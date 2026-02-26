@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.Projectiles
 {

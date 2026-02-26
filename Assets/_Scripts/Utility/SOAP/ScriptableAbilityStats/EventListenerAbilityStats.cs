@@ -1,9 +1,14 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Managers;
 using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
-
-namespace CosmicShore.Utilities
+using CosmicShore.Utility.SOAP.ScriptableCrystalStats;
+using CosmicShore.Utility.SOAP.ScriptablePrismStats;
+using CosmicShore.Utility.SOAP.ScriptableQuaternion;
+using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
+using CosmicShore.Utility.SOAP.ScriptableSilhouetteData;
+using CosmicShore.Utility.SOAP.ScriptableTransform;
+namespace CosmicShore.Utility.SOAP.ScriptableAbilityStats
 {
     [AddComponentMenu("Soap/EventListeners/EventListener"+nameof(AbilityStats))]
     public class EventListenerAbilityStats : EventListenerGeneric<AbilityStats>

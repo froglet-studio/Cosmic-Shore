@@ -1,26 +1,29 @@
 ﻿using System;
-using CosmicShore.App.UI.Views;
+using CosmicShore.Game.UI;
 
-[Serializable]
-public struct ShipSelectionSlot
+namespace CosmicShore.UI.Views
 {
-    public string vesselTypeNameOverride;
-
-    public ShipSelectionItemView itemView;
-
-    public bool TryGetVesselType(out VesselClassType type)
+    [Serializable]
+    public struct ShipSelectionSlot
     {
-        type = VesselClassType.Any;
+        public string vesselTypeNameOverride;
 
-        if (!string.IsNullOrWhiteSpace(vesselTypeNameOverride) &&
-            Enum.TryParse(vesselTypeNameOverride, true, out type))
+        public ShipSelectionItemView itemView;
+
+        public bool TryGetVesselType(out VesselClassType type)
         {
-            return true;
-        }
+            type = VesselClassType.Any;
 
-        if (!itemView) return false;
-        var sourceName = itemView.gameObject.name;
-        return !string.IsNullOrWhiteSpace(sourceName) &&
-               Enum.TryParse(sourceName, true, out type);
+            if (!string.IsNullOrWhiteSpace(vesselTypeNameOverride) &&
+                Enum.TryParse(vesselTypeNameOverride, true, out type))
+            {
+                return true;
+            }
+
+            if (!itemView) return false;
+            var sourceName = itemView.gameObject.name;
+            return !string.IsNullOrWhiteSpace(sourceName) &&
+                   Enum.TryParse(sourceName, true, out type);
+        }
     }
 }

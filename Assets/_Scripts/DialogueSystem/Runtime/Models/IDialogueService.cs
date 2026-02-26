@@ -1,8 +1,12 @@
-﻿using CosmicShore.DialogueSystem.Models;
 
-public interface IDialogueService
+namespace CosmicShore.DialogueSystem.Runtime.Models
 {
-    void PlayDialogueById(string setId);
-    void PlayDialogueSet(DialogueSet set);
-    bool IsPlaying { get; }
+    ﻿using CosmicShore.DialogueSystem.Models;
+
+    public interface IDialogueService
+    {
+        void PlayDialogueById(string setId);
+        void PlayDialogueSet(DialogueSet set);
+        bool IsPlaying { get; }
+    }
 }

@@ -1,7 +1,7 @@
 ﻿// BlockProjectilePoolManager.cs
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
-
+using CosmicShore.Utility.PoolsAndBuffers;
 namespace CosmicShore.Game.Projectiles
 {
     public class BlockProjectilePoolManager : GenericPoolManager<Prism>

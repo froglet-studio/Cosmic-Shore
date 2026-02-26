@@ -1,8 +1,11 @@
 using UnityEngine;
 using System;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Environment.Prisms
 {
     public class MaterialPropertyAnimator : MonoBehaviour
     {
@@ -119,9 +122,9 @@ namespace CosmicShore.Core
                 if (activeOpaqueMaterial != null && activeTransparentMaterial != null && MeshRenderer != null)
                 {
                     if (cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent)
-                        MeshRenderer.material = activeTransparentMaterial;
+                        MeshRenderer.sharedMaterial = activeTransparentMaterial;
                     else
-                        MeshRenderer.material = activeOpaqueMaterial;
+                        MeshRenderer.sharedMaterial = activeOpaqueMaterial;
                 }
                 
                 materialsDirty = false;
@@ -156,7 +159,7 @@ namespace CosmicShore.Core
             }
             else
             {
-                var currentMaterial = MeshRenderer.material;
+                var currentMaterial = MeshRenderer.sharedMaterial;
                 StartBrightColor = currentMaterial.GetColor(BrightColorId);
                 StartDarkColor = currentMaterial.GetColor(DarkColorId);
                 StartSpread = currentMaterial.GetVector(SpreadId);
@@ -175,10 +178,10 @@ namespace CosmicShore.Core
                 activeTransparentMaterial = transparentMaterial;
                 activeOpaqueMaterial = opaqueMaterial;
                 
-                if (MeshRenderer != null && cachedPrism != null && 
+                if (MeshRenderer != null && cachedPrism != null &&
                     cachedPrism.prismProperties != null)
                 {
-                    MeshRenderer.material = cachedPrism.prismProperties.IsTransparent ?
+                    MeshRenderer.sharedMaterial = cachedPrism.prismProperties.IsTransparent ?
                         transparentMaterial : opaqueMaterial;
                 }
 
@@ -190,7 +193,7 @@ namespace CosmicShore.Core
         {
             if (MeshRenderer != null && ValidateMaterials())
             {
-                MeshRenderer.material = transparent ? activeTransparentMaterial : activeOpaqueMaterial;
+                MeshRenderer.sharedMaterial = transparent ? activeTransparentMaterial : activeOpaqueMaterial;
                 cachedPrism.prismProperties.IsTransparent = transparent;
             }
         }

@@ -1,20 +1,23 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 
-public class DriftAction : ShipAction
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    public override void StartAction()
+    public class DriftAction : ShipAction
     {
-        Vessel.VesselStatus.VesselTransformer.PitchScaler *= 1.5f;
-        Vessel.VesselStatus.VesselTransformer.YawScaler *= 1.5f;
-        Vessel.VesselStatus.VesselTransformer.RollScaler *= 1.5f;
-        Vessel.VesselStatus.IsDrifting = true;
-    }
+        public override void StartAction()
+        {
+            Vessel.VesselStatus.VesselTransformer.PitchScaler *= 1.5f;
+            Vessel.VesselStatus.VesselTransformer.YawScaler *= 1.5f;
+            Vessel.VesselStatus.VesselTransformer.RollScaler *= 1.5f;
+            Vessel.VesselStatus.IsDrifting = true;
+        }
 
-    public override void StopAction()
-    {
-        Vessel.VesselStatus.VesselTransformer.PitchScaler /= 1.5f;
-        Vessel.VesselStatus.VesselTransformer.YawScaler /= 1.5f;
-        Vessel.VesselStatus.VesselTransformer.RollScaler /= 1.5f;
-        Vessel.VesselStatus.IsDrifting = false;
+        public override void StopAction()
+        {
+            Vessel.VesselStatus.VesselTransformer.PitchScaler /= 1.5f;
+            Vessel.VesselStatus.VesselTransformer.YawScaler /= 1.5f;
+            Vessel.VesselStatus.VesselTransformer.RollScaler /= 1.5f;
+            Vessel.VesselStatus.IsDrifting = false;
+        }
     }
 }

@@ -1,5 +1,5 @@
-using CosmicShore.Core;
-using CosmicShore.Soap;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Scoring

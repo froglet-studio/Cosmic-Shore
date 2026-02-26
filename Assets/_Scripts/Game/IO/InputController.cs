@@ -1,12 +1,13 @@
 using UnityEngine;
-using CosmicShore.Core;
+using CosmicShore.Game.Settings;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
-using CosmicShore.Systems;
+using CosmicShore.Game.Multiplayer;
 using CosmicShore.Utility.ClassExtensions;
 using Reflex.Attributes;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
-
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.IO
 {
@@ -112,6 +113,7 @@ namespace CosmicShore.Game.IO
 
                 currentStrategy?.SetInvertY(gameSetting.InvertYEnabled);
                 currentStrategy?.SetInvertThrottle(gameSetting.InvertThrottleEnabled);
+
 
                 CSDebug.Log($"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
             }

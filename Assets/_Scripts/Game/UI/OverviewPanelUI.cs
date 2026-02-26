@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.Game.UI
 {
     /// <summary>
     /// Manages all UI elements and presentation logic (Show, Hide, alpha, interactable).

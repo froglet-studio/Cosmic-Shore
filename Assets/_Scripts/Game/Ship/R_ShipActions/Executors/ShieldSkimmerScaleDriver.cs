@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections;
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
     public class ShieldSkimmerScaleDriver : MonoBehaviour
     {

@@ -1,8 +1,9 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Settings;
 using Lofelt.NiceVibrations;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.IO
 {

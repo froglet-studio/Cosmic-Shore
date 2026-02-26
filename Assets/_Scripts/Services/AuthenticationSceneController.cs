@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using CosmicShore.App.Profile;
+using CosmicShore.UI.Views;
 using CosmicShore.Systems.Bootstrap;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
@@ -9,9 +9,10 @@ using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.App.Systems.Authentication;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Services.Auth
+namespace CosmicShore.Services
 {
     /// <summary>
     /// Controls the authentication scene UI flow.

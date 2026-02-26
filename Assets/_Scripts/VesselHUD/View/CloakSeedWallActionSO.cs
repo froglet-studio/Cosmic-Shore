@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using CosmicShore.Core;
+using CosmicShore.Game.Environment.Prisms;
 
-namespace CosmicShore.Game
+namespace CosmicShore.VesselHUD.View
 {
     [CreateAssetMenu(fileName = "CloakSeedWallAction", menuName = "ScriptableObjects/Vessel Actions/Cloak + Seed Wall")]
     public class CloakSeedWallActionSO : ShipActionSO

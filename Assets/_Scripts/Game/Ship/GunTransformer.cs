@@ -1,8 +1,13 @@
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.IO;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Settings;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Utility.PoolsAndBuffers;
+namespace CosmicShore.Game.Ship
 {
     public class GunTransformer : MonoBehaviour
     {

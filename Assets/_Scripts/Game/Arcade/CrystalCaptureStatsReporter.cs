@@ -1,11 +1,11 @@
 ﻿// CrystalCaptureStatsReporter.cs
 using System.Linq;
-using CosmicShore.Game.Analytics;
-using CosmicShore.Soap;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.DataContainers;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Game.UI;
 namespace CosmicShore.Game.Arcade
 {
     public class CrystalCaptureStatsReporter : MonoBehaviour

@@ -1,7 +1,7 @@
 ﻿using Obvious.Soap;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.Impactors;
+namespace CosmicShore.Utility.SOAP.ScriptableClassType
 {
     [CreateAssetMenu(
         fileName = "Event_VesselImpactor",

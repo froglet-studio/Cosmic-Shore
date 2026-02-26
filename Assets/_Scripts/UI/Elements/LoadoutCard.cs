@@ -1,12 +1,12 @@
-using CosmicShore.Systems.Loadout;
-using CosmicShore.App.UI.Views;
+using CosmicShore.Systems.LoadOut;
+using CosmicShore.UI.Views;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Elements
+namespace CosmicShore.UI.Elements
 {
     public class LoadoutCard : MonoBehaviour
     {

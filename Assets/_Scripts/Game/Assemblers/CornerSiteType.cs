@@ -1,4 +1,5 @@
-﻿namespace CosmicShore
+
+namespace CosmicShore.Game.Assemblers
 {
     public enum CornerSiteType
     {
@@ -9,4 +10,3 @@
         None = 5
     }
 }
-

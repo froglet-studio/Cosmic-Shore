@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game.UI.Toast
+namespace CosmicShore.VesselHUD.ToastSystem
 {
     /// Immutable data packet for a chat toast.
     public readonly struct ChatToastRequest

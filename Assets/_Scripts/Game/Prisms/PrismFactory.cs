@@ -1,10 +1,13 @@
+using System;
 using UnityEngine;
-using CosmicShore.Core;
-using CosmicShore.Utilities; // for PrismEventChannelWithReturnSO
-using CosmicShore.Utility;
+using CosmicShore.Game.Managers;
+using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility;
+using CosmicShore.Utility.Effects;
+namespace CosmicShore.Game.Prisms
 {
     public enum PrismType
     {
@@ -24,7 +27,15 @@ namespace CosmicShore.Game
     {
         private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
         private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
-        
+
+        // Per-frame VFX spawn caps to prevent pool exhaustion when AOE hits many prisms
+        private const int MaxExplosionVFXPerFrame = 64;
+        private const int MaxImplosionVFXPerFrame = 64;
+        private int _explosionVFXCount;
+        private int _implosionVFXCount;
+        private int _lastExplosionFrame;
+        private int _lastImplosionFrame;
+
         [Header("Pool Managers")]
         [SerializeField] private InteractivePrismPoolManager dolphinPrismPool;
         [SerializeField] private InteractivePrismPoolManager serpentPrismPool;
@@ -173,7 +184,19 @@ namespace CosmicShore.Game
         
         GameObject SpawnExplosion(PrismEventData data)
         {
+            // Cap explosion VFX per frame to prevent pool exhaustion.
+            // Prism destruction still happens (Damage already applied), we just skip the visual.
+            if (Time.frameCount != _lastExplosionFrame)
+            {
+                _lastExplosionFrame = Time.frameCount;
+                _explosionVFXCount = 0;
+            }
+            if (_explosionVFXCount >= MaxExplosionVFXPerFrame)
+                return null;
+            _explosionVFXCount++;
+
             var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
+            if (obj == null) return null;
             obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
             obj.TriggerExplosion(data.Velocity);
@@ -182,7 +205,18 @@ namespace CosmicShore.Game
 
         GameObject SpawnImplosion(PrismEventData data)
         {
+            // Cap implosion VFX per frame for the same reason as explosions.
+            if (Time.frameCount != _lastImplosionFrame)
+            {
+                _lastImplosionFrame = Time.frameCount;
+                _implosionVFXCount = 0;
+            }
+            if (_implosionVFXCount >= MaxImplosionVFXPerFrame)
+                return null;
+            _implosionVFXCount++;
+
             var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
+            if (obj == null) return null;
             obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
             obj.StartImplosion(data.TargetTransform);
@@ -195,12 +229,16 @@ namespace CosmicShore.Game
             obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
 
-            obj.OnReturnToPool += _ =>
+            // Self-unsubscribing callback so lambdas don't accumulate on pool reuse
+            Action<PrismImplosion> growCallback = null;
+            growCallback = _ =>
             {
+                obj.OnReturnToPool -= growCallback;
                 data.OnGrowCompleted?.Invoke();
             };
+            obj.OnReturnToPool += growCallback;
 
-            obj.StartGrow(data.TargetTransform); // adjust if different
+            obj.StartGrow(data.TargetTransform);
 
             return obj.gameObject;
         }

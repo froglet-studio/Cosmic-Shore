@@ -1,140 +1,143 @@
 ﻿using System;
 using Obvious.Soap;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
 using UnityEngine;
-
-public class FireGunActionExecutor : ShipActionExecutorBase
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
-    /// <summary>Static event: each time a gun fires a single shot. Param = player name.</summary>
-    public static event Action<string> OnShotFired;
-
-    public event Action OnGunFired;
-    public event Action<float> OnAmmoChanged;
-
-    [Header("Scene Refs")]
-    [SerializeField] Gun gun;
-
-    [SerializeField] Transform projectileContainer;
-
-    [Header("Events")]
-    [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
-
-    [Header("Ammo")]
-    [SerializeField] private int defaultAmmoIndex = 2;
-
-    IVesselStatus _status;
-    ResourceSystem _resources;
-    FireGunActionSO _soRef;
-    readonly bool _detachFromContainer = true;
-
-    Transform _worldMuzzleAnchor;
-
-    void Awake()
+    public class FireGunActionExecutor : ShipActionExecutorBase
     {
-        var go = new GameObject("[MuzzleWorldAnchor]")
+        /// <summary>Static event: each time a gun fires a single shot. Param = player name.</summary>
+        public static event Action<string> OnShotFired;
+
+        public event Action OnGunFired;
+        public event Action<float> OnAmmoChanged;
+
+        [Header("Scene Refs")]
+        [SerializeField] Gun gun;
+
+        [SerializeField] Transform projectileContainer;
+
+        [Header("Events")]
+        [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
+        [Header("Ammo")]
+        [SerializeField] private int defaultAmmoIndex = 2;
+
+        IVesselStatus _status;
+        ResourceSystem _resources;
+        FireGunActionSO _soRef;
+        readonly bool _detachFromContainer = true;
+
+        Transform _worldMuzzleAnchor;
+
+        void Awake()
         {
-            hideFlags = HideFlags.HideAndDontSave
-        };
-        _worldMuzzleAnchor = go.transform;
-        _worldMuzzleAnchor.SetParent(null, true);
-    }
-
-    void OnEnable()
-    {
-        if (OnMiniGameTurnEnd) 
-            OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
-    }
-
-    void OnDisable()
-    {
-        if (OnMiniGameTurnEnd) 
-            OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
-    }
-
-    void OnDestroy()
-    {
-        if (_worldMuzzleAnchor)
-            Destroy(_worldMuzzleAnchor.gameObject);
-
-        if (_resources != null)
-            _resources.OnResourceChanged -= HandleResourceChanged;
-    }
-
-    public float Ammo01
-    {
-        get
-        {
-            var index = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
-
-            if (index < 0 || index >= _resources.Resources.Count) 
-                return 0f;
-
-            var res = _resources.Resources[index];
-            if (res == null || res.MaxAmount <= 0f) 
-                return 0f;
-
-            return Mathf.Clamp01(res.CurrentAmount / res.MaxAmount);
+            var go = new GameObject("[MuzzleWorldAnchor]")
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            _worldMuzzleAnchor = go.transform;
+            _worldMuzzleAnchor.SetParent(null, true);
         }
-    }
 
-    public override void Initialize(IVesselStatus shipStatus)
-    {
-        _status    = shipStatus;
-        _resources = shipStatus.ResourceSystem;
+        void OnEnable()
+        {
+            if (OnMiniGameTurnEnd) 
+                OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        }
 
-        _resources.OnResourceChanged -= HandleResourceChanged;
-        _resources.OnResourceChanged += HandleResourceChanged;
+        void OnDisable()
+        {
+            if (OnMiniGameTurnEnd) 
+                OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        }
 
-        if (gun != null)
-            gun.Initialize(shipStatus);
-    }
+        void OnDestroy()
+        {
+            if (_worldMuzzleAnchor)
+                Destroy(_worldMuzzleAnchor.gameObject);
 
-    void HandleResourceChanged(int index, float current, float max)
-    {
-        var ammoIndex = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
-        if (index != ammoIndex) 
-            return;
+            if (_resources != null)
+                _resources.OnResourceChanged -= HandleResourceChanged;
+        }
 
-        OnAmmoChanged?.Invoke(Ammo01);
-    }
+        public float Ammo01
+        {
+            get
+            {
+                var index = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
 
-    public void Fire(FireGunActionSO so, IVesselStatus status)
-    {
-        if (_resources.Resources[so.AmmoIndex].CurrentAmount < so.AmmoCost)
-            return;
+                if (index < 0 || index >= _resources.Resources.Count) 
+                    return 0f;
 
-        _soRef = so;
-        _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
+                var res = _resources.Resources[index];
+                if (res == null || res.MaxAmount <= 0f) 
+                    return 0f;
 
-        OnAmmoChanged?.Invoke(Ammo01);
+                return Mathf.Clamp01(res.CurrentAmount / res.MaxAmount);
+            }
+        }
 
-        var gunTf = gun ? gun.transform : transform;
-        _worldMuzzleAnchor.SetPositionAndRotation(gunTf.position, gunTf.rotation);
+        public override void Initialize(IVesselStatus shipStatus)
+        {
+            _status    = shipStatus;
+            _resources = shipStatus.ResourceSystem;
 
-        var inheritedVelocityWS = status.Course * status.Speed;
+            _resources.OnResourceChanged -= HandleResourceChanged;
+            _resources.OnResourceChanged += HandleResourceChanged;
 
-        OnGunFired?.Invoke();
-        OnShotFired?.Invoke(_status?.PlayerName);
+            if (gun != null)
+                gun.Initialize(shipStatus);
+        }
 
-        gun.FireGun(
-            _worldMuzzleAnchor,
-            so.Speed,
-            inheritedVelocityWS,
-            so.ProjectileScale,
-            true,
-            so.ProjectileTime.Value,
-            0,
-            FiringPatterns.Default,
-            so.Energy,
-            detachAfterSpawn: _detachFromContainer
-        );
-    }
+        void HandleResourceChanged(int index, float current, float max)
+        {
+            var ammoIndex = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
+            if (index != ammoIndex) 
+                return;
 
-    void OnTurnEndOfMiniGame()
-    {
-        _soRef = null;
-        OnAmmoChanged?.Invoke(Ammo01);
+            OnAmmoChanged?.Invoke(Ammo01);
+        }
+
+        public void Fire(FireGunActionSO so, IVesselStatus status)
+        {
+            if (_resources.Resources[so.AmmoIndex].CurrentAmount < so.AmmoCost)
+                return;
+
+            _soRef = so;
+            _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
+
+            OnAmmoChanged?.Invoke(Ammo01);
+
+            var gunTf = gun ? gun.transform : transform;
+            _worldMuzzleAnchor.SetPositionAndRotation(gunTf.position, gunTf.rotation);
+
+            var inheritedVelocityWS = status.Course * status.Speed;
+
+            OnGunFired?.Invoke();
+            OnShotFired?.Invoke(_status?.PlayerName);
+
+            gun.FireGun(
+                _worldMuzzleAnchor,
+                so.Speed,
+                inheritedVelocityWS,
+                so.ProjectileScale,
+                true,
+                so.ProjectileTime.Value,
+                0,
+                FiringPatterns.Default,
+                so.Energy,
+                detachAfterSpawn: _detachFromContainer
+            );
+        }
+
+        void OnTurnEndOfMiniGame()
+        {
+            _soRef = null;
+            OnAmmoChanged?.Invoke(Ammo01);
+        }
     }
 }

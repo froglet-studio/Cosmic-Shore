@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.Game.UI
 {
     /// One card already placed in the scene. Set its fields in the Inspector.
     public sealed class ShipCardView : MonoBehaviour

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Utility.DataContainers
 {
     [CreateAssetMenu(
         fileName = "FaunaConfiguration",

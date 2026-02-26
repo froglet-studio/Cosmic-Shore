@@ -2,7 +2,7 @@ using CosmicShore.Models.Enums;
 
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "DomainColorPalette", menuName = "CosmicShore/UI/Domain Color Palette")]
     public class DomainColorPaletteSO : ScriptableObject

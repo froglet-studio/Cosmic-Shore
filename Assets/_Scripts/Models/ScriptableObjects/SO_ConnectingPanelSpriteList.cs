@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Models.ScriptableObjects
 {
     [CreateAssetMenu(
         fileName = "SO_ConnectingPanelSpriteList",

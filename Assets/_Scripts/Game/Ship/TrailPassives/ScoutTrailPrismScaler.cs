@@ -1,7 +1,7 @@
 ﻿using CosmicShore;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 /// <summary>
 /// Dynamically scales trail prisms based on surrounding open space.
@@ -192,4 +192,8 @@ public class ScoutTrailPrismScaler : MonoBehaviour
         );
     }
 #endif
+
+namespace CosmicShore.Game.Ship.TrailPassives
+{
+    }
 }

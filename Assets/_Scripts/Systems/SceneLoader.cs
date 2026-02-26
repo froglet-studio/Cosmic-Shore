@@ -1,6 +1,6 @@
 using System;
-using CosmicShore.Soap;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Netcode;

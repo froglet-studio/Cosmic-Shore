@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.FX
+namespace CosmicShore.UI.FX
 {
     /// <summary>
     /// Built predominantly to add juice to currency balance changes, may have other uses

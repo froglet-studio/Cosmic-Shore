@@ -1,6 +1,4 @@
-﻿using CosmicShore.Soap;
-
-namespace CosmicShore.Game.Arcade.Scoring
+﻿namespace CosmicShore.Game.Arcade.Scoring
 {
     /// <summary>
     /// Scoring for LifeForm kills in Wildlife Blitz mode.

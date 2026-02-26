@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.DialogueSystem.Models
+namespace CosmicShore.DialogueSystem.Runtime.Models
 {
     public enum DialogueChannel
     {

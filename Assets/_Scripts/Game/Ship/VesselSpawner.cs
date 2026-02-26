@@ -1,10 +1,11 @@
 using System;
-using CosmicShore.Soap;
+using CosmicShore.Utility.SOAP;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     public class VesselSpawner : MonoBehaviour
     {

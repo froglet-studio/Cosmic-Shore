@@ -2,7 +2,7 @@
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Utility
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public class ShowIfAttribute : PropertyAttribute

@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.UI.Animations
 {
     /// <summary>
     /// Hacking-style typewriter: progressively reveals the target string.

@@ -1,8 +1,10 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.Helpers
 {
     [System.Serializable]
     public struct ResourceChangeSpec

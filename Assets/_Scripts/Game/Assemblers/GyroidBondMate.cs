@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Assemblers
 {
     public struct GyroidBondMate
     {

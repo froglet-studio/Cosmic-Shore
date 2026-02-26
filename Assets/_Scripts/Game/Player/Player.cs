@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.App.Profile;
+using CosmicShore.UI.Views;
 using CosmicShore.Game.IO;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility.ClassExtensions;
 using Reflex.Attributes;
 using Unity.Collections;
@@ -11,8 +11,8 @@ using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Player
 {
     public class Player : NetworkBehaviour, IPlayer
     {

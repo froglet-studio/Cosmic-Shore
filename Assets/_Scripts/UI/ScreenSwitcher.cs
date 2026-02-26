@@ -1,19 +1,19 @@
-using CosmicShore.Systems.UserActions;
+using CosmicShore.Systems.UserAction;
 using CosmicShore.Models.Enums;
-using CosmicShore.App.UI.Modals;
-using CosmicShore.App.UI.Screens;
-using CosmicShore.Core;
+using CosmicShore.UI.Modals;
+using CosmicShore.UI.Screens;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Systems;
+using CosmicShore.Game.Multiplayer;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     public class ScreenSwitcher : MonoBehaviour, IDragHandler, IEndDragHandler
     {
@@ -79,6 +79,10 @@ namespace CosmicShore.App.UI
 
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
+
+        // Cached canvas references for aspect-ratio-safe sliding
+        private Canvas _rootCanvas;
+        private RectTransform _canvasRect;
 
         // Old constants kept for compatibility
         private const int STORE  = (int)MenuScreens.STORE;
@@ -189,6 +193,11 @@ namespace CosmicShore.App.UI
 
         private void Start()
         {
+            _rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
+            _canvasRect = _rootCanvas.GetComponent<RectTransform>();
+
+            LayoutScreensToViewport();
+
             panelLocation = transform.position;
 
             if (PlayerPrefs.HasKey(ReturnToScreenPrefKey))
@@ -254,6 +263,71 @@ namespace CosmicShore.App.UI
             //
             //     navigateCoroutine = StartCoroutine(SmoothMove(transform.position, panelLocation, easing));
             // }
+        }
+
+        #endregion
+
+        #region Viewport Layout
+
+        /// <summary>
+        /// Returns the current viewport width in canvas units.
+        /// This adapts to any aspect ratio and CanvasScaler configuration.
+        /// </summary>
+        private float GetViewportWidthInCanvasUnits()
+        {
+            if (_canvasRect != null)
+                return _canvasRect.rect.width;
+
+            // Fallback: assume 1:1 canvas-to-pixel mapping
+            return Screen.width;
+        }
+
+        /// <summary>
+        /// Returns the world-space (pixel) distance for one screen slide.
+        /// </summary>
+        private float GetSlideDistance()
+        {
+            if (_rootCanvas != null)
+                return GetViewportWidthInCanvasUnits() * _rootCanvas.scaleFactor;
+
+            return Screen.width;
+        }
+
+        /// <summary>
+        /// Resizes and repositions each screen panel to fill the actual viewport width,
+        /// so the layout works correctly at any aspect ratio.
+        /// </summary>
+        private void LayoutScreensToViewport()
+        {
+            float viewportWidth = GetViewportWidthInCanvasUnits();
+            int count = GetScreenCount();
+
+            for (int i = 0; i < count; i++)
+            {
+                RectTransform rt = GetScreenRootRT(i);
+                if (rt == null) continue;
+
+                // Anchor to left edge, stretch vertically
+                rt.anchorMin = new Vector2(0f, 0f);
+                rt.anchorMax = new Vector2(0f, 1f);
+                rt.pivot = new Vector2(0f, 0.5f);
+                rt.sizeDelta = new Vector2(viewportWidth, 0f);
+                rt.anchoredPosition = new Vector2(i * viewportWidth, 0f);
+            }
+        }
+
+        /// <summary>
+        /// Returns the RectTransform for the screen at the given visual index.
+        /// </summary>
+        private RectTransform GetScreenRootRT(int index)
+        {
+            if (screens is { Count: > 0 } && index >= 0 && index < screens.Count)
+                return screens[index]?.root;
+
+            if (index >= 0 && index < transform.childCount)
+                return transform.GetChild(index) as RectTransform;
+
+            return null;
         }
 
         #endregion
@@ -346,8 +420,8 @@ namespace CosmicShore.App.UI
             else
                 PauseSystem.TogglePauseGame(true);
 
-            // Slide effect: 1 screen width per index
-            Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
+            // Slide effect: 1 viewport width per index (works at any aspect ratio)
+            Vector3 newLocation = new Vector3(-ScreenIndex * GetSlideDistance(), 0, 0);
             panelLocation = newLocation;
 
             if (animate)

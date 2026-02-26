@@ -2,9 +2,9 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
-using CosmicShore.Events;
+using CosmicShore.FTUE.Helpers;
 
-namespace CosmicShore.FTUE
+namespace CosmicShore.FTUE.UI
 {
     public class TutorialUIView : MonoBehaviour
     {

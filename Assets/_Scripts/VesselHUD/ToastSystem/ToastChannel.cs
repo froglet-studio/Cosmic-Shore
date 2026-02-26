@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI.Toast
+namespace CosmicShore.VesselHUD.ToastSystem
 {
     [CreateAssetMenu(fileName="ToastChannel", menuName="CosmicShore/UI/Toast Channel")]
     public class ToastChannel : ScriptableObject

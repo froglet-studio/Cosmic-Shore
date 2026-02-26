@@ -1,4 +1,8 @@
-public interface IMiniGameHUDController
+
+namespace CosmicShore.MinigameHUD.Interfaces
 {
-    // void OnButtonPressed(int buttonNumber); // Extend as needed for minigame specifics
+    public interface IMiniGameHUDController
+    {
+        // void OnButtonPressed(int buttonNumber); // Extend as needed for minigame specifics
+    }
 }

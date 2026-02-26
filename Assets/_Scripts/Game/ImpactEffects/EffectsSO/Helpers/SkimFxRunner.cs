@@ -1,10 +1,11 @@
 using System.Threading;
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using Cysharp.Threading.Tasks;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.Helpers
 {
     // ------------------------------------------------------------
     // Small internal helper: spawns & updates skim FX, then cleans up.

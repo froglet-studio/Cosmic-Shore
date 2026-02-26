@@ -1,11 +1,11 @@
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Player;
 using CosmicShore.Utility.ClassExtensions;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Environment.Cytoplasm
 {
     public class NudgeShard : MonoBehaviour
     {

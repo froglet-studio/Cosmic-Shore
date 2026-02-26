@@ -1,7 +1,7 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Managers;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Game.Arcade.TurnMonitors
 {
     public class ShipCollisionTurnMonitor : TurnMonitor
     {

@@ -1,14 +1,16 @@
 ﻿// Cell.cs
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Soap;
+using CosmicShore.Game.Managers;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 using Random = UnityEngine.Random;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility;
+using CosmicShore.Game.Environment.FlowField;
+namespace CosmicShore.Game.Environment
 {
     public class Cell : MonoBehaviour
     {

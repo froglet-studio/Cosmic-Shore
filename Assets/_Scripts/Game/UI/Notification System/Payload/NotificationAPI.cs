@@ -1,7 +1,8 @@
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
+
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.UI.NotificationSystem.Payload
 {
     public static class NotificationAPI
     {

@@ -1,16 +1,15 @@
 using System;
 using System.Collections;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
-using CosmicShore.Soap;
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore
+using CosmicShore.Game.Environment.FlowField;
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     /// <summary>
     /// Abstract base for all lifeforms with health/spindle infrastructure (primarily Flora).

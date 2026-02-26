@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility.DataContainers
 {
     public enum CinematicCameraType
     {

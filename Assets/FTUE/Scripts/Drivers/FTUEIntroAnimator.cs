@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using System.Collections;
 using DG.Tweening;
 
-namespace CosmicShore.FTUE
+namespace CosmicShore.FTUE.Drivers
 {
     public class FTUEIntroAnimator : MonoBehaviour
     {

@@ -1,11 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Game;
 using CosmicShore.Models.Enums;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Ship
 {
     [RequireComponent(typeof(IVesselStatus))]
     public class ResourceSystem : ElementalShipComponent

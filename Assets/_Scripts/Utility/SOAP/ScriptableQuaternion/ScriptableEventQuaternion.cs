@@ -1,7 +1,7 @@
 using UnityEngine;
 using Obvious.Soap;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility.SOAP.ScriptableQuaternion
 {
     [CreateAssetMenu(fileName = "Event_" + nameof(Quaternion), menuName = "ScriptableObjects/SOAP/Events/"+ nameof(Quaternion))]
     public class ScriptableEventQuaternion : ScriptableEvent<Quaternion>

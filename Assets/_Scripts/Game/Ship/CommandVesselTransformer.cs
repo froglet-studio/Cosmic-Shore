@@ -1,8 +1,8 @@
-using CosmicShore.Game;
-using CosmicShore.Utility;
+using CosmicShore.Game.IO;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Utility;
+namespace CosmicShore.Game.Ship
 {
     public class CommandVesselTransformer : VesselTransformer
     {

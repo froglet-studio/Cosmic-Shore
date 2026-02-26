@@ -1,10 +1,10 @@
-using CosmicShore.App.UI.Controllers;
-using CosmicShore.Core;
+using CosmicShore.Game.UI;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Player
 {
     public class PlayerSpawner : MonoBehaviour
     {

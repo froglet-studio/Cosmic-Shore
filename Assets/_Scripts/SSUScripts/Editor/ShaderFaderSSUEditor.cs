@@ -6,8 +6,8 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
 using UnityEngine.Rendering;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts;
+namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(ShaderFaderSSU))]
     [CanEditMultipleObjects]

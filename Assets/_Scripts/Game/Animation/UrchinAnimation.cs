@@ -1,5 +1,5 @@
 using UnityEngine;
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using System.Collections.Generic;
 
 namespace CosmicShore.Game.Animation

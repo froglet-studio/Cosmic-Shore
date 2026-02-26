@@ -1,17 +1,18 @@
-using CosmicShore.Systems.Loadout;
-using CosmicShore.App.UI.Elements;
-using CosmicShore.Core;
+using CosmicShore.Systems.LoadOut;
+using CosmicShore.UI.Elements;
+using CosmicShore.Game.Managers;
 using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI.Views
 {
     public class ArcadeLoadoutView : MonoBehaviour
     {

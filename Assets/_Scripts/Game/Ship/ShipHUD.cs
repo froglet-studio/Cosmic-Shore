@@ -1,9 +1,15 @@
-using CosmicShore.Core;
-using CosmicShore.Game;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.Player;
+using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Settings;
+using CosmicShore.Game.UI;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Utility.PoolsAndBuffers;
+namespace CosmicShore.Game.Ship
 {
     public class ShipHUD : MonoBehaviour // TODO: remove this class (unneeded) 
     {

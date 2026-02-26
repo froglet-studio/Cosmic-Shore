@@ -1,27 +1,27 @@
 using System;
-using System.Threading;
-using Cysharp.Threading.Tasks;
-using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Utility.Effects
 {
     /// <summary>
     /// Handles visual + positional explosion effect for prism destruction.
+    /// Animation is driven by PrismEffectsManager via batched Burst jobs
+    /// instead of per-instance async loops.
     /// Uses MaterialPropertyBlock to keep prefab-assigned materials intact.
-    /// UniTask-based animation with cancellation on disable.
     /// </summary>
     [RequireComponent(typeof(MeshRenderer))]
     public class PrismExplosion : MonoBehaviour
     {
-        [SerializeField] 
+        [SerializeField]
         private float minSpeed = 30f;
 
-        [SerializeField] 
+        [SerializeField]
         private float maxSpeed = 250f;
 
-        [SerializeField] 
+        [SerializeField]
         private MeshRenderer _renderer;
 
         private MaterialPropertyBlock _mpb;
@@ -29,13 +29,19 @@ namespace CosmicShore.Game
         // Pool callback (set by PoolManager)
         public Action<PrismExplosion> OnReturnToPool;
 
-        // UniTask cancellation
-        private CancellationTokenSource _cts;
-
         // Cache shader property IDs for performance
         private static readonly int VelocityID = Shader.PropertyToID("_Velocity");
         private static readonly int ExplosionAmountID = Shader.PropertyToID("_ExplosionAmount");
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
+
+        // State exposed to PrismEffectsManager for batched updates
+        internal Vector3 InitialPosition { get; private set; }
+        internal Vector3 Velocity { get; private set; }
+        internal float Speed { get; private set; }
+        internal float Elapsed { get; set; }
+        internal float MaxDuration => 5f;
+        internal bool IsActive { get; private set; }
+        internal MeshRenderer Renderer => _renderer;
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -55,8 +61,11 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
-            // Cancel any running animation and clean up overrides
-            CancelRunningTask();
+            if (IsActive)
+            {
+                IsActive = false;
+                PrismEffectsManager.Instance?.UnregisterExplosion(this);
+            }
 
             if (_renderer != null && _mpb != null)
             {
@@ -66,7 +75,8 @@ namespace CosmicShore.Game
         }
 
         /// <summary>
-        /// Fire the explosion animation. Safe-guards NaNs and uses UniTask.
+        /// Fire the explosion animation. Sets up state and registers with the
+        /// centralized PrismEffectsManager for batched Burst-compiled updates.
         /// </summary>
         public void TriggerExplosion(Vector3 velocity)
         {
@@ -79,93 +89,69 @@ namespace CosmicShore.Game
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * minSpeed;
 
-            // Restart CTS and run new async animation
-            CancelRunningTask();
-            _cts = new CancellationTokenSource();
-            ExplosionAsync(velocity, _cts.Token).Forget();
+            // If already active, unregister first
+            if (IsActive)
+                PrismEffectsManager.Instance?.UnregisterExplosion(this);
+
+            // Clamp velocity and calculate speed
+            velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out float speed);
+
+            // Store state for manager to read
+            InitialPosition = transform.position;
+            Velocity = velocity;
+            Speed = speed;
+            Elapsed = 0f;
+            IsActive = true;
+
+            // Set ALL animated shader properties to their initial values so
+            // we never fall back to the material's baked defaults
+            // (ExplodingBlockMaterial has _ExplosionAmount: 20.7 which looks fully exploded)
+            _renderer.GetPropertyBlock(_mpb);
+            _mpb.SetVector(VelocityID, velocity);
+            _mpb.SetFloat(ExplosionAmountID, 0f);
+            _mpb.SetFloat(OpacityID, 1f);
+            _renderer.SetPropertyBlock(_mpb);
+
+            // Register with batched manager for frame updates (auto-creates if not in scene)
+            PrismEffectsManager.EnsureInstance().RegisterExplosion(this);
         }
 
         /// <summary>
-        /// Public method to immediately return this instance to the pool.
+        /// Immediately return this instance to the pool.
         /// Also reparents under the PoolManager's transform for hierarchy cleanliness.
         /// </summary>
         public void ReturnToPool()
         {
-            // Stop animation & clear overrides
-            CancelRunningTask();
-
-            if (_renderer != null && _mpb != null)
-            {
-                _mpb.Clear();
-                _renderer.SetPropertyBlock(_mpb);
-            }
-            
+            CompleteEffect();
             OnReturnToPool?.Invoke(this);
         }
 
-        private void CancelRunningTask()
+        /// <summary>
+        /// Called internally or by PrismEffectsManager to stop the animation and clear overrides.
+        /// </summary>
+        internal void CompleteEffect()
         {
-            if (_cts != null)
+            if (IsActive)
             {
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = null;
-            }
-        }
-
-        private async UniTaskVoid ExplosionAsync(Vector3 velocity, CancellationToken ct)
-        {
-            // Clamp velocity and calculate speed
-            float speed;
-            velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out speed);
-
-            _renderer.GetPropertyBlock(_mpb);
-            _mpb.SetVector(VelocityID, velocity);
-            _renderer.SetPropertyBlock(_mpb);
-
-            Vector3 initialPosition = transform.position;
-            const float maxDuration = 5f;
-            float duration = 0f;
-
-            try
-            {
-                while (duration <= maxDuration)
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    duration += Time.deltaTime;
-
-                    // Update position
-                    Vector3 newPosition = initialPosition + duration * velocity;
-                    if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
-                        transform.position = newPosition;
-
-                    // Update shader overrides
-                    _renderer.GetPropertyBlock(_mpb);
-                    _mpb.SetFloat(ExplosionAmountID, speed * duration);
-                    _mpb.SetFloat(OpacityID, 1f - (duration / maxDuration));
-                    _renderer.SetPropertyBlock(_mpb);
-
-                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Swallow; cleanup happens below
+                IsActive = false;
+                PrismEffectsManager.Instance?.UnregisterExplosion(this);
             }
 
-            // Reset overrides
             if (_renderer != null && _mpb != null)
             {
                 _mpb.Clear();
                 _renderer.SetPropertyBlock(_mpb);
             }
+        }
 
-            // Notify pool manager that we’re done (if not canceled by manual ReturnToPool)
-            if (!ct.IsCancellationRequested)
-            {
-                OnReturnToPool?.Invoke(this);
-            }
+        /// <summary>
+        /// Called by PrismEffectsManager when the animation finishes naturally (elapsed >= maxDuration).
+        /// Cleans up and notifies pool.
+        /// </summary>
+        internal void OnEffectComplete()
+        {
+            CompleteEffect();
+            OnReturnToPool?.Invoke(this);
         }
     }
 }

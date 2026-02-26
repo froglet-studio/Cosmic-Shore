@@ -1,11 +1,12 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
-using CosmicShore.Core;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
 using Random = UnityEngine.Random;
 
 namespace CosmicShore.Game.Projectiles
@@ -49,7 +50,7 @@ namespace CosmicShore.Game.Projectiles
             baseBlockScale.z *= depthScale.Value;
             maxRadius        *= depthScale.Value;
 
-            rayDirection = transform.forward;
+            rayDirection = coneContainer.transform.forward;
             scaleCurve ??= AnimationCurve.Linear(0, 1, 1, 0.5f);
         }
 
@@ -73,6 +74,7 @@ namespace CosmicShore.Game.Projectiles
                 for (int ray = 0; ray < numberOfRays; ray++)
                 {
                     ct.ThrowIfCancellationRequested();
+                    if (!this) return; // guard against base conic animation destroying gameObject
 
                     Trail trail = new Trail();
                     trails.Add(trail);
@@ -115,8 +117,8 @@ namespace CosmicShore.Game.Projectiles
                 Quaternion aroundRay   = Quaternion.AngleAxis(randomRot, rayDirection);
                 Vector3 spreadDir      = aroundRay * spreadRot * rayDirection;
 
-                Vector3 pos = transform.position + spreadDir * radius;
-                Vector3 up  = transform.up;
+                Vector3 pos = coneContainer.transform.position + spreadDir * radius;
+                Vector3 up  = coneContainer.transform.up;
 
                 CreateBlock(pos, spreadDir, up, $"::Radial::{rayIndex}::{b}", trail, finalScale);
             }

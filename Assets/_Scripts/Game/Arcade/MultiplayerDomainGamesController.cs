@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Linq;
-using CosmicShore.Game.UI;
+using CosmicShore.Game.UI.GameEventFeed;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Arcade

@@ -1,4 +1,4 @@
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Default vessel telemetry for vessels that only track the common base stats

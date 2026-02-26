@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using CosmicShore.Core;
+using CosmicShore.Game.Environment.Prisms;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship;
+using CosmicShore.VesselHUD.View;
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
     public sealed class CloakSeedWallActionExecutor : ShipActionExecutorBase
     {

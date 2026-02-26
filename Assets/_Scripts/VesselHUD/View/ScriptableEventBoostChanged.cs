@@ -1,7 +1,7 @@
 ﻿using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.VesselHUD.View
 {
     [CreateAssetMenu(
         fileName = "Event_" + nameof(BoostChangedPayload),

@@ -1,7 +1,7 @@
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Environment.Spawning;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.FlowField;
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
     public class SpawnableCrystal : SpawnableBase
     {

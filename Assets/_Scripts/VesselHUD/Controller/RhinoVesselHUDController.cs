@@ -1,7 +1,11 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Utility.SOAP.ScriptableClassType;
+using CosmicShore.VesselHUD.View;
+namespace CosmicShore.VesselHUD.Controller
 {
     public sealed class RhinoVesselHUDController : VesselHUDController
     {

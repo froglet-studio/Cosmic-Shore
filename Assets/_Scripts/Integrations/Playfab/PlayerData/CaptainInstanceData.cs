@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore.Integrations.PlayFab.PlayerModels
+namespace CosmicShore.Integrations.Playfab.PlayerData
 {
     /// <summary>
     /// Data container that tracks how the player's captain instance has changed from the vanilla version - e.g how many times the captain has been upgrade

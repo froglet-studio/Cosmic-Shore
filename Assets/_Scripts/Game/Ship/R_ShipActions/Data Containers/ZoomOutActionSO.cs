@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 
-namespace CosmicShore.Game.CameraSystem
+namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
 {
     [CreateAssetMenu(fileName = "ZoomOutAction", menuName = "ScriptableObjects/Vessel Actions/ZoomOut (Camera)")]
     public class ZoomOutActionSO : ShipActionSO

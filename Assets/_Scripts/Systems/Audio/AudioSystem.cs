@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Core;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Settings;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Audio;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 /// <summary>
 /// Audio System to contain audio methods accessed by other classes

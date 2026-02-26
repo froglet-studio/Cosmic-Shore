@@ -1,7 +1,6 @@
 // Scoreboard.cs — rematch panels auto-dismiss after 2s (except received panel)
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.Analytics;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using Reflex.Attributes;
 using System.Collections;
@@ -10,9 +9,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Game.Arcade;
 namespace CosmicShore.Game.UI
 {
     public class Scoreboard : MonoBehaviour

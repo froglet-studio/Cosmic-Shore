@@ -1,10 +1,10 @@
-using CosmicShore.Core;
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Environment.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
     public class SpawnableComet : SpawnableBase
     {

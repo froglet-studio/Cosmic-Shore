@@ -2,12 +2,17 @@
 using UnityEngine;
 using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
-using CosmicShore.Game;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Core
+using CosmicShore.Game.Environment.MiniGameObjects;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Prisms;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Utility.SOAP.ScriptablePrismStats;
+using CosmicShore.Game.Environment.Prisms;
+namespace CosmicShore.Game.Ship
 {
     [RequireComponent(typeof(MaterialPropertyAnimator))]
     [RequireComponent(typeof(PrismScaleAnimator))]
@@ -45,6 +50,13 @@ namespace CosmicShore.Core
         public Action<Prism> OnReturnToPool;
         private bool _initialized;
         private Vector3 _lastDestructionScale = Vector3.one;
+
+        /// <summary>
+        /// Index into PrismAOERegistry's contiguous NativeArray.
+        /// Used for O(1) updates to cache-line-packed AOE data.
+        /// -1 means not registered.
+        /// </summary>
+        internal int AOERegistryIndex = -1;
         
         public Domains Domain
         {
@@ -137,6 +149,13 @@ namespace CosmicShore.Core
 
         private void ResetState()
         {
+            // Unregister from AOE batch processing
+            if (AOERegistryIndex >= 0)
+            {
+                PrismAOERegistry.Instance?.Unregister(AOERegistryIndex);
+                AOERegistryIndex = -1;
+            }
+
             destroyed = false;
             devastated = false;
             IsSmallest = false;
@@ -195,7 +214,12 @@ namespace CosmicShore.Core
                 OwnName = PlayerName,
                 Volume = prismProperties.volume,
             });
-            
+
+            // Register with AOE registry for cache-friendly batch explosion processing
+            var registry = PrismAOERegistry.EnsureInstance();
+            if (registry != null && registry.IsAvailable)
+                AOERegistryIndex = registry.Register(this);
+
             // CellControlManager is deprecated, transfer the logics below to somewhere else
             /*if (CellControlManager.Instance)
             {
@@ -245,6 +269,10 @@ namespace CosmicShore.Core
 
             destroyed = true;
             devastated = devastate;
+
+            // Mark destroyed in AOE registry so Burst job skips this prism
+            if (AOERegistryIndex >= 0)
+                PrismAOERegistry.Instance?.MarkDestroyed(AOERegistryIndex);
 
             _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
@@ -367,10 +395,8 @@ namespace CosmicShore.Core
 
         private void OnDestroy()
         {
-            if (meshRenderer != null && meshRenderer.material != null)
-            {
-                Destroy(meshRenderer.material);
-            }
+            // No material cleanup needed — we use sharedMaterial exclusively,
+            // so no per-instance material clones are created.
         }
     }
 }

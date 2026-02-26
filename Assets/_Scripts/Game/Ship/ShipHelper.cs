@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
+using CosmicShore.Game.Ship.ShipActions;
+using CosmicShore.Models.ScriptableObjects;
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// This class helps in method execution for IVesselStatus instances

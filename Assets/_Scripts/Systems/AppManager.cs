@@ -1,14 +1,16 @@
-using CosmicShore.App.Profile;
-using CosmicShore.Core;
-using CosmicShore.Game.Analytics;
+using CosmicShore.UI.Views;
+using CosmicShore.Game.Settings;
+using CosmicShore.Game.UI;
 using CosmicShore.Services;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using CosmicShore.Systems.Audio;
-using CosmicShore.Utilities;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Enums;
 using UnityEngine;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
 using Resolution = Reflex.Enums.Resolution;
 
 namespace CosmicShore.Systems

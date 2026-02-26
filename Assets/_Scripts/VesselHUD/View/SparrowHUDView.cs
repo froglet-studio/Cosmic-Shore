@@ -4,8 +4,11 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship.ShipActions;
+using CosmicShore.VesselHUD.Controller;
+namespace CosmicShore.VesselHUD.View
 {
     public class SparrowHUDView : VesselHUDView
     {

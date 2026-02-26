@@ -1,8 +1,8 @@
 ﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+namespace CosmicShore.VesselHUD.View
 {
     public class SerpentVesselHUDView : VesselHUDView
     {

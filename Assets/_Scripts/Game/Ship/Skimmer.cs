@@ -1,14 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Core;
+using CosmicShore.Game.Environment;
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Utility;
+using CosmicShore.Game.Environment.Cytoplasm;
+using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.Player;
+namespace CosmicShore.Game.Ship
 {
     public class Skimmer : ElementalShipComponent
     {

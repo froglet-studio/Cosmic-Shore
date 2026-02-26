@@ -1,8 +1,7 @@
 using System;
-using CosmicShore.Systems;
-using CosmicShore.Game;
-using CosmicShore.Utilities;
-using CosmicShore.Soap;
+using CosmicShore.Game.Multiplayer;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -10,7 +9,7 @@ using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine.Serialization;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Managers
 {
     [DefaultExecutionOrder(0)]
     public class GameManager : NetworkBehaviour

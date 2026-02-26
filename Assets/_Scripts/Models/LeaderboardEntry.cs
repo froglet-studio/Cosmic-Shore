@@ -1,16 +1,19 @@
 using UnityEngine.Serialization;
 
-[System.Serializable]
-public struct LeaderboardEntry
+namespace CosmicShore.Models
 {
-    public string PlayerName;
-    public int Score;
-    [FormerlySerializedAs("ShipType")] public VesselClassType vesselType;
-
-    public LeaderboardEntry(string playerName, int score, VesselClassType vesselType)
+    [System.Serializable]
+    public struct LeaderboardEntry
     {
-        PlayerName = playerName;
-        Score = score;
-        this.vesselType = vesselType;
+        public string PlayerName;
+        public int Score;
+        [FormerlySerializedAs("ShipType")] public VesselClassType vesselType;
+
+        public LeaderboardEntry(string playerName, int score, VesselClassType vesselType)
+        {
+            PlayerName = playerName;
+            Score = score;
+            this.vesselType = vesselType;
+        }
     }
 }

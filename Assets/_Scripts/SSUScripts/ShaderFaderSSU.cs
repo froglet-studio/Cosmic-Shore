@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts.Internal;
+namespace CosmicShore.SSUScripts
 {
     public class ShaderFaderSSU : MonoBehaviour
     {

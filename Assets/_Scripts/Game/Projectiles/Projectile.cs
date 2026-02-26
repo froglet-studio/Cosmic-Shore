@@ -2,10 +2,11 @@ using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
-using CosmicShore.Core;
-using CosmicShore.Utility;
+using CosmicShore.Game.Managers;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility;
 namespace CosmicShore.Game.Projectiles
 {
     public class Projectile : MonoBehaviour

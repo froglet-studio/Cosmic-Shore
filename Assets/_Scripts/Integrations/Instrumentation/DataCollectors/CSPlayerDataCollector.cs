@@ -2,7 +2,7 @@
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using System.Threading.Tasks;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Integrations.Instrumentation.DataCollectors
 {

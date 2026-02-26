@@ -3,13 +3,16 @@ using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
-using CosmicShore.Game.Cinematics;
-using CosmicShore.Utilities;
-using UnityEngine;
+using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility;
+using UnityEngine;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Player;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.VesselHUD.Controller;
+using CosmicShore.VesselHUD.Interfaces;
+namespace CosmicShore.Game.Ship
 {
     public interface IVesselStatus
     {

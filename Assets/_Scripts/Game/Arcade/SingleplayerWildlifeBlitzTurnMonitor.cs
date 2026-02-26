@@ -1,7 +1,7 @@
-﻿using CosmicShore.Soap;
-using Obvious.Soap;
+﻿using Obvious.Soap;
 using UnityEngine;
-
+using CosmicShore.Game.Arcade.TurnMonitors;
+using CosmicShore.Utility.DataContainers;
 namespace CosmicShore.Game.Arcade
 {
     public class SingleplayerWildlifeBlitzTurnMonitor : TurnMonitor

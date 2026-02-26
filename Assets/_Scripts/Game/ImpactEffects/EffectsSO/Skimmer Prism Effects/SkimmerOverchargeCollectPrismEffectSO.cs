@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Core.Visuals;
+using CosmicShore.Game.Managers;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Utility.Effects;
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects
 {
     [CreateAssetMenu(fileName = "SkimmerOverchargeCollectPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerOverchargeCollectPrismEffectSO")]
     public class SkimmerOverchargeCollectPrismEffectSO : SkimmerPrismEffectSO

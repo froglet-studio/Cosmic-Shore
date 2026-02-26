@@ -1,9 +1,9 @@
 ﻿using CosmicShore.Game.AI;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility.DataContainers
 {
     /// <summary>
     /// Handles AI-driven cinematic behaviors for vessels during end-game sequences.

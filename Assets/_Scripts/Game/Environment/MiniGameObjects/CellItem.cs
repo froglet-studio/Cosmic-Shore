@@ -2,8 +2,8 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment;
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
     public enum ItemType
     {

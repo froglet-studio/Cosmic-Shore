@@ -1,9 +1,12 @@
-using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Arcade.Scoring;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.UI;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Arcade.TurnMonitors
 {
     public class DistanceTurnMonitor : TurnMonitor
     {

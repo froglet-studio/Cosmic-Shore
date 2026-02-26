@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.DialogueSystem.Editor
 {
     public class DialogueLineDrawer : MonoBehaviour
     {

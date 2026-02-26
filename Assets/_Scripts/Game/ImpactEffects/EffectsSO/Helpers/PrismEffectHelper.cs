@@ -1,7 +1,8 @@
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
+
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.Helpers
 {
     public static class PrismEffectHelper
     {

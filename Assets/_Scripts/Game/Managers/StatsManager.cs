@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Game;
-using CosmicShore.Soap;
-using CosmicShore.Utilities;
 using CosmicShore.Models.Enums;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility;
 
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Managers
 {
     [System.Serializable]
     public struct CellStats

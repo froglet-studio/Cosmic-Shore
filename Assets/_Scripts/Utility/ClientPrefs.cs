@@ -1,7 +1,7 @@
 using UnityEngine;
 
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Singleton class which saves/loads local-client settings.

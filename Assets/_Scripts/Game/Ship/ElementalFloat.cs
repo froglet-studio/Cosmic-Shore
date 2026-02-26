@@ -1,49 +1,51 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Models.Enums;
 using System;
 using UnityEngine;
-using CosmicShore.Models.Enums;
 
-[Serializable]
-public class ElementalFloat
+namespace CosmicShore.Game.Ship
 {
-    [SerializeField] public bool Enabled;
-    [SerializeField] public float Value;
-    [SerializeField] float Min;
-    [SerializeField] float Max;
-    [SerializeField] Element element;
-    IVessel vessel;
-    string name;
-
-    public ElementalFloat(float value)
+    [Serializable]
+    public class ElementalFloat
     {
-        Value = value;
-    }
+        [SerializeField] public bool Enabled;
+        [SerializeField] public float Value;
+        [SerializeField] float Min;
+        [SerializeField] float Max;
+        [SerializeField] Element element;
+        IVessel vessel;
+        string name;
 
-    public string Name
-    {
-        set { name = value; }
-    }
-
-    public IVessel Vessel
-    {
-        set
+        public ElementalFloat(float value)
         {
-            vessel = value;
+            Value = value;
+        }
 
-            if (Enabled)
+        public string Name
+        {
+            set { name = value; }
+        }
+
+        public IVessel Vessel
+        {
+            set
             {
-                vessel.BindElementalFloat(name, element);
-                vessel.VesselStatus.ResourceSystem.OnElementLevelChange += ScaleValueWithLevel;
+                vessel = value;
+
+                if (Enabled)
+                {
+                    vessel.BindElementalFloat(name, element);
+                    vessel.VesselStatus.ResourceSystem.OnElementLevelChange += ScaleValueWithLevel;
+                }
             }
         }
-    }
 
-    // LerpUnclamped allows levels outside 0-10 (e.g. -5 to 15 from comeback system)
-    // to extrapolate beyond Min/Max
-    void ScaleValueWithLevel(Element element, int level)
-    {
-        if (element == this.element)
-            Value = Mathf.LerpUnclamped(Min, Max, level / 10f);
+        // LerpUnclamped allows levels outside 0-10 (e.g. -5 to 15 from comeback system)
+        // to extrapolate beyond Min/Max
+        void ScaleValueWithLevel(Element element, int level)
+        {
+            if (element == this.element)
+                Value = Mathf.LerpUnclamped(Min, Max, level / 10f);
+        }
     }
 }

@@ -1,24 +1,27 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
-
-public class ChangeRotationSpeedAction : ShipAction
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    [SerializeField] float rotationSpeedMultiplier = 5f;
-    [SerializeField] bool pitch = true;
-    [SerializeField] bool yaw = true;
-    [SerializeField] bool roll = true;
-
-    public override void StartAction()
+    public class ChangeRotationSpeedAction : ShipAction
     {
-        if (pitch) Vessel.VesselStatus.VesselTransformer.PitchScaler *= rotationSpeedMultiplier;
-        if (yaw) Vessel.VesselStatus.VesselTransformer.YawScaler *= rotationSpeedMultiplier;
-        if (roll) Vessel.VesselStatus.VesselTransformer.RollScaler *= rotationSpeedMultiplier;
-    }
+        [SerializeField] float rotationSpeedMultiplier = 5f;
+        [SerializeField] bool pitch = true;
+        [SerializeField] bool yaw = true;
+        [SerializeField] bool roll = true;
 
-    public override void StopAction()
-    {
-        if (pitch) Vessel.VesselStatus.VesselTransformer.PitchScaler /= rotationSpeedMultiplier;
-        if (yaw) Vessel.VesselStatus.VesselTransformer.YawScaler /= rotationSpeedMultiplier;
-        if (roll) Vessel.VesselStatus.VesselTransformer.RollScaler /= rotationSpeedMultiplier;
+        public override void StartAction()
+        {
+            if (pitch) Vessel.VesselStatus.VesselTransformer.PitchScaler *= rotationSpeedMultiplier;
+            if (yaw) Vessel.VesselStatus.VesselTransformer.YawScaler *= rotationSpeedMultiplier;
+            if (roll) Vessel.VesselStatus.VesselTransformer.RollScaler *= rotationSpeedMultiplier;
+        }
+
+        public override void StopAction()
+        {
+            if (pitch) Vessel.VesselStatus.VesselTransformer.PitchScaler /= rotationSpeedMultiplier;
+            if (yaw) Vessel.VesselStatus.VesselTransformer.YawScaler /= rotationSpeedMultiplier;
+            if (roll) Vessel.VesselStatus.VesselTransformer.RollScaler /= rotationSpeedMultiplier;
+        }
     }
 }

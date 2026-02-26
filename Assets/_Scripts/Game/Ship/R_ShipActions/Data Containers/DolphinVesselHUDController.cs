@@ -1,7 +1,9 @@
 ﻿using CosmicShore.Core;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+using CosmicShore.VesselHUD.Controller;
+using CosmicShore.VesselHUD.View;
+namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
 {
     public class DolphinVesselHUDController : VesselHUDController
     {

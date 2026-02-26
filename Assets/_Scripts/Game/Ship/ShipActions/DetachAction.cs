@@ -1,18 +1,21 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 
-public class DetachAction : ShipAction
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    public override void StartAction()
+    public class DetachAction : ShipAction
     {
-        if (VesselStatus.IsAttached)
+        public override void StartAction()
         {
-            VesselStatus.IsAttached = false;
-            VesselStatus.AttachedPrism = null;
+            if (VesselStatus.IsAttached)
+            {
+                VesselStatus.IsAttached = false;
+                VesselStatus.AttachedPrism = null;
+            }
         }
-    }
 
-    public override void StopAction()
-    {
-        // Implementing Abstract Method
+        public override void StopAction()
+        {
+            // Implementing Abstract Method
+        }
     }
 }

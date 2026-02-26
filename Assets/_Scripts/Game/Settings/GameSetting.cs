@@ -1,9 +1,8 @@
-using CosmicShore.Utilities;
-using UnityEngine;
 using CosmicShore.Utility;
+using UnityEngine;
+using CosmicShore.Utility.Recording;
 
-
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Settings
 {
     public class GameSetting : SingletonPersistent<GameSetting>
     {

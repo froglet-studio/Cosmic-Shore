@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using CosmicShore.App.Profile;
-using CosmicShore.Models;
-using CosmicShore.Soap;
+using CosmicShore.UI.Views;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Utility.DataContainers;
 using Reflex.Attributes;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.XP
 {

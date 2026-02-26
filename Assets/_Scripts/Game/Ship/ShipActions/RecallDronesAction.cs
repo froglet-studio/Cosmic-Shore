@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class RecallDronesAction : ShipAction
     {

@@ -1,48 +1,51 @@
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Environment.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpawnableCardioidSmear : SpawnableEllipsoid
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
-    protected override SpawnTrailData[] GenerateTrailData()
+    public class SpawnableCardioidSmear : SpawnableEllipsoid
     {
-        var trailDataList = new List<SpawnTrailData>();
-
-        float localLength = (float)rng.Next(1, 100) / 100 * maxlength;
-        float localWidth = (float)rng.Next(1, 100) / 100 * maxwidth;
-        float localHeight = (float)rng.Next(1, 100) / 100 * maxheight;
-
-        int cardioidCount = 12;
-        float offsetAngle = Mathf.PI * 2 / cardioidCount;
-
-        for (int cardioidIndex = 0; cardioidIndex < cardioidCount; cardioidIndex++)
+        protected override SpawnTrailData[] GenerateTrailData()
         {
-            int blockCount = 30;
-            var points = new SpawnPoint[blockCount];
+            var trailDataList = new List<SpawnTrailData>();
 
-            for (int block = 0; block < blockCount; block++)
+            float localLength = (float)rng.Next(1, 100) / 100 * maxlength;
+            float localWidth = (float)rng.Next(1, 100) / 100 * maxwidth;
+            float localHeight = (float)rng.Next(1, 100) / 100 * maxheight;
+
+            int cardioidCount = 12;
+            float offsetAngle = Mathf.PI * 2 / cardioidCount;
+
+            for (int cardioidIndex = 0; cardioidIndex < cardioidCount; cardioidIndex++)
             {
-                var t = ((float)block / blockCount) * Mathf.PI * 2;
-                var r = localWidth * (1 - Mathf.Sin(t));
+                int blockCount = 30;
+                var points = new SpawnPoint[blockCount];
 
-                var x = r * Mathf.Cos(t + offsetAngle * cardioidIndex);
-                var y = r * Mathf.Sin(t + offsetAngle * cardioidIndex);
-                var position = new Vector3(x, y, 0);
+                for (int block = 0; block < blockCount; block++)
+                {
+                    var t = ((float)block / blockCount) * Mathf.PI * 2;
+                    var r = localWidth * (1 - Mathf.Sin(t));
 
-                var lookPosition = block == 0 ? position : points[block - 1].Position;
-                var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
+                    var x = r * Mathf.Cos(t + offsetAngle * cardioidIndex);
+                    var y = r * Mathf.Sin(t + offsetAngle * cardioidIndex);
+                    var position = new Vector3(x, y, 0);
 
-                points[block] = new SpawnPoint(position, rotation, prism.transform.localScale);
+                    var lookPosition = block == 0 ? position : points[block - 1].Position;
+                    var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
+
+                    points[block] = new SpawnPoint(position, rotation, PrismScale);
+                }
+
+                trailDataList.Add(new SpawnTrailData(points, true, domain));
             }
 
-            trailDataList.Add(new SpawnTrailData(points, true, domain));
+            return trailDataList.ToArray();
         }
 
-        return trailDataList.ToArray();
-    }
-
-    protected override int GetParameterHash()
-    {
-        return System.HashCode.Combine(maxlength, maxwidth, maxheight, seed);
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(maxlength, maxwidth, maxheight, seed);
+        }
     }
 }

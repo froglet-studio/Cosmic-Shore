@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Utility.DataContainers
 {
     [CreateAssetMenu(
         fileName = "SpawnProfile",

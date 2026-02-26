@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore
+using CosmicShore.Game.Managers;
+namespace CosmicShore.UI.Elements
 {
     public class FavoriteIcon : MonoBehaviour
     {

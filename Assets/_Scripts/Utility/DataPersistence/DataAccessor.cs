@@ -4,7 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
 using System.Text;
 using System;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 /// <summary>
 /// Serializes objects to binary and saves to disk
@@ -57,75 +57,78 @@ static class DataAccessor
             // File exists 
             using FileStream dataStream = new FileStream(FilePath, FileMode.Open);
 
-            try
-            {
-                //BinaryFormatter converter = new BinaryFormatter();
-                //Data = (T)converter.Deserialize(dataStream);
+namespace CosmicShore.Utility.DataPersistence
+{
+                try
+                {
+                    //BinaryFormatter converter = new BinaryFormatter();
+                    //Data = (T)converter.Deserialize(dataStream);
 
-                byte[] data = new byte[dataStream.Length];
-                dataStream.Read(data, 0, (int)dataStream.Length);
+                    byte[] data = new byte[dataStream.Length];
+                    dataStream.Read(data, 0, (int)dataStream.Length);
 
-                CSDebug.Log($"DataAccessor.Load -  Type:{typeof(T)}, Data:{Encoding.ASCII.GetString(data)}");
+                    CSDebug.Log($"DataAccessor.Load -  Type:{typeof(T)}, Data:{Encoding.ASCII.GetString(data)}");
 
-                Data = (T)JsonConvert.DeserializeObject(Encoding.ASCII.GetString(data), typeof(T));
+                    Data = (T)JsonConvert.DeserializeObject(Encoding.ASCII.GetString(data), typeof(T));
 
-                dataStream.Close();
-            }
-            catch (Exception ex)
-            {
-                // This likely indicates that the file format has changed across builds
-                // For now, let's just recreate the file as a poor version of self healing
-                // Once the app is in the wild, we will need a strategy for updating these data models
-                // Maybe it's enough to just make additive changes?
-                CSDebug.LogError($"Issue encountered while deserializing a save file :( {FilePath}");
-                CSDebug.LogError($"Exception Message: {ex.Message}");
-
-                dataStream.Close();
-
-                File.Delete(FilePath);
-
-                Data = new T();
-                return Data;
-            }
-            /*catch (SerializationException ex)
-            {
-                // This likely indicates that the file format has changed across builds
-                // For now, let's just recreate the file as a poor version of self healing
-                // Once the app is in the wild, we will need a strategy for updating these data models
-                // Maybe it's enough to just make additive changes?
-                CSDebug.LogError($"Could not deserialize Save file :( {FilePath}");
-                CSDebug.LogError($"Exception Message: {ex.Message}");
-
-                File.Delete(FilePath);
-
-                Data = new T();
-                return Data;
-            }*/
-            finally
-            {
-                if (dataStream != null)
                     dataStream.Close();
+                }
+                catch (Exception ex)
+                {
+                    // This likely indicates that the file format has changed across builds
+                    // For now, let's just recreate the file as a poor version of self healing
+                    // Once the app is in the wild, we will need a strategy for updating these data models
+                    // Maybe it's enough to just make additive changes?
+                    CSDebug.LogError($"Issue encountered while deserializing a save file :( {FilePath}");
+                    CSDebug.LogError($"Exception Message: {ex.Message}");
+
+                    dataStream.Close();
+
+                    File.Delete(FilePath);
+
+                    Data = new T();
+                    return Data;
+                }
+                /*catch (SerializationException ex)
+                {
+                    // This likely indicates that the file format has changed across builds
+                    // For now, let's just recreate the file as a poor version of self healing
+                    // Once the app is in the wild, we will need a strategy for updating these data models
+                    // Maybe it's enough to just make additive changes?
+                    CSDebug.LogError($"Could not deserialize Save file :( {FilePath}");
+                    CSDebug.LogError($"Exception Message: {ex.Message}");
+
+                    File.Delete(FilePath);
+
+                    Data = new T();
+                    return Data;
+                }*/
+                finally
+                {
+                    if (dataStream != null)
+                        dataStream.Close();
+                }
             }
-        }
-        else
-        {
-            // File does not exist
-            Data = new T();
+            else
+            {
+                // File does not exist
+                Data = new T();
+                return Data;
+            }
+
             return Data;
         }
 
-        return Data;
-    }
-
-    /// <summary>
-    /// Nuke the saved file.
-    /// </summary>
-    /// <param name="fileName">File to nuke</param>
-    public static void Flush(string fileName)
-    {
-        if (File.Exists(GetFilePath(fileName)))
+        /// <summary>
+        /// Nuke the saved file.
+        /// </summary>
+        /// <param name="fileName">File to nuke</param>
+        public static void Flush(string fileName)
         {
-            File.Delete(GetFilePath(fileName));
+            if (File.Exists(GetFilePath(fileName)))
+            {
+                File.Delete(GetFilePath(fileName));
+            }
         }
     }
 }

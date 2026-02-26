@@ -1,6 +1,6 @@
-﻿using CosmicShore.Soap;
-using UnityEngine;
-
+﻿using UnityEngine;
+using CosmicShore.Game.Arcade.TurnMonitors;
+using CosmicShore.Utility.DataContainers;
 namespace CosmicShore.Game.Arcade
 {
     public class SinglePlayerWildlifeBlitzController : SinglePlayerMiniGameControllerBase

@@ -1,10 +1,10 @@
 ﻿using System;
 using CosmicShore.Game.IO;
-using CosmicShore.Soap;
+using CosmicShore.Utility.SOAP.ScriptableInputEvents;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.IO
 {
     public class InputStatus : NetworkBehaviour, IInputStatus
     {

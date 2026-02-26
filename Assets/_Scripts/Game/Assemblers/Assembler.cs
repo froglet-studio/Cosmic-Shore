@@ -1,7 +1,7 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Environment.FloraAndFauna;
+namespace CosmicShore.Game.Assemblers
 {
     public abstract class Assembler : MonoBehaviour
     {

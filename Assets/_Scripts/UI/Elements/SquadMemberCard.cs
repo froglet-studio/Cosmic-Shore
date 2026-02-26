@@ -1,10 +1,14 @@
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Integrations.Playfab.Economy;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Game.Managers;
+using CosmicShore.Models;
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.UI.Elements
 {
     public class SquadMemberCard : MonoBehaviour
     {

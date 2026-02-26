@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Systems.UserActions;
+using CosmicShore.Systems.UserAction;
 using CosmicShore.Models.Enums;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Systems.CTA
+namespace CosmicShore.Systems.CallToAction
 {
     [Serializable]
     public class CallToAction

@@ -1,12 +1,12 @@
 ﻿// JoustStatsReporter.cs
 using System.Linq;
-using CosmicShore.Game.Analytics;
-using CosmicShore.Soap;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.DataContainers;
 using Reflex.Attributes;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Game.UI;
 namespace CosmicShore.Game.Arcade
 {
     public class JoustStatsReporter : MonoBehaviour

@@ -1,9 +1,12 @@
 ﻿// FullAutoBlockShootActionSO.cs
 using UnityEngine;
-using CosmicShore.Core;
-using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.Prisms;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Models.Enums;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
 {
     [CreateAssetMenu(
         fileName = "FullAutoBlockShootAction",

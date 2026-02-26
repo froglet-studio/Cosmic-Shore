@@ -1,7 +1,7 @@
 using Unity.Netcode.Components;
 using UnityEngine;
 
-namespace Unity.Multiplayer.Samples.Utilities.ClientAuthority
+namespace CosmicShore.Utility.Network
 {
     /// <summary>
     /// Used for syncing an animator with client side changes. This includes host. Pure server as owner isn't supported

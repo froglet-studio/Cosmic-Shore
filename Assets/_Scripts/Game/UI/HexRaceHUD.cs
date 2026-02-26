@@ -1,4 +1,5 @@
-﻿namespace CosmicShore.Game.UI
+
+namespace CosmicShore.Game.UI
 {
     public class HexRaceHUD : MultiplayerHUD
     {

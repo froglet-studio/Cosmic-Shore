@@ -1,8 +1,8 @@
 using System.Linq;
 using UnityEngine;
 using TMPro;
-using CosmicShore.Core;
-using CosmicShore.Soap;
+using CosmicShore.Game.Managers;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
 

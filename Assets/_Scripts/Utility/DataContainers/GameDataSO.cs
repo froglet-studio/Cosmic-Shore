@@ -1,17 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Managers;
 using CosmicShore.Models.Enums;
 using Obvious.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using IPlayer = CosmicShore.Game.IPlayer;
+using CosmicShore.Game.Multiplayer;
+using CosmicShore.Game.Player;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Utility.SOAP.ScriptableClassType;
+using IPlayer = CosmicShore.Game.IPlayer;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility.DataContainers
 {
     /// <summary>
     /// Every MiniGame in the project should use the same asset of this SO.

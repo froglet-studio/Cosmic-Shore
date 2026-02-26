@@ -1,4 +1,4 @@
-namespace CosmicShore.DialogueSystem.Models
+namespace CosmicShore.DialogueSystem.Runtime.Models
 {
     public enum DialogueSpeaker
     {

@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Utility.Recording
 {
     /// <summary>
     /// A simple container for the data that will be used by the Asset Recorder.

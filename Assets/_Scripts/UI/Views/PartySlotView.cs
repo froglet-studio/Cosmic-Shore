@@ -1,9 +1,9 @@
-using CosmicShore.Soap;
+using CosmicShore.Utility.SOAP.ScriptablePartyData;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI.Views
 {
     /// <summary>
     /// Represents a single player slot in the Arcade Panel's Players Info area.

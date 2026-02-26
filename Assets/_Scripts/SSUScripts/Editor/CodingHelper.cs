@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 
-namespace SpriteShadersUltimate
+namespace CosmicShore.SSUScripts.Editor
 {
     public class CodingHelper : EditorWindow
     {

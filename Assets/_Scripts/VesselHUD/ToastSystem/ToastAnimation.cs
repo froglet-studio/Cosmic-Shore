@@ -1,4 +1,5 @@
-﻿namespace CosmicShore.Game.UI.Toast
+
+namespace CosmicShore.VesselHUD.ToastSystem
 {
     public enum ToastAnimation
     {

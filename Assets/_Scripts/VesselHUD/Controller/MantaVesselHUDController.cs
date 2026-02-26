@@ -1,7 +1,10 @@
 ﻿using CosmicShore.Game.UI.Toast;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects;
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Ship;
+using CosmicShore.VesselHUD.View;
+namespace CosmicShore.VesselHUD.Controller
 {
     public class MantaVesselHUDController : VesselHUDController
     {

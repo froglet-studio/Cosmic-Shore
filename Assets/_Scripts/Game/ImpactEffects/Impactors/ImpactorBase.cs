@@ -2,8 +2,8 @@ using System;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.EffectsSO;
+namespace CosmicShore.Game.ImpactEffects.Impactors
 {
     public abstract class ImpactorBase : MonoBehaviour, IImpactor
     {

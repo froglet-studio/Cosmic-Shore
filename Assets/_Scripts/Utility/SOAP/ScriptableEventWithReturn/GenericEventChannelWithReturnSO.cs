@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility.SOAP.ScriptableEventWithReturn
 {
     public abstract class GenericEventChannelWithReturnSO<T, Y> : ScriptableObject
     {

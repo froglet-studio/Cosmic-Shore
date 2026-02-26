@@ -2,8 +2,12 @@ using Obvious.Soap;
 using UnityEngine;
 using System.Collections;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.SOAP.ScriptableClassType;
+using CosmicShore.VesselHUD.Controller;
+using CosmicShore.VesselHUD.View;
+namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
 {
     public sealed class SquirrelVesselHUDController : VesselHUDController
     {

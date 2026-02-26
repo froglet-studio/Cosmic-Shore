@@ -2,9 +2,9 @@
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Game.Arcade.TurnMonitors
 {
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {

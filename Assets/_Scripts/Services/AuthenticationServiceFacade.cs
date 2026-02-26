@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Authentication;

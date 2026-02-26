@@ -1,10 +1,13 @@
 using CosmicShore.Models.Enums;
 
-﻿using System;
-
-[Serializable]
-public struct DailyChallenge
+namespace CosmicShore.Models.Structs
 {
-    public int Intensity;
-    public GameModes GameMode;
+    ﻿using System;
+
+    [Serializable]
+    public struct DailyChallenge
+    {
+        public int Intensity;
+        public GameModes GameMode;
+    }
 }

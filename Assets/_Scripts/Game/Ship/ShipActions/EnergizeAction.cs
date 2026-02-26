@@ -1,48 +1,51 @@
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using System.Collections.Generic;
 using UnityEngine;
-
-public class EnergizeAction : ShipAction
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    [SerializeField] List<FireGunAction> fireActions;
-
-    [SerializeField] float Speed = 70;
-    float defaultSpeed;
-
-    [SerializeField] float ProjectileTime = 6;
-    float defaultProjectileTime;
-
-    [SerializeField] int Energy = 1;
-    int defaultEnergy;
-
-    public override void Initialize(IVessel vessel)
+    public class EnergizeAction : ShipAction
     {
-        base.Initialize(vessel);
+        [SerializeField] List<FireGunAction> fireActions;
 
-        var firstGun = fireActions[0];
+        [SerializeField] float Speed = 70;
+        float defaultSpeed;
 
-        defaultSpeed = firstGun.Speed;
-        defaultProjectileTime = firstGun.ProjectileTime.Value;
-        defaultEnergy = firstGun.Energy;
-    }
+        [SerializeField] float ProjectileTime = 6;
+        float defaultProjectileTime;
 
-    public override void StartAction()
-    {
+        [SerializeField] int Energy = 1;
+        int defaultEnergy;
+
+        public override void Initialize(IVessel vessel)
+        {
+            base.Initialize(vessel);
+
+            var firstGun = fireActions[0];
+
+            defaultSpeed = firstGun.Speed;
+            defaultProjectileTime = firstGun.ProjectileTime.Value;
+            defaultEnergy = firstGun.Energy;
+        }
+
+        public override void StartAction()
+        {
+                foreach (FireGunAction fireaction in fireActions)
+                {
+                    if (fireaction.Energy < Energy) fireaction.Energy = Energy;
+                    if (fireaction.Speed < Speed) fireaction.Speed = Speed;
+                    if (fireaction.ProjectileTime.Value < ProjectileTime) fireaction.ProjectileTime.Value = ProjectileTime;
+                }
+        }
+
+        public override void StopAction()
+        {
             foreach (FireGunAction fireaction in fireActions)
             {
-                if (fireaction.Energy < Energy) fireaction.Energy = Energy;
-                if (fireaction.Speed < Speed) fireaction.Speed = Speed;
-                if (fireaction.ProjectileTime.Value < ProjectileTime) fireaction.ProjectileTime.Value = ProjectileTime;
+                fireaction.Energy = defaultEnergy;
+                fireaction.Speed = defaultSpeed;
+                fireaction.ProjectileTime.Value = defaultProjectileTime;
             }
-    }
-
-    public override void StopAction()
-    {
-        foreach (FireGunAction fireaction in fireActions)
-        {
-            fireaction.Energy = defaultEnergy;
-            fireaction.Speed = defaultSpeed;
-            fireaction.ProjectileTime.Value = defaultProjectileTime;
         }
     }
 }

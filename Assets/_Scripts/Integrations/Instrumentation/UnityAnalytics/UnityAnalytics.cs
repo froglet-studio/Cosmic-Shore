@@ -1,4 +1,4 @@
-using CosmicShore.Utilities;
+using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;

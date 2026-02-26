@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Models
+namespace CosmicShore.Models.ScriptableObjects
 {
     /// <summary>
     /// Defines a single episode's display data.

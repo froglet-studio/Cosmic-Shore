@@ -1,11 +1,10 @@
-﻿using CosmicShore.Utilities;
+﻿using CosmicShore.Models.ScriptableObjects;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-
-namespace CosmicShore.Core
+using CosmicShore.Utility;
+namespace CosmicShore.Game.Managers
 {
     [CreateAssetMenu(fileName = "ThemeManagerDataContainer", menuName = "ScriptableObjects/DataContainers/ThemeManagerDataContainerSO")]
     public class ThemeManagerDataContainerSO : ScriptableObject

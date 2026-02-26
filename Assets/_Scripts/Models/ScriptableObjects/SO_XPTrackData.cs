@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Models
+namespace CosmicShore.Models.ScriptableObjects
 {
     /// <summary>
     /// Defines the XP track: a list of milestones, each with an XP threshold and associated reward.

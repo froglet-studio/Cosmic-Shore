@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Integrations.PlayFab.Utility;
+using CosmicShore.Integrations.Playfab.Utility;
 using PlayFab;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.PlayFab.CloudScripts
+namespace CosmicShore.Integrations.Playfab.CloudScripts
 {
     public class FunctionProperties
     {

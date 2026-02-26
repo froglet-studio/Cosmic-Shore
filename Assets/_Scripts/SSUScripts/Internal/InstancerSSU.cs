@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SpriteShadersUltimate
+namespace CosmicShore.SSUScripts.Internal
 {
     [DisallowMultipleComponent()]
     public class InstancerSSU : MonoBehaviour

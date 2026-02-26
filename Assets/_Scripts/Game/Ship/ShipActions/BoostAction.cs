@@ -1,23 +1,26 @@
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 
-public class BoostAction : ShipAction
+
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    public override void Initialize(IVessel vessel)
+    public class BoostAction : ShipAction
     {
-        base.Initialize(vessel);
-    }
-    public override void StartAction()
-    {
-        if (VesselStatus != null)
+        public override void Initialize(IVessel vessel)
         {
-            VesselStatus.IsBoosting = true;
-            VesselStatus.IsStationary = false;
+            base.Initialize(vessel);
         }
-    }
+        public override void StartAction()
+        {
+            if (VesselStatus != null)
+            {
+                VesselStatus.IsBoosting = true;
+                VesselStatus.IsStationary = false;
+            }
+        }
 
-    public override void StopAction()
-    {
-        VesselStatus.IsBoosting = false;
+        public override void StopAction()
+        {
+            VesselStatus.IsBoosting = false;
+        }
     }
 }

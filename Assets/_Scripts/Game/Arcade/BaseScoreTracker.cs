@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
 using CosmicShore.Game.Arcade.Scoring;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.Arcade
 {

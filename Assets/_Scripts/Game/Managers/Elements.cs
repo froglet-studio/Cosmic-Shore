@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Utility;
+namespace CosmicShore.Game.Managers
 {
     public class Elements : MonoBehaviour
     {

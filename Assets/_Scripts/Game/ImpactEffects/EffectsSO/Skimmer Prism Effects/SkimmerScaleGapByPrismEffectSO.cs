@@ -1,7 +1,8 @@
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
+
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects
 {
     [CreateAssetMenu(fileName = "SkimmerScaleGapByPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerScaleGapByPrismEffectSO")]
     public class SkimmerScaleGapByPrismEffectSO : SkimmerPrismEffectSO

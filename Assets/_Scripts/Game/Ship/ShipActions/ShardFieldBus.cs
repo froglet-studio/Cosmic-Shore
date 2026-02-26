@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.Cytoplasm;
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Ship.ShipActions
 {
     [CreateAssetMenu(fileName = "ShardFieldBus", menuName = "CosmicShore/Buses/Shard Field Bus")]
     public class ShardFieldBus : ScriptableObject

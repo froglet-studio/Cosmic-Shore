@@ -1,13 +1,13 @@
-using CosmicShore.Systems;
-using CosmicShore.App.UI.FX;
+using CosmicShore.Game.Multiplayer;
+using CosmicShore.UI.FX;
 using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI.Elements.Buttons
 {
 
     [Serializable]

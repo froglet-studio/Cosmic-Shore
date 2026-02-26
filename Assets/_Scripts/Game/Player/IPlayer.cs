@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using CosmicShore.Game.IO;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Player
 {
     public interface IPlayer : ITransform
     {

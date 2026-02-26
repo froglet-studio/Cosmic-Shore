@@ -1,12 +1,14 @@
 using System;
-using CosmicShore.Core;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Managers;
+using CosmicShore.Utility.SOAP.ScriptableCrystalStats;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+namespace CosmicShore.Game.ImpactEffects.Impactors
 {
     public class OmniCrystalImpactor : CrystalImpactor
     {

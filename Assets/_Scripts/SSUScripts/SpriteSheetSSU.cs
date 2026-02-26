@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts.Internal;
+namespace CosmicShore.SSUScripts
 {
     /// <summary>
     /// Attach this to sprite renderers or images with a sprite shaders ultimate material.

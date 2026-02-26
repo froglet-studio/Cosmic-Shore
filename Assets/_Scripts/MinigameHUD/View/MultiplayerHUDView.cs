@@ -1,4 +1,5 @@
-﻿namespace CosmicShore.Game.UI
+
+namespace CosmicShore.MinigameHUD.View
 {
     public class MultiplayerHUDView : MiniGameHUDView
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore.Game.Analytics
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Top-level container persisted under UGSKeys.VesselStats in Cloud Save.

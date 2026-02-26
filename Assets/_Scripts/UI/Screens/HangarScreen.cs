@@ -1,11 +1,11 @@
-using CosmicShore.App.UI.Views;
+using CosmicShore.UI.Views;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Screens
+namespace CosmicShore.UI.Screens
 {
     public class HangarScreen : MonoBehaviour
     {

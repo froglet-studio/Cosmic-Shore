@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts;
+using CosmicShore.SSUScripts.Interactive;
+using CosmicShore.SSUScripts.Internal;
+namespace CosmicShore.SSUScripts.Editor
 {
     public class SSUShaderGUI : ShaderGUI
     {

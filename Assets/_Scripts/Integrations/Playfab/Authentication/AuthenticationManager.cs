@@ -3,19 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Security;
 using CosmicShore.Integrations.Architectures.EventBus;
-using CosmicShore.Integrations.PlayFab.PlayerData;
-using CosmicShore.Integrations.PlayFab.PlayerModels;
-using CosmicShore.Integrations.PlayFabV2.Models;
-using CosmicShore.Utilities;
+using CosmicShore.Integrations.Playfab.PlayerData;
+using CosmicShore.Utility;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-
-namespace CosmicShore.Integrations.PlayFab.Authentication
+namespace CosmicShore.Integrations.Playfab.Authentication
 {
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {

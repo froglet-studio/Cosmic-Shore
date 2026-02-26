@@ -1,37 +1,40 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-public class ForceReserializeScriptableObjects
+namespace CosmicShore.Editor
 {
-    [MenuItem("FrogletTools/Force Re-Serialize All ScriptableObjects")]
-    public static void ReserializeAllScriptableObjects()
+    public class ForceReserializeScriptableObjects
     {
-        // Find all ScriptableObject asset GUIDs in the project
-        string[] guids = AssetDatabase.FindAssets("t:ScriptableObject");
-
-        foreach (string guid in guids)
+        [MenuItem("FrogletTools/Force Re-Serialize All ScriptableObjects")]
+        public static void ReserializeAllScriptableObjects()
         {
-            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
-            ScriptableObject obj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(assetPath);
+            // Find all ScriptableObject asset GUIDs in the project
+            string[] guids = AssetDatabase.FindAssets("t:ScriptableObject");
 
-            if (obj != null)
+            foreach (string guid in guids)
             {
-                // Log the asset being processed
-                CSDebug.Log("Re-serializing: " + assetPath);
+                string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                ScriptableObject obj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(assetPath);
 
-                // Mark the asset as dirty to force it to be saved
-                EditorUtility.SetDirty(obj);
+                if (obj != null)
+                {
+                    // Log the asset being processed
+                    CSDebug.Log("Re-serializing: " + assetPath);
 
-                // Force the asset to save, which triggers the re-serialization
-                AssetDatabase.SaveAssets();
+                    // Mark the asset as dirty to force it to be saved
+                    EditorUtility.SetDirty(obj);
+
+                    // Force the asset to save, which triggers the re-serialization
+                    AssetDatabase.SaveAssets();
+                }
             }
+
+            // Optionally, force Unity to reimport all assets (if still needed)
+            AssetDatabase.Refresh();
+
+            CSDebug.Log("Re-serialization of all ScriptableObjects complete.");
         }
-
-        // Optionally, force Unity to reimport all assets (if still needed)
-        AssetDatabase.Refresh();
-
-        CSDebug.Log("Re-serialization of all ScriptableObjects complete.");
     }
 }
