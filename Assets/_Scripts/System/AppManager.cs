@@ -77,8 +77,8 @@ namespace CosmicShore.Core
         /// <summary>
         /// Ensures persistent system references are available for DI registration.
         /// If a field is not assigned in the inspector (e.g. prefab override lost),
-        /// auto-creates the service as a child of this transform so it inherits
-        /// DontDestroyOnLoad and gets registered in the Reflex container.
+        /// auto-creates the service as a standalone persistent GameObject.
+        /// Skips auto-creation when called on a prefab asset (non-scene context).
         /// </summary>
         void ResolvePersistentSystems()
         {
@@ -105,9 +105,18 @@ namespace CosmicShore.Core
             var existing = FindFirstObjectByType<T>();
             if (existing != null) return existing;
 
+            // Guard: if we are a prefab asset (not a scene instance), we cannot
+            // create GameObjects — skip auto-creation and let the service be
+            // registered as null so RegisterIfNotNull logs the error.
+            if (!gameObject.scene.IsValid())
+            {
+                Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned — skipping auto-create (prefab asset context).");
+                return null;
+            }
+
             Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned and not found — auto-creating persistent instance.");
             var go = new GameObject($"[{typeof(T).Name}]");
-            go.transform.SetParent(transform);
+            DontDestroyOnLoad(go);
             return go.AddComponent<T>();
         }
 
