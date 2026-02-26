@@ -1,5 +1,4 @@
-﻿using CosmicShore.Core;
-using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
+﻿using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
 using UnityEngine;
 
 namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects

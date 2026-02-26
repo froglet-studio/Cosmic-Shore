@@ -1,5 +1,4 @@
-﻿using CosmicShore.Core;
-using CosmicShore.Game.AI;
+﻿using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;

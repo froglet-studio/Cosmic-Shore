@@ -1,5 +1,4 @@
-﻿using CosmicShore.App.UI.Controllers;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
