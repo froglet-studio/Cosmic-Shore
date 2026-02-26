@@ -50,10 +50,10 @@ namespace CosmicShore.Core
         }
     }
 
-    public  class CaptainManager : SingletonPersistent<CaptainManager>
+    public class CaptainManager : MonoBehaviour
     {
-        public static event Action OnLoadCaptainData;
-        public static bool CaptainDataLoaded { get; private set; }
+        public event Action OnLoadCaptainData;
+        public bool CaptainDataLoaded { get; private set; }
         [SerializeField] SO_CaptainList AllCaptains;
         CaptainData captainData;
 

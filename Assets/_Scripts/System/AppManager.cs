@@ -30,6 +30,8 @@ namespace CosmicShore.Core
         [SerializeField] AudioSystem audioSystem;
         [SerializeField] PlayerDataService playerDataService;
         [SerializeField] UGSStatsManager ugsStatsManager;
+        [SerializeField] CaptainManager captainManager;
+        [SerializeField] IAPManager iapManager;
 
         [Header("Gameplay Manager Prefabs")]
         [Tooltip("Prefabs spawned during bootstrap and made persistent (DontDestroyOnLoad). " +
@@ -82,6 +84,8 @@ namespace CosmicShore.Core
             audioSystem = EnsureService(audioSystem);
             playerDataService = EnsureService(playerDataService);
             ugsStatsManager = EnsureService(ugsStatsManager);
+            captainManager = EnsureService(captainManager);
+            iapManager = EnsureService(iapManager);
         }
 
         T EnsureService<T>(T field) where T : Component
@@ -120,6 +124,8 @@ namespace CosmicShore.Core
             RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
             RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
             RegisterIfNotNull(builder, ugsStatsManager, nameof(ugsStatsManager));
+            RegisterIfNotNull(builder, captainManager, nameof(captainManager));
+            RegisterIfNotNull(builder, iapManager, nameof(iapManager));
 
             // Gameplay managers (spawned from prefabs or discovered in the scene)
             RegisterIfNotNull(builder, _gameManager, nameof(_gameManager));
