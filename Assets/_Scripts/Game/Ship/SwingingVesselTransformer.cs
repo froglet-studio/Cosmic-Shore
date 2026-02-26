@@ -320,6 +320,9 @@ public class SwingingVesselTransformer : VesselTransformer
 
     /// <summary>
     /// World-space direction for tether firing based on crosshair screen position.
+    /// Raycasts from the camera through the crosshair into the scene so that
+    /// the tether aims at whatever prism (or geometry) is under the crosshair.
+    /// Falls back to a far point on the ray if nothing is hit.
     /// </summary>
     Vector3 GetCursorDirection(bool left)
     {
@@ -328,7 +331,15 @@ public class SwingingVesselTransformer : VesselTransformer
 
         Vector3 screenPos = GetCrosshairScreenPosition(left);
         Ray ray = cam.ScreenPointToRay(screenPos);
-        Vector3 worldTarget = ray.GetPoint(200f);
+
+        // Raycast through the crosshair — TrailBlocks layer contains prisms
+        Vector3 worldTarget;
+        int layerMask = 1 << TrailBlocksLayer;
+        if (Physics.Raycast(ray, out var hit, maxTetherLength * 2f, layerMask))
+            worldTarget = hit.point;
+        else
+            worldTarget = ray.GetPoint(maxTetherLength);
+
         Vector3 dir = worldTarget - transform.position;
         return dir.sqrMagnitude > 0.001f ? dir.normalized : transform.forward;
     }
