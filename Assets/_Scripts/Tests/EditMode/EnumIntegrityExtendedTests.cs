@@ -142,15 +142,15 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region PassiveAbilities
+        #region ShipCameraOverrides
 
         [Test]
-        public void PassiveAbilities_AllValuesAreUnique()
+        public void ShipCameraOverrides_AllValuesAreUnique()
         {
-            var type = typeof(PassiveAbilities);
+            var type = typeof(ShipCameraOverrides);
             var values = Enum.GetValues(type).Cast<int>().ToList();
             var duplicates = values.GroupBy(v => v).Where(g => g.Count() > 1).Select(g => g.Key);
-            Assert.IsEmpty(duplicates, "Duplicate integer values found in PassiveAbilities.");
+            Assert.IsEmpty(duplicates, "Duplicate integer values found in ShipCameraOverrides.");
         }
 
         #endregion
@@ -194,15 +194,15 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region VesselImpactEffects
+        #region ShipImpactEffects
 
         [Test]
-        public void VesselImpactEffects_AllValuesAreUnique()
+        public void ShipImpactEffects_AllValuesAreUnique()
         {
-            var type = typeof(VesselImpactEffects);
+            var type = typeof(ShipImpactEffects);
             var values = Enum.GetValues(type).Cast<int>().ToList();
             var duplicates = values.GroupBy(v => v).Where(g => g.Count() > 1).Select(g => g.Key);
-            Assert.IsEmpty(duplicates, "Duplicate integer values found in VesselImpactEffects.");
+            Assert.IsEmpty(duplicates, "Duplicate integer values found in ShipImpactEffects.");
         }
 
         #endregion
