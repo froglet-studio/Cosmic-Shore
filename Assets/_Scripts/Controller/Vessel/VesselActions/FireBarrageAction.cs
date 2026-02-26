@@ -17,8 +17,6 @@ namespace CosmicShore.Gameplay
     
         bool inherit = false;
 
-        float ProjectileScale = 1f;
-
         public FiringPatterns FiringPattern = FiringPatterns.Default;
         public int Energy = 0;
         public float speed = 7;

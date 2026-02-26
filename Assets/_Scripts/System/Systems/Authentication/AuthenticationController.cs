@@ -15,7 +15,6 @@ namespace CosmicShore.Core
         }
 
         [Header("Startup")]
-        [SerializeField] private bool dontDestroyOnLoad = true;
         [SerializeField] private bool autoSignInAnonymously = false;
 
         [Header("Debug")]

@@ -18,8 +18,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] int minTrunks = 1;
         [SerializeField] int maxTrunks = 1;
 
-        //[SerializeField] float minBranchLengthMultiplier = 0.6f;
-        [SerializeField] float maxBranchLengthMultiplier = 0.8f;
         [SerializeField] int maxDepth = 10;
         [SerializeField] int maxTotalSpawnedObjects = 1000;
         [SerializeField] float leafChance = 0.05f;

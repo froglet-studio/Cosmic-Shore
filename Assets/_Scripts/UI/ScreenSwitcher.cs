@@ -55,7 +55,6 @@ namespace CosmicShore.UI
         }
 
         [Header("Swipe Settings")]
-        [SerializeField] private float percentThreshold = 0.2f; // Smaller = more sensitive
         [SerializeField] private float easing = 0.5f;           // Slide duration
 
         [Header("State")]

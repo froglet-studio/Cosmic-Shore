@@ -9,7 +9,6 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "VesselDecoyByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselDecoyByCrystalEffectSO")]
     public class VesselDecoyByCrystalEffectSO : VesselCrystalEffectSO
     {
-        [SerializeField] private float debounceSeconds = 0.15f;
         [SerializeField] private GameObject minePrefab;
 
         private static readonly Dictionary<Crystal, float> NextAllowedAt = new();

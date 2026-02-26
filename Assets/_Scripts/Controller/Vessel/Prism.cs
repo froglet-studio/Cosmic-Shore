@@ -44,7 +44,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] internal PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
 
         public Action<Prism> OnReturnToPool;
-        private bool _initialized;
         private Vector3 _lastDestructionScale = Vector3.one;
 
         /// <summary>
@@ -126,7 +125,6 @@ namespace CosmicShore.Gameplay
             // [Fix] Always clean up previous state when coming from pool
             ResetState();
 
-            _initialized = true;
             PlayerName = playerName;
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
