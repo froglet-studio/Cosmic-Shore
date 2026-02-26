@@ -51,6 +51,13 @@ namespace CosmicShore.Gameplay
                 networkManager.OnClientDisconnectCallback += OnClientDisconnect;
                 networkManager.OnTransportFailure         += OnTransportFailure;
             }
+
+            // If already authenticated (e.g. Menu_Main loaded after auth completed),
+            // start the host and run any game-scene setup immediately.
+            if (authenticationData.IsSignedIn)
+            {
+                OnAuthenticationSignedIn();
+            }
         }
 
         private void OnDisable()
@@ -73,47 +80,48 @@ namespace CosmicShore.Gameplay
 
         void OnAuthenticationSignedIn()
         {
+            EnsureHostStarted();
+
             if (gameData.IsMultiplayerMode)
             {
                 gameData.DestroyPlayerAndVessel();
                 ExecuteMultiplayerSetup().Forget();
             }
-            else
-            {
-                // Solo play with AI — start a local host so NetworkBehaviours work
-                // without online matchmaking. The ServerPlayerVesselInitializer will
-                // detect solo mode and spawn AI opponents.
-                StartLocalHostForSoloPlay();
-            }
         }
-        
-        private async void StartLocalHostForSoloPlay()
+
+        /// <summary>
+        /// Starts the Netcode host exactly once. Subsequent calls are no-ops
+        /// while the host is already listening. Called after authentication
+        /// completes — typically in Menu_Main, then skipped in game scenes.
+        /// </summary>
+        void EnsureHostStarted()
         {
             if (networkManager == null)
             {
-                CSDebug.LogError("[MultiplayerSetup] Cannot start local host — NetworkManager is null.");
+                CSDebug.LogError("[MultiplayerSetup] Cannot start host — NetworkManager is null.");
                 return;
             }
 
-            // Wait for any previous session's shutdown to complete before starting a new host
             if (networkManager.IsListening)
+            {
+                CSDebug.Log("[MultiplayerSetup] Host already running.");
+                return;
+            }
+
+            CSDebug.Log("[MultiplayerSetup] Starting as Host.");
+            networkManager.StartHost();
+        }
+
+        private async UniTaskVoid ExecuteMultiplayerSetup()
+        {
+            // Shutdown the local host before creating a Relay-based multiplayer session.
+            // This is the single intentional transition from local to Relay transport.
+            if (networkManager != null && networkManager.IsListening)
             {
                 networkManager.Shutdown();
                 await UniTask.WaitUntil(() => !networkManager.IsListening);
             }
 
-            // Ensure domain pool is fresh so the host and AI opponents each get
-            // a unique domain.  The multiplayer path does this inside
-            // SetupForMultiplayer(); the solo path was missing it, which caused
-            // every player (and their crystals) to get Domains.Unassigned.
-            DomainAssigner.Initialize();
-
-            CSDebug.Log("[MultiplayerSetup] Starting local host for solo play with AI.");
-            networkManager.StartHost();
-        }
-        
-        private async UniTaskVoid ExecuteMultiplayerSetup()
-        {
             // If a party session was already handed off (e.g. from PartyGameLauncher),
             // skip matchmaking and use the existing session directly.
             if (gameData.ActiveSession != null)
@@ -182,8 +190,6 @@ namespace CosmicShore.Gameplay
         private async UniTask StartSessionAsHost()
         {
             // Ensure domain pool is fresh before any players connect.
-            // The solo path does this in StartLocalHostForSoloPlay(); the multiplayer
-            // host path needs it here so connecting clients get unique domains.
             DomainAssigner.Initialize();
 
             var playerProperties  = await GetPlayerProperties();

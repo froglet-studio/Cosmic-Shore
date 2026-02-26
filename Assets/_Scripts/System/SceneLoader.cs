@@ -50,11 +50,14 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Automatically decides based on multiplayer flag.
+        /// Automatically decides based on whether a host/server is running.
+        /// When the Netcode host is active, network scene loading ensures
+        /// scene-placed NetworkObjects are properly spawned in the new scene.
         /// </summary>
         private void LaunchGame()
         {
-            bool useNetworkSceneLoading = gameData.IsMultiplayerMode;
+            var nm = NetworkManager.Singleton;
+            bool useNetworkSceneLoading = nm != null && nm.IsServer;
             LoadScene(gameData.SceneName, useNetworkSceneLoading);
         }
 

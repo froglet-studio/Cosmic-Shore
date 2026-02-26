@@ -78,6 +78,19 @@ namespace CosmicShore.Gameplay
 
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkVesselClientCache.OnNewInstanceAdded += OnNewVesselClientAdded;
+
+            // Handle clients that connected before this spawner was active
+            // (e.g., host started in Menu_Main before the game scene loaded).
+            // Reset the domain pool for this game session, then process them.
+            var connectedIds = NetworkManager.Singleton.ConnectedClientsIds;
+            if (connectedIds.Count > 0)
+            {
+                DomainAssigner.Initialize();
+                foreach (var clientId in connectedIds)
+                {
+                    OnClientConnected(clientId);
+                }
+            }
         }
 
         /// <summary>
