@@ -51,6 +51,7 @@ namespace CosmicShore.Core
         private float _cachedAuthTimeout = 3f;
 
         private bool _isProcessing;
+        private bool _navigated;
 
         void Start()
         {
@@ -86,6 +87,9 @@ namespace CosmicShore.Core
             // Start with loading state while we check cached auth.
             HideAllPanels();
             ShowLoading();
+
+            // Safety net: if the entire auth flow hangs, force-navigate after 10s.
+            ForceNavigateAfterTimeout(10f).Forget();
 
             try
             {
@@ -128,6 +132,17 @@ namespace CosmicShore.Core
             }
         }
 
+        async UniTaskVoid ForceNavigateAfterTimeout(float seconds)
+        {
+            await UniTask.Delay(TimeSpan.FromSeconds(seconds), ignoreTimeScale: true);
+
+            if (!_navigated && this != null && gameObject.activeInHierarchy)
+            {
+                CSDebug.LogWarning($"[AuthScene] Safety timeout reached after {seconds}s. Force-navigating to main menu.");
+                NavigateToMainMenu();
+            }
+        }
+
         bool IsAlreadySignedIn()
         {
             try
@@ -141,14 +156,18 @@ namespace CosmicShore.Core
             }
         }
 
-        async Task<bool> TrySignInCachedWithTimeoutAsync()
+        async UniTask<bool> TrySignInCachedWithTimeoutAsync()
         {
             var cachedTask = authController.TrySignInCachedAsync();
-            var delayTask = Task.Delay(TimeSpan.FromSeconds(_cachedAuthTimeout));
+            float elapsed = 0f;
 
-            var completed = await Task.WhenAny(cachedTask, delayTask);
+            while (!cachedTask.IsCompleted && elapsed < _cachedAuthTimeout)
+            {
+                await UniTask.Delay(100, ignoreTimeScale: true);
+                elapsed += 0.1f;
+            }
 
-            if (completed == cachedTask && cachedTask.IsCompletedSuccessfully)
+            if (cachedTask.IsCompletedSuccessfully)
                 return cachedTask.Result;
 
             return false;
@@ -193,7 +212,7 @@ namespace CosmicShore.Core
             if (usernameStatusText) usernameStatusText.text = string.Empty;
         }
 
-        async Task AttemptAutoSignInAsync()
+        async UniTask AttemptAutoSignInAsync()
         {
             try
             {
@@ -239,7 +258,7 @@ namespace CosmicShore.Core
 
         // ----- Post-Auth Flow -----
 
-        async Task HandlePostAuthFlowAsync()
+        async UniTask HandlePostAuthFlowAsync()
         {
             ShowLoading();
 
@@ -250,7 +269,7 @@ namespace CosmicShore.Core
                 float elapsed = 0f;
                 while (!playerDataService.IsInitialized && elapsed < timeout)
                 {
-                    await Task.Delay(100);
+                    await UniTask.Delay(100, ignoreTimeScale: true);
                     elapsed += 0.1f;
                 }
             }
@@ -331,9 +350,13 @@ namespace CosmicShore.Core
 
         void NavigateToMainMenu()
         {
+            if (_navigated) return;
+            _navigated = true;
+
             CSDebug.Log("[AuthScene] Navigating to Main Menu...");
 
-            if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
+            if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager)
+                && !transitionManager.IsTransitioning)
             {
                 transitionManager.LoadSceneAsync(mainMenuSceneName).Forget();
             }
