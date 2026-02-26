@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
@@ -9,36 +8,39 @@ using CosmicShore.Utilities;
 /// <summary>
 /// Spider vessel transformer: dual-tether swinging through the hypersea.
 ///
+/// Speed model:
+///   The spider has NO throttle. Speed is purely displacement-based.
+///   The only way to gain speed is dual-tether pumping (XDiff changes
+///   tether lengths). Single tether redirects momentum without changing
+///   speed. Free flight coasts at current velocity.
+///
 /// Controls overview:
 ///   Free flight (no triggers held):
-///     Standard two-thumb flying. Speed is a fixed cruise speed. Course
-///     (movement direction) is fully decoupled from forward — joystick
-///     rotation only changes the vessel's facing direction. Only tethers
-///     change course (via swing momentum on release).
+///     Sticks control orientation only (pitch/yaw/roll). Vessel coasts
+///     at whatever speed it had. Course is decoupled from forward.
 ///
 ///   Pull a trigger:
-///     Fires a visible tether from that side's cursor. If it hits a prism the tether
-///     anchors there. If it reaches max range a new prism is spawned as the anchor.
+///     Fires a tether from the spinneret arm tip on that side. If it hits
+///     a prism, the tether anchors. At max range, a new prism is spawned.
 ///
 ///   Hold one trigger (single anchor):
-///     Vessel is constrained to the sphere around the anchor. Pitch, yaw,
-///     and roll still rotate the vessel normally. The vessel's forward
-///     direction is projected onto the sphere's tangent plane to determine
-///     movement direction, with drift-like course lerp for momentum feel.
+///     Vessel is constrained to the sphere around the anchor. Maintains
+///     current speed. Forward is projected onto the tangent plane. Course
+///     lerps toward projected forward (drift feel). Only direction changes.
 ///
 ///   Hold both triggers (dual anchor):
-///     Vessel is constrained to the intersection circle of both anchor
-///     spheres. Same rotation controls. Forward is projected onto the
-///     circle tangent. XDiff adjusts tether lengths to change the circle
-///     radius (thumbs inward = larger, outward = smaller).
+///     Vessel is on the intersection circle of both spheres. XDiff sets
+///     a target circle radius (inward=larger, outward=smaller). Actual
+///     radius lerps toward target. Displacement from radius change + angular
+///     motion determines speed. This is the ONLY way to change speed.
 ///
 ///   Release a trigger:
-///     Detach tether, carry swing momentum into the next state.
+///     Detach tether, carry velocity into the next state.
 ///
-///   Crosshairs:
-///     Each crosshair defaults to halfway between screen center and the
-///     horizontal screen edge. Thumbstick inward moves toward vessel,
-///     outward moves toward screen edge.
+/// Spinneret arms:
+///     World-space arms extend from the vessel toward each side's aim
+///     target. The arm tip IS the tether fire point — no parallax.
+///     Arms replace screen-space crosshairs entirely.
 /// </summary>
 public class SwingingVesselTransformer : VesselTransformer
 {
@@ -48,20 +50,19 @@ public class SwingingVesselTransformer : VesselTransformer
     [SerializeField] float tetherRadius = 0.08f;
     [SerializeField] Material tetherMaterial;
 
-    [Header("Swing")]
-    [SerializeField] float swingAngularSpeed = 2.5f;
+    [Header("Spinneret Arms")]
+    [Tooltip("Distance from vessel center to the spinneret tip.")]
+    [SerializeField] float armLength = 5f;
+    [Tooltip("Visual thickness of the arm capsule.")]
+    [SerializeField] float armRadius = 0.04f;
 
     [Header("Course Lerp")]
     [Tooltip("How fast the tethered course catches up to the projected forward (drift feel).")]
     [SerializeField] float courseLerp = 1.5f;
 
-    [Header("Free Flight")]
-    [SerializeField] float cruiseSpeed = 25f;
-
-    [Header("Crosshair")]
-    [SerializeField] float crosshairSize = 32f;
-    [SerializeField] float crosshairThickness = 3f;
-    [SerializeField] Color crosshairColor = new Color(0f, 1f, 1f, 0.85f);
+    [Header("Tether Length")]
+    [Tooltip("How fast the actual tether length lerps toward the target during dual-anchor pumping.")]
+    [SerializeField] float tetherLengthLerpSpeed = 3f;
 
     [Header("Anchor Prism")]
     [SerializeField] Vector3 anchorPrismScale = new(6f, 6f, 6f);
@@ -115,23 +116,24 @@ public class SwingingVesselTransformer : VesselTransformer
     float circleAngle;
     float circleAngularVelocity;
 
-    // Dual-anchor home geometry (stored at transition, radius adjusted by XDiff)
+    // Dual-anchor geometry
     float dualAnchorA;
     float dualAnchorHomeH;
+    float currentH; // actual circle radius, lerps toward XDiff target
 
     // Momentum tracking across state transitions
     Vector3 lastVelocity;
 
-    // Free-flight course direction — fully independent from transform.forward.
-    // Only tethers (swing momentum) change this; joystick rotation does not.
+    // Free-flight course direction — decoupled from transform.forward
     Vector3 freeFlightCourse;
 
-    // Screen-space crosshair UI
-    Canvas crosshairCanvas;
-    RectTransform leftCrosshair;
-    RectTransform rightCrosshair;
+    // Spinneret arm visuals (world-space capsules extending from vessel)
+    Transform leftArm;
+    MeshRenderer leftArmRenderer;
+    Transform rightArm;
+    MeshRenderer rightArmRenderer;
 
-    // Deferred anchor spawns (spread prism creation across frames)
+    // Deferred anchor spawns
     Vector3? pendingLeftSpawnPos;
     Vector3? pendingRightSpawnPos;
 
@@ -154,8 +156,8 @@ public class SwingingVesselTransformer : VesselTransformer
 
         CreateTetherCapsule("LeftTether", ref leftTether);
         CreateTetherCapsule("RightTether", ref rightTether);
-
-        CreateCrosshairUI();
+        CreateArmCapsule("LeftArm", out leftArm, out leftArmRenderer);
+        CreateArmCapsule("RightArm", out rightArm, out rightArmRenderer);
 
         freeFlightCourse = transform.forward;
         if (VesselStatus != null)
@@ -183,7 +185,8 @@ public class SwingingVesselTransformer : VesselTransformer
     {
         if (leftTether.capsule) Destroy(leftTether.capsule.gameObject);
         if (rightTether.capsule) Destroy(rightTether.capsule.gameObject);
-        if (crosshairCanvas) Destroy(crosshairCanvas.gameObject);
+        if (leftArm) Destroy(leftArm.gameObject);
+        if (rightArm) Destroy(rightArm.gameObject);
     }
 
     void CreateTetherCapsule(string childName, ref TetherState tether)
@@ -195,65 +198,47 @@ public class SwingingVesselTransformer : VesselTransformer
         if (col) Destroy(col);
 
         var mr = go.GetComponent<MeshRenderer>();
-        if (tetherMaterial != null)
-            mr.sharedMaterial = tetherMaterial;
-        else
-        {
-            var shader = Shader.Find("Universal Render Pipeline/Unlit")
-                      ?? Shader.Find("Unlit/Color");
-            if (shader != null)
-            {
-                var mat = new Material(shader);
-                var bright = new Color(0f, 1f, 1f, 1f);
-                mat.color = bright;
-                mat.SetColor("_BaseColor", bright);
-                mr.material = mat;
-            }
-        }
+        ApplyTetherMaterial(mr);
 
         mr.enabled = false;
         tether.capsule = go.transform;
         tether.capsuleRenderer = mr;
     }
 
-    void CreateCrosshairUI()
+    void CreateArmCapsule(string childName, out Transform armTransform, out MeshRenderer armRenderer)
     {
-        var canvasGo = new GameObject("SpiderCrosshairs");
-        crosshairCanvas = canvasGo.AddComponent<Canvas>();
-        crosshairCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        crosshairCanvas.sortingOrder = 100;
-        canvasGo.AddComponent<CanvasScaler>();
+        var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        go.name = childName;
 
-        leftCrosshair = CreateCrosshairElement("LeftCrosshair");
-        rightCrosshair = CreateCrosshairElement("RightCrosshair");
+        var col = go.GetComponent<Collider>();
+        if (col) Destroy(col);
+
+        var mr = go.GetComponent<MeshRenderer>();
+        ApplyTetherMaterial(mr);
+
+        mr.enabled = true;
+        armTransform = go.transform;
+        armRenderer = mr;
     }
 
-    RectTransform CreateCrosshairElement(string elementName)
+    void ApplyTetherMaterial(MeshRenderer mr)
     {
-        var go = new GameObject(elementName);
-        go.transform.SetParent(crosshairCanvas.transform, false);
+        if (tetherMaterial != null)
+        {
+            mr.sharedMaterial = tetherMaterial;
+            return;
+        }
 
-        var rect = go.AddComponent<RectTransform>();
-        rect.sizeDelta = Vector2.zero;
-
-        CreateCrosshairLine(rect, new Vector2(crosshairSize, crosshairThickness));
-        CreateCrosshairLine(rect, new Vector2(crosshairThickness, crosshairSize));
-        CreateCrosshairLine(rect, Vector2.one * (crosshairThickness * 2f));
-
-        return rect;
-    }
-
-    void CreateCrosshairLine(RectTransform parent, Vector2 size)
-    {
-        var go = new GameObject("Line");
-        go.transform.SetParent(parent, false);
-
-        var rect = go.AddComponent<RectTransform>();
-        rect.sizeDelta = size;
-
-        var img = go.AddComponent<Image>();
-        img.color = crosshairColor;
-        img.raycastTarget = false;
+        var shader = Shader.Find("Universal Render Pipeline/Unlit")
+                  ?? Shader.Find("Unlit/Color");
+        if (shader != null)
+        {
+            var mat = new Material(shader);
+            var bright = new Color(0f, 1f, 1f, 1f);
+            mat.color = bright;
+            mat.SetColor("_BaseColor", bright);
+            mr.material = mat;
+        }
     }
 
     // ==================================================================
@@ -266,13 +251,19 @@ public class SwingingVesselTransformer : VesselTransformer
         {
             leftTether.triggerHeld = true;
             if (!leftTether.isAnchored)
-                FireTether(ref leftTether, GetCursorDirection(true));
+            {
+                var (tipPos, aimTarget) = GetSpinneretAim(true);
+                FireTetherFromTip(ref leftTether, tipPos, aimTarget);
+            }
         }
         else if (ie == InputEvents.RightStickAction)
         {
             rightTether.triggerHeld = true;
             if (!rightTether.isAnchored)
-                FireTether(ref rightTether, GetCursorDirection(false));
+            {
+                var (tipPos, aimTarget) = GetSpinneretAim(false);
+                FireTetherFromTip(ref rightTether, tipPos, aimTarget);
+            }
         }
     }
 
@@ -290,39 +281,34 @@ public class SwingingVesselTransformer : VesselTransformer
         }
     }
 
+    // ==================================================================
+    //  SPINNERET AIMING
+    // ==================================================================
+
     /// <summary>
-    /// Screen-space crosshair position for a given side.
+    /// Screen-space aim position for a given side.
     /// Neutral: halfway between screen center and horizontal edge.
-    /// Inward (toward center): moves crosshair to vessel (screen center).
-    /// Outward (toward edge): moves crosshair to the screen edge.
+    /// Inward (toward center): moves toward vessel. Outward: toward edge.
     /// </summary>
-    Vector3 GetCrosshairScreenPosition(bool left)
+    Vector3 GetAimScreenPosition(bool left)
     {
         float sw = Screen.width;
         float sh = Screen.height;
 
         if (left)
         {
-            // Left stick: X in [-1, 1], -1 = outward (left edge), +1 = inward (center)
             float stickX = InputStatus?.EasedLeftJoystickPosition.x ?? 0f;
-            // Map [-1,1] → [0, sw*0.5]: outward=-1→0, neutral=0→sw*0.25, inward=+1→sw*0.5
             float x = sw * 0.25f * (stickX + 1f);
             return new Vector3(x, sh * 0.5f, 0f);
         }
         else
         {
-            // Right stick: X in [-1, 1], -1 = inward (center), +1 = outward (right edge)
             float stickX = InputStatus?.EasedRightJoystickPosition.x ?? 0f;
-            // Map [-1,1] → [sw*0.5, sw]: inward=-1→sw*0.5, neutral=0→sw*0.75, outward=+1→sw
             float x = sw * (0.75f + 0.25f * stickX);
             return new Vector3(x, sh * 0.5f, 0f);
         }
     }
 
-    /// <summary>
-    /// Returns the active gameplay camera from CameraManager.
-    /// Falls back to Camera.main if the manager isn't available.
-    /// </summary>
     Camera GetGameplayCamera()
     {
         var controller = CameraManager.Instance?.GetActiveController();
@@ -332,37 +318,64 @@ public class SwingingVesselTransformer : VesselTransformer
     }
 
     /// <summary>
-    /// World-space direction for tether firing based on crosshair screen position.
-    /// Raycasts from the gameplay camera through the crosshair into the scene so
-    /// the tether aims at whatever prism is under the crosshair.
-    /// Falls back to a far point on the ray if nothing is hit.
+    /// Computes the world-space aim target by raycasting from the gameplay
+    /// camera through the aim screen position.
     /// </summary>
-    Vector3 GetCursorDirection(bool left)
+    Vector3 GetAimTarget(bool left)
     {
         var cam = GetGameplayCamera();
-        if (cam == null) return transform.forward;
+        if (cam == null) return transform.position + transform.forward * maxTetherLength;
 
-        Vector3 screenPos = GetCrosshairScreenPosition(left);
+        Vector3 screenPos = GetAimScreenPosition(left);
         Ray ray = cam.ScreenPointToRay(screenPos);
 
-        // Raycast through the crosshair — TrailBlocks layer contains prisms
-        Vector3 worldTarget;
         int layerMask = 1 << TrailBlocksLayer;
         if (Physics.Raycast(ray, out var hit, maxTetherLength * 2f, layerMask))
-            worldTarget = hit.point;
-        else
-            worldTarget = ray.GetPoint(maxTetherLength);
-
-        Vector3 dir = worldTarget - transform.position;
-        return dir.sqrMagnitude > 0.001f ? dir.normalized : transform.forward;
+            return hit.point;
+        return ray.GetPoint(maxTetherLength);
     }
 
-    void FireTether(ref TetherState tether, Vector3 direction)
+    /// <summary>
+    /// Computes the spinneret arm tip position and the aim target.
+    /// The tip is at armLength from the vessel, in the direction of the aim target.
+    /// The tether fires from the tip toward the target — zero parallax.
+    /// </summary>
+    (Vector3 tipPos, Vector3 aimTarget) GetSpinneretAim(bool left)
+    {
+        Vector3 target = GetAimTarget(left);
+        Vector3 dir = target - transform.position;
+        Vector3 tipDir = dir.sqrMagnitude > 0.001f ? dir.normalized : transform.forward;
+        Vector3 tip = transform.position + tipDir * armLength;
+        return (tip, target);
+    }
+
+    /// <summary>
+    /// Computes the arm tip direction for a given side based on current tether state.
+    /// Anchored: points toward anchor. Firing: points in fire direction. Free: points toward aim target.
+    /// </summary>
+    Vector3 GetArmTipPosition(TetherState tether, bool isLeft)
+    {
+        Vector3 dir;
+        if (tether.isAnchored && tether.anchor != null)
+            dir = (tether.anchor.position - transform.position).normalized;
+        else if (tether.isFiring)
+            dir = tether.fireDirection;
+        else
+        {
+            Vector3 target = GetAimTarget(isLeft);
+            Vector3 toTarget = target - transform.position;
+            dir = toTarget.sqrMagnitude > 0.001f ? toTarget.normalized : transform.forward;
+        }
+        return transform.position + dir * armLength;
+    }
+
+    void FireTetherFromTip(ref TetherState tether, Vector3 tipPosition, Vector3 aimTarget)
     {
         tether.isFiring = true;
         tether.extension = 0f;
-        tether.fireOrigin = transform.position;
-        tether.fireDirection = direction.normalized;
+        tether.fireOrigin = tipPosition;
+        Vector3 dir = aimTarget - tipPosition;
+        tether.fireDirection = dir.sqrMagnitude > 0.001f ? dir.normalized : transform.forward;
         tether.capsuleRenderer.enabled = true;
     }
 
@@ -390,10 +403,10 @@ public class SwingingVesselTransformer : VesselTransformer
         UpdateFiringTether(ref rightTether, false);
         ValidateAnchor(ref leftTether);
         ValidateAnchor(ref rightTether);
-        UpdateTetherVisual(ref leftTether);
-        UpdateTetherVisual(ref rightTether);
 
-        UpdateCursors();
+        UpdateSpinneretArms();
+        UpdateTetherVisual(ref leftTether, true);
+        UpdateTetherVisual(ref rightTether, false);
 
         DetermineState();
 
@@ -514,9 +527,40 @@ public class SwingingVesselTransformer : VesselTransformer
             ReleaseTether(ref tether);
     }
 
-    void UpdateTetherVisual(ref TetherState tether)
+    // ==================================================================
+    //  VISUALS
+    // ==================================================================
+
+    void UpdateSpinneretArms()
     {
+        UpdateArmVisual(leftArm, leftArmRenderer, leftTether, true);
+        UpdateArmVisual(rightArm, rightArmRenderer, rightTether, false);
+    }
+
+    void UpdateArmVisual(Transform arm, MeshRenderer renderer, TetherState tether, bool isLeft)
+    {
+        if (arm == null) return;
+
         Vector3 start = transform.position;
+        Vector3 tip = GetArmTipPosition(tether, isLeft);
+        float distance = Vector3.Distance(start, tip);
+
+        if (distance < 0.01f)
+        {
+            renderer.enabled = false;
+            return;
+        }
+
+        renderer.enabled = true;
+        arm.position = (start + tip) * 0.5f;
+        arm.rotation = Quaternion.FromToRotation(Vector3.up, (tip - start) / distance);
+        arm.localScale = new Vector3(armRadius * 2f, distance * 0.5f, armRadius * 2f);
+    }
+
+    void UpdateTetherVisual(ref TetherState tether, bool isLeft)
+    {
+        // Tether visual extends from the arm tip to the anchor/fire endpoint
+        Vector3 start = GetArmTipPosition(tether, isLeft);
         Vector3 end;
 
         if (tether.isAnchored && tether.anchor != null)
@@ -543,23 +587,6 @@ public class SwingingVesselTransformer : VesselTransformer
         tether.capsule.localScale = new Vector3(tetherRadius * 2f, distance * 0.5f, tetherRadius * 2f);
     }
 
-    void UpdateCursors()
-    {
-        if (crosshairCanvas == null) return;
-
-        bool showLeft = !leftTether.isFiring && !leftTether.isAnchored;
-        bool showRight = !rightTether.isFiring && !rightTether.isAnchored;
-
-        if (leftCrosshair) leftCrosshair.gameObject.SetActive(showLeft);
-        if (rightCrosshair) rightCrosshair.gameObject.SetActive(showRight);
-
-        if (showLeft && leftCrosshair)
-            leftCrosshair.position = GetCrosshairScreenPosition(true);
-
-        if (showRight && rightCrosshair)
-            rightCrosshair.position = GetCrosshairScreenPosition(false);
-    }
-
     // ==================================================================
     //  ROTATION OVERRIDE
     // ==================================================================
@@ -567,7 +594,6 @@ public class SwingingVesselTransformer : VesselTransformer
     protected override void RotateShip()
     {
         // Always use standard two-thumb rotation regardless of swing state.
-        // Pitch, yaw, and roll control vessel orientation in all modes.
         base.RotateShip();
     }
 
@@ -585,39 +611,35 @@ public class SwingingVesselTransformer : VesselTransformer
         }
     }
 
-    // ---- Free flight: course persists from swing momentum ----
+    // ---- Free flight: coast at current velocity, no throttle ----
 
     void FreeFlightMove()
     {
-        if (VesselStatus == null || InputStatus == null) return;
+        if (VesselStatus == null) return;
 
-        float boostAmount = 1f;
+        // No throttle, no cruise speed. The spider only coasts.
+        // Boost from gameplay interactions (crystals, etc.) still applies.
+        float effectiveSpeed = speed * throttleMultiplier;
         if (VesselStatus.IsBoosting)
-            boostAmount = VesselStatus.BoostMultiplier;
+            effectiveSpeed *= VesselStatus.BoostMultiplier;
         if (VesselStatus.IsChargedBoostDischarging)
-            boostAmount *= VesselStatus.ChargedBoostCharge;
+            effectiveSpeed *= VesselStatus.ChargedBoostCharge;
 
-        speed = Mathf.Lerp(speed, cruiseSpeed * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
-        speed *= throttleMultiplier;
-
-        VesselStatus.Speed = speed;
+        VesselStatus.Speed = effectiveSpeed;
         VesselStatus.Course = freeFlightCourse;
 
-        transform.position += (speed * freeFlightCourse + velocityShift) * Time.deltaTime;
-        lastVelocity = speed * freeFlightCourse;
+        transform.position += (effectiveSpeed * freeFlightCourse + velocityShift) * Time.deltaTime;
+        lastVelocity = effectiveSpeed * freeFlightCourse;
     }
 
-    // ---- Single anchor: sphere-projected flight ----
+    // ---- Single anchor: maintain speed, redirect on sphere ----
     //
-    // The vessel is constrained to the sphere around the anchor.
-    // Rotation controls work normally (pitch/yaw/roll via base.RotateShip).
-    // The vessel's forward direction is projected onto the sphere's tangent
-    // plane. Course snaps to the projected course on tether attach, then
-    // lerps toward the projected forward each frame (drift feel).
+    // Speed doesn't change — only direction. Forward is projected onto the
+    // sphere tangent plane. Course lerps toward projected forward (drift feel).
 
     void SingleAnchorMove()
     {
-        if (InputStatus == null || VesselStatus == null) return;
+        if (VesselStatus == null) return;
 
         bool isLeft = LeftIsActiveAnchor();
         TetherState anchored = isLeft ? leftTether : rightTether;
@@ -634,7 +656,7 @@ public class SwingingVesselTransformer : VesselTransformer
         float dist = toVessel.magnitude;
         Vector3 radial = dist > 0.01f ? toVessel / dist : Vector3.forward;
 
-        // Project vessel forward onto tangent plane of sphere at current position
+        // Project vessel forward onto tangent plane
         Vector3 projForward = transform.forward - Vector3.Dot(transform.forward, radial) * radial;
         if (projForward.sqrMagnitude > 0.001f)
             projForward.Normalize();
@@ -651,16 +673,14 @@ public class SwingingVesselTransformer : VesselTransformer
         else
             sphereCourse = projForward;
 
-        // Speed calculation (same as free flight)
-        float boostAmount = 1f;
-        if (VesselStatus.IsBoosting) boostAmount = VesselStatus.BoostMultiplier;
-        if (VesselStatus.IsChargedBoostDischarging) boostAmount *= VesselStatus.ChargedBoostCharge;
-        speed = Mathf.Lerp(speed, cruiseSpeed * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
-        speed *= throttleMultiplier;
+        // Speed is maintained — no throttle. Boost still applies.
+        float effectiveSpeed = speed * throttleMultiplier;
+        if (VesselStatus.IsBoosting) effectiveSpeed *= VesselStatus.BoostMultiplier;
+        if (VesselStatus.IsChargedBoostDischarging) effectiveSpeed *= VesselStatus.ChargedBoostCharge;
 
         // Move along course on the sphere surface
         Vector3 prevPos = transform.position;
-        Vector3 newPos = transform.position + sphereCourse * speed * Time.deltaTime;
+        Vector3 newPos = transform.position + sphereCourse * effectiveSpeed * Time.deltaTime;
 
         // Re-project onto sphere to maintain constraint
         Vector3 newRadial = newPos - anchorPos;
@@ -670,27 +690,24 @@ public class SwingingVesselTransformer : VesselTransformer
             newRadial = radial;
         transform.position = anchorPos + newRadial * radius;
 
-        // Velocity tracking for momentum on release
+        // Track actual velocity for momentum on release
         Vector3 displacement = transform.position - prevPos;
         lastVelocity = Time.deltaTime > 0.0001f ? displacement / Time.deltaTime : Vector3.zero;
 
         VesselStatus.Speed = lastVelocity.magnitude;
         VesselStatus.Course = sphereCourse;
-        speed = VesselStatus.Speed;
+        // speed stays unchanged — single tether never changes speed
     }
 
-    // ---- Dual anchor: intersection-circle projected flight ----
+    // ---- Dual anchor: pump tether lengths to gain speed ----
     //
-    // The vessel is constrained to the intersection circle of both tether
-    // spheres. Rotation controls work normally. Forward is projected onto
-    // the circle tangent. XDiff adjusts the circle radius by changing both
-    // tether lengths while keeping the circle center fixed:
-    //   Inward (XDiff→0)  = radius up to ~2× home
-    //   Outward (XDiff→1) = radius toward zero
+    // XDiff sets target circle radius. Actual radius lerps toward target.
+    // The displacement from angular motion + radius change IS the speed.
+    // This is the ONLY way the spider changes speed.
 
     void DualAnchorMove()
     {
-        if (InputStatus == null || VesselStatus == null) return;
+        if (VesselStatus == null) return;
 
         if (leftTether.anchor == null || rightTether.anchor == null)
         {
@@ -708,10 +725,15 @@ public class SwingingVesselTransformer : VesselTransformer
             return;
         }
 
-        // XDiff adjusts circle radius: inward(0)→2× home, neutral(0.5)→1× home, outward(1)→~0
-        float xDiff = InputStatus.XDiff;
+        // XDiff → target radius: inward(0)→2× home, neutral(0.5)→1× home, outward(1)→~0
+        float xDiff = InputStatus?.XDiff ?? 0.5f;
         float radiusMult = Mathf.Clamp(2f * (1f - xDiff), 0.05f, 2f);
-        float h = dualAnchorHomeH * radiusMult;
+        float targetH = dualAnchorHomeH * radiusMult;
+
+        // Lerp actual radius toward target
+        float oldH = currentH;
+        currentH = Mathf.Lerp(currentH, targetH, tetherLengthLerpSpeed * Time.deltaTime);
+        float h = Mathf.Max(currentH, 0.01f);
 
         // Update rope lengths to maintain circle center while changing radius
         leftTether.ropeLength = Mathf.Sqrt(dualAnchorA * dualAnchorA + h * h);
@@ -749,14 +771,9 @@ public class SwingingVesselTransformer : VesselTransformer
         if (Mathf.Abs(Vector3.Dot(projForward, tangent)) < 0.01f)
             desiredDir = Mathf.Sign(circleAngularVelocity);
 
-        // Speed calculation
-        float boostAmount = 1f;
-        if (VesselStatus.IsBoosting) boostAmount = VesselStatus.BoostMultiplier;
-        if (VesselStatus.IsChargedBoostDischarging) boostAmount *= VesselStatus.ChargedBoostCharge;
-        speed = Mathf.Lerp(speed, cruiseSpeed * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
-        speed *= throttleMultiplier;
-
-        float desiredAngVel = desiredDir * speed / Mathf.Max(h, 0.01f);
+        // Desired angular velocity preserves current linear speed on the new radius
+        float currentLinearSpeed = Mathf.Abs(circleAngularVelocity) * Mathf.Max(oldH, 0.01f);
+        float desiredAngVel = desiredDir * currentLinearSpeed / h;
 
         // Lerp angular velocity toward desired (drift feel)
         circleAngularVelocity = Mathf.Lerp(circleAngularVelocity, desiredAngVel, courseLerp * Time.deltaTime);
@@ -769,17 +786,18 @@ public class SwingingVesselTransformer : VesselTransformer
         Vector3 targetPos = center + h * (Mathf.Cos(circleAngle) * u + Mathf.Sin(circleAngle) * v);
         transform.position = Vector3.Lerp(prevPos, targetPos, LERP_AMOUNT * Time.deltaTime);
 
-        // Velocity tracking
+        // Speed is purely displacement-based
         Vector3 displacement = transform.position - prevPos;
         lastVelocity = Time.deltaTime > 0.0001f ? displacement / Time.deltaTime : Vector3.zero;
 
-        // Course tangent after movement
+        // Update speed from actual displacement — this is how the spider gains/loses speed
+        speed = lastVelocity.magnitude;
+
         Vector3 moveTangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
         if (circleAngularVelocity < 0f) moveTangent = -moveTangent;
 
-        VesselStatus.Speed = lastVelocity.magnitude;
-        VesselStatus.Course = moveTangent;
-        speed = VesselStatus.Speed;
+        VesselStatus.Speed = speed;
+        VesselStatus.Course = displacement.sqrMagnitude > 0.001f ? displacement.normalized : moveTangent;
     }
 
     // ==================================================================
@@ -788,10 +806,6 @@ public class SwingingVesselTransformer : VesselTransformer
 
     bool LeftIsActiveAnchor() => leftTether.isAnchored && leftTether.triggerHeld;
 
-    /// <summary>
-    /// On transition to SingleAnchor: snap course to the projection of the
-    /// current course onto the sphere's tangent plane at the vessel position.
-    /// </summary>
     void InitSphereCourseFromCurrentState()
     {
         Transform anchor = LeftIsActiveAnchor() ? leftTether.anchor
@@ -803,7 +817,7 @@ public class SwingingVesselTransformer : VesselTransformer
         float dist = toVessel.magnitude;
         Vector3 radial = dist > 0.01f ? toVessel / dist : Vector3.forward;
 
-        // Project current course onto tangent plane — immediate snap
+        // Snap: project current course onto tangent plane
         Vector3 currentCourse = VesselStatus != null ? VesselStatus.Course : transform.forward;
         sphereCourse = currentCourse - Vector3.Dot(currentCourse, radial) * radial;
 
@@ -813,7 +827,6 @@ public class SwingingVesselTransformer : VesselTransformer
             return;
         }
 
-        // Fallback: project forward
         sphereCourse = transform.forward - Vector3.Dot(transform.forward, radial) * radial;
         if (sphereCourse.sqrMagnitude > 0.001f)
             sphereCourse.Normalize();
@@ -821,10 +834,6 @@ public class SwingingVesselTransformer : VesselTransformer
             sphereCourse = Vector3.Cross(radial, Vector3.up).normalized;
     }
 
-    /// <summary>
-    /// On transition to DualAnchor: compute home geometry and initialize
-    /// circle angle and angular velocity from current state.
-    /// </summary>
     void InitDualAnchorFromCurrentState()
     {
         if (leftTether.anchor == null || rightTether.anchor == null) return;
@@ -837,10 +846,11 @@ public class SwingingVesselTransformer : VesselTransformer
         float r1 = leftTether.ropeLength;
         float r2 = rightTether.ropeLength;
 
-        // Store home geometry so XDiff can adjust radius while keeping center fixed
+        // Store home geometry
         dualAnchorA = (r1 * r1 - r2 * r2 + d * d) / (2f * d);
         float hSq = Mathf.Max(r1 * r1 - dualAnchorA * dualAnchorA, 0f);
         dualAnchorHomeH = Mathf.Sqrt(hSq);
+        currentH = dualAnchorHomeH;
 
         // Initialize circle angle from current position
         Vector3 axis = (a2 - a1).normalized;
@@ -854,7 +864,7 @@ public class SwingingVesselTransformer : VesselTransformer
         Vector3 offset = transform.position - center;
         circleAngle = Mathf.Atan2(Vector3.Dot(offset, v), Vector3.Dot(offset, u));
 
-        // Initialize angular velocity from current velocity projected onto tangent
+        // Initialize angular velocity from current velocity
         Vector3 tangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
         float h = Mathf.Max(dualAnchorHomeH, 0.01f);
         circleAngularVelocity = Vector3.Dot(lastVelocity, tangent) / h;
