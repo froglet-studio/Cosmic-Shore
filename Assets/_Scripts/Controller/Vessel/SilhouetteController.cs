@@ -29,7 +29,6 @@ namespace CosmicShore.Gameplay
         // trail data (pass to view)
         private float _xShift, _wavelength, _sx, _sy, _sz;
         private bool _haveHead;
-        private bool _dangerActive;
 
         void OnEnable()
         {
@@ -192,7 +191,6 @@ namespace CosmicShore.Gameplay
 
         public void SetDangerVisual(bool dangerEnabled)
         {
-            _dangerActive = dangerEnabled;
             view?.SetDangerVisual(dangerEnabled);
         }
 

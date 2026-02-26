@@ -20,7 +20,6 @@ namespace CosmicShore.Utility
         // Static camera state
         private Vector3 fixedCameraPosition;
         private Quaternion fixedCameraRotation;
-        private bool isStaticShot;
         
         // Circle camera state
         private float circleAngle;
@@ -49,7 +48,7 @@ namespace CosmicShore.Utility
             currentSetup = setup;
             isActive = true;
             setupStartTime = Time.time;
-            isStaticShot = false;
+
 
             CSDebug.Log($"Starting camera setup: {setup.cameraType}");
 
@@ -82,7 +81,7 @@ namespace CosmicShore.Utility
         public void StopCameraSetup()
         {
             isActive = false;
-            isStaticShot = false;
+
             currentSetup = null;
             CSDebug.Log("Camera setup stopped");
         }
@@ -130,7 +129,7 @@ namespace CosmicShore.Utility
             cameraTransform.position = fixedCameraPosition;
             cameraTransform.rotation = fixedCameraRotation;
             
-            isStaticShot = true;
+
             
             CSDebug.Log($"Static Front View initialized at {fixedCameraPosition}, looking at {vesselTransform.position}");
         }
@@ -166,7 +165,7 @@ namespace CosmicShore.Utility
             cameraTransform.position = fixedCameraPosition;
             cameraTransform.rotation = fixedCameraRotation;
             
-            isStaticShot = true;
+
             
             CSDebug.Log($"Static Side View initialized at {fixedCameraPosition}");
         }
@@ -321,7 +320,7 @@ namespace CosmicShore.Utility
         public void RestoreNormalMode()
         {
             isActive = false;
-            isStaticShot = false;
+
             CSDebug.Log("Camera restored to normal mode");
         }
         

@@ -11,9 +11,6 @@ namespace CosmicShore.Core
     {
         // Player/User authentication
         private static FirebaseAuth _userAuthentication;
-        
-        // Developer authentication, recommended use: in UNITY_EDITOR directive
-        private static FirebaseAuth _devAuthentication;
 
         private AuthMethods _firebaseAuthMethods;
         private string email;

@@ -11,7 +11,6 @@ namespace CosmicShore.Editor
         private long fileID = 0;
         private int searchMode = 0;
         private string[] searchModes = { "Find Asset by GUID", "Find GameObject by File ID", "Find Sub-Asset (GUID + File ID)" };
-        private Vector2 scrollPosition;
 
         [MenuItem("FrogletTools/Find Asset by GUID")]
         private static void ShowWindow()

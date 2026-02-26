@@ -30,7 +30,6 @@ namespace CosmicShore.Gameplay
         private bool _explosionNullified;
         private Coroutine _explodeRoutine;
         Material _tempMaterial;
-        private Vector3 _velocity;
 
         private void Start()
         {

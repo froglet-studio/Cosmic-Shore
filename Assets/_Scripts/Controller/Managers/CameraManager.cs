@@ -43,9 +43,6 @@ namespace CosmicShore.Gameplay
             set => _playerFollowTarget = value;
         }
 
-        private Camera _vCam;
-        private IVesselStatus vesselStatus;
-
         public override void Awake()
         {
             base.Awake();
@@ -68,7 +65,6 @@ namespace CosmicShore.Gameplay
 
         void Start()
         {
-            _vCam = (_playerCamera as CustomCameraController)?.Camera;
             InitializeSceneCamera();
         }
 
