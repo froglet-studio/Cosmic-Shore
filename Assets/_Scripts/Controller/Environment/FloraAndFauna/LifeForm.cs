@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Linq;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Obvious.Soap;
@@ -180,7 +181,9 @@ namespace CosmicShore.Gameplay
         {
             if (isCleaningUp) return;
 
-            if (crystal && crystal.gameObject.activeInHierarchy)
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CreatureDeath);
+
+            if (crystal && crystal.gameObject.activeInHierarchy && !isCleaningUp)
                 crystal.ActivateCrystal();
 
             int cellId = cell ? cell.ID : -1;

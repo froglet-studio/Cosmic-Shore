@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using UnityEngine;
@@ -18,6 +19,7 @@ namespace CosmicShore.Gameplay
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
             var t = vesselStatus.VesselTransformer;
             savedRotations = new Vector3(t.PitchScaler, t.YawScaler, t.RollScaler);
             t.PitchScaler *= Mult;
@@ -38,6 +40,7 @@ namespace CosmicShore.Gameplay
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
             var t = vesselStatus.VesselTransformer;
             t.PitchScaler = savedRotations.x;
             t.YawScaler = savedRotations.y;

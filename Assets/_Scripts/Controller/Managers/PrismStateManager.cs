@@ -108,6 +108,8 @@ namespace CosmicShore.Gameplay
 
         private void ApplyNormalState()
         {
+            var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
+
             materialAnimator.UpdateMaterial(
                 _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
                 _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)

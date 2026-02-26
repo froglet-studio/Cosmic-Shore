@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 
@@ -57,6 +58,7 @@ namespace CosmicShore.UI
 
         public void OnClick()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.SwitchView);
             navGroup.ActivateLink(this);
         }
 

@@ -29,6 +29,7 @@ namespace CosmicShore.UI
             else
                 UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeExploreMenu);
 
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.SwitchView);
             LoadoutView.gameObject.SetActive(loadout);
             ExploreView.gameObject.SetActive(!loadout);
         }

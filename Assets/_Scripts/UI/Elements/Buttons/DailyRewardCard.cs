@@ -114,6 +114,7 @@ namespace CosmicShore.UI
             switch (Mode)
             {
                 case ButtonMode.Free:
+                    AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
                     PlayerPrefs.SetString(LastFreeClaimedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
                     PlayerPrefs.Save();
                     DailyRewardHandler.Instance.Claim();
