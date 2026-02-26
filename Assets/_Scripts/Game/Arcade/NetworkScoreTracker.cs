@@ -5,15 +5,21 @@ namespace CosmicShore.Game.Arcade
 {
     public class NetworkScoreTracker : BaseScoreTracker
     {
+        /// <summary>
+        /// True when this tracker should act with server authority.
+        /// In party mode, IsServer may be false after env deactivation/reactivation
+        /// (IsSpawned unreliable), but the host is always both server and client.
+        /// </summary>
+        bool IsEffectiveServer => IsServer || (gameData != null && gameData.IsPartyMode);
+
         public override void OnNetworkSpawn()
         {
-            if (!IsServer) return;
+            if (!IsEffectiveServer) return;
             SubscribeScoreEvents();
         }
 
         public override void OnNetworkDespawn()
         {
-            if (!IsServer) return;
             UnsubscribeScoreEvents();
         }
 
@@ -21,21 +27,25 @@ namespace CosmicShore.Game.Arcade
         /// Re-subscribe when the environment is reactivated (party mode SetActive
         /// toggling). Prevents inactive environments' score trackers from
         /// responding to events and firing conflicting RPCs.
+        /// In party mode, subscribe even when IsSpawned is false — the environment
+        /// was deactivated during network spawn so IsSpawned may be unreliable.
         /// </summary>
         private void OnEnable()
         {
-            if (IsSpawned && IsServer)
+            if (IsSpawned || (gameData != null && gameData.IsPartyMode))
                 SubscribeScoreEvents();
         }
 
         private void OnDisable()
         {
-            if (!IsServer) return;
             UnsubscribeScoreEvents();
         }
 
         void SubscribeScoreEvents()
         {
+            // Only server (or party mode host) drives scoring
+            if (!IsEffectiveServer) return;
+
             // Unsubscribe first to prevent double-subscription when both
             // OnNetworkSpawn and OnEnable fire (party mode SetActive toggling).
             UnsubscribeScoreEvents();
@@ -58,12 +68,20 @@ namespace CosmicShore.Game.Arcade
 
         private void CalculateWinnerOnServer()
         {
-            DelayAndSendResults().Forget(); // fire and forget async call
+            // In party mode, sort + invoke directly — RPCs may not work
+            // after environment deactivation/reactivation.
+            if (gameData != null && gameData.IsPartyMode)
+            {
+                SortAndInvokeResults();
+                return;
+            }
+
+            DelayAndSendResults().Forget();
         }
 
         private async UniTaskVoid DelayAndSendResults()
         {
-            await UniTask.Delay(500); // waits for 0.5 seconds (500ms)
+            await UniTask.Delay(500);
             SendRoundStats_ClientRpc();
         }
 

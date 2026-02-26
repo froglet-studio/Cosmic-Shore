@@ -24,6 +24,14 @@ namespace CosmicShore.Game.Arcade
         bool isRunning;
 
         CancellationTokenSource _cts;
+
+        /// <summary>
+        /// True when this monitor should act with server authority.
+        /// In party mode, NetworkBehaviour.IsServer may return false after environment
+        /// deactivation/reactivation (IsSpawned becomes unreliable), but the host is
+        /// always both server and client — so IsPartyMode implies server authority.
+        /// </summary>
+        protected bool IsEffectiveServer => IsServer || (gameData != null && gameData.IsPartyMode);
         
         // ---- Public API ---------------------------------------------------
 

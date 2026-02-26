@@ -33,6 +33,7 @@ namespace CosmicShore.Game.Arcade
         private bool _trackSpawned;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
         private readonly NetworkVariable<int> _netCrystalsToFinish = new(0);
+        private int _partyCrystalsToFinish; // Local fallback for party mode (NetworkVariable writes unreliable)
 
         // Single source of truth for who won — set authoritatively by server, read by end game controller
         public string WinnerName { get; private set; } = "";
@@ -57,7 +58,7 @@ namespace CosmicShore.Game.Arcade
                 return;
             }
 
-            if (IsServer)
+            if (IsEffectiveServer)
             {
                 // Server generates the seed after a short delay for intensity sync
                 SpawnTrackEarly().Forget();
@@ -81,13 +82,26 @@ namespace CosmicShore.Game.Arcade
         {
             base.PartyMode_Activate();
 
-            // In party mode, spawn the track when the environment is activated
-            if (IsServer)
+            // In party mode, spawn the track when the environment is activated.
+            // Use IsEffectiveServer: IsServer may be false after env deactivation/reactivation.
+            if (IsEffectiveServer)
             {
                 _raceEnded = false;
                 _trackSpawned = false;
-                SpawnTrackEarly().Forget();
+                SpawnTrackForParty();
             }
+        }
+
+        /// <summary>
+        /// In party mode, spawn the track directly without NetworkVariable (IsSpawned
+        /// may be unreliable after environment deactivation/reactivation). The host is
+        /// the only client so no replication is needed.
+        /// </summary>
+        private void SpawnTrackForParty()
+        {
+            if (_trackSpawned || !segmentSpawner) return;
+            int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+            SpawnTrackLocally(generatedSeed);
         }
 
         public override void PartyMode_Deactivate()
@@ -126,7 +140,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void OnCountdownTimerEnded()
         {
-            if (!IsServer) return;
+            if (!IsEffectiveServer) return;
 
             // Ensure track seed is set for any edge case where early spawn was missed
             if (_netTrackSeed.Value == 0)
@@ -176,7 +190,7 @@ namespace CosmicShore.Game.Arcade
         protected override void OnTurnEndedCustom()
         {
             base.OnTurnEndedCustom();
-            if (!IsServer || !IsPartyMode) return;
+            if (!IsEffectiveServer || !IsPartyMode) return;
             if (_raceEnded) return;
             _raceEnded = true;
 
@@ -254,6 +268,7 @@ namespace CosmicShore.Game.Arcade
 
         int ResolveCrystalsToFinishTarget()
         {
+            if (IsPartyMode && _partyCrystalsToFinish > 0) return _partyCrystalsToFinish;
             if (_netCrystalsToFinish.Value > 0) return _netCrystalsToFinish.Value;
             if (crystalsToFinishOverride > 0) return crystalsToFinishOverride;
             return 39;
@@ -261,13 +276,22 @@ namespace CosmicShore.Game.Arcade
 
         public void SetCrystalsToFinishServer(int value)
         {
-            if (!IsServer) return;
+            if (!IsEffectiveServer) return;
+
+            // In party mode, NetworkVariable writes may fail (IsSpawned unreliable).
+            // Store locally — the host is the only client so no replication needed.
+            if (IsPartyMode)
+            {
+                _partyCrystalsToFinish = Mathf.Max(1, value);
+                return;
+            }
+
             _netCrystalsToFinish.Value = Mathf.Max(1, value);
         }
 
         public void NotifyCrystalsCollected(string playerName, int crystalsCollected)
         {
-            if (!IsServer) return;
+            if (!IsEffectiveServer) return;
             var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (stat != null)
                 stat.CrystalsCollected = crystalsCollected;
@@ -342,13 +366,22 @@ namespace CosmicShore.Game.Arcade
                 s.CrystalsCollected = 0;
             }
 
-            if (IsServer)
+            if (IsEffectiveServer)
             {
-                _netCrystalsToFinish.Value = 0;
-                _netTrackSeed.Value = 0;
+                _partyCrystalsToFinish = 0;
+
+                // In party mode, skip NetworkVariable writes (IsSpawned unreliable)
+                if (!IsPartyMode)
+                {
+                    _netCrystalsToFinish.Value = 0;
+                    _netTrackSeed.Value = 0;
+                }
 
                 // Re-generate the track for the replay
-                SpawnTrackEarly().Forget();
+                if (IsPartyMode)
+                    SpawnTrackForParty();
+                else
+                    SpawnTrackEarly().Forget();
             }
 
             RaiseToggleReadyButtonEvent(true);
