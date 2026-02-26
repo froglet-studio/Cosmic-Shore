@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Game.Settings;
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
