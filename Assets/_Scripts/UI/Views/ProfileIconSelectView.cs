@@ -70,11 +70,6 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // Fall back to singleton if Inspector reference is missing or was
-            // broken by PlayerDataService detaching via DontDestroyOnLoad.
-            if (dataService == null)
-                dataService = PlayerDataService.Instance;
-
             // Wire display name buttons (if present)
             if (displayNameSaveButton)
                 displayNameSaveButton.onClick.AddListener(SaveDisplayName);

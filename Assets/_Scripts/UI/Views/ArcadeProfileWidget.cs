@@ -53,11 +53,6 @@ namespace CosmicShore.UI
                 usernameInputField.onEndEdit.AddListener(OnUsernameInputEndEdit);
             }
 
-            // Fall back to singleton if Inspector reference is missing or was
-            // broken by PlayerDataService detaching via DontDestroyOnLoad.
-            if (playerDataService == null)
-                playerDataService = PlayerDataService.Instance;
-
             if (playerDataService)
                 playerDataService.OnProfileChanged += RefreshProfile;
 
