@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using CosmicShore.App.Systems.Audio;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;
@@ -72,6 +73,7 @@ namespace CosmicShore.Game
         private void Explode(Vector3 velocity)
         {
             mineCollider.enabled = false;
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.MineExplode);
             foreach (var modelData in mineModels)
             {
                 _tempMaterial = new Material(modelData.explodingMaterial);
