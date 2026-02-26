@@ -7,7 +7,7 @@ using UnityEngine.InputSystem.DualShock;
 using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.InputSystem.XInput;
 using UnityEngine.UI;
-using static CosmicShore.App.UI.ScreenSwitcher;
+using static CosmicShore.UI.ScreenSwitcher;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.IO

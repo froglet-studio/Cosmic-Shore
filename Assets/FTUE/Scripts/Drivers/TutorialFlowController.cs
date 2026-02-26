@@ -1,5 +1,7 @@
-using CosmicShore.Systems.CTA;
+using CosmicShore.Systems.CallToAction;
+using CosmicShore.FTUE.Data;
 using CosmicShore.FTUE.Helpers;
+using CosmicShore.FTUE.Interfaces;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;

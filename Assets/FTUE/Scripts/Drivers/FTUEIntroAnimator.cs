@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using DG.Tweening;
+using CosmicShore.FTUE.UI;
 
 namespace CosmicShore.FTUE.Drivers
 {

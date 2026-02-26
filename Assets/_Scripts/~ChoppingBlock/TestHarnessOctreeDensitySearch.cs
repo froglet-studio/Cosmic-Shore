@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
-using CosmicShore.Game;
-using CosmicShore.Soap;
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility;
 using CosmicShore.Models.Enums;
 

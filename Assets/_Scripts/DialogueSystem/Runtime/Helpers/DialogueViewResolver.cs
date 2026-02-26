@@ -1,6 +1,4 @@
-using CosmicShore.DialogueSystem.Models;
 using UnityEngine;
-using CosmicShore.DialogueSystem.Runtime;
 namespace CosmicShore.DialogueSystem.Runtime
 {
     public sealed class DialogueViewResolver : MonoBehaviour, IDialogueViewResolver
