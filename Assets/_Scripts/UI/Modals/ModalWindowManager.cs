@@ -8,7 +8,7 @@ namespace CosmicShore.UI
 {
     public class ModalWindowManager : MonoBehaviour
     {
-        [Inject] AudioSystem audioSystem;
+        [Inject] protected AudioSystem audioSystem;
 
         [Header("Settings")]
         public bool sharpAnimations;

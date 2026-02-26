@@ -2,7 +2,6 @@ using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
-using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using CosmicShore.Data;
@@ -11,8 +10,6 @@ namespace CosmicShore.UI
 {
     public class FactionMissionModal : ModalWindowManager
     {
-        [Inject] AudioSystem audioSystem;
-
         [SerializeField] FactionMissionGameView GameView;
         [SerializeField] SO_Mission Mission;
         [SerializeField] int Intensity;
