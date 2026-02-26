@@ -1,4 +1,5 @@
 using CosmicShore.Game.Multiplayer;
+using CosmicShore.Models.Structs;
 using CosmicShore.UI.FX;
 using System;
 using System.Collections;

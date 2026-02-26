@@ -1,7 +1,7 @@
-using CosmicShore.Game.Player;
 using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
+using Player = CosmicShore.Game.Player.Player;
 
 namespace CosmicShore.Game.Camera
 {

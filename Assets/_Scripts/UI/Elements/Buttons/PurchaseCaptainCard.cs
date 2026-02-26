@@ -1,4 +1,5 @@
 using CosmicShore.Integrations.Playfab;
+using CosmicShore.Models.ScriptableObjects;
 
 namespace CosmicShore.UI.Elements
 {

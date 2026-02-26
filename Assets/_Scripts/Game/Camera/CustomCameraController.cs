@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.Utility.Recording;
 using UnityEngine;
+using Camera = UnityEngine.Camera;
 
 namespace CosmicShore.Game.Camera
 {

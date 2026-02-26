@@ -1,4 +1,5 @@
 using CosmicShore.Systems.Favorites;
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.UI.Views;
 using CosmicShore.FTUE.Helpers;
 using System.Linq;

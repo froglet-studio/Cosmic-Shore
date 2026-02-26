@@ -1,3 +1,4 @@
+using CosmicShore.Models.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Systems.Audio

@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Models.Enums;
 using CosmicShore.Utility.DataContainers;
 
 namespace CosmicShore.Game.Arcade
