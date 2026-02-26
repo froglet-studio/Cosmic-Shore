@@ -1,4 +1,3 @@
-﻿using CosmicShore.Core;
 using Obvious.Soap;
 using CosmicShore.Utility.Network;
 using UnityEngine;

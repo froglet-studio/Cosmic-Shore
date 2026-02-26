@@ -1,5 +1,4 @@
-﻿using Unity.Multiplayer.Samples.Utilities;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CosmicShore.Game.Ship
 {

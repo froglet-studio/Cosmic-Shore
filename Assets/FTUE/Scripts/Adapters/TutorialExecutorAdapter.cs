@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Systems.CTA;
-using CosmicShore.App.UI;
+using CosmicShore.UI;
 using CosmicShore.FTUE.Data;
 using CosmicShore.FTUE.Drivers;
 using CosmicShore.FTUE.Interfaces;
