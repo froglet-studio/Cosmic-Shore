@@ -27,10 +27,11 @@ namespace CosmicShore.UI
                 switch (navGroupType)
                 {
                     case NavGroupType.SelectView:
-                        link.view.gameObject.SetActive(link.Index == linkToActivate.Index);
+                        if (link.view != null)
+                            link.view.gameObject.SetActive(link.Index == linkToActivate.Index);
                         break;
                     case NavGroupType.UpdateView:
-                        if (link.Index == linkToActivate.Index)
+                        if (link.Index == linkToActivate.Index && link.view != null)
                             link.view.Select(selectionIndex);
                         break;
                     default:
