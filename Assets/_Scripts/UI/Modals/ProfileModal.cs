@@ -17,6 +17,7 @@ namespace CosmicShore.UI
     public class ProfileModal : ModalWindowManager
     {
         [Inject] AudioSystem audioSystem;
+        [Inject] PlayerDataService playerDataService;
 
         [SerializeField] GameObject BusyIndicator;
 
@@ -219,10 +220,9 @@ namespace CosmicShore.UI
                 displayNameResultMessage.gameObject.SetActive(false);
 
             // Save via UGS PlayerDataService (primary path)
-            var dataService = PlayerDataService.Instance;
-            if (dataService != null)
+            if (playerDataService != null)
             {
-                dataService.SetDisplayName(newName);
+                playerDataService.SetDisplayName(newName);
             }
 
             CacheDisplayNameLocally(newName);
