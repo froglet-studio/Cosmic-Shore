@@ -7,6 +7,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
 using CosmicShore.Utility.Recording;
+using System;
 
 namespace CosmicShore.Game.ImpactEffects
 {

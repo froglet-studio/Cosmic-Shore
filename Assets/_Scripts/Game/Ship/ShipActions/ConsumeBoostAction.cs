@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
+using System.Linq;
 
 
 namespace CosmicShore.Game.Ship

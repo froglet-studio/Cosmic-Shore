@@ -3,6 +3,7 @@ using CosmicShore.Game.Managers;
 using CosmicShore.Game.Camera;
 using Obvious.Soap;
 using CosmicShore.Game.Ship;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     [DefaultExecutionOrder(-1000)]

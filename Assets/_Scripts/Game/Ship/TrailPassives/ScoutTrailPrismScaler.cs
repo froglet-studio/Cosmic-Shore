@@ -2,6 +2,7 @@ using CosmicShore;
 using CosmicShore.Game.Ship;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Game.Ship
 {

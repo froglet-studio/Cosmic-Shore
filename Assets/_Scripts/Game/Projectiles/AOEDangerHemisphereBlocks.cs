@@ -10,6 +10,7 @@ using CosmicShore.Game.Managers;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility.SOAP;
 using Random = UnityEngine.Random;
+using System.Linq;
 
 namespace CosmicShore.Game.Projectiles
 {

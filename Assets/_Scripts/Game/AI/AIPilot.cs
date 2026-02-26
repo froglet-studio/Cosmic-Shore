@@ -7,6 +7,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using CosmicShore.Models.Enums;
+using System.Linq;
 
 namespace CosmicShore.Game.AI
 {

@@ -22,6 +22,7 @@ using CosmicShore.VesselHUD.View;
 using CosmicShore.UI.Views;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Game.Environment
 {

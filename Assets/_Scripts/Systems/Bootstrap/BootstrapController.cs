@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
+using DG.Tweening;
 
 namespace CosmicShore.Systems.Bootstrap
 {

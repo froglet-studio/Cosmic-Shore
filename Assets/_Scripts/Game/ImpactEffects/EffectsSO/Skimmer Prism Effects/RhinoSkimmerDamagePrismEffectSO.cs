@@ -5,6 +5,7 @@ using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
+using System.Linq;
 namespace CosmicShore.Game.ImpactEffects
 {
     /// <summary>

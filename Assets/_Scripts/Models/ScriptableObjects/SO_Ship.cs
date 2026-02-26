@@ -18,6 +18,7 @@ using CosmicShore.UI.Modals;
 using CosmicShore.UI.Views;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Tools;
+using CosmicShore.Models.Enums;
 namespace CosmicShore.Models.ScriptableObjects
 {
     [CreateAssetMenu(fileName = "New Vessel", menuName = "CosmicShore/Vessel/Vessel", order = 1)]

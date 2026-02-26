@@ -5,6 +5,7 @@ using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility.Recording;
 using Obvious.Soap;
 using UnityEngine;
+using System.Linq;
 
 namespace CosmicShore.Game.Party
 {

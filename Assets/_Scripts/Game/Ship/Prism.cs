@@ -9,6 +9,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Prisms;
 using CosmicShore.Game.Ship;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     [RequireComponent(typeof(MaterialPropertyAnimator))]

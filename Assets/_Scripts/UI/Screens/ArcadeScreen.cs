@@ -4,6 +4,7 @@ using CosmicShore.UI.Views;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using System.Linq;
 
 namespace CosmicShore.UI.Screens
 {

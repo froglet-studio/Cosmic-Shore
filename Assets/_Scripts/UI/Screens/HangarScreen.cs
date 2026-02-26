@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility.Recording;
+using System.Linq;
+using TMPro;
 
 namespace CosmicShore.UI.Screens
 {

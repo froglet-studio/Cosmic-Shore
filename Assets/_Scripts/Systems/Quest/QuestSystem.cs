@@ -5,6 +5,7 @@ using CosmicShore.Systems.UserAction;
 using CosmicShore.Models.Enums;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Systems.Quest
 {

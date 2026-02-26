@@ -9,6 +9,8 @@ using CosmicShore.Utility;
 using CosmicShore.Game.Player;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.Ship;
+using System;
+using System.Linq;
 
 
 namespace CosmicShore.Game.Managers
