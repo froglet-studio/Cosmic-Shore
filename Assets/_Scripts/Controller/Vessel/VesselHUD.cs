@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         void Start()
         {
 
-            var shipHUD = GetComponentInChildren<Game.UI.MiniGameHUD>();
+            var shipHUD = GetComponentInChildren<MiniGameHUD>();
 
             if (shipHUD == null)
             {

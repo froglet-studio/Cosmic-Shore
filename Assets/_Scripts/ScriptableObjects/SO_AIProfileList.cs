@@ -25,7 +25,7 @@ namespace CosmicShore.ScriptableObjects
                 if (pool.Count == 0)
                     pool = new List<AIProfile>(aiProfiles);
 
-                int idx = Random.Range(0, pool.Count);
+                int idx = UnityEngine.Random.Range(0, pool.Count);
                 result.Add(pool[idx]);
                 pool.RemoveAt(idx);
             }
