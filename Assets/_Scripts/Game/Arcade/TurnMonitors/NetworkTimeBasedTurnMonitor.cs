@@ -7,7 +7,16 @@ namespace CosmicShore.Game.Arcade
     {
         protected override void UpdateTimerUI()
         {
-            FixedString32Bytes message = GetTimeToDisplay(); 
+            // In party mode, RPCs on scene-placed NetworkObjects may not work
+            // reliably after SetActive toggling. Update the display directly
+            // via the ScriptableEvent (same path the base class uses).
+            if (gameData != null && gameData.IsPartyMode)
+            {
+                InvokeUpdateTurnMonitorDisplay(GetTimeToDisplay());
+                return;
+            }
+
+            FixedString32Bytes message = GetTimeToDisplay();
             UpdateTimerUI_ClientRpc(message);
         }
 

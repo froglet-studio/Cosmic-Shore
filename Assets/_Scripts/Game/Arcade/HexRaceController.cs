@@ -164,6 +164,56 @@ namespace CosmicShore.Game.Arcade
             helix.secondOrderRadius = radius;
         }
 
+        // ==================== Turn End / Scoring ====================
+
+        /// <summary>
+        /// In party mode, ReportPlayerFinished_ServerRpc is skipped (RPC table may be
+        /// broken after SetActive toggling). This override sets proper scores for ALL
+        /// players so the sort in ExecuteServerGameEnd produces the correct winner.
+        /// Mirrors the logic in ReportPlayerFinished_ServerRpc: the first player to
+        /// collect all crystals gets their race time; all others get a penalty score.
+        /// </summary>
+        protected override void OnTurnEndedCustom()
+        {
+            base.OnTurnEndedCustom();
+            if (!IsServer || !IsPartyMode) return;
+            if (_raceEnded) return;
+            _raceEnded = true;
+
+            int crystalsToFinish = ResolveCrystalsToFinishTarget();
+            float currentTime = Time.time - gameData.TurnStartTime;
+
+            // Find the winner — first player who collected all crystals
+            string winnerName = "";
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats.CrystalsCollected >= crystalsToFinish)
+                {
+                    winnerName = stats.Name;
+                    break;
+                }
+            }
+
+            CSDebug.Log($"[HexRace] OnTurnEndedCustom (party). Winner='{winnerName}' Time={currentTime:F2}s " +
+                      $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.CrystalsCollected}c/{s.Score:F1}s"))}]");
+
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats.Name == winnerName)
+                {
+                    // Winner keeps their race time (already set by HexRaceScoreTracker.Update)
+                    // but cap it to currentTime in case Update hasn't run this frame
+                    if (stats.Score <= 0f)
+                        stats.Score = currentTime;
+                }
+                else
+                {
+                    int crystalsLeft = Mathf.Max(0, crystalsToFinish - stats.CrystalsCollected);
+                    stats.Score = 10000f + crystalsLeft;
+                }
+            }
+        }
+
         // ==================== Race Finish ====================
 
         // Only called by the winner's ScoreTracker
