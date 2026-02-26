@@ -105,7 +105,8 @@ namespace CosmicShore.Systems.Bootstrap
             if (_persistentRoot == null)
                 _persistentRoot = transform;
 
-            DontDestroyOnLoad(_persistentRoot.gameObject);
+            if (Application.isPlaying)
+                DontDestroyOnLoad(_persistentRoot.gameObject);
         }
 
         void ConfigurePlatform()
