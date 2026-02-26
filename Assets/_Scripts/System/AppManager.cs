@@ -73,7 +73,11 @@ namespace CosmicShore.Core
         {
             if (field != null) return field;
 
-            Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned — auto-creating persistent instance.");
+            // Look for an existing instance (e.g. persisted from bootstrap via DontDestroyOnLoad)
+            var existing = FindFirstObjectByType<T>();
+            if (existing != null) return existing;
+
+            Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned and not found — auto-creating persistent instance.");
             var go = new GameObject($"[{typeof(T).Name}]");
             return go.AddComponent<T>();
         }
