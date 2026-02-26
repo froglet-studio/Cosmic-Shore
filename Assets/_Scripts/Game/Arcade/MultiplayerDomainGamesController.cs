@@ -19,7 +19,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void OnCountdownTimerEnded()
         {
-            if (!IsEffectiveServer)
+            if (!IsServer)
                 return;
 
             OnCountdownTimerEnded_ClientRpc();
@@ -100,7 +100,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void SetupNewRound()
         {
-            if (IsEffectiveServer)
+            if (IsServer)
             {
                 readyClientCount = 0;
             }
@@ -121,7 +121,7 @@ namespace CosmicShore.Game.Arcade
             if (!ShowEndGameSequence) return;
             gameData.SortRoundStats(UseGolfRules);
             gameData.InvokeWinnerCalculated();
-            if (IsEffectiveServer)
+            if (IsServer)
             {
                 StartCoroutine(EndGameSyncRoutine());
             }

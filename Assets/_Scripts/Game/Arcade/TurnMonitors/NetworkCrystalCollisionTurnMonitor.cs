@@ -21,14 +21,9 @@ namespace CosmicShore.Game.Arcade
         {
             base.StartMonitor();
 
-            if (!IsEffectiveServer) return;
+            if (!IsServer) return;
             int target = GetCrystalCollisionCount();
-
-            // In party mode, skip NetworkVariable write (IsSpawned unreliable after
-            // env deactivation/reactivation). SetCrystalsToFinishServer stores locally.
-            if (!(gameData != null && gameData.IsPartyMode))
-                _netCrystalCollisions.Value = target;
-
+            _netCrystalCollisions.Value = target;
             controller?.SetCrystalsToFinishServer(target);
 
             CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
@@ -44,7 +39,7 @@ namespace CosmicShore.Game.Arcade
 
         public override void StopMonitor()
         {
-            if (IsEffectiveServer)
+            if (IsServer)
             {
                 foreach (var stat in gameData.RoundStatsList)
                     stat.OnCrystalsCollectedChanged -= ServerSideCrystalSync;
@@ -55,13 +50,13 @@ namespace CosmicShore.Game.Arcade
 
         void ServerSideCrystalSync(IRoundStats stats)
         {
-            if (!IsEffectiveServer) return;
+            if (!IsServer) return;
             controller?.NotifyCrystalsCollected(stats.Name, stats.CrystalsCollected);
         }
 
         public override bool CheckForEndOfTurn()
         {
-            if (!IsEffectiveServer) return false;
+            if (!IsServer) return false;
 
             int target = _netCrystalCollisions.Value > 0
                 ? _netCrystalCollisions.Value

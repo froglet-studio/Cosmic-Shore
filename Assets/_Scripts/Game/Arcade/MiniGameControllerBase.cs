@@ -34,14 +34,6 @@ namespace CosmicShore.Game.Arcade
         /// Gameplay mechanics (collision tracking, race finishing, crystal counting) still run.
         /// </summary>
         public bool IsPartyMode { get; set; }
-
-        /// <summary>
-        /// True when this controller should act with server authority.
-        /// In party mode, NetworkBehaviour.IsServer may return false after environment
-        /// deactivation/reactivation (IsSpawned becomes unreliable), but the host is
-        /// always both server and client — so IsPartyMode implies server authority.
-        /// </summary>
-        protected bool IsEffectiveServer => IsServer || IsPartyMode;
         
         public void OnReadyClicked()
         {

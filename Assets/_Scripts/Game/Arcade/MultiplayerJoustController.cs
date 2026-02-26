@@ -59,7 +59,7 @@ namespace CosmicShore.Game.Arcade
 
         public void NotifyCollision(string playerName, int collisionCount)
         {
-            if (!IsEffectiveServer) return;
+            if (!IsServer) return;
             var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (stats != null) stats.JoustCollisions = collisionCount;
 
@@ -101,7 +101,7 @@ namespace CosmicShore.Game.Arcade
         protected override void OnTurnEndedCustom()
         {
             base.OnTurnEndedCustom();
-            if (!IsEffectiveServer) return;
+            if (!IsServer) return;
             if (_finalResultsSent) return;
 
             CalculateJoustScores_Server();

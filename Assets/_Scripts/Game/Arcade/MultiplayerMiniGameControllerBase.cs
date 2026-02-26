@@ -66,10 +66,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsPartyMode) return;
 
-            // Use IsEffectiveServer: after environment deactivation/reactivation,
-            // NetworkBehaviour.IsServer may be false (IsSpawned unreliable), but the
-            // host is always both server and client in party mode.
-            if (IsEffectiveServer)
+            if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
             }
@@ -89,7 +86,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsPartyMode) return;
 
-            if (IsEffectiveServer)
+            if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
             }
@@ -121,7 +118,7 @@ namespace CosmicShore.Game.Arcade
             {
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
                 gameData.InitializeGame();
-                if (!IsEffectiveServer) return;
+                if (!IsServer) return;
                 SetupNewRound();
 
                 // In party mode, auto-start the game — no manual ready-click required.
@@ -138,7 +135,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void OnCountdownTimerEnded()
         {
-            if (!IsEffectiveServer) return;
+            if (!IsServer) return;
             OnCountdownTimerEnded_ClientRpc();
         }
 
@@ -151,7 +148,7 @@ namespace CosmicShore.Game.Arcade
 
         void HandleTurnEnd()
         {
-            if (!IsEffectiveServer) return;
+            if (!IsServer) return;
 
             if (IsPartyMode)
             {
@@ -193,7 +190,7 @@ namespace CosmicShore.Game.Arcade
 
         void ExecuteServerRoundEnd()
         {
-            if (!IsEffectiveServer) return;
+            if (!IsServer) return;
 
             // Sync to remote clients (not needed in party mode — RPCs not registered)
             if (!IsPartyMode)
@@ -220,7 +217,7 @@ namespace CosmicShore.Game.Arcade
 
         void ExecuteServerGameEnd()
         {
-            if (!IsEffectiveServer) return;
+            if (!IsServer) return;
 
             if (IsPartyMode)
             {
@@ -321,7 +318,7 @@ namespace CosmicShore.Game.Arcade
             OnResetForReplayCustom();
             RaiseToggleReadyButtonEvent(true);
 
-            if (IsEffectiveServer)
+            if (IsServer)
                 ResetServerRoundAfterDelay().Forget();
         }
 
