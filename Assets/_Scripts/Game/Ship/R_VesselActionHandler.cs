@@ -11,6 +11,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Game.Player;
 using CosmicShore.Game.Ship;
 using CosmicShore.VesselHUD.Controller;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     public class R_VesselActionHandler : NetworkBehaviour

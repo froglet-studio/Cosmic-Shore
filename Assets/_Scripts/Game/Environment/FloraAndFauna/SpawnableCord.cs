@@ -2,6 +2,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 namespace CosmicShore.Game.Environment
 {

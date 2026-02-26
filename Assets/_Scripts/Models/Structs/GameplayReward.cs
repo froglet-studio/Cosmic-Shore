@@ -1,9 +1,8 @@
 using CosmicShore.Models.Enums;
+using System;
 
 namespace CosmicShore.Models.Structs
 {
-    ﻿using System;
-
     [Serializable]
     public struct GameplayReward
     {

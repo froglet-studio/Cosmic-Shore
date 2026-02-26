@@ -1,8 +1,7 @@
+using System;
 
 namespace CosmicShore.Models.Structs
 {
-    ﻿using System;
-
     [Serializable]
     public struct DailyChallengeRewardState
     {

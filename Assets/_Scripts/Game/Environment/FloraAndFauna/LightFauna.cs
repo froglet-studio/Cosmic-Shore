@@ -4,6 +4,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Game.Environment;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Game.Environment
 {

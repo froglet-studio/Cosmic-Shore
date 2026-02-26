@@ -5,6 +5,7 @@ using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Game.Ship
 {

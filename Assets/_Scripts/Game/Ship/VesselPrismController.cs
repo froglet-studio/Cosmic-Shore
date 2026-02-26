@@ -9,6 +9,7 @@ using CosmicShore.Utility.SOAP;
 using CosmicShore.Game.Prisms;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Game.Ship
 {

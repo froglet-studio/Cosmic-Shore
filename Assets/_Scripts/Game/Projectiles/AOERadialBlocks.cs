@@ -8,6 +8,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Utility.SOAP;
 using Random = UnityEngine.Random;
+using System.Linq;
 
 namespace CosmicShore.Game.Projectiles
 {

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility.Effects;
 using CosmicShore.Utility.Recording;
+using System;
 
 namespace CosmicShore.Game.Projectiles
 {

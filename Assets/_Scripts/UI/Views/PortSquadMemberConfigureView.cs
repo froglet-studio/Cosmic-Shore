@@ -1,5 +1,6 @@
 using CosmicShore.UI.Modals;
 using UnityEngine;
+using System.Linq;
 
 namespace CosmicShore.UI.Views
 {

@@ -3,6 +3,7 @@ using Firebase.Auth;
 using CosmicShore.Integrations.Playfab;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
+using System;
 
 namespace CosmicShore.Integrations.Instrumentation
 {
