@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Views;
@@ -431,6 +432,7 @@ namespace CosmicShore.App.UI.Modals
         // Screen 1 → Screen 2
         public void OnConfirmConfiguration()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
             ShowGameDetailScreen();
         }
 
@@ -443,6 +445,7 @@ namespace CosmicShore.App.UI.Modals
         // Start Game button on Screen 2
         public void OnStartGameClicked()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             startGameRequestedEvent?.Raise();
         }
 

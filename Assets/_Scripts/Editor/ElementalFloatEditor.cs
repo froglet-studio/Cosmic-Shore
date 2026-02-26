@@ -2,6 +2,7 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
+using CosmicShore.Utility;
 
 public class ElementalFloatEditor : EditorWindow
 {
@@ -64,7 +65,7 @@ public class ElementalFloatEditor : EditorWindow
 
         if (selectedGameObject == null)
         {
-            Debug.LogWarning("No GameObject selected!");
+            CSDebug.LogWarning("No GameObject selected!");
             return;
         }
 

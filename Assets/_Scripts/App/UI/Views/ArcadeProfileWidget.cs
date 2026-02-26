@@ -51,11 +51,16 @@ namespace CosmicShore.App.UI
                 usernameInputField.onEndEdit.AddListener(OnUsernameInputEndEdit);
             }
 
+            // Fall back to singleton if Inspector reference is missing or was
+            // broken by PlayerDataService detaching via DontDestroyOnLoad.
+            if (playerDataService == null)
+                playerDataService = PlayerDataService.Instance;
+
             if (playerDataService)
                 playerDataService.OnProfileChanged += RefreshProfile;
 
             // Initial refresh if data is already loaded
-            if (playerDataService != null && playerDataService.IsInitialized)
+            if (playerDataService != null && playerDataService.CurrentProfile != null)
                 RefreshProfile(playerDataService.CurrentProfile);
         }
 
@@ -141,8 +146,10 @@ namespace CosmicShore.App.UI
 
             if (!string.IsNullOrEmpty(newName) && newName.Length >= 3 && newName.Length <= 25)
             {
-                if (playerDataService != null && playerDataService.IsInitialized)
-                    await playerDataService.SetDisplayNameAsync(newName);
+                // SetDisplayName works as soon as the service exists (CurrentProfile
+                // is created in Awake). Cloud save is handled internally via debounce.
+                if (playerDataService != null)
+                    playerDataService.SetDisplayName(newName);
             }
 
             // Restore display mode

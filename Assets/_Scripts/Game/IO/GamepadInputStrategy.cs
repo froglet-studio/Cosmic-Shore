@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game.IO
@@ -188,7 +189,7 @@ namespace CosmicShore.Game.IO
             if (UnityEngine.InputSystem.Keyboard.current != null && 
                 UnityEngine.InputSystem.Keyboard.current.tabKey.wasPressedThisFrame)
             {
-                Debug.Log($"[GamepadInput] Reparameterize Debug:\n" +
+                CSDebug.Log($"[GamepadInput] Reparameterize Debug:\n" +
                           $"  Raw Sticks - L: {leftStickRaw}, R: {rightStickRaw}\n" +
                           $"  YSum: {ySumBefore:F2} → {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
                           $"  YDiff: {yDiffBefore:F2} → {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +

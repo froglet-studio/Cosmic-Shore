@@ -3,6 +3,7 @@ using System.Collections;
 using System.Linq;
 using CosmicShore.Game.Cinematics;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -62,7 +63,7 @@ namespace CosmicShore.Game.Arcade
                 formatAsTime = false;
             }
 
-            Debug.Log($"[JoustEndGame] Local='{localName}' Jousts={myJousts}/{needed} " +
+            CSDebug.Log($"[JoustEndGame] Local='{localName}' Jousts={myJousts}/{needed} " +
                       $"didWin={didWin} WinnerName='{joustController.WinnerName}' " +
                       $"diff={joustDifference} RawScore={localStats.Score:F2} DisplayValue={displayValue} " +
                       $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F2}({s.JoustCollisions}j)"))}]");

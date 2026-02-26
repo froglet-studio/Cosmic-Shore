@@ -8,6 +8,7 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using System.Linq;
 using CosmicShore.Game;
 using CosmicShore.Soap;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -73,7 +74,7 @@ namespace CosmicShore
         // Method to roll a single threat based on weights
         Threat RollThreat()
         {
-            Debug.LogWarning("jade volume: node.GetTeamVolume(Teams.Jade)");
+            CSDebug.LogWarning("jade volume: node.GetTeamVolume(Teams.Jade)");
             var threats = node.GetTeamVolume(Domains.Jade) > faunaOnlyLimit ? faunaThreats : MissionData.PotentialThreats;
             float totalWeight = 0f;
             foreach (Threat threat in threats)
@@ -157,7 +158,7 @@ namespace CosmicShore
                 {
                     elapsedThreat += threat.threatLevel;
 
-                    Debug.LogWarning($"ThreatWaveCoroutine -  Spawning Threat:{threat.threatName}");
+                    CSDebug.LogWarning($"ThreatWaveCoroutine -  Spawning Threat:{threat.threatName}");
 
                     if (SpawnLocations != null)
                         ThreatSpawner.SpawnThreat(threat, threatTeam, SpawnLocations[currentSpawnLocationIndex].position);
@@ -173,7 +174,7 @@ namespace CosmicShore
 
                 var timeToTarget = (elapsedThreat / targetThreatPerTime) - elapsedTime;
 
-                Debug.LogWarning($"ThreatWaveCoroutine -  elapsedTime:{elapsedTime}, elapsedThreat:{elapsedThreat}, timeToTarget:{timeToTarget}");
+                CSDebug.LogWarning($"ThreatWaveCoroutine -  elapsedTime:{elapsedTime}, elapsedThreat:{elapsedThreat}, timeToTarget:{timeToTarget}");
 
                 yield return new WaitForSeconds(Mathf.Max(ThreatWaveMinimumPeriodInSeconds, timeToTarget));
             }

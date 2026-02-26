@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Services.Auth
 {
@@ -34,7 +35,7 @@ namespace CosmicShore.Services.Auth
 
                 if (authController == null)
                 {
-                    Debug.LogWarning("[SplashToAuthFlow] No AuthenticationController found. Going to auth scene.");
+                    CSDebug.LogWarning("[SplashToAuthFlow] No AuthenticationController found. Going to auth scene.");
                     SceneManager.LoadScene(authSceneName);
                     return;
                 }
@@ -44,18 +45,18 @@ namespace CosmicShore.Services.Auth
 
                 if (signedIn)
                 {
-                    Debug.Log("[SplashToAuthFlow] Cached session valid. Going to main menu.");
+                    CSDebug.Log("[SplashToAuthFlow] Cached session valid. Going to main menu.");
                     SceneManager.LoadScene(mainMenuSceneName);
                 }
                 else
                 {
-                    Debug.Log("[SplashToAuthFlow] No cached session. Going to auth scene.");
+                    CSDebug.Log("[SplashToAuthFlow] No cached session. Going to auth scene.");
                     SceneManager.LoadScene(authSceneName);
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[SplashToAuthFlow] Error during splash flow: {ex.Message}. Falling back to auth scene.");
+                CSDebug.LogWarning($"[SplashToAuthFlow] Error during splash flow: {ex.Message}. Falling back to auth scene.");
                 SceneManager.LoadScene(authSceneName);
             }
         }

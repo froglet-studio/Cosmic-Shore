@@ -4,6 +4,7 @@ using CosmicShore.Integrations.PlayFab.Utility;
 using PlayFab;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.PlayFab.CloudScripts
 {
@@ -55,12 +56,12 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         {
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.LogError("CloudScriptRunner - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
+                CSDebug.LogError("CloudScriptRunner - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
 
-            Debug.Log($"CloudScriptRunner - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
-            Debug.Log($"CloudScriptRunner - Result: {result.FunctionResult}");
+            CSDebug.Log($"CloudScriptRunner - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
+            CSDebug.Log($"CloudScriptRunner - Result: {result.FunctionResult}");
         }
     }
 }

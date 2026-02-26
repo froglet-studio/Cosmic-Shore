@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,7 +19,7 @@ namespace CosmicShore
     /// The structure offers clear paths along edges with frequent junctions at vertices,
     /// rewarding both long sweeping runs and quick direction changes.
     /// </summary>
-    public class SpawnableSpherene : SpawnableAbstractBase
+    public class SpawnableSpherene : SpawnableBase
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
@@ -39,16 +40,8 @@ namespace CosmicShore
         [SerializeField] Domains edgeDomain = Domains.Blue;
         [SerializeField] Domains vertexDomain = Domains.Gold;
 
-        static int ObjectsSpawned = 0;
-
-        public override GameObject Spawn()
+        protected override SpawnTrailData[] GenerateTrailData()
         {
-            var container = new GameObject($"Spherene{ObjectsSpawned++}");
-            int blockIndex = 0;
-
-            var trail = new Trail();
-            trails.Add(trail);
-
             // Generate geodesic sphere
             var (vertices, triangles) = GenerateIcosphere(subdivisions);
 
@@ -61,7 +54,8 @@ namespace CosmicShore
                 AddEdge(edges, triangles[i + 2], triangles[i]);
             }
 
-            // Place blocks along each edge
+            // Build edge trail points
+            var edgePoints = new List<SpawnPoint>();
             foreach (var (a, b) in edges)
             {
                 Vector3 start = vertices[a] * radius;
@@ -76,36 +70,37 @@ namespace CosmicShore
                     Vector3 position = Vector3.Slerp(start, end, t);
                     Vector3 nextPos = Vector3.Slerp(start, end, tNext);
 
-                    CreateBlock(position, nextPos,
-                        $"{container.name}::EDGE::{blockIndex}",
-                        trail, blockScale, prism, container, edgeDomain);
-
-                    blockIndex++;
+                    var rotation = SpawnPoint.LookRotation(position, nextPos, Vector3.up);
+                    edgePoints.Add(new SpawnPoint(position, rotation, blockScale));
                 }
             }
 
-            // Place larger blocks at vertices as junction markers
-            var vertexTrail = new Trail();
-            trails.Add(vertexTrail);
-
+            // Build vertex trail points
+            var vertexPoints = new SpawnPoint[vertices.Count];
             for (int i = 0; i < vertices.Count; i++)
             {
                 Vector3 position = vertices[i] * radius;
                 Vector3 lookTarget = position + vertices[i]; // look outward
-
-                CreateBlock(position, lookTarget,
-                    $"{container.name}::VERTEX::{blockIndex}",
-                    vertexTrail, blockScale * 1.5f, prism, container, vertexDomain);
-
-                blockIndex++;
+                var rotation = SpawnPoint.LookRotation(position, lookTarget, Vector3.up);
+                vertexPoints[i] = new SpawnPoint(position, rotation, blockScale * 1.5f);
             }
 
-            return container;
+            return new[]
+            {
+                new SpawnTrailData(edgePoints.ToArray(), false, edgeDomain),
+                new SpawnTrailData(vertexPoints, false, vertexDomain),
+            };
         }
 
-        public override GameObject Spawn(int intensityLevel)
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
-            return Spawn();
+            foreach (var td in trailData)
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+        }
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(subdivisions, radius, blocksPerEdge, blockScale, edgeDomain, vertexDomain, seed);
         }
 
         void AddEdge(HashSet<(int, int)> edges, int a, int b)

@@ -7,6 +7,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Playfab.Economy
 {
@@ -43,10 +44,10 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// <param name="response">Search Item Response</param>
         private static void OnGettingBundlesSuccess(SearchItemsResponse response)
         {
-            if (response is null) { Debug.Log("CatalogManager.GetBundle() - no response"); return; }
+            if (response is null) { CSDebug.Log("CatalogManager.GetBundle() - no response"); return; }
 
             var items = string.Join(" bundle: ", response.Items.Select(i => i.Id.ToString() + " " + i.Title.Values.FirstOrDefault()));
-            Debug.Log($"CatalogManager.GetBundle() - bundle: {items}");
+            CSDebug.Log($"CatalogManager.GetBundle() - bundle: {items}");
             Bundles ??= new();
 
             foreach (var bundle in response.Items)
@@ -58,8 +59,8 @@ namespace CosmicShore.Integrations.Playfab.Economy
             Bundles.TryGetValue("Test Bundle", out testBundleId);
 
             // TODO: This one is for testing, can be changed to any bundle id you want later
-            // if (string.IsNullOrEmpty(testBundleId)) {Debug.Log($"CatalogManager.GetBundle() - Test Bundle Id is not here");return;}
-            Debug.Log($"CatalogManager.GetBundles() - Test Bundle Id: {testBundleId}");
+            // if (string.IsNullOrEmpty(testBundleId)) {CSDebug.Log($"CatalogManager.GetBundle() - Test Bundle Id is not here");return;}
+            CSDebug.Log($"CatalogManager.GetBundles() - Test Bundle Id: {testBundleId}");
             OnGettingBundleId?.Invoke(testBundleId);
         }
 
@@ -97,7 +98,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         {
             if (result is null) return;
 
-            Debug.Log($"CatalogManager.PurchaseBundle() - {result.OrderId} remaining balance: {result.VirtualCurrencyBalances}");
+            CSDebug.Log($"CatalogManager.PurchaseBundle() - {result.OrderId} remaining balance: {result.VirtualCurrencyBalances}");
             PayBundle(result.OrderId);
 
         }
@@ -131,9 +132,9 @@ namespace CosmicShore.Integrations.Playfab.Economy
         {
             if (result is null) return;
 
-            Debug.Log($"CatalogManager.PayBundle() - {result.OrderId} purchase currency:{result.PurchaseCurrency} status:{result.Status}");
+            CSDebug.Log($"CatalogManager.PayBundle() - {result.OrderId} purchase currency:{result.PurchaseCurrency} status:{result.Status}");
             var balance = string.Join(" ", result.VirtualCurrency.Select(i => i.Key + " " + i.Value));
-            Debug.Log($"CatalogManager.BayBundle() - current virtual currency balance: {balance}");
+            CSDebug.Log($"CatalogManager.BayBundle() - current virtual currency balance: {balance}");
         }
 
         #endregion

@@ -2,6 +2,7 @@ using CosmicShore.App.Profile;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Screens
 {
@@ -26,7 +27,7 @@ namespace CosmicShore.App.UI.Screens
 
         public void Start()
         {
-            Debug.Log("MainMenu.cs start");
+            CSDebug.Log("MainMenu.cs start");
 
             if (FirstAppLaunchExperience())
             {
@@ -80,22 +81,22 @@ namespace CosmicShore.App.UI.Screens
             if (DebugFirstAppLaunch)
             {
                 PlayerPrefs.DeleteKey(PlayerPrefKeys.FirstAppLaunch.ToString());
-                Debug.Log("MainMenu.cs DebugFirstAppLaunch - delete first app launch key");
+                CSDebug.Log("MainMenu.cs DebugFirstAppLaunch - delete first app launch key");
             }
 
             // Implementation commented out until an updated design is available
             /*
-            Debug.Log("MainMenu.cs first app launch");
+            CSDebug.Log("MainMenu.cs first app launch");
             if (!PlayerPrefs.HasKey(PlayerPrefKeys.FirstAppLaunch.ToString()))
             //if (PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString(), -1234) == -1234)
             {
-                Debug.Log("MainMenu.cs first app launch - did not have key");
-                Debug.Log("MainMenu.cs - " + PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString()));
+                CSDebug.Log("MainMenu.cs first app launch - did not have key");
+                CSDebug.Log("MainMenu.cs - " + PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString()));
                 PlayerPrefs.SetInt(PlayerPrefKeys.FirstAppLaunch.ToString(), 1);
                 PlayerPrefs.Save();
-                Debug.Log("MainMenu.cs - " + PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString()));
+                CSDebug.Log("MainMenu.cs - " + PlayerPrefs.GetInt(PlayerPrefKeys.FirstAppLaunch.ToString()));
                 if (!PlayerPrefs.HasKey(PlayerPrefKeys.FirstAppLaunch.ToString()))
-                    Debug.Log("MainMenu.cs first app launch - still did not have fucking key");
+                    CSDebug.Log("MainMenu.cs first app launch - still did not have fucking key");
 
                 return true;
             }

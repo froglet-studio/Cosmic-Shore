@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -914,6 +914,7 @@ MonoBehaviour:
     - {x: 615, y: 0, z: -128}
   spawnCrystalWithPlayerDomain: 1
   extraCrystalsToSpawnBeyondPlayerCount: 0
+  spawnOnClientReady: 1
 --- !u!114 &1078953732
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2261,6 +2262,7 @@ MonoBehaviour:
   connectingPanelCanvasGroup: {fileID: 1556114767}
   canvasGroup: {fileID: 1556114777}
   lifeFormCounter: {fileID: 1556114768}
+  connectingPanel: {fileID: 0}
   hackerTextAnimator: {fileID: 1951025784}
   dotsAnimator: {fileID: 1951025785}
   playerScoreContainer: {fileID: 1313205415}
@@ -2523,39 +2525,18 @@ MonoBehaviour:
   spawnableSegments:
   - {fileID: 1899528610}
   spawnableByIntensity: []
-  positioningScheme: 19
   spawnSegmentWeights:
   - 1
   Seed: 0
   parent: {fileID: 0}
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  InitializeOnStart: 0
+  NumberOfSegments: 1
   origin: {x: 0, y: 0, z: 0}
   Radius: 1
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
-  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  InitializeOnStart: 0
-  NumberOfSegments: 1
-  mazeData: []
-  branchProbability: 0.2
-  minBranchAngle: 20
-  maxBranchAngle: 20
-  minBranches: 1
-  maxBranches: 3
-  minBranchLengthMultiplier: 0.6
-  maxBranchLengthMultiplier: 0.8
-  maxDepth: 3
-  maxTotalSpawnedObjects: 100
-  branchPrefabs: []
-  GridWidth: 10
-  GridHeight: 10
-  GridThickness: 10
-  CellSize: 10
-  Curviness: 0.5
-  BranchProbability: 0.2
-  TowerHeight: 100
-  TowerRadius: 20
-  RotationsPerUnit: 0.1
 --- !u!1 &1897523407 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -2713,8 +2694,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 528998d6a59dd7c4b9b1f0290145ef51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  seed: 0
   domain: 3
-  intenstyLevel: 1
+  children: []
+  leafPrefab: {fileID: 0}
+  intensityLevel: 1
   waypoints:
   - positions:
     - {x: 700, y: 0, z: 0}

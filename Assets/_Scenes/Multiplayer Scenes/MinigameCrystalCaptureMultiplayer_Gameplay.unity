@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -825,6 +825,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 8.4
       objectReference: {fileID: 0}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: xpEarnedText
+      value: 
+      objectReference: {fileID: 776211957}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: xpEarnedCanvasGroup
+      value: 
+      objectReference: {fileID: 776211958}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -2205,6 +2215,7 @@ MonoBehaviour:
   connectingPanelCanvasGroup: {fileID: 1617932949}
   canvasGroup: {fileID: 400393581}
   lifeFormCounter: {fileID: 400393570}
+  connectingPanel: {fileID: 0}
   hackerTextAnimator: {fileID: 0}
   dotsAnimator: {fileID: 0}
   playerScoreContainer: {fileID: 1562726424}
@@ -2377,6 +2388,24 @@ Transform:
   - {fileID: 808058267}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &776211957 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8519919900975884673, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!225 &776211958 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 5955435898294338417, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &808058266
 GameObject:
   m_ObjectHideFlags: 0
@@ -2426,42 +2455,21 @@ MonoBehaviour:
   - {fileID: 0}
   spawnableByIntensity:
   - {fileID: 7606682149800798904, guid: 218f41c09395b8e49a959f865e943d93, type: 3}
-  - {fileID: 2348215282272801469, guid: 34468b1d696674940a7e8243d1af1bc0, type: 3}
+  - {fileID: 8565176333109452482, guid: d8f13f0bb0fb307489536590772e6795, type: 3}
   - {fileID: 934516435980311962, guid: 207a992b551491b4cb209b0779c34323, type: 3}
   - {fileID: 4959367395204161429, guid: 7f105562de1ca3f41832337facd6e3d9, type: 3}
-  positioningScheme: 19
   spawnSegmentWeights:
   - 1
   Seed: 0
   parent: {fileID: 0}
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  InitializeOnStart: 1
+  NumberOfSegments: 1
   origin: {x: 0, y: 0, z: 0}
   Radius: 250
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
-  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  InitializeOnStart: 1
-  NumberOfSegments: 1
-  mazeData: []
-  branchProbability: 0.2
-  minBranchAngle: 20
-  maxBranchAngle: 20
-  minBranches: 1
-  maxBranches: 3
-  minBranchLengthMultiplier: 0.6
-  maxBranchLengthMultiplier: 0.8
-  maxDepth: 3
-  maxTotalSpawnedObjects: 100
-  branchPrefabs: []
-  GridWidth: 10
-  GridHeight: 10
-  GridThickness: 10
-  CellSize: 10
-  Curviness: 0.5
-  BranchProbability: 0.2
-  TowerHeight: 100
-  TowerRadius: 20
-  RotationsPerUnit: 0.1
 --- !u!1 &823542008 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1259559001432499751, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -3669,6 +3677,7 @@ MonoBehaviour:
   listOfCrystalPositions: []
   spawnCrystalWithPlayerDomain: 0
   extraCrystalsToSpawnBeyondPlayerCount: 5
+  spawnOnClientReady: 1
 --- !u!114 &1628508345
 MonoBehaviour:
   m_ObjectHideFlags: 0

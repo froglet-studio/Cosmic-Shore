@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.DialogueSystem.View
 {
@@ -258,7 +259,7 @@ namespace CosmicShore.DialogueSystem.View
         public void OnNextClicked()
         {
             WaitingForNextPressed = true;
-            Debug.Log("On Next Pressed");
+            CSDebug.Log("On Next Pressed");
         }
 
         public void ResetWaitingForNext() => WaitingForNextPressed = false;

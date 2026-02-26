@@ -9,6 +9,7 @@ using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using IPlayer = CosmicShore.Game.IPlayer;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Soap
 {
@@ -60,6 +61,7 @@ namespace CosmicShore.Soap
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
         public int LocalPlayerAvatarId;
+        public int LocalPlayerXP;
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
@@ -186,7 +188,7 @@ namespace CosmicShore.Soap
         {
             if (RoundStatsList == null || RoundStatsList.Count == 0)
             {
-                Debug.LogError("Cannot Replay game mode, no round stats data found!");
+                CSDebug.LogError("Cannot Replay game mode, no round stats data found!");
                 return;
             }
             
@@ -419,13 +421,13 @@ namespace CosmicShore.Soap
             won = false;
             if (RoundStatsList is null || RoundStatsList.Count == 0)
             {
-                Debug.LogError("No round stats found to calculate winner!");
+                CSDebug.LogError("No round stats found to calculate winner!");
                 return false;
             }
 
             if (!TryGetLocalPlayerStats(out IPlayer _, out roundStats))
             {
-                Debug.LogError("No round stats of active player found!");
+                CSDebug.LogError("No round stats of active player found!");
                 return false;   
             }
             
@@ -439,7 +441,7 @@ namespace CosmicShore.Soap
         {
             if (spawnTransforms == null)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
                 return;
             }
             
@@ -455,7 +457,7 @@ namespace CosmicShore.Soap
             
             if (SpawnPoses == null || SpawnPoses.Length == 0)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
                 return;
             }
 
@@ -476,7 +478,7 @@ namespace CosmicShore.Soap
                 }
             }
 
-            Debug.LogError($"No player found {clientId}");
+            CSDebug.LogError($"No player found {clientId}");
             return false;
         }
 
