@@ -29,8 +29,6 @@ namespace CosmicShore.Gameplay
         private MeshRenderer meshRenderer;
         private bool isRegistered;
 
-        private Vector3 prefabAuthoredScale;
-
         private bool isScaling;
         public bool IsScaling
         {

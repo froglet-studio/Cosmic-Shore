@@ -19,7 +19,6 @@ namespace CosmicShore.Gameplay
         private ZoomOutActionSO _so;
 
         private bool  _active;
-        private bool  _retracting;
         private float _baseScale;    
         private float _baseDistance;  
 
@@ -90,7 +89,6 @@ namespace CosmicShore.Gameplay
             }
 
             _state      = State.Expanding;
-            _retracting = false;
             _active     = true;
         }
 
@@ -108,7 +106,6 @@ namespace CosmicShore.Gameplay
             if (_state == State.Retracting) return;
 
             _state      = State.Retracting;
-            _retracting = true;
             _active     = true;
         }
 
@@ -177,7 +174,6 @@ namespace CosmicShore.Gameplay
                 ccRestore.adaptiveZoomEnabled = _hadAdaptiveZoom;
             _hadAdaptiveZoom = false;
 
-            _retracting = false;
             _active     = false;
             _state      = State.Idle;
             _so         = null;
@@ -189,7 +185,6 @@ namespace CosmicShore.Gameplay
                 ccRestore.adaptiveZoomEnabled = _hadAdaptiveZoom;
             _hadAdaptiveZoom = false;
 
-            _retracting = false;
             _active     = false;
             _state      = State.Idle;
             _so         = null;

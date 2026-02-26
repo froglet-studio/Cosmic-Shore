@@ -8,8 +8,6 @@ namespace CosmicShore.Gameplay
 {
     public class GamepadInputStrategy : BaseInputStrategy
     {
-        private bool leftStickEffectsStarted;
-        private bool rightStickEffectsStarted;
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
