@@ -69,6 +69,8 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] EndShapeDetailHUD endShapeHUD;
 
         [Header("Pool Return")]
+        [Tooltip("Raised when entering shape mode. Attach EventListenerNoParam on prisms to call ReturnToPool for a clean slate.")]
+        [SerializeField] ScriptableEventNoParam onShapeGameModeStarted;
         [Tooltip("Raised when exiting shape mode. Attach EventListenerNoParam on shape prisms to call ReturnToPool.")]
         [SerializeField] ScriptableEventNoParam onReturnShapePrismsEvent;
 
@@ -224,11 +226,13 @@ namespace CosmicShore.Game.ShapeDrawing
 
             // Cache vessel status via the vessel interface (NOT GetComponent)
             _vesselStatus = gameData.LocalPlayer?.Vessel?.VesselStatus;
+
+            // Return existing prisms to pool via SO event — clean slate for shape mode
+            if (onShapeGameModeStarted) onShapeGameModeStarted.Raise();
+
+            // Freeze player — Ready button will release via IsStationary = false
             if (_vesselStatus != null)
-            {
-                _vesselStatus.VesselPrismController.StopSpawn();
-                _vesselStatus.VesselPrismController.ClearTrails();
-            }
+                _vesselStatus.IsStationary = true;
 
             // Disable Cell to stop Lifeforms
             if (cellScript) cellScript.enabled = false;
@@ -252,11 +256,7 @@ namespace CosmicShore.Game.ShapeDrawing
             if (!_isActive || _drawingStarted) return;
             _drawingStarted = true;
 
-            // Ensure no prism spawn is running before we release the vessel
-            if (_vesselStatus != null)
-                _vesselStatus.VesselPrismController.StopSpawn();
-
-            // Release input
+            // Release player — vessel's natural prism spawning takes over
             if (_vesselStatus != null)
                 _vesselStatus.IsStationary = false;
 
@@ -296,12 +296,8 @@ namespace CosmicShore.Game.ShapeDrawing
             _trackingPath = false;
             _waitingForNext = false;
 
-            // Return shape prisms to pool via SO event (before clearing trail references)
+            // Return shape prisms to pool via SO event
             if (onReturnShapePrismsEvent) onReturnShapePrismsEvent.Raise();
-
-            // Clear trail list references after prisms have been returned
-            if (_vesselStatus != null)
-                _vesselStatus.VesselPrismController.ClearTrails();
 
             // Respawn player at the shape start position and freeze
             if (_vesselStatus != null && _activeShape != null)
@@ -451,22 +447,12 @@ namespace CosmicShore.Game.ShapeDrawing
             int waypointIndex = crystalId - 1;
             if (waypointIndex != _currentWaypointIndex) return;
 
-            // Start trails and path tracking after hitting the first crystal
-            if (_currentWaypointIndex == 0 && _vesselStatus != null)
+            // Start path tracking after hitting the first crystal
+            if (_currentWaypointIndex == 0)
             {
-                _vesselStatus.VesselPrismController.StartSpawn();
                 _trackingPath = true;
                 _nextSampleTime = Time.time;
                 Debug.Log("[ShapeDrawing] First crystal hit — tracking started.");
-            }
-
-            // Toggle trail based on shape data
-            if (_vesselStatus != null)
-            {
-                if (_activeShape.IsTrailEnabledForSegment(_currentWaypointIndex))
-                    _vesselStatus.VesselPrismController.StartSpawn();
-                else
-                    _vesselStatus.VesselPrismController.StopSpawn();
             }
 
             _currentWaypointIndex++;
@@ -702,12 +688,9 @@ namespace CosmicShore.Game.ShapeDrawing
             _trackingPath = false;
             if (guideLine) guideLine.enabled = false;
 
-            // Stop prism spawn and freeze the player
+            // Freeze the player
             if (_vesselStatus != null)
-            {
-                _vesselStatus.VesselPrismController.StopSpawn();
                 _vesselStatus.IsStationary = true;
-            }
 
             var score = CalculateScore();
 
