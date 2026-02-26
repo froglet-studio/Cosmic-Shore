@@ -71,6 +71,8 @@ namespace CosmicShore.Game.UI
 
         public void ToggleConnectingPanel(bool active)
         {
+            if (!connectingPanelCanvasGroup) return;
+
             connectingPanelCanvasGroup.alpha = active ? 1 : 0;
             connectingPanelCanvasGroup.interactable = active;
             connectingPanelCanvasGroup.blocksRaycasts = active;
@@ -125,6 +127,8 @@ namespace CosmicShore.Game.UI
 
         public void ClearPlayerList()
         {
+            if (playerScoreContainer == null) return;
+
             foreach (Transform child in playerScoreContainer)
             {
                 Destroy(child.gameObject);
