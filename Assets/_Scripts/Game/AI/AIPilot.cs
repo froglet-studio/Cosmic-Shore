@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 using CosmicShore.Utility.DataContainers;
+using CosmicShore.Game.IO;
 using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using CosmicShore.Models.Enums;
