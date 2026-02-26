@@ -14,6 +14,8 @@ namespace CosmicShore.UI
 {
     public class ArcadeExploreView : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [Header("Game Selection View")]
         [SerializeField] SO_GameList GameList;
         [SerializeField] GameObject GameSelectionView;
@@ -138,7 +140,7 @@ namespace CosmicShore.UI
 
         public void PlaySelectedGame()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
             // LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
             // Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
             gameData.InvokeGameLaunch();

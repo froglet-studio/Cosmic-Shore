@@ -1,13 +1,15 @@
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
+using Reflex.Attributes;
 
 namespace CosmicShore.Gameplay
 {
     public class DriftAction : ShipAction
     {
+        [Inject] AudioSystem audioSystem;
         public override void StartAction()
         {
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
             Vessel.VesselStatus.VesselTransformer.PitchScaler *= 1.5f;
             Vessel.VesselStatus.VesselTransformer.YawScaler *= 1.5f;
             Vessel.VesselStatus.VesselTransformer.RollScaler *= 1.5f;
@@ -16,7 +18,7 @@ namespace CosmicShore.Gameplay
 
         public override void StopAction()
         {
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
             Vessel.VesselStatus.VesselTransformer.PitchScaler /= 1.5f;
             Vessel.VesselStatus.VesselTransformer.YawScaler /= 1.5f;
             Vessel.VesselStatus.VesselTransformer.RollScaler /= 1.5f;

@@ -32,6 +32,7 @@ namespace CosmicShore.UI
         ModalWindowManager settingsModalWindowManager;
 
         [Inject] GameSetting gameSetting;
+        [Inject] AudioSystem audioSystem;
 
         /// <summary>
         /// stores if the local player input was paused before entering pause menu.
@@ -93,14 +94,14 @@ namespace CosmicShore.UI
         {
             pauseMenuPanel.gameObject.SetActive(true);
             settingsModalWindowManager.ModalWindowIn();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
         }
 
         public void Hide()
         {
             settingsModalWindowManager.ModalWindowOut();
             pauseMenuPanel.gameObject.SetActive(false);
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseClose);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseClose);
         }
         
         async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)

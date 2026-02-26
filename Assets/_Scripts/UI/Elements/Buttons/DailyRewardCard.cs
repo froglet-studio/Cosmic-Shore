@@ -3,6 +3,7 @@ using CosmicShore.UI;
 using System;
 using System.Collections;
 using System.Globalization;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Advertisements;
@@ -21,6 +22,8 @@ namespace CosmicShore.UI
 
     public class DailyRewardCard : PurchaseCard
     {
+        [Inject] AudioSystem audioSystem;
+
         [SerializeField] Image FreeButton;
         [SerializeField] Image AdButton;
         [SerializeField] Image ClockButton;
@@ -114,7 +117,7 @@ namespace CosmicShore.UI
             switch (Mode)
             {
                 case ButtonMode.Free:
-                    AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+                    audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
                     PlayerPrefs.SetString(LastFreeClaimedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
                     PlayerPrefs.Save();
                     DailyRewardHandler.Instance.Claim();

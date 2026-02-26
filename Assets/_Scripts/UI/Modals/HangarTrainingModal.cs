@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Data;
+using Reflex.Attributes;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -13,6 +14,8 @@ namespace CosmicShore.UI
 {
     public class HangarTrainingModal : ModalWindowManager
     {
+        [Inject] AudioSystem audioSystem;
+
         [SerializeField] Transform GameSelectionContainer;
         [SerializeField] Image ShipModelImage;
         [SerializeField] TMP_Text SelectedGameName;
@@ -159,7 +162,7 @@ namespace CosmicShore.UI
 
         public void LaunchSelectedGame()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
             var shipResources = new ResourceCollection();
             if (SelectedGame.ElementOne.Element == Element.Charge || SelectedGame.ElementTwo.Element == Element.Charge)
                 shipResources.Charge = 1;

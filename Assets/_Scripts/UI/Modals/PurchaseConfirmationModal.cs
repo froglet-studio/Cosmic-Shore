@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
+using Reflex.Attributes;
 using System;
 using System.Collections;
 using TMPro;
@@ -12,6 +13,8 @@ namespace CosmicShore.UI
 {
     public class PurchaseConfirmationModal : ModalWindowManager
     {
+        [Inject] AudioSystem audioSystem;
+
         [SerializeField] TMP_Text PriceLabel;
         [SerializeField] TMP_Text UnlockText;
         [SerializeField] TMP_Text CrystalBalanceText;
@@ -75,7 +78,7 @@ namespace CosmicShore.UI
 
         public void Confirm()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
             OnConfirm?.Invoke();
         }
 

@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Utility;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(PrismStateManager))]
     public class Prism : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         protected const string DEFAULT_PLAYER_NAME = "DefaultPlayer";
 
         [Header("Prism Properties")] 
@@ -286,7 +288,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -303,7 +305,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {

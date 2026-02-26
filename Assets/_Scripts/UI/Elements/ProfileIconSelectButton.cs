@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Gameplay;
@@ -8,6 +9,8 @@ namespace CosmicShore.UI
 {
     public class ProfileIconSelectButton : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [SerializeField] Image BorderImage;
         [SerializeField] Image IconImage;
         [HideInInspector]
@@ -24,7 +27,7 @@ namespace CosmicShore.UI
 
         public void OnClick()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
             IconView.SelectIcon(this, ProfileIcon);
         }
 

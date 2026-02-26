@@ -6,6 +6,7 @@ using TMPro;
 using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.UI
 {
@@ -14,6 +15,8 @@ namespace CosmicShore.UI
     /// </summary>
     public class NavLink : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [SerializeField] public View view;
         [SerializeField] List<Image> activeImageElements;
         [SerializeField] List<Image> inactiveImageElements;
@@ -58,7 +61,7 @@ namespace CosmicShore.UI
 
         public void OnClick()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.SwitchView);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.SwitchView);
             navGroup.ActivateLink(this);
         }
 

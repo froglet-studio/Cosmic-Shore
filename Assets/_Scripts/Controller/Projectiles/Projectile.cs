@@ -3,6 +3,7 @@ using System.Threading;
 using UnityEngine;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -10,6 +11,7 @@ namespace CosmicShore.Gameplay
 {
     public class Projectile : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         public Vector3 Velocity { get; set; }
         public Vector3 InitialScale { get; private set; }
 
@@ -101,7 +103,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
             }
 
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch);
             ProjectileTime = projectileTime;
 
             if (_detachOnLaunch && transform.parent)

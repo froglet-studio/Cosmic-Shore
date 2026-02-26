@@ -1,5 +1,6 @@
 using System.Collections;
 using CosmicShore.Core;
+using Reflex.Attributes;
 using UnityEngine;
 using static CosmicShore.UI.ScreenSwitcher;
 
@@ -7,6 +8,8 @@ namespace CosmicShore.UI
 {
     public class ModalWindowManager : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [Header("Settings")]
         public bool sharpAnimations;
 
@@ -38,7 +41,7 @@ namespace CosmicShore.UI
                 else
                     windowAnimator.Play("Window In");
 
-                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OpenView);
+                audioSystem.PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
             }
         }
@@ -56,7 +59,7 @@ namespace CosmicShore.UI
                 else
                     windowAnimator.Play("Window Out");
 
-                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.CloseView);
+                audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
                 isOn = false;
             }
             if(ModalType == ModalWindows.SETTINGS) return;

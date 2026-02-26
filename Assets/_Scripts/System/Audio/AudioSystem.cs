@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -53,9 +54,11 @@ namespace CosmicShore.Core
     }
 
     [DefaultExecutionOrder(-1)]
-    public class AudioSystem : SingletonPersistent<AudioSystem>
+    public class AudioSystem : MonoBehaviour
     {
         #region Fields
+        [Inject] GameSetting gameSetting;
+
         [SerializeField] AudioMixer masterMixer;
         [SerializeField] AudioSource sfxSource;
         [SerializeField] AudioSource musicSource1;
@@ -120,17 +123,16 @@ namespace CosmicShore.Core
             InitializeMenuAudioClips();
             InitializeGameplaySFXClips();
 
-            var settings = GameSetting.Instance;
-            if (settings == null)
+            if (gameSetting == null)
             {
-                CSDebug.LogError("[AudioSystem] GameSetting.Instance is null — ensure GameSetting is in the scene.");
+                CSDebug.LogError("[AudioSystem] GameSetting not injected — ensure GameSetting is registered in the DI container.");
                 return;
             }
 
-            musicEnabled = settings.MusicEnabled;
-            sfxEnabled = settings.SFXEnabled;
-            ChangeMusicLevel(settings.MusicLevel);
-            ChangeSFXLevel(settings.SFXLevel);
+            musicEnabled = gameSetting.MusicEnabled;
+            sfxEnabled = gameSetting.SFXEnabled;
+            ChangeMusicLevel(gameSetting.MusicLevel);
+            ChangeSFXLevel(gameSetting.SFXLevel);
             ChangeMusicEnabledStatus(musicEnabled);
         }
 

@@ -2,11 +2,13 @@ using System;
 using CosmicShore.Core;
 using Obvious.Soap;
 using CosmicShore.Gameplay;
+using Reflex.Attributes;
 using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     public class FireGunActionExecutor : ShipActionExecutorBase
     {
+        [Inject] AudioSystem audioSystem;
         /// <summary>Static event: each time a gun fires a single shot. Param = player name.</summary>
         public static event Action<string> OnShotFired;
 
@@ -105,7 +107,7 @@ namespace CosmicShore.Gameplay
             if (_resources.Resources[so.AmmoIndex].CurrentAmount < so.AmmoCost)
                 return;
 
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GunFire);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.GunFire);
             _soRef = so;
             _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
 

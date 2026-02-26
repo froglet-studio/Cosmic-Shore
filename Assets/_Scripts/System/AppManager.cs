@@ -71,7 +71,12 @@ namespace CosmicShore.Core
 
         T EnsureService<T>(T field) where T : Component
         {
-            if (field != null) return field;
+            // Use inspector-assigned reference if available
+            if (field != null)
+            {
+                DontDestroyOnLoad(field.gameObject);
+                return field;
+            }
 
             // Look for an existing instance (e.g. persisted from bootstrap via DontDestroyOnLoad)
             var existing = FindFirstObjectByType<T>();
@@ -79,6 +84,7 @@ namespace CosmicShore.Core
 
             Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned and not found — auto-creating persistent instance.");
             var go = new GameObject($"[{typeof(T).Name}]");
+            DontDestroyOnLoad(go);
             return go.AddComponent<T>();
         }
 
