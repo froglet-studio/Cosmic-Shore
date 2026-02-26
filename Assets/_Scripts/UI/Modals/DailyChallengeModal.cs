@@ -2,7 +2,6 @@ using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Data;
 using CosmicShore.Core;
-using Reflex.Attributes;
 using System;
 using TMPro;
 using UnityEngine;
@@ -11,8 +10,6 @@ namespace CosmicShore.UI
 {
     public class DailyChallengeModal : ModalWindowManager
     {
-        [Inject] AudioSystem audioSystem;
-
         [SerializeField] DailyChallengeGameView GameView;
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] TMP_Text TicketBalance;

@@ -17,7 +17,6 @@ namespace CosmicShore.UI
 {
     public class ArcadeGameConfigureModal : ModalWindowManager
     {
-        [Inject] AudioSystem audioSystem;
         [Inject] CaptainManager _captainManager;
 
         // TEMP for legacy systems (e.g. DailyChallengeSystem)

@@ -13,7 +13,6 @@ namespace CosmicShore.UI
 {
     public class PurchaseConfirmationModal : ModalWindowManager
     {
-        [Inject] AudioSystem audioSystem;
         [Inject] CaptainManager _captainManager;
 
         [SerializeField] TMP_Text PriceLabel;

@@ -16,7 +16,6 @@ namespace CosmicShore.UI
 {
     public class ProfileModal : ModalWindowManager
     {
-        [Inject] AudioSystem audioSystem;
         [Inject] PlayerDataService playerDataService;
 
         [SerializeField] GameObject BusyIndicator;

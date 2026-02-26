@@ -2,7 +2,6 @@ using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Data;
-using Reflex.Attributes;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -14,8 +13,6 @@ namespace CosmicShore.UI
 {
     public class HangarTrainingModal : ModalWindowManager
     {
-        [Inject] AudioSystem audioSystem;
-
         [SerializeField] Transform GameSelectionContainer;
         [SerializeField] Image ShipModelImage;
         [SerializeField] TMP_Text SelectedGameName;
