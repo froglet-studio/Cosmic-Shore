@@ -1,5 +1,5 @@
 
-namespace CosmicShore.FTUE.Data
+namespace CosmicShore.Core
 {
     /// <summary>All of our FTUE �phases,� in order.</summary>
     public enum TutorialPhase

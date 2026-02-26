@@ -1,13 +1,8 @@
 using System.Collections;
-using CosmicShore.FTUE.Adapters;
-using CosmicShore.FTUE.Data;
-using CosmicShore.FTUE.Interfaces;
+using CosmicShore.Core;
 using UnityEngine;
-using CosmicShore.FTUE.Adapters;
-using CosmicShore.FTUE.Data;
-using CosmicShore.FTUE.Interfaces;
 
-namespace CosmicShore.FTUE.Handlers
+namespace CosmicShore.Core
 {
     [AddComponentMenu("FTUE/Handlers/OpenArcadeMenuHandler")]
     public class OpenArcadeMenuHandler : MonoBehaviour, ITutorialStepHandler

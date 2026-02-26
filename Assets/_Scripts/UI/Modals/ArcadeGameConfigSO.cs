@@ -1,7 +1,7 @@
-﻿using CosmicShore;
+﻿using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore.UI.Modals
+namespace CosmicShore.UI
 {
     [CreateAssetMenu(
             fileName = "ArcadeGameConfig",

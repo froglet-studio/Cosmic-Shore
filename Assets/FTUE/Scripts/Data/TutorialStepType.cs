@@ -1,5 +1,5 @@
 
-namespace CosmicShore.FTUE.Data
+namespace CosmicShore.Core
 {
     public enum TutorialStepType
     {

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.UI.Elements
+namespace CosmicShore.UI
 {
     public class SwitchToggle : MonoBehaviour
     {

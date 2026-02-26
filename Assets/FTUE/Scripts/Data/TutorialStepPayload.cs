@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.FTUE.Data
+namespace CosmicShore.Core
 {
     [System.Serializable]
     public class TutorialStepPayload

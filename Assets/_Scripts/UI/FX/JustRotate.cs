@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.UI.FX
+namespace CosmicShore.UI
 {
 	public class JustRotate : MonoBehaviour
 	{

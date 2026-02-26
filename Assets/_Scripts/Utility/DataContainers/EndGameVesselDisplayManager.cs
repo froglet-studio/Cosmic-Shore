@@ -1,12 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Utility.SOAP;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
-using CosmicShore.Utility.Recording;
-using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Data;
 
-namespace CosmicShore.Utility.DataContainers
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Manages spawning and displaying vessel icons for end-game screen.

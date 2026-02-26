@@ -1,5 +1,5 @@
 
-namespace CosmicShore.Utility.DataContainers
+namespace CosmicShore.Utility
 {
     ﻿
         /// <summary>

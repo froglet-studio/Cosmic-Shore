@@ -1,8 +1,8 @@
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Utility.SOAP;
+using CosmicShore.ScriptableObjects;
 using System.Linq;
-namespace CosmicShore.Utility.DataContainers
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Central SOAP data container for the host connection and party system.

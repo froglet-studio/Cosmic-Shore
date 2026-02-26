@@ -1,7 +1,7 @@
 using Unity.Entities.UI;
 using UnityEngine;
 
-namespace CosmicShore.Utility.DataContainers
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(
         fileName = "Flora Configuration",

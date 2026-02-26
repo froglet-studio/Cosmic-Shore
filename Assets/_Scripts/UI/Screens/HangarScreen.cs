@@ -1,13 +1,13 @@
-using CosmicShore.UI.Views;
+using CosmicShore.UI;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 using System.Linq;
 using TMPro;
 
-namespace CosmicShore.UI.Screens
+namespace CosmicShore.UI
 {
     public class HangarScreen : MonoBehaviour
     {

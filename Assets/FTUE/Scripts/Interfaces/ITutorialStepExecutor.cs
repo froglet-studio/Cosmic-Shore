@@ -1,6 +1,6 @@
-using CosmicShore.FTUE.Data;
+using CosmicShore.Core;
 
-namespace CosmicShore.FTUE.Interfaces
+namespace CosmicShore.Core
 {
     public interface ITutorialStepExecutor
     {

@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.IAP;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Core;
+using CosmicShore.Utility;
 
-namespace CosmicShore.UI.Screens
+namespace CosmicShore.UI
 {
     public class EpisodeScreen : MonoBehaviour
     {

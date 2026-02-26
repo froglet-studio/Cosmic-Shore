@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace CosmicShore.FTUE.Interfaces
+namespace CosmicShore.Core
 {
     public interface IOutroHandler : ITutorialStepHandler
     {

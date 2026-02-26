@@ -1,9 +1,9 @@
 ﻿using System.Collections;
 using System.Linq;
 using UnityEngine;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
-namespace CosmicShore.Utility.DataContainers
+namespace CosmicShore.Utility
 {
     public class HexRaceEndGameController : EndGameCinematicController
     {

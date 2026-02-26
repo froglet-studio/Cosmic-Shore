@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Utility.Tools
+namespace CosmicShore.Utility
 {
     public class DependencySpawner : MonoBehaviour
     {

@@ -1,6 +1,6 @@
 using UnityEngine;
 using TMPro;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {

@@ -2,14 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Systems.CallToAction;
+using CosmicShore.Core;
 using CosmicShore.UI;
-using CosmicShore.FTUE.Data;
-using CosmicShore.FTUE.Drivers;
-using CosmicShore.FTUE.Interfaces;
-using CosmicShore.Models.Enums;
+using CosmicShore.Data;
 
-namespace CosmicShore.FTUE.Adapters
+namespace CosmicShore.Core
 {
     [AddComponentMenu("FTUE/Adapters/TutorialExecutorAdapter")]
     public class TutorialExecutorAdapter : MonoBehaviour, ITutorialExecutor

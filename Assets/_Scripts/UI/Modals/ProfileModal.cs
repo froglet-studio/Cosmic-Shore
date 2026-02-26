@@ -1,6 +1,5 @@
-using CosmicShore.Systems.Audio;
-using CosmicShore.Integrations.Playfab;
-using CosmicShore.Utility.DataContainers;
+using CosmicShore.Core;
+using CosmicShore.Utility;
 using PlayFab;
 using PlayFab.ClientModels;
 using Reflex.Attributes;
@@ -10,10 +9,9 @@ using System.Security;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility.Recording;
 using System.Linq;
 
-namespace CosmicShore.UI.Modals
+namespace CosmicShore.UI
 {
     public class ProfileModal : ModalWindowManager
     {

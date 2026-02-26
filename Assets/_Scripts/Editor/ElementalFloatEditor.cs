@@ -2,8 +2,8 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
-using CosmicShore.Utility.Recording;
-using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Data;
 
 namespace CosmicShore.Editor
 {

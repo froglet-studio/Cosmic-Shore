@@ -1,15 +1,14 @@
-using CosmicShore.Systems.Favorites;
-using CosmicShore.Models.ScriptableObjects;
-using CosmicShore.UI.Views;
-using CosmicShore.FTUE.Helpers;
+using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility.Recording;
-using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Data;
 
-namespace CosmicShore.UI.Elements
+namespace CosmicShore.UI
 {
     public class GameCard : MonoBehaviour
     {

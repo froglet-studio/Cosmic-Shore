@@ -1,7 +1,7 @@
-using CosmicShore.Integrations.Playfab;
-using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 
-namespace CosmicShore.UI.Elements
+namespace CosmicShore.UI
 {
     public class PurchaseCaptainCard : PurchaseItemCard
     {

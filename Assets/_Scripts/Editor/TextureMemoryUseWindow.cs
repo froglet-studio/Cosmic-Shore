@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Editor
 {

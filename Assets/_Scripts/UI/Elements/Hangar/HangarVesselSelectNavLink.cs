@@ -1,11 +1,10 @@
-using CosmicShore.Systems.CallToAction;
-using CosmicShore.UI.Elements;
-using CosmicShore.UI.Screens;
+using CosmicShore.Core;
+using CosmicShore.UI;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Game.Managers;
-using CosmicShore.Models.ScriptableObjects;
-namespace CosmicShore.UI.Elements
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+namespace CosmicShore.UI
 {
     /// <summary>
     /// The UI card view for individual items in the vessel selection nav bar of the hangar

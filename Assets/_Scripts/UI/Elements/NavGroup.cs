@@ -1,10 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 using System.Linq;
 
-namespace CosmicShore.UI.Elements
+namespace CosmicShore.UI
 {
     public enum NavGroupType
     {

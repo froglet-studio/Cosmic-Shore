@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.FTUE.Data
+namespace CosmicShore.Core
 {
     [CreateAssetMenu(menuName = "CosmicShore/FTUE/Progress Tracker")]
     public class FTUEProgress : ScriptableObject

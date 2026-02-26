@@ -1,10 +1,8 @@
 using System.Collections;
-using CosmicShore.FTUE.Adapters;
-using CosmicShore.FTUE.Data;
-using CosmicShore.FTUE.Interfaces;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore.FTUE.Handlers
+namespace CosmicShore.Core
 {
     [AddComponentMenu("FTUE/Handlers/IntroWelcomeHandler")]
     public class IntroWelcomeHandler : MonoBehaviour, ITutorialStepHandler

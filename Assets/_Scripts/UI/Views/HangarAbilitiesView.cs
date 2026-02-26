@@ -1,9 +1,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public class HangarAbilitiesView : View
     {

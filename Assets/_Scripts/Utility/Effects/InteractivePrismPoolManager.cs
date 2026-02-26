@@ -1,9 +1,9 @@
-using CosmicShore.Game.Ship;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
-using CosmicShore.Utility.PoolsAndBuffers;
-namespace CosmicShore.Utility.Effects
+using CosmicShore.Utility;
+namespace CosmicShore.Utility
 {
     public class InteractivePrismPoolManager : GenericPoolManager<Prism>
     {
