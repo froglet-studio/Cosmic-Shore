@@ -1,8 +1,5 @@
-
 namespace CosmicShore.DialogueSystem.Runtime.Models
 {
-    ﻿using CosmicShore.DialogueSystem.Models;
-
     public interface IDialogueService
     {
         void PlayDialogueById(string setId);

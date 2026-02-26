@@ -12,6 +12,9 @@ using CosmicShore.Utility.SOAP.ScriptableInputEvents;
 using CosmicShore.Utility.SOAP.ScriptablePartyData;
 using CosmicShore.Utility.SOAP.ScriptablePipData;
 using CosmicShore.VesselHUD.View;
+
+namespace CosmicShore.Game.Ship
+{
 public class VesselTransformer : MonoBehaviour
 {
     protected const float LERP_AMOUNT = 1.5f;
@@ -32,8 +35,6 @@ public class VesselTransformer : MonoBehaviour
     protected ResourceSystem ResourceSystem => VesselStatus?.ResourceSystem;
     #endregion
 
-namespace CosmicShore.Game.Ship
-{
         protected IInputStatus InputStatus => VesselStatus?.InputStatus;
 
         protected float speed;

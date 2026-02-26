@@ -2,6 +2,9 @@ using CosmicShore.Game.Ship;
 using System.Collections;
 using UnityEngine;
 using CosmicShore.Models.Enums;
+
+namespace CosmicShore.Game.Ship.ShipActions
+{
 public class DriftTrailAction : ShipAction
 {
     #region Events
@@ -9,8 +12,6 @@ public class DriftTrailAction : ShipAction
     public event ChangeDriftAltitude OnChangeDriftAltitude;
     #endregion
 
-namespace CosmicShore.Game.Ship.ShipActions
-{
         VesselPrismController VesselPrismController => VesselStatus.VesselPrismController;
 
         public override void Initialize(IVessel vessel)

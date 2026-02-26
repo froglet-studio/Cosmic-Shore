@@ -6,6 +6,9 @@ using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
+
+namespace CosmicShore.Game.Environment.MiniGameObjects
+{
 public class SpawnableWaypointTrack : SpawnableBase
 {
     [Header("Waypoints")]
@@ -415,7 +418,5 @@ public class SpawnableWaypointTrack : SpawnableBase
     }
 #endif
 
-namespace CosmicShore.Game.Environment.MiniGameObjects
-{
     }
 }
