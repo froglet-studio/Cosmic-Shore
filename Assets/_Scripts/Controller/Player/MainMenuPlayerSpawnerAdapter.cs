@@ -1,137 +1,60 @@
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using Cysharp.Threading.Tasks;
-using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Menu_Main player setup adapter. Does NOT spawn players or AI via the old
-    /// single-player path. Instead, waits for the NetworkManager host to create
-    /// the Player prefab automatically (via ConnectionApprovalCallback), then
-    /// spawns a Squirrel vessel, initializes the player in multiplayer mode,
-    /// and enables AI pilot for ambient flight in the menu.
+    /// Menu_Main adapter. Does NOT spawn players or vessels — that is handled by
+    /// MainMenuServerVesselInitializer + ClientPlayerVesselInitializer (same
+    /// pattern as Multiplayer_Freestyle).
     ///
-    /// Camera is wired to the vessel automatically through VesselCameraCustomizer
-    /// → OnInitializePlayerCamera SOAP event → CameraManager.SetupGamePlayCameras.
+    /// Responsibilities:
+    ///   1. Initialize game data and spawn positions.
+    ///   2. Set the vessel class to Squirrel before the host player spawns.
+    ///   3. On OnClientReady: enable AI pilot on the player's vessel, fire
+    ///      menu lifecycle events.
     /// </summary>
     public class MainMenuPlayerSpawnerAdapter : PlayerSpawnerAdapterBase
     {
-        [Header("Network Vessel Spawning")]
-        [SerializeField] VesselPrefabContainer vesselPrefabContainer;
-        [SerializeField] ThemeManagerDataContainerSO themeManagerData;
-
-        bool _initialized;
-
         void Start()
         {
+            // Force Squirrel for the menu vessel. Player.OnNetworkSpawn reads
+            // selectedVesselClass to set NetDefaultVesselType.
+            _gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
+
             _gameData.InitializeGame();
             AddSpawnPosesToGameData();
 
-            var nm = NetworkManager.Singleton;
-            if (nm == null)
-            {
-                CSDebug.LogWarning("[MainMenuSpawner] NetworkManager not available.");
-                return;
-            }
-
-            nm.OnClientConnectedCallback += OnClientConnected;
-
-            // If the host is already running and local client connected,
-            // process immediately.
-            if (nm.IsHost && nm.IsConnectedClient)
-                OnClientConnected(nm.LocalClientId);
+            _gameData.OnClientReady.OnRaised += OnClientReady;
         }
 
         void OnDisable()
         {
-            var nm = NetworkManager.Singleton;
-            if (nm != null)
-                nm.OnClientConnectedCallback -= OnClientConnected;
+            _gameData.OnClientReady.OnRaised -= OnClientReady;
         }
 
-        void OnClientConnected(ulong clientId)
+        void OnClientReady()
         {
-            var nm = NetworkManager.Singleton;
-            if (nm == null || clientId != nm.LocalClientId) return;
-            if (_initialized) return;
-            _initialized = true;
-
-            SetupHostPlayerAsync(clientId).Forget();
-        }
-
-        async UniTaskVoid SetupHostPlayerAsync(ulong clientId)
-        {
-            var nm = NetworkManager.Singleton;
-
-            // Wait for Player's OnNetworkSpawn to complete.
-            await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
-
-            var playerNetObj = nm.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (!playerNetObj)
+            var player = _gameData.LocalPlayer;
+            if (player?.Vessel == null)
             {
-                CSDebug.LogError("[MainMenuSpawner] Player NetworkObject not found for host.");
+                CSDebug.LogWarning("[MainMenuSpawner] LocalPlayer or Vessel not available on ClientReady.");
                 return;
             }
-
-            var player = playerNetObj.GetComponent<Player>();
-            if (!player)
-            {
-                CSDebug.LogError("[MainMenuSpawner] Player component missing on host object.");
-                return;
-            }
-
-            // Configure host player on the server.
-            DomainAssigner.Initialize();
-            player.NetDomain.Value = Domains.Jade;
-            player.NetIsAI.Value = false;
-
-            // Spawn a Squirrel vessel for the host.
-            if (!vesselPrefabContainer.TryGetShipPrefab(VesselClassType.Squirrel, out Transform shipPrefab))
-            {
-                CSDebug.LogError("[MainMenuSpawner] No prefab found for Squirrel vessel.");
-                return;
-            }
-
-            if (!shipPrefab.TryGetComponent(out NetworkObject shipNetworkObject))
-            {
-                CSDebug.LogError("[MainMenuSpawner] Squirrel prefab missing NetworkObject.");
-                return;
-            }
-
-            var vesselNO = Instantiate(shipNetworkObject);
-            vesselNO.SpawnWithOwnership(clientId, true);
-            player.NetVesselId.Value = vesselNO.NetworkObjectId;
-
-            // Initialize player + vessel in multiplayer mode.
-            // VesselController.Initialize sets up:
-            //   - AIPilot, VesselTransformer, ActionHandler
-            //   - VesselCameraCustomizer → raises OnInitializePlayerCamera
-            //     → CameraManager switches from menu cam to player cam
-            var vessel = vesselNO.GetComponent<IVessel>();
-            player.InitializeForMultiplayerMode(vessel);
-            vessel.Initialize(player);
-
-            // Apply team material properties.
-            ShipHelper.SetShipProperties(themeManagerData, vessel);
-
-            // Register with game data (sets pose, resets for play).
-            _gameData.AddPlayer(player);
 
             // Activate the player (starts vessel motion, enables subsystems).
             _gameData.SetPlayersActive();
 
             // Enable AI pilot — vessel is the player's but AI-controlled in the menu.
-            vessel.ToggleAIPilot(true);
+            player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
             // Signal menu systems that rely on these events.
             _gameData.InvokeMiniGameRoundStarted();
             _gameData.InvokeTurnStarted();
 
-            CSDebug.Log("[MainMenuSpawner] Host player setup complete — Squirrel vessel with AI pilot.");
+            CSDebug.Log("[MainMenuSpawner] Host player ready — Squirrel vessel with AI pilot.");
         }
     }
 }
