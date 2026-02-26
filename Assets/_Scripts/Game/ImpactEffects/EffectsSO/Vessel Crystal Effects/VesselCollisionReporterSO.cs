@@ -1,5 +1,4 @@
-﻿using CosmicShore.Core;
-using UnityEngine;
+﻿using UnityEngine;
 using CosmicShore.Game.Environment.FlowField;
 using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
 using CosmicShore.Game.ImpactEffects.Impactors;

@@ -1,4 +1,3 @@
-﻿using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Utility.SOAP.ScriptableCrystalStats;
 using Obvious.Soap;

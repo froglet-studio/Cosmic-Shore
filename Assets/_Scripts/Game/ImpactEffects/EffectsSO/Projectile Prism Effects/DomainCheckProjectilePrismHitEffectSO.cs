@@ -1,5 +1,4 @@
-﻿using CosmicShore.Core;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+﻿using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
 using UnityEngine;
 using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
 using CosmicShore.Game.ImpactEffects.Impactors;

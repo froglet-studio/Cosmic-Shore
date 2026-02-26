@@ -1,4 +1,3 @@
-﻿using CosmicShore.Core;
 using CosmicShore.Game.Environment;
 using System;
 using System.Reflection;

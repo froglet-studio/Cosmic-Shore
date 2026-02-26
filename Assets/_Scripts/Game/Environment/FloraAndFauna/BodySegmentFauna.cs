@@ -1,4 +1,3 @@
-using CosmicShore.DialogueSystem.Editor;
 using CosmicShore.Game.Environment;
 
 namespace CosmicShore.Game.Environment.FloraAndFauna

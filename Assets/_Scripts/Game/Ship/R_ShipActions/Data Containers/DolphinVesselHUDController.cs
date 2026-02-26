@@ -1,4 +1,3 @@
-﻿using CosmicShore.Core;
 using UnityEngine;
 using CosmicShore.Game.Ship;
 using CosmicShore.VesselHUD.Controller;

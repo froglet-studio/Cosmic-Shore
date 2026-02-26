@@ -1,5 +1,4 @@
-﻿using CosmicShore.Core;
-using CosmicShore.Game.Ship;
+﻿using CosmicShore.Game.Ship;
 using CosmicShore.Game.Arcade.Scoring;
 using Obvious.Soap;
 using Reflex.Attributes;

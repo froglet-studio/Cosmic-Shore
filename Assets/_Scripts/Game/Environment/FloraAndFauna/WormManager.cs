@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using CosmicShore.Editor;
 using CosmicShore.Game.Arcade.TurnMonitors;
 using CosmicShore.Game.Assemblers;
 using CosmicShore.Game.Environment;
@@ -55,7 +54,6 @@ using CosmicShore.Utility.Tools;
 using CosmicShore.VesselHUD.Controller;
 using CosmicShore.VesselHUD.Interfaces;
 using CosmicShore.VesselHUD.View;
-using CosmicShore.DialogueSystem.Editor;
 
 
 namespace CosmicShore.Game.Environment.FloraAndFauna

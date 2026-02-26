@@ -1,5 +1,4 @@
-﻿using CosmicShore.Core;
-using CosmicShore.Utility.DataContainers;
+﻿using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 using CosmicShore.Game.Environment;
 using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;

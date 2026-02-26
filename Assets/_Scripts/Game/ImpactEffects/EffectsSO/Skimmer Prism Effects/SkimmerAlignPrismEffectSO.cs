@@ -1,5 +1,4 @@
-﻿using CosmicShore.Core;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
 using CosmicShore.Game.ImpactEffects.Impactors;

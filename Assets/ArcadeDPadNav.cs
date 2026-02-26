@@ -1,4 +1,4 @@
-using CosmicShore.App.UI;
+using CosmicShore.UI;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
