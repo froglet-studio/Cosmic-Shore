@@ -5,7 +5,7 @@ namespace CosmicShore.Game.ShapeDrawing
 {
     /// <summary>
     /// Trigger sign that starts shape-drawing mode when the vessel flies through its collider.
-    /// Same activation pattern as ModeSelectTrigger. Billboards toward the player camera.
+    /// Position, rotation, and scale are set in the editor — this script never touches them.
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class ShapeSign : MonoBehaviour
@@ -17,13 +17,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] TMP_Text nameLabel;
         [SerializeField] TMP_Text descriptionLabel;
 
-        Vector3 _lockedPosition;
         bool _triggered;
-        Transform _cameraTransform;
 
         void Start()
         {
-            _lockedPosition = transform.position;
             GetComponent<Collider>().isTrigger = true;
             ApplyDisplayData();
         }
@@ -31,25 +28,6 @@ namespace CosmicShore.Game.ShapeDrawing
         void OnEnable()
         {
             _triggered = false;
-        }
-
-        void LateUpdate()
-        {
-            if (_cameraTransform == null)
-            {
-                var cam = Camera.main;
-                if (cam == null) return;
-                _cameraTransform = cam.transform;
-            }
-
-            // Lock position, billboard toward the player camera
-            var lookDir = transform.position - _cameraTransform.position;
-            lookDir.y = 0f;
-            var rotation = lookDir.sqrMagnitude > 0.001f
-                ? Quaternion.LookRotation(lookDir, Vector3.up)
-                : transform.rotation;
-
-            transform.SetPositionAndRotation(_lockedPosition, rotation);
         }
 
         void OnTriggerEnter(Collider other)
@@ -64,7 +42,7 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             _triggered = true;
             gameObject.SetActive(false);
-            ShapeSignEvents.RaiseShapeSelected(shapeDefinition, _lockedPosition);
+            ShapeSignEvents.RaiseShapeSelected(shapeDefinition, transform.position);
         }
 
         /// <summary>Called by SpawnableShapeSign immediately after instantiation.</summary>

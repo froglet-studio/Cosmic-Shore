@@ -184,8 +184,6 @@ namespace CosmicShore.Game.Arcade
             foreach (var trigger in modeTriggers.Where(trigger => trigger)) trigger.gameObject.SetActive(false);
 
             if (shapeSignSpawner) shapeSignSpawner.HideSigns();
-
-            gameData.StartTurn();
         }
 
         // ── Mode Selection Handlers ─────────────────────────────────────────
@@ -259,6 +257,8 @@ namespace CosmicShore.Game.Arcade
                 vessel.VesselStatus.VesselHUDController?.ShowHUD();
             }
 
+            // Enable systems BEFORE firing the turn event so their OnEnable
+            // subscriptions are active when OnMiniGameTurnStarted fires.
             if (cellScript) cellScript.enabled = true;
             if (localCrystalManager) localCrystalManager.enabled = true;
             if (segmentSpawner)
@@ -266,6 +266,8 @@ namespace CosmicShore.Game.Arcade
                 segmentSpawner.enabled = true;
                 segmentSpawner.Initialize();
             }
+
+            gameData.StartTurn();
         }
 
         void StartShapeMode(ShapeDefinition shapeDef)
@@ -274,6 +276,8 @@ namespace CosmicShore.Game.Arcade
             if (cellScript) cellScript.enabled = false;
 
             ClearPlayerTrails();
+
+            gameData.StartTurn();
 
             // Phase 1: setup + cinematic. OnPreviewComplete → show Ready button.
             shapeDrawingManager.StartShapeSequence(shapeDef, lobbyOrigin.position);
