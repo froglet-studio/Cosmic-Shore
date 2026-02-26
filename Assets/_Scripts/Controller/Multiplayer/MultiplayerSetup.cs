@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private void OnEnable()
+        private void Start()
         {
             if (authenticationDataVariable == null)
             {

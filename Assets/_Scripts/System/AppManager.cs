@@ -100,6 +100,12 @@ namespace CosmicShore.Core
 
         void ConfigureGameData()
         {
+            if (!gameData)
+            {
+                Debug.LogError("[AppManager] gameData is not assigned — cannot configure game data.");
+                return;
+            }
+
             gameData.ResetAllData();
 
             // Set sane defaults; the actual game mode, player count, and

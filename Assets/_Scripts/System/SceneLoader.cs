@@ -17,14 +17,7 @@ namespace CosmicShore.Core
 
         private void OnEnable()
         {
-            if (!gameData)
-            {
-                Debug.LogError("Game Data is null!");
-                return;
-            }
-            
             PauseSystem.TogglePauseGame(false);
-            gameData.OnLaunchGame.OnRaised += LaunchGame;
         }
 
         private void Start()
@@ -34,6 +27,7 @@ namespace CosmicShore.Core
                 Debug.LogError("[SceneLoader] gameData was not injected — check AppManager DI registration.");
                 return;
             }
+            gameData.OnLaunchGame.OnRaised += LaunchGame;
             gameData.InvokeSceneTransition(true);
         }
 
