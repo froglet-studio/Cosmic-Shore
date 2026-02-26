@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
   m_Name: Star_Shape
   m_EditorClassIdentifier: 
-  shapeName: Star Shape
+  shapeName: Star
   description: This is a Star Shape
   thumbnail: {fileID: 21300000, guid: badec3d57590b2e479701bb3abcbe5b8, type: 3}
   autoGeneratePreset: 0

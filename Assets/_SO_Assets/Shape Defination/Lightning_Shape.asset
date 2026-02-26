@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
   m_Name: Lightning_Shape
   m_EditorClassIdentifier: 
-  shapeName: Lightning Shape
+  shapeName: Lightning
   description: This is a Lightning Shape
   thumbnail: {fileID: 21300000, guid: 6e4a484316095f8408cebff2a4947317, type: 3}
   autoGeneratePreset: 0

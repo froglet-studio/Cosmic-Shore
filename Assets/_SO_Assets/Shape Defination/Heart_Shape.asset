@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
   m_Name: Heart_Shape
   m_EditorClassIdentifier: 
-  shapeName: Heart Shape
+  shapeName: Heart
   description: This is a Heart Shape
   thumbnail: {fileID: 21300000, guid: f891eac8a4e23514f8896ba0e34647cc, type: 3}
   autoGeneratePreset: 0
