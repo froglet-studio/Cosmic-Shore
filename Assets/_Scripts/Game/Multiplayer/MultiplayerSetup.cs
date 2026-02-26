@@ -40,17 +40,25 @@ namespace CosmicShore.Game.Multiplayer
         private void OnEnable()
         {
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
-            networkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-            networkManager.OnClientDisconnectCallback += OnClientDisconnect;
-            networkManager.OnTransportFailure         += OnTransportFailure;
+
+            if (networkManager != null)
+            {
+                networkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+                networkManager.OnClientDisconnectCallback += OnClientDisconnect;
+                networkManager.OnTransportFailure         += OnTransportFailure;
+            }
         }
 
         private void OnDisable()
         {
             authenticationData.OnSignedIn.OnRaised -= OnAuthenticationSignedIn;
-            networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-            networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
-            networkManager.OnTransportFailure         -= OnTransportFailure;
+
+            if (networkManager != null)
+            {
+                networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                networkManager.OnTransportFailure         -= OnTransportFailure;
+            }
         }
 
         // --------------------------
@@ -105,6 +113,7 @@ namespace CosmicShore.Game.Multiplayer
             if (gameData.ActiveSession != null)
             {
                 CSDebug.Log($"[MultiplayerSetup] Using existing party session {gameData.ActiveSession.Id}");
+                DomainAssigner.Initialize();
                 gameData.InvokeSessionStarted();
                 return;
             }
@@ -166,6 +175,11 @@ namespace CosmicShore.Game.Multiplayer
 
         private async UniTask StartSessionAsHost()
         {
+            // Ensure domain pool is fresh before any players connect.
+            // The solo path does this in StartLocalHostForSoloPlay(); the multiplayer
+            // host path needs it here so connecting clients get unique domains.
+            DomainAssigner.Initialize();
+
             var playerProperties  = await GetPlayerProperties();
             var sessionProperties = GetSessionProperties();
 
