@@ -51,15 +51,17 @@ namespace CosmicShore.Gameplay
     }
 
         #region Settings
-        [SerializeField] bool musicEnabled = true;
-        [SerializeField] bool sfxEnabled = true;
-        [SerializeField] bool hapticsEnabled = true;
-        [SerializeField] bool invertYEnabled = false;
-        [SerializeField] bool invertThrottleEnabled = false;
-        [SerializeField] bool joystickVisualsEnabled = true;
-        [SerializeField] float musicLevel = 1.0f;
-        [SerializeField] float sfxLevel = 1.0f;
-        [SerializeField] float hapticsLevel = 1.0f;
+        // Runtime state — always populated from PlayerPrefs in Awake().
+        // Not serialized to avoid dirtying the scene when values change at runtime.
+        bool musicEnabled = true;
+        bool sfxEnabled = true;
+        bool hapticsEnabled = true;
+        bool invertYEnabled;
+        bool invertThrottleEnabled;
+        bool joystickVisualsEnabled = true;
+        float musicLevel = 1.0f;
+        float sfxLevel = 1.0f;
+        float hapticsLevel = 1.0f;
 
         public bool MusicEnabled { get => musicEnabled; }
         public bool SFXEnabled { get => sfxEnabled; }

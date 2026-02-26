@@ -103,10 +103,10 @@ namespace CosmicShore.Core
 
         void SetupPersistentRoot()
         {
-            if (_persistentRoot == null)
-                _persistentRoot = transform;
-
-            DontDestroyOnLoad(_persistentRoot.gameObject);
+            // Use a local so we never write back to the serialized field at runtime,
+            // which would mark the scene dirty.
+            var root = _persistentRoot != null ? _persistentRoot : transform;
+            DontDestroyOnLoad(root.gameObject);
         }
 
         void ConfigurePlatform()
