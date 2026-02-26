@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using TMPro;

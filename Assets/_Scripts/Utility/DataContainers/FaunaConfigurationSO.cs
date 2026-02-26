@@ -1,3 +1,4 @@
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
 

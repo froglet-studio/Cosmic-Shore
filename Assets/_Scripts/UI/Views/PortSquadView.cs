@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;

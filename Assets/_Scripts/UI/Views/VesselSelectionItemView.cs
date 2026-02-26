@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CosmicShore.ScriptableObjects;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

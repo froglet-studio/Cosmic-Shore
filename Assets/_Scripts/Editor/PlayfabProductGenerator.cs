@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEditor;
 using PlayFab;

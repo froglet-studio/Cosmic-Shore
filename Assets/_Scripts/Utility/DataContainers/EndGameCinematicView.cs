@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Threading;
 using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
