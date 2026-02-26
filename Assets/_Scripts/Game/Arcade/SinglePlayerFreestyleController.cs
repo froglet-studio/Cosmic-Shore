@@ -33,6 +33,7 @@ namespace CosmicShore.Game.Arcade
 
         bool _isInLobby;
         bool _isShapePrep;        // true while waiting for Ready after shape cinematic
+        bool _isFreestylePrep;    // true while waiting for Ready after freestyle sign
 
         protected override void OnEnable()
         {
@@ -87,6 +88,11 @@ namespace CosmicShore.Game.Arcade
                 _isShapePrep = false;
                 shapeDrawingManager.BeginDrawing();
             }
+            else if (_isFreestylePrep)
+            {
+                _isFreestylePrep = false;
+                BeginFreestyle();
+            }
             else
             {
                 // Initial game start
@@ -106,7 +112,6 @@ namespace CosmicShore.Game.Arcade
                 CameraManager.Instance.SnapPlayerCameraToTarget();
             }
 
-            // Restore vessel HUD and teleport back to lobby immediately
             if (vessel?.VesselStatus != null)
                 vessel.VesselStatus.VesselHUDController?.ShowHUD();
 
@@ -191,7 +196,7 @@ namespace CosmicShore.Game.Arcade
             ExitLobby();
 
             if (!shapeDef)
-                StartStandardFreestyle();
+                StartFreestylePrep();
             else
                 StartShapeMode(shapeDef);
         }
@@ -202,7 +207,7 @@ namespace CosmicShore.Game.Arcade
             ExitLobby();
 
             if (!shapeDef)
-                StartStandardFreestyle();
+                StartFreestylePrep();
             else
                 StartShapeMode(shapeDef);
         }
@@ -211,25 +216,56 @@ namespace CosmicShore.Game.Arcade
         {
             if (!_isInLobby) return;
             ExitLobby();
-            StartStandardFreestyle();
+            StartFreestylePrep();
         }
 
         // ── Game Modes ──────────────────────────────────────────────────────
 
-        void StartStandardFreestyle()
+        /// <summary>
+        /// Freeze player, teleport to spawn, show connecting panel → ready → countdown → BeginFreestyle.
+        /// Same flow as shape mode prep.
+        /// </summary>
+        void StartFreestylePrep()
         {
-            Debug.Log("[Controller] Starting Standard Freestyle");
+            Debug.Log("[Controller] Starting Freestyle Prep");
+
+            var vessel = gameData.LocalPlayer?.Vessel;
+            if (vessel?.VesselStatus != null)
+                vessel.VesselStatus.IsStationary = true;
+
+            TeleportPlayerToLobby();
+            ClearPlayerTrails();
+
+            _isFreestylePrep = true;
+
+            if (miniGameHUD)
+                miniGameHUD.ShowConnectingFlow();
+            else
+                RaiseToggleReadyButtonEvent(true);
+        }
+
+        /// <summary>
+        /// Called after countdown ends in freestyle prep state.
+        /// Releases player and starts actual freestyle gameplay.
+        /// </summary>
+        void BeginFreestyle()
+        {
+            Debug.Log("[Controller] Beginning Freestyle");
+
+            var vessel = gameData.LocalPlayer?.Vessel;
+            if (vessel?.VesselStatus != null)
+            {
+                vessel.VesselStatus.IsStationary = false;
+                vessel.VesselStatus.VesselHUDController?.ShowHUD();
+            }
 
             if (cellScript) cellScript.enabled = true;
-
             if (localCrystalManager) localCrystalManager.enabled = true;
             if (segmentSpawner)
             {
                 segmentSpawner.enabled = true;
                 segmentSpawner.Initialize();
             }
-
-            RaiseToggleReadyButtonEvent(true);
         }
 
         void StartShapeMode(ShapeDefinition shapeDef)
@@ -246,6 +282,7 @@ namespace CosmicShore.Game.Arcade
         public void ReturnToLobby()
         {
             _isShapePrep = false;
+            _isFreestylePrep = false;
             shapeDrawingManager.ExitShapeMode();
             EnterLobby();
         }

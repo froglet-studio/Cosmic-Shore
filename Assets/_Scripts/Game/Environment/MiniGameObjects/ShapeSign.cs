@@ -4,19 +4,10 @@ using UnityEngine;
 namespace CosmicShore.Game.ShapeDrawing
 {
     /// <summary>
-    /// Floating sign in the Freestyle world advertising a drawable shape.
-    ///
-    /// Selection is driven by a Unity UI Button on a child World Space Canvas —
-    /// no trigger collider needed.
-    ///
-    /// Prefab structure:
-    ///   ShapeSign (this script)
-    ///   ├── SignMesh          (your 3D art / quad)
-    ///   └── Canvas            (Render Mode: World Space, scale 0.1)
-    ///         └── Button      (calls OnSignButtonPressed via OnClick())
-    ///               ├── NameLabel    (TMP_Text)
-    ///               └── Description (TMP_Text, optional)
+    /// Trigger sign that starts shape-drawing mode when the vessel flies through its collider.
+    /// Same activation pattern as ModeSelectTrigger. Billboards toward the player camera.
     /// </summary>
+    [RequireComponent(typeof(Collider))]
     public class ShapeSign : MonoBehaviour
     {
         [Header("Shape")]
@@ -26,19 +17,54 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] TMP_Text nameLabel;
         [SerializeField] TMP_Text descriptionLabel;
 
-        bool _selected;
+        Vector3 _lockedPosition;
+        bool _triggered;
+        Transform _cameraTransform;
 
-        void Awake()
+        void Start()
         {
+            _lockedPosition = transform.position;
+            GetComponent<Collider>().isTrigger = true;
             ApplyDisplayData();
         }
 
         void OnEnable()
         {
-            _selected = false;
+            _triggered = false;
+        }
 
-            var btn = GetComponentInChildren<UnityEngine.UI.Button>();
-            if (btn) btn.interactable = true;
+        void LateUpdate()
+        {
+            if (_cameraTransform == null)
+            {
+                var cam = Camera.main;
+                if (cam == null) return;
+                _cameraTransform = cam.transform;
+            }
+
+            // Lock position, billboard toward the player camera
+            var lookDir = transform.position - _cameraTransform.position;
+            lookDir.y = 0f;
+            var rotation = lookDir.sqrMagnitude > 0.001f
+                ? Quaternion.LookRotation(lookDir, Vector3.up)
+                : transform.rotation;
+
+            transform.SetPositionAndRotation(_lockedPosition, rotation);
+        }
+
+        void OnTriggerEnter(Collider other)
+        {
+            if (_triggered) return;
+
+            if (other.GetComponentInParent<VesselStatus>())
+                Activate();
+        }
+
+        void Activate()
+        {
+            _triggered = true;
+            gameObject.SetActive(false);
+            ShapeSignEvents.RaiseShapeSelected(shapeDefinition, _lockedPosition);
         }
 
         /// <summary>Called by SpawnableShapeSign immediately after instantiation.</summary>
@@ -48,18 +74,10 @@ namespace CosmicShore.Game.ShapeDrawing
             ApplyDisplayData();
         }
 
-        /// <summary>
-        /// Wire this to the Button's OnClick() event in the prefab.
-        /// </summary>
-        public void OnSignButtonPressed()
+        public void ResetTrigger()
         {
-            if (_selected) return;
-            _selected = true;
-
-            ShapeSignEvents.RaiseShapeSelected(shapeDefinition, transform.position);
-
-            var btn = GetComponentInChildren<UnityEngine.UI.Button>();
-            if (btn) btn.interactable = false;
+            _triggered = false;
+            gameObject.SetActive(true);
         }
 
         void ApplyDisplayData()
@@ -75,7 +93,6 @@ namespace CosmicShore.Game.ShapeDrawing
     /// </summary>
     public static class ShapeSignEvents
     {
-        /// <summary>Fired when a player presses a shape sign button.</summary>
         public static event System.Action<ShapeDefinition, Vector3> OnShapeSelected;
 
         public static void RaiseShapeSelected(ShapeDefinition def, Vector3 worldPos)
