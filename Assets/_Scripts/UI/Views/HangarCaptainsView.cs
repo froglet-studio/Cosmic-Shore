@@ -144,7 +144,7 @@ namespace CosmicShore.UI
                     var crystalBalance = CatalogManager.Instance.GetCrystalBalance(captain.PrimaryElement);
                     crystalRequirementSatisfied = crystalBalance >= crystalsNeeded;
                     SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
-                    SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
+                    SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Gameplay.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
                 }
 
                 GoToStoreButton.gameObject.SetActive(false);

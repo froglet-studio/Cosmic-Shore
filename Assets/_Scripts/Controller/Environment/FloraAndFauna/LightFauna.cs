@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
         {
             if (!data)
             {
-                CSDebug.LogError($"{nameof(LightFauna)} on {name} is missing {nameof(CosmicShore.LightFaunaDataSO)}.");
+                CSDebug.LogError($"{nameof(LightFauna)} on {name} is missing {nameof(LightFaunaDataSO)}.");
                 return;
             }
 
