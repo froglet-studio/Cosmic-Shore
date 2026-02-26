@@ -42,7 +42,7 @@ namespace CosmicShore.Editor
         /// </summary>
         public static void Build()
         {
-            var args = Environment.GetCommandLineArgs();
+            var args = System.Environment.GetCommandLineArgs();
             var outputPath = GetArgValue(args, "-outputPath")
                              ?? Path.Combine(DefaultOutputDir, DefaultApkName);
             bool release = args.Contains("-release");
