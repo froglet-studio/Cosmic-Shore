@@ -66,6 +66,7 @@ namespace CosmicShore.Soap
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;
+        public bool IsPartyMode;
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();
@@ -162,6 +163,7 @@ namespace CosmicShore.Soap
         public void ResetRuntimeData()
         {
             IsTurnRunning = false;
+            IsPartyMode = false;
             Players.Clear();
             Vessels.Clear();
             SlowedShipTransforms.Clear();

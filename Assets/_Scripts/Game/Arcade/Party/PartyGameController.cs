@@ -65,6 +65,7 @@ namespace CosmicShore.Game.Arcade.Party
         int _activeMiniGameIndex = -1;
         MultiplayerMiniGameControllerBase _activeMiniGameController;
         bool _vesselsSpawned; // True after first round spawns vessels
+        bool _winnerCapturedThisRound; // Prevents double-counting from multiple InvokeWinnerCalculated calls
         CancellationTokenSource _lobbyCts;
         CancellationTokenSource _roundCts;
 
@@ -121,6 +122,7 @@ namespace CosmicShore.Game.Arcade.Party
                 _roundResults.Add(new PartyRoundResult { RoundIndex = i });
 
             _vesselsSpawned = false;
+            gameData.IsPartyMode = true;
 
             // Set IsPartyMode on all environments immediately so their
             // OnNetworkSpawn callbacks know they're in party mode.
@@ -176,6 +178,8 @@ namespace CosmicShore.Game.Arcade.Party
             _lobbyCts?.Dispose();
             _roundCts?.Cancel();
             _roundCts?.Dispose();
+
+            gameData.IsPartyMode = false;
 
             base.OnNetworkDespawn();
         }
@@ -571,6 +575,7 @@ namespace CosmicShore.Game.Arcade.Party
                 int roundIndex = _netCurrentRound.Value;
                 var selectedMode = config.AvailableMiniGames[miniGameIndex];
 
+                _winnerCapturedThisRound = false;
                 CSDebug.Log($"[PartyGame] LoadMiniGameEnvironment: envIndex={miniGameIndex}, mode={selectedMode}, vesselsExist={_vesselsSpawned}");
 
                 BroadcastGameStateText_ClientRpc("Loading...");
@@ -709,7 +714,7 @@ namespace CosmicShore.Game.Arcade.Party
                 if (IsServer && CurrentPhase == PartyPhase.Playing)
                 {
                     CSDebug.Log("[PartyGame] Round timer expired.");
-                    ForceEndRound_ClientRpc();
+                    ForceEndRound_ClientRpc(IsGolfRulesForCurrentMode());
 
                     // Safety fallback: if OnShowGameEndScreen never fires (e.g., no
                     // cinematic controller on this environment), force CompleteRound
@@ -730,11 +735,11 @@ namespace CosmicShore.Game.Arcade.Party
         }
 
         [ClientRpc]
-        void ForceEndRound_ClientRpc()
+        void ForceEndRound_ClientRpc(bool golfRules)
         {
             gameData.InvokeGameTurnConditionsMet();
-            gameData.SortRoundStats(false);
-            gameData.CalculateDomainStats(false);
+            gameData.SortRoundStats(golfRules);
+            gameData.CalculateDomainStats(golfRules);
             gameData.InvokeWinnerCalculated();
             // DO NOT fire InvokeMiniGameEnd here — the EndGameCinematicController
             // needs to run its full sequence first (score reveal → Continue button).
@@ -747,8 +752,20 @@ namespace CosmicShore.Game.Arcade.Party
             if (!IsServer) return;
             if (CurrentPhase != PartyPhase.Playing) return;
 
+            // Guard against double-counting: InvokeWinnerCalculated can fire multiple
+            // times per round (game-specific controller fires it, then NetworkScoreTracker
+            // fires it again 500ms later via OnMiniGameEnd → CalculateWinnerOnServer).
+            if (_winnerCapturedThisRound) return;
+            _winnerCapturedThisRound = true;
+
             int roundIndex = _netCurrentRound.Value;
             var result = _roundResults[roundIndex];
+
+            // Ensure the stats list is sorted with the correct rules for this game mode.
+            // The game-specific controllers sort before firing InvokeWinnerCalculated,
+            // but re-sort here as a safety net (e.g., if ForceEndRound triggers this).
+            bool golfRules = IsGolfRulesForCurrentMode();
+            gameData.SortRoundStats(golfRules);
 
             if (gameData.RoundStatsList.Count > 0)
             {
@@ -757,8 +774,9 @@ namespace CosmicShore.Game.Arcade.Party
             }
 
             result.PlayerScores.Clear();
-            foreach (var stats in gameData.RoundStatsList)
+            for (int i = 0; i < gameData.RoundStatsList.Count; i++)
             {
+                var stats = gameData.RoundStatsList[i];
                 var playerState = _playerStates.FirstOrDefault(p => p.PlayerName == stats.Name);
                 result.PlayerScores.Add(new PartyRoundPlayerScore
                 {
@@ -767,13 +785,14 @@ namespace CosmicShore.Game.Arcade.Party
                     Score = stats.Score,
                     IsAIReplacement = playerState?.IsAIReplacement ?? false,
                 });
+                CSDebug.Log($"[PartyGame] Stats[{i}]: {stats.Name} score={stats.Score} crystals={stats.CrystalsCollected} jousts={stats.JoustCollisions}");
             }
 
             var winnerState = _playerStates.FirstOrDefault(p => p.PlayerName == result.WinnerName);
             if (winnerState != null)
                 winnerState.GamesWon++;
 
-            CSDebug.Log($"[PartyGame] Round {roundIndex + 1} winner: {result.WinnerName}");
+            CSDebug.Log($"[PartyGame] Round {roundIndex + 1} winner: {result.WinnerName} (golfRules={golfRules}, mode={gameData.GameMode})");
         }
 
         /// <summary>
@@ -1222,6 +1241,21 @@ namespace CosmicShore.Game.Arcade.Party
                 spvi.PartyMode = spviMode;
                 CSDebug.Log($"[PartyGame] Set SPVI PartyMode={spviMode} on '{env.name}'");
             }
+        }
+
+        /// <summary>
+        /// Returns true if the current mini-game mode uses golf rules (lower score wins).
+        /// Must match UseGolfRules in each game's controller:
+        ///   HexRace → true, Joust → true, CrystalCapture → false
+        /// </summary>
+        bool IsGolfRulesForCurrentMode()
+        {
+            return gameData.GameMode switch
+            {
+                GameModes.HexRace => true,
+                GameModes.MultiplayerJoust => true,
+                _ => false,
+            };
         }
 
         /// <summary>

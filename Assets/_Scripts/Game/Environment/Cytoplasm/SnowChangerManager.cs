@@ -1,5 +1,6 @@
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -7,10 +8,18 @@ namespace CosmicShore.Game
     {
         [SerializeField]
         CellRuntimeDataSO cellData;
-        
+
+        bool _spawned;
+
         private void OnEnable()
         {
+            _spawned = false;
             cellData.OnCellItemsUpdated.OnRaised += OnCellItemsUpdated;
+
+            // If cell is already initialized and has crystals (party mode: cell init
+            // and crystal spawn may have happened before this component re-enabled),
+            // spawn immediately instead of waiting for the next OnCellItemsUpdated.
+            TrySpawnIfReady();
         }
 
         private void OnDisable()
@@ -20,15 +29,20 @@ namespace CosmicShore.Game
 
         void OnCellItemsUpdated()
         {
+            TrySpawnIfReady();
+        }
+
+        void TrySpawnIfReady()
+        {
+            if (_spawned) return;
+
             if (!cellData.TryGetLocalCrystal(out _))
                 return;
 
-            // Don't unsubscribe until we can actually spawn — Cell.Initialize
-            // may not have run yet (party mode timing: crystals can spawn
-            // before the cell is fully initialized).
             if (cellData.Config == null || cellData.CellTransform == null)
                 return;
 
+            _spawned = true;
             cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
             SpawnSnows();
         }
@@ -36,7 +50,11 @@ namespace CosmicShore.Game
         private void SpawnSnows()
         {
             if (cellData.Config == null || cellData.Config.CytoplasmPrefab == null || cellData.CellTransform == null)
+            {
+                CSDebug.LogWarning($"[SnowChangerManager] Cannot spawn: Config={cellData.Config != null}, " +
+                    $"CytoplasmPrefab={cellData.Config?.CytoplasmPrefab != null}, CellTransform={cellData.CellTransform != null}");
                 return;
+            }
 
             var snowChanger = Instantiate(cellData.Config.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
             snowChanger.Initialize();

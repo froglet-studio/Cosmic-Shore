@@ -36,6 +36,10 @@ namespace CosmicShore.Game.Arcade
 
         void SubscribeScoreEvents()
         {
+            // Unsubscribe first to prevent double-subscription when both
+            // OnNetworkSpawn and OnEnable fire (party mode SetActive toggling).
+            UnsubscribeScoreEvents();
+
             gameData.OnInitializeGame += InitializeScoringMode;
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;

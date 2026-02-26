@@ -354,6 +354,16 @@ namespace CosmicShore.Game.UI
             UpdateLifeformCounterDisplay("0");
             view.UpdateScoreUI("0");
 
+            // In party mode, skip connecting panel and pre-game cinematic —
+            // the party controller handles the lobby/ready flow and the HUD
+            // just needs to be visible and ready for score display.
+            if (gameData != null && gameData.IsPartyMode)
+            {
+                view.ToggleConnectingPanel(false);
+                ToggleReadyButton(false);
+                return;
+            }
+
             view.ToggleConnectingPanel(true);
             ToggleReadyButton(false);
 
