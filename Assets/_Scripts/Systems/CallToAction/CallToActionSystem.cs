@@ -95,7 +95,7 @@ namespace CosmicShore.Systems.CallToAction
         /// 3) Remove from ActiveCallsToAction
         /// </summary>
         /// <param name="action"></param>
-        void ResolveCallsToActionOnUserActionCompleted(UserAction action)
+        void ResolveCallsToActionOnUserActionCompleted(CosmicShore.Systems.UserAction.UserAction action)
         {
             CSDebug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: {action}");
             List<CallToAction> matchingCalls = new();

@@ -1,3 +1,6 @@
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.DataContainers;
+
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Ship;
 using CosmicShore.Game.XP;
 using CosmicShore.Utility.SOAP;
 using UnityEngine;
