@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Tests
 {
@@ -21,7 +22,7 @@ namespace CosmicShore.Tests
         [Test]
         public void LineData_Constructor_SetsStart()
         {
-            var line = new Utility.GeometryUtils.LineData(
+            var line = new GeometryUtils.LineData(
                 new Vector3(1, 2, 3),
                 new Vector3(4, 5, 6)
             );
@@ -32,7 +33,7 @@ namespace CosmicShore.Tests
         [Test]
         public void LineData_Constructor_DirectionIsNormalized()
         {
-            var line = new Utility.GeometryUtils.LineData(
+            var line = new GeometryUtils.LineData(
                 Vector3.zero,
                 new Vector3(10, 0, 0)
             );
@@ -48,7 +49,7 @@ namespace CosmicShore.Tests
             var start = new Vector3(0, 0, 0);
             var end = new Vector3(3, 4, 0);
 
-            var line = new Utility.GeometryUtils.LineData(start, end);
+            var line = new GeometryUtils.LineData(start, end);
 
             Assert.AreEqual(5f, line.Magnitude, 0.0001f,
                 "Magnitude should be the distance between start and end (3-4-5 triangle).");
@@ -61,12 +62,12 @@ namespace CosmicShore.Tests
         [Test]
         public void DistanceFromPointToLine_PointOnLine_ReturnsZero()
         {
-            var line = Utility.GeometryUtils.PrecomputeLineData(
+            var line = GeometryUtils.PrecomputeLineData(
                 Vector3.zero,
                 new Vector3(10, 0, 0)
             );
 
-            float distance = Utility.GeometryUtils.DistanceFromPointToLine(
+            float distance = GeometryUtils.DistanceFromPointToLine(
                 new Vector3(5, 0, 0), line
             );
 
@@ -76,13 +77,13 @@ namespace CosmicShore.Tests
         [Test]
         public void DistanceFromPointToLine_PerpendicularPoint_ReturnsPerpendicularDistance()
         {
-            var line = Utility.GeometryUtils.PrecomputeLineData(
+            var line = GeometryUtils.PrecomputeLineData(
                 Vector3.zero,
                 new Vector3(10, 0, 0)
             );
 
             // Point at (5, 3, 0) — perpendicular distance to X-axis is 3.
-            float distance = Utility.GeometryUtils.DistanceFromPointToLine(
+            float distance = GeometryUtils.DistanceFromPointToLine(
                 new Vector3(5, 3, 0), line
             );
 
@@ -92,14 +93,14 @@ namespace CosmicShore.Tests
         [Test]
         public void DistanceFromPointToLine_PointBeforeStart_ReturnsDistanceToStart()
         {
-            var line = Utility.GeometryUtils.PrecomputeLineData(
+            var line = GeometryUtils.PrecomputeLineData(
                 new Vector3(5, 0, 0),
                 new Vector3(10, 0, 0)
             );
 
             // Point at origin — before the line start.
             // Distance should be to the start point (5,0,0).
-            float distance = Utility.GeometryUtils.DistanceFromPointToLine(
+            float distance = GeometryUtils.DistanceFromPointToLine(
                 Vector3.zero, line
             );
 
@@ -109,13 +110,13 @@ namespace CosmicShore.Tests
         [Test]
         public void DistanceFromPointToLine_PointBeyondEnd_ReturnsDistanceToEnd()
         {
-            var line = Utility.GeometryUtils.PrecomputeLineData(
+            var line = GeometryUtils.PrecomputeLineData(
                 Vector3.zero,
                 new Vector3(5, 0, 0)
             );
 
             // Point at (10, 0, 0) — beyond the line end.
-            float distance = Utility.GeometryUtils.DistanceFromPointToLine(
+            float distance = GeometryUtils.DistanceFromPointToLine(
                 new Vector3(10, 0, 0), line
             );
 
@@ -125,12 +126,12 @@ namespace CosmicShore.Tests
         [Test]
         public void DistanceFromPointToLine_PointAtStart_ReturnsZero()
         {
-            var line = Utility.GeometryUtils.PrecomputeLineData(
+            var line = GeometryUtils.PrecomputeLineData(
                 new Vector3(3, 4, 5),
                 new Vector3(6, 7, 8)
             );
 
-            float distance = Utility.GeometryUtils.DistanceFromPointToLine(
+            float distance = GeometryUtils.DistanceFromPointToLine(
                 new Vector3(3, 4, 5), line
             );
 
@@ -144,7 +145,7 @@ namespace CosmicShore.Tests
         [Test]
         public void DistancesFromPointsToLine_ReturnsCorrectCount()
         {
-            var line = Utility.GeometryUtils.PrecomputeLineData(
+            var line = GeometryUtils.PrecomputeLineData(
                 Vector3.zero, new Vector3(10, 0, 0)
             );
 
@@ -155,7 +156,7 @@ namespace CosmicShore.Tests
                 new(10, 4, 0)
             };
 
-            var distances = Utility.GeometryUtils.DistancesFromPointsToLine(points, line);
+            var distances = GeometryUtils.DistancesFromPointsToLine(points, line);
 
             Assert.AreEqual(3, distances.Count);
         }
@@ -163,11 +164,11 @@ namespace CosmicShore.Tests
         [Test]
         public void DistancesFromPointsToLine_EmptyList_ReturnsEmptyList()
         {
-            var line = Utility.GeometryUtils.PrecomputeLineData(
+            var line = GeometryUtils.PrecomputeLineData(
                 Vector3.zero, Vector3.one
             );
 
-            var distances = Utility.GeometryUtils.DistancesFromPointsToLine(
+            var distances = GeometryUtils.DistancesFromPointsToLine(
                 new List<Vector3>(), line
             );
 
@@ -184,7 +185,7 @@ namespace CosmicShore.Tests
             var input = new Vector3(3, 0, 0); // magnitude = 3
             float magnitude;
 
-            var result = Utility.GeometryUtils.ClampMagnitude(input, 1f, 5f, out magnitude);
+            var result = GeometryUtils.ClampMagnitude(input, 1f, 5f, out magnitude);
 
             Assert.AreEqual(3f, magnitude, 0.0001f);
             Assert.AreEqual(input, result);
@@ -196,7 +197,7 @@ namespace CosmicShore.Tests
             var input = new Vector3(1, 0, 0); // magnitude = 1
             float magnitude;
 
-            var result = Utility.GeometryUtils.ClampMagnitude(input, 5f, 10f, out magnitude);
+            var result = GeometryUtils.ClampMagnitude(input, 5f, 10f, out magnitude);
 
             Assert.AreEqual(5f, result.magnitude, 0.0001f,
                 "Vector should be scaled up to minimum magnitude.");
@@ -208,7 +209,7 @@ namespace CosmicShore.Tests
             var input = new Vector3(20, 0, 0); // magnitude = 20
             float magnitude;
 
-            var result = Utility.GeometryUtils.ClampMagnitude(input, 1f, 10f, out magnitude);
+            var result = GeometryUtils.ClampMagnitude(input, 1f, 10f, out magnitude);
 
             Assert.AreEqual(10f, result.magnitude, 0.0001f,
                 "Vector should be scaled down to maximum magnitude.");
@@ -220,7 +221,7 @@ namespace CosmicShore.Tests
             var input = new Vector3(3, 4, 0); // magnitude = 5, direction = (0.6, 0.8, 0)
             float magnitude;
 
-            var result = Utility.GeometryUtils.ClampMagnitude(input, 10f, 20f, out magnitude);
+            var result = GeometryUtils.ClampMagnitude(input, 10f, 20f, out magnitude);
 
             // Direction should be preserved even though magnitude changed.
             Assert.AreEqual(input.normalized.x, result.normalized.x, 0.001f);
@@ -234,7 +235,7 @@ namespace CosmicShore.Tests
             var input = new Vector3(3, 4, 0); // magnitude = 5
             float magnitude;
 
-            Utility.GeometryUtils.ClampMagnitude(input, 1f, 10f, out magnitude);
+            GeometryUtils.ClampMagnitude(input, 1f, 10f, out magnitude);
 
             Assert.AreEqual(5f, magnitude, 0.0001f,
                 "Output magnitude should be the original vector's magnitude.");

@@ -1,6 +1,5 @@
 using NUnit.Framework;
 using CosmicShore.Core;
-using CosmicShore.Data;
 
 namespace CosmicShore.Tests
 {
