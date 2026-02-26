@@ -23,11 +23,6 @@ namespace CosmicShore.Game.Arcade
         [Header("HUD")]
         [SerializeField] MiniGameHUD miniGameHUD;
 
-        [Header("Trigger Placement")]
-        [SerializeField] float triggerRingRadius = 40f;
-        [SerializeField] float triggerScale = 0.4f;
-        [SerializeField] float triggerForwardOffset = 50f;
-
         protected override bool HasEndGame => false;
         protected override bool ShowEndGameSequence => false;
 
@@ -149,28 +144,14 @@ namespace CosmicShore.Game.Arcade
 
             ClearPlayerTrails();
 
-            var playerTransform = gameData.LocalPlayer?.Vessel?.Transform;
-            var center = playerTransform ? playerTransform.position : lobbyOrigin.position;
-            var forward = playerTransform ? playerTransform.forward : Vector3.forward;
-            var triggerCenter = center + forward * triggerForwardOffset;
-
-            var activeTriggers = modeTriggers.Where(trigger => trigger).ToList();
-            for (int i = 0; i < activeTriggers.Count; i++)
+            // Enable and reset mode triggers — positions/rotations/scales
+            // are set in the editor, never overridden at runtime.
+            foreach (var trigger in modeTriggers.Where(trigger => trigger))
             {
-                var trigger = activeTriggers[i];
                 trigger.gameObject.SetActive(true);
                 trigger.ResetTrigger();
                 trigger.OnModeSelected.RemoveListener(HandleModeSelection);
                 trigger.OnModeSelected.AddListener(HandleModeSelection);
-
-                float angle = ((i - (activeTriggers.Count - 1) * 0.5f) / Mathf.Max(1, activeTriggers.Count - 1)) * Mathf.PI * 0.5f;
-                var offset = new Vector3(Mathf.Sin(angle) * triggerRingRadius, 0f, Mathf.Cos(angle) * triggerRingRadius);
-                trigger.transform.position = triggerCenter + offset;
-                trigger.transform.localScale = Vector3.one * triggerScale;
-
-                var dirToPlayer = (center - trigger.transform.position).normalized;
-                if (dirToPlayer != Vector3.zero)
-                    trigger.transform.rotation = Quaternion.LookRotation(dirToPlayer, Vector3.up);
             }
 
             if (shapeSignSpawner)
