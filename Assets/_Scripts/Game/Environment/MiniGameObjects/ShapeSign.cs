@@ -30,14 +30,12 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] TMP_Text descriptionLabel;
 
         Vector3 _lockedPosition;
-        Quaternion _lockedRotation;
         bool _selected;
+        Transform _cameraTransform;
 
         void Awake()
         {
-            // Lock the scene-placed transform — nothing can override this
             _lockedPosition = transform.position;
-            _lockedRotation = transform.rotation;
             ApplyDisplayData();
         }
 
@@ -51,9 +49,22 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void LateUpdate()
         {
-            // Enforce locked position every frame — prevents physics,
-            // parent changes, or any other system from moving this sign
-            transform.SetPositionAndRotation(_lockedPosition, _lockedRotation);
+            // Cache camera transform on first use
+            if (_cameraTransform == null)
+            {
+                var cam = Camera.main;
+                if (cam == null) return;
+                _cameraTransform = cam.transform;
+            }
+
+            // Lock position, billboard toward the player camera
+            var lookDir = transform.position - _cameraTransform.position;
+            lookDir.y = 0f; // keep sign upright
+            var rotation = lookDir.sqrMagnitude > 0.001f
+                ? Quaternion.LookRotation(lookDir, Vector3.up)
+                : transform.rotation;
+
+            transform.SetPositionAndRotation(_lockedPosition, rotation);
         }
 
         /// <summary>Called by SpawnableShapeSign immediately after instantiation.</summary>
