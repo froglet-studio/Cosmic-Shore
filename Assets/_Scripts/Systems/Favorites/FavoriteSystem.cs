@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
+using CosmicShore.Utility.DataPersistence;
 
 namespace CosmicShore.Systems.Favorites
 {
