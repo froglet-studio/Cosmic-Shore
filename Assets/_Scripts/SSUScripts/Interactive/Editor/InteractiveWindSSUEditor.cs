@@ -6,7 +6,7 @@ using CosmicShore.SSUScripts.Interactive;
 namespace CosmicShore.SSUScripts.Interactive.Editor
 {
     [CustomEditor(typeof(InteractiveWindSSU)), CanEditMultipleObjects]
-    public class InteractiveWindSSUEditor : Editor
+    public class InteractiveWindSSUEditor : UnityEditor.Editor
     {
         bool displaySetup;
         bool displayTroubleshooting;
