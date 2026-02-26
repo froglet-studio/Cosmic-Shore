@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Game.Environment;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 

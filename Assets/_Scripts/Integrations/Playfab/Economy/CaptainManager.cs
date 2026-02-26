@@ -1,4 +1,5 @@
 using CosmicShore.Systems.Xp;
+using CosmicShore.Models;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
 using System;
