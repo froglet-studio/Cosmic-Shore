@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using TMPro;
 using Unity.Services.Authentication;
 using UnityEngine;
@@ -40,7 +41,7 @@ namespace CosmicShore.Core
 
         [Header("Dependencies")]
         [SerializeField] private AuthenticationController authController;
-        [SerializeField] private PlayerDataService playerDataService;
+        [Inject] private PlayerDataService playerDataService;
 
         [Header("Navigation")]
         [SerializeField] private string mainMenuSceneName = "Menu_Main";
@@ -54,7 +55,6 @@ namespace CosmicShore.Core
         void Start()
         {
             EnsureAuthController();
-            ResolvePlayerDataService();
             SetupUI();
             RunAuthFlowAsync().Forget();
         }
@@ -63,37 +63,9 @@ namespace CosmicShore.Core
         {
             if (authController != null) return;
 
-#if UNITY_2023_1_OR_NEWER
-            authController = FindAnyObjectByType<AuthenticationController>();
-#else
-            authController = FindObjectOfType<AuthenticationController>();
-#endif
-
-            if (authController != null)
-            {
-                CSDebug.Log("[AuthScene] Found existing AuthenticationController in scene.");
-                return;
-            }
-
-            CSDebug.Log("[AuthScene] No AuthenticationController found. Creating one.");
+            CSDebug.Log("[AuthScene] No AuthenticationController assigned. Creating one.");
             var go = new GameObject("[AuthenticationController]");
             authController = go.AddComponent<AuthenticationController>();
-        }
-
-        void ResolvePlayerDataService()
-        {
-            if (playerDataService != null) return;
-
-#if UNITY_2023_1_OR_NEWER
-            playerDataService = FindAnyObjectByType<PlayerDataService>();
-#else
-            playerDataService = FindObjectOfType<PlayerDataService>();
-#endif
-
-            if (playerDataService != null)
-                CSDebug.Log("[AuthScene] PlayerDataService resolved via scene search.");
-            else
-                CSDebug.LogWarning("[AuthScene] PlayerDataService not found — username check will be skipped.");
         }
 
         void SetupUI()
@@ -298,8 +270,6 @@ namespace CosmicShore.Core
 
         bool CheckIfUsernameNeeded()
         {
-            // If PlayerDataService isn't available (e.g. Reflex injection not ready),
-            // skip username check and proceed to main menu. Username can be set later.
             if (playerDataService == null || !playerDataService.IsInitialized)
                 return false;
 

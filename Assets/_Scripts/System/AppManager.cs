@@ -56,36 +56,24 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Resolves persistent system references at runtime when they are not
-        /// assigned in the inspector. Uses FindAnyObjectByType as a fallback,
-        /// and auto-creates the service as a persistent GameObject if still
-        /// missing — so the DI registrations always succeed.
+        /// Ensures persistent system references are available for DI registration.
+        /// If a field is not assigned in the inspector (e.g. prefab override lost),
+        /// auto-creates the service as a child of this transform so it inherits
+        /// DontDestroyOnLoad and gets registered in the Reflex container.
         /// </summary>
         void ResolvePersistentSystems()
         {
-            gameSetting = ResolveOrCreate<GameSetting>(gameSetting);
-            audioSystem = ResolveOrCreate<AudioSystem>(audioSystem);
-            playerDataService = ResolveOrCreate<PlayerDataService>(playerDataService);
-            ugsStatsManager = ResolveOrCreate<UGSStatsManager>(ugsStatsManager);
+            gameSetting = EnsureService(gameSetting);
+            audioSystem = EnsureService(audioSystem);
+            playerDataService = EnsureService(playerDataService);
+            ugsStatsManager = EnsureService(ugsStatsManager);
         }
 
-        T ResolveOrCreate<T>(T field) where T : Component
+        T EnsureService<T>(T field) where T : Component
         {
             if (field != null) return field;
 
-#if UNITY_2023_1_OR_NEWER
-            var found = FindAnyObjectByType<T>();
-#else
-            var found = FindObjectOfType<T>();
-#endif
-
-            if (found != null)
-            {
-                Debug.Log($"[AppManager] {typeof(T).Name} resolved via scene search.");
-                return found;
-            }
-
-            Debug.LogWarning($"[AppManager] {typeof(T).Name} not found — auto-creating persistent instance.");
+            Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned — auto-creating persistent instance.");
             var go = new GameObject($"[{typeof(T).Name}]");
             go.transform.SetParent(transform);
             return go.AddComponent<T>();
@@ -93,6 +81,10 @@ namespace CosmicShore.Core
 
         public void InstallBindings(ContainerBuilder builder)
         {
+            // Guarantee services exist before registration. Reflex may call
+            // InstallBindings before Awake, so we cannot rely on Awake alone.
+            ResolvePersistentSystems();
+
             // ScriptableObject assets / Variables
             RegisterIfNotNull(builder, gameData, nameof(gameData));
             RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
