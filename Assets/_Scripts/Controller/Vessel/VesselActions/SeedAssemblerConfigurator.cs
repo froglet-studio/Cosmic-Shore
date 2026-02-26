@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] int shieldResourceIndex = 0;
         [SerializeField] float wallsPerFullResource = 4f;
 
-        Game.VesselPrismController controller;
+        VesselPrismController controller;
         Assembler _activeAssembler;
         IVesselStatus vesselStatus;
         Prism _activeSeedBlock;

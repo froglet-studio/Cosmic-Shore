@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     public class SeedWallAction : ShipAction
     {
         [SerializeField] float enhancementsPerFullAmmo = 3;
-        Game.VesselPrismController controller;
+        VesselPrismController controller;
 
         [SerializeField] int resourceIndex = 0;
         float resourceCost;

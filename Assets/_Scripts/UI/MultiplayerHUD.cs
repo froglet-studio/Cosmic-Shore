@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using CosmicShore.Data;
 using CosmicShore.UI;
 namespace CosmicShore.UI
 {

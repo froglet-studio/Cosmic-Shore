@@ -164,7 +164,7 @@ namespace CosmicShore.UI
             return HostConnectionService.Instance.DeclineInviteAsync();
         }
 
-        public void HandOffToMultiplayerSetup(CosmicShore.Soap.GameDataSO gameData)
+        public void HandOffToMultiplayerSetup(GameDataSO gameData)
         {
             HostConnectionService.Instance?.HandOffToMultiplayerSetup(gameData);
         }

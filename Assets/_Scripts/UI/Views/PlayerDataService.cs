@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;

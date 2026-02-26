@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("prismSpawner")]
         [FormerlySerializedAs("trailSpawner")]
         [Header("Scene Refs")]
-        [SerializeField] private Game.VesselPrismController vesselPrismController;
+        [SerializeField] private VesselPrismController vesselPrismController;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
@@ -124,7 +124,7 @@ namespace CosmicShore.Gameplay
             var listA = vesselPrismController?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
-            var trail2Field = typeof(Game.VesselPrismController).GetField(
+            var trail2Field = typeof(VesselPrismController).GetField(
                 "Trail2",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
             );

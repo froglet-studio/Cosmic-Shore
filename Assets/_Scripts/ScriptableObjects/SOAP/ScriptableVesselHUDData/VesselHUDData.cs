@@ -1,5 +1,5 @@
 using System;
-using CosmicShore.Gameplay;
+using CosmicShore.UI;
 
 namespace CosmicShore.ScriptableObjects
 {
