@@ -194,6 +194,7 @@ namespace CosmicShore.Game
         public void Unregister(int index)
         {
             if (index < 0 || index >= _highWaterMark) return;
+            if (!_spatial.IsCreated) return;
             var s = _spatial[index];
             s.Flags = 0; // clear all flags including IsActive
             _spatial[index] = s;
@@ -204,6 +205,7 @@ namespace CosmicShore.Game
         public void MarkDestroyed(int index)
         {
             if (index < 0 || index >= _highWaterMark) return;
+            if (!_spatial.IsCreated) return;
             var s = _spatial[index];
             s.Flags |= PrismFlags.Destroyed;
             _spatial[index] = s;
@@ -212,6 +214,7 @@ namespace CosmicShore.Game
         public void UpdateShieldState(int index, bool shielded, bool superShielded)
         {
             if (index < 0 || index >= _highWaterMark) return;
+            if (!_spatial.IsCreated) return;
             var s = _spatial[index];
             // Clear shield bits, then set
             s.Flags = (byte)(s.Flags & ~(PrismFlags.IsShielded | PrismFlags.IsSuperShielded));
@@ -223,6 +226,7 @@ namespace CosmicShore.Game
         public void UpdateDomain(int index, int domain)
         {
             if (index < 0 || index >= _highWaterMark) return;
+            if (!_damage.IsCreated) return;
             var d = _damage[index];
             d.Domain = domain;
             _damage[index] = d;
@@ -234,6 +238,7 @@ namespace CosmicShore.Game
         public void UpdateVolume(int index, float volume)
         {
             if (index < 0 || index >= _highWaterMark) return;
+            if (!_damage.IsCreated) return;
             var d = _damage[index];
             d.Volume = volume;
             _damage[index] = d;
@@ -272,7 +277,7 @@ namespace CosmicShore.Game
             IVessel vessel,
             HashSet<int> alreadyHit)
         {
-            if (_highWaterMark == 0) return true;
+            if (_highWaterMark == 0 || !_spatial.IsCreated) return true;
 
             // --- Phase 1: Burst job over hot spatial data ---
             _hitIndices.Clear();
