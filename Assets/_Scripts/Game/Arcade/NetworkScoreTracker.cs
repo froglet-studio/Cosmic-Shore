@@ -1,3 +1,4 @@
+using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 
@@ -7,30 +8,31 @@ namespace CosmicShore.Game.Arcade
     {
         public override void OnNetworkSpawn()
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             SubscribeScoreEvents();
         }
 
         public override void OnNetworkDespawn()
         {
-            if (!IsServer) return;
+            // Use IsServerSafe: after SetActive toggling IsServer may be stale
+            if (!this.IsServerSafe()) return;
             UnsubscribeScoreEvents();
         }
 
         /// <summary>
         /// Re-subscribe when the environment is reactivated (party mode SetActive
-        /// toggling). Prevents inactive environments' score trackers from
-        /// responding to events and firing conflicting RPCs.
+        /// toggling). IsSpawned may be unreliable after toggling, so fall back to
+        /// the global NetworkManager check via IsServerSafe.
         /// </summary>
         private void OnEnable()
         {
-            if (IsSpawned && IsServer)
+            if (this.IsServerSafe())
                 SubscribeScoreEvents();
         }
 
         private void OnDisable()
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             UnsubscribeScoreEvents();
         }
 

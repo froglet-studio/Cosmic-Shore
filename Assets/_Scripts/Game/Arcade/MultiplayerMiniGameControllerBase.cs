@@ -1,6 +1,7 @@
 // MultiplayerMiniGameControllerBase.cs
 using System;
 using CosmicShore.Game.UI;
+using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
@@ -66,7 +67,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsPartyMode) return;
 
-            if (IsServer)
+            if (this.IsServerSafe())
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
             }
@@ -86,7 +87,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsPartyMode) return;
 
-            if (IsServer)
+            if (this.IsServerSafe())
             {
                 gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
             }
@@ -118,7 +119,7 @@ namespace CosmicShore.Game.Arcade
             {
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
                 gameData.InitializeGame();
-                if (!IsServer) return;
+                if (!this.IsServerSafe()) return;
                 SetupNewRound();
 
                 // In party mode, auto-start the game — no manual ready-click required.
@@ -135,7 +136,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void OnCountdownTimerEnded()
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             OnCountdownTimerEnded_ClientRpc();
         }
 
@@ -148,7 +149,7 @@ namespace CosmicShore.Game.Arcade
 
         void HandleTurnEnd()
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
 
             if (IsPartyMode)
             {
@@ -190,7 +191,7 @@ namespace CosmicShore.Game.Arcade
 
         void ExecuteServerRoundEnd()
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
 
             // Sync to remote clients (not needed in party mode — RPCs not registered)
             if (!IsPartyMode)
@@ -217,7 +218,7 @@ namespace CosmicShore.Game.Arcade
 
         void ExecuteServerGameEnd()
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
 
             if (IsPartyMode)
             {

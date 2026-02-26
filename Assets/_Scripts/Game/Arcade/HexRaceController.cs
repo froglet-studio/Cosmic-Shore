@@ -1,4 +1,5 @@
 using System.Linq;
+using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
@@ -82,7 +83,7 @@ namespace CosmicShore.Game.Arcade
             base.PartyMode_Activate();
 
             // In party mode, spawn the track when the environment is activated
-            if (IsServer)
+            if (this.IsServerSafe())
             {
                 _raceEnded = false;
                 _trackSpawned = false;
@@ -118,15 +119,25 @@ namespace CosmicShore.Game.Arcade
         {
             // Small delay to ensure all clients have joined and intensity is synced
             await UniTask.Delay(1500, DelayType.UnscaledDeltaTime);
-            if (!IsServer || _trackSpawned) return;
+            if (!this.IsServerSafe() || _trackSpawned) return;
 
             int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
-            _netTrackSeed.Value = generatedSeed;
+
+            // In party mode after SetActive toggling, IsSpawned may be unreliable
+            // so the NetworkVariable write could fail. Spawn the track locally as fallback.
+            if (IsSpawned)
+            {
+                _netTrackSeed.Value = generatedSeed;
+            }
+            else
+            {
+                SpawnTrackLocally(generatedSeed);
+            }
         }
 
         protected override void OnCountdownTimerEnded()
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
 
             // Ensure track seed is set for any edge case where early spawn was missed
             if (_netTrackSeed.Value == 0)
@@ -176,7 +187,7 @@ namespace CosmicShore.Game.Arcade
         protected override void OnTurnEndedCustom()
         {
             base.OnTurnEndedCustom();
-            if (!IsServer || !IsPartyMode) return;
+            if (!this.IsServerSafe() || !IsPartyMode) return;
             if (_raceEnded) return;
             _raceEnded = true;
 
@@ -261,13 +272,15 @@ namespace CosmicShore.Game.Arcade
 
         public void SetCrystalsToFinishServer(int value)
         {
-            if (!IsServer) return;
-            _netCrystalsToFinish.Value = Mathf.Max(1, value);
+            if (!this.IsServerSafe()) return;
+            int clamped = Mathf.Max(1, value);
+            if (IsSpawned)
+                _netCrystalsToFinish.Value = clamped;
         }
 
         public void NotifyCrystalsCollected(string playerName, int crystalsCollected)
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (stat != null)
                 stat.CrystalsCollected = crystalsCollected;

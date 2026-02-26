@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using CosmicShore.Game.UI;
+using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
@@ -19,7 +20,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void OnCountdownTimerEnded()
         {
-            if (!IsServer)
+            if (!this.IsServerSafe())
                 return;
 
             OnCountdownTimerEnded_ClientRpc();
@@ -100,7 +101,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void SetupNewRound()
         {
-            if (IsServer)
+            if (this.IsServerSafe())
             {
                 readyClientCount = 0;
             }

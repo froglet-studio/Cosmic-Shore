@@ -1,5 +1,6 @@
 // NetworkCrystalCollisionTurnMonitor.cs
 using System.Linq;
+using CosmicShore.Utility.ClassExtensions;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -12,6 +13,9 @@ namespace CosmicShore.Game.Arcade
 
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
+        // Local fallback when NetworkVariable write fails (IsSpawned unreliable after SetActive toggling)
+        private int _localCrystalTarget;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -21,9 +25,14 @@ namespace CosmicShore.Game.Arcade
         {
             base.StartMonitor();
 
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             int target = GetCrystalCollisionCount();
-            _netCrystalCollisions.Value = target;
+            _localCrystalTarget = target;
+
+            // Guard NetworkVariable write — IsSpawned may be unreliable after SetActive toggling
+            if (IsSpawned)
+                _netCrystalCollisions.Value = target;
+
             controller?.SetCrystalsToFinishServer(target);
 
             CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
@@ -39,7 +48,7 @@ namespace CosmicShore.Game.Arcade
 
         public override void StopMonitor()
         {
-            if (IsServer)
+            if (this.IsServerSafe())
             {
                 foreach (var stat in gameData.RoundStatsList)
                     stat.OnCrystalsCollectedChanged -= ServerSideCrystalSync;
@@ -50,26 +59,27 @@ namespace CosmicShore.Game.Arcade
 
         void ServerSideCrystalSync(IRoundStats stats)
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             controller?.NotifyCrystalsCollected(stats.Name, stats.CrystalsCollected);
         }
 
         public override bool CheckForEndOfTurn()
         {
-            if (!IsServer) return false;
+            if (!this.IsServerSafe()) return false;
 
-            int target = _netCrystalCollisions.Value > 0
+            // Prefer NetworkVariable, fall back to local target, then config
+            int target = (IsSpawned && _netCrystalCollisions.Value > 0)
                 ? _netCrystalCollisions.Value
-                : CrystalCollisions;
+                : (_localCrystalTarget > 0 ? _localCrystalTarget : CrystalCollisions);
 
             return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target);
         }
 
         protected override void UpdateCrystalsRemainingUI()
         {
-            int target = _netCrystalCollisions.Value > 0
+            int target = (IsSpawned && _netCrystalCollisions.Value > 0)
                 ? _netCrystalCollisions.Value
-                : CrystalCollisions;
+                : (_localCrystalTarget > 0 ? _localCrystalTarget : CrystalCollisions);
 
             int current = ownStats?.CrystalsCollected ?? 0;
             int remaining = Mathf.Max(0, target - current);

@@ -1,5 +1,6 @@
 ﻿// MultiplayerJoustController.cs
 using System.Linq;
+using CosmicShore.Utility.ClassExtensions;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -59,7 +60,7 @@ namespace CosmicShore.Game.Arcade
 
         public void NotifyCollision(string playerName, int collisionCount)
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (stats != null) stats.JoustCollisions = collisionCount;
 
@@ -101,7 +102,7 @@ namespace CosmicShore.Game.Arcade
         protected override void OnTurnEndedCustom()
         {
             base.OnTurnEndedCustom();
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             if (_finalResultsSent) return;
 
             CalculateJoustScores_Server();
