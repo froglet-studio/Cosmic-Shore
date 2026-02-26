@@ -32,8 +32,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private CinemachineCamera mainMenuCamera;
         [SerializeField] private Transform endCameraFollowTarget;
         [SerializeField] private Transform endCameraLookAtTarget;
-        [SerializeField] private float startTransitionDistance = 40f;
-    
+
         private Transform _playerFollowTarget;
         private const int ActivePriority = 10;
 

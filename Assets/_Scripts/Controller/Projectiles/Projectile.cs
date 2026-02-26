@@ -17,7 +17,6 @@ namespace CosmicShore.Gameplay
 
         [Header("Projectile Settings")]
         [SerializeField] private bool spike = false;
-        [SerializeField] private float growthRate = 1.0f;
         [SerializeField] private bool friendlyFire = false;
 
         [Header("Data Containers")]

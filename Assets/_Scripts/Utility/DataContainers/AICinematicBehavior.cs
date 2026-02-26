@@ -11,7 +11,6 @@ namespace CosmicShore.Utility
     /// </summary>
     public class AICinematicBehavior : MonoBehaviour
     {
-        [SerializeField] private float forwardSpeed = 20f;
         [SerializeField] private float loopRadius = 15f;
         [SerializeField] private float loopSpeed = 2f;
         
