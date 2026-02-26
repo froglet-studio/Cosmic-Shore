@@ -13,7 +13,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.SOAP;
-using IPlayer = CosmicShore.Game.IPlayer;
+using IPlayer = CosmicShore.Game.Player.IPlayer;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Utility.DataContainers

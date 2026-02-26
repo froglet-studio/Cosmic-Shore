@@ -1,4 +1,4 @@
-using CosmicShore.Game.UI.Toast;
+using CosmicShore.VesselHUD.ToastSystem;
 using UnityEngine;
 using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;

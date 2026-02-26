@@ -1,4 +1,4 @@
-using CosmicShore.Game.CameraSystem;
+using CosmicShore.Game.Camera;
 using UnityEngine;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Ship;

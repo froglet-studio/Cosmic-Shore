@@ -1,5 +1,5 @@
 using System;
-using CosmicShore.Systems.CTA;
+using CosmicShore.Systems.CallToAction;
 using CosmicShore.Models.Enums;
 
 namespace CosmicShore.FTUE.Helpers
