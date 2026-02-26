@@ -21,8 +21,11 @@ namespace CosmicShore.Utility
         {
             KillTween();
             targetFill = Mathf.Clamp01(targetFill);
-            currentTween = boostFillImage
-                .DOFillAmount(targetFill, duration)
+            currentTween = DOTween.To(
+                    () => boostFillImage.fillAmount,
+                    x => boostFillImage.fillAmount = x,
+                    targetFill,
+                    duration)
                 .SetEase(ease)
                 .OnComplete(() => onComplete?.Invoke());
         }
