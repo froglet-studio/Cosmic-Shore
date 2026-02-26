@@ -74,6 +74,7 @@ namespace CosmicShore.UI
         {
             Favorited = !Favorited;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
             FavoriteSystem.ToggleFavorite(gameMode);
             ExploreView.PopulateGameSelectionList();
         }

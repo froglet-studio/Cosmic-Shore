@@ -134,7 +134,7 @@ namespace CosmicShore.UI
 
             string existing = "";
 
-            if (dataService != null && dataService.IsInitialized && dataService.CurrentProfile != null)
+            if (dataService != null && dataService.CurrentProfile != null)
             {
                 existing = dataService.CurrentProfile.displayName;
             }
@@ -283,7 +283,7 @@ namespace CosmicShore.UI
                     return;
                 }
 
-                if (dataService != null && dataService.IsInitialized)
+                if (dataService != null)
                 {
                     dataService.SetDisplayName(newName);
                 }

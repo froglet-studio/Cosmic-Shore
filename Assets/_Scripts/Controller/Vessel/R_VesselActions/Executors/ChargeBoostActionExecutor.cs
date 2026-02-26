@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
@@ -71,8 +72,9 @@ namespace CosmicShore.Gameplay
 
         public void BeginDischarge(ChargeBoostActionSO so, IVesselStatus status)
         {
-            End(); 
+            End();
             _charging = false;
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
 
             if (!_resources) return;
 

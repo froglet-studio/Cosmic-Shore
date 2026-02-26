@@ -57,7 +57,7 @@ namespace CosmicShore.UI
                 playerDataService.OnProfileChanged += RefreshProfile;
 
             // Initial refresh if data is already loaded
-            if (playerDataService != null && playerDataService.IsInitialized)
+            if (playerDataService != null && playerDataService.CurrentProfile != null)
                 RefreshProfile(playerDataService.CurrentProfile);
         }
 
@@ -143,7 +143,9 @@ namespace CosmicShore.UI
 
             if (!string.IsNullOrEmpty(newName) && newName.Length >= 3 && newName.Length <= 25)
             {
-                if (playerDataService != null && playerDataService.IsInitialized)
+                // SetDisplayName works as soon as the service exists (CurrentProfile
+                // is created in Awake). Cloud save is handled internally via debounce.
+                if (playerDataService != null)
                     playerDataService.SetDisplayName(newName);
             }
 

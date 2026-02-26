@@ -17,6 +17,7 @@ namespace CosmicShore.UI
     public class ProfileModal : ModalWindowManager
     {
         [Inject] AudioSystem audioSystem;
+        [Inject] PlayerDataService playerDataService;
 
         [SerializeField] GameObject BusyIndicator;
 
@@ -218,26 +219,14 @@ namespace CosmicShore.UI
             if (displayNameResultMessage)
                 displayNameResultMessage.gameObject.SetActive(false);
 
-            if (PlayerDataController.Instance != null)
+            // Save via UGS PlayerDataService (primary path)
+            if (playerDataService != null)
             {
-                PlayerDataController.Instance.SetPlayerDisplayName(
-                    newName,
-                    result =>
-                    {
-                        CacheDisplayNameLocally(newName);
-                        UpdatePlayerDisplayNameView(result);
-                    });
-            }
-            else
-            {
-                CSDebug.LogWarning(
-                    "[ProfileModal] PlayerDataController.Instance is null. Setting display name only locally.");
-                CacheDisplayNameLocally(newName);
-                UpdatePlayerDisplayNameView(null);
+                playerDataService.SetDisplayName(newName);
             }
 
-            if (BusyIndicator)
-                BusyIndicator.SetActive(true);
+            CacheDisplayNameLocally(newName);
+            UpdatePlayerDisplayNameView(null);
 
             CSDebug.Log($"Current player display name: {newName}");
         }

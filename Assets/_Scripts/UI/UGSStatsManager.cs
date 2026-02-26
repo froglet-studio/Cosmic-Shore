@@ -36,11 +36,17 @@ namespace CosmicShore.UI
 
         private void OnEnable()
         {
+            if (authenticationDataVariable == null)
+            {
+                Debug.LogWarning("[UGSStatsManager] authenticationDataVariable is not assigned — auth events will not be observed.");
+                return;
+            }
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
         }
 
         private void OnDisable()
         {
+            if (authenticationDataVariable == null) return;
             authenticationData.OnSignedIn.OnRaised -= OnAuthenticationSignedIn;
         }
 

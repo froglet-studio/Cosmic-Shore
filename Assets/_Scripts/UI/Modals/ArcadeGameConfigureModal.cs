@@ -436,6 +436,7 @@ namespace CosmicShore.UI
         // Screen 1 → Screen 2
         public void OnConfirmConfiguration()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
             ShowGameDetailScreen();
         }
 
@@ -448,6 +449,8 @@ namespace CosmicShore.UI
         // Start Game button on Screen 2
         public void OnStartGameClicked()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+
             // Route multiplayer modes through PartyGameLauncher for
             // party reconciliation (AI backfill, kick extras).
             if (_selectedGame != null && _selectedGame.IsMultiplayer

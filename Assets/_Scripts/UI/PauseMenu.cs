@@ -93,12 +93,14 @@ namespace CosmicShore.UI
         {
             pauseMenuPanel.gameObject.SetActive(true);
             settingsModalWindowManager.ModalWindowIn();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
         }
 
         public void Hide()
         {
             settingsModalWindowManager.ModalWindowOut();
             pauseMenuPanel.gameObject.SetActive(false);
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseClose);
         }
         
         async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)

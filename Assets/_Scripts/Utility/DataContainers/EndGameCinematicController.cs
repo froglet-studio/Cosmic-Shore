@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
@@ -271,6 +272,7 @@ namespace CosmicShore.Utility
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 

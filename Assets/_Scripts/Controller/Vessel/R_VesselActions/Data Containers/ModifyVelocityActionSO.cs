@@ -1,5 +1,6 @@
-using UnityEngine;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
@@ -12,6 +13,7 @@ namespace CosmicShore.Gameplay
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);
             vesselStatus.VesselTransformer.ModifyVelocity(vesselStatus.Vessel.Transform.forward * magnitude, duration);
         }
 

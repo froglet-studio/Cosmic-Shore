@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
@@ -87,7 +88,9 @@ namespace CosmicShore.Gameplay
         public void Consume(ConsumeBoostActionSO so, IVesselStatus status)
         {
             if (!so || status == null) return;
-        
+
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
+
             if (_status is { IsTranslationRestricted: true }) return;
         
             if (_so != so)
