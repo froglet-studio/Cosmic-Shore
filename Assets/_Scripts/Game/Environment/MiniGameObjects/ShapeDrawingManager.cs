@@ -4,6 +4,7 @@ using System.IO;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Soap;
 using UnityEngine;
+using Obvious.Soap;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
 
@@ -26,7 +27,7 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] LineRenderer guideLine;
         [SerializeField] LineRenderer ghostLine;
         [SerializeField] Camera revealCamera;
-        [SerializeField] float shapeScale = 3f;
+        [SerializeField] float shapeScale = 7f;
 
         [Header("Shape Orientation")]
         [Tooltip("Rotation applied to shape waypoints. Default (-90,0,0) rotates XY-defined shapes to the horizontal XZ plane.")]
@@ -61,6 +62,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [Header("Debug")]
         [Tooltip("Press this key to save a screenshot (PC only).")]
         [SerializeField] Key screenshotKey = Key.F12;
+
+        [Header("Pool Return")]
+        [Tooltip("Raised when exiting shape mode. Attach EventListenerNoParam on shape prisms to call ReturnToPool.")]
+        [SerializeField] ScriptableEventNoParam onReturnShapePrismsEvent;
 
         [Header("Events")]
         public UnityEvent OnShapeCompleted;
@@ -253,10 +258,6 @@ namespace CosmicShore.Game.ShapeDrawing
         public void ContinueFromReveal()
         {
             if (!_waitingForNext) return;
-
-            if (_vesselStatus != null)
-                _vesselStatus.VesselPrismController.ClearTrails();
-
             ExitShapeMode();
         }
 
@@ -269,6 +270,13 @@ namespace CosmicShore.Game.ShapeDrawing
             _activeShape = null;
             _trackingPath = false;
             _waitingForNext = false;
+
+            // Return shape prisms to pool via SO event (before clearing trail references)
+            if (onReturnShapePrismsEvent) onReturnShapePrismsEvent.Raise();
+
+            // Clear trail list references after prisms have been returned
+            if (_vesselStatus != null)
+                _vesselStatus.VesselPrismController.ClearTrails();
 
             // Destroy SnowChanger instance
             DestroySnowChanger();
