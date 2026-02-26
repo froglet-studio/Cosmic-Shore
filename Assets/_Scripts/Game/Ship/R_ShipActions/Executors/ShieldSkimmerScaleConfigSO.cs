@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Game.Environment;
 using CosmicShore.Game.Ship;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(

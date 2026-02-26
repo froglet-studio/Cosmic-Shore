@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Linq;
 
 namespace CosmicShore.Models.Structs
 {

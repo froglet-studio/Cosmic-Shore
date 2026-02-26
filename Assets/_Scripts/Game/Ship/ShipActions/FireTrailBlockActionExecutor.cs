@@ -3,6 +3,7 @@ using CosmicShore.Game.Ship;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase

@@ -3,6 +3,7 @@ using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 namespace CosmicShore.UI.Views
 {

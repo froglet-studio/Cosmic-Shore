@@ -4,6 +4,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using UnityEngine;
+using System.Linq;
 
 namespace CosmicShore.Game.Party
 {

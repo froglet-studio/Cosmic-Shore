@@ -7,6 +7,8 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Utility.Effects;
 using CosmicShore.VesselHUD.View;
+using System;
+using System.Linq;
 namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "VesselResetBoostPrismEffect",

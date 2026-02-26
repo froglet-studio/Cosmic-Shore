@@ -9,6 +9,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using System.Linq;
 namespace CosmicShore.Game.Environment
 {
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]

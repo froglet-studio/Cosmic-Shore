@@ -2,6 +2,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility.Effects;
+using System.Linq;
 ﻿using UnityEngine;
 
 namespace CosmicShore.Game.ImpactEffects

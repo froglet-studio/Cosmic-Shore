@@ -4,6 +4,7 @@ using CosmicShore.Game.Camera;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Game.UI
 {

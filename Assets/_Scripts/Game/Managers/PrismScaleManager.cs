@@ -4,6 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
 using CosmicShore.Game.Environment;
+using System.Linq;
 namespace CosmicShore.Game.Managers
 {
     public class PrismScaleManager : AdaptiveAnimationManager<PrismScaleManager, PrismScaleAnimator, ScaleAnimationData>

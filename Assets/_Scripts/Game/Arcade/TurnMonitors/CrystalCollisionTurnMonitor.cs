@@ -4,6 +4,7 @@ using CosmicShore.Game.Player;
 using CosmicShore.Models.Enums;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {

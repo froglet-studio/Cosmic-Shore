@@ -9,6 +9,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Utility.SOAP;
 using CosmicShore.VesselHUD.View;
+using System.Linq;
 
 namespace CosmicShore.Game.Ship
 {
