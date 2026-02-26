@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
+using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -355,6 +356,8 @@ namespace CosmicShore.Core
 
             CSDebug.Log("[AuthScene] Navigating to Main Menu...");
 
+            StartHostMode();
+
             if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager)
                 && !transitionManager.IsTransitioning)
             {
@@ -364,6 +367,48 @@ namespace CosmicShore.Core
             {
                 SceneManager.LoadScene(mainMenuSceneName);
             }
+        }
+
+        // ----- Host Startup -----
+
+        void StartHostMode()
+        {
+            var nm = NetworkManager.Singleton;
+
+            if (nm == null)
+            {
+                CSDebug.LogWarning("[AuthScene] NetworkManager not available — skipping host start.");
+                return;
+            }
+
+            if (nm.IsListening)
+            {
+                CSDebug.Log("[AuthScene] NetworkManager already listening — skipping host start.");
+                return;
+            }
+
+            nm.ConnectionApprovalCallback += ApproveConnection;
+
+            if (nm.StartHost())
+            {
+                CSDebug.Log("[AuthScene] Started as Host before entering Main Menu.");
+            }
+            else
+            {
+                CSDebug.LogWarning("[AuthScene] Failed to start as Host.");
+                nm.ConnectionApprovalCallback -= ApproveConnection;
+            }
+        }
+
+        static void ApproveConnection(
+            NetworkManager.ConnectionApprovalRequest request,
+            NetworkManager.ConnectionApprovalResponse response)
+        {
+            response.Approved = true;
+            response.CreatePlayerObject = false;
+            response.Position = Vector3.zero;
+            response.Rotation = Quaternion.identity;
+            response.PlayerPrefabHash = null;
         }
     }
 }
