@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
 using CosmicShore.Core;
@@ -75,6 +76,7 @@ namespace CosmicShore.UI
 
         public void Confirm()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
             OnConfirm?.Invoke();
         }
 

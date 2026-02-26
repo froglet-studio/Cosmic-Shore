@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,6 +24,7 @@ namespace CosmicShore.UI
 
         public void OnClick()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
             IconView.SelectIcon(this, ProfileIcon);
         }
 

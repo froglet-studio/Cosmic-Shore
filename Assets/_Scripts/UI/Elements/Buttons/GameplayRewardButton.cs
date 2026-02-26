@@ -65,6 +65,7 @@ namespace CosmicShore.UI
 
         public void ClaimReward()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
             switch (RewardButtonType)
             {
                 case RewardButtonType.DailyChallenge:

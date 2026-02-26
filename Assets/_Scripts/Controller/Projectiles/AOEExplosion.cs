@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using CosmicShore.Data;
@@ -92,6 +93,7 @@ namespace CosmicShore.Gameplay
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.Explosion);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 

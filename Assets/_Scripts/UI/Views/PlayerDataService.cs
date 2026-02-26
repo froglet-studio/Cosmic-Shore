@@ -188,9 +188,15 @@ namespace CosmicShore.UI
             CurrentProfile = new PlayerProfileData
             {
                 userId      = string.IsNullOrEmpty(playerId) ? Guid.NewGuid().ToString("N") : playerId,
-                displayName = "Pilot",
+                displayName = GenerateDefaultDisplayName(),
                 avatarId    = GetDefaultAvatarId()
             };
+        }
+
+        static string GenerateDefaultDisplayName()
+        {
+            int suffix = UnityEngine.Random.Range(1000, 10000);
+            return $"Pilot{suffix}";
         }
 
         int GetDefaultAvatarId()

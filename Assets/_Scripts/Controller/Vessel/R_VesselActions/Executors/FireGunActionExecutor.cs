@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Core;
 using Obvious.Soap;
 using CosmicShore.Gameplay;
 using UnityEngine;
@@ -104,6 +105,7 @@ namespace CosmicShore.Gameplay
             if (_resources.Resources[so.AmmoIndex].CurrentAmount < so.AmmoCost)
                 return;
 
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GunFire);
             _soRef = so;
             _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
 
