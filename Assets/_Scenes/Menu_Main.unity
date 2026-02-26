@@ -57362,6 +57362,9 @@ GameObject:
   - component: {fileID: 1486013833}
   - component: {fileID: 1486013836}
   - component: {fileID: 1486013835}
+  - component: {fileID: 1486013840}
+  - component: {fileID: 1486013841}
+  - component: {fileID: 1486013842}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -57381,7 +57384,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1943945029}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1486013832
@@ -57462,6 +57466,53 @@ MonoBehaviour:
   spawnCrystalWithPlayerDomain: 0
   extraCrystalsToSpawnBeyondPlayerCount: 0
   spawnOnClientReady: 0
+--- !u!114 &1486013840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486013830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 112c623451eca5647a6ad4742a4f18aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1486013841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486013830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  clientPlayerVesselInitializer: {fileID: 1486013842}
+  vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
+    type: 2}
+  _playerOrigins:
+  - {fileID: 1564324325}
+  - {fileID: 673228694}
+--- !u!114 &1486013842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486013830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc7ff967d6770d241a956a121fdcfa63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &1486054860
 GameObject:
   m_ObjectHideFlags: 0
@@ -77640,7 +77691,7 @@ Transform:
   m_Children:
   - {fileID: 1564324325}
   - {fileID: 673228694}
-  m_Father: {fileID: 2996404617579086753}
+  m_Father: {fileID: 1486013831}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1944765221
 GameObject:
@@ -92945,177 +92996,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!1001 &2996404617579086749
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: m_Name
-      value: Player and Ship Spawner
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _spawnAtStart
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[0].ShipType
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[0].ShipClass
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[0].AllowSpawning
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[0].EnableAIPilot
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[1].AllowSpawning
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[1].EnableAIPilot
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1943945029}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2996404617579086751}
-  m_SourcePrefab: {fileID: 100100000, guid: a51d3a28670d8e64fbdb568abd6769e2, type: 3}
---- !u!1 &2996404617579086750 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
-    type: 3}
-  m_PrefabInstance: {fileID: 2996404617579086749}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2996404617579086751
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2996404617579086750}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d73c34105d7d4efab70dcea51ce9cede, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  _playerSpawner: {fileID: 2996404617579086752}
-  _initializeDatas:
-  - vesselClass: 2
-    domain: 2
-    PlayerName: Hostile1
-    AvatarId: 0
-    IsAI: 1
-    AllowSpawning: 0
-  - vesselClass: 11
-    domain: 2
-    PlayerName: Hostile2
-    AvatarId: 0
-    IsAI: 1
-    AllowSpawning: 0
-  - vesselClass: 3
-    domain: 2
-    PlayerName: Hostile3
-    AvatarId: 0
-    IsAI: 1
-    AllowSpawning: 1
-  _spawnTransforms:
-  - {fileID: 1564324325}
-  - {fileID: 673228694}
---- !u!114 &2996404617579086752 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-    type: 3}
-  m_PrefabInstance: {fileID: 2996404617579086749}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2996404617579086750}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 05f25773e3ee4abc86fa268757d3f4ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &2996404617579086753 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
-    type: 3}
-  m_PrefabInstance: {fileID: 2996404617579086749}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &3016169605549964998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -108174,6 +108054,5 @@ SceneRoots:
   - {fileID: 989920296}
   - {fileID: 949102245}
   - {fileID: 1867118901}
-  - {fileID: 2996404617579086749}
   - {fileID: 1486013831}
   - {fileID: 1243749158}
