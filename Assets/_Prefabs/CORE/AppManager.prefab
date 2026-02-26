@@ -56,6 +56,13 @@ MonoBehaviour:
   audioSystem: {fileID: 0}
   playerDataService: {fileID: 0}
   ugsStatsManager: {fileID: 0}
+  _gameplayManagerPrefabs:
+  - {fileID: 5036209225001289759, guid: 6e26a254ab5fbd749a242ce2be20d667, type: 3}
+  - {fileID: 3198637200510386836, guid: d2f1f48a5b5d5d14299a56a777d3971c, type: 3}
+  - {fileID: 5172949237805376952, guid: aa34cc8006c47114a826ff61f52889d6, type: 3}
+  - {fileID: 4853709196820857184, guid: ba70c0f3eb077d44b8a538982d02dadc, type: 3}
+  - {fileID: 8350600879602490808, guid: 7fec532a729a8b648a8de2399d1b918a, type: 3}
+  - {fileID: 1962929663241759852, guid: bd0ed2313b0c31841835230bedeaa90d, type: 3}
 --- !u!114 &5456740058571604360
 MonoBehaviour:
   m_ObjectHideFlags: 0
