@@ -12,7 +12,7 @@ Cosmic Shore is a multigenre space game ("the party game for pilots") developed 
 
 ### Vessel Classes
 
-The game features 11 vessel class types (defined in `Assets/_Scripts/Models/Enums/VesselClassType.cs`):
+The game features 11 vessel class types (defined in `Assets/_Scripts/Data/Enums/VesselClassType.cs`):
 
 | Vessel | ID | Genre / Role |
 |---|---|---|
@@ -57,53 +57,94 @@ Team ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue 
 ```
 Assets/
 ├── _Scripts/                  # All first-party code (~1,100 C# files)
-│   ├── App/                   # Application-level systems
-│   │   ├── Systems/           # Audio, Auth, Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP
-│   │   └── UI/                # App UI elements, FX, modals
-│   ├── Game/                  # Gameplay systems (~600 files)
-│   │   ├── Ship/              # Vessel core: VesselStatus, Prism, Trail, VesselPrismController, ShipActions/
-│   │   ├── Prisms/            # PrismFactory, PrismComponents (ECS), performance managers
-│   │   ├── Projectiles/       # Projectile systems
-│   │   ├── ImpactEffects/     # Impactors (7 types) + Effect SOs (10+ types)
-│   │   ├── Animation/         # Per-vessel animation controllers
-│   │   ├── Camera/            # CustomCameraController, CameraSettingsSO, CameraRigAnchor
+│   ├── Controller/            # Gameplay systems (~536 files)
+│   │   ├── Vessel/            # Vessel core: VesselStatus, Prism, Trail, VesselPrismController, VesselActions/, R_VesselActions/
+│   │   ├── Environment/       # Cells, crystals, flora/fauna, flow fields, warp fields, spawning
+│   │   ├── ImpactEffects/     # Impactors (11 types) + Effect SOs (20+ types)
+│   │   ├── Arcade/            # Mini-game controllers, scoring, turn monitors
+│   │   ├── Projectiles/       # Projectile systems, guns, mines, AOE effects
+│   │   ├── Managers/          # PrismScaleManager, MaterialStateManager, PrismStateManager, GameManager, ThemeManager
 │   │   ├── IO/                # Input strategies (Keyboard, Gamepad, Touch)
+│   │   ├── Animation/         # Per-vessel animation controllers
+│   │   ├── Camera/            # CustomCameraController, CameraSettingsSO, ICameraController
 │   │   ├── Multiplayer/       # Netcode: ClientPlayerVesselInitializer, ServerPlayerVesselInitializer, NetworkStatsManager
-│   │   ├── Arcade/            # Mini-game controllers and configurations
+│   │   ├── Player/            # Player spawning, IPlayer interface
+│   │   ├── Prisms/            # PrismFactory
+│   │   ├── Assemblers/        # Gyroid/wall assembly systems
 │   │   ├── Party/             # Party/social system
-│   │   ├── Environment/       # Prism animators, mini-game objects, flora/fauna
-│   │   ├── Managers/          # PrismScaleManager, MaterialStateManager, PrismStateManager, BlockDensityGrid
-│   │   └── UI/                # Game UI, VesselHUD (per-vessel HUD controllers)
-│   ├── Systems/
-│   │   └── Bootstrap/         # BootstrapController, ServiceLocator, SceneTransitionManager, ApplicationLifecycleManager
-│   ├── Models/Enums/          # VesselClassType, Domains, ResourceType, ShipActions, etc.
-│   ├── Utility/               # SOAP types, Effects, PoolsAndBuffers, DataContainers, DataPersistence
-│   ├── DialogueSystem/        # Custom dialogue system with editor tools
-│   └── Integrations/          # PlayFab integration
+│   │   ├── AI/                # AIPilot, AIGunner
+│   │   ├── FX/                # Visual effects controllers
+│   │   ├── ECS/               # DOTS entity components
+│   │   ├── XP/                # Experience point controllers
+│   │   └── Settings/          # Runtime settings
+│   ├── System/                # Application-level systems (~126 files)
+│   │   ├── Bootstrap/         # BootstrapController, ServiceLocator, SceneTransitionManager, ApplicationLifecycleManager
+│   │   ├── Playfab/           # PlayFab integration (Auth, Economy, Groups, PlayerData, PlayStream)
+│   │   ├── Instrumentation/   # CSAnalyticsManager, Firebase analytics, data collectors
+│   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
+│   │   ├── RewindSystem/      # Rewind/replay functionality
+│   │   ├── Audio/             # Wwise audio management
+│   │   ├── LoadOut/           # Vessel loadout configuration
+│   │   ├── CallToAction/      # Promotional/CTA system
+│   │   ├── Squads/            # Squad management
+│   │   ├── Quest/             # Quest system
+│   │   ├── UserAction/        # User action tracking
+│   │   ├── UserJourney/       # Funnel analytics
+│   │   ├── Favorites/         # Favorites system
+│   │   ├── Xp/                # XP leveling
+│   │   ├── Ads/               # Ad integration
+│   │   └── Architectures/     # Shared architectural base classes
+│   ├── UI/                    # Game & app UI (~188 files)
+│   │   ├── Controller/        # VesselHUD controllers (Manta, Rhino, Serpent, Sparrow)
+│   │   ├── View/              # VesselHUD views (all vessel types + Minigame, Multiplayer)
+│   │   ├── Interfaces/        # IVesselHUDController, IVesselHUDView, IMinigameHUDController
+│   │   ├── Elements/          # Reusable UI components
+│   │   ├── Views/             # Screen/view implementations (VesselSelection, XPTrack, Profile)
+│   │   ├── Modals/            # Modal dialogs (Settings, Profile, PurchaseConfirmation)
+│   │   ├── Screens/           # Screen containers
+│   │   ├── ToastSystem/       # ToastService, ToastChannel, ToastAnimation
+│   │   ├── Notification System/ # Push notification UI
+│   │   ├── GameEventFeed/     # In-game event feed
+│   │   ├── FX/                # UI visual effects
+│   │   └── Animations/        # UI animations
+│   ├── Data/                  # Models & enums (~29 files)
+│   │   ├── Enums/             # VesselClassType, Domains, ResourceType, ShipActions, InputEvents, etc.
+│   │   └── Structs/           # DailyChallenge, GameplayReward, TrainingGameProgress
+│   ├── ScriptableObjects/     # SO definitions & SOAP types (~70 files)
+│   │   ├── SOAP/              # Custom SOAP types (14 subdirectories)
+│   │   └── SO_*.cs            # Game data SOs (Captain, Vessel, Game, ArcadeGame, Element, etc.)
+│   ├── Utility/               # Effects, PoolsAndBuffers, DataContainers, DataPersistence, ClassExtensions
+│   ├── DialogueSystem/        # Dialogue editor tools, animation, SO assets
+│   ├── Editor/                # Editor tools (CopyTool, shader inspectors, scene utilities)
+│   ├── Tests/                 # Edit-mode unit tests
+│   ├── Integrations/          # PlayFab SDK integration
+│   └── SSUScripts/            # Specialized subsystem scripts
 ├── _SO_Assets/                # ScriptableObject asset instances (48+ subdirectories)
 ├── _Prefabs/                  # CORE, Cameras, Characters, Environment, Pools, Projectile, Spaceships, Trails, UI Elements
 ├── _Scenes/                   # Game scenes organized by type
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
-├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), etc.
+├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
 ├── Wwise/                     # Audio middleware
 ├── Firebase/, PlayFabSDK/     # Backend SDKs
 ├── NiceVibrations/            # Haptic feedback
 └── SerializeInterface/        # Custom [RequireInterface] attribute support
 ```
 
+Note: A vestigial `_Scripts/Game/` directory exists containing only non-code assets (compute shaders, input action mappings, material files, and the `PRISM_PERFORMANCE_AUDIT.md`). All C# code has been reorganized into the directories listed above.
+
 ### Assembly Definitions
+
+All first-party gameplay code compiles in Unity's default assembly (no runtime `.asmdef` files). Only test assemblies have explicit assembly definitions:
 
 | Assembly | Scope |
 |---|---|
-| `CosmicShore.Runtime` | Main gameplay code |
-| `CosmicShore.Core` | Core types (`Models/Enums`) |
-| `CosmicShore.Utility` | SOAP types, Effects, PoolsAndBuffers, DataPersistence, DataContainers |
-| `CosmicShore.Bootstrap` | Bootstrap/scene management system |
-| `CosmicShore.DialogueSystem` | Dialogue runtime |
-| `CosmicShore.SSU` | Specialized subsystem |
-| `CosmicShore.Editor` | Editor tools |
 | `CosmicShore.Bootstrap.Tests` | Bootstrap unit tests |
+| `CosmicShore.Multiplayer.Tests` | Multiplayer unit tests |
+| `CosmicShore.PlayFabTests` | PlayFab integration tests |
+| `CosmicShore.Tests.EditMode` | General edit-mode tests |
+
+Third-party assemblies: `Obvious.Soap`, `PlayFab`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
 
 ## Architecture Patterns
 
@@ -139,19 +180,19 @@ This project uses the **SOAP asset** (Obvious.Soap v2.7.0, installed at `Assets/
 | Broadcasting an event to multiple listeners | `ScriptableEvent<T>` asset |
 | UI needs to react to gameplay changes | `EventListener<T>` on the UI GameObject |
 | New system needs data from another system | Reference the existing `ScriptableVariable` — do not add a direct dependency |
-| Request/response pattern between systems | `GenericEventChannelWithReturnSO<T, Y>` (custom extension at `Assets/_Scripts/Utility/SOAP/ScriptableEventWithReturn/`) |
+| Request/response pattern between systems | `GenericEventChannelWithReturnSO<T, Y>` (custom extension at `Assets/_Scripts/ScriptableObjects/SOAP/ScriptableEventWithReturn/`) |
 
 #### Creating New SOAP Types
 
-Custom SOAP types live in `Assets/_Scripts/Utility/SOAP/` organized by data type. When you need a new type:
+Custom SOAP types live in `Assets/_Scripts/ScriptableObjects/SOAP/` organized by data type. When you need a new type:
 
-1. Create a folder: `Assets/_Scripts/Utility/SOAP/Scriptable[TypeName]/`
+1. Create a folder: `Assets/_Scripts/ScriptableObjects/SOAP/Scriptable[TypeName]/`
 2. Create the variable class: `[TypeName]Variable : ScriptableVariable<[TypeName]>`
 3. Create the event class: `ScriptableEvent[TypeName] : ScriptableEvent<[TypeName]>`
 4. Create the listener class: `EventListener[TypeName] : EventListenerGeneric<[TypeName]>`
-5. Use namespace `CosmicShore.Soap` for all custom SOAP types
+5. Use namespace `CosmicShore.ScriptableObjects` for all custom SOAP types
 
-Existing custom SOAP types include: `AbilityStats`, `AuthenticationData`, `ClassType` (VesselClassType), `CrystalStats`, `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `ShipHUDData`, `SilhouetteData`, `Transform`, `NetworkMonitorData`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`).
+Existing custom SOAP types (14 subdirectories): `AbilityStats`, `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `SilhouetteData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
 
 #### SOAP Anti-Patterns
 
@@ -159,13 +200,13 @@ Existing custom SOAP types include: `AbilityStats`, `AuthenticationData`, `Class
 - **Do not** add direct MonoBehaviour-to-MonoBehaviour references for data sharing — use `ScriptableVariable` instead
 - **Do not** use `FindObjectOfType` or service locators to get shared data — wire a `ScriptableVariable` in the inspector
 - **Do not** create C# events or `Action` delegates on MonoBehaviours for things that multiple unrelated systems need to observe — use `ScriptableEvent`
-- **Do not** duplicate SOAP types — check `Assets/_Scripts/Utility/SOAP/` for existing types before creating new ones
+- **Do not** duplicate SOAP types — check `Assets/_Scripts/ScriptableObjects/SOAP/` for existing types before creating new ones
 - **Do not** put gameplay logic inside ScriptableVariable/ScriptableEvent classes — they are data containers and channels, not controllers
 - **Do not** add if-null guards on ScriptableEvent serialize fields — fail loud on missing references
 
 ### Bootstrap & Scene Flow
 
-The application uses an industry-standard bootstrap pattern (`Assets/_Scripts/Systems/Bootstrap/`):
+The application uses an industry-standard bootstrap pattern (`Assets/_Scripts/System/Bootstrap/`):
 
 1. **Bootstrap scene** (build index 0) → `BootstrapController` initializes all `IBootstrapService` implementations in order
 2. **Authentication scene** → `SplashToAuthFlow` handles auth flow
@@ -180,26 +221,28 @@ Key classes:
 
 ### Input Strategy Pattern
 
-Platform-agnostic input via `Assets/_Scripts/Game/IO/`:
+Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
 
 - `IInputStrategy` — interface for all input handlers
 - `BaseInputStrategy` — shared logic
 - `KeyboardMouseInputStrategy`, `GamepadInputStrategy`, `TouchInputStrategy` — platform-specific implementations
+- `InputController` — manages active strategy and input state
+- `IInputStatus` / `InputStatus` — input state container
 - Input strategies are swappable per platform/context at runtime
 
 ### Impact Effects Architecture
 
-The collision/impact system (`Assets/_Scripts/Game/ImpactEffects/`) uses a matrix of impactors and effect SOs:
+The collision/impact system (`Assets/_Scripts/Controller/ImpactEffects/`) uses a matrix of impactors and effect SOs:
 
-**Impactor types** (all extend `ImpactorBase`): `VesselImpactor`, `PrismImpactor`, `ProjectileImpactor`, `SkimmerImpactor`, `MineImpactor`, `ExplosionImpactor`, `CrystalImpactor`
+**Impactor types** (all extend `ImpactorBase`): `VesselImpactor`, `NetworkVesselImpactor`, `PrismImpactor`, `ProjectileImpactor`, `SkimmerImpactor`, `MineImpactor`, `ExplosionImpactor`, `CrystalImpactor`, `ElementalCrystalImpactor`, `OmniCrystalImpactor`, `TeamCrystalImpactor`
 
-**Effect SO pattern**: `[Impactor][Target]EffectSO` — e.g., `VesselExplosionByCrystalEffectSO`, `SkimmerAlignPrismEffectSO`, `SparrowDebuffByRhinoDangerPrismEffectSO`. Per-vessel effect asset instances exist for each vessel class.
+**Effect SO pattern**: `[Impactor][Target]EffectSO` — e.g., `VesselExplosionByCrystalEffectSO`, `SkimmerAlignPrismEffectSO`, `SparrowDebuffByRhinoDangerPrismEffectSO`. Per-vessel effect asset instances exist for each vessel class. Organized into subdirectories: `Vessel Crystal Effects/`, `Vessel Prism Effects/`, `Vessel Explosion Effects/`, `Vessel Projectile Effects/`, `Vessel Skimmer Effects/`, `Skimmer Prism Effects/`, `Projectile Crystal Effects/`, `Projectile Prism Effects/`, `Projectile Mine Effects/`, `Projectile End Effects/`.
 
 Key interfaces: `IImpactor` / `IImpactCollider`
 
 ### Multiplayer / Netcode
 
-The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Game/Multiplayer/`:
+The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
 
 - `ClientPlayerVesselInitializer` / `ServerPlayerVesselInitializer` — vessel spawning on client/server
 - `ServerPlayerVesselInitializerWithAI` — AI opponent spawning
@@ -211,58 +254,68 @@ The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5
 
 ### FTUE (First-Time User Experience)
 
-Tutorial system at `Assets/FTUE/` using adapter pattern with clean interface separation:
+Tutorial system at `Assets/FTUE/` (27 C# files) using adapter pattern with clean interface separation:
 
-- **Interfaces**: `IFlowController`, `ITutorialExecutor`, `ITutorialStepHandler`, `ITutorialUIView`
+- **Interfaces**: `IFlowController`, `ITutorialExecutor`, `ITutorialStepHandler`, `ITutorialUIView`, `IAnimator`, `IOutroHandler`, `ITutorialStepExecutor`
 - **Adapters**: `TutorialExecutorAdapter`, `FTUEIntroAnimatorAdapter`, `TutorialUIViewAdapter`
-- **Data models**: `TutorialStep`, `TutorialPhase`, `TutorialSection`, `FTUEProgress`
+- **Data models**: `TutorialStep`, `TutorialPhase`, `TutorialSection`, `TutorialSequenceSet`, `TutorialStepPayload`, `TutorialStepType`, `FTUEProgress`
+- **Drivers**: `FTUEIntroAnimator`, `TutorialFlowController`
 - **Step handlers**: `FreestylePromptHandler`, `IntroWelcomeHandler`, `LockModesExceptFreestyleHandler`, `OpenArcadeMenuHandler`
+- **UI**: `TutorialUIView`, `InGameTutorialFlowView`
+- **Events**: `FTUEEventManager` (SOAP-based event broadcasting)
 
 ### Dialogue System
 
-Custom dialogue system at `Assets/_Scripts/DialogueSystem/` (namespace: `CosmicShore.DialogueSystem`):
+Custom dialogue system spanning two locations:
 
-- Editor tools: `DialogueEditorWindow`, `DialogueSetEditorView`
-- Runtime: `DialogueManager`, `DialogueEventChannel`, `DialogueUIAnimator`, `DialogueViewResolver`, `DialogueAudioBatchLinker`
+- **Editor & assets**: `Assets/_Scripts/DialogueSystem/` — animation controllers, shader graphs (SpriteAnimation, UI_NoiseDissolve), SO dialogue data assets, prefab
+- **Runtime code**: `Assets/_Scripts/System/Runtime/` — `DialogueManager`, `DialogueEventChannel`, `DialogueUIAnimator`, `DialogueViewResolver`, `DialogueAudioBatchLinker`
+- **Models**: `Assets/_Scripts/System/Runtime/Models/` — `DialogueLine`, `DialogueSet`, `DialogueSetLibrary`, `DialogueSpeaker`, `DialogueVisuals`, `DialogueModeType`, `IDialogueService`, `IDialogueView`, `IDialogueViewResolver`
+- **Views**: `InGameRadioDialogueView`, `MainMenuDialogueView`, `RewardDialogueView`
+- **Editor tools**: `DialogueEditorWindow`, `DialogueLineDrawer` (in `_Scripts/Editor/`)
 
 ### AI Opponent System
 
-Runtime-configurable AI opponents with `MainAIProfileList.asset`:
+Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - `AIPilot` controls AI vessel behavior
+- `AIGunner` controls AI targeting/shooting
+- AI profiles configured via `SO_AIProfileList` (`MainAIProfileList.asset`)
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
 
 ### Namespace Convention
 
-All game code lives under `CosmicShore.*`:
+All game code lives under `CosmicShore.*` with 8 primary namespaces:
 
-- `CosmicShore.Core` — foundational systems, ship status, transformers
-- `CosmicShore.Game` — gameplay systems (Ship, Prisms, Projectiles, ImpactEffects, Animation, Camera, IO, Multiplayer, Party, Arcade, Environment, Managers, UI)
-- `CosmicShore.Game.Projectiles` — projectile-specific classes
-- `CosmicShore.Systems.Bootstrap` — bootstrap/scene flow
-- `CosmicShore.Services` — service layer
-- `CosmicShore.Models.Enums` — all game enumerations
-- `CosmicShore.UI` / `CosmicShore.VesselHUD` — UI systems
-- `CosmicShore.Soap` — custom SOAP types
-- `CosmicShore.Utility` — utilities (SOAP types, Effects, PoolsAndBuffers, DataContainers, DataPersistence)
-- `CosmicShore.DialogueSystem` — dialogue management
+- `CosmicShore.Core` — foundational systems: PlayFab integration, authentication, bootstrap, rewind, FTUE, dialogue runtime
+- `CosmicShore.Gameplay` — all gameplay controllers: vessel, input, multiplayer, camera, impact effects, arcade, projectiles, environment, player, AI
+- `CosmicShore.Data` — enums (VesselClassType, Domains, ResourceType, ShipActions, InputEvents, etc.) and data structs
+- `CosmicShore.ScriptableObjects` — SO definitions (SO_Captain, SO_Vessel, SO_Game, etc.) and all custom SOAP types
+- `CosmicShore.UI` — all UI: vessel HUD controllers/views, modals, screens, toast system, scoreboards, elements
+- `CosmicShore.Utility` — utilities: Effects, PoolsAndBuffers, DataContainers, DataPersistence, ClassExtensions, interactive SSU components
+- `CosmicShore.Editor` — editor tools: dialogue editor, shader inspectors, copy tools, scene utilities
+- `CosmicShore.Tests` — edit-mode unit tests
 
 ### Key Systems & Classes
 
 | System | Key Classes | Location |
 |---|---|---|
-| Vessel core | `VesselStatus` (extends `NetworkBehaviour`), `ShipTransformer`, `VesselPrismController` | `_Scripts/Game/Ship/` |
-| Prism lifecycle | `Prism`, `PrismFactory`, `Trail`, `TrailBlock` | `_Scripts/Game/Ship/`, `_Scripts/Game/Prisms/` |
-| Prism performance | `PrismScaleManager`, `MaterialStateManager`, `AdaptiveAnimationManager`, `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` | `_Scripts/Game/Managers/` |
-| Impact effects | `ImpactorBase` + 7 impactor types, 10+ Effect SO types | `_Scripts/Game/ImpactEffects/` |
-| Camera | `CustomCameraController`, `ShipCameraCustomizer`, `CameraRigAnchor`, `CameraSettingsSO`, `ICameraController`, `ICameraConfigurator` | `_Scripts/Game/Camera/` |
-| Vessel HUD | `IVesselHUDController`, `IShipHUDView`, per-vessel controllers (Sparrow, Squirrel, Serpent, Manta, Rhino, Dolphin) | `_Scripts/Game/UI/` |
-| Arcade games | `MiniGameControllerBase`, `SinglePlayerMiniGameControllerBase`, `MultiplayerMiniGameControllerBase` | `_Scripts/Game/Arcade/` |
-| Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_ShipElementStatsHandler` | `_Scripts/Game/Ship/` |
+| Vessel core | `VesselStatus` (extends `NetworkBehaviour`), `VesselTransformer`, `VesselController`, `VesselPrismController` | `_Scripts/Controller/Vessel/` |
+| Vessel actions | `VesselActionSO` (base config), `VesselActionExecutorBase`, `ActionExecutorRegistry` + 40+ action SOs | `_Scripts/Controller/Vessel/R_VesselActions/`, `VesselActions/` |
+| Prism lifecycle | `Prism`, `PrismFactory`, `Trail`, `TrailFollower` | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/Prisms/` |
+| Prism performance | `PrismScaleManager`, `MaterialStateManager`, `AdaptiveAnimationManager`, `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` | `_Scripts/Controller/Managers/` |
+| Impact effects | `ImpactorBase` + 11 impactor types, 20+ Effect SO types | `_Scripts/Controller/ImpactEffects/` |
+| Camera | `CustomCameraController`, `VesselCameraCustomizer`, `CameraSettingsSO`, `ICameraController`, `ICameraConfigurator` | `_Scripts/Controller/Camera/` |
+| Vessel HUD | `IVesselHUDController`, `IVesselHUDView`, per-vessel controllers & views (Sparrow, Squirrel, Serpent, Manta, Rhino, Dolphin) | `_Scripts/UI/Controller/`, `_Scripts/UI/View/`, `_Scripts/UI/Interfaces/` |
+| Arcade games | `MiniGameControllerBase`, `SinglePlayerMiniGameControllerBase`, `MultiplayerMiniGameControllerBase`, `CompositeScoring` | `_Scripts/Controller/Arcade/` |
+| Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
-| UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/App/UI/`, `_Scripts/Game/UI/` |
-| Telemetry | `VesselTelemetryBootstrapper`, `VesselStats` SO, UGS Cloud Save upload | `_Scripts/Game/Ship/` |
-| App systems | Audio, Auth, Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP | `_Scripts/App/Systems/` |
+| Player system | `Player`, `PlayerSpawner`, `IPlayer`, platform-specific adapters | `_Scripts/Controller/Player/` |
+| UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
+| Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
+| Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
+| App systems | Audio, Auth, Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP | `_Scripts/System/` |
+| ScriptableObjects | `SO_Vessel`, `SO_Captain`, `SO_Game`, `SO_ArcadeGame`, `SO_Element`, `SO_Mission`, etc. | `_Scripts/ScriptableObjects/` |
 
 ### Async Pattern
 
@@ -306,7 +359,7 @@ All game code lives under `CosmicShore.*`:
 
 ### Prism System Performance
 
-The prism system is the most performance-critical gameplay system. See `Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md` for the full audit. Key facts:
+The prism system is the most performance-critical gameplay system. See `Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md` for the full audit (note: audit doc remains in the vestigial `Game/` directory). Key facts:
 
 - Each prism is a full GameObject with 5-6 MonoBehaviours + BoxCollider + MeshRenderer
 - At 2,000 prisms: ~12,000 MonoBehaviour instances + 2,000 colliders
@@ -319,8 +372,10 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 ### Test Infrastructure
 
 - **Framework**: Unity Test Framework 1.6.0 (NUnit-based)
-- **Bootstrap tests**: `Assets/_Scripts/Systems/Bootstrap/Tests/` — `BootstrapControllerTests`, `ServiceLocatorTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `SceneFlowIntegrationTests`, `BootstrapConfigSOTests`
-- **PlayFab tests**: `Assets/_Scripts/Integrations/Playfab/PlayFabTests/`
+- **Edit-mode tests**: `Assets/_Scripts/Tests/EditMode/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
+- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `BootstrapControllerTests`, `ServiceLocatorTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `SceneFlowIntegrationTests`, `BootstrapConfigSOTests`
+- **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/` — `DomainAssignerTests`
+- **PlayFab tests**: `Assets/_Scripts/System/Playfab/PlayFabTests/` — `PlayFabCatalogTests`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
 - **Test scenes**: `Assets/_Scenes/TestInput/`, `Assets/_Scenes/Game_TestDesign/`
 
