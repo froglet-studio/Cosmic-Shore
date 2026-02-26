@@ -91,7 +91,7 @@ namespace CosmicShore.Tests
             public float Button3AbilityActiveTime { get; set; }
         }
 
-        TestRoundStats _stats;
+        IRoundStats _stats;
 
         [SetUp]
         public void SetUp()
