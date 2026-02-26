@@ -62,7 +62,12 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer) return;
             var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (stats != null) stats.JoustCollisions = collisionCount;
-            NotifyCollision_ClientRpc(playerName, collisionCount);
+
+            // In party mode, skip the ClientRpc — RPC table may be broken after
+            // SetActive toggling. The NetworkVariable.OnValueChanged callback
+            // fires locally on the host, so the HUD still updates.
+            if (!IsPartyMode)
+                NotifyCollision_ClientRpc(playerName, collisionCount);
         }
 
         public void ReportCollisionToServer(string playerName, int collisionCount)
@@ -100,7 +105,12 @@ namespace CosmicShore.Game.Arcade
             if (_finalResultsSent) return;
 
             CalculateJoustScores_Server();
-            SyncJoustResults_Authoritative();
+
+            // In party mode, skip the ClientRpc sync — RPC table is broken after
+            // SetActive toggling. ExecuteServerGameEnd handles sort + InvokeWinnerCalculated.
+            if (!IsPartyMode)
+                SyncJoustResults_Authoritative();
+
             _finalResultsSent = true;
         }
 
