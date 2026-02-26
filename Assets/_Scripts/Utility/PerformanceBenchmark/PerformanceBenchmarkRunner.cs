@@ -49,7 +49,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // Running averages for live progress reporting
         float runningFpsSum;
-        float runningFrameTimeSum;
+        float runningFrameTimeMs;
+
+        // Cached config flags — avoid SO property getter per frame
+        bool cachedCaptureRendering;
+        bool cachedCaptureMemory;
+        bool cachedCapturePhysics;
 
         // Profiler recorders for rendering stats
         ProfilerRecorder drawCallsRecorder;
@@ -57,6 +62,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder setPassRecorder;
         ProfilerRecorder trianglesRecorder;
         ProfilerRecorder verticesRecorder;
+
+        // Profiler recorders for memory and physics — zero-allocation alternatives
+        ProfilerRecorder gcAllocRecorder;
+        ProfilerRecorder activeBodiesRecorder;
 
         public bool IsRunning => state == State.WarmingUp || state == State.Sampling;
         public float Progress
@@ -99,11 +108,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 return;
             }
 
+            // Cache config flags to avoid SO property getter overhead per frame
+            cachedCaptureRendering = config.CaptureRenderingStats;
+            cachedCaptureMemory = config.CaptureMemoryStats;
+            cachedCapturePhysics = config.CapturePhysicsStats;
+
             int estimatedFrames = Mathf.CeilToInt(config.SampleDuration * 120);
             snapshots = new List<FrameSnapshot>(estimatedFrames);
             frameCounter = 0;
             runningFpsSum = 0;
-            runningFrameTimeSum = 0;
+            runningFrameTimeMs = 0;
 
             currentReport = new BenchmarkReport
             {
@@ -191,9 +205,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 };
 
                 runningFpsSum += fps;
-                runningFrameTimeSum += frameTimeMs;
+                runningFrameTimeMs += frameTimeMs;
 
-                if (config.CaptureRenderingStats)
+                if (cachedCaptureRendering)
                 {
                     snapshot.drawCalls = GetRecorderValue(drawCallsRecorder);
                     snapshot.batches = GetRecorderValue(batchesRecorder);
@@ -202,18 +216,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     snapshot.vertices = GetRecorderValue(verticesRecorder);
                 }
 
-                if (config.CaptureMemoryStats)
+                if (cachedCaptureMemory)
                 {
                     snapshot.totalAllocatedMemory = Profiler.GetTotalAllocatedMemoryLong();
                     snapshot.totalReservedMemory = Profiler.GetTotalReservedMemoryLong();
-                    snapshot.gcAllocatedPerFrame = Profiler.GetMonoUsedSizeLong();
+                    // Use ProfilerRecorder for actual per-frame GC allocation instead of
+                    // GetMonoUsedSizeLong() which returns cumulative heap usage.
+                    snapshot.gcAllocatedPerFrame = GetRecorderValueLong(gcAllocRecorder);
                 }
 
-                if (config.CapturePhysicsStats)
+                if (cachedCapturePhysics)
                 {
-                    snapshot.activeRigidbodies = Physics.simulationMode != SimulationMode.Script
-                        ? FindObjectsByType<Rigidbody>(FindObjectsSortMode.None).Length
-                        : 0;
+                    // Use ProfilerRecorder instead of FindObjectsByType<Rigidbody>() which
+                    // scans the scene hierarchy and allocates a managed array every frame.
+                    snapshot.activeRigidbodies = GetRecorderValue(activeBodiesRecorder);
                 }
 
                 snapshots.Add(snapshot);
@@ -273,7 +289,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         BenchmarkStateData BuildStateData(string reportFilePath)
         {
             float avgFps = frameCounter > 0 ? runningFpsSum / frameCounter : 0;
-            float avgFrameTime = frameCounter > 0 ? runningFrameTimeSum / frameCounter : 0;
+            float avgFrameTime = frameCounter > 0 ? runningFrameTimeMs / frameCounter : 0;
             float p99 = currentReport?.statistics?.p99FrameTimeMs ?? 0;
 
             return new BenchmarkStateData(
@@ -293,13 +309,24 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         void StartRecorders()
         {
-            if (!config.CaptureRenderingStats) return;
+            if (cachedCaptureRendering)
+            {
+                drawCallsRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Draw Calls Count");
+                batchesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Batches Count");
+                setPassRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count");
+                trianglesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Triangles Count");
+                verticesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Vertices Count");
+            }
 
-            drawCallsRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Draw Calls Count");
-            batchesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Batches Count");
-            setPassRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count");
-            trianglesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Triangles Count");
-            verticesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Vertices Count");
+            if (cachedCaptureMemory)
+            {
+                gcAllocRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
+            }
+
+            if (cachedCapturePhysics)
+            {
+                activeBodiesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Physics, "Active Dynamic Bodies");
+            }
         }
 
         void DisposeRecorders()
@@ -309,11 +336,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             setPassRecorder.Dispose();
             trianglesRecorder.Dispose();
             verticesRecorder.Dispose();
+            gcAllocRecorder.Dispose();
+            activeBodiesRecorder.Dispose();
         }
 
         static int GetRecorderValue(ProfilerRecorder recorder)
         {
             return recorder.Valid && recorder.Count > 0 ? (int)recorder.LastValue : 0;
+        }
+
+        static long GetRecorderValueLong(ProfilerRecorder recorder)
+        {
+            return recorder.Valid && recorder.Count > 0 ? recorder.LastValue : 0;
         }
 
         // ── Logging ─────────────────────────────────────
