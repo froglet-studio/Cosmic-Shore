@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private Transform modelRoot; 
         
         private readonly HashSet<int> _protectedBlockIds = new();
-        private Game.VesselPrismController controller;
+        private VesselPrismController controller;
         private Coroutine _runRoutine;
 
         private GameObject _ghostGo;
@@ -325,7 +325,7 @@ namespace CosmicShore.Gameplay
             var listA = controller?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
-            var trail2Field = typeof(Game.VesselPrismController).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
+            var trail2Field = typeof(VesselPrismController).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
             var trail2 = trail2Field?.GetValue(controller) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 

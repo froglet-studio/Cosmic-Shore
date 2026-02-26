@@ -2,6 +2,7 @@ using CosmicShore.ScriptableObjects;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Data;
 using CosmicShore.Utility;

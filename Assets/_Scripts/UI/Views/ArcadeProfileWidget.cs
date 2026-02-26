@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using Reflex.Attributes;
 using TMPro;

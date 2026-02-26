@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     public class OverheatTrailVisualBridge : MonoBehaviour
     {
         [SerializeField] private OverheatingActionExecutor overheating;
-        [SerializeField] private CosmicShore.SilhouetteController    silhouette;
+        [SerializeField] private SilhouetteController    silhouette;
         [SerializeField] private SilhouetteConfigSO        config;
 
         void Awake()

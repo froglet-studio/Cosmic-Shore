@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.InputSystem;
