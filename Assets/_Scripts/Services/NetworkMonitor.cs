@@ -1,11 +1,11 @@
+using CosmicShore.Utility;
 using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Services
 {
     /// <summary>
     /// Plain C# class (no MonoBehaviour, no static).

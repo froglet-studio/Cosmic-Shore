@@ -6,7 +6,7 @@ using CosmicShore.SSUScripts.Interactive;
 namespace CosmicShore.SSUScripts.Interactive.Editor
 {
     [CustomEditor(typeof(WindParallaxSSU))]
-    public class WindParallaxSSUEditor : Editor
+    public class WindParallaxSSUEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

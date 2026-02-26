@@ -6,7 +6,7 @@ using CosmicShore.SSUScripts.Interactive;
 namespace CosmicShore.SSUScripts.Interactive.Editor
 {
     [CustomEditor(typeof(WindManagerSSU)), CanEditMultipleObjects]
-    public class WindManagerSSUEditor : Editor
+    public class WindManagerSSUEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
