@@ -118,6 +118,15 @@ namespace CosmicShore.Game
         private const int INITIAL_CAPACITY = 4096;
         private const int JOB_BATCH_SIZE = 256;
 
+        /// <summary>
+        /// Maximum NEW prism hits to process per frame per explosion.
+        /// Spreading damage across frames prevents catastrophic frame spikes
+        /// (e.g. 2000+ prisms destroyed in one frame → 426ms).
+        /// Unprocessed hits are NOT added to alreadyHit and will be
+        /// re-found by the Burst spatial query on subsequent frames.
+        /// </summary>
+        private const int MAX_NEW_HITS_PER_FRAME = 48;
+
         // Hot: scanned by Burst job every frame during AOE
         private NativeArray<PrismSpatialData> _spatial;
 
@@ -308,12 +317,22 @@ namespace CosmicShore.Game
                 vesselPlayerName = status.Player.Name;
             }
 
+            int newHitCount = 0;
             for (int i = 0; i < _hitIndices.Length; i++)
             {
                 int idx = _hitIndices[i];
 
                 // Skip if already hit by this explosion (mirrors OnTriggerEnter once-per-pair behavior)
-                if (!alreadyHit.Add(idx)) continue;
+                if (alreadyHit.Contains(idx)) continue;
+
+                // Cap new damage per frame to spread load across frames.
+                // Don't add to alreadyHit — the Burst job will re-find these
+                // prisms next frame and we'll process them then.
+                if (newHitCount >= MAX_NEW_HITS_PER_FRAME)
+                    continue;
+
+                alreadyHit.Add(idx);
+                newHitCount++;
 
                 var prism = _prisms[idx];
                 if (prism == null || prism.destroyed) continue;
