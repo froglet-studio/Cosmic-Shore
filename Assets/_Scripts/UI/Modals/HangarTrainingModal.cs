@@ -1,15 +1,15 @@
-using CosmicShore.Systems;
-using CosmicShore.App.UI;
-using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
-using CosmicShore.Models.Enums;
+using CosmicShore.Gameplay;
+using CosmicShore.UI;
+using CosmicShore.Data;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using CosmicShore.ScriptableObjects;
 
-namespace CosmicShore
+namespace CosmicShore.UI
 {
     public class HangarTrainingModal : ModalWindowManager
     {

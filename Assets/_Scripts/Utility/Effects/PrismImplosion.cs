@@ -1,37 +1,42 @@
 using System;
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
-using CosmicShore.Utility.ClassExtensions; // if you still need it elsewhere
+using CosmicShore.Gameplay;
+using CosmicShore.Utility; // if you still need it elsewhere
 using CosmicShore.Utility;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles prism implosion/grow VFX. Managed by PrismImplosionPoolManager.
+    /// Animation is driven by PrismEffectsManager via batched Burst jobs
+    /// instead of per-instance async loops.
     /// Uses MaterialPropertyBlock so prefab materials remain untouched.
-    /// UniTask-based animations with cancellation.
     /// </summary>
     [RequireComponent(typeof(Renderer))]
     public class PrismImplosion : MonoBehaviour
     {
         [SerializeField] private Renderer prismRenderer;
         [SerializeField] private float implosionDuration = 2f;
-        [SerializeField] private float growDelay = 0.25f; // small pause before expanding
+        [SerializeField] private float growDelay = 0.25f;
 
         private MaterialPropertyBlock mpb;
 
-        // UniTask cancellation
-        private CancellationTokenSource cts;
-
-        private float implosionProgress;
-        
         /// <summary> Callback for pooling system when effect finishes. </summary>
         public Action<PrismImplosion> OnReturnToPool;
 
         // Shader property IDs
         private static readonly int ImplosionProgressID = Shader.PropertyToID("_State");
         private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
+
+        // State exposed to PrismEffectsManager for batched updates
+        internal Vector3 TargetPosition { get; private set; }
+        internal float Elapsed { get; set; }
+        internal float Duration => implosionDuration;
+        internal float GrowDelayRemaining { get; set; }
+        internal float Progress { get; set; }
+        internal bool IsActive { get; private set; }
+        internal bool IsGrowing { get; private set; }
+        internal Renderer Renderer => prismRenderer;
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -51,9 +56,12 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
-            // cancel any running tasks
-            CancelRunning();
-            // clear overrides
+            if (IsActive)
+            {
+                IsActive = false;
+                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
+            }
+
             if (prismRenderer != null && mpb != null)
             {
                 mpb.Clear();
@@ -63,7 +71,7 @@ namespace CosmicShore.Game
 
         // ---------------- API ----------------
 
-        /// <summary> Start implosion (shader: 0 → 1). </summary>
+        /// <summary> Start implosion (shader: 0 -> 1). </summary>
         public void StartImplosion(Transform convergenceTransform)
         {
             if (!prismRenderer || mpb == null)
@@ -72,21 +80,30 @@ namespace CosmicShore.Game
                 return;
             }
 
-            CancelRunning();
-            cts = new CancellationTokenSource();
+            if (IsActive)
+                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
 
             var targetPos = convergenceTransform.position;
 
-            // Reset shader properties
+            // Store state for manager to read
+            TargetPosition = targetPos;
+            Elapsed = 0f;
+            Progress = 0f;
+            IsGrowing = false;
+            GrowDelayRemaining = 0f;
+            IsActive = true;
+
+            // Set initial shader state
             prismRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat(ImplosionProgressID, 0f);
             mpb.SetVector(ConvergencePointID, targetPos);
             prismRenderer.SetPropertyBlock(mpb);
 
-            ImplosionAsync(targetPos, cts.Token).Forget();
+            // Register with batched manager for frame updates (auto-creates if not in scene)
+            PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
         }
 
-        /// <summary> Start grow (shader: 1 → 0). </summary>
+        /// <summary> Start grow (shader: 1 -> 0). </summary>
         public void StartGrow(Transform ownerTransform)
         {
             if (!prismRenderer || mpb == null)
@@ -95,136 +112,71 @@ namespace CosmicShore.Game
                 return;
             }
 
-            CancelRunning();
-            cts = new CancellationTokenSource();
+            if (IsActive)
+                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
 
-            GrowAsync(ownerTransform, cts.Token).Forget();
+            var startPosition = ownerTransform.position;
+
+            // Store state for manager to read
+            TargetPosition = startPosition;
+            Elapsed = 0f;
+            Progress = 1f;
+            IsGrowing = true;
+            GrowDelayRemaining = growDelay;
+            IsActive = true;
+
+            // Set initial collapsed state
+            prismRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(ImplosionProgressID, 1f);
+            mpb.SetVector(ConvergencePointID, startPosition);
+            prismRenderer.SetPropertyBlock(mpb);
+
+            // Register with batched manager for frame updates (auto-creates if not in scene)
+            PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
         }
 
         /// <summary>
-        /// Immediately stop any animation, clear overrides, reparent under pool root, and return to pool.
+        /// Immediately stop any animation, clear overrides, and return to pool.
         /// </summary>
         public void ReturnToPool()
         {
-            CancelRunning();
+            CompleteEffect();
+            OnReturnToPool?.Invoke(this);
+        }
+
+        public float GetImplosionProgress() => Progress;
+
+        /// <summary>Externally stop (cancels animation, but does not auto-return).</summary>
+        public void StopEffect() => CompleteEffect();
+
+        // ---------------- Internals ----------------
+
+        /// <summary>
+        /// Called internally or by PrismEffectsManager to stop the animation and clear overrides.
+        /// </summary>
+        internal void CompleteEffect()
+        {
+            if (IsActive)
+            {
+                IsActive = false;
+                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
+            }
 
             if (prismRenderer && mpb != null)
             {
                 mpb.Clear();
                 prismRenderer.SetPropertyBlock(mpb);
             }
+        }
 
+        /// <summary>
+        /// Called by PrismEffectsManager when the animation finishes naturally.
+        /// Cleans up and notifies pool.
+        /// </summary>
+        internal void OnEffectComplete()
+        {
+            CompleteEffect();
             OnReturnToPool?.Invoke(this);
-        }
-
-        public float GetImplosionProgress() => implosionProgress;
-
-        /// <summary>Externally stop (cancels async op, but does not auto-return).</summary>
-        public void StopEffect() => CancelRunning();
-
-        // ---------------- Internals ----------------
-
-        private void CancelRunning()
-        {
-            if (cts != null)
-            {
-                cts.Cancel();
-                cts.Dispose();
-                cts = null;
-            }
-        }
-
-        private async UniTaskVoid ImplosionAsync(Vector3 targetPos, CancellationToken ct)
-        {
-            float elapsed = 0f;
-
-            try
-            {
-                while (elapsed < implosionDuration)
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    elapsed += Time.deltaTime;
-                    float t = Mathf.Clamp01(elapsed / implosionDuration);
-
-                    implosionProgress = Mathf.Lerp(0f, 1f, t);
-
-                    prismRenderer.GetPropertyBlock(mpb);
-                    mpb.SetFloat(ImplosionProgressID, implosionProgress);
-                    mpb.SetVector(ConvergencePointID, targetPos);
-                    prismRenderer.SetPropertyBlock(mpb);
-
-                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // cleanup happens below; do not release to pool on cancel
-            }
-
-            // Force final state if not canceled
-            if (!ct.IsCancellationRequested)
-            {
-                implosionProgress = 1f;
-
-                prismRenderer.GetPropertyBlock(mpb);
-                mpb.SetFloat(ImplosionProgressID, 1f);
-                mpb.SetVector(ConvergencePointID, targetPos);
-                prismRenderer.SetPropertyBlock(mpb);
-
-                // finished normally -> return to pool
-                OnReturnToPool?.Invoke(this);
-            }
-        }
-
-        private async UniTaskVoid GrowAsync(Transform ownerTransform, CancellationToken ct)
-        {
-            // initialize at collapsed state
-            Vector3 startPosition = ownerTransform.position;
-            prismRenderer.GetPropertyBlock(mpb);
-            mpb.SetFloat(ImplosionProgressID, 1f);
-            mpb.SetVector(ConvergencePointID, startPosition);
-            prismRenderer.SetPropertyBlock(mpb);
-
-            try
-            {
-                // optional delay before expanding
-                if (growDelay > 0f)
-                    await UniTask.Delay(TimeSpan.FromSeconds(growDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
-
-                float elapsed = 0f;
-                while (elapsed < implosionDuration)
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    elapsed += Time.deltaTime;
-                    implosionProgress = 1f - Mathf.Clamp01(elapsed / implosionDuration);
-
-                    prismRenderer.GetPropertyBlock(mpb);
-                    mpb.SetFloat(ImplosionProgressID, implosionProgress);
-                    // If you need to keep following the owner during grow, uncomment:
-                    // mpb.SetVector(ConvergencePointID, ownerTransform.position);
-                    prismRenderer.SetPropertyBlock(mpb);
-
-                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // cleanup happens below; do not release to pool on cancel
-            }
-
-            // finished (not canceled): clear overrides and return to pool
-            if (!ct.IsCancellationRequested)
-            {
-                if (prismRenderer && mpb != null)
-                {
-                    mpb.Clear();
-                    prismRenderer.SetPropertyBlock(mpb);
-                }
-
-                OnReturnToPool?.Invoke(this);
-            }
         }
     }
 }

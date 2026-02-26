@@ -1,10 +1,12 @@
-using CosmicShore.Systems.Squads;
-using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
+using CosmicShore.Gameplay;
 using TMPro;
 using UnityEngine;
-
-namespace CosmicShore.App.UI.Modals
+using CosmicShore.Data;
+using CosmicShore.Utility;
+namespace CosmicShore.UI
 {
     public class FactionMissionModal : ModalWindowManager
     {

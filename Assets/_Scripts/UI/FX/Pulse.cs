@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.FX
+namespace CosmicShore.UI
 {
     public class Pulse : MonoBehaviour
     {

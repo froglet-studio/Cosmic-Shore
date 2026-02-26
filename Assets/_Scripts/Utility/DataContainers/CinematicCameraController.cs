@@ -1,7 +1,8 @@
 using CosmicShore.Utility;
+
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles cinematic camera behaviors during end-game sequences.

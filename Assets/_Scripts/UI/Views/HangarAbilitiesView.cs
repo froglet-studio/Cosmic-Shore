@@ -1,9 +1,10 @@
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI
 {
     public class HangarAbilitiesView : View
     {

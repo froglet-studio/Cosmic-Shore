@@ -1,5 +1,7 @@
-using CosmicShore.Systems;
-using CosmicShore.App.UI.FX;
+using CosmicShore.Core;
+using CosmicShore.Gameplay;
+using CosmicShore.Data;
+using CosmicShore.UI;
 using System;
 using System.Collections;
 using TMPro;
@@ -7,7 +9,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
 
     [Serializable]

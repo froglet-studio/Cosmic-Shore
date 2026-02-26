@@ -1,7 +1,5 @@
-using CosmicShore.Systems.Ads;
-using CosmicShore.App.UI.FX;
-using CosmicShore.Integrations.PlayFab.CloudScripts;
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Core;
+using CosmicShore.UI;
 using System;
 using System.Collections;
 using System.Globalization;
@@ -9,8 +7,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Advertisements;
 using UnityEngine.UI;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-namespace CosmicShore
+
+namespace CosmicShore.UI
 {
     enum ButtonMode
     {

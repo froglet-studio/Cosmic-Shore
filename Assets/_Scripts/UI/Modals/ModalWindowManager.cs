@@ -1,8 +1,8 @@
 using System.Collections;
 using UnityEngine;
-using static CosmicShore.App.UI.ScreenSwitcher;
+using static CosmicShore.UI.ScreenSwitcher;
 
-namespace CosmicShore.App.UI.Modals
+namespace CosmicShore.UI
 {
     public class ModalWindowManager : MonoBehaviour
     {

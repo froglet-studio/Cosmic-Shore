@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
-using CosmicShore.Models.Enums;
+using CosmicShore.Gameplay;
+using CosmicShore.Data;
 using Obvious.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using IPlayer = CosmicShore.Game.IPlayer;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using IPlayer = CosmicShore.Gameplay.IPlayer;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Every MiniGame in the project should use the same asset of this SO.
@@ -61,6 +61,14 @@ namespace CosmicShore.Soap
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;
+
+        /// <summary>
+        /// Number of AI players to backfill in multiplayer when not enough
+        /// human players are present. Set by PartyGameLauncher before launch.
+        /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
+        /// </summary>
+        public int RequestedAIBackfillCount;
+
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();
@@ -150,6 +158,7 @@ namespace CosmicShore.Soap
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
+            RequestedAIBackfillCount = 0;
             _playerSpawnPoseList.Clear();
             LocalPlayer = null;
             LocalRoundStats = null;

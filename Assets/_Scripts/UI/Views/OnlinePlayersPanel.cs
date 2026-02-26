@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using CosmicShore.Game.Party;
-using CosmicShore.Soap;
+using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore.App.UI.Panels
+using CosmicShore.ScriptableObjects;
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Modal panel that lists all online players from the presence lobby.

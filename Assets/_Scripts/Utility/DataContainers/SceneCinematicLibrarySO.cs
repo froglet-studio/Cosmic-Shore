@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(
         fileName = "SceneCinematicLibrary",

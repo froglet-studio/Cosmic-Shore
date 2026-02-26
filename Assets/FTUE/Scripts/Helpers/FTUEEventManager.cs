@@ -1,7 +1,8 @@
 using System;
-using CosmicShore.Systems.CTA;
+using CosmicShore.Core;
+using CosmicShore.Data;
 
-namespace CosmicShore.Events
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Central hub for FTUE-related events.

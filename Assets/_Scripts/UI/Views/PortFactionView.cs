@@ -1,6 +1,6 @@
-using CosmicShore.App.UI.Views;
+using CosmicShore.UI;
 
-namespace CosmicShore
+namespace CosmicShore.UI
 {
     public class PortFactionView : View
     {

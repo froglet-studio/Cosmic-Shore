@@ -1,11 +1,14 @@
-using CosmicShore.Systems;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore.App.UI.Views
+using CosmicShore.Data;
+using CosmicShore.Utility;
+using System.Linq;
+namespace CosmicShore.UI
 {
     public class DailyChallengeGameView : View
     {

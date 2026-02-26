@@ -1,10 +1,12 @@
-using CosmicShore.Integrations.PlayFab.PlayerData;
+using CosmicShore.Core;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 
-namespace CosmicShore
+namespace CosmicShore.UI
 {
     [RequireComponent (typeof (Image))]
     public class ProfileImage : MonoBehaviour

@@ -1,0 +1,20 @@
+using UnityEngine;
+using CosmicShore.Gameplay;
+using CosmicShore.Data;
+using CosmicShore.Utility;
+namespace CosmicShore.Gameplay
+{
+    [CreateAssetMenu(
+        fileName = "VesselChangeResourceByCrystalEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselChangeResourceByCrystalEffectSO")]
+    public class VesselChangeResourceByCrystalEffectSO : VesselCrystalEffectSO
+    {
+        [SerializeField] ResourceChangeSpec _change;
+        
+        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
+        {
+            var rs = vesselImpactor.Vessel.VesselStatus.ResourceSystem;
+            _change.ApplyTo(rs, this);
+        }
+    }
+}

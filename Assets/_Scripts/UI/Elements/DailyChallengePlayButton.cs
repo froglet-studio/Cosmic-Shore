@@ -1,7 +1,7 @@
-using CosmicShore.Systems;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     public class DailyChallengePlayButton : MonoBehaviour
     {

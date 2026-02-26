@@ -1,9 +1,10 @@
+using CosmicShore.Gameplay;
 using CosmicShore.Core;
-using CosmicShore.Integrations.PlayFab.Economy;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.ScriptableObjects;
 
-namespace CosmicShore
+namespace CosmicShore.UI
 {
     public class PurchaseGameCard : PurchaseItemCard
     {

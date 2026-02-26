@@ -1,7 +1,6 @@
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Data;
 using CosmicShore.Core;
-using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Integrations.PlayFab.PlayerData;
-using CosmicShore.Integrations.PlayFab.PlayStream;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,8 +8,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
-
-namespace CosmicShore.App.UI.Screens
+using System.Linq;
+namespace CosmicShore.UI
 {
     [RequireComponent(typeof(MenuAudio))]
     public class LeaderboardsMenu : MonoBehaviour

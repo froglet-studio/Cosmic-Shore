@@ -1,10 +1,10 @@
-using CosmicShore.Game.Party;
-using CosmicShore.Soap;
+using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore.App.UI.Panels
+using CosmicShore.ScriptableObjects;
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Toast popup for incoming party invitations.

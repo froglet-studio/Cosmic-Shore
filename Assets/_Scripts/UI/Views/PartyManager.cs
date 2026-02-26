@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CosmicShore.App.Profile;
-using CosmicShore.Soap;
-using CosmicShore.Utilities;
+using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-
-namespace CosmicShore.Game.Party
+using CosmicShore.ScriptableObjects;
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Backward-compatible facade that delegates to <see cref="HostConnectionService"/>
@@ -166,7 +165,7 @@ namespace CosmicShore.Game.Party
             return HostConnectionService.Instance.DeclineInviteAsync();
         }
 
-        public void HandOffToMultiplayerSetup(CosmicShore.Soap.GameDataSO gameData)
+        public void HandOffToMultiplayerSetup(GameDataSO gameData)
         {
             HostConnectionService.Instance?.HandOffToMultiplayerSetup(gameData);
         }

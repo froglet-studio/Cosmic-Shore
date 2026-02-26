@@ -1,10 +1,9 @@
-using CosmicShore.App.Profile;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI
 {
     /// <summary>
     /// UI component that displays the player's profile (display name + avatar).

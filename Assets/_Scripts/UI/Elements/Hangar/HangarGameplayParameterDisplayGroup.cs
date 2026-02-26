@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using System.Linq;
 
-namespace CosmicShore
+namespace CosmicShore.UI
 {
     public class HangarGameplayParameterDisplayGroup : MonoBehaviour
     {

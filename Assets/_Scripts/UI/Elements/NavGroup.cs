@@ -2,8 +2,9 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using System.Linq;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     public enum NavGroupType
     {

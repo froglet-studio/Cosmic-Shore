@@ -1,13 +1,16 @@
-﻿using System;
+using System;
 using System.Collections;
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.XP;
-using CosmicShore.Soap;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.UI;
 using CosmicShore.Utility;
+using System.Linq;
+using DG.Tweening;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     public class EndGameCinematicController : MonoBehaviour
     {

@@ -1,18 +1,17 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CosmicShore.App.Systems;
-using CosmicShore.Services.Auth;
-using CosmicShore.Soap;
+using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using UnityEngine;
-using CosmicShore.Utility;
 using Reflex.Attributes;
 
 
-namespace CosmicShore.App.Profile
+namespace CosmicShore.UI
 {
     public class PlayerDataService : MonoBehaviour
     {

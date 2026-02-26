@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     public class TooltipHandler : MonoBehaviour, IPointerClickHandler
     {

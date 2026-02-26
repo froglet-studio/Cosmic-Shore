@@ -1,6 +1,5 @@
-using CosmicShore.App.UI.Modals;
-using CosmicShore.App.UI.Views;
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.UI;
+using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +9,7 @@ using UnityEngine.Assertions;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI.Screens
+namespace CosmicShore.UI
 {
     public class StoreScreen : View
     {

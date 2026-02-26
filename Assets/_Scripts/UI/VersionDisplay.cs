@@ -2,7 +2,7 @@ using UnityEngine;
 using TMPro;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     public class VersionDisplay : MonoBehaviour
     {

@@ -1,7 +1,8 @@
 using Obvious.Soap;
 using UnityEngine;
-
-namespace CosmicShore.Soap
+using CosmicShore.ScriptableObjects;
+using System.Linq;
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Central SOAP data container for the host connection and party system.
@@ -46,6 +47,9 @@ namespace CosmicShore.Soap
         [Tooltip("Raised when a remote player leaves the local player's party.")]
         public ScriptableEventPartyPlayerData OnPartyMemberLeft;
 
+        [Tooltip("Raised when the host kicks a remote player from the party.")]
+        public ScriptableEventPartyPlayerData OnPartyMemberKicked;
+
         [Header("Max Slots")]
         [Tooltip("Maximum number of party slots (including the local player).")]
         [SerializeField] private int maxPartySlots = 4;
@@ -83,6 +87,42 @@ namespace CosmicShore.Soap
         // ─────────────────────────────────────────────────────────────────────
 
         public bool HasOpenSlots => PartyMembers == null || PartyMembers.Count < maxPartySlots;
+
+        /// <summary>
+        /// Number of remote (non-local) human players in the party.
+        /// </summary>
+        public int RemotePartyMemberCount
+        {
+            get
+            {
+                if (PartyMembers == null) return 0;
+                int count = 0;
+                foreach (var m in PartyMembers)
+                    if (m.PlayerId != LocalPlayerId) count++;
+                return count;
+            }
+        }
+
+        /// <summary>
+        /// Removes a party member by player ID and fires OnPartyMemberKicked.
+        /// </summary>
+        public bool RemovePartyMember(string playerId)
+        {
+            if (PartyMembers == null) return false;
+
+            for (int i = PartyMembers.Count - 1; i >= 0; i--)
+            {
+                if (PartyMembers[i].PlayerId == playerId)
+                {
+                    var removed = PartyMembers[i];
+                    PartyMembers.RemoveAt(i);
+                    OnPartyMemberKicked?.Raise(removed);
+                    OnPartyMemberLeft?.Raise(removed);
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public void ResetRuntimeData()
         {

@@ -1,8 +1,10 @@
-using CosmicShore.App.UI.Screens;
+using CosmicShore.UI;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore
+using CosmicShore.Core;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+namespace CosmicShore.UI
 {
     public class HangarTrainingGameButton : MonoBehaviour
     {

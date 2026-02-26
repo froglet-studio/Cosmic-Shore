@@ -1,7 +1,6 @@
-using CosmicShore.Core;
+using CosmicShore.Gameplay;
 using UnityEngine;
-
-namespace CosmicShore.App.UI.Elements
+namespace CosmicShore.UI
 {
     public class ToggleSynchronizer : MonoBehaviour
     {

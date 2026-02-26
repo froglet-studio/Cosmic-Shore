@@ -2,8 +2,8 @@ using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore
+using CosmicShore.Gameplay;
+namespace CosmicShore.UI
 {
     public class IntensitySelectButton : MonoBehaviour
     {

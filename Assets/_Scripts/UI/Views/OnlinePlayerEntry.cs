@@ -1,10 +1,10 @@
 using System;
-using CosmicShore.Soap;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Panels
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Individual row in the <see cref="OnlinePlayersPanel"/>.

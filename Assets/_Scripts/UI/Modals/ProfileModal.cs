@@ -1,7 +1,6 @@
-using CosmicShore.Systems.Audio;
-using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Integrations.PlayFab.PlayerData;
-using CosmicShore.Soap;
+using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using PlayFab;
 using PlayFab.ClientModels;
 using Reflex.Attributes;
@@ -11,9 +10,9 @@ using System.Security;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using System.Linq;
 
-namespace CosmicShore.App.UI.Modals
+namespace CosmicShore.UI
 {
     public class ProfileModal : ModalWindowManager
     {

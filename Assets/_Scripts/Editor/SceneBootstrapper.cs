@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 
-namespace BTG.Editor
+namespace CosmicShore.Editor
 {
     /// <summary>
     /// Class that permits auto-loading a bootstrap scene when the editor switches to play mode.

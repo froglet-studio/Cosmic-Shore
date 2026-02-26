@@ -3,7 +3,7 @@ using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI
 {
     public abstract class View : MonoBehaviour
     {

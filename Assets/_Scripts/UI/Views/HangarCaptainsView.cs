@@ -1,7 +1,7 @@
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Models;
-using CosmicShore.App.UI.Modals;
-using CosmicShore.App.UI.Screens;
+using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI
 {
     public class HangarCaptainsView : View
     {
@@ -144,7 +144,7 @@ namespace CosmicShore.App.UI.Views
                     var crystalBalance = CatalogManager.Instance.GetCrystalBalance(captain.PrimaryElement);
                     crystalRequirementSatisfied = crystalBalance >= crystalsNeeded;
                     SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
-                    SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
+                    SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Gameplay.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
                 }
 
                 GoToStoreButton.gameObject.SetActive(false);
