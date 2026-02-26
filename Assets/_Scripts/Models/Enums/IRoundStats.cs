@@ -1,4 +1,5 @@
 ﻿using System;
+using CosmicShore.Game.Ship;
 
 namespace CosmicShore.Models.Enums
 {

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using CosmicShore.Utility.DataContainers;
+using CosmicShore.VesselHUD.Controller;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using TMPro;

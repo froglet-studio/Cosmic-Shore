@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.Models.Enums;
+using CosmicShore.Models.ScriptableObjects;
 
 namespace CosmicShore.Systems.Squads
 {

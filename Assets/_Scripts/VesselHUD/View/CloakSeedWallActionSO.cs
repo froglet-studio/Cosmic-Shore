@@ -1,5 +1,6 @@
 using UnityEngine;
 using CosmicShore.Game.Environment;
+using CosmicShore.Game.Ship;
 
 namespace CosmicShore.VesselHUD.View
 {

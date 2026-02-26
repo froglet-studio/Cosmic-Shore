@@ -1,6 +1,7 @@
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.UI.Modals;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 
 namespace CosmicShore.UI.Views
 {

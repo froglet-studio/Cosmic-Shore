@@ -7,6 +7,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.UI.Modals;
 using CosmicShore.Utility.Recording;
 using System.Linq;
 

@@ -2,7 +2,7 @@
 using CosmicShore.Utility.Network;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Player;
+using Player = CosmicShore.Game.Player.Player;
 namespace CosmicShore.Game.Ship
 {
     /// <summary>

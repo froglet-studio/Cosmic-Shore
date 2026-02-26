@@ -1,5 +1,6 @@
 using CosmicShore.Game;
 using CosmicShore.Game.ImpactEffects;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
 namespace CosmicShore.Game.Ship

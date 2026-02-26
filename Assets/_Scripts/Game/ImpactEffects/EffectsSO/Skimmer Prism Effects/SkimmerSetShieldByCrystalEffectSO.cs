@@ -1,3 +1,4 @@
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility.Recording;
 
 ﻿using UnityEngine;

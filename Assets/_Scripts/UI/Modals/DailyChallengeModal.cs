@@ -1,4 +1,5 @@
 using CosmicShore.Game.Multiplayer;
+using CosmicShore.Models.Structs;
 using CosmicShore.UI.Views;
 using CosmicShore.Models.Enums;
 using CosmicShore.Integrations.Playfab;

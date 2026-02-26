@@ -5,9 +5,11 @@ using UnityEngine.InputSystem;
 using CosmicShore.Game.Settings;
 using Reflex.Attributes;
 using System;
+using CosmicShore.Game.IO;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
+using Player = CosmicShore.Game.Player.Player;
 
 namespace CosmicShore.Game.UI
 {

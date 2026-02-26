@@ -1,5 +1,6 @@
 using CosmicShore.Integrations.Playfab;
 using CosmicShore.Models.Enums;
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Models.Structs;
 using System;
 using System.Collections.Generic;

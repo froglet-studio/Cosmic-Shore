@@ -1,5 +1,6 @@
 using CosmicShore.Systems.CallToAction;
 using CosmicShore.Models.Enums;
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Systems.Favorites;
 using CosmicShore.Systems.LoadOut;
 using CosmicShore.UI.Elements;

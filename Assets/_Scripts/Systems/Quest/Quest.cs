@@ -1,9 +1,10 @@
 using CosmicShore.Integrations.Playfab;
 using System;
 using System.Collections.Generic;
-using CosmicShore.Systems.UserAction;
 using UnityEngine;
 using CosmicShore.Models.Enums;
+using CallToAction = CosmicShore.Systems.CallToAction.CallToAction;
+using UserAction = CosmicShore.Systems.UserAction.UserAction;
 
 namespace CosmicShore.Systems.Quest
 {
@@ -14,7 +15,7 @@ namespace CosmicShore.Systems.Quest
         public string Title;
         public string Description;
         public int ShardValue;
-        public CTA.CallToAction CallToAction;
+        public CallToAction CallToAction;
 
         /* Satisfaction Requirements */
         public UserAction CompletionAction;

@@ -1,5 +1,6 @@
 using CosmicShore.Game.Ship;
 using CosmicShore.Integrations.Playfab;
+using CosmicShore.Models;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
 using System.Collections.Generic;

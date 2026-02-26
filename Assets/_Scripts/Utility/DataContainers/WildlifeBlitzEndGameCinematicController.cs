@@ -1,4 +1,5 @@
 using System.Collections;
+using CosmicShore.Game.IO;
 using CosmicShore.Game.Ship;
 using CosmicShore.Game.Arcade;
 using Reflex.Attributes;

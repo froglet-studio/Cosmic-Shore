@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 

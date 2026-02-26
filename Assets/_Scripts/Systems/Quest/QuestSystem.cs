@@ -1,11 +1,12 @@
 using CosmicShore.Utility;
 using System.Collections.Generic;
-using CosmicShore.Systems.CallToAction;
-using CosmicShore.Systems.UserAction;
 using CosmicShore.Models.Enums;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using System.Linq;
+using CallToActionSystem = CosmicShore.Systems.CallToAction.CallToActionSystem;
+using UserAction = CosmicShore.Systems.UserAction.UserAction;
+using UserActionSystem = CosmicShore.Systems.UserAction.UserActionSystem;
 
 namespace CosmicShore.Systems.Quest
 {

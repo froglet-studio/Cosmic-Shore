@@ -1,4 +1,4 @@
-using CosmicShore.Game;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility.Recording;
 using UnityEngine;

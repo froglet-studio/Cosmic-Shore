@@ -10,8 +10,8 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility.SOAP;
-using CosmicShore.Game.Player;
 using CosmicShore.Game.Ship;
+using Player = CosmicShore.Game.Player.Player;
 using CosmicShore.Models.ScriptableObjects;
 namespace CosmicShore.Game.Multiplayer
 {

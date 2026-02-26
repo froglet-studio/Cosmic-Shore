@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation;
+using CosmicShore.Models;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Instrumentation

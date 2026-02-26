@@ -7,8 +7,8 @@ using CosmicShore.Utility;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Player;
 using CosmicShore.Models.ScriptableObjects;
+using IPlayer = CosmicShore.Game.Player.IPlayer;
 using CosmicShore.VesselHUD.Controller;
 using CosmicShore.VesselHUD.Interfaces;
 namespace CosmicShore.Game.Ship

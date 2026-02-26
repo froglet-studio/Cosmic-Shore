@@ -1,4 +1,5 @@
 using CosmicShore.Integrations.Instrumentation;
+using CosmicShore.Models;
 using System.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Utility.Recording;

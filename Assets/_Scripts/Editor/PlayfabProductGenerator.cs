@@ -5,6 +5,7 @@ using System;
 using CosmicShore.Integrations.Playfab;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
+using CosmicShore.Models.ScriptableObjects;
 
 namespace CosmicShore.Editor
 {

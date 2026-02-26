@@ -1,3 +1,4 @@
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
 using System.Collections.Generic;
 using CosmicShore.Systems.Quest;

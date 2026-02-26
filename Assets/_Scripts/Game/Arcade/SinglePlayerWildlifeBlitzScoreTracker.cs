@@ -1,5 +1,6 @@
-using CosmicShore.Game.Ship;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using Reflex.Attributes;
 using UnityEngine;

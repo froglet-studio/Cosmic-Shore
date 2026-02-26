@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Managers;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;

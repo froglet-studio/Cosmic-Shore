@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Models.Structs;
 using UnityEngine;
 
 namespace CosmicShore.Models.ScriptableObjects

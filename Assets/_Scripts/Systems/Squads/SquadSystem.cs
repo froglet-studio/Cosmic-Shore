@@ -2,6 +2,7 @@ using CosmicShore.Integrations.Playfab;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Models.Enums;
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility.DataPersistence;
 
 namespace CosmicShore.Systems.Squads

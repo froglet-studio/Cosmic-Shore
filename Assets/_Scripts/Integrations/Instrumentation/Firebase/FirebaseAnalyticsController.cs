@@ -1,5 +1,6 @@
-using CosmicShore.Systems.UserAction;
 using CosmicShore.Utility;
+using UserAction = CosmicShore.Systems.UserAction.UserAction;
+using UserActionSystem = CosmicShore.Systems.UserAction.UserActionSystem;
 #if !UNITY_WEBGL
 using CosmicShore.Utility.DataContainers;
 using Firebase;

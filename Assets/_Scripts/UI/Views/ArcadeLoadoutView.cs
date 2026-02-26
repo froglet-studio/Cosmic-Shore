@@ -1,16 +1,17 @@
-using CosmicShore.Systems.LoadOut;
-using CosmicShore.UI.Elements;
 using CosmicShore.Game.Managers;
 using CosmicShore.Models.Enums;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Systems.LoadOut;
+using CosmicShore.UI.Elements;
+using CosmicShore.Utility;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility.Recording;
+using Reflex.Attributes;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Utility.DataContainers;
-using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
-using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.UI.Views
 {

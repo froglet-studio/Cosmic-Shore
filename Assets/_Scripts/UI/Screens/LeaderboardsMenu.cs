@@ -1,4 +1,5 @@
 using CosmicShore.Models.Enums;
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Integrations.Playfab;
 using System;
 using System.Collections;

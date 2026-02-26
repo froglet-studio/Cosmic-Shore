@@ -1,3 +1,4 @@
+using CosmicShore.Models;
 using CosmicShore.UI.Modals;
 using CosmicShore.UI.Views;
 using CosmicShore.Integrations.Playfab;

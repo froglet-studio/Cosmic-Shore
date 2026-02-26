@@ -1,4 +1,4 @@
-﻿using CosmicShore;
+﻿using CosmicShore.Models.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.UI.Modals

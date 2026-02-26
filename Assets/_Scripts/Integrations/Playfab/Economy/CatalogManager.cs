@@ -11,6 +11,7 @@ using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
+using CosmicShore.Models;
 using CosmicShore.Models.Enums;
 using CosmicShore.Models.Structs;
 using CosmicShore.Utility.SOAP;

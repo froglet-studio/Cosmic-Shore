@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
+using CosmicShore.Utility;
 namespace CosmicShore.Game.Player
 {
     public interface IPlayer : ITransform

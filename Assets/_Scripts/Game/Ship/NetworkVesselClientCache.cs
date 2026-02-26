@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Utility.Network;
+using UnityEngine;
 
 namespace CosmicShore.Game.Ship
 {

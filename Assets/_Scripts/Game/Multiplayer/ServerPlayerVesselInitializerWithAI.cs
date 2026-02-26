@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Game.Player;
 using CosmicShore.Models.Enums;
+using IPlayer = CosmicShore.Game.Player.IPlayer;
+using Player = CosmicShore.Game.Player.Player;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.Multiplayer

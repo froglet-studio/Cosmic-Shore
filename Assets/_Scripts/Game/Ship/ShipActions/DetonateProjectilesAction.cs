@@ -1,4 +1,5 @@
 using CosmicShore.Game.ImpactEffects;
+using CosmicShore.Game.Projectiles;
 using CosmicShore.Models.Enums;
 using UnityEngine;
 

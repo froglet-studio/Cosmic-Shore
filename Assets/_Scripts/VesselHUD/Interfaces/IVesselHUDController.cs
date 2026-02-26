@@ -1,3 +1,5 @@
+using CosmicShore.Game.Ship;
+
 namespace CosmicShore.VesselHUD.Interfaces
 {
     public interface IVesselHUDController

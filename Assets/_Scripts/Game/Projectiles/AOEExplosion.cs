@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using CosmicShore.Game.ImpactEffects;
+using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.DataContainers;
 

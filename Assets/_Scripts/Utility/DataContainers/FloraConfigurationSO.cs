@@ -1,3 +1,4 @@
+using CosmicShore.Game.Environment;
 using Unity.Entities.UI;
 using UnityEngine;
 

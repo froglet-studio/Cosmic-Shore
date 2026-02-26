@@ -1,5 +1,6 @@
 using CosmicShore.Game.Multiplayer;
 using CosmicShore.Game.Managers;
+using CosmicShore.Models.Structs;
 using System;
 using System.Linq;
 using TMPro;
