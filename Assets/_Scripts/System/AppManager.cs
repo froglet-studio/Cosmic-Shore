@@ -44,6 +44,7 @@ namespace CosmicShore.Core
         ThemeManager _themeManager;
         CameraManager _cameraManager;
         PostProcessingManager _postProcessingManager;
+        StatsManager _statsManager;
 
         bool _gameplayManagersResolved;
 
@@ -125,6 +126,7 @@ namespace CosmicShore.Core
             RegisterIfNotNull(builder, _themeManager, nameof(_themeManager));
             RegisterIfNotNull(builder, _cameraManager, nameof(_cameraManager));
             RegisterIfNotNull(builder, _postProcessingManager, nameof(_postProcessingManager));
+            RegisterIfNotNull(builder, _statsManager, nameof(_statsManager));
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             if (authenticationDataVariable != null)
@@ -173,6 +175,7 @@ namespace CosmicShore.Core
             _themeManager = FindFirstObjectByType<ThemeManager>();
             _cameraManager = FindFirstObjectByType<CameraManager>();
             _postProcessingManager = FindFirstObjectByType<PostProcessingManager>();
+            _statsManager = FindFirstObjectByType<StatsManager>();
         }
 
         void EnsurePrefabInstance(GameObject prefab)
