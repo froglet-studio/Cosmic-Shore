@@ -37,4 +37,8 @@ MonoBehaviour:
     vesselIcon: {fileID: 21300000, guid: d071add11cf05ec46b30d819e86fc72d, type: 3}
     winnerIcon: {fileID: 0}
     vesselColor: {r: 1, g: 1, b: 1, a: 1}
+  - vesselType: 12
+    vesselIcon: {fileID: 0}
+    winnerIcon: {fileID: 0}
+    vesselColor: {r: 1, g: 1, b: 1, a: 1}
   defaultIcon: {fileID: 0}
