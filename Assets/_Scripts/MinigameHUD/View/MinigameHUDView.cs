@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Game.UI
 {
@@ -19,9 +20,16 @@ namespace CosmicShore.Game.UI
         [SerializeField] private GameObject pip;
         [SerializeField] private GameObject silhouette;
         [SerializeField] private GameObject trailDisplay;
-        [SerializeField] private CanvasGroup connectingPanelCanvasGroup; 
+        [SerializeField] private CanvasGroup connectingPanelCanvasGroup;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
+
+        [Header("Connecting Panel")]
+        [SerializeField] private ConnectingPanel connectingPanel;
+
+        [Header("Connecting Panel Animations")]
+        [SerializeField] private DoTweenTypewriterAnimator hackerTextAnimator;
+        [SerializeField] private ConnectingDotsAnimator dotsAnimator;
 
         [Header("Player/AI Score Cards")]
         [SerializeField] private Transform playerScoreContainer;
@@ -30,6 +38,21 @@ namespace CosmicShore.Game.UI
 
         public Transform PlayerScoreContainer => playerScoreContainer;
         public PlayerScoreCard PlayerScoreCardPrefab => playerScoreCardPrefab;
+
+        private void Awake()
+        {
+            // Auto-discover connecting panel components when not assigned in Inspector
+            if (connectingPanelCanvasGroup != null)
+            {
+                var panelGO = connectingPanelCanvasGroup.gameObject;
+                if (connectingPanel == null)
+                    connectingPanel = panelGO.GetComponent<ConnectingPanel>();
+                if (hackerTextAnimator == null)
+                    hackerTextAnimator = panelGO.GetComponentInChildren<DoTweenTypewriterAnimator>();
+                if (dotsAnimator == null)
+                    dotsAnimator = panelGO.GetComponentInChildren<ConnectingDotsAnimator>();
+            }
+        }
 
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
@@ -48,13 +71,64 @@ namespace CosmicShore.Game.UI
 
         public void ToggleConnectingPanel(bool active)
         {
+            if (!connectingPanelCanvasGroup) return;
+
             connectingPanelCanvasGroup.alpha = active ? 1 : 0;
             connectingPanelCanvasGroup.interactable = active;
             connectingPanelCanvasGroup.blocksRaycasts = active;
+
+            // Enable/disable the ConnectingPanel component so OnEnable picks a random sprite
+            if (connectingPanel != null)
+                connectingPanel.enabled = active;
+
+            if (active)
+                StartConnectingAnimations();
+            else
+                StopConnectingAnimations();
+        }
+
+        private System.Threading.CancellationTokenSource _hackerCts;
+
+        private void StartConnectingAnimations()
+        {
+            // Start hacker text animation using the animator's own baked-in fullText
+            if (hackerTextAnimator != null)
+            {
+                _hackerCts?.Cancel();
+                _hackerCts?.Dispose();
+                _hackerCts = new System.Threading.CancellationTokenSource();
+                hackerTextAnimator.PlayIn(_hackerCts.Token).Forget();
+            }
+
+            // Start dots animation
+            if (dotsAnimator != null)
+            {
+                dotsAnimator.BaseText = "CONNECTING TO SHORE";
+                dotsAnimator.StartAnimation();
+            }
+        }
+
+        private void StopConnectingAnimations()
+        {
+            // Stop hacker text
+            if (_hackerCts != null)
+            {
+                _hackerCts.Cancel();
+                _hackerCts.Dispose();
+                _hackerCts = null;
+            }
+            if (hackerTextAnimator != null)
+                hackerTextAnimator.ClearInstant();
+
+            // Stop dots animation
+            if (dotsAnimator != null)
+                dotsAnimator.StopAnimation();
         }
 
         public void ClearPlayerList()
         {
+            if (playerScoreContainer == null) return;
+
             foreach (Transform child in playerScoreContainer)
             {
                 Destroy(child.gameObject);
@@ -80,5 +154,12 @@ namespace CosmicShore.Game.UI
         public GameObject Pip => pip;
         public GameObject Silhouette => silhouette;
         public GameObject TrailDisplay => trailDisplay;
+
+        private void OnDestroy()
+        {
+            _hackerCts?.Cancel();
+            _hackerCts?.Dispose();
+            _hackerCts = null;
+        }
     }
 }

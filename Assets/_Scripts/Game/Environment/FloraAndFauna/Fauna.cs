@@ -3,6 +3,7 @@ using CosmicShore.Game;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -21,7 +22,7 @@ namespace CosmicShore
         protected virtual void Start()
         {
             if (domain == Domains.Unassigned)
-                Debug.LogWarning($"{name}: Population domain is Unassigned. Assign it before spawning FaunaPrefab, or set it on the prefab.");
+                CSDebug.LogWarning($"{name}: Population domain is Unassigned. Assign it before spawning FaunaPrefab, or set it on the prefab.");
 
             StartCoroutine(UpdateGoal());
         }

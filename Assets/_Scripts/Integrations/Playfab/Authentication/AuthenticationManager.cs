@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Integrations.PlayFab.Authentication
@@ -32,9 +33,10 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         
         public override void Awake()
         {
+            // [PLAYFAB DISABLED] Authentication now handled by UGS AuthenticationController.
+            // This class will be removed after full UGS migration.
             base.Awake();
-            
-            StartCoroutine(LoginCoroutine());
+            return;
         }
 
         IEnumerator LoginCoroutine()
@@ -54,7 +56,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         {
             if (Adjectives != null && Nouns != null)
             {
-                Debug.Log("AuthenticationManager - Names are already retrieved.");
+                CSDebug.Log("AuthenticationManager - Names are already retrieved.");
                 return;
             }
             
@@ -70,15 +72,15 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
                         Adjectives = new(JsonConvert.DeserializeObject<string[]>(result.Data["DefaultDisplayNameAdjectives"]));
                         Nouns = new(JsonConvert.DeserializeObject<string[]>(result.Data["DefaultDisplayNameNouns"]));
                         
-                        Debug.Log("AuthenticationManager - Default name list loaded.");
-                        Debug.Log($"AuthenticationManager - Default adjectives: {Adjectives}");
-                        Debug.Log($"AuthenticationManager - Default nouns: {Nouns}");
+                        CSDebug.Log("AuthenticationManager - Default name list loaded.");
+                        CSDebug.Log($"AuthenticationManager - Default adjectives: {Adjectives}");
+                        CSDebug.Log($"AuthenticationManager - Default nouns: {Nouns}");
                     }
                             
                 }, 
                 (error) =>
                 {
-                    Debug.LogError(error.GenerateErrorReport());
+                    CSDebug.LogError(error.GenerateErrorReport());
                 }
             );
         }
@@ -163,10 +165,10 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             PlayFabAccount.AuthContext = loginResult.AuthenticationContext;
             //PlayerProfile.IsNewlyCreated = loginResult.NewlyCreated;
 
-            Debug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
-            Debug.Log($"AuthenticationManager - Play Fab Id: {PlayFabAccount.ID}");
-            Debug.Log($"AuthenticationManager - Entity Type: {PlayFabAccount.AuthContext.EntityType}");
-            Debug.Log($"AuthenticationManager - Entity Id: {PlayFabAccount.AuthContext.EntityId}");
+            CSDebug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
+            CSDebug.Log($"AuthenticationManager - Play Fab Id: {PlayFabAccount.ID}");
+            CSDebug.Log($"AuthenticationManager - Entity Type: {PlayFabAccount.AuthContext.EntityType}");
+            CSDebug.Log($"AuthenticationManager - Entity Id: {PlayFabAccount.AuthContext.EntityId}");
 
             OnLoginSuccess?.Invoke();
             LoginEventBus.Publish(LoginType.Success);
@@ -174,7 +176,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
 
         void HandleLoginError(PlayFabError loginError = null)
         {
-            Debug.LogError("AuthenticationManager - " + loginError.GenerateErrorReport());
+            CSDebug.LogError("AuthenticationManager - " + loginError.GenerateErrorReport());
             OnLoginError?.Invoke();
             LoginEventBus.Publish(LoginType.Fail);
         }
@@ -208,10 +210,10 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             {
                 if(PlayerSession.IsRemembered)
                     PlayerSession.ForgetMe();
-                Debug.Log("Android Device Unlinked.");
+                CSDebug.Log("Android Device Unlinked.");
             }, (error) =>
             {
-                Debug.LogError(error.GenerateErrorReport());
+                CSDebug.LogError(error.GenerateErrorReport());
             });
         }
 
@@ -224,10 +226,10 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             {
                 if(PlayerSession.IsRemembered)
                     PlayerSession.ForgetMe();
-                Debug.Log("IOS Device Unlinked.");
+                CSDebug.Log("IOS Device Unlinked.");
             }, (error) =>
             {
-                Debug.LogError(error.GenerateErrorReport());
+                CSDebug.LogError(error.GenerateErrorReport());
             });
         }
 
@@ -241,10 +243,10 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             {
                 if(PlayerSession.IsRemembered)
                     PlayerSession.ForgetMe();
-                Debug.Log("Custom Device Unlinked.");
+                CSDebug.Log("Custom Device Unlinked.");
             }, (error) =>
             {
-                Debug.LogError(error.GenerateErrorReport());
+                CSDebug.LogError(error.GenerateErrorReport());
             });
         }
 
@@ -271,7 +273,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
                 {
                     PlayFabAccount.AuthContext = result.AuthenticationContext;
                     password?.Dispose();
-                    Debug.Log("Logged in with email.");
+                    CSDebug.Log("Logged in with email.");
                     PlayFabClientAPI.GetAccountInfo(
                         new GetAccountInfoRequest()
                         {
@@ -280,13 +282,13 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
                         },
                         (result) =>
                         {
-                            Debug.Log($"PlayFab ID: {result.AccountInfo.PlayFabId}");
-                            Debug.Log($"Player email retrieved: {result.AccountInfo.PrivateInfo.Email}");
+                            CSDebug.Log($"PlayFab ID: {result.AccountInfo.PlayFabId}");
+                            CSDebug.Log($"Player email retrieved: {result.AccountInfo.PrivateInfo.Email}");
                         }, null);
                 },
                 (error) =>
                 {
-                    Debug.Log(error.GenerateErrorReport());
+                    CSDebug.Log(error.GenerateErrorReport());
                     resultCallback?.Invoke(error);
                 }
                 );
@@ -329,12 +331,12 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
                             null, null
                             );
                     }
-                    Debug.Log("Register with email succeeded.");
-                    Debug.Log($"Player username {result.Username}");
+                    CSDebug.Log("Register with email succeeded.");
+                    CSDebug.Log($"Player username {result.Username}");
                     OnRegisterSuccess?.Invoke();
                 }, (error) =>
                 {
-                    Debug.Log(error.GenerateErrorReport());
+                    CSDebug.Log(error.GenerateErrorReport());
                     resultCallback?.Invoke(error);
                 }
             );

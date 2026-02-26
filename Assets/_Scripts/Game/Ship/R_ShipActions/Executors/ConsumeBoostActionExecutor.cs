@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.App.Systems.Audio;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 {
@@ -16,7 +18,10 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
     public event Action<float, float> OnBoostStarted;
     public event Action OnBoostEnded;
     
-    [SerializeField, Range(0,4)] private int initialCharges = 4; 
+    [Header("Events")]
+    [SerializeField] private ScriptableEventBoostChanged boostChanged;
+
+    [SerializeField, Range(0,4)] private int initialCharges = 4;
 
     IVesselStatus _status;
     ResourceSystem _resources;
@@ -111,6 +116,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         int pipIndex = Mathf.Clamp(_available - 1, 0, _so.MaxCharges - 1);
         float duration = Mathf.Max(0.05f, _so.BoostDuration);
 
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
         OnChargeConsumed?.Invoke(pipIndex, duration);
         _available = Mathf.Max(0, _available - 1);
         OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
@@ -147,15 +153,25 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
            // _status.BoostMultiplier = (_so ? _so.BoostMultiplier.Value : 4f) * stacks;
             // multiplicative
              _status.BoostMultiplier = Mathf.Pow( 4f, stacks);
-             Debug.Log($"Boost Multiplier Working {_status.BoostMultiplier}");
+             CSDebug.Log($"Boost Multiplier Working {_status.BoostMultiplier}");
         }
         else
         {
             _status.IsBoosting = false;
             _status.BoostMultiplier = 1f;
             OnBoostEnded?.Invoke();
+        }
 
-            if (!_so || _available != 0 || _reloading) return;
+        // Notify HUD of the multiplier change (MaxMultiplier = 0 → HUD uses its own config)
+        boostChanged?.Raise(new BoostChangedPayload
+        {
+            BoostMultiplier = _status.BoostMultiplier,
+            MaxMultiplier = 0f,
+            SourceDomain = Domains.None
+        });
+
+        if (stacks == 0 && _so && _available == 0 && !_reloading)
+        {
             _reloadCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             ReloadRoutineAsync(_so.ReloadCooldown, _so.ReloadFillTime, _reloadCts.Token).Forget();
         }
@@ -193,11 +209,11 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
         catch (OperationCanceledException)
         {
-            Debug.Log($"[ConsumeBoost] Reload cancelled.");
+            CSDebug.Log($"[ConsumeBoost] Reload cancelled.");
         }
         catch (Exception e)
         {
-            Debug.LogError($"[ConsumeBoost] ReloadRoutine error: {e}");
+            CSDebug.LogError($"[ConsumeBoost] ReloadRoutine error: {e}");
         }
         finally
         {
@@ -223,7 +239,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
         catch (Exception e)
         {
-            Debug.LogError($"[ConsumeBoost] StackRoutine error: {e}");
+            CSDebug.LogError($"[ConsumeBoost] StackRoutine error: {e}");
         }
         finally
         {

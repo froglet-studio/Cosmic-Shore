@@ -2,12 +2,13 @@
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
-        [SerializeField] private MultiplayerHexRaceController controller;
+        [SerializeField] private HexRaceController controller;
 
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
@@ -25,7 +26,7 @@ namespace CosmicShore.Game.Arcade
             _netCrystalCollisions.Value = target;
             controller?.SetCrystalsToFinishServer(target);
 
-            Debug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
+            CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
                       $"(intensity={gameData.SelectedIntensity.Value})");
 
             foreach (var stat in gameData.RoundStatsList)

@@ -2,6 +2,7 @@
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -10,6 +11,9 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselDangerBlockFormationBySkimmerEffectSO")]
     public sealed class VesselDangerBlockFormationBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
+        /// <summary>Static event: fired when danger blocks are spawned. Param = attacker player name.</summary>
+        public static event System.Action<string> OnDangerBlockSpawned;
+
         [Header("AOE Prefab")]
         [SerializeField] private GameObject dangerHemispherePrefab;
         
@@ -20,7 +24,7 @@ namespace CosmicShore.Game
         {
             if (!cellData)
             {
-                Debug.LogError("No Cell data found!");
+                CSDebug.LogError("No Cell data found!");
                 return;
             }
             
@@ -50,7 +54,7 @@ namespace CosmicShore.Game
             var toTarget = targetPos - victimPos;
             if (toTarget.sqrMagnitude < 0.01f)
             {
-                Debug.LogWarning("[VesselDangerBlockFormationBySkimmerEffectSO] Target too close to victim. Aborting AOE.");
+                CSDebug.LogWarning("[VesselDangerBlockFormationBySkimmerEffectSO] Target too close to victim. Aborting AOE.");
                 return;
             }
 
@@ -73,6 +77,8 @@ namespace CosmicShore.Game
 
             aoe.Initialize(init);
             aoe.Detonate();
+
+            OnDangerBlockSpawned?.Invoke(attackerStatus.PlayerName);
         }
     }
 }

@@ -3,11 +3,19 @@ using System.Collections;
 using System.Linq;
 using CosmicShore.Game.Cinematics;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerCrystalCaptureEndGameController : EndGameCinematicController
     {
+        protected override bool DetermineLocalPlayerWon()
+        {
+            var localName = gameData.LocalPlayer?.Name;
+            return gameData.RoundStatsList.Count > 0
+                && gameData.RoundStatsList[0].Name == localName;
+        }
+
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
             if (!view || !cinematic) yield break;
@@ -39,7 +47,7 @@ namespace CosmicShore.Game.Arcade
                 ? $"WON BY {crystalDifference} CRYSTAL{(crystalDifference != 1 ? "S" : "")}"
                 : $"LOST BY {crystalDifference} CRYSTAL{(crystalDifference != 1 ? "S" : "")}";
 
-            Debug.Log($"[CrystalCapture] Local='{localName}' myScore={myScore} " +
+            CSDebug.Log($"[CrystalCapture] Local='{localName}' myScore={myScore} " +
                       $"opponentScore={opponentScore} didWin={didWin} diff={crystalDifference} " +
                       $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 

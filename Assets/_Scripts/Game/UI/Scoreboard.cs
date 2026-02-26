@@ -9,6 +9,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -83,7 +84,7 @@ namespace CosmicShore.Game.UI
         {
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
-                Debug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+                CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
             HideScoreboard();
         }
 
@@ -111,11 +112,14 @@ namespace CosmicShore.Game.UI
 
         void ShowScoreboard()
         {
-            if (!gameData) { Debug.LogError("[Scoreboard] GameData is null!"); return; }
+            if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
             HideAllRematchPanels();
 
-            if (gameData.IsMultiplayerMode) ShowMultiplayerView();
+            // Show multiplayer view when playing against opponents (online or AI).
+            // The multiplayerController being present means this is a multiplayer scene
+            // running with opponents, even in solo-with-AI mode.
+            if (gameData.IsMultiplayerMode || multiplayerController != null) ShowMultiplayerView();
             else ShowSinglePlayerView();
 
             PopulateDynamicStats();
@@ -250,9 +254,19 @@ namespace CosmicShore.Game.UI
                 foreach (Transform child in statsContainer)
                     Destroy(child.gameObject);
 
-            if (!statsProvider || !statsContainer || !statRowPrefab) return;
+            if (!statsProvider || !statsContainer || !statRowPrefab)
+            {
+                Debug.LogWarning($"[Scoreboard] PopulateDynamicStats skipped — " +
+                    $"provider={(statsProvider != null ? "OK" : "NULL")}, " +
+                    $"container={(statsContainer != null ? "OK" : "NULL")}, " +
+                    $"rowPrefab={(statRowPrefab != null ? "OK" : "NULL")}");
+                return;
+            }
 
-            foreach (var stat in statsProvider.GetStats())
+            var stats = statsProvider.GetStats();
+            Debug.Log($"[Scoreboard] Populating {stats.Count} dynamic stat row(s)");
+
+            foreach (var stat in stats)
             {
                 var row = Instantiate(statRowPrefab, statsContainer);
                 row.Initialize(stat.Label, stat.Value, stat.Icon);
@@ -272,7 +286,7 @@ namespace CosmicShore.Game.UI
             {
                 if (multiplayerController == null)
                 {
-                    Debug.LogError("[Scoreboard] multiplayerController not assigned!");
+                    CSDebug.LogError("[Scoreboard] multiplayerController not assigned!");
                     return;
                 }
 
@@ -289,6 +303,13 @@ namespace CosmicShore.Game.UI
                 ));
 
                 multiplayerController.RequestRematch(gameData.LocalPlayer.Name);
+            }
+            else if (multiplayerController != null)
+            {
+                // Solo-with-AI: the game runs on the network stack, so go through the
+                // controller's replay flow to properly reset race state (_raceEnded, etc.)
+                // without showing the multiplayer rematch invitation UI.
+                multiplayerController.RequestReplay();
             }
             else
             {

@@ -2,6 +2,7 @@
 using Firebase.Auth;
 using CosmicShore.Integrations.PlayFab.Event_Models;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
@@ -86,7 +87,7 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
                     RegisterAccount(email, password);
                     break;
                 default:
-                    Debug.Log("The other authentication methods are coming soon.");
+                    CSDebug.Log("The other authentication methods are coming soon.");
                     break;
             }
         }
@@ -96,7 +97,7 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         /// </summary>
         private void DefaultLogin()
         {
-            Debug.Log($"{nameof(FirebaseAuthentication)} - Firebase default login method here.");
+            CSDebug.Log($"{nameof(FirebaseAuthentication)} - Firebase default login method here.");
         }
         
         /// <summary>
@@ -106,16 +107,16 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         {
             _userAuthentication.SignInAnonymouslyAsync().ContinueWith(task => {
                 if (task.IsCanceled) {
-                    Debug.LogError("SignInAnonymouslyAsync was canceled.");
+                    CSDebug.LogError("SignInAnonymouslyAsync was canceled.");
                     return;
                 }
                 if (task.IsFaulted) {
-                    Debug.LogError("SignInAnonymouslyAsync encountered an error: " + task.Exception);
+                    CSDebug.LogError("SignInAnonymouslyAsync encountered an error: " + task.Exception);
                     return;
                 }
 
                 var result = task.Result;
-                Debug.LogFormat("User signed in successfully: {0} ({1})",
+                CSDebug.LogFormat("User signed in successfully: {0} ({1})",
                     result.User.DisplayName, result.User.UserId);
             });
         }
@@ -129,16 +130,16 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         {
             _userAuthentication.SignInWithEmailAndPasswordAsync(email, password).ContinueWith(task => {
                 if (task.IsCanceled) {
-                    Debug.LogError("SignInWithEmailAndPasswordAsync was canceled.");
+                    CSDebug.LogError("SignInWithEmailAndPasswordAsync was canceled.");
                     return;
                 }
                 if (task.IsFaulted) {
-                    Debug.LogError("SignInWithEmailAndPasswordAsync encountered an error: " + task.Exception);
+                    CSDebug.LogError("SignInWithEmailAndPasswordAsync encountered an error: " + task.Exception);
                     return;
                 }
 
                 var result = task.Result;
-                Debug.LogFormat("User signed in successfully: {0} ({1})",
+                CSDebug.LogFormat("User signed in successfully: {0} ({1})",
                     result.User.DisplayName, result.User.UserId);
             });
         }
@@ -152,17 +153,17 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         {
             _userAuthentication.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWith(task => {
                 if (task.IsCanceled) {
-                    Debug.LogError("CreateUserWithEmailAndPasswordAsync was canceled.");
+                    CSDebug.LogError("CreateUserWithEmailAndPasswordAsync was canceled.");
                     return;
                 }
                 if (task.IsFaulted) {
-                    Debug.LogError("CreateUserWithEmailAndPasswordAsync encountered an error: " + task.Exception);
+                    CSDebug.LogError("CreateUserWithEmailAndPasswordAsync encountered an error: " + task.Exception);
                     return;
                 }
 
                 // Firebase user has been created.
                 var result = task.Result;
-                Debug.LogFormat("Firebase user created successfully: {0} ({1})",
+                CSDebug.LogFormat("Firebase user created successfully: {0} ({1})",
                     result.User.DisplayName, result.User.UserId);
             });
         }

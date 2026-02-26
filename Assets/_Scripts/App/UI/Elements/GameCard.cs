@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Events;
@@ -6,6 +7,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Elements
 {
@@ -73,6 +75,7 @@ namespace CosmicShore.App.UI.Elements
         {
             Favorited = !Favorited;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
             FavoriteSystem.ToggleFavorite(gameMode);
             ExploreView.PopulateGameSelectionList();
         }
@@ -84,7 +87,7 @@ namespace CosmicShore.App.UI.Elements
             // Set active and show details
             //LoadoutView.ExpandLoadout(Index);
 
-            Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+            CSDebug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
 
         }
     }

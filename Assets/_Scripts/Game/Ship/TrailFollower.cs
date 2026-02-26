@@ -1,6 +1,7 @@
 
 using CosmicShore.Game;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -43,7 +44,7 @@ namespace CosmicShore.Core
 
         public void Attach(Prism prism)
         {
-            Debug.Log($"Attaching: trail:{prism.Trail}");
+            CSDebug.Log($"Attaching: trail:{prism.Trail}");
             attachedTrail = prism.Trail;
             attachedBlockIndex = attachedTrail.GetBlockIndex(prism);
             percentTowardNextBlock = 0; // TODO: calculate initial percentTowardNextBlock
@@ -61,7 +62,7 @@ namespace CosmicShore.Core
 
             var upcomingBlocks = attachedTrail.LookAhead(attachedBlockIndex, percentTowardNextBlock, direction, Throttle * FriendlyTerrainSpeed * Time.deltaTime);
             if (upcomingBlocks == null || upcomingBlocks.Count < 2) {
-                Debug.LogWarning("Could not move TrailFollower, not enough upcoming blocks");
+                CSDebug.LogWarning("Could not move TrailFollower, not enough upcoming blocks");
                 return;
             }
 

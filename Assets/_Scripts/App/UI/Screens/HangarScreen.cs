@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Screens
 {
@@ -44,7 +45,7 @@ namespace CosmicShore.App.UI.Screens
         {
             if (ShipSelectionContainer == null)
             {
-                Debug.LogError($"SerializedField 'ShipSelectionContainer' has not been assigned in HangarMenu");
+                CSDebug.LogError($"SerializedField 'ShipSelectionContainer' has not been assigned in HangarMenu");
                 return;
             }
 
@@ -60,7 +61,7 @@ namespace CosmicShore.App.UI.Screens
             for (var i = 0; i < Ships.Count; i++)
             {
                 var ship = Ships[i];
-                Debug.Log($"Populating Vessel Select List: {ship.Name}");                
+                CSDebug.Log($"Populating Vessel Select List: {ship.Name}");                
                 var shipSelectCard = Instantiate(ShipSelectCardPrefab, ShipSelectionContainer.transform);
                 shipSelectCard.name = shipSelectCard.name.Replace("(Clone)", "");
                 shipSelectCard.AssignShipClass(ship);
@@ -78,9 +79,9 @@ namespace CosmicShore.App.UI.Screens
             //PlayerPrefs.SetInt("HangarLastSelectedShipIndex", index);
             //PlayerPrefs.Save();
             var selectedShip = Ships[index];
-            Debug.Log($"SelectShip: {selectedShip.Name}");
-            Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionContainer.childCount}");
-            Debug.Log($"Ships.Count: {Ships.Count}");
+            CSDebug.Log($"SelectShip: {selectedShip.Name}");
+            CSDebug.Log($"ShipSelectionContainer.childCount: {ShipSelectionContainer.childCount}");
+            CSDebug.Log($"Ships.Count: {Ships.Count}");
 
             // set all sprites to deselected - the selected card will activate it's own sprite
             for (var i = 0; i < ShipSelectionContainer.childCount; i++)
@@ -110,7 +111,7 @@ namespace CosmicShore.App.UI.Screens
         {
             yield return null; // new WaitForSeconds(2);
             var shipSelectCard = ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectNavLink>();
-            Debug.Log($"Starting SelectShipCoroutine: {shipSelectCard.name}, {shipSelectCard.Ship.Name}");
+            CSDebug.Log($"Starting SelectShipCoroutine: {shipSelectCard.name}, {shipSelectCard.Ship.Name}");
             shipSelectCard.Select();
         }
     }

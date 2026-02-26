@@ -3,6 +3,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -72,7 +73,7 @@ namespace CosmicShore
 
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
-            Debug.Log($"SetVirtualItem - {virtualItem.Name},{virtualItem.Type},{virtualItem.ContentType}");
+            CSDebug.Log($"SetVirtualItem - {virtualItem.Name},{virtualItem.Type},{virtualItem.ContentType}");
             this.virtualItem = virtualItem;
             PriceLabel.text = virtualItem.Price[0].Amount.ToString();
             UnavailablePriceLabel.text = virtualItem.Price[0].Amount.ToString();
@@ -107,7 +108,7 @@ namespace CosmicShore
 
         public override void OnClickBuy()
         {
-            Debug.LogWarning("OnClickBuy");
+            CSDebug.LogWarning("OnClickBuy");
             base.OnClickBuy();
             ConfirmationModal.SetVirtualItem(virtualItem, Purchase);
 
