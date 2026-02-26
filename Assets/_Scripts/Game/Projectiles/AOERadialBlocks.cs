@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
+using CosmicShore.Utility.SOAP;
 using Random = UnityEngine.Random;
 
 namespace CosmicShore.Game.Projectiles

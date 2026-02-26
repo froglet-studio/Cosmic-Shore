@@ -1,6 +1,6 @@
-﻿using System.Collections;
+using System.Collections;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Arcade.Scoring;
+using CosmicShore.Game.Arcade;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility.Recording;

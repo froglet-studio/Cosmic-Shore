@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO
+namespace CosmicShore.Game.ImpactEffects
 {
     public abstract class ImpactEffectSO : ScriptableObject
     {

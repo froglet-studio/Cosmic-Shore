@@ -1,15 +1,11 @@
 using CosmicShore.Game.Arcade;
-using CosmicShore.Utility.SOAP.ScriptableCrystalStats;
+using CosmicShore.Utility.SOAP;
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Game.UI.Animations;
-using CosmicShore.Game.UI.GameEventFeed;
-using CosmicShore.Game.UI.NotificationSystem.Payload;
-using CosmicShore.Game.UI.PreGameCinematic;
+using CosmicShore.Game.UI;
 using CosmicShore.MinigameHUD.View;
-using CosmicShore.Game.Environment.FlowField;
-using CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Managers;
 namespace CosmicShore.Game.Ship
 {

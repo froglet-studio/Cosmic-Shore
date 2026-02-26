@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Utility.SOAP.ScriptablePartyData
+namespace CosmicShore.Utility.SOAP
 {
     /// <summary>
     /// Immutable snapshot of a player's identity within the party/presence system.

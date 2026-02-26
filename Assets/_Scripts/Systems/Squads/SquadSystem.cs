@@ -1,4 +1,4 @@
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Models.Enums;

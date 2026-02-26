@@ -1,11 +1,11 @@
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Spawns prisms on the Clifford torus — a flat torus embedded in the 3-sphere S³,

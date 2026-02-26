@@ -6,11 +6,10 @@ using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility.Recording;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.MiniGameObjects;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
     public struct Entity

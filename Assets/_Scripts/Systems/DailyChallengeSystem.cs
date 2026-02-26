@@ -1,9 +1,8 @@
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using CosmicShore.Integrations.Playfab.PlayerData;
 using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Utility;

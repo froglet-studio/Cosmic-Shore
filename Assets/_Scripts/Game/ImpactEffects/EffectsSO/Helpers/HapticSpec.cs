@@ -2,7 +2,7 @@ using CosmicShore.Game.IO;
 using UnityEngine;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.Helpers
+namespace CosmicShore.Game.ImpactEffects
 {
     [System.Serializable]
     public struct HapticSpec

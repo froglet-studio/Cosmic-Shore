@@ -1,11 +1,9 @@
 using System.Collections;
 using UnityEngine;
-using CosmicShore.DialogueSystem.Runtime.Models;
-using CosmicShore.DialogueSystem.Runtime.Events;
-using CosmicShore.DialogueSystem.Runtime.Helpers;
+using CosmicShore.DialogueSystem.Runtime;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.DialogueSystem.Runtime.Controller
+namespace CosmicShore.DialogueSystem.Runtime
 {
     public sealed class DialogueManager : MonoBehaviour
     {

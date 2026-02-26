@@ -1,8 +1,7 @@
 using UnityEngine;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
 using CosmicShore.Game.Ship;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "ModifyForwardVelocityAction", menuName = "ScriptableObjects/Vessel Actions/Modify Forward Velocity")]
     public class ModifyVelocityActionSO

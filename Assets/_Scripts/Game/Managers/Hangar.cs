@@ -1,5 +1,5 @@
 using CosmicShore.Game.Ship;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-using CosmicShore.Utility.SOAP.ScriptablePipData;
+using CosmicShore.Utility.SOAP;
 using UnityEngine;
 using CosmicShore.Game.Player;
 using CosmicShore.Game.UI;

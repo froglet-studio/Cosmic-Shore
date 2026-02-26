@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Environment;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Toggle ability:

@@ -1,10 +1,9 @@
-﻿using CosmicShore.Game.Arcade.Scoring;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Utility.DataContainers;
 using UnityEngine;
-using CosmicShore.Game.Arcade.TurnMonitors;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     public class WildlifeBlitzEndGameStatsTracker : MonoBehaviour
     {

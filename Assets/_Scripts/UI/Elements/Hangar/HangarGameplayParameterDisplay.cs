@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Game.Managers;
 using CosmicShore.Models.ScriptableObjects;
-namespace CosmicShore.UI.Elements.Hangar
+namespace CosmicShore.UI.Elements
 {
     public class HangarGameplayParameterDisplay : MonoBehaviour
     {

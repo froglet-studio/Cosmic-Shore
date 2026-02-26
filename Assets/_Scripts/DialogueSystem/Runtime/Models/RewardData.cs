@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.DialogueSystem.Runtime.Models
+namespace CosmicShore.DialogueSystem.Runtime
 {
     public enum RewardType { Item, Currency, XP, Unlock }
     public enum RewardRarity { Common, Rare, Epic, Legendary }

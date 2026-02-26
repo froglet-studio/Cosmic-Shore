@@ -1,7 +1,7 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName="ToggleTranslationModeAction", menuName="ScriptableObjects/Vessel Actions/Toggle Translation Mode")]
     public sealed class ToggleTranslationModeActionSO : ShipActionSO

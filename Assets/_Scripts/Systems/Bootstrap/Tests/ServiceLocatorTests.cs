@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace CosmicShore.Systems.Bootstrap.Tests
+namespace CosmicShore.Systems.Bootstrap
 {
     [TestFixture]
     public class ServiceLocatorTests

@@ -1,6 +1,6 @@
 using CosmicShore.UI.Modals;
 using CosmicShore.UI.Views;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;

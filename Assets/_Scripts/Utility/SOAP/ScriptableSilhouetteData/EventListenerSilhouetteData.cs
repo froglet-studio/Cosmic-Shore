@@ -1,13 +1,8 @@
 using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
-using CosmicShore.Utility.SOAP.ScriptableAbilityStats;
-using CosmicShore.Utility.SOAP.ScriptableCrystalStats;
-using CosmicShore.Utility.SOAP.ScriptablePrismStats;
-using CosmicShore.Utility.SOAP.ScriptableQuaternion;
-using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
-using CosmicShore.Utility.SOAP.ScriptableTransform;
-namespace CosmicShore.Utility.SOAP.ScriptableSilhouetteData
+using CosmicShore.Utility.SOAP;
+namespace CosmicShore.Utility.SOAP
 {
     [AddComponentMenu("Soap/EventListeners/EventListener"+nameof(SilhouetteData))]
     public class EventListenerSilhouetteData : EventListenerGeneric<SilhouetteData>

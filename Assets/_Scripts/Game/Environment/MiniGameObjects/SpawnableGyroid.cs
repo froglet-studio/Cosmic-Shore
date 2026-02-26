@@ -1,10 +1,10 @@
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Assemblers;
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
     public class SpawnableGyroid : SpawnableBase
     {

@@ -1,6 +1,6 @@
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Utility.SOAP.ScriptablePartyData;
+using CosmicShore.Utility.SOAP;
 namespace CosmicShore.Utility.DataContainers
 {
     /// <summary>

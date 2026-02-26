@@ -1,7 +1,7 @@
 using CosmicShore.Game.Multiplayer;
 using CosmicShore.UI.Views;
 using CosmicShore.Models.Enums;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using System;
 using TMPro;
 using UnityEngine;

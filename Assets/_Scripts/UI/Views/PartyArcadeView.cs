@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Utility.DataContainers;
 using Reflex.Attributes;
 using UnityEngine;
-using CosmicShore.Utility.SOAP.ScriptablePartyData;
+using CosmicShore.Utility.SOAP;
 namespace CosmicShore.UI.Views
 {
     /// <summary>

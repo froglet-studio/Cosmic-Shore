@@ -1,6 +1,6 @@
-﻿using Obvious.Soap;
+using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Game.Arcade.TurnMonitors;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Utility.DataContainers;
 namespace CosmicShore.Game.Arcade
 {

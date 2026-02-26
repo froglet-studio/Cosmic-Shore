@@ -1,7 +1,7 @@
 using Unity.Entities;
 using Unity.Mathematics;
 
-namespace CosmicShore.Game.ECS.Components
+namespace CosmicShore.Game.ECS
 {
     /// <summary>
     /// Core prism data for ECS migration. Maps to the MonoBehaviour Prism + PrismProperties.

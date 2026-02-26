@@ -1,8 +1,7 @@
 using CosmicShore.Game.Environment;
 using CosmicShore.Game.Player;
-using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
+using CosmicShore.Utility.SOAP;
 using UnityEngine;
-using CosmicShore.Game.Environment.Prisms;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Settings;
 using CosmicShore.Game.UI;

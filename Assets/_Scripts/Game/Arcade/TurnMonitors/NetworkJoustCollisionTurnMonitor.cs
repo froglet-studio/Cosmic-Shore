@@ -3,7 +3,7 @@ using Unity.Netcode;
 using System.Linq;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.TurnMonitors
+namespace CosmicShore.Game.Arcade
 {
     public class NetworkJoustCollisionTurnMonitor : JoustCollisionTurnMonitor
     {

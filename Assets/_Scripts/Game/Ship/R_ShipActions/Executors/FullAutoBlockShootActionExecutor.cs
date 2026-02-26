@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
-using CosmicShore.Game.Environment.Prisms;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.ImpactEffects;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
@@ -11,8 +11,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Game.Prisms;
 using CosmicShore.Game.Projectiles;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public class FullAutoBlockShootActionExecutor : ShipActionExecutorBase
     {

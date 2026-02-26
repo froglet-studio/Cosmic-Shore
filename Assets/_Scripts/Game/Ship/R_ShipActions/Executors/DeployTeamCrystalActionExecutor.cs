@@ -1,10 +1,9 @@
-﻿using Obvious.Soap;
-using CosmicShore.Game.Environment.FlowField;
+using Obvious.Soap;
+using CosmicShore.Game.Environment;
 using UnityEngine;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
 using CosmicShore.Utility.Effects;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
     {

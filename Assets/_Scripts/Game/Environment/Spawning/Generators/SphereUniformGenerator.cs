@@ -1,6 +1,6 @@
 using UnityEngine;
-using CosmicShore.Game.Environment.Spawning;
-namespace CosmicShore.Game.Environment.Spawning.Generators
+using CosmicShore.Game.Environment;
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Generates points uniformly distributed inside a sphere.

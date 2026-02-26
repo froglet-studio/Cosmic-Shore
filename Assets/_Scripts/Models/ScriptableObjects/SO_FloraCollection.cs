@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore.Utility;
-using CosmicShore.Game.Environment.FloraAndFauna;
+using CosmicShore.Game.Environment;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Models.ScriptableObjects

@@ -1,12 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
-using CosmicShore.Game.Ship.ShipActions;
+using CosmicShore.Game.Ship;
 using CosmicShore.VesselHUD.Controller;
 namespace CosmicShore.VesselHUD.View
 {

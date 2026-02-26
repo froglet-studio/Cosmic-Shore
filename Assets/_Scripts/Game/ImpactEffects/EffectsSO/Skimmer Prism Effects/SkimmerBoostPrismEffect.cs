@@ -1,12 +1,11 @@
 using UnityEngine;
 using Obvious.Soap;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
 using CosmicShore.VesselHUD.View;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "SkimmerBoostPrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerBoostPrismEffectSO")]

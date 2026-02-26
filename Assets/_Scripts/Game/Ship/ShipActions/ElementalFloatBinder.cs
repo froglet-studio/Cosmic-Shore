@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Reflection;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public static class ElementalFloatBinder
     {

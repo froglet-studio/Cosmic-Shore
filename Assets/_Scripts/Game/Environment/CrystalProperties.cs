@@ -1,5 +1,5 @@
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.Environment;
 ﻿
 namespace CosmicShore.Game.Environment
 {

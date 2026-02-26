@@ -1,4 +1,4 @@
-using CosmicShore.Integrations.Playfab.PlayerData;
+using CosmicShore.Integrations.Playfab;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;

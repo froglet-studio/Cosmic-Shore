@@ -2,11 +2,10 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.FlowField;
-using CosmicShore.Game.ImpactEffects.Containers;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;
-namespace CosmicShore.Game.ImpactEffects.Impactors
+namespace CosmicShore.Game.ImpactEffects
 {
     [RequireComponent(typeof(IVessel))]
     [RequireComponent(typeof(NetworkVesselImpactor))]

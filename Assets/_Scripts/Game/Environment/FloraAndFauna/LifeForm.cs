@@ -8,8 +8,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.FlowField;
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Abstract base for all lifeforms with health/spindle infrastructure (primarily Flora).

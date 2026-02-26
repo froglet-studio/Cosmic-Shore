@@ -1,13 +1,11 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
 using System.Collections.Generic;
-using CosmicShore.Game.Arcade.TurnMonitors;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility.DataContainers;
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.UI

@@ -1,9 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using CosmicShore.SSUScripts.Interactive;
-namespace CosmicShore.SSUScripts.Interactive.Editor
+namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(WindParallaxSSU))]
     public class WindParallaxSSUEditor : UnityEditor.Editor

@@ -2,7 +2,7 @@ using CosmicShore.Utility.Recording;
 
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game.UI.NotificationSystem.Payload
+namespace CosmicShore.Game.UI
 {
     public static class NotificationAPI
     {

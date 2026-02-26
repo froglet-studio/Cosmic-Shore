@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Abstract base for animal-like lifeforms and their managers.

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     // DEPRECATED - Unnecessary
     

@@ -1,5 +1,5 @@
 using UnityEngine;
-using CosmicShore.Utility.SOAP.ScriptableTransform;
+using CosmicShore.Utility.SOAP;
 using CosmicShore.Game.Managers;
 using CosmicShore.Utility;
 using CosmicShore.Game.Camera;

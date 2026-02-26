@@ -1,10 +1,10 @@
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
     public class SpawnableEllipsoid : SpawnableBase
     {

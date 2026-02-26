@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Systems;
 using Unity.Services.Analytics;
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.SOAP;
 using Unity.Services.CloudSave;
 using Unity.Services.Leaderboards;
 using UnityEngine;

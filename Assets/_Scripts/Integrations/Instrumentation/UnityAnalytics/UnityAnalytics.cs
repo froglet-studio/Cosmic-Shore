@@ -1,9 +1,9 @@
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.SOAP;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Instrumentation.UnityAnalytics
+namespace CosmicShore.Integrations.Instrumentation
 {
     public class UnityAnalytics : MonoBehaviour
     {

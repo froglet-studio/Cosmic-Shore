@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Models.Enums;
 using CosmicShore.MinigameHUD.View;
-namespace CosmicShore.Game.UI.GameEventFeed
+namespace CosmicShore.Game.UI
 {
     public class GameEventFeed : MonoBehaviour
     {

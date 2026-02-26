@@ -6,7 +6,7 @@ using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.UI;
 using CosmicShore.Utility;
-using CosmicShore.Game.Arcade.TurnMonitors;
+using CosmicShore.Game.Arcade;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>

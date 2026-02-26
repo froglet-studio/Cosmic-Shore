@@ -2,8 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using PlayFab;
 using System;
-using CosmicShore.Integrations.Playfab.Economy;
-using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 

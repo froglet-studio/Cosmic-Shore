@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.PlayerData;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Utility.ClassExtensions;
@@ -13,9 +12,9 @@ using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.SOAP;
 using CosmicShore.Utility.DataPersistence;
-namespace CosmicShore.Integrations.Playfab.PlayStream
+namespace CosmicShore.Integrations.Playfab
 {
     /// <summary>
     /// Leaderboard Manager

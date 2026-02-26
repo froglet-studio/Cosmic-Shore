@@ -1,9 +1,9 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility.Recording;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     /// <summary>
     /// Scoring for Elemental Crystal collection in Wildlife Blitz mode.

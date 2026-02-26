@@ -1,7 +1,5 @@
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.PlayerData;
-using CosmicShore.Integrations.Playfab.Utility;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Utility;
 using PlayFab;
 using PlayFab.ClientModels;
@@ -9,7 +7,7 @@ using PlayFab.EventsModels;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.Playfab.PlayStream
+namespace CosmicShore.Integrations.Playfab
 {
     public class AnalyticsController : SingletonPersistent<AnalyticsController>
     {

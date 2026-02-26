@@ -6,7 +6,7 @@ using CosmicShore.UI.Screens;
 using CosmicShore.Game.Managers;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.UI.Modals;
-namespace CosmicShore.UI.Elements.Hangar
+namespace CosmicShore.UI.Elements
 {
     public class HangarTrainingGameButton : MonoBehaviour
     {

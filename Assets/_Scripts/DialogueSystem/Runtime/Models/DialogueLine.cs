@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.DialogueSystem.Runtime.Models
+namespace CosmicShore.DialogueSystem.Runtime
 {
     [System.Serializable]
     public class DialogueLine

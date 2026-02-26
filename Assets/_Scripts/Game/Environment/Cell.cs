@@ -1,4 +1,4 @@
-﻿// Cell.cs
+// Cell.cs
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Game.Managers;
@@ -9,7 +9,7 @@ using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
-using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.Environment;
 namespace CosmicShore.Game.Environment
 {
     public class Cell : MonoBehaviour

@@ -1,9 +1,8 @@
-﻿using CosmicShore.Game.CameraSystem;
+using CosmicShore.Game.CameraSystem;
 using UnityEngine;
 using CosmicShore.Game.Managers;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-using CosmicShore.Game.Ship.ShipActions;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Ship
 {
     [DefaultExecutionOrder(-900)]
     public sealed class CameraZoomFollowScaleProvider : MonoBehaviour

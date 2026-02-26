@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Game.Managers;
 using CosmicShore.Models.ScriptableObjects;
-namespace CosmicShore.UI.Elements.Hangar
+namespace CosmicShore.UI.Elements
 {
     /// <summary>
     /// The UI card view for individual items in the vessel selection nav bar of the hangar

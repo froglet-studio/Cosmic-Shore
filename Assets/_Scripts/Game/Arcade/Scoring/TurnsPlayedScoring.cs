@@ -1,6 +1,6 @@
 using CosmicShore.Utility.DataContainers;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     /// <summary>
     /// Reminder - player elimination is a bad game mechanic. Redesign the game to not use this.

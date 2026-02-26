@@ -1,4 +1,4 @@
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility.DataContainers;
@@ -7,7 +7,7 @@ using Obvious.Soap;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
     public class SegmentSpawner : MonoBehaviour
     {

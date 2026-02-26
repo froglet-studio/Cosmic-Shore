@@ -5,12 +5,9 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility.Recording;
 using UnityEngine.Serialization;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Utility.SOAP;
-using CosmicShore.Utility.SOAP.ScriptableInputEvents;
-using CosmicShore.Utility.SOAP.ScriptablePartyData;
-using CosmicShore.Utility.SOAP.ScriptablePipData;
 using CosmicShore.VesselHUD.View;
 
 namespace CosmicShore.Game.Ship

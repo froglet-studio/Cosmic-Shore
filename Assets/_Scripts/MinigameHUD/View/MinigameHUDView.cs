@@ -7,8 +7,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.UI.Animations;
-using CosmicShore.Game.UI.GameEventFeed;
+using CosmicShore.Game.UI;
 namespace CosmicShore.MinigameHUD.View
 {
     public class MiniGameHUDView : MonoBehaviour, IMiniGameHUDView

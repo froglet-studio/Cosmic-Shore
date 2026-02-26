@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using CosmicShore.Game.Ship;
 using UnityEngine;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
     {

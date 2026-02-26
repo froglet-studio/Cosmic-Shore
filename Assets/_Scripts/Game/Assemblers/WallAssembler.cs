@@ -5,7 +5,6 @@ using CosmicShore.Utility.Recording;
 using UnityEngine;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
-using CosmicShore.Game.Environment.FloraAndFauna;
 namespace CosmicShore.Game.Assemblers
 {
     public class WallAssembler : Assembler

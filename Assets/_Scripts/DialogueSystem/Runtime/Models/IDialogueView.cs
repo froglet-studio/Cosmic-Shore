@@ -1,6 +1,6 @@
-﻿// Shared interface
+// Shared interface
 using System;
-namespace CosmicShore.DialogueSystem.Runtime.Models
+namespace CosmicShore.DialogueSystem.Runtime
 {
     public interface IDialogueView
     {

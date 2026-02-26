@@ -1,4 +1,4 @@
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using System;
 using System.Collections.Generic;
 using CosmicShore.Systems.UserAction;

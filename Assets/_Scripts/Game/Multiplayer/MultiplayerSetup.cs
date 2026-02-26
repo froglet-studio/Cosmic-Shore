@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +10,7 @@ using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 using Reflex.Attributes;
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.SOAP;
 namespace CosmicShore.Game.Multiplayer
 {
     public class MultiplayerSetup : MonoBehaviour

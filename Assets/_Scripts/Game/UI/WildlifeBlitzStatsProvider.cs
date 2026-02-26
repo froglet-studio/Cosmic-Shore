@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using CosmicShore.Game.Arcade.Scoring;
-using UnityEngine;
+using System.Collections.Generic;
 using CosmicShore.Game.Arcade;
+using UnityEngine;
 namespace CosmicShore.Game.UI
 {
     public class WildlifeBlitzStatsProvider : ScoreboardStatsProvider

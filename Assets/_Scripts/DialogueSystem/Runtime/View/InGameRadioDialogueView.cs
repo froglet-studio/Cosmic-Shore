@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections;
-using CosmicShore.DialogueSystem.Runtime.Models;
+using CosmicShore.DialogueSystem.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.DialogueSystem.Runtime.View
+namespace CosmicShore.DialogueSystem.Runtime
 {
     /// <summary>
     /// Compact radio-style dialogue view for in-game use.

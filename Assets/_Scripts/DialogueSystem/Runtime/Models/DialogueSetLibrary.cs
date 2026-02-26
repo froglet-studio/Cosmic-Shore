@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.DialogueSystem.Runtime.Models
+namespace CosmicShore.DialogueSystem.Runtime
 {
     [CreateAssetMenu(menuName = "CosmicShore/Dialogue/Dialogue Library")]
     public class DialogueSetLibrary : ScriptableObject

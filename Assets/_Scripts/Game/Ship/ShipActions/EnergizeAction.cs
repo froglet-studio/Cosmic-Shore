@@ -2,7 +2,7 @@ using CosmicShore.Game.Ship;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class EnergizeAction : ShipAction
     {

@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.UI.PreGameCinematic
+namespace CosmicShore.Game.UI
 {
     /// <summary>
     /// Controls a pre-game cinematic flythrough that shows the level/map

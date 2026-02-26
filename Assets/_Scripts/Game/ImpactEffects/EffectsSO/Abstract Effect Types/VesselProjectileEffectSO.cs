@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes
+namespace CosmicShore.Game.ImpactEffects
 {
     public abstract class VesselProjectileEffectSO : ImpactEffectSO
     {

@@ -1,6 +1,6 @@
 using CosmicShore.Game.Ship;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class DriftAction : ShipAction
     {

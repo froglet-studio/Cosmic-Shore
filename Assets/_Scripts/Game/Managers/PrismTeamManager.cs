@@ -1,9 +1,9 @@
 using UnityEngine;
 using System;
 using CosmicShore.Game.Ship;
-using CosmicShore.Utility.SOAP.ScriptablePrismStats;
+using CosmicShore.Utility.SOAP;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Environment;
 namespace CosmicShore.Game.Managers
 {
     public class PrismTeamManager : MonoBehaviour

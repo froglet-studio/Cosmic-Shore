@@ -1,12 +1,10 @@
 using UnityEngine;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselProjectileEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(
         fileName = "VesselChangeSkimmerSizeByProjectileEffect",

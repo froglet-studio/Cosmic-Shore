@@ -1,10 +1,10 @@
-﻿using System.Text;
+using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI.Animations
+namespace CosmicShore.Game.UI
 {
     /// <summary>
     /// Hacking-style typewriter: progressively reveals the target string.

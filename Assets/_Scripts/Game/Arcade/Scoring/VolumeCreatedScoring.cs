@@ -1,6 +1,6 @@
 using CosmicShore.Utility.DataContainers;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     public class VolumeCreatedScoring : BaseScoring
     {

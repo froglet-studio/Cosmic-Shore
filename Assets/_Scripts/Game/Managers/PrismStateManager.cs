@@ -1,6 +1,6 @@
 using CosmicShore.Game.Ship;
 using UnityEngine;
-using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Environment;
 namespace CosmicShore.Game.Managers
 {
     public enum BlockState

@@ -2,7 +2,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI.Animations
+namespace CosmicShore.Game.UI
 {
     [RequireComponent(typeof(TMP_Text))]
     public sealed class EllipsisTextLooper : MonoBehaviour

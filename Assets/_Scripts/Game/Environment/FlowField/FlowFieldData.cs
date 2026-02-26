@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game.Environment.FlowField
+namespace CosmicShore.Game.Environment
 {
     [System.Serializable] public class FlowFieldData : MonoBehaviour
     {

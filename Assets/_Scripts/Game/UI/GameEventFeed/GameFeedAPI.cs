@@ -3,7 +3,7 @@ using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.UI.GameEventFeed
+namespace CosmicShore.Game.UI
 {
     public static class GameFeedAPI
     {

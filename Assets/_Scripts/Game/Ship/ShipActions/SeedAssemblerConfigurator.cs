@@ -5,7 +5,7 @@ using CosmicShore.Game.Ship;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Assemblers;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class SeedAssemblerConfigurator : MonoBehaviour
     {

@@ -1,7 +1,7 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "DriftTrailAction", menuName = "ScriptableObjects/Vessel Actions/Drift Trail")]
     public class DriftTrailActionSO : ShipActionSO

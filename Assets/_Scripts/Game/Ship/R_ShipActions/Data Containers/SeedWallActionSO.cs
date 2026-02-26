@@ -1,9 +1,7 @@
-﻿using CosmicShore;
+using CosmicShore;
 using CosmicShore.Game.Ship;
 using UnityEngine;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
-using CosmicShore.Game.Ship.ShipActions;
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "SeedWallAction", menuName = "ScriptableObjects/Vessel Actions/Seed Wall")]
     public class SeedWallActionSO : ShipActionSO

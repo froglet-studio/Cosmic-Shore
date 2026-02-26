@@ -4,7 +4,7 @@ using CosmicShore.Utility;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Manages a group of <see cref="Boid"/> creatures.

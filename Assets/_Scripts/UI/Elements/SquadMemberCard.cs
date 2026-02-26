@@ -1,4 +1,4 @@
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

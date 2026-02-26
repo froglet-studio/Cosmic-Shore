@@ -1,7 +1,7 @@
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Models.ScriptableObjects;
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
     public class ThreatSpawner : MonoBehaviour
     {

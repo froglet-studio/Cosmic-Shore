@@ -5,7 +5,7 @@ using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class ChargeBoostAction : ShipAction
     {

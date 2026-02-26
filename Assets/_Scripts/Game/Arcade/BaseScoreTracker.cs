@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using CosmicShore.Game.Arcade.Scoring;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using Unity.Netcode;

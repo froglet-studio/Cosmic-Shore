@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
-using CosmicShore.Utility.SOAP.ScriptableInputEvents;
-using CosmicShore.Utility.SOAP.ScriptablePartyData;
-namespace CosmicShore.Utility.SOAP.ScriptablePipData
+using CosmicShore.Utility.SOAP;
+namespace CosmicShore.Utility.SOAP
 {
     [AddComponentMenu("Soap/EventListeners/EventListener" + nameof(PipData))]
     public class EventListenerPipData : EventListenerGeneric<PipData>

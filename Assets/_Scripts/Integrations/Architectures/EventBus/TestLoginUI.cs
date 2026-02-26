@@ -1,9 +1,9 @@
 using System;
-using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace CosmicShore.Integrations.Architectures.EventBus
+namespace CosmicShore.Integrations.EventBus
 {
     public class TestLoginUI : MonoBehaviour
     {

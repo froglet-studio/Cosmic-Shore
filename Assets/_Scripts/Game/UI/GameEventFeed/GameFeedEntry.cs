@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Game.UI.GameEventFeed
+namespace CosmicShore.Game.UI
 {
     [RequireComponent(typeof(CanvasGroup))]
     public class GameFeedEntry : MonoBehaviour

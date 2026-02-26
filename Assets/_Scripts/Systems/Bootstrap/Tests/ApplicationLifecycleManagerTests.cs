@@ -3,7 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace CosmicShore.Systems.Bootstrap.Tests
+namespace CosmicShore.Systems.Bootstrap
 {
     [TestFixture]
     public class ApplicationLifecycleManagerTests

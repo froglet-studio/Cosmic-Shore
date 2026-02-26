@@ -2,7 +2,7 @@ using CosmicShore.Game.Camera;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class ZoomOutAction : ShipAction
     {

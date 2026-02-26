@@ -1,6 +1,6 @@
 using Obvious.Soap;
 
-namespace CosmicShore.Utility.SOAP.ScriptableAuthenticationData
+namespace CosmicShore.Utility.SOAP
 {
     [System.Serializable]
     public class AuthenticationData

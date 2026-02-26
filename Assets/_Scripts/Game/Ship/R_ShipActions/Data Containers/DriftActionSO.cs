@@ -1,8 +1,8 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "DriftAction", menuName = "ScriptableObjects/Vessel Actions/Drift")]
     public class DriftActionSO : ShipActionSO

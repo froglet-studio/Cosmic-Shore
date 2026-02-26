@@ -1,10 +1,9 @@
 using CosmicShore.Game.Ship;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Utility.Effects;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselPrismEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "VesselFeelDangerByPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselFeelDangerByPrismEffectSO")]
     public class VesselFeelDangerByPrismEffectSO : VesselPrismEffectSO

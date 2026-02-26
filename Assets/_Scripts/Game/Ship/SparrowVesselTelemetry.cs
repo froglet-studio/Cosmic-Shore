@@ -1,11 +1,8 @@
 using CosmicShore.Game.Arcade;
 using UnityEngine;
-using CosmicShore.Game.UI.Animations;
-using CosmicShore.Game.UI.GameEventFeed;
-using CosmicShore.Game.UI.NotificationSystem.Payload;
-using CosmicShore.Game.UI.PreGameCinematic;
+using CosmicShore.Game.UI;
 using CosmicShore.MinigameHUD.View;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship;
 namespace CosmicShore.Game.Ship
 {
     /// <summary>

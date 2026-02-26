@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
 
-namespace CosmicShore.Utility.SOAP.ScriptableClassType
+namespace CosmicShore.Utility.SOAP
 {
     [AddComponentMenu("Soap/EventListeners/EventListener"+nameof(VesselClassType))]
     public class EventListenerShipClassType : EventListenerGeneric<VesselClassType>

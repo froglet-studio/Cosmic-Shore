@@ -8,8 +8,6 @@ using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
-using CosmicShore.Game.Environment.Cytoplasm;
-using CosmicShore.Game.Environment.FlowField;
 using CosmicShore.Game.Player;
 namespace CosmicShore.Game.Ship
 {

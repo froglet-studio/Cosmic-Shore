@@ -4,7 +4,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
-namespace CosmicShore.Systems.Bootstrap.Tests
+namespace CosmicShore.Systems.Bootstrap
 {
     /// <summary>
     /// Integration tests that verify the Bootstrap → Authentication → Menu_Main

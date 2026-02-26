@@ -1,12 +1,11 @@
-﻿using CosmicShore.Game.Ship;
-using CosmicShore.Game.Arcade.Scoring;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Arcade;
 using Obvious.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.UI;
-using CosmicShore.Game.Arcade.TurnMonitors;
 namespace CosmicShore.Game.Arcade
 {
     public class SinglePlayerWildlifeBlitzScoreTracker : BaseScoreTracker

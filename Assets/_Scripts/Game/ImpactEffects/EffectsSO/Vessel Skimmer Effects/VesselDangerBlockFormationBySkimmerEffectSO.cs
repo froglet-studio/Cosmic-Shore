@@ -1,15 +1,14 @@
-﻿using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 using CosmicShore.Game.Environment;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(
         fileName = "VesselDangerBlockFormationBySkimmerEffect",

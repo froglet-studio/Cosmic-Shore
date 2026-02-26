@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
-namespace CosmicShore.Integrations.Instrumentation.Interfaces
+namespace CosmicShore.Integrations.Instrumentation
 {
     interface IAnalyzable
     {

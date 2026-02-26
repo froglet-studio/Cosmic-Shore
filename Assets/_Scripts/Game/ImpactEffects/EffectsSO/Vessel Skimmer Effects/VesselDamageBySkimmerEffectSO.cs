@@ -1,12 +1,11 @@
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility.Effects;
-using CosmicShore.Utility.SOAP.ScriptableClassType;
+using CosmicShore.Utility.SOAP;
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(
         fileName = "VesselDamageBySkimmerEffect",

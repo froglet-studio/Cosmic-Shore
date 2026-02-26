@@ -1,8 +1,8 @@
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Models.Enums;
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class DetonateProjectilesAction : ShipAction
     {

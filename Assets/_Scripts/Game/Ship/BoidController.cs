@@ -5,7 +5,7 @@ using CosmicShore.Game.Player;
 using CosmicShore.Utility;
 using Obvious.Soap;
 using CosmicShore.Game.UI;
-using CosmicShore.Game.Environment.FloraAndFauna;
+using CosmicShore.Game.Environment;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.Ship

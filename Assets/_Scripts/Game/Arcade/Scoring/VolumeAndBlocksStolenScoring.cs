@@ -2,7 +2,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     public class VolumeAndBlocksStolenScoring : BaseScoring
     {

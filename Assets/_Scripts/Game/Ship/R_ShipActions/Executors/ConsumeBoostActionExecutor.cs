@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -7,10 +7,9 @@ using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
 using CosmicShore.Utility;
 using CosmicShore.VesselHUD.View;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public class ConsumeBoostActionExecutor : ShipActionExecutorBase
     {

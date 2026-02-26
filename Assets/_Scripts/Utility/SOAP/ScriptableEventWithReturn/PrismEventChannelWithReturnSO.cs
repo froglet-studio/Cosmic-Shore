@@ -1,10 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 using CosmicShore.Game.Prisms;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
 
 
-namespace CosmicShore.Utility.SOAP.ScriptableEventWithReturn
+namespace CosmicShore.Utility.SOAP
 {
     public struct PrismReturnEventData
     {

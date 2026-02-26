@@ -1,9 +1,9 @@
-﻿using CosmicShore;
+using CosmicShore;
 using CosmicShore.Game.Ship;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Ship.TrailPassives
+namespace CosmicShore.Game.Ship
 {
 /// <summary>
 /// Dynamically scales trail prisms based on surrounding open space.

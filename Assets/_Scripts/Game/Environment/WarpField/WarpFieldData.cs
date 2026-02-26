@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game.Environment.WarpField
+namespace CosmicShore.Game.Environment
 {
     [System.Serializable] public class WarpFieldData : MonoBehaviour
     {

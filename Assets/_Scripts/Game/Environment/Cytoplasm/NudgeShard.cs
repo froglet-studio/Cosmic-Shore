@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Environment.Cytoplasm
+namespace CosmicShore.Game.Environment
 {
     public class NudgeShard : MonoBehaviour
     {

@@ -1,10 +1,10 @@
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
     public class SpawnableRaceTrack : SpawnableBase
     {

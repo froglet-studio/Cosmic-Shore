@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Game.Environment.Prisms;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Settings;
 using CosmicShore.Game.Ship;

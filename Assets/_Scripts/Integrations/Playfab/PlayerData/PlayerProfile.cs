@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Playfab.PlayerData
+namespace CosmicShore.Integrations.Playfab
 {
     public class PlayerProfile
     {

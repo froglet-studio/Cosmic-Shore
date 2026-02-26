@@ -1,10 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
 using CosmicShore.Game.Ship;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
     {

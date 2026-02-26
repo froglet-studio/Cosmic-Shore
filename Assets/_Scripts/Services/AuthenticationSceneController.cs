@@ -9,7 +9,7 @@ using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using CosmicShore.App.Systems.Authentication;
+using CosmicShore.App.Authentication;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Services

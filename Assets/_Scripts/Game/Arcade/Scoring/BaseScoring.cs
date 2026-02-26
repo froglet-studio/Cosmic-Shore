@@ -5,7 +5,7 @@ using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     [System.Serializable]
     public abstract class BaseScoring

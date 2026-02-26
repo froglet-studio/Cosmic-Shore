@@ -1,10 +1,10 @@
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Spawns prisms along fibers of the Hopf fibration: S³ → S².

@@ -5,7 +5,7 @@ using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     public class TimePlayedScoring : BaseScoring
     {

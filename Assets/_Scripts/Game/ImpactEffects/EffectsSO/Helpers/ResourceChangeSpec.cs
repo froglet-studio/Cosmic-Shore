@@ -4,7 +4,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.Helpers
+namespace CosmicShore.Game.ImpactEffects
 {
     [System.Serializable]
     public struct ResourceChangeSpec

@@ -8,9 +8,9 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.MiniGameObjects;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
-namespace CosmicShore.Game.Environment.FlowField
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Environment
 {
     [Serializable]
     public class CrystalPositionSet

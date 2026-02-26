@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections;
-using CosmicShore.DialogueSystem.Runtime.Models;
+using CosmicShore.DialogueSystem.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.DialogueSystem.Runtime.View
+namespace CosmicShore.DialogueSystem.Runtime
 {
     /// <summary>
     /// Dialogue view that emphasizes a reward panel.

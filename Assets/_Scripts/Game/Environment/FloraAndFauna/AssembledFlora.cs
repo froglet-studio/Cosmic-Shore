@@ -7,14 +7,11 @@ using UnityEngine;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility.SOAP;
-using CosmicShore.Utility.SOAP.ScriptableInputEvents;
-using CosmicShore.Utility.SOAP.ScriptablePartyData;
-using CosmicShore.Utility.SOAP.ScriptablePipData;
 using CosmicShore.Game.Assemblers;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     public class GrowthInfo
     {

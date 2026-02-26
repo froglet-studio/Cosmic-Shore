@@ -1,14 +1,11 @@
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Game.ImpactEffects;
 using UnityEngine;
-using CosmicShore.Game.Environment.FlowField;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.EffectsSO.Helpers;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Environment;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.ProjectileCrystalEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "ProjectileExplosionByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Projectile - Crystal/ProjectileExplosionByCrystalEffectSO")]
     public class ProjectileExplosionByCrystalEffectSO : ProjectileCrystalEffectSO

@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using CosmicShore.Game.IO;
-using CosmicShore.Utility.SOAP.ScriptableInputEvents;
+using CosmicShore.Utility.SOAP;
 using Unity.Netcode;
 using UnityEngine;
 

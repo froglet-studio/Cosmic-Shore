@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     [System.Serializable]
     public abstract class BaseScoringMode

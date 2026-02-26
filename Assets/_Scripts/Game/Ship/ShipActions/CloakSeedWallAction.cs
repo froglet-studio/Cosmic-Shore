@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -8,7 +8,7 @@ using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
 using CosmicShore.Game.Assemblers;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class CloakSeedWallAction : ShipAction
     {

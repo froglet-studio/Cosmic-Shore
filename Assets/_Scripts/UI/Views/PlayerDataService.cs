@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Systems;
-using CosmicShore.App.Systems.Authentication;
+using CosmicShore.App.Authentication;
 using CosmicShore.Utility.DataContainers;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;

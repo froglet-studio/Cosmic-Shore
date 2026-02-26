@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Linq;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Arcade.TurnMonitors
+namespace CosmicShore.Game.Arcade
 {
     public class VolumeCreatedTurnMonitor : TurnMonitor
     {

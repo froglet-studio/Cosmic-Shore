@@ -1,6 +1,6 @@
 using CosmicShore.Game.Environment;
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Individual segment of a <see cref="Worm"/> creature.

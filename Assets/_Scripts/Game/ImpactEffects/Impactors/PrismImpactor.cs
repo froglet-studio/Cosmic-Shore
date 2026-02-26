@@ -2,8 +2,8 @@ using System;
 using CosmicShore.Game.Ship;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-namespace CosmicShore.Game.ImpactEffects.Impactors
+using CosmicShore.Game.ImpactEffects;
+namespace CosmicShore.Game.ImpactEffects
 {
     [RequireComponent(typeof(Prism))]
     public class PrismImpactor : ImpactorBase

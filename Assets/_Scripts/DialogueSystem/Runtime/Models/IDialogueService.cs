@@ -1,4 +1,4 @@
-namespace CosmicShore.DialogueSystem.Runtime.Models
+namespace CosmicShore.DialogueSystem.Runtime
 {
     public interface IDialogueService
     {

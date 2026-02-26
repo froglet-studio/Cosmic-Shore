@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine.UI;
 using System;
 
-namespace CosmicShore.DialogueSystem.Runtime.References
+namespace CosmicShore.DialogueSystem.Runtime
 {
     public class DialogueUIPrefabRefs : MonoBehaviour
     {

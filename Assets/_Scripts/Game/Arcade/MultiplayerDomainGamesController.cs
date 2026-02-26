@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Linq;
-using CosmicShore.Game.UI.GameEventFeed;
+using CosmicShore.Game.UI;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;

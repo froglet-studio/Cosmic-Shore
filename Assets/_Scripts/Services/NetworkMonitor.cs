@@ -1,5 +1,5 @@
 using CosmicShore.Utility;
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.SOAP;
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;

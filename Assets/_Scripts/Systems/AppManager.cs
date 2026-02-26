@@ -10,7 +10,7 @@ using Reflex.Core;
 using Reflex.Enums;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.SOAP;
 using Resolution = Reflex.Enums.Resolution;
 
 namespace CosmicShore.Systems

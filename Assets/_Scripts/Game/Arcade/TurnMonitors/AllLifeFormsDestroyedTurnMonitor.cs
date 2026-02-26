@@ -2,7 +2,7 @@ using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.TurnMonitors
+namespace CosmicShore.Game.Arcade
 {
     public class AllLifeFormsDestroyedTurnMonitor : TurnMonitor
     {

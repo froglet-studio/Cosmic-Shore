@@ -3,7 +3,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
-using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Environment;
 namespace CosmicShore.Game.Managers
 {
     public class PrismScaleManager : AdaptiveAnimationManager<PrismScaleManager, PrismScaleAnimator, ScaleAnimationData>

@@ -1,7 +1,6 @@
 using CosmicShore.Game.Environment;
 using CosmicShore.Game.IO;
 using UnityEngine;
-using CosmicShore.Game.Environment.Prisms;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Settings;
 using CosmicShore.Models.Enums;

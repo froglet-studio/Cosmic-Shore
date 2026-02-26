@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Environment.FlowField
+namespace CosmicShore.Game.Environment
 {
     public class NetworkCrystalManager : CrystalManager
     {

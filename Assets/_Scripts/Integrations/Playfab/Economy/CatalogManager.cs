@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.CloudScripts;
-using CosmicShore.Integrations.Playfab.Utility;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Models.ScriptableObjects;
 using Newtonsoft.Json;
 using PlayFab;
@@ -15,8 +13,8 @@ using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Models.Structs;
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
-namespace CosmicShore.Integrations.Playfab.Economy
+using CosmicShore.Utility.SOAP;
+namespace CosmicShore.Integrations.Playfab
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {

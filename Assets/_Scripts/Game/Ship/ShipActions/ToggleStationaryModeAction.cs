@@ -1,9 +1,7 @@
 using CosmicShore.Game.Ship;
 using UnityEngine;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class ToggleStationaryModeAction : ShipAction
     {

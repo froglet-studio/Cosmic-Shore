@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 using PlayFab;
 using PlayFab.ClientModels;
 using System.Collections.Generic;
 using CosmicShore.Systems.Xp;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.Utility;
+using CosmicShore.Integrations.Playfab;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.Playfab.PlayerData
+namespace CosmicShore.Integrations.Playfab
 {
     public class PlayerDataController : SingletonPersistent<PlayerDataController>
     {

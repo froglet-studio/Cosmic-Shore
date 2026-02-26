@@ -1,6 +1,6 @@
 using System;
 #if !UNITY_WEBGL
-using CosmicShore.Integrations.Instrumentation.Firebase;
+using CosmicShore.Integrations.Instrumentation;
 #endif
 using UnityEngine;
 using UnityEngine.Advertisements;

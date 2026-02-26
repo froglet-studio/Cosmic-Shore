@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 using CosmicShore.Game.Managers;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Utility.Effects

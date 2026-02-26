@@ -1,4 +1,4 @@
-using CosmicShore.Utility.SOAP.ScriptablePartyData;
+using CosmicShore.Utility.SOAP;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

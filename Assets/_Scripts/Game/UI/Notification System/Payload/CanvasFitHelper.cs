@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-namespace CosmicShore.Game.UI.NotificationSystem.Payload
+namespace CosmicShore.Game.UI
 {
     [RequireComponent(typeof(RectTransform))]
     public sealed class CanvasFitHelper : MonoBehaviour

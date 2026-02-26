@@ -5,7 +5,7 @@ using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.UI.Elements.Hangar
+namespace CosmicShore.UI.Elements
 {
     public class HangarGameplayParameterDisplayGroup : MonoBehaviour
     {

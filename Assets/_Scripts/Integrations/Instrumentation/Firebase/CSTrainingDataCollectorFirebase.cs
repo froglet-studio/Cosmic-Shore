@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Threading.Tasks;
-using CosmicShore.Integrations.Instrumentation.Firebase;
-using CosmicShore.Integrations.Instrumentation.Interfaces;
+using CosmicShore.Integrations.Instrumentation;
 using Firebase.Analytics;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.Instrumentation.Firebase
+namespace CosmicShore.Integrations.Instrumentation
 {
     public class CSTrainingDataCollectorFirebase : ITrainingAnalyzable
     {

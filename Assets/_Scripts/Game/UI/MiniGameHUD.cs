@@ -10,11 +10,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Models.Enums;
-using CosmicShore.Utility.SOAP.ScriptablePipData;
-using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
-using CosmicShore.Utility.SOAP.ScriptableSilhouetteData;
+using CosmicShore.Utility.SOAP;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.UI.PreGameCinematic;
+using CosmicShore.Game.UI;
 using CosmicShore.MinigameHUD.View;
 namespace CosmicShore.Game.UI
 {

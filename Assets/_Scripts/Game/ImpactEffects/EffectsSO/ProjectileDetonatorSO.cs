@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "ProjectileDetonator",
         menuName = "ScriptableObjects/Services/Projectile Detonator")]
