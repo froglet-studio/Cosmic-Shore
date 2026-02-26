@@ -93,7 +93,10 @@ namespace CosmicShore.Game.Arcade
 
                 var vessel = gameData.LocalPlayer?.Vessel;
                 if (vessel?.VesselStatus != null)
+                {
                     vessel.VesselStatus.IsStationary = false;
+                    vessel.VesselStatus.VesselHUDController?.ShowHUD();
+                }
 
                 TeleportPlayerToLobby();
                 ClearPlayerTrails();

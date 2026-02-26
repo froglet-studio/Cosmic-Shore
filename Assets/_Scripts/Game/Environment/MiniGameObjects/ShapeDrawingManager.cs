@@ -328,6 +328,9 @@ namespace CosmicShore.Game.ShapeDrawing
             shapeCrystalManager.DestroyAllCrystals();
             shapeCrystalManager.enabled = false;
 
+            // Restore vessel HUD
+            _vesselStatus?.VesselHUDController?.ShowHUD();
+
             OnFreestyleResumed?.Invoke();
         }
 
@@ -738,7 +741,8 @@ namespace CosmicShore.Game.ShapeDrawing
             _waitingForNext = true;
             OnRevealStarted?.Invoke();
 
-            // Show end-of-shape detail HUD with stats
+            // Hide vessel HUD, show end-of-shape detail HUD with stats
+            _vesselStatus?.VesselHUDController?.HideHUD();
             if (endShapeHUD) endShapeHUD.Show(score);
         }
 
