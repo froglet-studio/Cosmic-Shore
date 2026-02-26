@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Utility.DataContainers;
 using UnityEngine;
-using CosmicShore.Game.UI.Animations;
-using CosmicShore.Game.UI.GameEventFeed;
-using CosmicShore.Game.UI.NotificationSystem.Payload;
-using CosmicShore.Game.UI.PreGameCinematic;
+using CosmicShore.Game.UI;
 using CosmicShore.MinigameHUD.View;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselPrismEffects;
+using CosmicShore.Game.ImpactEffects;
 namespace CosmicShore.Game.Ship
 {
     /// <summary>

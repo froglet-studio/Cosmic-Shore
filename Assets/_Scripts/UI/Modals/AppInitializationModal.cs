@@ -1,7 +1,5 @@
 using CosmicShore.FTUE.Helpers;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.Economy;
-using CosmicShore.Integrations.Playfab.PlayerData;
+using CosmicShore.Integrations.Playfab;
 using System.Collections;
 using TMPro;
 using UnityEngine;

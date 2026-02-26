@@ -6,7 +6,7 @@ using CosmicShore.Utility.Recording;
 using UnityEngine;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Utility;
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     public class BranchingFlora : Flora
     {

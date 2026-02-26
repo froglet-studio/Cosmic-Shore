@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class ToggleProjectileActionWrapper :ShipAction
     {

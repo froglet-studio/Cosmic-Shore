@@ -1,13 +1,11 @@
-﻿using UnityEngine;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.EffectsSO.Helpers;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using UnityEngine;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     /// <summary>
     /// Rhino-specific skimmer vs prism effect:

@@ -1,6 +1,6 @@
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 
-namespace CosmicShore.UI.Elements.Buttons
+namespace CosmicShore.UI.Elements
 {
     public class PurchaseGameplayTicketCard : PurchaseItemCard
     {

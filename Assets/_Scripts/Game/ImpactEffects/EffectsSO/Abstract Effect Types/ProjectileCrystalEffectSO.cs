@@ -1,4 +1,4 @@
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes
+namespace CosmicShore.Game.ImpactEffects
 {
     public abstract class ProjectileCrystalEffectSO : ImpactEffectSO
     {

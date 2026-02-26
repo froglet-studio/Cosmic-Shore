@@ -6,8 +6,7 @@ using CosmicShore.Utility;
 using Reflex.Attributes;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
-using CosmicShore.Utility.SOAP.ScriptablePartyData;
+using CosmicShore.Utility.SOAP;
 namespace CosmicShore.UI.Views
 {
     /// <summary>

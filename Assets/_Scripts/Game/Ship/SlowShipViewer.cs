@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Game.Environment;
-using CosmicShore.Utility.SOAP.ScriptableClassType;
+using CosmicShore.Utility.SOAP;
 using UnityEngine;
-using CosmicShore.Game.Environment.Prisms;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Settings;
 using CosmicShore.Models.Enums;

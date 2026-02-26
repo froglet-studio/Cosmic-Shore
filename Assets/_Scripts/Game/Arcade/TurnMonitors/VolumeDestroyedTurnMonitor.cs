@@ -1,7 +1,7 @@
 using CosmicShore.Game.Managers;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Arcade.TurnMonitors
+namespace CosmicShore.Game.Arcade
 {
     public class VolumeDestroyedTurnMonitor : TurnMonitor
     {

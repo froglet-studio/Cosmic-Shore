@@ -1,10 +1,9 @@
-﻿using CosmicShore.Integrations.Instrumentation.Firebase;
-using CosmicShore.Integrations.Instrumentation.Interfaces;
+using CosmicShore.Integrations.Instrumentation;
 using System.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.Instrumentation.DataCollectors
+namespace CosmicShore.Integrations.Instrumentation
 {
     public class CSDeviceDataCollector : IDeviceAnalyzale
     {

@@ -1,7 +1,5 @@
 using CosmicShore.Models.Enums;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.PlayerData;
-using CosmicShore.Integrations.Playfab.PlayStream;
+using CosmicShore.Integrations.Playfab;
 using System;
 using System.Collections;
 using System.Collections.Generic;

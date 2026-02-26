@@ -3,7 +3,7 @@ using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI.Animations
+namespace CosmicShore.Game.UI
 {
     /// <summary>
     /// Animates trailing dots on a text label (e.g. "Connecting to Shore" -> "Connecting to Shore." -> "..." -> repeat).

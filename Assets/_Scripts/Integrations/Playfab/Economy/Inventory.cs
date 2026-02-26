@@ -5,7 +5,7 @@ using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Utility.DataPersistence;
 
-namespace CosmicShore.Integrations.Playfab.Economy
+namespace CosmicShore.Integrations.Playfab
 {
     [Serializable]
     public class Inventory

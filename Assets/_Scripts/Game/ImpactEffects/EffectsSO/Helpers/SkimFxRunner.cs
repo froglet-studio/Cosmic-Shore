@@ -5,7 +5,7 @@ using CosmicShore.Utility.Recording;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.Helpers
+namespace CosmicShore.Game.ImpactEffects
 {
     // ------------------------------------------------------------
     // Small internal helper: spawns & updates skim FX, then cleans up.

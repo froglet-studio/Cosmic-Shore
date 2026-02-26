@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.PlayerData;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Models.ScriptableObjects;
 using Newtonsoft.Json;
 using PlayFab.ClientModels;

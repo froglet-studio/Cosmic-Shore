@@ -4,7 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Environment;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 

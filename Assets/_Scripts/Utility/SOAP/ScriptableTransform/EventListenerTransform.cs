@@ -1,13 +1,8 @@
 using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
-using CosmicShore.Utility.SOAP.ScriptableAbilityStats;
-using CosmicShore.Utility.SOAP.ScriptableCrystalStats;
-using CosmicShore.Utility.SOAP.ScriptablePrismStats;
-using CosmicShore.Utility.SOAP.ScriptableQuaternion;
-using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
-using CosmicShore.Utility.SOAP.ScriptableSilhouetteData;
-namespace CosmicShore.Utility.SOAP.ScriptableTransform
+using CosmicShore.Utility.SOAP;
+namespace CosmicShore.Utility.SOAP
 {
     [AddComponentMenu("Soap/EventListeners/EventListener"+nameof(Transform))]
     public class EventListenerTransform : EventListenerGeneric<Transform>

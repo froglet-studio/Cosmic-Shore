@@ -1,12 +1,11 @@
-﻿using UnityEngine;
+using UnityEngine;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility.Effects;
-using CosmicShore.Utility.SOAP.ScriptableClassType;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselPrismEffects
+using CosmicShore.Utility.SOAP;
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(
         fileName = "SparrowDebuffByRhinoDangerPrismEffect",

@@ -1,8 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     /// <summary>
     /// Gradually blends a renderer's material or material properties over time.

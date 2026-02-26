@@ -1,11 +1,11 @@
 using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using CosmicShore.Game.Environment.FlowField;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.ImpactEffects.Impactors
+namespace CosmicShore.Game.ImpactEffects
 {
     public class ElementalCrystalImpactor : CrystalImpactor
     {

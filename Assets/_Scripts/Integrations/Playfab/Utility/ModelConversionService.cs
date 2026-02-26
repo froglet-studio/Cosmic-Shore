@@ -1,11 +1,11 @@
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using UnityEngine.Assertions;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.Playfab.Utility
+namespace CosmicShore.Integrations.Playfab
 {
     public class ModelConversionService
     {

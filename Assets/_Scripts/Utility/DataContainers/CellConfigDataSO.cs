@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game.Environment;
-using CosmicShore.Game.Environment.CellModifiers;
-using CosmicShore.Game.Environment.Cytoplasm;
 namespace CosmicShore.Utility.DataContainers
 {
     [CreateAssetMenu(fileName = "CellConfigData", menuName = "Cosmic Shore/Cells/Cell Config Data")]

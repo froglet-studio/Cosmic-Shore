@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "SkimmerScalePitchAndYawPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerScalePitchAndYawPrismEffectSO")]
     public class SkimmerScalePitchAndYawPrismEffectSO : SkimmerPrismEffectSO

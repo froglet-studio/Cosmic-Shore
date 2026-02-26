@@ -1,4 +1,4 @@
-namespace CosmicShore.Utility.SOAP.ScriptablePipData
+namespace CosmicShore.Utility.SOAP
 {
     [System.Serializable]
     public struct PipData

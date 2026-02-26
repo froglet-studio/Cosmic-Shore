@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game.Environment.WarpField
+namespace CosmicShore.Game.Environment
 {
     public class WarpFieldView : MonoBehaviour
     {

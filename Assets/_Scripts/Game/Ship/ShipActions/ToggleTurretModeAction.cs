@@ -1,7 +1,7 @@
 using CosmicShore.Game.Ship;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class ToggleTurretModeAction : ToggleStationaryModeAction
     {

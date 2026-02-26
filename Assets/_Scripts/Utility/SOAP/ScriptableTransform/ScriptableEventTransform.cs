@@ -1,7 +1,7 @@
 using UnityEngine;
 using Obvious.Soap;
 
-namespace CosmicShore.Utility.SOAP.ScriptableTransform
+namespace CosmicShore.Utility.SOAP
 {
     [CreateAssetMenu(fileName = "Event_" + nameof(Transform), menuName = "ScriptableObjects/SOAP/Events/"+ nameof(Transform))]
     public class ScriptableEventTransform : ScriptableEvent<Transform>

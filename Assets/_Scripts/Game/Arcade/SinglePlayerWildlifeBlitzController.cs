@@ -1,5 +1,5 @@
-﻿using UnityEngine;
-using CosmicShore.Game.Arcade.TurnMonitors;
+using UnityEngine;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Utility.DataContainers;
 namespace CosmicShore.Game.Arcade
 {

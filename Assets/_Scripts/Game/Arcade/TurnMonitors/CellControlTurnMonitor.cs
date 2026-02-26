@@ -3,9 +3,9 @@ using UnityEngine;
 using CosmicShore.Game.UI;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility.DataContainers;
-using CosmicShore.Game.Arcade.Scoring;
+using CosmicShore.Game.Arcade;
 
-namespace CosmicShore.Game.Arcade.TurnMonitors
+namespace CosmicShore.Game.Arcade
 {
     public class CellControlTurnMonitor : TurnMonitor
     {

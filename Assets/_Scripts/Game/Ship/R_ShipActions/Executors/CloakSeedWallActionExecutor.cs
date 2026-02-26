@@ -1,16 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Environment;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Ship;
 using CosmicShore.VesselHUD.View;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public sealed class CloakSeedWallActionExecutor : ShipActionExecutorBase
     {

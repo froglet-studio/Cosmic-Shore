@@ -5,7 +5,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Recording;
 
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     public class Worm : MonoBehaviour
     {

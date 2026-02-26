@@ -7,7 +7,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 using UnityEngine;
-using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
+using CosmicShore.Utility.SOAP;
 namespace CosmicShore.Game.Projectiles
 {
     public class AOEBlockCreation : AOEExplosion

@@ -1,7 +1,7 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "ChargeBoostAction", menuName = "CosmicShore/Actions/Charge Boost")]
     public class ChargeBoostActionSO : ShipActionSO

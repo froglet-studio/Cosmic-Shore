@@ -1,8 +1,8 @@
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
     public class SpawnableCardioidSmear : SpawnableEllipsoid
     {

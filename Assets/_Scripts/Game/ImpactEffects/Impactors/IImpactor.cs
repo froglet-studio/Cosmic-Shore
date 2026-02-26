@@ -1,7 +1,7 @@
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.ImpactEffects.Impactors
+namespace CosmicShore.Game.ImpactEffects
 {
     public interface IImpactor : ITransform
     {

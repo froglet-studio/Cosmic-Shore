@@ -1,12 +1,12 @@
 using System;
-using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Utility;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.Playfab.Utility
+namespace CosmicShore.Integrations.Playfab
 {
     public class PlayFabUtility : SingletonPersistent<PlayFabUtility>
     {

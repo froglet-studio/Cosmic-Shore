@@ -1,10 +1,10 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
     {

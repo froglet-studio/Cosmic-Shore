@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.UI.Elements.Buttons
+namespace CosmicShore.UI.Elements
 {
 
     [Serializable]

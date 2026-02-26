@@ -4,7 +4,7 @@ using CosmicShore.Systems.Bootstrap;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.App.Systems.Authentication;
+using CosmicShore.App.Authentication;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Services

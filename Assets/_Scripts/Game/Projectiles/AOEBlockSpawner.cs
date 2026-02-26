@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Threading;
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 
 namespace CosmicShore.Game.Projectiles
 {

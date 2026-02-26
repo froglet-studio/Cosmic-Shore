@@ -1,8 +1,8 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "ApplyRotationAction", menuName = "ScriptableObjects/Vessel Actions/ApplyRotationActionSO")]
     public class ApplyRotationActionSO : ShipActionSO

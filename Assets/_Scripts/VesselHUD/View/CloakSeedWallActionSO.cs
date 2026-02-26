@@ -1,5 +1,5 @@
-﻿using UnityEngine;
-using CosmicShore.Game.Environment.Prisms;
+using UnityEngine;
+using CosmicShore.Game.Environment;
 
 namespace CosmicShore.VesselHUD.View
 {

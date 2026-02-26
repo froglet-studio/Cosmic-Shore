@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 using CosmicShore.Game.Ship;
 
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "YawsteryAction", menuName = "ScriptableObjects/Vessel Actions/Yawstery (Hold-To-Yaw)")]
     public class YawsteryActionSO : ShipActionSO

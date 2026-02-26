@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game.Environment.FlowField
+namespace CosmicShore.Game.Environment
 {
     public class FlowFieldView : MonoBehaviour
     {

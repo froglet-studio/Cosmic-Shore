@@ -6,7 +6,7 @@ using CosmicShore.Game.Environment;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     public class Spindle : MonoBehaviour
     {

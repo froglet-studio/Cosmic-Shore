@@ -7,7 +7,7 @@ using CosmicShore.Utility;
 using CosmicShore.Game.Assemblers;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     public enum BoidCollisionEffects
     {

@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CosmicShore.Game.Ship;
 using UnityEngine;
 
-namespace CosmicShore.Utility.SOAP.ScriptableSilhouetteData
+namespace CosmicShore.Utility.SOAP
 {
     [Serializable]
     public struct SilhouetteData

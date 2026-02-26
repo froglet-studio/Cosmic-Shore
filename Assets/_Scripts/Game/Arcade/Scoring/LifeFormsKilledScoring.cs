@@ -1,4 +1,4 @@
-﻿namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
     /// <summary>
     /// Scoring for LifeForm kills in Wildlife Blitz mode.

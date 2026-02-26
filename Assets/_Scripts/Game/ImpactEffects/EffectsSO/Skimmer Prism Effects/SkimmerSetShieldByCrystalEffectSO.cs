@@ -2,7 +2,7 @@ using CosmicShore.Utility.Recording;
 
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(
         fileName = "SkimmerSetShieldByCrystalEffect",

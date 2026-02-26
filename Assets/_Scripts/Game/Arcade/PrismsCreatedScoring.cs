@@ -1,5 +1,5 @@
 using System;
-using CosmicShore.Game.Arcade.Scoring;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Utility.DataContainers;
 
 namespace CosmicShore.Game.Arcade

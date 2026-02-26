@@ -1,11 +1,11 @@
-using CosmicShore.DialogueSystem.Runtime.Models;
+using CosmicShore.DialogueSystem.Runtime;
 using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.DialogueSystem.Runtime.View
+namespace CosmicShore.DialogueSystem.Runtime
 {
     public class DialogueUIController : MonoBehaviour
     {

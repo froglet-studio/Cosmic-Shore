@@ -1,6 +1,5 @@
 using CosmicShore.Game.Environment;
 using UnityEngine;
-using CosmicShore.Game.Environment.Prisms;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Settings;
 using CosmicShore.Game.Ship;

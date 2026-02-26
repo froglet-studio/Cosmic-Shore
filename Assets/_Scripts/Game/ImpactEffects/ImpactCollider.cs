@@ -1,5 +1,5 @@
 using UnityEngine;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Models.Enums;
 namespace CosmicShore.Game.ImpactEffects
 {

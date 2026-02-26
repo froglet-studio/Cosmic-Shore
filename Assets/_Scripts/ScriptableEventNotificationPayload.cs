@@ -1,4 +1,4 @@
-using CosmicShore.Game.UI.NotificationSystem.Payload;
+using CosmicShore.Game.UI;
 using UnityEngine;
 using Obvious.Soap;
 

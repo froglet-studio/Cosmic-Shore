@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game.Environment.Spawning
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Immutable spatial data for a single spawned object.

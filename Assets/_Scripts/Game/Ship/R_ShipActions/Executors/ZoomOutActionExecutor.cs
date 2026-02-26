@@ -1,11 +1,9 @@
-﻿using UnityEngine;
+using UnityEngine;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Camera;
 using Obvious.Soap;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-using CosmicShore.Game.Ship.ShipActions;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     [DefaultExecutionOrder(-1000)]
     public sealed class ZoomOutActionExecutor : ShipActionExecutorBase

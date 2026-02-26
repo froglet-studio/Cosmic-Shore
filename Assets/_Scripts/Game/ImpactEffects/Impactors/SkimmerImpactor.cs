@@ -4,10 +4,9 @@ using CosmicShore.Game.Ship;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.FlowField;
-using CosmicShore.Game.ImpactEffects.Containers;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-namespace CosmicShore.Game.ImpactEffects.Impactors
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.ImpactEffects;
+namespace CosmicShore.Game.ImpactEffects
 {
     public class SkimmerImpactor : ImpactorBase
     {

@@ -1,12 +1,12 @@
 using CosmicShore.UI.Views;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Models.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Game.Managers;
 using CosmicShore.Models;
-namespace CosmicShore.UI.Elements.Buttons
+namespace CosmicShore.UI.Elements
 {
     public class CaptainUpgradeSelectionCard : MonoBehaviour
     {

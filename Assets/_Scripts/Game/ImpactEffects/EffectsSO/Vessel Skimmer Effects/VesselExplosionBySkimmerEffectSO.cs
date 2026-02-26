@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Game.UI.GameEventFeed;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.EffectsSO.Helpers;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.UI;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(
         fileName = "VesselExplosionBySkimmer",

@@ -1,11 +1,9 @@
-﻿using System;
+using System;
 using System.Collections;
 using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-using CosmicShore.Game.Ship.ShipActions;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
     {

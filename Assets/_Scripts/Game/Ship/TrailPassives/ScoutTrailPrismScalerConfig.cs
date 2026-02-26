@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.TrailPassives
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Configuration data for ScoutTrailPrismScaler.

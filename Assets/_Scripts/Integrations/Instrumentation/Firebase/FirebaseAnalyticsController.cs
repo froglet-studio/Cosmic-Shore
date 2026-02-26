@@ -12,7 +12,7 @@ using UnityEngine.Serialization;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Integrations.Instrumentation.Firebase
+namespace CosmicShore.Integrations.Instrumentation
 {
     public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {

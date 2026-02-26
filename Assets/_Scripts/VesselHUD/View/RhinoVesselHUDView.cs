@@ -1,8 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.Environment;
 using CosmicShore.Game.Ship;
 namespace CosmicShore.VesselHUD.View
 {

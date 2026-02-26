@@ -2,7 +2,7 @@ using CosmicShore.Game.Environment;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Models;
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Common contract for all lifeform entities in the game (Flora, Fauna, and Managers).

@@ -4,7 +4,7 @@ using CosmicShore.Systems.Favorites;
 using CosmicShore.Systems.LoadOut;
 using CosmicShore.UI.Elements;
 using CosmicShore.UI.Modals;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using System;
 using System.Collections.Generic;
 using System.Linq;

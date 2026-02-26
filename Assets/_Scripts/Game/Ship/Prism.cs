@@ -1,17 +1,14 @@
-﻿using System;
+using System;
 using UnityEngine;
 using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game.Environment;
-using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
+using CosmicShore.Utility.SOAP;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.MiniGameObjects;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Prisms;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
-using CosmicShore.Utility.SOAP.ScriptablePrismStats;
-using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Ship;
 namespace CosmicShore.Game.Ship
 {
     [RequireComponent(typeof(MaterialPropertyAnimator))]

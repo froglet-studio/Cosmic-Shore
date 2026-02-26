@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Utility;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-using CosmicShore.Integrations.Playfab.CloudScripts;
-namespace CosmicShore.Integrations.Playfab.Economy
+namespace CosmicShore.Integrations.Playfab
 {
     /// <summary>
     /// TODO: Generalize function execution

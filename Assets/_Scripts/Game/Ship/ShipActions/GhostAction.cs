@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class GhostAction : ShipAction
     {

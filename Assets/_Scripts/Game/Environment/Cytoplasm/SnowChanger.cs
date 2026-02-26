@@ -1,8 +1,8 @@
 using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility.Recording;
 using UnityEngine;
-using CosmicShore.Game.Environment.FlowField;
-namespace CosmicShore.Game.Environment.Cytoplasm
+using CosmicShore.Game.Environment;
+namespace CosmicShore.Game.Environment
 {
     public class SnowChanger : MonoBehaviour
     {

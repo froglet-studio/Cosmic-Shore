@@ -1,13 +1,12 @@
 using System.Collections.Generic;
 using CosmicShore.Game.Managers;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Game.ImpactEffects;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.ImpactEffects.Containers;
 using CosmicShore.Game.Player;
 using CosmicShore.Game.Projectiles;
-namespace CosmicShore.Game.ImpactEffects.Impactors
+namespace CosmicShore.Game.ImpactEffects
 {
     [RequireComponent(typeof(AOEExplosion))]
     public class ExplosionImpactor : ImpactorBase

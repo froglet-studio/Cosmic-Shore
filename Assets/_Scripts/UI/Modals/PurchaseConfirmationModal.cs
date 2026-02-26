@@ -1,12 +1,11 @@
 using CosmicShore.UI.FX;
 using CosmicShore.Game.Environment;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Game.Environment.Prisms;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Settings;
 using CosmicShore.Game.Ship;

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game.Environment.WarpField
+namespace CosmicShore.Game.Environment
 {
     [CreateAssetMenu(fileName = "ZeroWarpData", menuName = "CosmicShore/Warp/ZeroWarp", order = 30)]
     [System.Serializable]

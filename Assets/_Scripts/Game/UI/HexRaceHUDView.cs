@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Models.Enums;
 using UnityEngine;
-using CosmicShore.Game.UI.GameEventFeed;
+using CosmicShore.Game.UI;
 using CosmicShore.MinigameHUD.View;
 namespace CosmicShore.Game.UI
 {

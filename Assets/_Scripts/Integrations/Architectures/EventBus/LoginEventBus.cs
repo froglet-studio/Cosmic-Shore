@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.Architectures.EventBus
+namespace CosmicShore.Integrations.EventBus
 {
     [Serializable]
     public enum LoginType

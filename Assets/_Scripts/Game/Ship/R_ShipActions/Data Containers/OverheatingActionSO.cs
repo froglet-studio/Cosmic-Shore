@@ -1,7 +1,7 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "OverheatingAction", menuName = "ScriptableObjects/Vessel Actions/Overheating")]
     public class OverheatingActionSO : ShipActionSO

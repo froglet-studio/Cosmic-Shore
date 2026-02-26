@@ -1,11 +1,11 @@
-﻿// MultiplayerJoustController.cs
+// MultiplayerJoustController.cs
 using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Arcade.TurnMonitors;
+using CosmicShore.Game.Arcade;
 namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerJoustController : MultiplayerDomainGamesController

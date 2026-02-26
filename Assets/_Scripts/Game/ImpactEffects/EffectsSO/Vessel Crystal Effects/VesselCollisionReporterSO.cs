@@ -1,14 +1,13 @@
-﻿using UnityEngine;
-using CosmicShore.Game.Environment.FlowField;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using UnityEngine;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Managers;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselCrystalEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "VesselCollisionReporter", menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselCollisionReporter")]
     public class VesselCollisionReporterSO : VesselCrystalEffectSO

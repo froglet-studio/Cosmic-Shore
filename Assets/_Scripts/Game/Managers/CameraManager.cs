@@ -6,7 +6,7 @@ using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.Utility.SOAP.ScriptableTransform;
+using CosmicShore.Utility.SOAP;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.Managers

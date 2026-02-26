@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.ProjectileMineEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "ProjectileExplodeMine", menuName = "ScriptableObjects/Impact Effects/Projectile - Mine/ProjectileExplodeMineSO")]
     public class ProjectileExplodeMineSO : ProjectileMineEffectSO

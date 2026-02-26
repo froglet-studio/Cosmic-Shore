@@ -1,11 +1,9 @@
-﻿using CosmicShore;
+using CosmicShore;
 using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-using CosmicShore.Game.Ship.ShipActions;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
     {

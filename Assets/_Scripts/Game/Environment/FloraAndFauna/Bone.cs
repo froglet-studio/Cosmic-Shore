@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     public class Bone : MonoBehaviour 
     {

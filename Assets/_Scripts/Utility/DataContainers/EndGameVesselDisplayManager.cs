@@ -1,11 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility.SOAP;
 using UnityEngine;
-using CosmicShore.Utility.SOAP.ScriptableInputEvents;
-using CosmicShore.Utility.SOAP.ScriptablePartyData;
-using CosmicShore.Utility.SOAP.ScriptablePipData;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Utility.DataContainers

@@ -1,11 +1,11 @@
 using System;
 using CosmicShore.Game.Ship;
 using CosmicShore.Game.Player;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Game.ImpactEffects;
 using UnityEngine;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class FireGunAction : ShipAction
     {

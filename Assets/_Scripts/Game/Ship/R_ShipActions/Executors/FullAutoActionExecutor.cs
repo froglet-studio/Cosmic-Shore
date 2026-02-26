@@ -1,16 +1,15 @@
-﻿using System;
+using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Game.Ship;
 using CosmicShore.Game.Projectiles;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Game.ImpactEffects;
 using Obvious.Soap;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
 public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 {

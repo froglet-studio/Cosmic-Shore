@@ -1,7 +1,7 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "ToggleAlignAction", menuName = "ScriptableObjects/Vessel Actions/Toggle Align")]
     public sealed class ToggleAlignActionSO : ShipActionSO

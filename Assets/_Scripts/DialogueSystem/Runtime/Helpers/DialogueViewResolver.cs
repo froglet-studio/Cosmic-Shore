@@ -1,7 +1,7 @@
-﻿using CosmicShore.DialogueSystem.Models;
+using CosmicShore.DialogueSystem.Models;
 using UnityEngine;
-using CosmicShore.DialogueSystem.Runtime.View;
-namespace CosmicShore.DialogueSystem.Runtime.Helpers
+using CosmicShore.DialogueSystem.Runtime;
+namespace CosmicShore.DialogueSystem.Runtime
 {
     public sealed class DialogueViewResolver : MonoBehaviour, IDialogueViewResolver
     {

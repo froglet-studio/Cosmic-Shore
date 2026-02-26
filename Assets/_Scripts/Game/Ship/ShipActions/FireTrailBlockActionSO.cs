@@ -1,7 +1,7 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "FireTrailBlockAction", menuName = "ScriptableObjects/Vessel Actions/Fire Trail Block")]
     public class FireTrailBlockActionSO : ShipActionSO

@@ -1,7 +1,7 @@
 using DG.Tweening;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI.GameEventFeed
+namespace CosmicShore.Game.UI
 {
     [CreateAssetMenu(
         fileName = "GameFeedSettings",

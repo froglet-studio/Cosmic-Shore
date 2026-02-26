@@ -5,7 +5,7 @@ using CosmicShore.Utility;
 using CosmicShore.Game.Environment;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Lightweight boid-like creature with separation, cohesion, and goal-seeking behaviors.

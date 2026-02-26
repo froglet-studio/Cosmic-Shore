@@ -5,12 +5,8 @@ using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Game.UI.Animations;
-using CosmicShore.Game.UI.GameEventFeed;
-using CosmicShore.Game.UI.NotificationSystem.Payload;
-using CosmicShore.Game.UI.PreGameCinematic;
-using CosmicShore.MinigameHUD.View;
 using CosmicShore.Game.UI;
+using CosmicShore.MinigameHUD.View;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.Arcade

@@ -2,7 +2,7 @@ using CosmicShore.Game.IO;
 using UnityEngine;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class ToggleGyroAction : ShipAction
     {

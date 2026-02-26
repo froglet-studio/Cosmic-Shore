@@ -1,4 +1,4 @@
-namespace CosmicShore.Integrations.Instrumentation.Firebase
+namespace CosmicShore.Integrations.Instrumentation
 {
     public class CSCustomKeysFirebase
     {

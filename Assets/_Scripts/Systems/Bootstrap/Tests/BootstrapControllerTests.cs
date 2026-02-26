@@ -2,7 +2,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace CosmicShore.Systems.Bootstrap.Tests
+namespace CosmicShore.Systems.Bootstrap
 {
     [TestFixture]
     public class BootstrapControllerTests

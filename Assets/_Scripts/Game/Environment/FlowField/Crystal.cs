@@ -9,9 +9,8 @@ using Unity.Collections;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Managers;
-using CosmicShore.Game.Environment.MiniGameObjects;
 using CosmicShore.Utility.Effects;
-namespace CosmicShore.Game.Environment.FlowField
+namespace CosmicShore.Game.Environment
 {
     [System.Serializable]
     public class CrystalModelData

@@ -2,7 +2,7 @@ using System.Collections;
 using CosmicShore.Game.Environment;
 using UnityEngine;
 
-namespace CosmicShore.Game.Environment.FloraAndFauna
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Abstract base for plant-like lifeforms.

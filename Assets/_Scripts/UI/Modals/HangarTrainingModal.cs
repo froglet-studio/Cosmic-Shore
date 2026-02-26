@@ -5,13 +5,10 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.UI.Elements.Buttons;
 using CosmicShore.Utility;
 using CosmicShore.Game.Managers;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
-using CosmicShore.Game.Ship.ShipActions;
+using CosmicShore.Game.Ship;
 using CosmicShore.Models.ScriptableObjects;
-using CosmicShore.UI.Elements.Hangar;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.UI.Modals

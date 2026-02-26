@@ -1,6 +1,4 @@
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.PlayerData;
-using CosmicShore.Integrations.Playfab.PlayStream;
+using CosmicShore.Integrations.Playfab;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;

@@ -8,7 +8,6 @@ using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
-using CosmicShore.Game.Environment.FloraAndFauna;
 namespace CosmicShore.Game.Assemblers
 {
 

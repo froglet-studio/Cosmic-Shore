@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.ProjectileEndEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(
         fileName = "DetonateSparrowProjectileEndEffect",

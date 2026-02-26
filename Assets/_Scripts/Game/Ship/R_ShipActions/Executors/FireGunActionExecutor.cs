@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using Obvious.Soap;
 using CosmicShore.Game.Ship;
 using CosmicShore.Game.Projectiles;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Game.ImpactEffects;
 using UnityEngine;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public class FireGunActionExecutor : ShipActionExecutorBase
     {

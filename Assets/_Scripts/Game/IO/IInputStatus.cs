@@ -1,18 +1,9 @@
-﻿using System;
+using System;
 using CosmicShore.Game.IO;
-using CosmicShore.Utility.SOAP.ScriptableInputEvents;
+using CosmicShore.Utility.SOAP;
 using CosmicShore.Utility;
 using UnityEngine;
 using CosmicShore.Utility.DataContainers;
-using CosmicShore.Utility.SOAP.ScriptableAbilityStats;
-using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
-using CosmicShore.Utility.SOAP.ScriptableCrystalStats;
-using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
-using CosmicShore.Utility.SOAP.ScriptablePrismStats;
-using CosmicShore.Utility.SOAP.ScriptableQuaternion;
-using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
-using CosmicShore.Utility.SOAP.ScriptableSilhouetteData;
-using CosmicShore.Utility.SOAP.ScriptableTransform;
 namespace CosmicShore.Game.IO
 {
     public interface IInputStatus

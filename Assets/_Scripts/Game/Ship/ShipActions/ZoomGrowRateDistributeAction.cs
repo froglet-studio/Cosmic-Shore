@@ -3,7 +3,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class ZoomGrowRateDistributeAction : ShipAction
     {

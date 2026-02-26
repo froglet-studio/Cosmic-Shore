@@ -4,7 +4,7 @@ using CosmicShore.Utility.DataContainers;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Game.Arcade.TurnMonitors;
+using CosmicShore.Game.Arcade;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>

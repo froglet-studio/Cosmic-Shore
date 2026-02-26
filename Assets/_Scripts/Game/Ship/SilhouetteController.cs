@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Game.ImpactEffects.EffectsSO.VesselCrystalEffects;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.ImpactEffects.Impactors;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship;
 using CosmicShore.UI.Views;
 namespace CosmicShore.Game.Ship
 {

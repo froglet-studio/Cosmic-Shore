@@ -5,7 +5,7 @@ using Unity.Services.Core;
 using Unity.Services.Authentication;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.Systems.Authentication
+namespace CosmicShore.App.Authentication
 {
     public class AuthenticationController : MonoBehaviour
     {

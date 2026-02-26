@@ -1,12 +1,10 @@
-﻿using System;
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Game.Ship;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
-using CosmicShore.Game.Ship.ShipActions;
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+namespace CosmicShore.Game.Ship
 {
     public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
     {

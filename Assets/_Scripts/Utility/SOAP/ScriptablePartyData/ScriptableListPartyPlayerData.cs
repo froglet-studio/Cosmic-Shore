@@ -1,7 +1,7 @@
 using UnityEngine;
 using Obvious.Soap;
 
-namespace CosmicShore.Utility.SOAP.ScriptablePartyData
+namespace CosmicShore.Utility.SOAP
 {
     [CreateAssetMenu(
         fileName = "List_" + nameof(PartyPlayerData),

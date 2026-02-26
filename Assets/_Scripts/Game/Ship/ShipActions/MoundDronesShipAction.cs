@@ -1,9 +1,9 @@
-using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.Environment;
 using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship
 {
     public class MoundDronesShipAction : ShipAction
     {

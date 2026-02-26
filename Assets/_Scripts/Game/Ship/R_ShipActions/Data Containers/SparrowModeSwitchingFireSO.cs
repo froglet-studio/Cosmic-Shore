@@ -1,9 +1,7 @@
-﻿using Obvious.Soap;
+using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
-using CosmicShore.Game.Ship.ShipActions;
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "ModeSwitchingFire",
         menuName = "ScriptableObjects/Vessel Actions/Mode Switching Fire")]

@@ -1,5 +1,5 @@
 
-namespace CosmicShore.Game.ImpactEffects.EffectsSO
+namespace CosmicShore.Game.ImpactEffects
 {
     /*namespace CosmicShore.Game
     {

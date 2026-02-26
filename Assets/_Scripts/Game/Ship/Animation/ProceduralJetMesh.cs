@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game.Ship.Animation
+namespace CosmicShore.Game.Ship
 {
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class ProceduralJetMesh : MonoBehaviour

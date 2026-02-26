@@ -1,7 +1,7 @@
 using PlayFab;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Playfab.Authentication
+namespace CosmicShore.Integrations.Playfab
 {
     public class PlayFabAccount{
         public string ID { get; set; }

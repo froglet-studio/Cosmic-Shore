@@ -1,13 +1,12 @@
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.Environment.FlowField;
-using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
 
-namespace CosmicShore.Game.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment
 {
 public class SpawnableWaypointTrack : SpawnableBase
 {

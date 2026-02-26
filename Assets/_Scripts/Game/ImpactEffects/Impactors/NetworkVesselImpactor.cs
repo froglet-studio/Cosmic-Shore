@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-namespace CosmicShore.Game.ImpactEffects.Impactors
+namespace CosmicShore.Game.ImpactEffects
 {
     [RequireComponent(typeof(VesselImpactor))]
     public class NetworkVesselImpactor : NetworkBehaviour

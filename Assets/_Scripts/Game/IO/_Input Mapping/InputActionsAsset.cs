@@ -16,7 +16,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Utilities;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.IO.InputMapping
+namespace CosmicShore.Game.IO
 {
     /// <summary>
     /// Provides programmatic access to <see cref="InputActionAsset" />, <see cref="InputActionMap" />, <see cref="InputAction" /> and <see cref="InputControlScheme" /> instances defined in asset "Assets/_Scripts/Game/IO/_Input Mapping/InputActionsAsset.inputactions".

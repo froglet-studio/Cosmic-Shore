@@ -1,6 +1,6 @@
 using CosmicShore.Systems.Ads;
 using CosmicShore.UI.FX;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using System;
 using System.Collections;
 using System.Globalization;
@@ -9,12 +9,11 @@ using UnityEngine;
 using UnityEngine.Advertisements;
 using UnityEngine.UI;
 using CosmicShore.Game.Managers;
-using CosmicShore.Game.Ship.R_ShipActions.Executors;
-using CosmicShore.Game.Ship.ShipActions;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.UI.Elements.Buttons
+namespace CosmicShore.UI.Elements
 {
     enum ButtonMode
     {

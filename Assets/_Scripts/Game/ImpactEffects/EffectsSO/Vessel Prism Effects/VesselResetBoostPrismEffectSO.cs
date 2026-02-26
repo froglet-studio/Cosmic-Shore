@@ -4,11 +4,10 @@ using Obvious.Soap;
 using CosmicShore.Game.Managers;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
-using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
-using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Utility.Effects;
 using CosmicShore.VesselHUD.View;
-namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselPrismEffects
+namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "VesselResetBoostPrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselResetBoostPrismEffectSO")]

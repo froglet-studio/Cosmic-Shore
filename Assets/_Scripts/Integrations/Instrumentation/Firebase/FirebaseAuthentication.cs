@@ -1,10 +1,10 @@
 #if !UNITY_WEBGL
 using Firebase.Auth;
-using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.Instrumentation.Firebase
+namespace CosmicShore.Integrations.Instrumentation
 {
     public class FirebaseAuthentication
     {

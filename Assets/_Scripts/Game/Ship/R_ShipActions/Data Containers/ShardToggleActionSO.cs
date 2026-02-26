@@ -1,9 +1,9 @@
-﻿using CosmicShore.Game;
+using CosmicShore.Game;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "ShardToggleAction", menuName = "ScriptableObjects/Vessel Actions/Shard Toggle")]
     public class ShardToggleActionSO : ShipActionSO

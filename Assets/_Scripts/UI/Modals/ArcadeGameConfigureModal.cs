@@ -3,7 +3,7 @@ using System.Linq;
 using CosmicShore.Systems.Favorites;
 using CosmicShore.Systems.LoadOut;
 using CosmicShore.UI.Views;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;

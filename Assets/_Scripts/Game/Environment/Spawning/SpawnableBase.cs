@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.Spawning.Generators;
-namespace CosmicShore.Game.Environment.Spawning
+using CosmicShore.Game.Environment;
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Unified base class for spatial pattern generation and object spawning.

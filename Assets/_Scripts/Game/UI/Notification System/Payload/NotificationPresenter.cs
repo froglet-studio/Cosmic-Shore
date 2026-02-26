@@ -1,10 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.UI.NotificationSystem.Payload
+namespace CosmicShore.Game.UI
 {
     public sealed class NotificationPresenter : MonoBehaviour
     {
