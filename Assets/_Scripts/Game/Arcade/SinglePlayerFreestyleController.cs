@@ -18,7 +18,6 @@ namespace CosmicShore.Game.Arcade
         [Header("Lobby Configuration")]
         [SerializeField] Transform lobbyOrigin;
         [SerializeField] List<ModeSelectTrigger> modeTriggers;
-        [SerializeField] ShapeSignSpawner shapeSignSpawner;
 
         [Header("HUD")]
         [SerializeField] MiniGameHUD miniGameHUD;
@@ -153,9 +152,6 @@ namespace CosmicShore.Game.Arcade
                 trigger.OnModeSelected.RemoveListener(HandleModeSelection);
                 trigger.OnModeSelected.AddListener(HandleModeSelection);
             }
-
-            if (shapeSignSpawner)
-                shapeSignSpawner.ShowSigns();
         }
 
         void ExitLobby()
@@ -163,8 +159,6 @@ namespace CosmicShore.Game.Arcade
             _isInLobby = false;
 
             foreach (var trigger in modeTriggers.Where(trigger => trigger)) trigger.gameObject.SetActive(false);
-
-            if (shapeSignSpawner) shapeSignSpawner.HideSigns();
         }
 
         // ── Mode Selection Handlers ─────────────────────────────────────────
