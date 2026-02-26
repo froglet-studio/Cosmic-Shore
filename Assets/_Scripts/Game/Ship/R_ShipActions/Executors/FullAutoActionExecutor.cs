@@ -10,6 +10,8 @@ using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
 
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+{
 public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 {
     /// <summary>Static event: each time a full-auto volley fires. Param = player name.</summary>
@@ -216,7 +218,5 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     }
     #endregion
 
-namespace CosmicShore.Game.Ship.R_ShipActions.Executors
-{
     }
 }

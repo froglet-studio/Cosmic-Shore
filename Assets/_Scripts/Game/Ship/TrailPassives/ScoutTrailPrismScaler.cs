@@ -3,6 +3,8 @@ using CosmicShore.Game.Ship;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 
+namespace CosmicShore.Game.Ship.TrailPassives
+{
 /// <summary>
 /// Dynamically scales trail prisms based on surrounding open space.
 /// Uses adaptive OverlapSphere sampling to determine if the player is in open or confined areas.
@@ -193,7 +195,5 @@ public class ScoutTrailPrismScaler : MonoBehaviour
     }
 #endif
 
-namespace CosmicShore.Game.Ship.TrailPassives
-{
     }
 }
