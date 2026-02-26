@@ -1,3 +1,4 @@
+using CosmicShore.Models.Enums;
 using UnityEngine.Serialization;
 
 namespace CosmicShore.Models
