@@ -1,6 +1,6 @@
 {
     "name": "PlayFabTests",
-    "rootNamespace": "CosmicShore.Integrations.PlayFab.PlayFabTests",
+    "rootNamespace": "CosmicShore.Integrations.Playfab.PlayFabTests",
     "references": [
         "CosmicShore.Core",
         "CosmicShore.Utility",
