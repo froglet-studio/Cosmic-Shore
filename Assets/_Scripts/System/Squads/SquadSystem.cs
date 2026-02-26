@@ -27,8 +27,7 @@ namespace CosmicShore.Core
                 DataAccessor.Save(SquadSaveFileName, Squad);
             }
 
-            if (CaptainList == null)
-                CaptainList = CaptainManager.Instance.GetAllSOCaptains();
+            // CaptainList must be set externally (e.g. by PortSquadView) before use.
         }
 
         public static Squad LoadSquad()

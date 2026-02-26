@@ -11,10 +11,12 @@ using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
 using CosmicShore.Utility;
 using CosmicShore.Data;
+using Reflex.Attributes;
 namespace CosmicShore.Core
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {
+        [Inject] CaptainManager _captainManager;
         [SerializeField]
         NetworkMonitorDataVariable  _networkMonitorDataVariable;
         NetworkMonitorData _networkMonitorData => _networkMonitorDataVariable.Value;
@@ -397,7 +399,7 @@ namespace CosmicShore.Core
                     CSDebug.LogFormat("{0} - {1} - Adding Captain", nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.captains.Add(item);
                     // If we ever own a captain, consider it encountered
-                    CaptainManager.Instance.EncounterCaptain(item.Name);
+                    _captainManager.EncounterCaptain(item.Name);
                     break;
                 case "Class":
                     CSDebug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));

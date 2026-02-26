@@ -1,12 +1,14 @@
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Core;
 using System.Collections.Generic;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
 {
     public class PortSquadView : View
     {
+        [Inject] CaptainManager _captainManager;
         [SerializeField] PortSquadMemberConfigureView squadMemberConfigureView;
 
         [SerializeField] SquadMemberCard PlayerCaptainButton;
@@ -26,7 +28,7 @@ namespace CosmicShore.UI
                     AllCaptains.Add(captain);
 
             // Populate Squad Buttons
-            //SquadSystem.CaptainList = AllCaptains;
+            SquadSystem.CaptainList = _captainManager.GetAllSOCaptains();
             SquadSystem.DefaultLeader = AllCaptains[0];
             SquadSystem.DefaultRogueOne = AllCaptains[0];
             SquadSystem.DefaultRogueTwo = AllCaptains[0];

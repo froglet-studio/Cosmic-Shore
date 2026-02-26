@@ -18,6 +18,7 @@ namespace CosmicShore.UI
     public class ArcadeGameConfigureModal : ModalWindowManager
     {
         [Inject] AudioSystem audioSystem;
+        [Inject] CaptainManager _captainManager;
 
         // TEMP for legacy systems (e.g. DailyChallengeSystem)
         public static ArcadeGameConfigureModal Instance { get; private set; }
@@ -217,9 +218,9 @@ namespace CosmicShore.UI
                 .Select(c => c.Ship)
                 .ToList();
 
-            if (respectInventoryForShipSelection && CaptainManager.Instance)
+            if (respectInventoryForShipSelection && _captainManager)
             {
-                var unlocked = CaptainManager.Instance.UnlockedShips;
+                var unlocked = _captainManager.UnlockedShips;
                 ships = ships.Where(s => unlocked.Contains(s)).ToList();
             }
 
