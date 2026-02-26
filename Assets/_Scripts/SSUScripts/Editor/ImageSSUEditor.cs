@@ -10,7 +10,7 @@ namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(ImageSSU))]
     [CanEditMultipleObjects]
-    public class ImageSSUEditor : Editor
+    public class ImageSSUEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
