@@ -299,15 +299,6 @@ namespace CosmicShore.Game.ShapeDrawing
             // Return shape prisms to pool via SO event
             if (onReturnShapePrismsEvent) onReturnShapePrismsEvent.Raise();
 
-            // Respawn player at the shape start position and freeze
-            if (_vesselStatus != null && _activeShape != null)
-            {
-                Vector3 startPos = GetWorldPlayerStart();
-                Quaternion startRot = GetPlayerStartRotation();
-                _vesselStatus.Vessel.Transform.SetPositionAndRotation(startPos, startRot);
-                _vesselStatus.IsStationary = true;
-            }
-
             _activeShape = null;
 
             // Destroy SnowChanger instance
@@ -690,10 +681,6 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             _trackingPath = false;
             if (guideLine) guideLine.enabled = false;
-
-            // Freeze the player
-            if (_vesselStatus != null)
-                _vesselStatus.IsStationary = true;
 
             var score = CalculateScore();
 

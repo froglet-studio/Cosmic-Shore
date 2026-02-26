@@ -9,9 +9,6 @@ namespace CosmicShore.Game.ShapeDrawing
     /// Selection is driven by a Unity UI Button on a child World Space Canvas —
     /// no trigger collider needed.
     ///
-    /// Positions are set manually in the scene editor. This script locks the
-    /// transform to the scene-placed position so nothing can move it.
-    ///
     /// Prefab structure:
     ///   ShapeSign (this script)
     ///   ├── SignMesh          (your 3D art / quad)
@@ -29,13 +26,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] TMP_Text nameLabel;
         [SerializeField] TMP_Text descriptionLabel;
 
-        Vector3 _lockedPosition;
         bool _selected;
-        Transform _cameraTransform;
 
         void Awake()
         {
-            _lockedPosition = transform.position;
             ApplyDisplayData();
         }
 
@@ -45,26 +39,6 @@ namespace CosmicShore.Game.ShapeDrawing
 
             var btn = GetComponentInChildren<UnityEngine.UI.Button>();
             if (btn) btn.interactable = true;
-        }
-
-        void LateUpdate()
-        {
-            // Cache camera transform on first use
-            if (_cameraTransform == null)
-            {
-                var cam = Camera.main;
-                if (cam == null) return;
-                _cameraTransform = cam.transform;
-            }
-
-            // Lock position, billboard toward the player camera
-            var lookDir = transform.position - _cameraTransform.position;
-            lookDir.y = 0f; // keep sign upright
-            var rotation = lookDir.sqrMagnitude > 0.001f
-                ? Quaternion.LookRotation(lookDir, Vector3.up)
-                : transform.rotation;
-
-            transform.SetPositionAndRotation(_lockedPosition, rotation);
         }
 
         /// <summary>Called by SpawnableShapeSign immediately after instantiation.</summary>
@@ -82,7 +56,7 @@ namespace CosmicShore.Game.ShapeDrawing
             if (_selected) return;
             _selected = true;
 
-            ShapeSignEvents.RaiseShapeSelected(shapeDefinition, _lockedPosition);
+            ShapeSignEvents.RaiseShapeSelected(shapeDefinition, transform.position);
 
             var btn = GetComponentInChildren<UnityEngine.UI.Button>();
             if (btn) btn.interactable = false;
