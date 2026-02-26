@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
-using Reflex.Attributes;
 using TMPro;
 using Unity.Services.Authentication;
 using UnityEngine;
@@ -41,7 +40,7 @@ namespace CosmicShore.Core
 
         [Header("Dependencies")]
         [SerializeField] private AuthenticationController authController;
-        [Inject] private PlayerDataService playerDataService;
+        [SerializeField] private PlayerDataService playerDataService;
 
         [Header("Navigation")]
         [SerializeField] private string mainMenuSceneName = "Menu_Main";
@@ -55,6 +54,7 @@ namespace CosmicShore.Core
         void Start()
         {
             EnsureAuthController();
+            ResolvePlayerDataService();
             SetupUI();
             RunAuthFlowAsync().Forget();
         }
@@ -78,6 +78,22 @@ namespace CosmicShore.Core
             CSDebug.Log("[AuthScene] No AuthenticationController found. Creating one.");
             var go = new GameObject("[AuthenticationController]");
             authController = go.AddComponent<AuthenticationController>();
+        }
+
+        void ResolvePlayerDataService()
+        {
+            if (playerDataService != null) return;
+
+#if UNITY_2023_1_OR_NEWER
+            playerDataService = FindAnyObjectByType<PlayerDataService>();
+#else
+            playerDataService = FindObjectOfType<PlayerDataService>();
+#endif
+
+            if (playerDataService != null)
+                CSDebug.Log("[AuthScene] PlayerDataService resolved via scene search.");
+            else
+                CSDebug.LogWarning("[AuthScene] PlayerDataService not found — username check will be skipped.");
         }
 
         void SetupUI()
@@ -121,15 +137,22 @@ namespace CosmicShore.Core
                     }
                 }
 
-                // No cached auth — show the login UI.
+                // No cached auth — show the login UI or auto-login.
                 HideLoading();
-                ShowAuthPanel();
+                if (authPanel != null)
+                {
+                    ShowAuthPanel();
+                }
+                else
+                {
+                    CSDebug.LogWarning("[AuthScene] No auth panel in scene — attempting automatic anonymous sign-in.");
+                    await AttemptAutoSignInAsync();
+                }
             }
             catch (Exception ex)
             {
-                CSDebug.LogWarning($"[AuthScene] Auto-skip check failed: {ex.Message}. Showing auth panel.");
-                HideLoading();
-                ShowAuthPanel();
+                CSDebug.LogWarning($"[AuthScene] Auth flow failed: {ex.Message}. Navigating to main menu.");
+                NavigateToMainMenu();
             }
         }
 
@@ -196,6 +219,21 @@ namespace CosmicShore.Core
         {
             if (statusText) statusText.text = string.Empty;
             if (usernameStatusText) usernameStatusText.text = string.Empty;
+        }
+
+        async Task AttemptAutoSignInAsync()
+        {
+            try
+            {
+                if (authController != null)
+                    await authController.EnsureSignedInAnonymouslyAsync();
+                await HandlePostAuthFlowAsync();
+            }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Auto sign-in failed: {ex.Message}. Navigating to main menu.");
+                NavigateToMainMenu();
+            }
         }
 
         // ----- Guest Login -----

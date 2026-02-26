@@ -57,18 +57,19 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Resolves persistent system references at runtime when they are not
-        /// assigned in the inspector. Uses FindAnyObjectByType as a fallback
-        /// so the DI registrations succeed even when scene wiring is incomplete.
+        /// assigned in the inspector. Uses FindAnyObjectByType as a fallback,
+        /// and auto-creates the service as a persistent GameObject if still
+        /// missing — so the DI registrations always succeed.
         /// </summary>
         void ResolvePersistentSystems()
         {
-            gameSetting = ResolveIfNull(gameSetting);
-            audioSystem = ResolveIfNull(audioSystem);
-            playerDataService = ResolveIfNull(playerDataService);
-            ugsStatsManager = ResolveIfNull(ugsStatsManager);
+            gameSetting = ResolveOrCreate<GameSetting>(gameSetting);
+            audioSystem = ResolveOrCreate<AudioSystem>(audioSystem);
+            playerDataService = ResolveOrCreate<PlayerDataService>(playerDataService);
+            ugsStatsManager = ResolveOrCreate<UGSStatsManager>(ugsStatsManager);
         }
 
-        static T ResolveIfNull<T>(T field) where T : Component
+        T ResolveOrCreate<T>(T field) where T : Component
         {
             if (field != null) return field;
 
@@ -79,9 +80,15 @@ namespace CosmicShore.Core
 #endif
 
             if (found != null)
+            {
                 Debug.Log($"[AppManager] {typeof(T).Name} resolved via scene search.");
+                return found;
+            }
 
-            return found;
+            Debug.LogWarning($"[AppManager] {typeof(T).Name} not found — auto-creating persistent instance.");
+            var go = new GameObject($"[{typeof(T).Name}]");
+            go.transform.SetParent(transform);
+            return go.AddComponent<T>();
         }
 
         public void InstallBindings(ContainerBuilder builder)
