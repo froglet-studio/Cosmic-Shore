@@ -702,25 +702,37 @@ namespace CosmicShore.Game.Arcade.Party
             return chosen;
         }
 
+        /// <summary>
+        /// Safety-only fallback timer. Each game mode has its own turn monitor that
+        /// handles the real end condition:
+        ///   HexRace  → NetworkCrystalCollisionTurnMonitor (all crystals collected)
+        ///   Joust    → NetworkJoustCollisionTurnMonitor   (3 jousts reached)
+        ///   CrystalCapture → NetworkTimeBasedTurnMonitor  (round timer expires)
+        ///
+        /// This timer only fires if something goes wrong and the game never ends
+        /// naturally. It does NOT call InvokeGameTurnConditionsMet to avoid
+        /// triggering game-specific score trackers that call ServerRpcs on
+        /// controllers with broken RPC registries (party mode SetActive toggling).
+        /// </summary>
         async UniTaskVoid RunRoundTimer(CancellationToken ct)
         {
+            const float safetyTimeoutSeconds = 300f; // 5 minutes — generous safety net
+
             try
             {
                 await UniTask.Delay(
-                    TimeSpan.FromSeconds(config.RoundDurationSeconds),
+                    TimeSpan.FromSeconds(safetyTimeoutSeconds),
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
                 if (IsServer && CurrentPhase == PartyPhase.Playing)
                 {
-                    CSDebug.Log("[PartyGame] Round timer expired.");
+                    CSDebug.LogWarning("[PartyGame] Safety timer expired (5 min) — force-ending round.");
                     ForceEndRound_ClientRpc(IsGolfRulesForCurrentMode());
 
-                    // Safety fallback: if OnShowGameEndScreen never fires (e.g., no
-                    // cinematic controller on this environment), force CompleteRound
-                    // after a generous timeout so the party doesn't get stuck.
+                    // If OnShowGameEndScreen never fires (no cinematic), force CompleteRound.
                     await UniTask.Delay(
-                        TimeSpan.FromSeconds(60),
+                        TimeSpan.FromSeconds(30),
                         DelayType.UnscaledDeltaTime,
                         cancellationToken: ct);
 
@@ -737,14 +749,17 @@ namespace CosmicShore.Game.Arcade.Party
         [ClientRpc]
         void ForceEndRound_ClientRpc(bool golfRules)
         {
-            gameData.InvokeGameTurnConditionsMet();
+            // DO NOT call InvokeGameTurnConditionsMet() here. That raises
+            // OnMiniGameTurnEnd which triggers game-specific score trackers
+            // (e.g., HexRaceScoreTracker.HandleGameEnd) that call ServerRpcs
+            // on controllers whose RPC table may be broken after party mode
+            // SetActive toggling — causing KeyNotFoundException crashes.
+            //
+            // This is a safety fallback: just sort with whatever scores exist
+            // and declare a winner so the cinematic can play.
             gameData.SortRoundStats(golfRules);
             gameData.CalculateDomainStats(golfRules);
             gameData.InvokeWinnerCalculated();
-            // DO NOT fire InvokeMiniGameEnd here — the EndGameCinematicController
-            // needs to run its full sequence first (score reveal → Continue button).
-            // OnShowGameEndScreen fires when the cinematic finishes, which triggers
-            // CompleteRound via OnShowGameEndScreen handler below.
         }
 
         void OnMiniGameWinnerCalculated()

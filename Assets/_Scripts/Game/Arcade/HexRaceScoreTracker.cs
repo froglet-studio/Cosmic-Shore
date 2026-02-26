@@ -122,10 +122,16 @@ namespace CosmicShore.Game.Arcade
                 if (UGSStatsManager.Instance && _vesselTelemetry != null && _observedVessel != null)
                     UGSStatsManager.Instance.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
 
-                if (controller) controller.ReportLocalPlayerFinished(finalScore);
+                // In party mode, skip the ServerRpc — the base controller's
+                // ExecuteServerGameEnd handles sort + InvokeWinnerCalculated.
+                // Calling ReportPlayerFinished_ServerRpc in party mode causes
+                // KeyNotFoundException because the controller's RPC table may
+                // be broken after SetActive toggling.
+                if (controller && !gameData.IsPartyMode)
+                    controller.ReportLocalPlayerFinished(finalScore);
             }
 
-            if (controller == null)
+            if (controller == null && !gameData.IsPartyMode)
                 SortAndInvokeResults();
         }
 
