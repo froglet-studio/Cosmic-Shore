@@ -14,22 +14,13 @@ namespace CosmicShore.Game
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {
-        private static bool _instanceDestroyed;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => _instanceDestroyed = false;
-
         /// <summary>
         /// Ensures a PrismEffectsManager instance exists. If none was placed in the scene,
         /// creates one automatically so explosion/implosion effects don't silently fail.
-        /// Returns null during scene teardown to avoid spawning objects from OnDestroy.
         /// </summary>
         public static PrismEffectsManager EnsureInstance()
         {
             if (Instance != null) return Instance;
-
-            // Don't auto-create after the previous instance was destroyed (scene teardown)
-            if (_instanceDestroyed) return null;
 
             var go = new GameObject("[PrismEffectsManager]");
             go.AddComponent<PrismEffectsManager>();
@@ -65,7 +56,6 @@ namespace CosmicShore.Game
         public override void Awake()
         {
             base.Awake();
-            _instanceDestroyed = false;
             sharedMPB = new MaterialPropertyBlock();
             explosionJobData = new NativeArray<ExplosionJobData>(INITIAL_CAPACITY, Allocator.Persistent);
             implosionJobData = new NativeArray<ImplosionJobData>(INITIAL_CAPACITY, Allocator.Persistent);
@@ -291,7 +281,6 @@ namespace CosmicShore.Game
 
         private void OnDestroy()
         {
-            _instanceDestroyed = true;
             if (explosionJobData.IsCreated) explosionJobData.Dispose();
             if (implosionJobData.IsCreated) implosionJobData.Dispose();
             activeExplosions.Clear();

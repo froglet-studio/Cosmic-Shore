@@ -111,7 +111,7 @@ namespace CosmicShore.Game
             _renderer.SetPropertyBlock(_mpb);
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
-            PrismEffectsManager.EnsureInstance()?.RegisterExplosion(this);
+            PrismEffectsManager.EnsureInstance().RegisterExplosion(this);
         }
 
         /// <summary>
