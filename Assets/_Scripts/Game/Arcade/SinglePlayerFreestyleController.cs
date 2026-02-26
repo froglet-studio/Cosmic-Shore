@@ -18,6 +18,7 @@ namespace CosmicShore.Game.Arcade
         [Header("Lobby Configuration")]
         [SerializeField] Transform lobbyOrigin;
         [SerializeField] List<ModeSelectTrigger> modeTriggers;
+        [SerializeField] GameObject signsParent;
 
         [Header("HUD")]
         [SerializeField] MiniGameHUD miniGameHUD;
@@ -143,6 +144,8 @@ namespace CosmicShore.Game.Arcade
 
             ClearPlayerTrails();
 
+            if (signsParent) signsParent.SetActive(true);
+
             // Enable and reset mode triggers — positions/rotations/scales
             // are set in the editor, never overridden at runtime.
             foreach (var trigger in modeTriggers.Where(trigger => trigger))
@@ -159,6 +162,8 @@ namespace CosmicShore.Game.Arcade
             _isInLobby = false;
 
             foreach (var trigger in modeTriggers.Where(trigger => trigger)) trigger.gameObject.SetActive(false);
+
+            if (signsParent) signsParent.SetActive(false);
         }
 
         // ── Mode Selection Handlers ─────────────────────────────────────────
