@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
-using CosmicShore.Data;
+using CosmicShore.Gameplay;
 
 namespace CosmicShore.Editor
 {

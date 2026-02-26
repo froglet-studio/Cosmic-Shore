@@ -3,7 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
 using CosmicShore.Utility;
-using CosmicShore.Data;
+using CosmicShore.Gameplay;
 
 namespace CosmicShore.Editor
 {

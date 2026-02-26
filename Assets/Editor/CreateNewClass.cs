@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 
 /*
     get class name
