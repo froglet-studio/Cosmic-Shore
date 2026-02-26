@@ -1,7 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utility;
@@ -14,6 +16,8 @@ namespace CosmicShore.Core
     /// Otherwise, loads the Authentication scene.
     ///
     /// Uses SceneTransitionManager for fade transitions when available.
+    /// Auth state is read from the AuthenticationDataVariable SOAP asset,
+    /// which is updated by the AuthenticationServiceFacade started in AppManager.
     /// </summary>
     public class SplashToAuthFlow : MonoBehaviour
     {
@@ -25,7 +29,7 @@ namespace CosmicShore.Core
         [SerializeField] private float splashDisplayDuration = 2f;
 
         [Header("Dependencies")]
-        [SerializeField] private AuthenticationController authController;
+        [Inject] private AuthenticationDataVariable authenticationDataVariable;
 
         async void Start()
         {
@@ -34,27 +38,39 @@ namespace CosmicShore.Core
                 // Show splash for the configured duration.
                 await Task.Delay(TimeSpan.FromSeconds(splashDisplayDuration));
 
-                if (authController == null)
-                    authController = FindAnyObjectByType<AuthenticationController>();
-
-                if (authController == null)
+                if (authenticationDataVariable == null)
                 {
-                    CSDebug.LogWarning("[SplashToAuthFlow] No AuthenticationController found. Going to auth scene.");
+                    CSDebug.LogWarning("[SplashToAuthFlow] AuthenticationDataVariable not injected. Going to auth scene.");
                     await LoadSceneWithTransitionAsync(authSceneName);
                     return;
                 }
 
-                // Try to sign in with cached credentials.
-                bool signedIn = await authController.TrySignInCachedAsync();
+                var authData = authenticationDataVariable.Value;
 
-                if (signedIn)
+                // AuthenticationServiceFacade may still be signing in.
+                // Wait briefly for in-flight auth to complete.
+                if (authData.State == AuthenticationData.AuthState.Initializing ||
+                    authData.State == AuthenticationData.AuthState.SigningIn)
                 {
-                    CSDebug.Log("[SplashToAuthFlow] Cached session valid. Going to main menu.");
+                    float waited = 0f;
+                    const float maxWait = 5f;
+                    while (!authData.IsSignedIn && waited < maxWait &&
+                           (authData.State == AuthenticationData.AuthState.Initializing ||
+                            authData.State == AuthenticationData.AuthState.SigningIn))
+                    {
+                        await Task.Delay(100);
+                        waited += 0.1f;
+                    }
+                }
+
+                if (authData.IsSignedIn)
+                {
+                    CSDebug.Log("[SplashToAuthFlow] Already signed in. Going to main menu.");
                     await LoadSceneWithTransitionAsync(mainMenuSceneName);
                 }
                 else
                 {
-                    CSDebug.Log("[SplashToAuthFlow] No cached session. Going to auth scene.");
+                    CSDebug.Log("[SplashToAuthFlow] Not signed in. Going to auth scene.");
                     await LoadSceneWithTransitionAsync(authSceneName);
                 }
             }
