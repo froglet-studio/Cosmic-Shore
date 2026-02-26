@@ -40,6 +40,7 @@ namespace CosmicShore.Game.Multiplayer
         private void OnEnable()
         {
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
+            if (networkManager == null) return;
             networkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             networkManager.OnClientDisconnectCallback += OnClientDisconnect;
             networkManager.OnTransportFailure         += OnTransportFailure;
@@ -48,6 +49,7 @@ namespace CosmicShore.Game.Multiplayer
         private void OnDisable()
         {
             authenticationData.OnSignedIn.OnRaised -= OnAuthenticationSignedIn;
+            if (networkManager == null) return;
             networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
             networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
             networkManager.OnTransportFailure         -= OnTransportFailure;

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility.Recording;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -44,14 +45,14 @@ namespace CosmicShore.Game.Party
         {
             if (!connectionData.IsHost)
             {
-                Debug.LogWarning("[PartyGameLauncher] Only the host can launch a game.");
+                CSDebug.LogWarning("[PartyGameLauncher] Only the host can launch a game.");
                 return;
             }
 
             var game = FindGame(GameModes.MultiplayerFreestyle);
             if (game == null)
             {
-                Debug.LogError("[PartyGameLauncher] MultiplayerFreestyle game not found in game list.");
+                CSDebug.LogError("[PartyGameLauncher] MultiplayerFreestyle game not found in game list.");
                 return;
             }
 
@@ -80,7 +81,7 @@ namespace CosmicShore.Game.Party
             onPartyGameReady?.Raise();
 
             // ── Launch ───────────────────────────────────────────────────────
-            Debug.Log($"[PartyGameLauncher] Launching {game.DisplayName}: " +
+            CSDebug.Log($"[PartyGameLauncher] Launching {game.DisplayName}: " +
                       $"players={playerCount}, intensity={intensity}, " +
                       $"humans={connectionData.RemotePartyMemberCount + 1}, ai={aiSlots}");
 
@@ -126,7 +127,7 @@ namespace CosmicShore.Game.Party
             for (int i = remoteIds.Count - 1; i >= 0 && toKick > 0; i--, toKick--)
             {
                 string kickId = remoteIds[i];
-                Debug.Log($"[PartyGameLauncher] Kicking excess member: {kickId}");
+                CSDebug.Log($"[PartyGameLauncher] Kicking excess member: {kickId}");
 
                 if (HostConnectionService.Instance != null)
                     await HostConnectionService.Instance.KickPartyMemberAsync(kickId);

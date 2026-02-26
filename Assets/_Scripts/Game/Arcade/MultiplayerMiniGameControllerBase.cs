@@ -84,13 +84,14 @@ namespace CosmicShore.Game.Arcade
         {
             try
             {
-                await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
-                
+                await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime,
+                    cancellationToken: this.GetCancellationTokenOnDestroy());
+
                 gameData.InitializeGame();
-                
+
                 if (!IsServer)
                     return;
-                
+
                 SetupNewRound();
             }
             catch (OperationCanceledException)
@@ -285,7 +286,7 @@ namespace CosmicShore.Game.Arcade
 
         async UniTaskVoid ResetServerRoundAfterDelay()
         {
-            await UniTask.Delay(100); 
+            await UniTask.Delay(100, cancellationToken: this.GetCancellationTokenOnDestroy());
             SetupNewRound();
         }
 
