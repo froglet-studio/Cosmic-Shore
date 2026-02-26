@@ -44,15 +44,6 @@ namespace CosmicShore.Core
         void Start()
         {
             // [PLAYFAB DISABLED] Economy/catalog will be rebuilt on UGS. Pending removal.
-            return;
-
-            CSDebug.Log("CatalogManager.Start");
-            AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
-            AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
-            OnLoadCatalogSuccess += LoadPlayerInventory;
-            OnLoadInventory += GrantStartingInventoryIfInventoryIsEmpty;
-
-            _networkMonitorData.OnNetworkLost.OnRaised += Inventory.LoadFromDisk;
         }
 
         public void OnDestroy()

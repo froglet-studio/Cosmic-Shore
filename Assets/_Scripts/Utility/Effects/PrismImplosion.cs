@@ -1,8 +1,6 @@
 using System;
 using UnityEngine;
 using CosmicShore.Gameplay;
-using CosmicShore.Utility; // if you still need it elsewhere
-using CosmicShore.Utility;
 
 namespace CosmicShore.Utility
 {

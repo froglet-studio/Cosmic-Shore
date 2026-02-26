@@ -268,7 +268,7 @@ namespace CosmicShore.UI
         // Display name save / cancel
         // ------------------------------------------------------------------
 
-        private async void SaveDisplayName()
+        private void SaveDisplayName()
         {
             try
             {

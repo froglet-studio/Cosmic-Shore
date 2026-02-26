@@ -16,8 +16,9 @@ namespace CosmicShore.Utility
                 OnResetForReplay.OnRaised += HandleReset;
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             if (OnResetForReplay != null)
                 OnResetForReplay.OnRaised -= HandleReset;
         }

@@ -63,12 +63,6 @@ namespace CosmicShore.Core
         void OnEnable()
         {
             // [PLAYFAB DISABLED] Captain management will be rebuilt on UGS. Pending removal.
-            return;
-
-            XpHandler.OnCaptainDataLoaded += LoadCaptainsData;
-
-            CatalogManager.OnLoadInventory += LoadCaptainsData;
-            CatalogManager.OnInventoryChange += LoadCaptainsData;
         }
 
         void OnDisable()

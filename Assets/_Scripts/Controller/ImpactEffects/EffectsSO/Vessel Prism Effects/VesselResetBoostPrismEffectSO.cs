@@ -1,12 +1,10 @@
-using System; // Required for Action
+using System;
 using UnityEngine;
 using Obvious.Soap;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using CosmicShore.UI;
-using System;
-using System.Linq;
 namespace CosmicShore.Gameplay
 {
     [CreateAssetMenu(fileName = "VesselResetBoostPrismEffect",

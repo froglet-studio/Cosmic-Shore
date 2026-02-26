@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
             gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
         }
 
-        void OnDestroy()
+        override void OnDestroy()
         {
             UnsubscribeEvents();
             if (gameData == null) return;

@@ -20,9 +20,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("Team whose density grid is queried for the explosion target.")]
         [SerializeField] private Domains domain = Domains.Jade;
 
-        [Tooltip("Max distance to search for a cell (used by CellControlManager on its side, if applicable).")]
-        [SerializeField] private float searchRadiusHint = 0f; // optional / unused here, kept for future
-
         [SerializeField] private CellRuntimeDataSO cellData;
         
         // Runtime toggle state

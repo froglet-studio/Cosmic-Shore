@@ -368,7 +368,7 @@ namespace CosmicShore.Utility
                 .OrderByDescending(rs => rs.VolumeRemaining)
                 .FirstOrDefault();
 
-            return top is null ? (Domains.Jade, 0f) : (Team: top.Domain, top.VolumeRemaining);
+            return top is null ? (Domains.Jade, 0f) : (top.Domain, top.VolumeRemaining);
         }
         
         public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>
