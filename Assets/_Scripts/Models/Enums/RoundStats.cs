@@ -2,8 +2,6 @@ using System;
 using CosmicShore.Models.Enums;
 using Unity.Netcode;
 using Unity.Collections;
-using UnityEngine;
-using CosmicShore.Game.Managers;
 namespace CosmicShore.Models.Enums
 {
     public class RoundStats : NetworkBehaviour, IRoundStats

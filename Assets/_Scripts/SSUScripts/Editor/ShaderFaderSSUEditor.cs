@@ -11,7 +11,7 @@ namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(ShaderFaderSSU))]
     [CanEditMultipleObjects]
-    public class ShaderFaderSSUEditor : Editor
+    public class ShaderFaderSSUEditor : UnityEditor.Editor
     {
         List<string> shaderProperties;
         float previewValue;
