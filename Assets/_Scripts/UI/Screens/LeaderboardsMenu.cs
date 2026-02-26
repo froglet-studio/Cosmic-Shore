@@ -1,16 +1,14 @@
-using CosmicShore.Models.Enums;
-using CosmicShore.Models.ScriptableObjects;
-using CosmicShore.Integrations.Playfab;
+using CosmicShore.Data;
+using CosmicShore.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility.Recording;
 using CosmicShore.Utility;
 using System.Linq;
-namespace CosmicShore.UI.Screens
+namespace CosmicShore.UI
 {
     [RequireComponent(typeof(MenuAudio))]
     public class LeaderboardsMenu : MonoBehaviour

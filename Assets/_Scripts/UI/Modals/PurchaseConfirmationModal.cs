@@ -1,18 +1,14 @@
-using CosmicShore.UI.FX;
-using CosmicShore.Game.Environment;
-using CosmicShore.Integrations.Playfab;
+using CosmicShore.UI;
+using CosmicShore.Gameplay;
+using CosmicShore.Core;
 using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Game.Managers;
-using CosmicShore.Game.Settings;
-using CosmicShore.Game.Ship;
-using CosmicShore.Models.Enums;
+using CosmicShore.Data;
 using CosmicShore.Utility;
-using CosmicShore.Utility.PoolsAndBuffers;
-namespace CosmicShore.UI.Modals
+namespace CosmicShore.UI
 {
     public class PurchaseConfirmationModal : ModalWindowManager
     {

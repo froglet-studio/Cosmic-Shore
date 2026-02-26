@@ -3,10 +3,10 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using CosmicShore.UI.Views;
-using CosmicShore.Utility.Recording;
+using CosmicShore.UI;
+using CosmicShore.Utility;
 
-namespace CosmicShore.UI.Elements
+namespace CosmicShore.UI
 {
     /// <summary>
     /// 

@@ -1,9 +1,8 @@
-using CosmicShore.FTUE.Drivers;
-using CosmicShore.FTUE.Interfaces;
+using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
 
-namespace CosmicShore.FTUE.Adapters
+namespace CosmicShore.Core
 {
     [AddComponentMenu("FTUE/Adapters/FTUEIntroAnimatorAdapter")]
     public class FTUEIntroAnimatorAdapter : MonoBehaviour, IAnimator

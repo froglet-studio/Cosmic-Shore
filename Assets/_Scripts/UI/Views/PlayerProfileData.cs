@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     [Serializable]
     public class PlayerProfileData

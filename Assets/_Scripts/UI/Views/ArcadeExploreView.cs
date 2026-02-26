@@ -1,21 +1,15 @@
-using CosmicShore.Systems.CallToAction;
-using CosmicShore.Models.Enums;
-using CosmicShore.Models.ScriptableObjects;
-using CosmicShore.Systems.Favorites;
-using CosmicShore.Systems.LoadOut;
-using CosmicShore.UI.Elements;
-using CosmicShore.UI.Modals;
-using CosmicShore.Integrations.Playfab;
+using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Utility.DataContainers;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public class ArcadeExploreView : MonoBehaviour
     {

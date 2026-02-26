@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     /// <summary>
     /// UI component that displays the player's profile (display name + avatar).

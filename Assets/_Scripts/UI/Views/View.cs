@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public abstract class View : MonoBehaviour
     {

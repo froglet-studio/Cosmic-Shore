@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
-using CosmicShore.Models.Enums;
+using CosmicShore.Data;
 
 namespace CosmicShore.Editor
 {

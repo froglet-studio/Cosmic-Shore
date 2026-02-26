@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public class FactionMissionGameView : View
     {

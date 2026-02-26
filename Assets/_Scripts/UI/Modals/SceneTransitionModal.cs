@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CosmicShore.UI.Modals
+namespace CosmicShore.UI
 {
     [RequireComponent(typeof(Animator))]
     public class SceneTransitionModal : MonoBehaviour

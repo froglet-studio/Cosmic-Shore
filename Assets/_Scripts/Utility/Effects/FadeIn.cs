@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace CosmicShore.Utility.Effects
+namespace CosmicShore.Utility
 {
     public class FadeIn : MonoBehaviour
     {

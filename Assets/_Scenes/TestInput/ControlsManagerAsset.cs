@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Utilities;
 
-namespace CosmicShore.Scenes.TestInput
+namespace CosmicShore.Core
 {
     public partial class @ControlsManagerAsset: IInputActionCollection2, IDisposable
     {

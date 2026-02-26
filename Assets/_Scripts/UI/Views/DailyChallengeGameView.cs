@@ -1,19 +1,12 @@
-using CosmicShore.Game.Environment;
-using CosmicShore.Game.Managers;
-using CosmicShore.Game.Multiplayer;
-using CosmicShore.Game.Settings;
-using CosmicShore.Game.Ship;
-using CosmicShore.Models.Enums;
-using CosmicShore.Models.ScriptableObjects;
-using CosmicShore.Utility;
-using CosmicShore.Utility.PoolsAndBuffers;
+using CosmicShore.Gameplay;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore.UI.Views
+using CosmicShore.Data;
+using CosmicShore.Utility;
+using System.Linq;
+namespace CosmicShore.UI
 {
     public class DailyChallengeGameView : View
     {

@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public class XPTrackView : MonoBehaviour
     {

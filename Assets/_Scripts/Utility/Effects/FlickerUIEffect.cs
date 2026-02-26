@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Utility.Effects
+namespace CosmicShore.Utility
 {
     public class FlickerUIEffect : MonoBehaviour
     {

@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
-using CosmicShore.Utility.SOAP;
-namespace CosmicShore.UI.Views
+using CosmicShore.ScriptableObjects;
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Drives the Players Info area on the left side of the Arcade Panel.

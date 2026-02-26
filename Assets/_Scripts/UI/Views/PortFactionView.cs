@@ -1,6 +1,6 @@
-using CosmicShore.Game.UI;
+using CosmicShore.UI;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public class PortFactionView : View
     {

@@ -1,7 +1,7 @@
 ﻿using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.UI.Modals
+namespace CosmicShore.UI
 {
         [CreateAssetMenu(
             fileName = "Event_ArcadeGameConfig",

@@ -5,10 +5,9 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Pool;
 using CosmicShore.Utility;
-using CosmicShore.Utility.Recording;
 using System.Linq;
 
-namespace CosmicShore.Utility.PoolsAndBuffers
+namespace CosmicShore.Utility
 {
     public abstract class GenericPoolManager<T> : MonoBehaviour where T : Component
     {

@@ -1,14 +1,11 @@
-using CosmicShore.Systems.CallToAction;
-using CosmicShore.FTUE.Data;
-using CosmicShore.FTUE.Helpers;
-using CosmicShore.FTUE.Interfaces;
+using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using CosmicShore.Models.Enums;
+using CosmicShore.Data;
 
-namespace CosmicShore.FTUE.Drivers
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Drives the FTUE by delegating each TutorialStep to its ITutorialStepHandler

@@ -1,9 +1,8 @@
-using CosmicShore.Models.ScriptableObjects;
-using CosmicShore.Systems.Squads;
+using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public class PortSquadView : View
     {

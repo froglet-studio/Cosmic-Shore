@@ -1,7 +1,7 @@
-using CosmicShore.FTUE.Data;
+using CosmicShore.Core;
 using System.Collections;
 
-namespace CosmicShore.FTUE.Interfaces
+namespace CosmicShore.Core
 {
     public interface ITutorialStepHandler
     {

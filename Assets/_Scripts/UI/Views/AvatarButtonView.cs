@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public class AvatarButtonView : MonoBehaviour
     {

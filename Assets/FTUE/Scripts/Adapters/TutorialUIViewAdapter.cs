@@ -1,10 +1,9 @@
 // TutorialUIViewAdapter.cs
-using CosmicShore.FTUE.Interfaces;
-using CosmicShore.FTUE.UI;
+using CosmicShore.Core;
 using System;
 using UnityEngine;
 
-namespace CosmicShore.FTUE.Adapters
+namespace CosmicShore.Core
 {
     [AddComponentMenu("FTUE/Adapters/TutorialUIViewAdapter")]
     public class TutorialUIViewAdapter : MonoBehaviour, ITutorialUIView

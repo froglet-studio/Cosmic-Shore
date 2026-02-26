@@ -1,17 +1,15 @@
-using CosmicShore.Systems.UserAction;
-using CosmicShore.Models.Enums;
-using CosmicShore.UI.Modals;
-using CosmicShore.UI.Screens;
+using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.UI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Game.Multiplayer;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
-using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.UI
 {

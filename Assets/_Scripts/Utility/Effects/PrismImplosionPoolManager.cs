@@ -1,8 +1,8 @@
-using CosmicShore.Utility.PoolsAndBuffers;
+using CosmicShore.Utility;
 using Unity.Cinemachine;
 using UnityEngine;
 
-namespace CosmicShore.Utility.Effects
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Pool manager for PrismImplosion VFX.

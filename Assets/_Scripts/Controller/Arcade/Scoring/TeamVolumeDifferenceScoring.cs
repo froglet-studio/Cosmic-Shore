@@ -1,0 +1,38 @@
+using System.Linq;
+using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Unity.Services.Matchmaker.Models;
+using UnityEngine;
+using CosmicShore.Data;
+namespace CosmicShore.Gameplay
+{
+    public class TeamVolumeDifferenceScoring : BaseScoring
+    {
+        public TeamVolumeDifferenceScoring(IScoreTracker tracker, GameDataSO scoreData, float scoreMultiplier) : base(tracker, scoreData, scoreMultiplier) { }
+
+        /*public override void CalculateScore()
+        {
+            var sorted = GameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
+            if (sorted == null || sorted.Count == 0) return;
+
+            // last element (descending list) has the smallest volume
+            float minVol = sorted[^1].VolumeRemaining;
+
+            foreach (var ps in GameData.RoundStatsList)
+            {
+                float rel = Mathf.Max(0f, ps.VolumeRemaining - minVol); // relative to last place
+                ps.Score += rel * scoreMultiplier;                      // accumulate like before
+            }
+        }*/
+
+        public override void Subscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void Unsubscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}
