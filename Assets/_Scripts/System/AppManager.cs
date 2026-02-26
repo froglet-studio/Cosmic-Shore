@@ -30,11 +30,14 @@ namespace CosmicShore.Core
         [SerializeField] AudioSystem audioSystem;
         [SerializeField] PlayerDataService playerDataService;
         [SerializeField] UGSStatsManager ugsStatsManager;
-        [SerializeField] AuthenticationController authenticationController;
 
-        // ✅ Reflex will inject these from the container
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
+
+        void Awake()
+        {
+            ResolvePersistentSystems();
+        }
 
         void Start()
         {
@@ -52,19 +55,47 @@ namespace CosmicShore.Core
             gameData?.ResetAllData();
         }
 
+        /// <summary>
+        /// Resolves persistent system references at runtime when they are not
+        /// assigned in the inspector. Uses FindAnyObjectByType as a fallback
+        /// so the DI registrations succeed even when scene wiring is incomplete.
+        /// </summary>
+        void ResolvePersistentSystems()
+        {
+            gameSetting = ResolveIfNull(gameSetting);
+            audioSystem = ResolveIfNull(audioSystem);
+            playerDataService = ResolveIfNull(playerDataService);
+            ugsStatsManager = ResolveIfNull(ugsStatsManager);
+        }
+
+        static T ResolveIfNull<T>(T field) where T : Component
+        {
+            if (field != null) return field;
+
+#if UNITY_2023_1_OR_NEWER
+            var found = FindAnyObjectByType<T>();
+#else
+            var found = FindObjectOfType<T>();
+#endif
+
+            if (found != null)
+                Debug.Log($"[AppManager] {typeof(T).Name} resolved via scene search.");
+
+            return found;
+        }
+
         public void InstallBindings(ContainerBuilder builder)
         {
-            // ScriptableObject assets / Variables: register as values (singleton bindings)
+            // ScriptableObject assets / Variables
             RegisterIfNotNull(builder, gameData, nameof(gameData));
             RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
 
-            // Persistent MonoBehaviour systems: register existing scene instances
+            // Persistent MonoBehaviour systems
             RegisterIfNotNull(builder, gameSetting, nameof(gameSetting));
             RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
             RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
             RegisterIfNotNull(builder, ugsStatsManager, nameof(ugsStatsManager));
-            RegisterIfNotNull(builder, authenticationController, nameof(authenticationController));
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             if (authenticationDataVariable != null)
@@ -93,7 +124,7 @@ namespace CosmicShore.Core
                 builder.RegisterValue(value);
                 return;
             }
-            Debug.LogError($"[AppManager] {fieldName} is not assigned in the inspector — skipping DI registration.");
+            Debug.LogError($"[AppManager] {fieldName} is not assigned and could not be found — skipping DI registration.");
         }
 
         void StartNetworkMonitor() => networkMonitor?.StartMonitoring();
