@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utility;
 using CosmicShore.Utilities;
 
@@ -319,14 +320,26 @@ public class SwingingVesselTransformer : VesselTransformer
     }
 
     /// <summary>
+    /// Returns the active gameplay camera from CameraManager.
+    /// Falls back to Camera.main if the manager isn't available.
+    /// </summary>
+    Camera GetGameplayCamera()
+    {
+        var controller = CameraManager.Instance?.GetActiveController();
+        if (controller is CustomCameraController ccc)
+            return ccc.Camera;
+        return Camera.main;
+    }
+
+    /// <summary>
     /// World-space direction for tether firing based on crosshair screen position.
-    /// Raycasts from the camera through the crosshair into the scene so that
-    /// the tether aims at whatever prism (or geometry) is under the crosshair.
+    /// Raycasts from the gameplay camera through the crosshair into the scene so
+    /// the tether aims at whatever prism is under the crosshair.
     /// Falls back to a far point on the ray if nothing is hit.
     /// </summary>
     Vector3 GetCursorDirection(bool left)
     {
-        var cam = Camera.main;
+        var cam = GetGameplayCamera();
         if (cam == null) return transform.forward;
 
         Vector3 screenPos = GetCrosshairScreenPosition(left);
