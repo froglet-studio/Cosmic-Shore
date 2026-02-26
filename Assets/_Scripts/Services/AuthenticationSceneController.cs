@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CosmicShore.UI.Views;
 using CosmicShore.Systems.Bootstrap;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
@@ -45,7 +46,7 @@ namespace CosmicShore.Services
         [Inject] private PlayerDataService playerDataService;
 
         [Header("Navigation")]
-        [SerializeField] private string mainMenuSceneName = "Menu_Main";
+        [SerializeField] private SceneNameListSO _sceneNames;
 
         [Header("Auto-Skip")]
         [SerializeField, Tooltip("Seconds to wait for cached auth before showing UI.")]
@@ -328,11 +329,11 @@ namespace CosmicShore.Services
 
             if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
             {
-                transitionManager.LoadSceneAsync(mainMenuSceneName).Forget();
+                transitionManager.LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
             }
             else
             {
-                SceneManager.LoadScene(mainMenuSceneName);
+                SceneManager.LoadScene(_sceneNames.MainMenuScene);
             }
         }
     }

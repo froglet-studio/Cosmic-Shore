@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -28,6 +29,9 @@ namespace CosmicShore.Systems.Bootstrap
         [Header("Configuration")]
         [SerializeField, Tooltip("Bootstrap settings asset. Create via ScriptableObjects/Core/BootstrapConfig.")]
         BootstrapConfigSO _config;
+
+        [SerializeField, Tooltip("Scene name registry. All scene names come from this single asset.")]
+        SceneNameListSO _sceneNames;
 
         [Header("Persistent Root")]
         [SerializeField, Tooltip("The root GameObject that receives DontDestroyOnLoad. " +
@@ -172,7 +176,7 @@ namespace CosmicShore.Systems.Bootstrap
 
                 OnBootstrapComplete?.Invoke();
 
-                string targetScene = _config != null ? _config.FirstSceneName : "Authentication";
+                string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).

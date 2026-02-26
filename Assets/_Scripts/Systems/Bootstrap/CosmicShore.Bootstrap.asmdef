@@ -3,7 +3,8 @@
     "rootNamespace": "CosmicShore.Systems.Bootstrap",
     "references": [
         "UniTask",
-        "Unity.Netcode.Runtime"
+        "Unity.Netcode.Runtime",
+        "CosmicShore.Utility"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

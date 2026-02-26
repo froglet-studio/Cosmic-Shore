@@ -5,6 +5,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
+using CosmicShore.Utility.DataContainers;
 
 namespace CosmicShore.Systems.Bootstrap.Tests
 {
@@ -134,66 +135,6 @@ namespace CosmicShore.Systems.Bootstrap.Tests
 
         #endregion
 
-        #region BootstrapConfigSO Validation
-
-        [Test]
-        public void BootstrapConfigSO_FirstSceneName_MatchesBuildSettings()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-
-            var enabledPaths = EditorBuildSettings.scenes
-                .Where(s => s.enabled)
-                .Select(s => System.IO.Path.GetFileNameWithoutExtension(s.path))
-                .ToHashSet();
-
-            Assert.IsTrue(
-                enabledPaths.Contains(config.FirstSceneName),
-                $"BootstrapConfigSO.FirstSceneName ('{config.FirstSceneName}') not found in build settings.");
-
-            Object.DestroyImmediate(config);
-        }
-
-        [Test]
-        public void BootstrapConfigSO_MainMenuSceneName_MatchesBuildSettings()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-
-            var enabledPaths = EditorBuildSettings.scenes
-                .Where(s => s.enabled)
-                .Select(s => System.IO.Path.GetFileNameWithoutExtension(s.path))
-                .ToHashSet();
-
-            Assert.IsTrue(
-                enabledPaths.Contains(config.MainMenuSceneName),
-                $"BootstrapConfigSO.MainMenuSceneName ('{config.MainMenuSceneName}') not found in build settings.");
-
-            Object.DestroyImmediate(config);
-        }
-
-        [Test]
-        public void BootstrapConfigSO_FirstSceneName_IsAuthentication()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-
-            Assert.AreEqual("Authentication", config.FirstSceneName,
-                "BootstrapConfigSO.FirstSceneName should default to 'Authentication'.");
-
-            Object.DestroyImmediate(config);
-        }
-
-        [Test]
-        public void BootstrapConfigSO_MainMenuSceneName_IsMenuMain()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-
-            Assert.AreEqual("Menu_Main", config.MainMenuSceneName,
-                "BootstrapConfigSO.MainMenuSceneName should default to 'Menu_Main'.");
-
-            Object.DestroyImmediate(config);
-        }
-
-        #endregion
-
         #region SceneNameListSO Asset Validation
 
         [Test]
@@ -203,6 +144,116 @@ namespace CosmicShore.Systems.Bootstrap.Tests
             Assert.IsTrue(guids.Length > 0,
                 "No SceneNameListSO asset found in the project. " +
                 "Create one via ScriptableObjects/SceneNameListSO.");
+        }
+
+        [Test]
+        public void SceneNameListSOAsset_BootstrapScene_IsNotEmpty()
+        {
+            var guids = AssetDatabase.FindAssets("t:SceneNameListSO");
+            if (guids.Length == 0)
+            {
+                Assert.Inconclusive("No SceneNameListSO asset to validate.");
+                return;
+            }
+
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+                Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
+
+                var so = new SerializedObject(asset);
+                var prop = so.FindProperty("BootstrapScene");
+                Assert.IsNotNull(prop,
+                    $"SceneNameListSO at {path} is missing 'BootstrapScene' field.");
+                Assert.IsFalse(string.IsNullOrEmpty(prop.stringValue),
+                    $"SceneNameListSO at {path} has empty BootstrapScene.");
+            }
+        }
+
+        [Test]
+        public void SceneNameListSOAsset_AuthenticationScene_IsNotEmpty()
+        {
+            var guids = AssetDatabase.FindAssets("t:SceneNameListSO");
+            if (guids.Length == 0)
+            {
+                Assert.Inconclusive("No SceneNameListSO asset to validate.");
+                return;
+            }
+
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+                Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
+
+                var so = new SerializedObject(asset);
+                var prop = so.FindProperty("AuthenticationScene");
+                Assert.IsNotNull(prop,
+                    $"SceneNameListSO at {path} is missing 'AuthenticationScene' field.");
+                Assert.IsFalse(string.IsNullOrEmpty(prop.stringValue),
+                    $"SceneNameListSO at {path} has empty AuthenticationScene.");
+            }
+        }
+
+        [Test]
+        public void SceneNameListSOAsset_BootstrapScene_MatchesBuildSettings()
+        {
+            var guids = AssetDatabase.FindAssets("t:SceneNameListSO");
+            if (guids.Length == 0)
+            {
+                Assert.Inconclusive("No SceneNameListSO asset to validate.");
+                return;
+            }
+
+            var enabledNames = EditorBuildSettings.scenes
+                .Where(s => s.enabled)
+                .Select(s => System.IO.Path.GetFileNameWithoutExtension(s.path))
+                .ToHashSet();
+
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+                Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
+
+                var so = new SerializedObject(asset);
+                var prop = so.FindProperty("BootstrapScene");
+                var value = prop.stringValue;
+                Assert.IsTrue(enabledNames.Contains(value),
+                    $"SceneNameListSO.BootstrapScene ('{value}') at {path} " +
+                    $"not found in enabled build settings scenes.");
+            }
+        }
+
+        [Test]
+        public void SceneNameListSOAsset_AuthenticationScene_MatchesBuildSettings()
+        {
+            var guids = AssetDatabase.FindAssets("t:SceneNameListSO");
+            if (guids.Length == 0)
+            {
+                Assert.Inconclusive("No SceneNameListSO asset to validate.");
+                return;
+            }
+
+            var enabledNames = EditorBuildSettings.scenes
+                .Where(s => s.enabled)
+                .Select(s => System.IO.Path.GetFileNameWithoutExtension(s.path))
+                .ToHashSet();
+
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+                Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
+
+                var so = new SerializedObject(asset);
+                var prop = so.FindProperty("AuthenticationScene");
+                var value = prop.stringValue;
+                Assert.IsTrue(enabledNames.Contains(value),
+                    $"SceneNameListSO.AuthenticationScene ('{value}') at {path} " +
+                    $"not found in enabled build settings scenes.");
+            }
         }
 
         [Test]
@@ -223,7 +274,6 @@ namespace CosmicShore.Systems.Bootstrap.Tests
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
-                // Load the asset as a generic ScriptableObject and read the field via SerializedObject
                 var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
                 Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
 
@@ -282,44 +332,12 @@ namespace CosmicShore.Systems.Bootstrap.Tests
 
         #endregion
 
-        #region Cross-System Scene Name Consistency
-
-        [Test]
-        public void BootstrapConfig_And_SceneNameListSO_MainMenu_AreConsistent()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-            string configMainMenu = config.MainMenuSceneName;
-            Object.DestroyImmediate(config);
-
-            var guids = AssetDatabase.FindAssets("t:SceneNameListSO");
-            if (guids.Length == 0)
-            {
-                Assert.Inconclusive("No SceneNameListSO asset to compare against.");
-                return;
-            }
-
-            foreach (var guid in guids)
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
-                var so = new SerializedObject(asset);
-                var mainMenuProp = so.FindProperty("MainMenuScene");
-
-                Assert.AreEqual(configMainMenu, mainMenuProp.stringValue,
-                    $"BootstrapConfigSO.MainMenuSceneName ('{configMainMenu}') doesn't match " +
-                    $"SceneNameListSO.MainMenuScene ('{mainMenuProp.stringValue}') at {path}. " +
-                    $"These must be the same scene name.");
-            }
-        }
-
-        #endregion
-
         #region BootstrapController Fallback Validation
 
         [Test]
-        public void BootstrapController_NullConfig_FallbackScene_IsAuthentication()
+        public void BootstrapController_NullSceneNames_FallbackScene_IsAuthentication()
         {
-            // When _config is null, BootstrapController falls back to "Authentication".
+            // When _sceneNames is null, BootstrapController falls back to "Authentication".
             // Verify that scene exists in build settings.
             var enabledNames = EditorBuildSettings.scenes
                 .Where(s => s.enabled)
@@ -327,7 +345,7 @@ namespace CosmicShore.Systems.Bootstrap.Tests
                 .ToHashSet();
 
             Assert.IsTrue(enabledNames.Contains("Authentication"),
-                "BootstrapController falls back to 'Authentication' when no config is assigned. " +
+                "BootstrapController falls back to 'Authentication' when no SceneNameListSO is assigned. " +
                 "This scene must exist in build settings.");
         }
 

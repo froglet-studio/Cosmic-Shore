@@ -4,6 +4,7 @@
     "references": [
         "CosmicShore.Core",
         "CosmicShore.Utility",
+        "CosmicShore.Bootstrap",
         "Obvious.Soap",
         "PlayFab",
         "Lofelt.NiceVibrations",

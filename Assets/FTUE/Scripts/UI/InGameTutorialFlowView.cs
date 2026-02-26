@@ -6,6 +6,7 @@ using CosmicShore.FTUE.Adapters;
 using CosmicShore.FTUE.Data;
 using UnityEngine.SceneManagement;
 using CosmicShore.Models.Enums;
+using CosmicShore.Utility.DataContainers;
 
 namespace CosmicShore.FTUE.UI
 {
@@ -16,6 +17,7 @@ namespace CosmicShore.FTUE.UI
         [SerializeField] private FTUEIntroAnimatorAdapter _animatorAdapter;
         [SerializeField] private TutorialUIViewAdapter _uiViewAdapter;
         [SerializeField] private GameObject _skipButton;
+        [SerializeField] private SceneNameListSO _sceneNames;
 
         private bool _phase2Started;
 
@@ -99,7 +101,7 @@ namespace CosmicShore.FTUE.UI
 
         public void ReturnToMainMenu()
         {
-            SceneManager.LoadScene("Menu_Main");
+            SceneManager.LoadScene(_sceneNames.MainMenuScene);
         }
     }
 }

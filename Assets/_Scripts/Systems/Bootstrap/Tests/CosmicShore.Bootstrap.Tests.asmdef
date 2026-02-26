@@ -3,6 +3,7 @@
     "rootNamespace": "CosmicShore.Systems.Bootstrap.Tests",
     "references": [
         "CosmicShore.Bootstrap",
+        "CosmicShore.Utility",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

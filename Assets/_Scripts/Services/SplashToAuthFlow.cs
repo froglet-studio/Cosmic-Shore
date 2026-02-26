@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CosmicShore.Systems.Bootstrap;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -19,8 +20,7 @@ namespace CosmicShore.Services
     public class SplashToAuthFlow : MonoBehaviour
     {
         [Header("Scene Names")]
-        [SerializeField] private string authSceneName = "Authentication";
-        [SerializeField] private string mainMenuSceneName = "Menu_Main";
+        [SerializeField] private SceneNameListSO _sceneNames;
 
         [Header("Splash")]
         [SerializeField] private float splashDisplayDuration = 2f;
@@ -41,7 +41,7 @@ namespace CosmicShore.Services
                 if (authController == null)
                 {
                     CSDebug.LogWarning("[SplashToAuthFlow] No AuthenticationController found. Going to auth scene.");
-                    await LoadSceneWithTransitionAsync(authSceneName);
+                    await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
                     return;
                 }
 
@@ -51,18 +51,18 @@ namespace CosmicShore.Services
                 if (signedIn)
                 {
                     CSDebug.Log("[SplashToAuthFlow] Cached session valid. Going to main menu.");
-                    await LoadSceneWithTransitionAsync(mainMenuSceneName);
+                    await LoadSceneWithTransitionAsync(_sceneNames.MainMenuScene);
                 }
                 else
                 {
                     CSDebug.Log("[SplashToAuthFlow] No cached session. Going to auth scene.");
-                    await LoadSceneWithTransitionAsync(authSceneName);
+                    await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
                 }
             }
             catch (Exception ex)
             {
                 CSDebug.LogWarning($"[SplashToAuthFlow] Error during splash flow: {ex.Message}. Falling back to auth scene.");
-                await LoadSceneWithTransitionAsync(authSceneName);
+                await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
             }
         }
 
