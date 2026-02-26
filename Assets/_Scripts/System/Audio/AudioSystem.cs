@@ -123,6 +123,10 @@ namespace CosmicShore.Core
             InitializeMenuAudioClips();
             InitializeGameplaySFXClips();
 
+            // Fallback: when auto-created by AppManager.EnsureService before the
+            // Reflex container is built, [Inject] will not have resolved yet.
+            gameSetting ??= FindFirstObjectByType<GameSetting>();
+
             if (gameSetting == null)
             {
                 CSDebug.LogError("[AudioSystem] GameSetting not injected — ensure GameSetting is registered in the DI container.");

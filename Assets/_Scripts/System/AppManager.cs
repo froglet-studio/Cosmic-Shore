@@ -84,7 +84,7 @@ namespace CosmicShore.Core
 
             Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned and not found — auto-creating persistent instance.");
             var go = new GameObject($"[{typeof(T).Name}]");
-            DontDestroyOnLoad(go);
+            go.transform.SetParent(transform);
             return go.AddComponent<T>();
         }
 

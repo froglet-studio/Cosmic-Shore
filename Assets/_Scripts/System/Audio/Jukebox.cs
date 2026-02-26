@@ -32,6 +32,10 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            // Fallback: when auto-created by AppManager.EnsureService before the
+            // Reflex container is built, [Inject] will not have resolved yet.
+            audioSystem ??= FindFirstObjectByType<AudioSystem>();
+
             InitializeJukebox();
             StartJukebox();
         }
