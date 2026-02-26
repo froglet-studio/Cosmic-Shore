@@ -38,6 +38,8 @@ namespace CosmicShore.Core
 
         void Update()
         {
+            if (audioSystem == null) return;
+
             if (!audioSystem.MusicEnabled)
                 return;
 
@@ -99,6 +101,7 @@ namespace CosmicShore.Core
         /// <param name="title">The title of the song - must already exist in the playlist</param>
         public void PlaySong(string title)
         {
+            if (audioSystem == null) return;
             if (Playlist.TryGetValue(title, out Song song))
                 audioSystem.PlayMusicClip(song.Clip);
         }
@@ -108,6 +111,11 @@ namespace CosmicShore.Core
         /// </summary>
         public void PlayRandomSong()
         {
+            if (audioSystem == null)
+            {
+                CSDebug.LogError("[Jukebox] audioSystem was not injected — check AppManager DI registration.");
+                return;
+            }
             SO_Song so = so_songs[Random.Range(0, so_songs.Length)];
             AudioClip clip = so.Clip;
             audioSystem.PlayMusicClip(clip);
@@ -118,6 +126,8 @@ namespace CosmicShore.Core
         /// </summary>
         public void PlayNextSong()
         {
+            if (audioSystem == null) return;
+
             // Start the song at the current index and increment the index to queue up the next song
             audioSystem.PlayMusicClip(so_songs[nextSongIndex].Clip);
 
@@ -130,7 +140,7 @@ namespace CosmicShore.Core
         /// </summary>
         public void CancelAllSongsPlaying()
         {
-            audioSystem.StopAllSongs();
+            if (audioSystem != null) audioSystem.StopAllSongs();
             jukeboxIsOn = false;
         }
     }

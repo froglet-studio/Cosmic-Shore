@@ -37,6 +37,12 @@ namespace CosmicShore.Gameplay
 
         private void OnEnable()
         {
+            if (authenticationDataVariable == null)
+            {
+                CSDebug.LogError("[MultiplayerSetup] authenticationDataVariable was not injected — check AppManager DI registration.");
+                return;
+            }
+
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
 
             if (networkManager != null)
@@ -49,6 +55,8 @@ namespace CosmicShore.Gameplay
 
         private void OnDisable()
         {
+            if (authenticationDataVariable == null) return;
+
             authenticationData.OnSignedIn.OnRaised -= OnAuthenticationSignedIn;
 
             if (networkManager != null)

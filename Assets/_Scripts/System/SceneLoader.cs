@@ -29,11 +29,17 @@ namespace CosmicShore.Core
 
         private void Start()
         {
+            if (!gameData)
+            {
+                Debug.LogError("[SceneLoader] gameData was not injected — check AppManager DI registration.");
+                return;
+            }
             gameData.InvokeSceneTransition(true);
         }
 
         private void OnDisable()
         {
+            if (!gameData) return;
             gameData.OnLaunchGame.OnRaised -= LaunchGame;
         }
 
@@ -127,7 +133,7 @@ namespace CosmicShore.Core
 
         private void OnApplicationQuit()
         {
-            gameData.ResetAllData();
+            if (gameData) gameData.ResetAllData();
         }
     }
 }

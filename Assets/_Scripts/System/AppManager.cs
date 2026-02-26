@@ -54,28 +54,44 @@ namespace CosmicShore.Core
         public void InstallBindings(ContainerBuilder builder)
         {
             // ScriptableObject assets / Variables: register as values (singleton bindings)
-            builder.RegisterValue(gameData);
-            builder.RegisterValue(authenticationDataVariable);
-            builder.RegisterValue(networkMonitorDataVariable);
+            RegisterIfNotNull(builder, gameData, nameof(gameData));
+            RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
+            RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
 
             // Persistent MonoBehaviour systems: register existing scene instances
-            builder.RegisterValue(gameSetting);
-            builder.RegisterValue(audioSystem);
-            builder.RegisterValue(playerDataService);
-            builder.RegisterValue(ugsStatsManager);
+            RegisterIfNotNull(builder, gameSetting, nameof(gameSetting));
+            RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
+            RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
+            RegisterIfNotNull(builder, ugsStatsManager, nameof(ugsStatsManager));
 
             // Persistent C# singletons (live as long as the RootScope container lives)
-            builder.RegisterFactory(
-                _ => new AuthenticationServiceFacade(authenticationDataVariable, authenticationWithLog),
-                lifetime: Lifetime.Singleton,
-                resolution: Resolution.Lazy
-            );
+            if (authenticationDataVariable != null)
+            {
+                builder.RegisterFactory(
+                    _ => new AuthenticationServiceFacade(authenticationDataVariable, authenticationWithLog),
+                    lifetime: Lifetime.Singleton,
+                    resolution: Resolution.Lazy
+                );
+            }
 
-            builder.RegisterFactory(
-                _ => new NetworkMonitor(networkMonitorDataVariable),
-                lifetime: Lifetime.Singleton,
-                resolution: Resolution.Lazy
-            );
+            if (networkMonitorDataVariable != null)
+            {
+                builder.RegisterFactory(
+                    _ => new NetworkMonitor(networkMonitorDataVariable),
+                    lifetime: Lifetime.Singleton,
+                    resolution: Resolution.Lazy
+                );
+            }
+        }
+
+        static void RegisterIfNotNull<T>(ContainerBuilder builder, T value, string fieldName) where T : class
+        {
+            if (value != null)
+            {
+                builder.RegisterValue(value);
+                return;
+            }
+            Debug.LogError($"[AppManager] {fieldName} is not assigned in the inspector — skipping DI registration.");
         }
 
         void StartNetworkMonitor() => networkMonitor?.StartMonitoring();
