@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using Reflex.Core;
