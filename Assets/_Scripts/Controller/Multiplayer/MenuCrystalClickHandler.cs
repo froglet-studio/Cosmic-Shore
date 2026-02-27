@@ -9,9 +9,13 @@ using UnityEngine.InputSystem;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Handles the crystal click interaction on Menu_Main. When the player taps a crystal,
-    /// the menu UI fades out, the camera switches to the gameplay follow camera,
-    /// autopilot disables, and the player gains vessel control.
+    /// Toggles between menu mode (crystal camera + autopilot) and gameplay mode
+    /// (vessel follow camera + player control) on Menu_Main.
+    ///
+    /// Menu mode: end camera looks at the crystal (already implemented in scene).
+    ///   The crystal sits at screen center. Player taps the crystal → gameplay mode.
+    /// Gameplay mode: player camera follows the vessel, player has control.
+    ///   Player taps screen center → back to menu mode.
     /// </summary>
     public class MenuCrystalClickHandler : MonoBehaviour
     {
@@ -19,14 +23,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] GameDataSO gameData;
 
         [Header("Menu UI")]
-        [Tooltip("CanvasGroups to fade out when transitioning to gameplay.")]
+        [Tooltip("CanvasGroups to fade when toggling between menu and gameplay.")]
         [SerializeField] CanvasGroup[] menuCanvasGroups;
 
         [Header("Settings")]
         [SerializeField] float fadeDuration = 0.5f;
         [SerializeField] float raycastDistance = 2000f;
 
-        bool _hasTransitioned;
+        [Tooltip("Fraction of screen height defining the center-tap radius for returning to menu.")]
+        [SerializeField, Range(0.05f, 0.3f)] float centerTapRadius = 0.12f;
+
+        bool _isInGameplay;
+        bool _isTransitioning;
         CancellationTokenSource _cts;
 
         void OnEnable()
@@ -43,13 +51,23 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (_hasTransitioned) return;
+            if (_isTransitioning) return;
             if (gameData.LocalPlayer?.Vessel == null) return;
             if (!DetectTap(out Vector2 screenPos)) return;
-            if (!RaycastCrystal(screenPos)) return;
 
-            TransitionToGameplay().Forget();
+            if (_isInGameplay)
+            {
+                if (IsCenterTap(screenPos))
+                    TransitionToMenu().Forget();
+            }
+            else
+            {
+                if (RaycastCrystal(screenPos))
+                    TransitionToGameplay().Forget();
+            }
         }
+
+        #region Input Detection
 
         bool DetectTap(out Vector2 screenPos)
         {
@@ -79,6 +97,13 @@ namespace CosmicShore.Gameplay
             return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         }
 
+        bool IsCenterTap(Vector2 screenPos)
+        {
+            var center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            float radius = Screen.height * centerTapRadius;
+            return Vector2.Distance(screenPos, center) <= radius;
+        }
+
         bool RaycastCrystal(Vector2 screenPos)
         {
             var cam = Camera.main;
@@ -94,29 +119,63 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        #endregion
+
+        #region Transitions
+
         async UniTaskVoid TransitionToGameplay()
         {
-            _hasTransitioned = true;
+            _isTransitioning = true;
             var ct = _cts.Token;
             var player = gameData.LocalPlayer;
 
             // Fade out menu UI
             await FadeCanvasGroups(0f, ct);
 
-            // Ensure game is unpaused (may be paused if on a non-HOME screen)
             PauseSystem.TogglePauseGame(false);
 
-            // Disable autopilot and enable player input
+            // Disable autopilot, give player control
             player.Vessel.ToggleAIPilot(false);
             player.InputController.SetPause(false);
 
-            // Switch to gameplay camera
+            // Switch to gameplay follow camera
             if (CameraManager.Instance)
             {
                 var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
                 CameraManager.Instance.SetupGamePlayCameras(followTarget);
             }
+
+            _isInGameplay = true;
+            _isTransitioning = false;
         }
+
+        async UniTaskVoid TransitionToMenu()
+        {
+            _isTransitioning = true;
+            var ct = _cts.Token;
+            var player = gameData.LocalPlayer;
+
+            // Remove player control, re-enable autopilot
+            player.InputController.SetPause(true);
+            player.Vessel.ToggleAIPilot(true);
+
+            // Switch back to crystal camera (end camera)
+            if (CameraManager.Instance)
+            {
+                var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
+                CameraManager.Instance.SetupEndCameraFollow(followTarget);
+            }
+
+            // Fade in menu UI
+            await FadeCanvasGroups(1f, ct);
+
+            _isInGameplay = false;
+            _isTransitioning = false;
+        }
+
+        #endregion
+
+        #region UI Fade
 
         async UniTask FadeCanvasGroups(float targetAlpha, CancellationToken ct)
         {
@@ -160,5 +219,7 @@ namespace CosmicShore.Gameplay
                 cg.interactable = alpha > 0.01f;
             }
         }
+
+        #endregion
     }
 }
