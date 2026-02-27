@@ -87,7 +87,10 @@ namespace CosmicShore.Gameplay
             SetPlayerPrefDefault(PlayerPrefKeys.SFXLevel, 1);
             SetPlayerPrefDefault(PlayerPrefKeys.HapticsLevel, 1);
 
-            PlayerPrefs.Save();
+            // PlayerPrefs are readable in-memory immediately after Set; the
+            // explicit Save() was performing synchronous disk I/O during
+            // bootstrap, blocking the main thread. Unity auto-saves prefs
+            // on application quit.
 
             musicEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.MusicEnabled)) == 1;
             sfxEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.SFXEnabled)) == 1;

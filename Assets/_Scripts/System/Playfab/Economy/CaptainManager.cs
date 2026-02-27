@@ -67,10 +67,7 @@ namespace CosmicShore.Core
 
         void OnDisable()
         {
-            XpHandler.OnCaptainDataLoaded -= LoadCaptainsData;
-
-            CatalogManager.OnLoadInventory += LoadCaptainsData;
-            CatalogManager.OnInventoryChange -= LoadCaptainsData;
+            // [PLAYFAB DISABLED] Matching OnEnable — nothing to unsubscribe.
         }
 
         void LoadCaptainsData()

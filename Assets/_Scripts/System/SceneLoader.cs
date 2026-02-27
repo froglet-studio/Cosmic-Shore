@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Core
 {
-    public class SceneLoader : MonoBehaviour
+    public class SceneLoader : NetworkBehaviour
     {
         [SerializeField] float waitBeforeLoading = 0.5f;
         [Inject] GameDataSO gameData;
