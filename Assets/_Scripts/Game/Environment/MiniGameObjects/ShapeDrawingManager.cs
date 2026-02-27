@@ -20,6 +20,7 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] Cell cellScript;
         [SerializeField] GameDataSO gameData;
         [SerializeField] CellRuntimeDataSO cellData;
+        [SerializeField] PauseButton pauseButton;
 
         [Header("SnowChanger")]
         [Tooltip("SnowChanger prefab that spawns directional shards pointing at the current crystal.")]
@@ -241,6 +242,9 @@ namespace CosmicShore.Game.ShapeDrawing
             if (_vesselStatus != null)
                 _vesselStatus.IsStationary = true;
 
+            // Disable pause during shape drawing
+            if (pauseButton) pauseButton.SetInteractable(false);
+
             // Disable Cell to stop Lifeforms
             if (cellScript) cellScript.enabled = false;
 
@@ -333,8 +337,9 @@ namespace CosmicShore.Game.ShapeDrawing
             shapeCrystalManager.DestroyAllCrystals();
             shapeCrystalManager.enabled = false;
 
-            // Restore vessel HUD
+            // Restore vessel HUD and pause button
             _vesselStatus?.VesselHUDController?.ShowHUD();
+            if (pauseButton) pauseButton.SetInteractable(true);
 
             OnFreestyleResumed?.Invoke();
         }

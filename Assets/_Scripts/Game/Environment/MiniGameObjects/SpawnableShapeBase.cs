@@ -37,21 +37,22 @@ public abstract class SpawnableShapeBase : SpawnableBase
 
     /// <summary>
     /// Returns block count scaled by current intensity level.
-    /// Intensity 1 = baseBlockCount, 2 = baseBlockCount * 2, etc.
+    /// Base output at intensity 1 = 3x baseBlockCount (matches old intensity 3),
+    /// then grows further: intensity 2 = 4x, intensity 3 = 5x, etc.
     /// </summary>
     protected int GetScaledBlockCount()
     {
-        return baseBlockCount * Mathf.Max(1, intensityLevel);
+        return baseBlockCount * Mathf.Max(1, intensityLevel + 2);
     }
 
     /// <summary>
     /// Returns a size multiplier that grows with intensity so prisms don't overlap.
-    /// Uses square root scaling: intensity 1 = 1x, 2 = ~1.41x, 3 = ~1.73x, 4 = 2x.
-    /// This keeps spacing proportional as block count increases.
+    /// Base output at intensity 1 = sqrt(3) ≈ 1.73x (matches old intensity 3),
+    /// then scales further. Uses square root scaling for proportional spacing.
     /// </summary>
     protected float GetIntensitySizeMultiplier()
     {
-        return Mathf.Sqrt(Mathf.Max(1, intensityLevel));
+        return Mathf.Sqrt(Mathf.Max(1, intensityLevel + 2));
     }
 
     public override GameObject Spawn(int intensity = 1)
