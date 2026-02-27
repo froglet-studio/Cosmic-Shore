@@ -138,6 +138,7 @@ namespace CosmicShore.Gameplay
                 if (!cellConfigData) return;
             }
 
+            SpawnCytoplasm();
             ApplyModifiers();
             StartSpawnerForMode();
         }
@@ -185,6 +186,14 @@ namespace CosmicShore.Gameplay
             if (cellConfigData.NucleusPrefab == null) return;
             var nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
+        }
+
+        void SpawnCytoplasm()
+        {
+            if (cellConfigData.CytoplasmPrefab == null) return;
+
+            var snowChanger = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
+            snowChanger.Initialize();
         }
 
         void ResetVolumes()
