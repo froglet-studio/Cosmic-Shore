@@ -132,20 +132,20 @@ namespace CosmicShore.Game
         {
             if (themeManagerData == null)
             {
-                CSDebug.LogError("[ShipHelper] ThemeManagerData is null — cannot set ship properties.");
+                Debug.LogError("[ShipHelper] ThemeManagerData is null — cannot set ship properties.");
                 return;
             }
 
             if (themeManagerData.TeamMaterialSets == null)
             {
-                CSDebug.LogError("[ShipHelper] TeamMaterialSets not initialized — ThemeManager may not have run.");
+                Debug.LogError("[ShipHelper] TeamMaterialSets not initialized — ThemeManager may not have run.");
                 return;
             }
 
             var domain = vessel.VesselStatus.Domain;
             if (!themeManagerData.TeamMaterialSets.TryGetValue(domain, out var materialSet))
             {
-                CSDebug.LogError($"[ShipHelper] No material set found for domain {domain}.");
+                Debug.LogError($"[ShipHelper] No material set found for domain {domain}.");
                 return;
             }
 
