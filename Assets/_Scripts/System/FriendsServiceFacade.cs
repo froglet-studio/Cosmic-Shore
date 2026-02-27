@@ -4,6 +4,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Services.Friends;
 using Unity.Services.Friends.Models;
+using Unity.Services.Friends.Notifications;
 using UnityEngine;
 
 namespace CosmicShore.Core
