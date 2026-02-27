@@ -1151,7 +1151,7 @@ PrefabInstance:
     - target: {fileID: 7225496175357077209, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
       propertyPath: m_Name
-      value: NetworkStatsManager
+      value: StatsManager
       objectReference: {fileID: 0}
     - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
