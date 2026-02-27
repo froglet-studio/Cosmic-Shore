@@ -5,6 +5,8 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -24,6 +26,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Dependencies")]
         [Inject] protected GameDataSO gameData;
+        [Inject] protected Container _container;
 
         [FormerlySerializedAs("clientPlayerSpawner")]
         [SerializeField] protected ClientPlayerVesselInitializer clientPlayerVesselInitializer;
@@ -221,6 +224,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < aiCount; i++)
             {
                 var aiPlayerNO = Instantiate(playerPrefabNO);
+                GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
                 // Position AI at successive spawn points (index 1, 2, ...)
                 if (_playerOrigins != null && _playerOrigins.Length > 0)
@@ -345,6 +349,7 @@ namespace CosmicShore.Gameplay
             }
 
             vesselNO = Instantiate(shipNetworkObject);
+            GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
             vesselNO.transform.SetPositionAndRotation(aiPlayer.transform.position, aiPlayer.transform.rotation);
             vesselNO.Spawn(true); // server-owned
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
@@ -447,6 +452,7 @@ namespace CosmicShore.Gameplay
             }
 
             var networkVessel = Instantiate(shipNetworkObject);
+            GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
             networkVessel.SpawnWithOwnership(clientId, true);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
         }

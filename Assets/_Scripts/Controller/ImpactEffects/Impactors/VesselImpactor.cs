@@ -1,5 +1,5 @@
 using CosmicShore.Core;
-using Reflex.Attributes;
+using CosmicShore.ScriptableObjects;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(NetworkVesselImpactor))]
     public class VesselImpactor : ImpactorBase
     {
-        [Inject] AudioSystem audioSystem;
+        [SerializeField] ScriptableEventGameplaySFX gameplaySFXEvent;
         [SerializeField] VesselImpactorDataContainerSO vesselImpactorDataContainerSO;
         [SerializeField] NetworkVesselImpactor networkVesselImpactor;
 
@@ -30,14 +30,14 @@ namespace CosmicShore.Gameplay
             {
                 case PrismImpactor prismImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
-                    audioSystem.PlayGameplaySFX(GameplaySFXCategory.VesselImpact);
+                    gameplaySFXEvent.Raise(GameplaySFXCategory.VesselImpact);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
                         effect.Execute(this, prismImpactee);
                     break;
 
                 case OmniCrystalImpactor omniCrystalImpactee:
                 {
-                    audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect);
+                    gameplaySFXEvent.Raise(GameplaySFXCategory.CrystalCollect);
                     var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
                     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
                         networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
 
                 case ElementalCrystalImpactor elementalCrystalImpactee:
                 {
-                    audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect);
+                    gameplaySFXEvent.Raise(GameplaySFXCategory.CrystalCollect);
                     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
                     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
                         networkVesselImpactor.ExecuteOnHitElementalCrystal(data);
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
 
                 case SkimmerImpactor skimmerImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
-                    audioSystem.PlayGameplaySFX(GameplaySFXCategory.VesselImpact);
+                    gameplaySFXEvent.Raise(GameplaySFXCategory.VesselImpact);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)
                         effect.Execute(this, skimmerImpactee);
                     break;
