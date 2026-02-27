@@ -123,6 +123,11 @@ Bootstrap Scene → AppManager (DI root, persists across scenes)
 
 The app boots through a Bootstrap scene that initializes services and Reflex DI bindings. Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. The splash screen reads this state to skip auth when a cached session exists. See the [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) section in CLAUDE.md for the full pipeline.
 
+### Architecture Audits
+
+- **[Bootstrap Scene Audit](./Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md)** — All 16 root GameObjects, execution order map, applied fixes, and deferred refactoring issues
+- **[Prism Performance Audit](./Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md)** — Per-prism component stack, Jobs+Burst optimizations, and remaining main-thread bottlenecks
+
 ### Project Structure
 
 ```

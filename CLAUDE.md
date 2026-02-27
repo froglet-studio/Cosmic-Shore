@@ -219,6 +219,8 @@ Key classes:
 - `ApplicationLifecycleManager` — application lifecycle events
 - `BootstrapConfigSO` — configures: first scene, main menu scene, service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
 
+See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the full bootstrap scene audit: all 16 root GameObjects, execution order map, applied fixes, and deferred issues.
+
 ### Authentication & Session Flow
 
 Authentication uses **Unity Gaming Services (UGS)** exclusively. Legacy PlayFab auth files exist under `_Scripts/System/Playfab/Authentication/` but are deprecated and inert.
