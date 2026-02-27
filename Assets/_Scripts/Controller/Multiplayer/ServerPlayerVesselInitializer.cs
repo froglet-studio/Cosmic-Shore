@@ -4,6 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -22,7 +23,7 @@ namespace CosmicShore.Gameplay
     public class ServerPlayerVesselInitializer : MonoBehaviour
     {
         [Header("Dependencies")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
 
         [FormerlySerializedAs("clientPlayerSpawner")]
         [SerializeField] protected ClientPlayerVesselInitializer clientPlayerVesselInitializer;

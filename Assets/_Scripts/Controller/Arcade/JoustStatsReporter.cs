@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     public class JoustStatsReporter : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] private MultiplayerJoustController joustController;
 
         [Header("Settings")]

@@ -28,7 +28,7 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventNoParam startGameRequestedEvent;
 
         [Header("Shared Game Data")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
         [Header("Party Launcher")]

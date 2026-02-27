@@ -1,12 +1,13 @@
 using System;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     public abstract class PlayerSpawnerAdapterBase : MonoBehaviour
     {
-        [SerializeField] protected GameDataSO _gameData;
+        [Inject] protected GameDataSO _gameData;
         [SerializeField] protected PlayerSpawner _playerSpawner;
 
         [SerializeField] 

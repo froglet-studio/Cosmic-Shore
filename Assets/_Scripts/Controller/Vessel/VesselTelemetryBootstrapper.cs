@@ -1,4 +1,5 @@
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
@@ -12,7 +13,7 @@ namespace CosmicShore.Gameplay
     [DefaultExecutionOrder(-100)] // Run before VesselTelemetry.Awake
     public class VesselTelemetryBootstrapper : MonoBehaviour
     {
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         void Awake()
         {
