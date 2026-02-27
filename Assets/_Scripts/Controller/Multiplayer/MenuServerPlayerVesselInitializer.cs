@@ -1,4 +1,3 @@
-using System;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 
@@ -11,17 +10,12 @@ namespace CosmicShore.Gameplay
     /// Game data configuration (vessel class, player count, intensity) is handled
     /// by <see cref="Core.MainMenuController"/> — this class only handles the
     /// network spawn chain and autopilot activation.
+    ///
+    /// Signals completion via <see cref="GameDataSO.OnMenuReady"/> SOAP event
+    /// so any system can react to the menu being fully interactive.
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
-        /// <summary>
-        /// Raised after the autopilot vessel is fully spawned, identity is set,
-        /// AI pilot is active, and the camera follow target is configured.
-        /// <see cref="Core.MainMenuController"/> subscribes to this to
-        /// transition the menu state to <see cref="MainMenuState.Ready"/>.
-        /// </summary>
-        public event Action OnMenuVesselReady;
-
         /// <summary>
         /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
         /// </summary>
@@ -52,7 +46,7 @@ namespace CosmicShore.Gameplay
                 CameraManager.Instance.SetupEndCameraFollow(followTarget);
             }
 
-            OnMenuVesselReady?.Invoke();
+            gameData.InvokeMenuReady();
         }
 
         void InitializeMenuPlayerIdentity(IPlayer player)

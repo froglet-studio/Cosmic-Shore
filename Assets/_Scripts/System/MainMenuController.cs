@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -24,8 +23,8 @@ namespace CosmicShore.Core
     ///
     /// Flow:
     ///   None → Initializing  : Start() — configures game data, fires InitializeGame
-    ///   Initializing → Ready : autopilot vessel spawned and active
-    ///   Ready → LaunchingGame: player selected a game mode (OnLaunchGame)
+    ///   Initializing → Ready : OnMenuReady SOAP event (autopilot vessel spawned and active)
+    ///   Ready → LaunchingGame: OnLaunchGame SOAP event (player selected a game mode)
     /// </summary>
     public class MainMenuController : MonoBehaviour
     {
@@ -38,10 +37,6 @@ namespace CosmicShore.Core
 
         [SerializeField, Tooltip("Game intensity for the menu background scene.")]
         int menuIntensity = 1;
-
-        [Header("Scene References")]
-        [SerializeField, Tooltip("The menu vessel initializer that spawns the autopilot vessel.")]
-        MenuServerPlayerVesselInitializer vesselInitializer;
 
         [Inject] GameDataSO _gameData;
 
@@ -97,8 +92,8 @@ namespace CosmicShore.Core
 
         void SubscribeEvents()
         {
-            if (vesselInitializer)
-                vesselInitializer.OnMenuVesselReady += HandleMenuVesselReady;
+            if (_gameData?.OnMenuReady != null)
+                _gameData.OnMenuReady.OnRaised += HandleMenuReady;
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised += HandleLaunchGame;
@@ -106,8 +101,8 @@ namespace CosmicShore.Core
 
         void UnsubscribeEvents()
         {
-            if (vesselInitializer)
-                vesselInitializer.OnMenuVesselReady -= HandleMenuVesselReady;
+            if (_gameData?.OnMenuReady != null)
+                _gameData.OnMenuReady.OnRaised -= HandleMenuReady;
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised -= HandleLaunchGame;
@@ -124,7 +119,7 @@ namespace CosmicShore.Core
 
         // ── Event Handlers ──────────────────────────────────────────────
 
-        void HandleMenuVesselReady()
+        void HandleMenuReady()
         {
             TransitionTo(MainMenuState.Ready);
         }
