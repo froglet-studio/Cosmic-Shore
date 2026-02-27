@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using CosmicShore.ScriptableObjects;
 namespace CosmicShore.UI
 {
@@ -10,11 +12,13 @@ namespace CosmicShore.UI
     /// Renders N <see cref="PartySlotView"/> slots sourced from
     /// <see cref="HostConnectionDataSO"/>.  Slot 0 is always the local player.
     /// Empty slots show a "+" button that opens the <see cref="OnlinePlayersPanel"/>.
+    /// Includes a "Friends" button to open the <see cref="FriendsPanel"/>.
     /// </summary>
     public class PartyArcadeView : MonoBehaviour
     {
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
+        [SerializeField] private FriendsDataSO friendsData;
 
         [Header("Slots")]
         [Tooltip("Pre-placed slot views in the hierarchy (index 0 = local player).")]
@@ -22,6 +26,11 @@ namespace CosmicShore.UI
 
         [Header("Online Players Panel")]
         [SerializeField] private OnlinePlayersPanel onlinePlayersPanel;
+
+        [Header("Friends")]
+        [SerializeField] private FriendsPanel friendsPanel;
+        [SerializeField] private Button friendsButton;
+        [SerializeField] private TMP_Text friendsRequestBadge;
 
         [Header("Data")]
         [SerializeField] private SO_ProfileIconList profileIcons;
@@ -36,6 +45,8 @@ namespace CosmicShore.UI
         {
             foreach (var slot in partySlots)
                 slot.Initialize(OpenOnlinePlayers);
+
+            friendsButton?.onClick.AddListener(OpenFriends);
         }
 
         void Start()
@@ -53,10 +64,14 @@ namespace CosmicShore.UI
                     connectionData.OnHostConnectionEstablished.OnRaised += RefreshAllSlots;
             }
 
+            if (friendsData?.IncomingRequests != null)
+                friendsData.IncomingRequests.OnItemCountChanged += UpdateFriendsBadge;
+
             if (playerDataService != null)
                 playerDataService.OnProfileChanged += OnLocalProfileChanged;
 
             RefreshAllSlots();
+            UpdateFriendsBadge();
         }
 
         void OnDisable()
@@ -73,6 +88,9 @@ namespace CosmicShore.UI
                 if (connectionData.OnHostConnectionEstablished != null)
                     connectionData.OnHostConnectionEstablished.OnRaised -= RefreshAllSlots;
             }
+
+            if (friendsData?.IncomingRequests != null)
+                friendsData.IncomingRequests.OnItemCountChanged -= UpdateFriendsBadge;
 
             if (playerDataService != null)
                 playerDataService.OnProfileChanged -= OnLocalProfileChanged;
@@ -146,6 +164,20 @@ namespace CosmicShore.UI
         private void OpenOnlinePlayers()
         {
             onlinePlayersPanel?.Show();
+        }
+
+        private void OpenFriends()
+        {
+            friendsPanel?.Show();
+        }
+
+        private void UpdateFriendsBadge()
+        {
+            if (friendsRequestBadge == null) return;
+
+            int count = friendsData?.IncomingRequestCount ?? 0;
+            friendsRequestBadge.text = count > 0 ? count.ToString() : "";
+            friendsRequestBadge.gameObject.SetActive(count > 0);
         }
 
         // ─────────────────────────────────────────────────────────────────────

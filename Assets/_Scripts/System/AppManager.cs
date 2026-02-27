@@ -58,6 +58,9 @@ namespace CosmicShore.Core
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
 
+        [Header("Friends")]
+        [SerializeField] FriendsDataSO friendsData;
+
         [Header("Lifecycle Events")]
         [SerializeField, Tooltip("SOAP event container for application lifecycle events (pause, focus, quit, scene load/unload).")]
         ApplicationLifecycleEventsContainerSO lifecycleEvents;
@@ -81,6 +84,7 @@ namespace CosmicShore.Core
         [SerializeField] SceneTransitionManager sceneTransitionManager;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
+        [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
 
@@ -309,6 +313,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, gameData, nameof(gameData));
             RegisterAsset(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
+            RegisterAsset(builder, friendsData, nameof(friendsData));
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
             RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
 
@@ -341,6 +346,12 @@ namespace CosmicShore.Core
 
             builder.RegisterFactory(
                 _ => new NetworkMonitor(networkMonitorDataVariable),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new FriendsServiceFacade(authenticationDataVariable, friendsData, authenticationWithLog),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

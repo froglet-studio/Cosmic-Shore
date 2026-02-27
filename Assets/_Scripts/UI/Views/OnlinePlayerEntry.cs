@@ -18,8 +18,13 @@ namespace CosmicShore.UI
         [SerializeField] private Button inviteButton;
         [SerializeField] private GameObject inviteSentIndicator;
 
+        [Header("Friend Request (optional)")]
+        [SerializeField] private Button addFriendButton;
+        [SerializeField] private GameObject friendRequestSentIndicator;
+
         private PartyPlayerData _info;
         private Action<PartyPlayerData> _onInvite;
+        private Action<PartyPlayerData> _onAddFriend;
 
         public string PlayerId => _info.PlayerId;
 
@@ -29,8 +34,15 @@ namespace CosmicShore.UI
 
         public void Populate(PartyPlayerData info, Sprite avatar, Action<PartyPlayerData> onInvite)
         {
+            Populate(info, avatar, onInvite, null, false);
+        }
+
+        public void Populate(PartyPlayerData info, Sprite avatar, Action<PartyPlayerData> onInvite,
+            Action<PartyPlayerData> onAddFriend, bool isAlreadyFriend)
+        {
             _info = info;
             _onInvite = onInvite;
+            _onAddFriend = onAddFriend;
 
             displayNameText.text = info.DisplayName;
 
@@ -41,6 +53,17 @@ namespace CosmicShore.UI
             inviteButton?.onClick.AddListener(OnInvitePressed);
 
             inviteSentIndicator?.SetActive(false);
+
+            // Add Friend button setup
+            if (addFriendButton != null)
+            {
+                addFriendButton.onClick.RemoveAllListeners();
+                addFriendButton.onClick.AddListener(OnAddFriendPressed);
+                addFriendButton.gameObject.SetActive(onAddFriend != null && !isAlreadyFriend);
+                addFriendButton.interactable = true;
+            }
+
+            friendRequestSentIndicator?.SetActive(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -55,6 +78,16 @@ namespace CosmicShore.UI
                 inviteButton.interactable = false;
 
             inviteSentIndicator?.SetActive(true);
+        }
+
+        private void OnAddFriendPressed()
+        {
+            _onAddFriend?.Invoke(_info);
+
+            if (addFriendButton != null)
+                addFriendButton.interactable = false;
+
+            friendRequestSentIndicator?.SetActive(true);
         }
     }
 }
