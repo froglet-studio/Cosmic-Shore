@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <LogLevel>k__BackingField: 0
   <RootScopes>k__BackingField:
-  - {fileID: 4798048649644018183, guid: 4eee63018bbefa743845cd8125957a2d, type: 3}
+  - {fileID: 2486593768800232768, guid: e8e93793df963174bb54c51ec8b0ace4, type: 3}
+  - {fileID: 7023092432296079887, guid: 4eee63018bbefa743845cd8125957a2d, type: 3}
