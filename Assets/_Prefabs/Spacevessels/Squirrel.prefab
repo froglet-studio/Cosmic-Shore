@@ -1723,6 +1723,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c65db9958c064485be49a2183f263,
     type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}

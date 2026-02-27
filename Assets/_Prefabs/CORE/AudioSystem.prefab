@@ -437,7 +437,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 041326fa7f1db0944a3fa50cbacd061c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   masterMixer: {fileID: 24100000, guid: 1cf03307ae00ea44284cc75693abbb07, type: 2}
   sfxSource: {fileID: 6992457589778822547}
   musicSource1: {fileID: 5079991984299441695}
