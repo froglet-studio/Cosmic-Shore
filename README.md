@@ -90,7 +90,9 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Architecture**: ScriptableObject-driven configuration + SOAP (Scriptable Object Architecture Pattern) for event-driven, decoupled communication
 - **Async**: UniTask with CancellationToken throughout
 - **DI**: Reflex dependency injection — `AppManager` as root `IInstaller`, lazy singleton factories, `[Inject]` across gameplay and UI systems
+- **App state**: `ApplicationStateMachine` — table-driven phase tracking (Bootstrap → Auth → Menu → Game → GameOver) via SOAP `ApplicationStateDataVariable`
 - **Auth**: Unity Gaming Services (UGS) Authentication — anonymous sign-in, cached sessions, SOAP-driven state via `AuthenticationDataVariable`
+- **Friends**: UGS Friends — `FriendsServiceFacade` single-writer facade, relationship data via `FriendsDataSO`
 - **Networking**: Unity Netcode for GameObjects (multiplayer with AI backfill)
 - **Camera**: Cinemachine 3.1.2 with per-vessel settings
 - **VFX**: VFX Graph, custom HLSL shaders, Shader Graph, procedural skybox
@@ -118,12 +120,15 @@ See [`GIT_RULES.md`](./GIT_RULES.md) for branching model, commit conventions, an
 ```
 Bootstrap Scene → AppManager (DI root + orchestrator, persists across scenes)
     ├─ Reflex DI: registers all managers, SO assets, services
+    ├─ ApplicationStateMachine: None → Bootstrapping → Authenticating
     ├─ AuthenticationServiceFacade → UGS sign-in → SOAP state
+    ├─ FriendsServiceFacade → UGS Friends init on auth
     ├─ MultiplayerSetup → starts network host on sign-in
     ├─ SceneLoader → game launch, restart, return-to-menu (NetworkBehaviour)
     └─ SceneTransitionManager → Authentication → Menu_Main (networked)
                                                     │
                                                     ▼
+                                        ApplicationState: MainMenu
                                               ScreenSwitcher
                                     ┌────┬────┬────┬────┬────┐
                                     │Store│Arcade│Home│Port│Hangar│
@@ -133,11 +138,13 @@ Bootstrap Scene → AppManager (DI root + orchestrator, persists across scenes)
                                       (autopilot Squirrel in background)
 ```
 
-The app boots through a Bootstrap scene where `AppManager` serves as both the top-level orchestrator (`[DefaultExecutionOrder(-100)]`) and the Reflex DI root (`IInstaller`). It configures the platform, registers all persistent managers and SO assets (including `GameDataSO`, `SceneNameListSO`, and `ApplicationLifecycleEventsContainerSO`), starts authentication and network monitoring, then transitions to the Authentication scene.
+The app boots through a Bootstrap scene where `AppManager` serves as both the top-level orchestrator (`[DefaultExecutionOrder(-100)]`) and the Reflex DI root (`IInstaller`). It configures the platform, registers all persistent managers and SO assets (including `GameDataSO`, `SceneNameListSO`, `ApplicationLifecycleEventsContainerSO`, `ApplicationStateDataVariable`, and `FriendsDataSO`), starts authentication and network monitoring, then transitions to the Authentication scene.
 
-Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. On sign-in, `MultiplayerSetup` starts the network host, and the menu is loaded as a networked scene. Scene loading is managed by `SceneLoader`, a `NetworkBehaviour` that auto-selects local vs network scene loading and handles game restarts.
+An `ApplicationStateMachine` (pure C# DI singleton) tracks the top-level application phase (`Bootstrapping → Authenticating → MainMenu → LoadingGame → InGame → GameOver`) with special states for `Paused`, `Disconnected`, and `ShuttingDown`. It validates transitions via a table-driven state graph and auto-subscribes to gameplay SOAP events for automatic phase changes. All phase data is written to `ApplicationStateDataVariable` (SOAP), allowing any system to read current state or subscribe to `OnStateChanged`.
 
-The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. A `MenuServerPlayerVesselInitializer` spawns an autopilot Squirrel vessel in the background with Cinemachine camera tracking. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./CLAUDE.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) sections in CLAUDE.md for details.
+Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. On sign-in, `MultiplayerSetup` starts the network host, a `FriendsServiceFacade` initializes the UGS Friends service (syncing into `FriendsDataSO`), and the menu is loaded as a networked scene. Scene loading is managed by `SceneLoader`, a `NetworkBehaviour` that auto-selects local vs network scene loading and handles game restarts.
+
+The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. A `MenuServerPlayerVesselInitializer` spawns an autopilot Squirrel vessel in the background with camera tracking. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./CLAUDE.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) sections in CLAUDE.md for details.
 
 ### Architecture Audits
 
@@ -165,9 +172,11 @@ Assets/
 │   │   ├── Instrumentation/   # Analytics, Firebase
 │   │   ├── Runtime/           # Dialogue runtime
 │   │   ├── AppManager.cs      # Top-level orchestrator + Reflex DI root
+│   │   ├── ApplicationStateMachine.cs  # App phase state machine (SOAP single-writer)
 │   │   ├── SceneLoader.cs     # Scene loading, restart, return-to-menu (NetworkBehaviour)
 │   │   ├── AuthenticationServiceFacade.cs
 │   │   ├── AuthenticationSceneController.cs
+│   │   ├── FriendsServiceFacade.cs  # UGS Friends single-writer facade
 │   │   ├── SplashToAuthFlow.cs
 │   │   ├── NetworkMonitor.cs
 │   │   └── ...                # Audio, LoadOut, Quest, Ads, etc.
@@ -182,7 +191,7 @@ Assets/
 │   │   └── ...                # FX, Toast, Animations
 │   ├── Data/                  # Enums & data structs
 │   ├── ScriptableObjects/     # SO definitions & SOAP types
-│   │   └── SOAP/              # Custom SOAP types (15 subdirectories)
+│   │   └── SOAP/              # Custom SOAP types (16 subdirectories)
 │   ├── Utility/               # Effects, pooling, data persistence
 │   └── Tests/                 # Edit-mode unit tests
 ├── _SO_Assets/                # ScriptableObject asset instances
