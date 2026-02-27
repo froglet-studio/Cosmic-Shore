@@ -61,6 +61,13 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
+            // Switch the Cinemachine menu camera to follow the autopilot vessel.
+            if (CameraManager.Instance)
+            {
+                var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
+                CameraManager.Instance.FollowVesselInMainMenu(followTarget);
+            }
+
             // Signal menu systems that rely on these events.
             gameData.InvokeMiniGameRoundStarted();
             gameData.InvokeTurnStarted();

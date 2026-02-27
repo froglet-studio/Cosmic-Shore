@@ -204,6 +204,26 @@ namespace CosmicShore.Gameplay
                 pcc.SnapToTarget();
         }
 
+        /// <summary>
+        /// Switches to the Cinemachine main menu camera and sets it to follow
+        /// the given target (typically the autopilot vessel in Menu_Main).
+        /// Cancels the default crystal look-at so the camera tracks the vessel.
+        /// </summary>
+        public void FollowVesselInMainMenu(Transform target)
+        {
+            if (!mainMenuCamera) return;
+
+            SetMainMenuCameraActive();
+
+            // Cancel the crystal look-at scheduled by SetMainMenuCameraActive
+            _lookAtCrystalCts?.Cancel();
+            _lookAtCrystalCts?.Dispose();
+            _lookAtCrystalCts = null;
+
+            mainMenuCamera.Follow = target;
+            mainMenuCamera.LookAt = target;
+        }
+
         public void SetNormalizedCloseCameraDistance(float normalizedDistance)
         {
             if (_playerCamera == null) return;
