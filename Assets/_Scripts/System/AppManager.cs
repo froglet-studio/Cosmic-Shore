@@ -41,11 +41,11 @@ namespace CosmicShore.Core
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
 
-        bool _validated;
+        bool _resolved;
 
         void Awake()
         {
-            ValidatePersistents();
+            ResolveAndValidateManagers();
         }
 
         void Start()
@@ -64,51 +64,71 @@ namespace CosmicShore.Core
             gameData?.ResetAllData();
         }
 
-        void ValidatePersistents()
+        /// <summary>
+        /// Resolves any unassigned manager references by finding them in the scene,
+        /// then validates that each resolved manager has DontDestroyOnLoad.
+        ///
+        /// This handles the case where AppManager lives on a prefab and cannot hold
+        /// serialized references to scene MonoBehaviours. Serialized fields still work
+        /// as the primary binding when wired via scene overrides — FindAnyObjectByType
+        /// is only the fallback.
+        /// </summary>
+        void ResolveAndValidateManagers()
         {
-            if (_validated) return;
-            _validated = true;
+            if (_resolved) return;
+            _resolved = true;
 
-            ValidatePersistent(gameSetting, nameof(gameSetting));
-            ValidatePersistent(audioSystem, nameof(audioSystem));
-            ValidatePersistent(playerDataService, nameof(playerDataService));
-            ValidatePersistent(ugsStatsManager, nameof(ugsStatsManager));
-            ValidatePersistent(captainManager, nameof(captainManager));
-            ValidatePersistent(iapManager, nameof(iapManager));
-            ValidatePersistent(gameManager, nameof(gameManager));
-            ValidatePersistent(themeManager, nameof(themeManager));
-            ValidatePersistent(cameraManager, nameof(cameraManager));
-            ValidatePersistent(postProcessingManager, nameof(postProcessingManager));
-            ValidatePersistent(statsManager, nameof(statsManager));
+            ResolveManager(ref gameSetting, nameof(gameSetting));
+            ResolveManager(ref audioSystem, nameof(audioSystem));
+            ResolveManager(ref playerDataService, nameof(playerDataService));
+            ResolveManager(ref ugsStatsManager, nameof(ugsStatsManager));
+            ResolveManager(ref captainManager, nameof(captainManager));
+            ResolveManager(ref iapManager, nameof(iapManager));
+            ResolveManager(ref gameManager, nameof(gameManager));
+            ResolveManager(ref themeManager, nameof(themeManager));
+            ResolveManager(ref cameraManager, nameof(cameraManager));
+            ResolveManager(ref postProcessingManager, nameof(postProcessingManager));
+            ResolveManager(ref statsManager, nameof(statsManager));
         }
 
-        static void ValidatePersistent<T>(T reference, string fieldName) where T : Component
+        /// <summary>
+        /// If the serialized field is null, attempts to find the manager in the scene.
+        /// When found, ensures it has a DontDestroyOnLoad component so it persists
+        /// across scene transitions.
+        /// </summary>
+        void ResolveManager<T>(ref T field, string fieldName) where T : Component
         {
-            if (reference == null)
+            if (field == null)
             {
-                Debug.LogError($"[AppManager] {fieldName} is not assigned.");
+#if UNITY_2023_1_OR_NEWER
+                field = FindAnyObjectByType<T>();
+#else
+                field = FindObjectOfType<T>();
+#endif
+            }
+
+            if (field == null)
+            {
+                Debug.LogWarning($"[AppManager] {fieldName} not found in scene — will skip DI registration.");
                 return;
             }
 
-            if (!reference.TryGetComponent<DontDestroyOnLoad>(out _))
-            {
-                Debug.LogWarning($"[AppManager] {fieldName} is missing a DontDestroyOnLoad component — adding one.");
-                reference.gameObject.AddComponent<DontDestroyOnLoad>();
-            }
+            if (!field.TryGetComponent<DontDestroyOnLoad>(out _))
+                field.gameObject.AddComponent<DontDestroyOnLoad>();
         }
 
         public void InstallBindings(ContainerBuilder builder)
         {
-            // Guarantee validation runs before registration. Reflex may
-            // call InstallBindings before Awake, so we cannot rely on Awake alone.
-            ValidatePersistents();
+            // Resolve scene managers before registration. Reflex may call
+            // InstallBindings before Awake, so we cannot rely on Awake alone.
+            ResolveAndValidateManagers();
 
             // ScriptableObject assets / Variables
             RegisterIfNotNull(builder, gameData, nameof(gameData));
             RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
 
-            // Singleton persistent services (scene references)
+            // Singleton persistent services (resolved from scene)
             RegisterIfNotNull(builder, gameSetting, nameof(gameSetting));
             RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
             RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
@@ -148,7 +168,7 @@ namespace CosmicShore.Core
                 builder.RegisterValue(value);
                 return;
             }
-            Debug.LogError($"[AppManager] {fieldName} is not assigned and could not be found — skipping DI registration.");
+            Debug.LogWarning($"[AppManager] {fieldName} is not available — skipping DI registration.");
         }
 
         void StartNetworkMonitor() => networkMonitor?.StartMonitoring();
