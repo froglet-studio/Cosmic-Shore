@@ -69,6 +69,7 @@ namespace CosmicShore.Core
         [SerializeField] ThemeManager themeManager;
         [SerializeField] CameraManager cameraManager;
         [SerializeField] PostProcessingManager postProcessingManager;
+        [SerializeField] SceneTransitionManager sceneTransitionManager;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
@@ -204,8 +205,8 @@ namespace CosmicShore.Core
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).
-                if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
-                    await transitionManager.LoadSceneAsync(targetScene);
+                if (sceneTransitionManager != null)
+                    await sceneTransitionManager.LoadSceneAsync(targetScene);
                 else
                     SceneManager.LoadScene(targetScene);
             }
@@ -262,6 +263,7 @@ namespace CosmicShore.Core
             TryResolveManager(ref themeManager);
             TryResolveManager(ref cameraManager);
             TryResolveManager(ref postProcessingManager);
+            TryResolveManager(ref sceneTransitionManager);
         }
 
         void TryResolveManager<T>(ref T field) where T : Component
@@ -308,6 +310,7 @@ namespace CosmicShore.Core
             RegisterManagerSingleton<ThemeManager>(builder, themeManager);
             RegisterManagerSingleton<CameraManager>(builder, cameraManager);
             RegisterManagerSingleton<PostProcessingManager>(builder, postProcessingManager);
+            RegisterManagerSingleton<SceneTransitionManager>(builder, sceneTransitionManager);
 
             // ── Pure C# service singletons ───────────────────────────────
             // Created by factory, no scene object needed. Lazy so they are
@@ -459,8 +462,8 @@ namespace CosmicShore.Core
 
             var go = new GameObject("[BootstrapFlow]");
 
-            // SceneTransitionManager must be added first so it registers in
-            // ServiceLocator before AppManager.Start() runs.
+            // SceneTransitionManager is added first so it is available when
+            // AppManager resolves managers during Awake.
             go.AddComponent<SceneTransitionManager>();
             go.AddComponent<ApplicationLifecycleManager>();
             go.AddComponent<AppManager>();

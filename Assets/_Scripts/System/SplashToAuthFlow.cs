@@ -7,6 +7,7 @@ using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+
 namespace CosmicShore.Core
 {
     /// <summary>
@@ -29,6 +30,7 @@ namespace CosmicShore.Core
 
         [Inject] private AuthenticationDataVariable authenticationDataVariable;
         [Inject] private SceneNameListSO _sceneNames;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
 
         CancellationTokenSource _cts;
 
@@ -111,9 +113,9 @@ namespace CosmicShore.Core
 
         async UniTask LoadSceneWithTransitionAsync(string sceneName)
         {
-            if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
+            if (_sceneTransitionManager != null)
             {
-                await transitionManager.LoadSceneAsync(sceneName);
+                await _sceneTransitionManager.LoadSceneAsync(sceneName);
             }
             else
             {
