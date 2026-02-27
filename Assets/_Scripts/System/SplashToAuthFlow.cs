@@ -1,12 +1,11 @@
 using System;
-using System.Threading.Tasks;
-using CosmicShore.Core;
+using System.Threading;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -15,9 +14,9 @@ namespace CosmicShore.Core
     /// checks if the user has a cached session. If so, goes directly to Menu_Main.
     /// Otherwise, loads the Authentication scene.
     ///
+    /// Auth state is read from the <see cref="AuthenticationDataVariable"/> SOAP asset,
+    /// which is updated by the <see cref="AuthenticationServiceFacade"/> started in AppManager.
     /// Uses SceneTransitionManager for fade transitions when available.
-    /// Auth state is read from the AuthenticationDataVariable SOAP asset,
-    /// which is updated by the AuthenticationServiceFacade started in AppManager.
     /// </summary>
     public class SplashToAuthFlow : MonoBehaviour
     {
@@ -28,15 +27,40 @@ namespace CosmicShore.Core
         [Header("Splash")]
         [SerializeField] private float splashDisplayDuration = 2f;
 
-        [Header("Dependencies")]
+        [Header("Timeouts")]
+        [SerializeField, Tooltip("Max seconds to wait for in-flight auth to complete.")]
+        private float authWaitTimeout = 5f;
+
         [Inject] private AuthenticationDataVariable authenticationDataVariable;
 
-        async void Start()
+        CancellationTokenSource _cts;
+
+        void OnEnable()
+        {
+            _cts = new CancellationTokenSource();
+        }
+
+        void OnDisable()
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+        }
+
+        void Start()
+        {
+            RunSplashFlowAsync(_cts.Token).Forget();
+        }
+
+        async UniTaskVoid RunSplashFlowAsync(CancellationToken ct)
         {
             try
             {
                 // Show splash for the configured duration.
-                await Task.Delay(TimeSpan.FromSeconds(splashDisplayDuration));
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(splashDisplayDuration),
+                    ignoreTimeScale: true,
+                    cancellationToken: ct);
 
                 if (authenticationDataVariable == null)
                 {
@@ -48,18 +72,24 @@ namespace CosmicShore.Core
                 var authData = authenticationDataVariable.Value;
 
                 // AuthenticationServiceFacade may still be signing in.
-                // Wait briefly for in-flight auth to complete.
+                // Wait for in-flight auth to settle, with a timeout.
                 if (authData.State == AuthenticationData.AuthState.Initializing ||
                     authData.State == AuthenticationData.AuthState.SigningIn)
                 {
-                    float waited = 0f;
-                    const float maxWait = 5f;
-                    while (!authData.IsSignedIn && waited < maxWait &&
-                           (authData.State == AuthenticationData.AuthState.Initializing ||
-                            authData.State == AuthenticationData.AuthState.SigningIn))
+                    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    timeoutCts.CancelAfter(TimeSpan.FromSeconds(authWaitTimeout));
+
+                    try
                     {
-                        await Task.Delay(100);
-                        waited += 0.1f;
+                        await UniTask.WaitUntil(
+                            () => authData.IsSignedIn ||
+                                  (authData.State != AuthenticationData.AuthState.Initializing &&
+                                   authData.State != AuthenticationData.AuthState.SigningIn),
+                            cancellationToken: timeoutCts.Token);
+                    }
+                    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                    {
+                        CSDebug.LogWarning("[SplashToAuthFlow] Auth wait timed out. Proceeding.");
                     }
                 }
 
@@ -74,6 +104,7 @@ namespace CosmicShore.Core
                     await LoadSceneWithTransitionAsync(authSceneName);
                 }
             }
+            catch (OperationCanceledException) { /* scene destroyed — expected */ }
             catch (Exception ex)
             {
                 CSDebug.LogWarning($"[SplashToAuthFlow] Error during splash flow: {ex.Message}. Falling back to auth scene.");
@@ -81,7 +112,7 @@ namespace CosmicShore.Core
             }
         }
 
-        async Task LoadSceneWithTransitionAsync(string sceneName)
+        async UniTask LoadSceneWithTransitionAsync(string sceneName)
         {
             if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
             {
