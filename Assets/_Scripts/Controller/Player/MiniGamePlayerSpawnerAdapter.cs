@@ -10,14 +10,11 @@ namespace CosmicShore.Gameplay
         [Inject] private PlayerDataService playerDataService;
         [SerializeField] private bool _spawnAIAtStart = false;
 
-        private void OnEnable()
+        private void Start()
         {
             _gameData.OnInitializeGame.OnRaised += InitializeGame;
             AddSpawnPosesToGameData();
-        }
 
-        private void Start()
-        {
             if (_spawnAIAtStart)
                 SpawnDefaultPlayersAndAddToGameData();
         }

@@ -9,14 +9,6 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public abstract class SinglePlayerMiniGameControllerBase : MiniGameControllerBase
     {
-        protected virtual void OnEnable()
-        {
-            if (gameData == null) return;
-            
-            gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
-            gameData.OnResetForReplay.OnRaised += OnResetForReplay;
-        }
-        
         protected virtual void Start()
         {
             if (gameData == null)
@@ -24,16 +16,18 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("GameDataSO is not assigned!", this);
                 return;
             }
-            
+
+            gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
+            gameData.OnResetForReplay.OnRaised += OnResetForReplay;
+
             gameData.InitializeGame();
             gameData.InvokeClientReady();
             SetupNewRound();
         }
-        
-        protected virtual void OnDisable() 
+
+        protected virtual void OnDisable()
         {
             if (gameData == null) return;
-            
             gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
         }

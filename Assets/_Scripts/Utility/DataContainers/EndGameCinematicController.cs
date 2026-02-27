@@ -30,20 +30,22 @@ namespace CosmicShore.Utility
         protected Coroutine runningRoutine;
         protected float cachedBoostMultiplier;
         
-        protected virtual void OnEnable()
+        protected virtual void Start()
         {
-            if (!gameData) return;
-            gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
+            if (gameData)
+                gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
 
-            if (!view) return;
-            view.Initialize();
-            view.OnContinuePressed += HandleContinuePressed;
+            if (view)
+            {
+                view.Initialize();
+                view.OnContinuePressed += HandleContinuePressed;
+            }
         }
 
         protected virtual void OnDisable()
         {
-            if (!gameData) return;
-            gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
+            if (gameData)
+                gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
 
             if (view)
                 view.OnContinuePressed -= HandleContinuePressed;

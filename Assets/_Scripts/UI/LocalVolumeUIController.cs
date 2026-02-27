@@ -13,7 +13,7 @@ namespace CosmicShore.UI
         private bool _active;
         private bool _running;
 
-        void OnEnable()
+        void Start()
         {
             gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStart;
             gameData.OnMiniGameTurnEnd.OnRaised += GameTurnEnd;

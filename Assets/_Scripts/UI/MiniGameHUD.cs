@@ -132,9 +132,10 @@ namespace CosmicShore.UI
             _connectingCts?.Dispose();
             _connectingCts = new CancellationTokenSource();
 
-            SubscribeToEvents();
             CleanupUI();
         }
+
+        protected virtual void Start() => SubscribeToEvents();
 
         protected virtual void OnDisable()
         {

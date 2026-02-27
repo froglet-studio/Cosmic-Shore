@@ -106,7 +106,7 @@ namespace CosmicShore.Core
 
             DontDestroyOnLoad(gameObject);
             ConfigurePlatform();
-            ResolveAndValidateManagers();
+            TryResolveManagersEarly();
         }
 
         void Start()
@@ -242,37 +242,29 @@ namespace CosmicShore.Core
         #region Manager Resolution & DI
 
         /// <summary>
-        /// Resolves any unassigned manager references by finding them in the scene,
-        /// then validates that each resolved manager has DontDestroyOnLoad.
-        ///
-        /// This handles the case where AppManager lives on a prefab and cannot hold
-        /// serialized references to scene MonoBehaviours. Serialized fields still work
-        /// as the primary binding when wired via scene overrides — FindAnyObjectByType
-        /// is only the fallback.
+        /// Best-effort early resolution of manager references from the scene.
+        /// Finds unassigned managers via FindAnyObjectByType and marks them
+        /// DontDestroyOnLoad. Does not warn on missing managers — the lazy
+        /// DI factory handles that at injection time.
         /// </summary>
-        void ResolveAndValidateManagers()
+        void TryResolveManagersEarly()
         {
             if (_resolved) return;
             _resolved = true;
 
-            ResolveManager(ref gameSetting, nameof(gameSetting));
-            ResolveManager(ref audioSystem, nameof(audioSystem));
-            ResolveManager(ref playerDataService, nameof(playerDataService));
-            ResolveManager(ref ugsStatsManager, nameof(ugsStatsManager));
-            ResolveManager(ref captainManager, nameof(captainManager));
-            ResolveManager(ref iapManager, nameof(iapManager));
-            ResolveManager(ref gameManager, nameof(gameManager));
-            ResolveManager(ref themeManager, nameof(themeManager));
-            ResolveManager(ref cameraManager, nameof(cameraManager));
-            ResolveManager(ref postProcessingManager, nameof(postProcessingManager));
+            TryResolveManager(ref gameSetting);
+            TryResolveManager(ref audioSystem);
+            TryResolveManager(ref playerDataService);
+            TryResolveManager(ref ugsStatsManager);
+            TryResolveManager(ref captainManager);
+            TryResolveManager(ref iapManager);
+            TryResolveManager(ref gameManager);
+            TryResolveManager(ref themeManager);
+            TryResolveManager(ref cameraManager);
+            TryResolveManager(ref postProcessingManager);
         }
 
-        /// <summary>
-        /// If the serialized field is null, attempts to find the manager in the scene.
-        /// When found, ensures it has a DontDestroyOnLoad component so it persists
-        /// across scene transitions.
-        /// </summary>
-        void ResolveManager<T>(ref T field, string fieldName) where T : Component
+        void TryResolveManager<T>(ref T field) where T : Component
         {
             if (field == null)
             {
@@ -283,68 +275,114 @@ namespace CosmicShore.Core
 #endif
             }
 
-            if (field == null)
-            {
-                Debug.LogWarning($"[AppManager] {fieldName} not found in scene — will skip DI registration.");
-                return;
-            }
-
-            if (!field.TryGetComponent<DontDestroyOnLoad>(out _))
-                field.gameObject.AddComponent<DontDestroyOnLoad>();
+            if (field != null)
+                EnsurePersistent(field);
         }
 
         public void InstallBindings(ContainerBuilder builder)
         {
-            // Resolve scene managers before registration. Reflex may call
-            // InstallBindings before Awake, so we cannot rely on Awake alone.
-            ResolveAndValidateManagers();
+            // Best-effort early resolution. Reflex may call InstallBindings
+            // before Awake, so we cannot rely on Awake alone.
+            TryResolveManagersEarly();
 
-            // ScriptableObject assets / Variables
-            RegisterIfNotNull(builder, _sceneNames, nameof(_sceneNames));
-            RegisterIfNotNull(builder, gameData, nameof(gameData));
-            RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
-            RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
+            // ── ScriptableObject assets ──────────────────────────────────
+            // Project-level assets wired via inspector. RegisterValue is the
+            // correct Reflex API: the instance already exists and is immutable.
+            RegisterAsset(builder, _sceneNames, nameof(_sceneNames));
+            RegisterAsset(builder, gameData, nameof(gameData));
+            RegisterAsset(builder, authenticationDataVariable, nameof(authenticationDataVariable));
+            RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
 
-            // Singleton persistent services (resolved from scene)
-            RegisterIfNotNull(builder, gameSetting, nameof(gameSetting));
-            RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
-            RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
-            RegisterIfNotNull(builder, ugsStatsManager, nameof(ugsStatsManager));
-            RegisterIfNotNull(builder, captainManager, nameof(captainManager));
-            RegisterIfNotNull(builder, iapManager, nameof(iapManager));
-            RegisterIfNotNull(builder, gameManager, nameof(gameManager));
-            RegisterIfNotNull(builder, themeManager, nameof(themeManager));
-            RegisterIfNotNull(builder, cameraManager, nameof(cameraManager));
-            RegisterIfNotNull(builder, postProcessingManager, nameof(postProcessingManager));
+            // ── MonoBehaviour singletons (lazy factory) ──────────────────
+            // Scene-resolved managers may not exist in the Bootstrap scene at
+            // registration time. RegisterFactory with Lazy resolution defers
+            // the scene lookup until first [Inject] access, so registration
+            // always succeeds.
+            RegisterManagerSingleton<GameSetting>(builder, gameSetting);
+            RegisterManagerSingleton<AudioSystem>(builder, audioSystem);
+            RegisterManagerSingleton<PlayerDataService>(builder, playerDataService);
+            RegisterManagerSingleton<UGSStatsManager>(builder, ugsStatsManager);
+            RegisterManagerSingleton<CaptainManager>(builder, captainManager);
+            RegisterManagerSingleton<IAPManager>(builder, iapManager);
+            RegisterManagerSingleton<GameManager>(builder, gameManager);
+            RegisterManagerSingleton<ThemeManager>(builder, themeManager);
+            RegisterManagerSingleton<CameraManager>(builder, cameraManager);
+            RegisterManagerSingleton<PostProcessingManager>(builder, postProcessingManager);
 
-            // Persistent C# singletons (live as long as the RootScope container lives)
-            if (authenticationDataVariable != null)
-            {
-                builder.RegisterFactory(
-                    _ => new AuthenticationServiceFacade(authenticationDataVariable, authenticationWithLog),
-                    lifetime: Lifetime.Singleton,
-                    resolution: Resolution.Lazy
-                );
-            }
+            // ── Pure C# service singletons ───────────────────────────────
+            // Created by factory, no scene object needed. Lazy so they are
+            // only instantiated when first injected.
+            builder.RegisterFactory(
+                _ => new AuthenticationServiceFacade(authenticationDataVariable, authenticationWithLog),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
 
-            if (networkMonitorDataVariable != null)
-            {
-                builder.RegisterFactory(
-                    _ => new NetworkMonitor(networkMonitorDataVariable),
-                    lifetime: Lifetime.Singleton,
-                    resolution: Resolution.Lazy
-                );
-            }
+            builder.RegisterFactory(
+                _ => new NetworkMonitor(networkMonitorDataVariable),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
         }
 
-        static void RegisterIfNotNull<T>(ContainerBuilder builder, T value, string fieldName) where T : class
+        /// <summary>
+        /// Registers a ScriptableObject asset via RegisterValue. These are
+        /// project-level assets that must be wired in the inspector.
+        /// Logs an error (fail-loud) if the asset is missing.
+        /// </summary>
+        static void RegisterAsset<T>(ContainerBuilder builder, T asset, string fieldName) where T : ScriptableObject
         {
-            if (value != null)
+            if (asset != null)
             {
-                builder.RegisterValue(value);
+                builder.RegisterValue(asset);
                 return;
             }
-            Debug.LogWarning($"[AppManager] {fieldName} is not available — skipping DI registration.");
+            Debug.LogError($"[AppManager] {fieldName} ScriptableObject asset is not assigned — DI registration skipped.");
+        }
+
+        /// <summary>
+        /// Registers a MonoBehaviour singleton via RegisterFactory with lazy
+        /// resolution. The factory prefers the serialized/early-resolved reference;
+        /// if that is null it falls back to a scene search at injection time.
+        /// This ensures registration always succeeds even when the manager
+        /// hasn't loaded into the scene yet.
+        /// </summary>
+        void RegisterManagerSingleton<T>(ContainerBuilder builder, T serializedRef) where T : Component
+        {
+            builder.RegisterFactory<T>(
+                _ =>
+                {
+                    // Prefer the reference that was already resolved (serialized or early-found).
+                    if (serializedRef != null)
+                    {
+                        EnsurePersistent(serializedRef);
+                        return serializedRef;
+                    }
+
+                    // Deferred scene search at first injection time.
+#if UNITY_2023_1_OR_NEWER
+                    var found = FindAnyObjectByType<T>();
+#else
+                    var found = FindObjectOfType<T>();
+#endif
+                    if (found != null)
+                    {
+                        EnsurePersistent(found);
+                        return found;
+                    }
+
+                    Debug.LogError($"[AppManager] {typeof(T).Name} not found at injection time — DI resolution failed.");
+                    return null;
+                },
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+        }
+
+        static void EnsurePersistent(Component component)
+        {
+            if (!component.TryGetComponent<DontDestroyOnLoad>(out _))
+                component.gameObject.AddComponent<DontDestroyOnLoad>();
         }
 
         #endregion

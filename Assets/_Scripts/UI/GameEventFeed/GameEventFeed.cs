@@ -47,7 +47,7 @@ namespace CosmicShore.UI
             gameObject.SetActive(true);
         }
 
-        private void OnEnable()
+        private void Start()
         {
             if (feedChannel != null)
                 feedChannel.OnRaised += OnFeedEvent;

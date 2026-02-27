@@ -14,13 +14,10 @@ namespace CosmicShore.UI
         [SerializeField] private TMP_Text xpText;
         [Inject] private PlayerDataService playerDataService;
 
-        void OnEnable()
+        void Start()
         {
-            if (playerDataService != null)
-            {
-                playerDataService.OnProfileChanged += OnProfileChanged;
-                UpdateDisplay(playerDataService.GetXP());
-            }
+            playerDataService.OnProfileChanged += OnProfileChanged;
+            UpdateDisplay(playerDataService.GetXP());
         }
 
         void OnDisable()

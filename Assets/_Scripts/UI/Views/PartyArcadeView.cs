@@ -38,7 +38,7 @@ namespace CosmicShore.UI
                 slot.Initialize(OpenOnlinePlayers);
         }
 
-        void OnEnable()
+        void Start()
         {
             if (connectionData != null)
             {

@@ -39,7 +39,9 @@ namespace CosmicShore.UI
                 _menuAudio = shipSelectionGrid.GetComponent<MenuAudio>();
         }
 
-        void OnEnable()
+        void Start() => NormalizeAndPaint();
+
+        void NormalizeAndPaint()
         {
             EnsureLookup();
 
