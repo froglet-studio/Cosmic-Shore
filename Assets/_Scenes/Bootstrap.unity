@@ -311,14 +311,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d3275ef5da29b646a52d80c5b57244e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  _onReturnToMainMenu: {fileID: 11400000, guid: ee5d65f9d27de024590573c0a92ca4d7,
-    type: 2}
   _onInitializePlayerCamera: {fileID: 11400000, guid: dfc4b3d01080dac408975d4a25c6c1ea,
     type: 2}
   endCamera: {fileID: 0}
-  mainMenuCamera: {fileID: 838949995}
   endCameraFollowTarget: {fileID: 1323972083}
   endCameraLookAtTarget: {fileID: 1341340454}
 --- !u!114 &176951646
@@ -3159,6 +3155,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 041326fa7f1db0944a3fa50cbacd061c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameplaySFXEvent: {fileID: 0}
   masterMixer: {fileID: 24100000, guid: 1cf03307ae00ea44284cc75693abbb07, type: 2}
   sfxSource: {fileID: 1590954733}
   musicSource1: {fileID: 452571399}
@@ -3673,6 +3670,11 @@ PrefabInstance:
       propertyPath: postProcessingManager
       value: 
       objectReference: {fileID: 1922865233}
+    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
+        type: 3}
+      propertyPath: sceneTransitionManager
+      value: 
+      objectReference: {fileID: 8256122174668503709}
     - target: {fileID: 6778103901198434919, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
       propertyPath: m_Name
@@ -3733,6 +3735,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4eee63018bbefa743845cd8125957a2d, type: 3}
+--- !u!114 &8256122174668503709 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 974600371733867531, guid: 4eee63018bbefa743845cd8125957a2d,
+    type: 3}
+  m_PrefabInstance: {fileID: 8256122174668503708}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 621b2788bb4141fa90f26bb44247998c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
