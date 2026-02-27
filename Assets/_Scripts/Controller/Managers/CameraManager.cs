@@ -76,6 +76,12 @@ namespace CosmicShore.Gameplay
 
         private void InitializeSceneCamera()
         {
+            if (_sceneNameList == null)
+            {
+                Debug.LogError("[CameraManager] _sceneNameList was not injected — check AppManager DI registration.");
+                return;
+            }
+
             var activeScene = SceneManager.GetActiveScene().name;
 
             if (activeScene == _sceneNameList.MainMenuScene)
