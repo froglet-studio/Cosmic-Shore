@@ -38,8 +38,26 @@ namespace CosmicShore.UI
                 slot.Initialize(OpenOnlinePlayers);
         }
 
-        void OnEnable() => SubscribeAndRefresh();
-        void Start() => SubscribeAndRefresh();
+        void Start()
+        {
+            if (connectionData != null)
+            {
+                if (connectionData.PartyMembers != null)
+                {
+                    connectionData.PartyMembers.OnItemAdded += OnPartyMemberAdded;
+                    connectionData.PartyMembers.OnItemRemoved += OnPartyMemberRemoved;
+                    connectionData.PartyMembers.OnCleared += OnPartyCleared;
+                }
+
+                if (connectionData.OnHostConnectionEstablished != null)
+                    connectionData.OnHostConnectionEstablished.OnRaised += RefreshAllSlots;
+            }
+
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged += OnLocalProfileChanged;
+
+            RefreshAllSlots();
+        }
 
         void OnDisable()
         {
@@ -58,36 +76,6 @@ namespace CosmicShore.UI
 
             if (playerDataService != null)
                 playerDataService.OnProfileChanged -= OnLocalProfileChanged;
-        }
-
-        void SubscribeAndRefresh()
-        {
-            if (connectionData != null)
-            {
-                if (connectionData.PartyMembers != null)
-                {
-                    connectionData.PartyMembers.OnItemAdded -= OnPartyMemberAdded;
-                    connectionData.PartyMembers.OnItemRemoved -= OnPartyMemberRemoved;
-                    connectionData.PartyMembers.OnCleared -= OnPartyCleared;
-                    connectionData.PartyMembers.OnItemAdded += OnPartyMemberAdded;
-                    connectionData.PartyMembers.OnItemRemoved += OnPartyMemberRemoved;
-                    connectionData.PartyMembers.OnCleared += OnPartyCleared;
-                }
-
-                if (connectionData.OnHostConnectionEstablished != null)
-                {
-                    connectionData.OnHostConnectionEstablished.OnRaised -= RefreshAllSlots;
-                    connectionData.OnHostConnectionEstablished.OnRaised += RefreshAllSlots;
-                }
-            }
-
-            if (playerDataService != null)
-            {
-                playerDataService.OnProfileChanged -= OnLocalProfileChanged;
-                playerDataService.OnProfileChanged += OnLocalProfileChanged;
-            }
-
-            RefreshAllSlots();
         }
 
         // ─────────────────────────────────────────────────────────────────────

@@ -132,7 +132,6 @@ namespace CosmicShore.UI
             _connectingCts?.Dispose();
             _connectingCts = new CancellationTokenSource();
 
-            SubscribeToEvents();
             CleanupUI();
         }
 
@@ -149,10 +148,6 @@ namespace CosmicShore.UI
 
         protected virtual void SubscribeToEvents()
         {
-            // Unsub-before-sub prevents double-subscription when both
-            // OnEnable and Start call this method.
-            UnsubscribeFromEvents();
-
             if (gameData != null)
             {
                 gameData.OnClientReady.OnRaised += OnClientReady;

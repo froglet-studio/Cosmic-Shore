@@ -54,20 +54,16 @@ namespace CosmicShore.UI
         const string CrystalRequirementTemplate = "<color=#{2}>{0}</color> / {1}";
         const string XPRequirementTemplate = "<color=#{2}>{0}</color> / {1} XP";
 
-        void OnEnable() => SubscribeToEvents();
-        void Start() => SubscribeToEvents();
+        void Start()
+        {
+            if (_captainManager != null)
+                _captainManager.OnLoadCaptainData += NewCaptainData;
+        }
 
         void OnDisable()
         {
             if (_captainManager != null)
                 _captainManager.OnLoadCaptainData -= NewCaptainData;
-        }
-
-        void SubscribeToEvents()
-        {
-            if (_captainManager == null) return;
-            _captainManager.OnLoadCaptainData -= NewCaptainData;
-            _captainManager.OnLoadCaptainData += NewCaptainData;
         }
 
         void NewCaptainData()

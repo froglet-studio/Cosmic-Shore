@@ -37,8 +37,13 @@ namespace CosmicShore.UI
         private readonly List<GameObject> _spawnedLevels = new();
         private Tween _sliderTween;
 
-        void OnEnable() => SubscribeAndLoad();
-        void Start() => SubscribeAndLoad();
+        void Start()
+        {
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged += OnProfileChanged;
+
+            LoadTrack();
+        }
 
         void OnDisable()
         {
@@ -46,17 +51,6 @@ namespace CosmicShore.UI
                 playerDataService.OnProfileChanged -= OnProfileChanged;
 
             KillTween();
-        }
-
-        void SubscribeAndLoad()
-        {
-            if (playerDataService != null)
-            {
-                playerDataService.OnProfileChanged -= OnProfileChanged;
-                playerDataService.OnProfileChanged += OnProfileChanged;
-            }
-
-            LoadTrack();
         }
 
         void OnProfileChanged(PlayerProfileData data)
