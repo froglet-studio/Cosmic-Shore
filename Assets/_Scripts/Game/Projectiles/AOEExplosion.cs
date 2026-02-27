@@ -87,6 +87,12 @@ namespace CosmicShore.Game.Projectiles
             Material = initStruct.OverrideMaterial;
 
             explosionCts = new CancellationTokenSource();
+
+            // Start invisible — ExplodeAsync enables the renderer once the animation
+            // begins. Without this, the mesh is visible at prefab default scale for
+            // the entire ExplosionDelay, appearing as a full-size opaque sphere.
+            transform.localScale = Vector3.zero;
+            if (meshRenderer) meshRenderer.enabled = false;
         }
 
         public void Detonate()
@@ -136,7 +142,11 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 var cachedTransform = transform;
-                if (meshRenderer) meshRenderer.material = Material;
+                if (meshRenderer)
+                {
+                    meshRenderer.material = Material;
+                    meshRenderer.enabled = true;
+                }
 
                 float time = 0f;
 
