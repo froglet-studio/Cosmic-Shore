@@ -1,5 +1,5 @@
 using CosmicShore;
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.App.Systems.VesselUnlock;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -32,11 +32,11 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public GameplayParameter gameplayParameter3 = new GameplayParameter("Solo", "Social", .5f);
 
     /// <summary>
-    /// A flag indicating whether the Vessel Class is locked. Vessel Class is locked if it is not owned by the player (in the player's inventory).
+    /// A flag indicating whether the Vessel Class is locked. Vessel Class is locked if it is not unlocked by the player.
     /// </summary>
     public bool IsLocked
     {
-        get => !CaptainManager.Instance.UnlockedShips.Contains(this);
+        get => !VesselUnlockSystem.IsUnlocked(this);
     }
 }
 

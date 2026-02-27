@@ -172,6 +172,14 @@ namespace CosmicShore.App.UI.Views
 
         void HandleSlotClicked(VesselClassType vesselType, SO_Ship ship)
         {
+            // Prevent selecting locked vessels
+            if (ship != null && ship.IsLocked)
+            {
+                if (verboseLogging)
+                    CSDebug.Log($"[ShipSelectionView] Blocked selection of locked vessel {vesselType}");
+                return;
+            }
+
             if (gameData != null && gameData.selectedVesselClass != null)
             {
                 gameData.selectedVesselClass.Value = vesselType;

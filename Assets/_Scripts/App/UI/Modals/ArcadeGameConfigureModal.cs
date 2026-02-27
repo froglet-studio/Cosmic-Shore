@@ -3,6 +3,7 @@ using System.Linq;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
+using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Soap;
@@ -210,10 +211,10 @@ namespace CosmicShore.App.UI.Modals
                 .Select(c => c.Ship)
                 .ToList();
 
-            if (respectInventoryForShipSelection && CaptainManager.Instance)
+            if (respectInventoryForShipSelection)
             {
-                var unlocked = CaptainManager.Instance.UnlockedShips;
-                ships = ships.Where(s => unlocked.Contains(s)).ToList();
+                VesselUnlockSystem.Initialize();
+                ships = ships.Where(s => VesselUnlockSystem.IsUnlocked(s)).ToList();
             }
 
             _availableShips.AddRange(ships);
