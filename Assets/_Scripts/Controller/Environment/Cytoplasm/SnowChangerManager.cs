@@ -22,15 +22,21 @@ namespace CosmicShore.Gameplay
         {
             if (!cellData.TryGetLocalCrystal(out _))
                 return;
-            
+
+            if (!TrySpawnSnows())
+                return;
+
             cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
-            SpawnSnows();
         }
-        
-        private void SpawnSnows()
+
+        private bool TrySpawnSnows()
         {
+            if (cellData.Config == null || cellData.Config.CytoplasmPrefab == null || cellData.CellTransform == null)
+                return false;
+
             var snowChanger = Instantiate(cellData.Config.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
             snowChanger.Initialize();
+            return true;
         }
     }
 }
