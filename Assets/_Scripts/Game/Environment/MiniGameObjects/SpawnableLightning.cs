@@ -20,22 +20,25 @@ public class SpawnableLightning : SpawnableShapeBase
     protected override SpawnPoint[] GeneratePoints()
     {
         int blockCount = GetScaledBlockCount();
+        float sizeMul = GetIntensitySizeMultiplier();
 
         // Generate zigzag vertices
         var vertices = new Vector3[zigzagSegments + 1];
-        float segmentHeight = height * 2f / zigzagSegments;
+        float scaledHeight = height * sizeMul;
+        float scaledWidth = width * sizeMul;
+        float segmentHeight = scaledHeight * 2f / zigzagSegments;
 
         for (int i = 0; i <= zigzagSegments; i++)
         {
-            float y = height - i * segmentHeight;
+            float y = scaledHeight - i * segmentHeight;
             float x;
             if (i == 0 || i == zigzagSegments)
                 x = 0f; // Top and bottom centered
             else
-                x = (i % 2 == 0) ? -width * 0.5f : width * 0.5f;
+                x = (i % 2 == 0) ? -scaledWidth * 0.5f : scaledWidth * 0.5f;
 
             // Add slight randomness for organic feel
-            float jitter = (float)rng.NextDouble() * width * 0.15f - width * 0.075f;
+            float jitter = (float)rng.NextDouble() * scaledWidth * 0.15f - scaledWidth * 0.075f;
             vertices[i] = new Vector3(x + jitter, y, 0f);
         }
 

@@ -4,26 +4,31 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 /// <summary>
-/// Spawns a circle shape made of prism trails.
-/// Block count scales with intensity via GetScaledBlockCount().
+/// Spawns an infinity/figure-eight (lemniscate of Bernoulli) shape made of prism trails.
+/// Block count and size scale with intensity.
 /// </summary>
-public class SpawnableCircle : SpawnableShapeBase
+public class SpawnableInfinity : SpawnableShapeBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
 
-    [Header("Circle Parameters")]
-    [SerializeField] float radius = 16f;
+    [Header("Infinity Parameters")]
+    [SerializeField] float size = 18f;
 
     protected override SpawnPoint[] GeneratePoints()
     {
         int blockCount = GetScaledBlockCount();
-        float scaledRadius = radius * GetIntensitySizeMultiplier();
+        float sizeMul = GetIntensitySizeMultiplier();
+        float scaledSize = size * sizeMul;
         var points = new SpawnPoint[blockCount];
 
         for (int i = 0; i < blockCount; i++)
         {
             float t = (float)i / blockCount * Mathf.PI * 2f;
-            var position = new Vector3(Mathf.Cos(t) * scaledRadius, Mathf.Sin(t) * scaledRadius, 0f);
+            // Lemniscate parametric form
+            float denom = 1f + Mathf.Sin(t) * Mathf.Sin(t);
+            float x = scaledSize * Mathf.Cos(t) / denom;
+            float y = scaledSize * Mathf.Sin(t) * Mathf.Cos(t) / denom;
+            var position = new Vector3(x, y, 0f);
             var lookPosition = i == 0 ? position : points[i - 1].Position;
             var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
             points[i] = new SpawnPoint(position, rotation, Vector3.one);
@@ -38,7 +43,6 @@ public class SpawnableCircle : SpawnableShapeBase
         if (pts == null || pts.Length == 0)
             return System.Array.Empty<SpawnTrailData>();
 
-        // Circle is a closed loop
         return new[] { new SpawnTrailData(pts, true, domain) };
     }
 
@@ -50,6 +54,6 @@ public class SpawnableCircle : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(radius, baseBlockCount, intensityLevel, seed);
+        return System.HashCode.Combine(size, baseBlockCount, intensityLevel, seed);
     }
 }

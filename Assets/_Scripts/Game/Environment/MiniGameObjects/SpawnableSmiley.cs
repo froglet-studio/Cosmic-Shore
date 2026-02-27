@@ -17,14 +17,16 @@ public class SpawnableSmiley : SpawnableShapeBase
     protected override SpawnTrailData[] GenerateTrailData()
     {
         int totalBlocks = GetScaledBlockCount();
+        float sizeMul = GetIntensitySizeMultiplier();
+        float scaledFace = faceRadius * sizeMul;
 
         // Distribute blocks: ~20% per eye, ~60% for mouth
         int eyeBlocks = Mathf.Max(6, totalBlocks / 5);
         int mouthBlocks = totalBlocks - eyeBlocks * 2;
 
-        var leftEye = GenerateEyePoints(-faceRadius * 0.3f, faceRadius * 0.25f, faceRadius * 0.12f, eyeBlocks);
-        var rightEye = GenerateEyePoints(faceRadius * 0.3f, faceRadius * 0.25f, faceRadius * 0.12f, eyeBlocks);
-        var mouth = GenerateMouthPoints(mouthBlocks);
+        var leftEye = GenerateEyePoints(-scaledFace * 0.3f, scaledFace * 0.25f, scaledFace * 0.12f, eyeBlocks);
+        var rightEye = GenerateEyePoints(scaledFace * 0.3f, scaledFace * 0.25f, scaledFace * 0.12f, eyeBlocks);
+        var mouth = GenerateMouthPoints(mouthBlocks, scaledFace);
 
         return new[]
         {
@@ -51,11 +53,11 @@ public class SpawnableSmiley : SpawnableShapeBase
         return points;
     }
 
-    SpawnPoint[] GenerateMouthPoints(int blockCount)
+    SpawnPoint[] GenerateMouthPoints(int blockCount, float scaledFace)
     {
         var points = new SpawnPoint[blockCount];
-        float mouthRadius = faceRadius * 0.45f;
-        float mouthY = -faceRadius * 0.1f;
+        float mouthRadius = scaledFace * 0.45f;
+        float mouthY = -scaledFace * 0.1f;
 
         for (int i = 0; i < blockCount; i++)
         {

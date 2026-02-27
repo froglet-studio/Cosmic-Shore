@@ -4,42 +4,40 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 /// <summary>
-/// Spawns a circle shape made of prism trails.
-/// Block count scales with intensity via GetScaledBlockCount().
+/// Spawns a sine wave shape made of prism trails.
+/// Smooth oscillating wave with configurable amplitude, wavelength, and cycle count. Scales with intensity.
 /// </summary>
-public class SpawnableCircle : SpawnableShapeBase
+public class SpawnableWave : SpawnableShapeBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
 
-    [Header("Circle Parameters")]
-    [SerializeField] float radius = 16f;
+    [Header("Wave Parameters")]
+    [SerializeField] float amplitude = 12f;
+    [SerializeField] float wavelength = 30f;
+    [SerializeField] int cycles = 2;
 
     protected override SpawnPoint[] GeneratePoints()
     {
         int blockCount = GetScaledBlockCount();
-        float scaledRadius = radius * GetIntensitySizeMultiplier();
+        float sizeMul = GetIntensitySizeMultiplier();
+        float scaledAmplitude = amplitude * sizeMul;
+        float scaledWavelength = wavelength * sizeMul;
         var points = new SpawnPoint[blockCount];
+
+        float totalWidth = scaledWavelength * cycles;
 
         for (int i = 0; i < blockCount; i++)
         {
-            float t = (float)i / blockCount * Mathf.PI * 2f;
-            var position = new Vector3(Mathf.Cos(t) * scaledRadius, Mathf.Sin(t) * scaledRadius, 0f);
+            float t = (float)i / blockCount;
+            float x = t * totalWidth - totalWidth * 0.5f;
+            float y = Mathf.Sin(t * cycles * Mathf.PI * 2f) * scaledAmplitude;
+            var position = new Vector3(x, y, 0f);
             var lookPosition = i == 0 ? position : points[i - 1].Position;
             var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
             points[i] = new SpawnPoint(position, rotation, Vector3.one);
         }
 
         return points;
-    }
-
-    protected override SpawnTrailData[] GenerateTrailData()
-    {
-        var pts = GeneratePoints();
-        if (pts == null || pts.Length == 0)
-            return System.Array.Empty<SpawnTrailData>();
-
-        // Circle is a closed loop
-        return new[] { new SpawnTrailData(pts, true, domain) };
     }
 
     protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
@@ -50,6 +48,6 @@ public class SpawnableCircle : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(radius, baseBlockCount, intensityLevel, seed);
+        return System.HashCode.Combine(amplitude, wavelength, cycles, baseBlockCount, intensityLevel, seed);
     }
 }

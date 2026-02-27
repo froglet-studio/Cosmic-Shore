@@ -44,9 +44,10 @@ public class SpawnableStar : SpawnableShapeBase
 
     Vector3 GetStarVertex(int index)
     {
+        float sizeMul = GetIntensitySizeMultiplier();
         int totalVertices = points * 2;
         float angle = (index / (float)totalVertices) * Mathf.PI * 2f - Mathf.PI / 2f;
-        float r = (index % 2 == 0) ? outerRadius : innerRadius;
+        float r = (index % 2 == 0) ? outerRadius * sizeMul : innerRadius * sizeMul;
         return new Vector3(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r, 0f);
     }
 

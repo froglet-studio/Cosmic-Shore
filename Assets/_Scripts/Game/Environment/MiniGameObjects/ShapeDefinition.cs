@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.ShapeDrawing
 {
-    public enum ShapePreset { None, Circle, Star, Heart, Lightning, Smiley }
+    public enum ShapePreset { None, Circle, Star, Heart, Lightning, Smiley, Spiral, Diamond, Infinity, Arrow, Wave }
 
     /// <summary>
     /// Defines a drawable shape for Shape Drawing Mode.
@@ -139,6 +139,21 @@ namespace CosmicShore.Game.ShapeDrawing
                 case ShapePreset.Smiley:
                     GenerateSmiley(radius);
                     break;
+                case ShapePreset.Spiral:
+                    GenerateSpiral(radius);
+                    break;
+                case ShapePreset.Diamond:
+                    GenerateDiamond(radius);
+                    break;
+                case ShapePreset.Infinity:
+                    GenerateInfinity(radius);
+                    break;
+                case ShapePreset.Arrow:
+                    GenerateArrow(radius);
+                    break;
+                case ShapePreset.Wave:
+                    GenerateWave(radius);
+                    break;
             }
         }
 
@@ -231,6 +246,93 @@ namespace CosmicShore.Game.ShapeDrawing
                 float angle = Mathf.PI + (i / 8f) * Mathf.PI;
                 waypoints.Add(new Vector3(Mathf.Cos(angle) * mouthR,
                     -r * 0.1f + Mathf.Sin(angle) * mouthR * 0.5f, 0f));
+                trailEnabledPerSegment.Add(true);
+            }
+        }
+
+        void GenerateSpiral(float r)
+        {
+            int points = 24;
+            float revolutions = 3f;
+            for (int i = 0; i <= points; i++)
+            {
+                float t = (float)i / points;
+                float angle = t * revolutions * Mathf.PI * 2f;
+                float radius = t * r;
+                waypoints.Add(new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f));
+                trailEnabledPerSegment.Add(true);
+            }
+        }
+
+        void GenerateDiamond(float r)
+        {
+            float w = r * 0.6f;
+            var verts = new Vector3[]
+            {
+                new(0f, r, 0f),
+                new(w, 0f, 0f),
+                new(0f, -r, 0f),
+                new(-w, 0f, 0f),
+                new(0f, r, 0f),
+            };
+            foreach (var v in verts)
+            {
+                waypoints.Add(v);
+                trailEnabledPerSegment.Add(true);
+            }
+        }
+
+        void GenerateInfinity(float r)
+        {
+            int points = 24;
+            for (int i = 0; i <= points; i++)
+            {
+                float t = (float)i / points * Mathf.PI * 2f;
+                float denom = 1f + Mathf.Sin(t) * Mathf.Sin(t);
+                float x = r * Mathf.Cos(t) / denom;
+                float y = r * Mathf.Sin(t) * Mathf.Cos(t) / denom;
+                waypoints.Add(new Vector3(x, y, 0f));
+                trailEnabledPerSegment.Add(true);
+            }
+        }
+
+        void GenerateArrow(float r)
+        {
+            float hw = r * 0.8f;
+            float hh = r * 0.6f;
+            float sl = r * 1.2f;
+            float sw = r * 0.2f;
+            float shaftTop = -hh * 0.1f;
+
+            var verts = new Vector3[]
+            {
+                new(0f, hh, 0f),
+                new(hw * 0.5f, shaftTop, 0f),
+                new(sw * 0.5f, shaftTop, 0f),
+                new(sw * 0.5f, -sl, 0f),
+                new(-sw * 0.5f, -sl, 0f),
+                new(-sw * 0.5f, shaftTop, 0f),
+                new(-hw * 0.5f, shaftTop, 0f),
+                new(0f, hh, 0f),
+            };
+            foreach (var v in verts)
+            {
+                waypoints.Add(v);
+                trailEnabledPerSegment.Add(true);
+            }
+        }
+
+        void GenerateWave(float r)
+        {
+            int points = 24;
+            int cycles = 2;
+            float totalWidth = r * 2f;
+            for (int i = 0; i <= points; i++)
+            {
+                float t = (float)i / points;
+                float x = t * totalWidth - totalWidth * 0.5f;
+                float y = Mathf.Sin(t * cycles * Mathf.PI * 2f) * r * 0.5f;
+                waypoints.Add(new Vector3(x, y, 0f));
                 trailEnabledPerSegment.Add(true);
             }
         }

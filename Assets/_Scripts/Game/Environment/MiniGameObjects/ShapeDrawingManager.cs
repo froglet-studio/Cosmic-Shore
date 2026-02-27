@@ -46,9 +46,9 @@ namespace CosmicShore.Game.ShapeDrawing
         [Tooltip("How often (in seconds) to sample the player position for accuracy scoring.")]
         [SerializeField] float positionSampleInterval = 0.15f;
         [Tooltip("Maximum distance (units) from ideal path that still counts as 100% accurate for that sample.")]
-        [SerializeField] float perfectDistanceThreshold = 15f;
+        [SerializeField] float perfectDistanceThreshold = 5f;
         [Tooltip("Distance at which accuracy drops to 0% for that sample.")]
-        [SerializeField] float zeroAccuracyDistance = 80f;
+        [SerializeField] float zeroAccuracyDistance = 30f;
 
         [Header("Preview Cinematic")]
         [Tooltip("Seconds the camera holds on the top-down shape view.")]
@@ -95,7 +95,7 @@ namespace CosmicShore.Game.ShapeDrawing
 
         // Scoring state
         float _shapeStartTime;
-        readonly List<Vector3> _playerPathSamples = new();
+        readonly List<(Vector3 position, int segmentIndex)> _playerPathSamples = new();
         float _nextSampleTime;
         bool _trackingPath;
 
@@ -606,7 +606,7 @@ namespace CosmicShore.Game.ShapeDrawing
             if (Time.time < _nextSampleTime) return;
 
             _nextSampleTime = Time.time + positionSampleInterval;
-            _playerPathSamples.Add(_vesselStatus.Vessel.Transform.position);
+            _playerPathSamples.Add((_vesselStatus.Vessel.Transform.position, _currentWaypointIndex));
         }
 
         ShapeScoreData CalculateScore()
@@ -627,21 +627,28 @@ namespace CosmicShore.Game.ShapeDrawing
             if (_playerPathSamples.Count == 0 || _activeShape.waypoints.Count < 2) return 0f;
 
             var worldWaypoints = GetAllWorldWaypoints();
+            int waypointCount = worldWaypoints.Length;
 
             float totalAccuracy = 0f;
             int validSamples = 0;
 
-            foreach (var sample in _playerPathSamples)
+            foreach (var (samplePos, segIdx) in _playerPathSamples)
             {
                 float minDist = float.MaxValue;
 
-                for (int i = 0; i < worldWaypoints.Length - 1; i++)
+                // Only check the segment the player was on and its immediate neighbors.
+                // segIdx is the NEXT waypoint the player was heading toward.
+                // The relevant segment is [segIdx-1 → segIdx], plus neighbors for tolerance.
+                int segFrom = Mathf.Max(0, segIdx - 2);
+                int segTo = Mathf.Min(waypointCount - 2, segIdx);
+
+                for (int i = segFrom; i <= segTo; i++)
                 {
                     if (!_activeShape.IsTrailEnabledForSegment(i + 1) &&
                         !_activeShape.IsTrailEnabledForSegment(i))
                         continue;
 
-                    float dist = DistanceToSegment(sample, worldWaypoints[i], worldWaypoints[i + 1]);
+                    float dist = DistanceToSegment(samplePos, worldWaypoints[i], worldWaypoints[i + 1]);
                     if (dist < minDist) minDist = dist;
                 }
 
@@ -736,17 +743,55 @@ namespace CosmicShore.Game.ShapeDrawing
         // ── Debug Screenshot ─────────────────────────────────────────────
 
         /// <summary>
-        /// Captures a screenshot and saves it to the persistent data path.
-        /// Wire to a UI button or press screenshotKey (default F12).
+        /// Captures a screenshot excluding UI layers.
+        /// Temporarily disables the UI layer on the active camera, renders to a RenderTexture,
+        /// saves the result as PNG, then restores the camera's original culling mask.
         /// </summary>
         public void TakeDebugScreenshot()
         {
+            StartCoroutine(CaptureShapeScreenshot());
+        }
+
+        IEnumerator CaptureShapeScreenshot()
+        {
+            // Wait for end of frame so current rendering is done
+            yield return new WaitForEndOfFrame();
+
+            var cam = Camera.main;
+            if (!cam) yield break;
+
+            // Save original culling mask and disable UI layer
+            int originalCullingMask = cam.cullingMask;
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (uiLayer >= 0)
+                cam.cullingMask &= ~(1 << uiLayer);
+
+            // Create temporary render texture matching screen resolution
+            var rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24);
+            cam.targetTexture = rt;
+            cam.Render();
+            cam.targetTexture = null;
+
+            // Restore camera
+            cam.cullingMask = originalCullingMask;
+
+            // Read pixels from render texture
+            RenderTexture.active = rt;
+            var screenshot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+            screenshot.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+            screenshot.Apply();
+            RenderTexture.active = null;
+            RenderTexture.ReleaseTemporary(rt);
+
+            // Save to disk
             string folder = Path.Combine(Application.persistentDataPath, "Screenshots");
             Directory.CreateDirectory(folder);
             string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string filePath = Path.Combine(folder, $"Shape_{timestamp}.png");
-            ScreenCapture.CaptureScreenshot(filePath);
-            Debug.Log($"[ShapeDrawing] Screenshot saved: {filePath}");
+            File.WriteAllBytes(filePath, screenshot.EncodeToPNG());
+            Object.Destroy(screenshot);
+
+            Debug.Log($"[ShapeDrawing] Screenshot saved (UI excluded): {filePath}");
         }
     }
 }

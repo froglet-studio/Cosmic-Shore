@@ -35,6 +35,16 @@ public abstract class SpawnableShapeBase : SpawnableBase
         return baseBlockCount * Mathf.Max(1, intensityLevel);
     }
 
+    /// <summary>
+    /// Returns a size multiplier that grows with intensity so prisms don't overlap.
+    /// Uses square root scaling: intensity 1 = 1x, 2 = ~1.41x, 3 = ~1.73x, 4 = 2x.
+    /// This keeps spacing proportional as block count increases.
+    /// </summary>
+    protected float GetIntensitySizeMultiplier()
+    {
+        return Mathf.Sqrt(Mathf.Max(1, intensityLevel));
+    }
+
     public override GameObject Spawn(int intensity = 1)
     {
         var container = base.Spawn(intensity);

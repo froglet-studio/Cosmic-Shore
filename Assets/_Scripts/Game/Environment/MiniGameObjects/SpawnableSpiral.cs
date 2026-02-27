@@ -4,42 +4,36 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 /// <summary>
-/// Spawns a circle shape made of prism trails.
-/// Block count scales with intensity via GetScaledBlockCount().
+/// Spawns a spiral shape made of prism trails.
+/// Starts from center and spirals outward. Block count and size scale with intensity.
 /// </summary>
-public class SpawnableCircle : SpawnableShapeBase
+public class SpawnableSpiral : SpawnableShapeBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
 
-    [Header("Circle Parameters")]
-    [SerializeField] float radius = 16f;
+    [Header("Spiral Parameters")]
+    [SerializeField] float maxRadius = 20f;
+    [SerializeField] float revolutions = 3f;
 
     protected override SpawnPoint[] GeneratePoints()
     {
         int blockCount = GetScaledBlockCount();
-        float scaledRadius = radius * GetIntensitySizeMultiplier();
+        float sizeMul = GetIntensitySizeMultiplier();
+        float scaledRadius = maxRadius * sizeMul;
         var points = new SpawnPoint[blockCount];
 
         for (int i = 0; i < blockCount; i++)
         {
-            float t = (float)i / blockCount * Mathf.PI * 2f;
-            var position = new Vector3(Mathf.Cos(t) * scaledRadius, Mathf.Sin(t) * scaledRadius, 0f);
+            float t = (float)i / blockCount;
+            float angle = t * revolutions * Mathf.PI * 2f;
+            float r = t * scaledRadius;
+            var position = new Vector3(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r, 0f);
             var lookPosition = i == 0 ? position : points[i - 1].Position;
             var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
             points[i] = new SpawnPoint(position, rotation, Vector3.one);
         }
 
         return points;
-    }
-
-    protected override SpawnTrailData[] GenerateTrailData()
-    {
-        var pts = GeneratePoints();
-        if (pts == null || pts.Length == 0)
-            return System.Array.Empty<SpawnTrailData>();
-
-        // Circle is a closed loop
-        return new[] { new SpawnTrailData(pts, true, domain) };
     }
 
     protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
@@ -50,6 +44,6 @@ public class SpawnableCircle : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(radius, baseBlockCount, intensityLevel, seed);
+        return System.HashCode.Combine(maxRadius, revolutions, baseBlockCount, intensityLevel, seed);
     }
 }

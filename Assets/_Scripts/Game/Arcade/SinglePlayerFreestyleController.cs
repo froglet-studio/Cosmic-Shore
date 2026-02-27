@@ -27,6 +27,20 @@ namespace CosmicShore.Game.Arcade
         bool _isShapePrep;        // true while waiting for Ready after shape cinematic
         bool _isInShapeMode;      // true while shape drawing is active
 
+        protected override void Start()
+        {
+            base.Start();
+
+            // Initialize environment immediately so shapes/segments are visible
+            // before the player presses Ready. BeginFreestyle() will re-initialize later.
+            if (segmentSpawner)
+            {
+                segmentSpawner.enabled = true;
+                segmentSpawner.Initialize();
+            }
+            if (cellScript) cellScript.enabled = true;
+        }
+
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -109,7 +123,11 @@ namespace CosmicShore.Game.Arcade
                 segmentSpawner.NukeTheTrails();
                 segmentSpawner.enabled = false;
             }
-            if (cellScript) cellScript.enabled = false;
+            if (cellScript)
+            {
+                cellScript.SetLifeFormsActive(false);
+                cellScript.enabled = false;
+            }
             if (localCrystalManager)
             {
                 localCrystalManager.ManualTurnEnded();
@@ -167,7 +185,11 @@ namespace CosmicShore.Game.Arcade
 
             // Enable systems BEFORE firing the turn event so their OnEnable
             // subscriptions are active when OnMiniGameTurnStarted fires.
-            if (cellScript) cellScript.enabled = true;
+            if (cellScript)
+            {
+                cellScript.enabled = true;
+                cellScript.SetLifeFormsActive(true);
+            }
             if (localCrystalManager) localCrystalManager.enabled = true;
             if (segmentSpawner)
             {
