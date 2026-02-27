@@ -2,6 +2,7 @@ using CosmicShore.Utility;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
+using Reflex.Injectors;
 using System;
 
 namespace CosmicShore.Gameplay
@@ -62,6 +63,9 @@ namespace CosmicShore.Gameplay
             Quaternion rotation = Quaternion.LookRotation(dirToTarget, Vector3.up);
 
             var aoeGo = Instantiate(dangerHemispherePrefab, victimPos, rotation);
+            var container = vesselImpactor.DIContainer;
+            if (container != null)
+                GameObjectInjector.InjectRecursive(aoeGo, container);
             var aoe   = aoeGo.GetComponent<AOEDangerHemisphereBlocks>();
 
             var init = new AOEExplosion.InitializeStruct

@@ -3,12 +3,18 @@ using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using Reflex.Attributes;
+using Reflex.Core;
+
 namespace CosmicShore.Gameplay
 {
     public abstract class ImpactorBase : MonoBehaviour, IImpactor
     {
+        [Inject] Container _diContainer;
+        public Container DIContainer => _diContainer;
+
         protected virtual bool isInitialized => true;
-        
+
         public Transform Transform => transform;
         public abstract Domains OwnDomain { get; }
         
