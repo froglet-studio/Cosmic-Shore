@@ -28,6 +28,7 @@ namespace CosmicShore.Gameplay
         private bool _leaving;
 
         private NetworkManager networkManager;
+        private bool _hostStartInProgress;
 
         private void Start()
         {
@@ -90,53 +91,65 @@ namespace CosmicShore.Gameplay
         /// </summary>
         async UniTask EnsureHostStartedAsync()
         {
-            // Instantiate NetworkManager prefab if none exists yet.
-            if (NetworkManager.Singleton == null)
+            // Guard against concurrent calls (e.g. OnSignedIn event + IsSignedIn
+            // check both firing before the first call completes its async yield).
+            if (_hostStartInProgress) return;
+            _hostStartInProgress = true;
+
+            try
             {
-                if (_networkManagerPrefab != null)
+                // Instantiate NetworkManager prefab if none exists yet.
+                if (NetworkManager.Singleton == null)
                 {
-                    Instantiate(_networkManagerPrefab);
-                    // Wait one frame for NetworkManager.Awake() to register as Singleton.
-                    await UniTask.Yield();
+                    if (_networkManagerPrefab != null)
+                    {
+                        Instantiate(_networkManagerPrefab);
+                        // Wait one frame for NetworkManager.Awake() to register as Singleton.
+                        await UniTask.Yield();
+                    }
+                    else
+                    {
+                        CSDebug.LogError("[MultiplayerSetup] Cannot start host — no NetworkManager and no prefab assigned.");
+                        return;
+                    }
                 }
-                else
+
+                var nm = NetworkManager.Singleton;
+                if (nm == null)
                 {
-                    CSDebug.LogError("[MultiplayerSetup] Cannot start host — no NetworkManager and no prefab assigned.");
+                    CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null after instantiation.");
                     return;
                 }
-            }
 
-            var nm = NetworkManager.Singleton;
-            if (nm == null)
-            {
-                CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null after instantiation.");
-                return;
-            }
-
-            // Re-cache and wire callbacks if the NetworkManager instance changed.
-            if (networkManager != nm)
-            {
-                if (networkManager != null)
+                // Re-cache and wire callbacks if the NetworkManager instance changed.
+                if (networkManager != nm)
                 {
-                    networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                    networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
-                    networkManager.OnTransportFailure         -= OnTransportFailure;
+                    if (networkManager != null)
+                    {
+                        networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                        networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                        networkManager.OnTransportFailure         -= OnTransportFailure;
+                    }
+
+                    networkManager = nm;
+                    nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+                    nm.OnClientDisconnectCallback += OnClientDisconnect;
+                    nm.OnTransportFailure         += OnTransportFailure;
                 }
 
-                networkManager = nm;
-                nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-                nm.OnClientDisconnectCallback += OnClientDisconnect;
-                nm.OnTransportFailure         += OnTransportFailure;
-            }
+                if (nm.IsListening)
+                {
+                    CSDebug.Log("[MultiplayerSetup] Host already running.");
+                    return;
+                }
 
-            if (nm.IsListening)
+                CSDebug.Log("[MultiplayerSetup] Starting as Host.");
+                nm.StartHost();
+            }
+            finally
             {
-                CSDebug.Log("[MultiplayerSetup] Host already running.");
-                return;
+                _hostStartInProgress = false;
             }
-
-            CSDebug.Log("[MultiplayerSetup] Starting as Host.");
-            nm.StartHost();
         }
 
         private async UniTaskVoid ExecuteMultiplayerSetup()

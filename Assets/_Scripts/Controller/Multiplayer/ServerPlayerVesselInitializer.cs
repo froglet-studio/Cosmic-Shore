@@ -425,7 +425,8 @@ namespace CosmicShore.Gameplay
                 }
                 catch (OperationCanceledException)
                 {
-                    CSDebug.LogError($"[ServerPlayerVesselInitializer] Player not found for client {clientId} after timeout");
+                    CSDebug.LogError($"[ServerPlayerVesselInitializer] Player not found for client {clientId} after timeout. " +
+                                     $"Players registered: {gameData.Players.Count}, NM listening: {NetworkManager.Singleton?.IsListening}");
                     return;
                 }
                 finally
