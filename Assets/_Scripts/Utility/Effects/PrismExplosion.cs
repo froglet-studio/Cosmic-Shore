@@ -55,6 +55,11 @@ namespace CosmicShore.Game
                 _renderer = GetComponent<MeshRenderer>();
 
             _mpb = new MaterialPropertyBlock();
+
+            // Start with renderer disabled — only PrismEffectsManager should enable it
+            // during active animation. This prevents pool-retrieved objects from flashing.
+            if (_renderer != null)
+                _renderer.enabled = false;
         }
 
         private void OnDisable()
@@ -67,8 +72,9 @@ namespace CosmicShore.Game
 
             if (_renderer != null)
             {
-                // Re-enable renderer so it's ready for next pool retrieval
-                _renderer.enabled = true;
+                // Keep renderer disabled so pool-reactivated objects are invisible
+                // until PrismEffectsManager explicitly enables during animation.
+                _renderer.enabled = false;
                 if (_mpb != null)
                 {
                     _mpb.Clear();
@@ -85,7 +91,7 @@ namespace CosmicShore.Game
         {
             if (_renderer == null || _mpb == null)
             {
-                CSDebug.LogError("[PrismExplosion] Missing required components, cannot trigger explosion.");
+                Debug.LogError("[PrismExplosionDbg] Missing required components, cannot trigger explosion.");
                 return;
             }
 
@@ -115,10 +121,8 @@ namespace CosmicShore.Game
             _mpb.SetFloat(OpacityID, 1f);
             _renderer.SetPropertyBlock(_mpb);
 
-            // Hide renderer until PrismEffectsManager applies the first animated frame.
-            // Without this, explosions spawned after PrismEffectsManager.Update() (e.g. from
-            // AOE batch processing via UniTask) render for one frame at _ExplosionAmount=0 /
-            // _Opacity=1 — a full-size, fully opaque, undistorted sphere flash.
+            // Keep renderer disabled until PrismEffectsManager applies the first animated
+            // frame. The manager will set renderer.enabled = true once real values are applied.
             _renderer.enabled = false;
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
@@ -148,8 +152,10 @@ namespace CosmicShore.Game
 
             if (_renderer != null)
             {
-                // Re-enable renderer so it's ready for next pool retrieval
-                _renderer.enabled = true;
+                // Disable renderer — only PrismEffectsManager should enable it during
+                // active animation. Leaving it enabled here caused undistorted sphere
+                // flashes when OnReturnToPool was null or pool deactivation was delayed.
+                _renderer.enabled = false;
                 if (_mpb != null)
                 {
                     _mpb.Clear();
@@ -165,7 +171,16 @@ namespace CosmicShore.Game
         internal void OnEffectComplete()
         {
             CompleteEffect();
-            OnReturnToPool?.Invoke(this);
+
+            if (OnReturnToPool == null)
+            {
+                Debug.LogWarning($"[PrismExplosionDbg] OnReturnToPool is null on '{name}' (id={GetInstanceID()}). " +
+                                 "Object will not be returned to pool — deactivating as fallback.");
+                gameObject.SetActive(false);
+                return;
+            }
+
+            OnReturnToPool.Invoke(this);
         }
     }
 }

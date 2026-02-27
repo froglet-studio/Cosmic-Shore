@@ -116,6 +116,26 @@ namespace CosmicShore.Game
             float dt = Time.deltaTime;
             if (activeExplosions.Count > 0) ProcessExplosions(dt);
             if (activeImplosions.Count > 0) ProcessImplosions(dt);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // Safety audit: detect explosions with enabled renderers that aren't actively managed.
+            // This catches "zombie" objects that escaped the pool lifecycle.
+            if (Time.frameCount % 60 == 0) // Check once per ~second at 60fps
+            {
+                var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
+                foreach (var exp in allExplosions)
+                {
+                    if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
+                    {
+                        Debug.LogWarning($"[PrismExplosionDbg] ZOMBIE detected: '{exp.name}' (id={exp.GetInstanceID()}) " +
+                                         $"has renderer ENABLED but IsActive=false. frame={Time.frameCount} " +
+                                         $"go.activeSelf={exp.gameObject.activeSelf}");
+                        // Auto-fix: disable the renderer to prevent visual glitch
+                        exp.Renderer.enabled = false;
+                    }
+                }
+            }
+#endif
         }
 
         #region Explosion Processing
@@ -180,11 +200,22 @@ namespace CosmicShore.Game
                     // Enable renderer on first animated frame — TriggerExplosion disables it
                     // to prevent a one-frame flash of the unanimated mesh.
                     if (!renderer.enabled)
+                    {
                         renderer.enabled = true;
+                        Debug.Log($"[PrismExplosionDbg] Enabling renderer on '{exp.name}' (id={exp.GetInstanceID()}) " +
+                                  $"frame={Time.frameCount} amount={data.explosionAmount:F2} opacity={data.opacity:F2}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[PrismExplosionDbg] Null renderer on active explosion '{exp.name}' " +
+                                     $"(id={exp.GetInstanceID()}) frame={Time.frameCount}");
                 }
 
                 if (data.elapsed >= data.maxDuration)
                 {
+                    Debug.Log($"[PrismExplosionDbg] Completing explosion '{exp.name}' (id={exp.GetInstanceID()}) " +
+                              $"frame={Time.frameCount} elapsed={data.elapsed:F2}");
                     explosionCompletionQueue.Add(exp);
                 }
             }
