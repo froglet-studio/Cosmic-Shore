@@ -184,13 +184,15 @@ namespace CosmicShore.App.UI.Views
 
         float GetNormalizedProgress()
         {
-            if (questList == null || questList.Quests.Count == 0) return 0f;
+            int total = questList != null ? questList.Quests.Count : 0;
+            if (total == 0) return 0f;
 
+            // The first mode is always unlocked, so the baseline is 1/N.
+            // Each completed quest adds another 1/N on top of that.
             var service = GameModeProgressionService.Instance;
-            if (service == null) return 0f;
+            int completed = service != null ? service.GetCompletedQuestCount() : 0;
 
-            int completed = service.GetCompletedQuestCount();
-            return Mathf.Clamp01((float)completed / questList.Quests.Count);
+            return Mathf.Clamp01((float)(1 + completed) / total);
         }
 
         // ── Cleanup ─────────────────────────────────────────────────────────────
