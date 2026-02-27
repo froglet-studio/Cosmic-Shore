@@ -96,10 +96,10 @@ AppManager.Start()  → ConfigureGameData, StartNetworkMonitor, StartAuthenticat
 ```
 AppManager.RunBootstrapAsync()
   → Yield frame (let all Awake() complete)
-  → Initialize IBootstrapService implementations (ordered)
   → Yield frame (let all Start() settle)
-  → Splash screen fade
-  → Load "Authentication" scene via SceneTransitionManager
+  → Enforce minimum splash duration
+  → Splash screen fade (CanvasGroup)
+  → Load "Authentication" scene via SceneTransitionManager (or direct SceneManager fallback)
 ```
 
 ### Phase 4: Scene Flow
@@ -142,25 +142,24 @@ Assets/_Scripts/System/Bootstrap/
 ├── ServiceLocator.cs
 ├── SceneTransitionManager.cs
 ├── ApplicationLifecycleManager.cs
-├── IBootstrapService.cs
 ├── BOOTSTRAP_AUDIT.md              ← this file
 └── Tests/
     ├── BootstrapControllerTests.cs  (renamed class: AppManagerBootstrapTests)
     ├── ServiceLocatorTests.cs
     ├── SceneTransitionManagerTests.cs
     ├── ApplicationLifecycleManagerTests.cs
-    ├── SceneFlowIntegrationTests.cs
-    └── BootstrapConfigSOTests.cs
+    └── SceneFlowIntegrationTests.cs
 ```
 
 Related files outside the Bootstrap directory:
 
 ```
-Assets/_Scripts/System/AppManager.cs         ← now includes all bootstrap logic
+Assets/_Scripts/System/AppManager.cs         ← top-level orchestrator + DI root
+Assets/_Scripts/System/SceneLoader.cs        ← persistent scene loading (NetworkBehaviour)
+Assets/_Scripts/Utility/DataContainers/SceneNameListSO.cs  ← centralized scene names
 Assets/_Scripts/Controller/Settings/GameSetting.cs
 Assets/_Scripts/Controller/Managers/CameraManager.cs
 Assets/_Scripts/Controller/Managers/CaptainManager.cs
 Assets/_Scripts/Controller/Managers/ThemeManager.cs
 Assets/_Scripts/Utility/Singleton.cs
-Assets/_Scripts/Controller/Multiplayer/SceneLoader.cs
 ```
