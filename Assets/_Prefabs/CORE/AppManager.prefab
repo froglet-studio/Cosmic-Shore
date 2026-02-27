@@ -58,6 +58,7 @@ MonoBehaviour:
   networkMonitorDataVariable: {fileID: 11400000, guid: c656ab83067d26846b449b637e43320a,
     type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  friendsData: {fileID: 11400000, guid: e69f5c7256384d1cb59d57e12551c123, type: 2}
   gameSetting: {fileID: 0}
   audioSystem: {fileID: 0}
   playerDataService: {fileID: 0}
