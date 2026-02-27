@@ -25,36 +25,34 @@ namespace CosmicShore.Core
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
 
-        [Header("Persistent Systems")]
-        [SerializeField] GameSetting gameSetting;
-        [SerializeField] AudioSystem audioSystem;
-        [SerializeField] PlayerDataService playerDataService;
-        [SerializeField] UGSStatsManager ugsStatsManager;
-        [SerializeField] CaptainManager captainManager;
-        [SerializeField] IAPManager iapManager;
-
-        [Header("Gameplay Managers")]
-        [SerializeField] GameManager gameManager;
-        [SerializeField] ThemeManager themeManager;
-        [SerializeField] CameraManager cameraManager;
-        [SerializeField] PostProcessingManager postProcessingManager;
-        [SerializeField] StatsManager statsManager;
-
-        [Header("Additional Persistent Prefabs")]
-        [Tooltip("Prefabs that need to persist across scenes but are not registered in DI. " +
-                 "If an instance of the prefab's primary component already exists in the scene, " +
+        [Header("Singleton Persistents")]
+        [Tooltip("Prefabs spawned during bootstrap and made persistent (DontDestroyOnLoad). " +
+                 "All prefab references live here instead of in the scene for git-friendliness. " +
+                 "If an instance of a prefab's primary component already exists, " +
                  "that instance is reused instead of spawning a duplicate.")]
-        [SerializeField] GameObject[] _additionalPersistentPrefabs;
+        [SerializeField] GameObject[] _singletonPersistents;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
 
-        bool _persistentSystemsResolved;
+        // Resolved at runtime after spawning singleton persistents
+        GameSetting _gameSetting;
+        AudioSystem _audioSystem;
+        PlayerDataService _playerDataService;
+        UGSStatsManager _ugsStatsManager;
+        CaptainManager _captainManager;
+        IAPManager _iapManager;
+        GameManager _gameManager;
+        ThemeManager _themeManager;
+        CameraManager _cameraManager;
+        PostProcessingManager _postProcessingManager;
+        StatsManager _statsManager;
+
+        bool _resolved;
 
         void Awake()
         {
-            ResolvePersistentSystems();
-            EnsureAdditionalPrefabs();
+            SpawnAndResolveSingletonPersistents();
         }
 
         void Start()
@@ -74,83 +72,81 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Ensures all persistent system and gameplay manager references are available
-        /// for DI registration. If a field is not assigned in the inspector (e.g. prefab
-        /// override lost), auto-creates the service as a standalone persistent GameObject.
-        /// Skips auto-creation when called on a prefab asset (non-scene context).
+        /// Spawns all singleton persistent prefabs and discovers their components
+        /// for DI registration. Each prefab is instantiated once and marked
+        /// DontDestroyOnLoad. If an instance already exists in the scene, it is
+        /// reused and persisted instead of spawning a duplicate.
         /// </summary>
-        void ResolvePersistentSystems()
+        void SpawnAndResolveSingletonPersistents()
         {
-            if (_persistentSystemsResolved) return;
-            _persistentSystemsResolved = true;
+            if (_resolved) return;
+            _resolved = true;
 
-            gameSetting = EnsureService(gameSetting);
-            audioSystem = EnsureService(audioSystem);
-            playerDataService = EnsureService(playerDataService);
-            ugsStatsManager = EnsureService(ugsStatsManager);
-            captainManager = EnsureService(captainManager);
-            iapManager = EnsureService(iapManager);
+            // Phase 1: Spawn all prefabs (or reuse existing instances)
+            if (_singletonPersistents != null)
+            {
+                foreach (var prefab in _singletonPersistents)
+                {
+                    if (prefab == null) continue;
+                    EnsurePrefabInstance(prefab);
+                }
+            }
 
-            gameManager = EnsureService(gameManager);
-            themeManager = EnsureService(themeManager);
-            cameraManager = EnsureService(cameraManager);
-            postProcessingManager = EnsureService(postProcessingManager);
-            statsManager = EnsureService(statsManager);
+            // Phase 2: Discover spawned components for DI registration
+            _gameSetting = FindFirstObjectByType<GameSetting>();
+            _audioSystem = FindFirstObjectByType<AudioSystem>();
+            _playerDataService = FindFirstObjectByType<PlayerDataService>();
+            _ugsStatsManager = FindFirstObjectByType<UGSStatsManager>();
+            _captainManager = FindFirstObjectByType<CaptainManager>();
+            _iapManager = FindFirstObjectByType<IAPManager>();
+            _gameManager = FindFirstObjectByType<GameManager>();
+            _themeManager = FindFirstObjectByType<ThemeManager>();
+            _cameraManager = FindFirstObjectByType<CameraManager>();
+            _postProcessingManager = FindFirstObjectByType<PostProcessingManager>();
+            _statsManager = FindFirstObjectByType<StatsManager>();
         }
 
-        T EnsureService<T>(T field) where T : Component
+        void EnsurePrefabInstance(GameObject prefab)
         {
-            // Use inspector-assigned reference if available
-            if (field != null)
+            // Check if an instance of any root-level MonoBehaviour already exists.
+            foreach (var mb in prefab.GetComponents<MonoBehaviour>())
             {
-                DontDestroyOnLoad(field.gameObject);
-                return field;
+                if (mb == null) continue;
+                var existing = FindFirstObjectByType(mb.GetType()) as Component;
+                if (existing != null)
+                {
+                    DontDestroyOnLoad(existing.transform.root.gameObject);
+                    return;
+                }
             }
 
-            // Look for an existing instance (e.g. persisted from bootstrap via DontDestroyOnLoad)
-            var existing = FindFirstObjectByType<T>();
-            if (existing != null) return existing;
-
-            // Guard: if we are a prefab asset (not a scene instance), we cannot
-            // create GameObjects — skip auto-creation and let the service be
-            // registered as null so RegisterIfNotNull logs the error.
-            if (!gameObject.scene.IsValid())
-            {
-                Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned — skipping auto-create (prefab asset context).");
-                return null;
-            }
-
-            Debug.LogWarning($"[AppManager] {typeof(T).Name} not assigned and not found — auto-creating persistent instance.");
-            var go = new GameObject($"[{typeof(T).Name}]");
-            DontDestroyOnLoad(go);
-            return go.AddComponent<T>();
+            var instance = Instantiate(prefab);
+            DontDestroyOnLoad(instance);
         }
 
         public void InstallBindings(ContainerBuilder builder)
         {
-            // Guarantee services exist before registration. Reflex may call
-            // InstallBindings before Awake, so we cannot rely on Awake alone.
-            ResolvePersistentSystems();
+            // Guarantee singletons are spawned before registration. Reflex may
+            // call InstallBindings before Awake, so we cannot rely on Awake alone.
+            SpawnAndResolveSingletonPersistents();
 
             // ScriptableObject assets / Variables
             RegisterIfNotNull(builder, gameData, nameof(gameData));
             RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
 
-            // Persistent MonoBehaviour systems
-            RegisterIfNotNull(builder, gameSetting, nameof(gameSetting));
-            RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
-            RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
-            RegisterIfNotNull(builder, ugsStatsManager, nameof(ugsStatsManager));
-            RegisterIfNotNull(builder, captainManager, nameof(captainManager));
-            RegisterIfNotNull(builder, iapManager, nameof(iapManager));
-
-            // Gameplay managers
-            RegisterIfNotNull(builder, gameManager, nameof(gameManager));
-            RegisterIfNotNull(builder, themeManager, nameof(themeManager));
-            RegisterIfNotNull(builder, cameraManager, nameof(cameraManager));
-            RegisterIfNotNull(builder, postProcessingManager, nameof(postProcessingManager));
-            RegisterIfNotNull(builder, statsManager, nameof(statsManager));
+            // Singleton persistent services
+            RegisterIfNotNull(builder, _gameSetting, nameof(_gameSetting));
+            RegisterIfNotNull(builder, _audioSystem, nameof(_audioSystem));
+            RegisterIfNotNull(builder, _playerDataService, nameof(_playerDataService));
+            RegisterIfNotNull(builder, _ugsStatsManager, nameof(_ugsStatsManager));
+            RegisterIfNotNull(builder, _captainManager, nameof(_captainManager));
+            RegisterIfNotNull(builder, _iapManager, nameof(_iapManager));
+            RegisterIfNotNull(builder, _gameManager, nameof(_gameManager));
+            RegisterIfNotNull(builder, _themeManager, nameof(_themeManager));
+            RegisterIfNotNull(builder, _cameraManager, nameof(_cameraManager));
+            RegisterIfNotNull(builder, _postProcessingManager, nameof(_postProcessingManager));
+            RegisterIfNotNull(builder, _statsManager, nameof(_statsManager));
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             if (authenticationDataVariable != null)
@@ -171,45 +167,6 @@ namespace CosmicShore.Core
                 );
             }
         }
-
-        #region Additional Persistent Prefabs
-
-        /// <summary>
-        /// Spawns additional persistent prefabs that are not registered in DI
-        /// (e.g. PrismManagers, CallToActionManager, DailyChallengeSystem).
-        /// For each prefab, checks if an instance of its primary component type
-        /// already exists in the scene. If so, that instance is reused and persisted.
-        /// Otherwise the prefab is instantiated and persisted.
-        /// </summary>
-        void EnsureAdditionalPrefabs()
-        {
-            if (_additionalPersistentPrefabs == null) return;
-
-            foreach (var prefab in _additionalPersistentPrefabs)
-            {
-                if (prefab == null) continue;
-                EnsurePrefabInstance(prefab);
-            }
-        }
-
-        void EnsurePrefabInstance(GameObject prefab)
-        {
-            foreach (var mb in prefab.GetComponents<MonoBehaviour>())
-            {
-                if (mb == null) continue;
-                var existing = FindFirstObjectByType(mb.GetType()) as Component;
-                if (existing != null)
-                {
-                    DontDestroyOnLoad(existing.transform.root.gameObject);
-                    return;
-                }
-            }
-
-            var instance = Instantiate(prefab);
-            DontDestroyOnLoad(instance);
-        }
-
-        #endregion
 
         static void RegisterIfNotNull<T>(ContainerBuilder builder, T value, string fieldName) where T : class
         {
