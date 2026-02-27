@@ -113,8 +113,6 @@ namespace CosmicShore.UI
 
             Animator.StopPlayback();
             gameObject.SetActive(false);
-
-            FTUEEventManager.OnInitializeFTUECalled();
         }
     }
 }
