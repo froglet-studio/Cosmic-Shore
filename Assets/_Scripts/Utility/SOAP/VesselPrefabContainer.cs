@@ -15,7 +15,7 @@ namespace CosmicShore.Soap
         {
             shipPrefabTransform = null;
 
-            if (_shipPrefabs.Length == 0)
+            if (_shipPrefabs == null || _shipPrefabs.Length == 0)
             {
                 CSDebug.LogError("No Vessel Prefabs found! This should never happen!");
                 return false;
@@ -23,10 +23,13 @@ namespace CosmicShore.Soap
 
             foreach (var prefab in _shipPrefabs)
             {
+                if (prefab == null)
+                    continue;
+
                 if (!prefab.TryGetComponent(out IVesselStatus shipStatus))
                 {
-                    CSDebug.LogError($"Vessel prefab {prefab} does not have a VesselStatus component attached!");
-                    return false;
+                    CSDebug.LogWarning($"Vessel prefab {prefab.name} does not have a VesselStatus component — skipping.");
+                    continue;
                 }
 
                 if (shipStatus.VesselType != vesselType)
@@ -37,7 +40,7 @@ namespace CosmicShore.Soap
 
             if (shipPrefabTransform == null)
             {
-                CSDebug.LogError("No Vessel Prefabs found matching the needed vessel type!");
+                CSDebug.LogError($"No Vessel Prefab found matching vessel type {vesselType}!");
                 return false;
             }
 
