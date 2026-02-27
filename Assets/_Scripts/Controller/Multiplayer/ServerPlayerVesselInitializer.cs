@@ -37,6 +37,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
 
+        [Header("Lifecycle")]
+        [Tooltip("When true, NetworkManager.Shutdown() is called on despawn (game scenes). " +
+                 "Set to false for Menu_Main so the host persists across scene transitions.")]
+        [SerializeField] bool shutdownNetworkOnDespawn = true;
+
         [Header("Spawn Origins")]
         [SerializeField] protected Transform[] _playerOrigins;
 
@@ -104,7 +109,7 @@ namespace CosmicShore.Gameplay
 
             NetworkVesselClientCache.OnNewInstanceAdded -= OnNewVesselClientAdded;
 
-            if (NetworkManager.Singleton)
+            if (shutdownNetworkOnDespawn && NetworkManager.Singleton)
                 NetworkManager.Singleton.Shutdown();
         }
 
@@ -129,14 +134,10 @@ namespace CosmicShore.Gameplay
         protected virtual void OnClientConnected(ulong clientId)
         {
             bool isLocalHost = clientId == NetworkManager.Singleton.LocalClientId;
+            bool needsAI = isLocalHost && (IsSoloWithAI || NeedsAIBackfill);
 
-            if (IsSoloWithAI && isLocalHost)
+            if (needsAI)
             {
-                SpawnPlayerThenAI(clientId).Forget();
-            }
-            else if (NeedsAIBackfill && isLocalHost)
-            {
-                // Multiplayer with AI backfill (party has fewer humans than player count)
                 SpawnPlayerThenAI(clientId).Forget();
             }
             else
@@ -325,7 +326,7 @@ namespace CosmicShore.Gameplay
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
 
-        bool TrySpawnVesselForAI(Player aiPlayer, out NetworkObject vesselNO)
+        protected bool TrySpawnVesselForAI(Player aiPlayer, out NetworkObject vesselNO)
         {
             vesselNO = null;
             var vesselType = aiPlayer.NetDefaultVesselType.Value;
