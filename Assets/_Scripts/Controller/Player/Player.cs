@@ -150,14 +150,34 @@ namespace CosmicShore.Gameplay
             {
                 NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
             }
-            
+
             NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
             NetIsAI.Value = IsInitializedAsAI;
-            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
-            // Signal spawn after name is set so server-side handlers see valid values.
+            // Always subscribe — vessel class may not be configured yet (menu scene)
+            // or may already be valid (gameplay scene). The callback handles both:
+            // subscribe first, then check current value to proceed immediately if ready.
+            gameData.selectedVesselClass.OnValueChanged += OnSelectedVesselClassChanged;
+            TrySetVesselType(gameData.selectedVesselClass.Value);
+        }
+
+        /// <summary>
+        /// Reacts to <see cref="GameDataSO.selectedVesselClass"/> changes.
+        /// In the menu scene this fires when <see cref="Core.MainMenuController.ConfigureMenuGameData"/>
+        /// sets the vessel class after <see cref="OnNetworkSpawn"/>.
+        /// In gameplay scenes the eager check in <see cref="OnNetworkSpawn"/> resolves immediately.
+        /// </summary>
+        void OnSelectedVesselClassChanged(VesselClassType newValue) =>
+            TrySetVesselType(newValue);
+
+        void TrySetVesselType(VesselClassType vesselClass)
+        {
+            if (vesselClass == VesselClassType.Random || vesselClass == VesselClassType.Any)
+                return;
+
+            gameData.selectedVesselClass.OnValueChanged -= OnSelectedVesselClassChanged;
+            NetDefaultVesselType.Value = vesselClass;
             gameData.InvokePlayerNetworkSpawned();
-
             InputController.Initialize();
         }
         
@@ -167,6 +187,7 @@ namespace CosmicShore.Gameplay
             NetName.OnValueChanged -= OnNetNameValueChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
+            gameData.selectedVesselClass.OnValueChanged -= OnSelectedVesselClassChanged;
         }
 
 
