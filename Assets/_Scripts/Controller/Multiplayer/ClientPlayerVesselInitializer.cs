@@ -2,6 +2,7 @@
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -9,10 +10,10 @@ namespace CosmicShore.Gameplay
 {
     public class ClientPlayerVesselInitializer : NetworkBehaviour
     {
-        [SerializeField] 
-        ThemeManagerDataContainerSO themeManagerData;
-        
         [SerializeField]
+        ThemeManagerDataContainerSO themeManagerData;
+
+        [Inject]
         protected GameDataSO gameData;
         
         /// <summary>

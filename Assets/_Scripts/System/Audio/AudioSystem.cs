@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -58,6 +59,9 @@ namespace CosmicShore.Core
     {
         #region Fields
         [Inject] GameSetting gameSetting;
+
+        [Header("SOAP Event Channels")]
+        [SerializeField] ScriptableEventGameplaySFX gameplaySFXEvent;
 
         [SerializeField] AudioMixer masterMixer;
         [SerializeField] AudioSource sfxSource;
@@ -146,6 +150,9 @@ namespace CosmicShore.Core
             GameSetting.OnChangeSFXEnabledStatus += ChangeSFXEnabledStatus;
             GameSetting.OnChangeMusicLevel += ChangeMusicLevel;
             GameSetting.OnChangeSFXLevel += ChangeSFXLevel;
+
+            if (gameplaySFXEvent != null)
+                gameplaySFXEvent.OnRaised += PlayGameplaySFX;
         }
 
         void OnDisable()
@@ -154,6 +161,9 @@ namespace CosmicShore.Core
             GameSetting.OnChangeSFXEnabledStatus -= ChangeSFXEnabledStatus;
             GameSetting.OnChangeMusicLevel -= ChangeMusicLevel;
             GameSetting.OnChangeSFXLevel -= ChangeSFXLevel;
+
+            if (gameplaySFXEvent != null)
+                gameplaySFXEvent.OnRaised -= PlayGameplaySFX;
         }
 
         void ChangeMusicEnabledStatus(bool status)
