@@ -119,9 +119,18 @@ See [`GIT_RULES.md`](./GIT_RULES.md) for branching model, commit conventions, an
 Bootstrap Scene → AppManager (DI root, persists across scenes)
     ├─ AuthenticationServiceFacade → UGS sign-in → SOAP state
     └─ SceneTransitionManager → Splash / Auth → Menu_Main
+                                                    │
+                                                    ▼
+                                              ScreenSwitcher
+                                    ┌────┬────┬────┬────┬────┐
+                                    │Store│Arcade│Home│Port│Hangar│
+                                    └────┴────┴────┴────┴────┘
+                                    ← slide left / right →
 ```
 
-The app boots through a Bootstrap scene that initializes services and Reflex DI bindings. Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. The splash screen reads this state to skip auth when a cached session exists. See the [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) section in CLAUDE.md for the full pipeline.
+The app boots through a Bootstrap scene that initializes services and Reflex DI bindings. Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. The splash screen reads this state to skip auth when a cached session exists.
+
+The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./CLAUDE.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) sections in CLAUDE.md for details.
 
 ### Project Structure
 
@@ -150,10 +159,14 @@ Assets/
 │   │   ├── NetworkMonitor.cs
 │   │   └── ...                # Audio, LoadOut, Quest, Ads, etc.
 │   ├── UI/                    # Game & app UI (~188 files)
+│   │   ├── Screens/           # Menu screens (Home, Arcade, Store, Hangar, Leaderboards, Episodes)
+│   │   ├── Interfaces/        # IScreen, IVesselHUDController, IVesselHUDView
+│   │   ├── Elements/          # Reusable components (NavLink, NavGroup, ProfileDisplayWidget)
 │   │   ├── Views/             # PlayerDataService, screen views
 │   │   ├── Controller/        # HUD controllers
-│   │   ├── Modals/            # Settings, Profile, Purchase dialogs
-│   │   └── ...                # Elements, FX, Toast, Animations
+│   │   ├── Modals/            # ModalWindowManager, Settings, Profile, Purchase dialogs
+│   │   ├── ScreenSwitcher.cs  # Central menu navigation (slide + IScreen lifecycle)
+│   │   └── ...                # FX, Toast, Animations
 │   ├── Data/                  # Enums & data structs
 │   ├── ScriptableObjects/     # SO definitions & SOAP types
 │   │   └── SOAP/              # Custom SOAP types (14 subdirectories)
