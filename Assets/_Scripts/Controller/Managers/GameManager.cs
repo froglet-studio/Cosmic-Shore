@@ -4,6 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace CosmicShore.Gameplay
     {
         const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = 0.5f;
 
-        [SerializeField] SceneNameListSO _sceneNames;
+        [Inject] SceneNameListSO _sceneNames;
         [SerializeField] SO_GameList AllGames;
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] ScriptableEventBool _onSceneTransition;

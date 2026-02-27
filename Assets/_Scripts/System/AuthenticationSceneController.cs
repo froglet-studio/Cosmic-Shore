@@ -41,9 +41,6 @@ namespace CosmicShore.Core
         [SerializeField] private Button confirmUsernameButton;
         [SerializeField] private TMP_Text usernameStatusText;
 
-        [Header("Navigation")]
-        [SerializeField] private string mainMenuSceneName = "Menu_Main";
-
         [Header("Timeouts")]
         [SerializeField, Tooltip("Seconds to wait for cached auth before showing UI.")]
         private float cachedAuthTimeout = 3f;
@@ -57,6 +54,7 @@ namespace CosmicShore.Core
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
         [Inject] private PlayerDataService _playerDataService;
+        [Inject] private SceneNameListSO _sceneNames;
 
         CancellationTokenSource _cts;
         bool _navigated;
@@ -418,11 +416,11 @@ namespace CosmicShore.Core
             if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager)
                 && !transitionManager.IsTransitioning)
             {
-                transitionManager.LoadSceneAsync(mainMenuSceneName).Forget();
+                transitionManager.LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
             }
             else
             {
-                SceneManager.LoadScene(mainMenuSceneName);
+                SceneManager.LoadScene(_sceneNames.MainMenuScene);
             }
         }
     }
