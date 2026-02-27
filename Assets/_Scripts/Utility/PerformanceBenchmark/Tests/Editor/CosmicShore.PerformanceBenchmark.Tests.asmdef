@@ -2,9 +2,7 @@
     "name": "CosmicShore.PerformanceBenchmark.Tests",
     "rootNamespace": "CosmicShore.Utility.PerformanceBenchmark.Tests",
     "references": [
-        "CosmicShore.Core",
-        "CosmicShore.Utility",
-        "CosmicShore.Runtime",
+        "CosmicShore.PerformanceBenchmark",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
