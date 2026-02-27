@@ -21,12 +21,14 @@ namespace CosmicShore.Game.Arcade
 
         /// <summary>
         /// Re-subscribe when the environment is reactivated (party mode SetActive
-        /// toggling). IsSpawned may be unreliable after toggling, so fall back to
-        /// the global NetworkManager check via IsServerSafe.
+        /// toggling). Requires IsSpawned (normal) or IsPartyMode (reactivation —
+        /// IsSpawned may be stale after SetActive toggling) so we don't subscribe
+        /// too early during initial scene load (before OnNetworkSpawn).
         /// </summary>
         private void OnEnable()
         {
-            if (this.IsServerSafe())
+            bool spawned = IsSpawned || (gameData != null && gameData.IsPartyMode);
+            if (spawned && this.IsServerSafe())
                 SubscribeScoreEvents();
         }
 

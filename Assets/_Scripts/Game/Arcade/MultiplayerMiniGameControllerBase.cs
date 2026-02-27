@@ -118,6 +118,14 @@ namespace CosmicShore.Game.Arcade
             try
             {
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+
+                // If the environment was deactivated while we waited (e.g. the
+                // initial spawn → deactivate cycle in party mode), bail out.
+                // Without this, autonomous init from OnNetworkSpawn would fire
+                // gameData.InitializeGame() on all 3 deactivated environments
+                // into the shared GameDataSO.
+                if (!gameObject.activeInHierarchy) return;
+
                 gameData.InitializeGame();
                 if (!this.IsServerSafe()) return;
                 SetupNewRound();
