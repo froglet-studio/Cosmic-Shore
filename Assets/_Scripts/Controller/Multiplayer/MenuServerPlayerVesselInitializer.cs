@@ -66,7 +66,8 @@ namespace CosmicShore.Gameplay
             var player = gameData.LocalPlayer;
             if (player?.Vessel == null)
             {
-                CSDebug.LogWarning("[MenuServerVesselInit] LocalPlayer or Vessel not available on ClientReady.");
+                CSDebug.LogError("[MenuServerVesselInit] LocalPlayer or Vessel not available on ClientReady. " +
+                                 "This should not happen — ClientReady must fire after all players are initialized.");
                 return;
             }
 
