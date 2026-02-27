@@ -31,8 +31,10 @@ using CosmicShore.Utilities;
 ///   Hold both triggers (dual anchor):
 ///     Vessel is on the intersection circle of both spheres. XDiff sets
 ///     a target circle radius (inward=larger, outward=smaller). Actual
-///     radius lerps toward target. Displacement from radius change + angular
-///     motion determines speed. This is the ONLY way to change speed.
+///     radius lerps toward target. Angular momentum L = omega * r² is
+///     conserved: shrinking the radius spins you faster (ice skater effect,
+///     v ∝ 1/r). Active contraction injects pump energy into L, so each
+///     pump cycle ratchets speed upward. This is the ONLY way to change speed.
 ///
 ///   Release a trigger:
 ///     Detach tether, carry velocity into the next state.
@@ -62,6 +64,12 @@ public class SwingingVesselTransformer : VesselTransformer
     [Header("Tether Length")]
     [Tooltip("How fast the actual tether length lerps toward the target during dual-anchor pumping.")]
     [SerializeField] float tetherLengthLerpSpeed = 3f;
+
+    [Header("Angular Momentum (Option B)")]
+    [Tooltip("Energy injected per unit of contraction rate × angular velocity. Higher = faster speed gain per pump.")]
+    [SerializeField] float pumpGain = 0.5f;
+    [Tooltip("Minimum circle radius to prevent singularity at r→0.")]
+    [SerializeField] float minCircleRadius = 1f;
 
     [Header("Anchor Prism")]
     [SerializeField] Vector3 anchorPrismScale = new(6f, 6f, 6f);
@@ -114,6 +122,7 @@ public class SwingingVesselTransformer : VesselTransformer
     // Circle navigation (dual anchor)
     float circleAngle;
     float circleAngularVelocity;
+    float angularMomentum; // L = omega * h² (signed, per unit mass)
 
     // Dual-anchor geometry
     float dualAnchorA;
@@ -751,11 +760,11 @@ public class SwingingVesselTransformer : VesselTransformer
         // speed stays unchanged — single tether never changes speed
     }
 
-    // ---- Dual anchor: pump tether lengths to gain speed ----
+    // ---- Dual anchor: angular momentum conservation + pump injection ----
     //
-    // XDiff sets target circle radius. Actual radius lerps toward target.
-    // The displacement from angular motion + radius change IS the speed.
-    // This is the ONLY way the spider changes speed.
+    // L = omega * h² is conserved. Shrinking radius → omega ∝ 1/h² → v ∝ 1/h.
+    // Active contraction injects energy: L += pumpGain * |dh/dt| * |omega|.
+    // Each pump cycle ratchets L upward. Release at short radius for max speed.
 
     void DualAnchorMove()
     {
@@ -777,15 +786,39 @@ public class SwingingVesselTransformer : VesselTransformer
             return;
         }
 
-        // XDiff → target radius: inward(0)→2× home, neutral(0.5)→1× home, outward(1)→~0
+        float dt = Time.deltaTime;
+
+        // XDiff → target radius: inward(0)→2× home, neutral(0.5)→1× home, outward(1)→near zero
         float xDiff = InputStatus?.XDiff ?? 0.5f;
         float radiusMult = Mathf.Clamp(2f * (1f - xDiff), 0.05f, 2f);
-        float targetH = dualAnchorHomeH * radiusMult;
+        float targetH = Mathf.Max(dualAnchorHomeH * radiusMult, minCircleRadius);
 
         // Lerp actual radius toward target
         float oldH = currentH;
-        currentH = Mathf.Lerp(currentH, targetH, tetherLengthLerpSpeed * Time.deltaTime);
-        float h = Mathf.Max(currentH, 0.01f);
+        currentH = Mathf.Lerp(currentH, targetH, tetherLengthLerpSpeed * dt);
+        currentH = Mathf.Max(currentH, minCircleRadius);
+        float h = currentH;
+
+        // --- Angular momentum pump injection ---
+        // When the player contracts radius (dH < 0), inject energy into L.
+        // Injection scales with contraction rate × current angular speed,
+        // so faster spinning rewards more energy per pump.
+        float dH = currentH - oldH;
+        if (dH < 0f && dt > 0.0001f)
+        {
+            float contractionRate = Mathf.Abs(dH) / dt;
+            float absOmega = Mathf.Abs(circleAngularVelocity);
+            float sign = circleAngularVelocity >= 0f ? 1f : -1f;
+
+            // Fallback: if stationary, give a small kick so the first pump isn't dead
+            if (absOmega < 0.001f)
+                sign = 1f;
+
+            angularMomentum += sign * pumpGain * contractionRate * Mathf.Max(absOmega, 0.1f) * dt;
+        }
+
+        // --- Angular momentum conservation: omega = L / h² ---
+        circleAngularVelocity = angularMomentum / (h * h);
 
         // Update rope lengths to maintain circle center while changing radius
         leftTether.ropeLength = Mathf.Sqrt(dualAnchorA * dualAnchorA + h * h);
@@ -808,48 +841,25 @@ public class SwingingVesselTransformer : VesselTransformer
             u = Vector3.Cross(axis, Vector3.forward).normalized;
         Vector3 v = Vector3.Cross(axis, u).normalized;
 
-        // Tangent at current angle on circle
-        Vector3 tangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
-
-        // Project forward onto circle plane (remove axis component)
-        Vector3 projForward = transform.forward - Vector3.Dot(transform.forward, axis) * axis;
-        if (projForward.sqrMagnitude > 0.001f)
-            projForward.Normalize();
-        else
-            projForward = tangent;
-
-        // Desired angular velocity direction from projected forward
-        float desiredDir = Mathf.Sign(Vector3.Dot(projForward, tangent));
-        if (Mathf.Abs(Vector3.Dot(projForward, tangent)) < 0.01f)
-            desiredDir = Mathf.Sign(circleAngularVelocity);
-
-        // Desired angular velocity preserves current linear speed on the new radius
-        float currentLinearSpeed = Mathf.Abs(circleAngularVelocity) * Mathf.Max(oldH, 0.01f);
-        float desiredAngVel = desiredDir * currentLinearSpeed / h;
-
-        // Lerp angular velocity toward desired (drift feel)
-        circleAngularVelocity = Mathf.Lerp(circleAngularVelocity, desiredAngVel, courseLerp * Time.deltaTime);
-
         // Advance angle
-        circleAngle += circleAngularVelocity * Time.deltaTime;
+        circleAngle += circleAngularVelocity * dt;
 
         // Position on circle
         Vector3 prevPos = transform.position;
-        Vector3 targetPos = center + h * (Mathf.Cos(circleAngle) * u + Mathf.Sin(circleAngle) * v);
-        transform.position = Vector3.Lerp(prevPos, targetPos, LERP_AMOUNT * Time.deltaTime);
+        Vector3 onCircle = center + h * (Mathf.Cos(circleAngle) * u + Mathf.Sin(circleAngle) * v);
+        transform.position = onCircle;
 
-        // Speed is purely displacement-based
+        // Displacement-based velocity
         Vector3 displacement = transform.position - prevPos;
-        lastVelocity = Time.deltaTime > 0.0001f ? displacement / Time.deltaTime : Vector3.zero;
-
-        // Update speed from actual displacement — this is how the spider gains/loses speed
+        lastVelocity = dt > 0.0001f ? displacement / dt : Vector3.zero;
         speed = lastVelocity.magnitude;
 
-        Vector3 moveTangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
-        if (circleAngularVelocity < 0f) moveTangent = -moveTangent;
+        // Course for HUD / other systems
+        Vector3 tangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
+        if (circleAngularVelocity < 0f) tangent = -tangent;
 
         VesselStatus.Speed = speed;
-        VesselStatus.Course = displacement.sqrMagnitude > 0.001f ? displacement.normalized : moveTangent;
+        VesselStatus.Course = displacement.sqrMagnitude > 0.001f ? displacement.normalized : tangent;
     }
 
     // ==================================================================
@@ -901,7 +911,7 @@ public class SwingingVesselTransformer : VesselTransformer
         // Store home geometry
         dualAnchorA = (r1 * r1 - r2 * r2 + d * d) / (2f * d);
         float hSq = Mathf.Max(r1 * r1 - dualAnchorA * dualAnchorA, 0f);
-        dualAnchorHomeH = Mathf.Sqrt(hSq);
+        dualAnchorHomeH = Mathf.Max(Mathf.Sqrt(hSq), minCircleRadius);
         currentH = dualAnchorHomeH;
 
         // Initialize circle angle from current position
@@ -918,8 +928,11 @@ public class SwingingVesselTransformer : VesselTransformer
 
         // Initialize angular velocity from current velocity
         Vector3 tangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
-        float h = Mathf.Max(dualAnchorHomeH, 0.01f);
+        float h = currentH;
         circleAngularVelocity = Vector3.Dot(lastVelocity, tangent) / h;
+
+        // Initialize angular momentum: L = omega * h²
+        angularMomentum = circleAngularVelocity * h * h;
     }
 
     Transform SpawnAnchorPrism(Vector3 position)
