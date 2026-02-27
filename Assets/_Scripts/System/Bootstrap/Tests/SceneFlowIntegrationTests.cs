@@ -294,12 +294,12 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region BootstrapController Fallback Validation
+        #region AppManager Fallback Validation
 
         [Test]
-        public void BootstrapController_NullConfig_FallbackScene_IsAuthentication()
+        public void AppManager_NullConfig_FallbackScene_IsAuthentication()
         {
-            // When _config is null, BootstrapController falls back to "Authentication".
+            // When _bootstrapConfig is null, AppManager falls back to "Authentication".
             // Verify that scene exists in build settings.
             var enabledNames = EditorBuildSettings.scenes
                 .Where(s => s.enabled)
@@ -307,23 +307,23 @@ namespace CosmicShore.Core
                 .ToHashSet();
 
             Assert.IsTrue(enabledNames.Contains("Authentication"),
-                "BootstrapController falls back to 'Authentication' when no config is assigned. " +
+                "AppManager falls back to 'Authentication' when no config is assigned. " +
                 "This scene must exist in build settings.");
         }
 
         [Test]
-        public void BootstrapController_AutoCreate_ComponentsAreCorrect()
+        public void AppManager_AutoCreate_ComponentsAreCorrect()
         {
             // Verify that the auto-create flow would produce the right components.
             var go = new GameObject("[TestAutoCreate]");
 
             go.AddComponent<SceneTransitionManager>();
             go.AddComponent<ApplicationLifecycleManager>();
-            var controller = go.AddComponent<BootstrapController>();
+            var manager = go.AddComponent<AppManager>();
 
             Assert.IsNotNull(go.GetComponent<SceneTransitionManager>());
             Assert.IsNotNull(go.GetComponent<ApplicationLifecycleManager>());
-            Assert.IsNotNull(go.GetComponent<BootstrapController>());
+            Assert.IsNotNull(go.GetComponent<AppManager>());
 
             Object.DestroyImmediate(go);
             ServiceLocator.ClearAll();

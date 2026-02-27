@@ -12,7 +12,7 @@ namespace CosmicShore.UI
     /// Shows an initialization overlay until UGS authentication completes.
     /// Replaces legacy PlayFab event subscriptions with direct UGS auth polling.
     ///
-    /// The bootstrap flow (BootstrapController → AppManager → AuthenticationServiceFacade)
+    /// The bootstrap flow (AppManager → AuthenticationServiceFacade)
     /// normally completes authentication before Menu_Main loads, so this modal closes
     /// almost immediately. A timeout fallback ensures the UI is never permanently blocked.
     /// </summary>
