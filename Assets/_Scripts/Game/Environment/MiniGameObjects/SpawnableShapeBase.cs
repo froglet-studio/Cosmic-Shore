@@ -1,3 +1,5 @@
+using System.Collections;
+using CosmicShore.Core;
 using CosmicShore.Game.ShapeDrawing;
 using CosmicShore.Game.Spawning;
 using UnityEngine;
@@ -11,6 +13,9 @@ using UnityEngine;
 ///
 /// Intensity scaling: higher intensity = more blockCount via GetScaledBlockCount().
 /// Base block count is 30; intensity 2 = 60, intensity 3 = 90, etc.
+///
+/// Prisms are spawned gradually (one at a time) for a procedural reveal effect.
+/// The collision trigger is disabled until all prisms have spawned.
 /// </summary>
 public abstract class SpawnableShapeBase : SpawnableBase
 {
@@ -25,6 +30,10 @@ public abstract class SpawnableShapeBase : SpawnableBase
     [Header("Shape Scale")]
     [Tooltip("Base number of prism blocks at intensity 1.")]
     [SerializeField] protected int baseBlockCount = 30;
+
+    [Header("Gradual Spawning")]
+    [Tooltip("Seconds between each prism spawn during gradual reveal. 0 = all at once.")]
+    [SerializeField] protected float spawnInterval = 0.03f;
 
     /// <summary>
     /// Returns block count scaled by current intensity level.
@@ -47,14 +56,86 @@ public abstract class SpawnableShapeBase : SpawnableBase
 
     public override GameObject Spawn(int intensity = 1)
     {
-        var container = base.Spawn(intensity);
-        AttachTrigger(container);
+        intensityLevel = intensity;
+        trails.Clear();
+
+        var container = new GameObject(name);
+        var trailData = GetTrailData();
+
+        // Attach trigger immediately but keep it disabled until spawning finishes
+        var trigger = AttachTrigger(container);
+
+        if (spawnInterval > 0f)
+        {
+            // Gradual spawning via coroutine
+            StartCoroutine(GradualSpawnCoroutine(trailData, container, trigger));
+        }
+        else
+        {
+            // Instant spawning (legacy behavior)
+            SpawnLeafObjects(trailData, container);
+            if (trigger) trigger.SetReady(true);
+        }
+
         return container;
     }
 
-    void AttachTrigger(GameObject container)
+    IEnumerator GradualSpawnCoroutine(SpawnTrailData[] trailData, GameObject container, ShapeCollisionTrigger trigger)
     {
-        if (shapeDefinition == null) return;
+        foreach (var td in trailData)
+        {
+            var prismPrefab = GetPrismPrefab();
+            if (prismPrefab == null) continue;
+
+            var trail = new Trail(td.IsLoop);
+            var actualDomain = td.Domain;
+
+            for (int i = 0; i < td.Points.Length; i++)
+            {
+                if (!container) yield break; // Container was destroyed
+
+                var point = td.Points[i];
+                var block = Instantiate(prismPrefab, container.transform);
+                block.ChangeTeam(actualDomain);
+                block.ownerID = $"{container.name}::{i}";
+                block.transform.localPosition = point.Position;
+                block.transform.localRotation = point.Rotation;
+                block.TargetScale = point.Scale;
+                block.Trail = trail;
+                block.Initialize();
+                trail.Add(block);
+
+                yield return new WaitForSeconds(spawnInterval);
+            }
+
+            trails.Add(trail);
+        }
+
+        // All prisms spawned — enable collision
+        if (trigger)
+        {
+            // Recalculate radius now that all renderers exist
+            if (triggerRadius <= 0f && container)
+            {
+                var sphere = container.GetComponent<SphereCollider>();
+                if (sphere) sphere.radius = CalculateBoundingRadius(container);
+            }
+            trigger.SetReady(true);
+        }
+    }
+
+    /// <summary>
+    /// Returns the Prism prefab for leaf spawning. Subclasses with a prism field
+    /// can override this. Default falls back to leafPrefab.
+    /// </summary>
+    protected virtual Prism GetPrismPrefab()
+    {
+        return leafPrefab ? leafPrefab.GetComponent<Prism>() : null;
+    }
+
+    ShapeCollisionTrigger AttachTrigger(GameObject container)
+    {
+        if (shapeDefinition == null) return null;
 
         // Add kinematic Rigidbody so trigger events fire
         var rb = container.AddComponent<Rigidbody>();
@@ -64,11 +145,14 @@ public abstract class SpawnableShapeBase : SpawnableBase
         // Add sphere trigger sized to shape bounds
         var sphere = container.AddComponent<SphereCollider>();
         sphere.isTrigger = true;
-        sphere.radius = triggerRadius > 0 ? triggerRadius : CalculateBoundingRadius(container);
+        sphere.radius = triggerRadius > 0 ? triggerRadius : 20f; // Will be recalculated after spawn
 
-        // Add collision handler
+        // Add collision handler — starts disabled
         var trigger = container.AddComponent<ShapeCollisionTrigger>();
-        trigger.Initialize(shapeDefinition);
+        trigger.Initialize(shapeDefinition, domain);
+        trigger.SetReady(false);
+
+        return trigger;
     }
 
     float CalculateBoundingRadius(GameObject container)

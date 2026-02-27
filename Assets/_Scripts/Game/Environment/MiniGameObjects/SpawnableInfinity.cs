@@ -52,6 +52,8 @@ public class SpawnableInfinity : SpawnableShapeBase
             SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
     }
 
+    protected override Prism GetPrismPrefab() => prism;
+
     protected override int GetParameterHash()
     {
         return System.HashCode.Combine(size, baseBlockCount, intensityLevel, seed);

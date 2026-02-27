@@ -196,16 +196,15 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void GenerateLightning(float r)
         {
-            float h = r;
+            // Zigzag bolt with well-spaced waypoints — no converging at center
             waypoints.AddRange(new[]
             {
-                new Vector3( 0.3f * r,  h,       0f),
-                new Vector3(-0.1f * r,  0.1f*h,  0f),
-                new Vector3( 0.2f * r,  0.05f*h, 0f),
-                new Vector3(-0.3f * r, -h,        0f),
-                new Vector3( 0.1f * r, -0.05f*h, 0f),
-                new Vector3(-0.2f * r, -0.1f*h,  0f),
-                new Vector3( 0.3f * r,  h,        0f),
+                new Vector3( 0.15f * r,  r,          0f),   // top start
+                new Vector3(-0.25f * r,  0.4f  * r,  0f),   // zigzag left upper
+                new Vector3( 0.25f * r,  0.15f * r,  0f),   // zigzag right upper
+                new Vector3(-0.15f * r, -0.15f * r,  0f),   // zigzag left lower
+                new Vector3( 0.2f  * r, -0.4f  * r,  0f),   // zigzag right lower
+                new Vector3(-0.1f  * r, -r,          0f),   // bottom end
             });
             for (int i = 0; i < waypoints.Count; i++)
                 trailEnabledPerSegment.Add(true);
@@ -213,13 +212,15 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void GenerateSmiley(float r)
         {
-            // Left eye (3 points)
-            float eyeR = r * 0.12f;
-            float eyeY = r * 0.25f;
-            for (int i = 0; i <= 3; i++)
+            // Left eye (6-point circle for visible shape)
+            float eyeR = r * 0.15f;
+            float eyeY = r * 0.3f;
+            float eyeX = r * 0.3f;
+            int eyePoints = 6;
+            for (int i = 0; i <= eyePoints; i++)
             {
-                float angle = (i / 3f) * Mathf.PI * 2f;
-                waypoints.Add(new Vector3(-r * 0.3f + Mathf.Cos(angle) * eyeR,
+                float angle = (i / (float)eyePoints) * Mathf.PI * 2f;
+                waypoints.Add(new Vector3(-eyeX + Mathf.Cos(angle) * eyeR,
                     eyeY + Mathf.Sin(angle) * eyeR, 0f));
                 trailEnabledPerSegment.Add(true);
             }
@@ -227,11 +228,11 @@ namespace CosmicShore.Game.ShapeDrawing
             // Pen up: travel to right eye
             trailEnabledPerSegment[trailEnabledPerSegment.Count - 1] = false;
 
-            // Right eye (3 points)
-            for (int i = 0; i <= 3; i++)
+            // Right eye (6-point circle)
+            for (int i = 0; i <= eyePoints; i++)
             {
-                float angle = (i / 3f) * Mathf.PI * 2f;
-                waypoints.Add(new Vector3(r * 0.3f + Mathf.Cos(angle) * eyeR,
+                float angle = (i / (float)eyePoints) * Mathf.PI * 2f;
+                waypoints.Add(new Vector3(eyeX + Mathf.Cos(angle) * eyeR,
                     eyeY + Mathf.Sin(angle) * eyeR, 0f));
                 trailEnabledPerSegment.Add(true);
             }
@@ -239,13 +240,16 @@ namespace CosmicShore.Game.ShapeDrawing
             // Pen up: travel to mouth start
             trailEnabledPerSegment[trailEnabledPerSegment.Count - 1] = false;
 
-            // Mouth arc (8 points, lower semicircle)
-            float mouthR = r * 0.45f;
-            for (int i = 0; i <= 8; i++)
+            // Mouth arc — smile curves downward from left to right
+            float mouthR = r * 0.5f;
+            float mouthY = -r * 0.15f;
+            int mouthPoints = 8;
+            for (int i = 0; i <= mouthPoints; i++)
             {
-                float angle = Mathf.PI + (i / 8f) * Mathf.PI;
+                // Arc from left to right (0 to PI), going below center = smile
+                float angle = Mathf.PI - (i / (float)mouthPoints) * Mathf.PI;
                 waypoints.Add(new Vector3(Mathf.Cos(angle) * mouthR,
-                    -r * 0.1f + Mathf.Sin(angle) * mouthR * 0.5f, 0f));
+                    mouthY - Mathf.Sin(angle) * mouthR * 0.35f, 0f));
                 trailEnabledPerSegment.Add(true);
             }
         }

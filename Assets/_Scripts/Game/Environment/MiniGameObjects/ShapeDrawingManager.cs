@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using CosmicShore.Core;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Game.UI;
 using CosmicShore.Soap;
@@ -63,6 +64,12 @@ namespace CosmicShore.Game.ShapeDrawing
         [Header("Debug")]
         [Tooltip("Press this key to save a screenshot (PC only).")]
         [SerializeField] Key screenshotKey = Key.F12;
+
+        [Header("Prism Keeping")]
+        [Tooltip("Duration of the shrink+reposition animation when keeping drawn prisms.")]
+        [SerializeField] float prismShrinkDuration = 1.5f;
+        [Tooltip("Final scale multiplier for kept prisms (relative to original). 0.15 = 15% of original size.")]
+        [SerializeField] float prismShrinkScale = 0.15f;
 
         [Header("End Shape HUD")]
         [Tooltip("UI panel shown after completing a shape. Displays stats, screenshot and exit buttons.")]
@@ -296,8 +303,15 @@ namespace CosmicShore.Game.ShapeDrawing
             _trackingPath = false;
             _waitingForNext = false;
 
-            // Return shape prisms to pool via SO event
+            // Capture player-drawn prisms BEFORE returning anything to pool
+            var capturedPrisms = CapturePlayerPrisms();
+
+            // Return remaining shape prisms to pool via SO event
             if (onReturnShapePrismsEvent) onReturnShapePrismsEvent.Raise();
+
+            // Animate captured prisms into the original shape outline
+            if (capturedPrisms.Count > 0 && _activeShape != null)
+                StartCoroutine(ShrinkPrismsIntoShape(capturedPrisms, _activeShape, _shapeOrigin));
 
             _activeShape = null;
 
@@ -323,6 +337,122 @@ namespace CosmicShore.Game.ShapeDrawing
             _vesselStatus?.VesselHUDController?.ShowHUD();
 
             OnFreestyleResumed?.Invoke();
+        }
+
+        // ── Prism Keeping ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Captures all player-drawn prisms from VesselPrismController trails,
+        /// detaches them from the pool system so they won't be returned.
+        /// </summary>
+        List<Prism> CapturePlayerPrisms()
+        {
+            var result = new List<Prism>();
+            var prismController = _vesselStatus?.VesselPrismController;
+            if (prismController == null) return result;
+
+            // Collect from both trails
+            foreach (var prism in prismController.Trail.TrailList)
+            {
+                if (prism != null && prism.gameObject != null)
+                    result.Add(prism);
+            }
+
+            // Detach each prism from pool system
+            foreach (var prism in result)
+            {
+                // Null out pool callback so ReturnToPool() becomes a no-op
+                prism.OnReturnToPool = null;
+
+                // Disable EventListenerNoParam components so SO events don't return them
+                var listeners = prism.GetComponents<EventListenerNoParam>();
+                foreach (var l in listeners)
+                    l.enabled = false;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Animates captured prisms: shrinks them and repositions to form the original shape outline.
+        /// </summary>
+        IEnumerator ShrinkPrismsIntoShape(List<Prism> prisms, ShapeDefinition shape, Vector3 origin)
+        {
+            if (prisms.Count == 0) yield break;
+
+            // Create a persistent container for the miniature shape
+            var container = new GameObject($"CompletedShape_{shape.shapeName}");
+            container.transform.position = origin;
+
+            // Calculate target positions along the shape outline
+            var shapeRotation = Quaternion.Euler(shapeOrientationEuler);
+            shape.EnsureWaypoints();
+            var waypoints = shape.waypoints;
+            if (waypoints == null || waypoints.Count < 2) yield break;
+
+            // Build world-space shape path segments and total length
+            var worldPoints = new Vector3[waypoints.Count];
+            for (int i = 0; i < waypoints.Count; i++)
+                worldPoints[i] = origin + shapeRotation * (waypoints[i] * shapeScale * prismShrinkScale);
+
+            float totalLength = 0f;
+            var segLengths = new float[worldPoints.Length - 1];
+            for (int i = 0; i < worldPoints.Length - 1; i++)
+            {
+                segLengths[i] = Vector3.Distance(worldPoints[i], worldPoints[i + 1]);
+                totalLength += segLengths[i];
+            }
+
+            // Distribute prisms evenly along the shape path
+            var targetPositions = new Vector3[prisms.Count];
+            for (int i = 0; i < prisms.Count; i++)
+            {
+                float dist = (float)i / prisms.Count * totalLength;
+                float accumulated = 0f;
+                int seg = 0;
+                for (seg = 0; seg < segLengths.Length - 1; seg++)
+                {
+                    if (accumulated + segLengths[seg] > dist) break;
+                    accumulated += segLengths[seg];
+                }
+                float frac = segLengths[seg] > 0f ? (dist - accumulated) / segLengths[seg] : 0f;
+                targetPositions[i] = Vector3.Lerp(worldPoints[seg], worldPoints[Mathf.Min(seg + 1, worldPoints.Length - 1)], frac);
+            }
+
+            // Record starting state
+            var startPositions = new Vector3[prisms.Count];
+            var startScales = new Vector3[prisms.Count];
+            for (int i = 0; i < prisms.Count; i++)
+            {
+                if (!prisms[i]) continue;
+                startPositions[i] = prisms[i].transform.position;
+                startScales[i] = prisms[i].transform.localScale;
+            }
+
+            var targetScale = Vector3.one * prismShrinkScale;
+
+            // Animate over duration
+            float elapsed = 0f;
+            while (elapsed < prismShrinkDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / prismShrinkDuration));
+
+                for (int i = 0; i < prisms.Count; i++)
+                {
+                    if (!prisms[i]) continue;
+                    prisms[i].transform.position = Vector3.Lerp(startPositions[i], targetPositions[i], t);
+                    prisms[i].transform.localScale = Vector3.Lerp(startScales[i], targetScale, t);
+                }
+
+                yield return null;
+            }
+
+            // Reparent to container for clean hierarchy
+            foreach (var prism in prisms)
+            {
+                if (prism) prism.transform.SetParent(container.transform);
+            }
         }
 
         // ── Preview Sequence (Phase 1) ───────────────────────────────────────

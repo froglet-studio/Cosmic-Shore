@@ -105,15 +105,20 @@ namespace CosmicShore.Game.Arcade
         /// Vessel hit a spawnable shape's trigger collider during freestyle.
         /// Transition: freeze player → nuke freestyle → start shape mode.
         /// </summary>
-        void HandleShapeCollision(ShapeDefinition shapeDef, Vector3 worldPos)
+        void HandleShapeCollision(ShapeDefinition shapeDef, Vector3 worldPos, Domains shapeDomain)
         {
             if (_isInShapeMode || _isShapePrep) return;
             if (!shapeDef) return;
 
             _isInShapeMode = true;
 
+            // Change the player's domain to match the shape's domain color
+            var player = gameData.LocalPlayer;
+            if (player is Player p)
+                p.SetDomain(shapeDomain);
+
             // Freeze the player
-            var vessel = gameData.LocalPlayer?.Vessel;
+            var vessel = player?.Vessel;
             if (vessel?.VesselStatus != null)
                 vessel.VesselStatus.IsStationary = true;
 

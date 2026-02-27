@@ -46,6 +46,8 @@ public class SpawnableWave : SpawnableShapeBase
             SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
     }
 
+    protected override Prism GetPrismPrefab() => prism;
+
     protected override int GetParameterHash()
     {
         return System.HashCode.Combine(amplitude, wavelength, cycles, baseBlockCount, intensityLevel, seed);
