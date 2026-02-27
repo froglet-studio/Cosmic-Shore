@@ -17,10 +17,6 @@ namespace CosmicShore.Gameplay
         const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
 
-        [Header("Networking")]
-        [SerializeField, Tooltip("NetworkManager prefab to instantiate when none exists in the scene (e.g. during Bootstrap).")]
-        private GameObject _networkManagerPrefab;
-
         [Inject] GameDataSO gameData;
         [Inject] AuthenticationDataVariable authenticationDataVariable;
         AuthenticationData authenticationData => authenticationDataVariable.Value;
@@ -73,7 +69,7 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid OnAuthenticationSignedInAsync()
         {
-            await EnsureHostStartedAsync();
+            EnsureHostStarted();
 
             if (gameData.IsMultiplayerMode)
             {
@@ -83,41 +79,25 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Ensures the NetworkManager exists, registers Netcode callbacks, and
-        /// starts the host exactly once. Instantiates the NetworkManager prefab
-        /// when no Singleton is present (e.g. when running from Bootstrap before
-        /// any gameplay scene has loaded). Subsequent calls are no-ops while the
-        /// host is already listening.
+        /// Ensures the NetworkManager has Netcode callbacks registered and
+        /// starts the host exactly once. The NetworkManager lives in the
+        /// Bootstrap scene as DontDestroyOnLoad and must already exist.
+        /// Subsequent calls are no-ops while the host is already listening.
         /// </summary>
-        async UniTask EnsureHostStartedAsync()
+        void EnsureHostStarted()
         {
             // Guard against concurrent calls (e.g. OnSignedIn event + IsSignedIn
-            // check both firing before the first call completes its async yield).
+            // check both firing before the first call completes).
             if (_hostStartInProgress) return;
             _hostStartInProgress = true;
 
             try
             {
-                // Instantiate NetworkManager prefab if none exists yet.
-                if (NetworkManager.Singleton == null)
-                {
-                    if (_networkManagerPrefab != null)
-                    {
-                        Instantiate(_networkManagerPrefab);
-                        // Wait one frame for NetworkManager.Awake() to register as Singleton.
-                        await UniTask.Yield();
-                    }
-                    else
-                    {
-                        CSDebug.LogError("[MultiplayerSetup] Cannot start host — no NetworkManager and no prefab assigned.");
-                        return;
-                    }
-                }
-
+                // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
                 var nm = NetworkManager.Singleton;
                 if (nm == null)
                 {
-                    CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null after instantiation.");
+                    CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null — it should exist from the Bootstrap scene.");
                     return;
                 }
 

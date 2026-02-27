@@ -56,10 +56,6 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Seconds to wait for the network host to become ready before starting it from the auth scene.")]
         private float networkHostTimeout = 3f;
 
-        [Header("Networking")]
-        [SerializeField, Tooltip("NetworkManager prefab. Used to start the network host before loading Menu_Main when MultiplayerSetup has not yet started it.")]
-        private GameObject _networkManagerPrefab;
-
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
         [Inject] private PlayerDataService _playerDataService;
@@ -463,9 +459,10 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Guarantees the network host is running before Menu_Main is loaded.
+        /// The NetworkManager lives in the Bootstrap scene as DontDestroyOnLoad.
         /// First waits for MultiplayerSetup to start the host (via OnSignedIn).
-        /// If that doesn't happen within <see cref="networkHostTimeout"/>, creates
-        /// the NetworkManager from prefab and starts the host directly.
+        /// If that doesn't happen within <see cref="networkHostTimeout"/>, starts
+        /// the host directly on the existing NetworkManager.
         /// </summary>
         async UniTask EnsureHostStartedAsync(CancellationToken ct)
         {
@@ -476,7 +473,7 @@ namespace CosmicShore.Core
                 return;
             }
 
-            // Wait for MultiplayerSetup (if present in the scene) to start the host.
+            // Wait for MultiplayerSetup to start the host (triggered by OnSignedIn).
             using (var waitCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
             {
                 waitCts.CancelAfter(TimeSpan.FromSeconds(networkHostTimeout));
@@ -495,24 +492,11 @@ namespace CosmicShore.Core
                 }
             }
 
-            // Instantiate NetworkManager from prefab if it doesn't exist yet.
-            if (NetworkManager.Singleton == null)
-            {
-                if (_networkManagerPrefab == null)
-                {
-                    CSDebug.LogError("[AuthScene] Cannot start host — no NetworkManager exists and no prefab assigned.");
-                    return;
-                }
-
-                Instantiate(_networkManagerPrefab);
-                // Wait one frame for NetworkManager.Awake() to register as Singleton.
-                await UniTask.Yield(ct);
-            }
-
+            // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
             var nm = NetworkManager.Singleton;
             if (nm == null)
             {
-                CSDebug.LogError("[AuthScene] NetworkManager.Singleton is null after prefab instantiation.");
+                CSDebug.LogError("[AuthScene] NetworkManager.Singleton is null — it should exist from the Bootstrap scene.");
                 return;
             }
 
