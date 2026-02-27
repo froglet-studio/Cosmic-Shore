@@ -61,7 +61,7 @@ MonoBehaviour:
   ugsStatsManager: {fileID: 0}
   captainManager: {fileID: 0}
   iapManager: {fileID: 0}
-  gameManager: {fileID: 0}
+  sceneLoader: {fileID: 0}
   themeManager: {fileID: 0}
   cameraManager: {fileID: 0}
   postProcessingManager: {fileID: 0}
