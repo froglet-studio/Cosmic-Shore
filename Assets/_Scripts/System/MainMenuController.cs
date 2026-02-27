@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -28,6 +29,9 @@ namespace CosmicShore.Core
     /// </summary>
     public class MainMenuController : MonoBehaviour
     {
+        [Header("Spawn Origins")]
+        [SerializeField] protected Transform[] _playerOrigins;
+        
         [Header("Menu Autopilot Configuration")]
         [SerializeField, Tooltip("Vessel class displayed as the autopilot in the menu background.")]
         VesselClassType menuVesselClass = VesselClassType.Squirrel;
@@ -77,9 +81,10 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            ConfigureMenuGameData();
             SubscribeEvents();
             TransitionTo(MainMenuState.Initializing);
-            ConfigureMenuGameData();
+            DomainAssigner.Initialize();
             _gameData.InitializeGame();
         }
 
@@ -112,6 +117,7 @@ namespace CosmicShore.Core
 
         void ConfigureMenuGameData()
         {
+            _gameData.SetSpawnPositions(_playerOrigins);
             _gameData.selectedVesselClass.Value = menuVesselClass;
             _gameData.SelectedPlayerCount.Value = menuPlayerCount;
             _gameData.SelectedIntensity.Value = menuIntensity;

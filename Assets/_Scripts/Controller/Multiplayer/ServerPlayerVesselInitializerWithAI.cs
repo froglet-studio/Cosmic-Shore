@@ -45,9 +45,7 @@ namespace CosmicShore.Gameplay
                 enabled = false;
                 return;
             }
-
-            SetupSpawnPositions();
-
+            
             // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawned.
             // AI players fire the event during Spawn(), but since we haven't
             // subscribed yet, those events are harmlessly ignored.
@@ -82,9 +80,8 @@ namespace CosmicShore.Gameplay
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
-                var spawnT = GetSpawnTransformForAI(i);
-                if (spawnT)
-                    aiPlayerNO.transform.SetPositionAndRotation(spawnT.position, spawnT.rotation);
+                var spawnT = GetSpawnPoseForAI(i);
+                aiPlayerNO.transform.SetPositionAndRotation(spawnT.position, spawnT.rotation);
 
                 aiPlayerNO.Spawn(true);
 
@@ -177,10 +174,12 @@ namespace CosmicShore.Gameplay
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
 
-        Transform GetSpawnTransformForAI(int aiIndex)
+        Pose GetSpawnPoseForAI(int aiIndex)
         {
+            var _playerOrigins = gameData.SpawnPoses;
+            
             if (_playerOrigins == null || _playerOrigins.Length == 0)
-                return null;
+                return default;
 
             int idx = 2 + aiIndex;
             if (idx >= _playerOrigins.Length)

@@ -150,13 +150,13 @@ namespace CosmicShore.Gameplay
             {
                 NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
             }
+            
+            NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+            NetIsAI.Value = IsInitializedAsAI;
+            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
             // Signal spawn after name is set so server-side handlers see valid values.
             gameData.InvokePlayerNetworkSpawned();
-
-            // Setting vessel type triggers the server spawn chain synchronously
-            // (HandleNewPlayer → OnPlayerReadyToSpawn → SpawnVesselAndInitialize).
-            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
             InputController.Initialize();
         }

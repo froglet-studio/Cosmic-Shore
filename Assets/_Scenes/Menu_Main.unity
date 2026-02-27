@@ -57922,11 +57922,6 @@ MonoBehaviour:
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
   shutdownNetworkOnDespawn: 1
-  _playerOrigins:
-  - {fileID: 1564324325}
-  - {fileID: 673228694}
-  - {fileID: 1419570605}
-  - {fileID: 1867942830}
 --- !u!114 &1486013850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -57957,6 +57952,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d759a309d5838254980724692bce6225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _playerOrigins:
+  - {fileID: 1564324325}
+  - {fileID: 673228694}
+  - {fileID: 1419570605}
+  - {fileID: 1867942830}
   menuVesselClass: 6
   menuPlayerCount: 3
   menuIntensity: 1

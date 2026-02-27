@@ -1,6 +1,4 @@
-using CosmicShore.Data;
 using CosmicShore.Utility;
-using Unity.Netcode;
 
 namespace CosmicShore.Gameplay
 {
@@ -23,53 +21,22 @@ namespace CosmicShore.Gameplay
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
         /// <summary>
-        /// Defers spawn setup until game data is configured.
-        /// MainMenuController.Start() → ConfigureMenuGameData() → InitializeGame()
-        /// raises OnInitializeGame, at which point we proceed with the spawn chain.
-        /// </summary>
-        protected override void OnNetworkSpawn()
-        {
-            if (!NetworkManager.Singleton.IsServer)
-            {
-                enabled = false;
-                return;
-            }
-
-            gameData.OnInitializeGame.OnRaised += HandleGameInitialized;
-        }
-
-        protected override void OnNetworkDespawn()
-        {
-            gameData.OnInitializeGame.OnRaised -= HandleGameInitialized;
-            base.OnNetworkDespawn();
-        }
-
-        void HandleGameInitialized()
-        {
-            gameData.OnInitializeGame.OnRaised -= HandleGameInitialized;
-            SetupSpawnPositions();
-            SubscribeAndProcessPlayers();
-        }
-
-        /// <summary>
         /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
         /// </summary>
         protected override void OnPlayerReadyToSpawn(Player player)
         {
             base.OnPlayerReadyToSpawn(player);
-            ActivateAutopilot();
+            ActivateAutopilot(player);
         }
 
-        void ActivateAutopilot()
+        void ActivateAutopilot(Player player)
         {
-            var player = gameData.LocalPlayer;
             if (player?.Vessel == null)
             {
                 CSDebug.LogError("[MenuServerVesselInit] LocalPlayer or Vessel not available after initialization.");
                 return;
             }
 
-            InitializeMenuPlayerIdentity(player);
             gameData.SetPlayersActive();
 
             player.Vessel.ToggleAIPilot(true);
@@ -82,25 +49,6 @@ namespace CosmicShore.Gameplay
             }
 
             gameData.InvokeMenuReady();
-        }
-
-        void InitializeMenuPlayerIdentity(IPlayer player)
-        {
-            if (player is not Player netPlayer)
-                return;
-
-            netPlayer.NetDomain.Value = Domains.Jade;
-
-            if (string.IsNullOrEmpty(player.Name))
-            {
-                string displayName = !string.IsNullOrEmpty(gameData.LocalPlayerDisplayName)
-                    ? gameData.LocalPlayerDisplayName
-                    : "Pilot";
-                netPlayer.NetName.Value = displayName;
-            }
-
-            player.RoundStats.Domain = player.Domain;
-            player.RoundStats.Name = player.Name;
         }
     }
 }

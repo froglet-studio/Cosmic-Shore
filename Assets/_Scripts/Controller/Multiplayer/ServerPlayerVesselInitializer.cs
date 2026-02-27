@@ -42,9 +42,6 @@ namespace CosmicShore.Gameplay
                  "Set to false for Menu_Main so the host persists across scene transitions.")]
         [SerializeField] bool shutdownNetworkOnDespawn = true;
 
-        [Header("Spawn Origins")]
-        [SerializeField] protected Transform[] _playerOrigins;
-
         protected NetcodeHooks _netcodeHooks;
 
         public Action OnAllPlayersSpawned;
@@ -79,34 +76,29 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            SetupSpawnPositions();
-            SubscribeAndProcessPlayers();
+            gameData.OnInitializeGame.OnRaised += HandleGameInitialized;
         }
 
         protected virtual void OnNetworkDespawn()
         {
             gameData.OnPlayerNetworkSpawned.OnRaised -= HandlePlayerNetworkSpawned;
+            gameData.OnInitializeGame.OnRaised -= HandleGameInitialized;
             _processedPlayers.Clear();
 
             if (shutdownNetworkOnDespawn && NetworkManager.Singleton)
                 NetworkManager.Singleton.Shutdown();
         }
 
-        protected void SetupSpawnPositions()
-        {
-            gameData.SetSpawnPositions(_playerOrigins);
-            DomainAssigner.Initialize();
-        }
-
         protected void SubscribeAndProcessPlayers()
         {
             gameData.OnPlayerNetworkSpawned.OnRaised += HandlePlayerNetworkSpawned;
-
-            foreach (var p in gameData.Players)
-            {
-                if (p is Player netPlayer && _processedPlayers.Add(netPlayer.NetworkObjectId))
-                    HandleNewPlayer(netPlayer);
-            }
+            HandlePlayerNetworkSpawned();
+        }
+        
+        void HandleGameInitialized()
+        {
+            gameData.OnInitializeGame.OnRaised -= HandleGameInitialized;
+            SubscribeAndProcessPlayers();
         }
 
         void HandlePlayerNetworkSpawned()
@@ -125,9 +117,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void HandleNewPlayer(Player player)
         {
-            player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
-            player.NetIsAI.Value = false;
-
             if (IsReadyToSpawn(player))
             {
                 OnPlayerReadyToSpawn(player);
@@ -166,7 +155,7 @@ namespace CosmicShore.Gameplay
             gameData.InvokeClientReady();
         }
 
-        protected void SpawnVesselAndInitialize(ulong clientId, Player player)
+        void SpawnVesselAndInitialize(ulong clientId, Player player)
         {
             var vesselNO = SpawnVesselForPlayer(clientId, player);
             if (vesselNO == null)
@@ -222,7 +211,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer)
+        NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer)
         {
             var vesselType = networkPlayer.NetDefaultVesselType.Value;
 
@@ -243,16 +232,6 @@ namespace CosmicShore.Gameplay
             networkVessel.SpawnWithOwnership(clientId, true);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
             return networkVessel;
-        }
-
-        protected Player FindPlayerByClientId(ulong clientId)
-        {
-            foreach (var p in gameData.Players)
-            {
-                if (p is Player netPlayer && netPlayer.OwnerClientId == clientId)
-                    return netPlayer;
-            }
-            return null;
         }
 
         /// <summary>
