@@ -109,12 +109,13 @@ namespace CosmicShore.Core
             try
             {
                 // Race the entire auth flow against a hard safety timeout.
-                var (hasResult, _) = await UniTask.WhenAny(
+                // WhenAny returns the 0-based index of the first task to complete.
+                int winnerIndex = await UniTask.WhenAny(
                     RunAuthFlowCoreAsync(ct),
                     UniTask.Delay(TimeSpan.FromSeconds(safetyTimeout), ignoreTimeScale: true, cancellationToken: ct)
                 );
 
-                if (!hasResult && !_navigated)
+                if (winnerIndex == 1 && !_navigated)
                 {
                     CSDebug.LogWarning($"[AuthScene] Safety timeout reached after {safetyTimeout}s. Force-navigating to main menu.");
                     NavigateToMainMenu();
