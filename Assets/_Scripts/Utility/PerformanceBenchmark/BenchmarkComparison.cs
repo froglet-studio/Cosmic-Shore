@@ -121,7 +121,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             sb.AppendLine($"  Scene:    {result.baseline.sceneName} → {result.current.sceneName}");
             sb.AppendLine($"  Frames:   {result.baseline.statistics.totalFrames} → {result.current.statistics.totalFrames}");
             sb.AppendLine();
-            sb.AppendLine($"  {"Metric",-28} {"Baseline",>10} {"Current",>10} {"Delta",>10} {"%",>7}  Verdict");
+            sb.AppendLine($"  {"Metric",-28} {"Baseline",10} {"Current",10} {"Delta",10} {"%",7}  Verdict");
             sb.AppendLine($"  {"─".PadRight(28, '─')} {"─".PadRight(10, '─')} {"─".PadRight(10, '─')} {"─".PadRight(10, '─')} {"─".PadRight(7, '─')}  {"─".PadRight(10, '─')}");
 
             foreach (var d in result.deltas)
@@ -134,7 +134,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 };
 
                 string sign = d.absoluteDelta >= 0 ? "+" : "";
-                sb.AppendLine($"  {d.metricName,-28} {d.baselineValue,>10:F2} {d.currentValue,>10:F2} {sign + d.absoluteDelta.ToString("F2"),>10} {sign + d.percentDelta.ToString("F1") + "%",>7}  {verdictStr}");
+                sb.AppendLine($"  {d.metricName,-28} {d.baselineValue,10:F2} {d.currentValue,10:F2} {sign + d.absoluteDelta.ToString("F2"),10} {sign + d.percentDelta.ToString("F1") + "%",7}  {verdictStr}");
             }
 
             sb.AppendLine();

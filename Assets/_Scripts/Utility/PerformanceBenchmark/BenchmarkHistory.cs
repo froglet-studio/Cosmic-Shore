@@ -202,7 +202,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var recent = entries.Take(count).ToList();
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Performance trend for '{sceneName}' (last {recent.Count} runs):");
-            sb.AppendLine($"{"Date",-22} {"Label",-16} {"Avg FPS",>8} {"P1 FPS",>8} {"Avg ms",>8} {"P99 ms",>8} {"Frames",>7}  Tag");
+            sb.AppendLine($"{"Date",-22} {"Label",-16} {"Avg FPS",8} {"P1 FPS",8} {"Avg ms",8} {"P99 ms",8} {"Frames",7}  Tag");
             sb.AppendLine(new string('─', 100));
 
             foreach (var e in recent)
@@ -210,7 +210,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 string date = e.timestamp?.Length > 19 ? e.timestamp[..19] : e.timestamp ?? "?";
                 string label = e.label?.Length > 15 ? e.label[..15] : e.label ?? "";
                 string tag = string.IsNullOrEmpty(e.tag) ? "" : $"[{e.tag}]";
-                sb.AppendLine($"{date,-22} {label,-16} {e.avgFps,>8:F1} {e.p1Fps,>8:F1} {e.avgFrameTimeMs,>8:F2} {e.p99FrameTimeMs,>8:F2} {e.totalFrames,>7}  {tag}");
+                sb.AppendLine($"{date,-22} {label,-16} {e.avgFps,8:F1} {e.p1Fps,8:F1} {e.avgFrameTimeMs,8:F2} {e.p99FrameTimeMs,8:F2} {e.totalFrames,7}  {tag}");
             }
 
             if (recent.Count >= 2)
