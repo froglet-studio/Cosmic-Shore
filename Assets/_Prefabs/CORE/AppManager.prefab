@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 9113152145594744158}
   - component: {fileID: 2108845819244561836}
-  - component: {fileID: 5456740058571604360}
   - component: {fileID: 4798048649644018183}
   m_Layer: 0
   m_Name: AppManager
@@ -46,6 +45,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e302c18e9e54be68a27007ba98cf5b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _bootstrapConfig: {fileID: 11400000, guid: d6eff71c1de600547829b04174eaea6e, type: 2}
+  _sceneNames: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
+  _splashCanvasGroup: {fileID: 0}
+  _fadeOutDuration: 0.5
   authenticationDataVariable: {fileID: 11400000, guid: 875bcedfcf3335047b416297732cba15,
     type: 2}
   authenticationWithLog: 0
@@ -54,32 +57,14 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   gameSetting: {fileID: 0}
   audioSystem: {fileID: 0}
-  callToActionSystem: {fileID: 0}
-  dailyChallengeSystem: {fileID: 0}
   playerDataService: {fileID: 0}
   ugsStatsManager: {fileID: 0}
-  _gameplayManagerPrefabs:
-  - {fileID: 3198637200510386836, guid: d2f1f48a5b5d5d14299a56a777d3971c, type: 3}
-  - {fileID: 5172949237805376952, guid: aa34cc8006c47114a826ff61f52889d6, type: 3}
-  - {fileID: 4853709196820857184, guid: ba70c0f3eb077d44b8a538982d02dadc, type: 3}
-  - {fileID: 8350600879602490808, guid: 7fec532a729a8b648a8de2399d1b918a, type: 3}
-  - {fileID: 1962929663241759852, guid: bd0ed2313b0c31841835230bedeaa90d, type: 3}
-  - {fileID: 2173894828075591833, guid: 52d52803d2bd0384093e4705bcf57ed1, type: 3}
-  - {fileID: 4302996649166915022, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
-  - {fileID: 7148363145610136641, guid: c5bedb24f471a7b43ab346332d4ea40e, type: 3}
-  - {fileID: 5377474336189881263, guid: 987fb44715d58f443bb86d97e9ed91a7, type: 3}
---- !u!114 &5456740058571604360
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6778103901198434919}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5312032623c34414a54ea00e35a7eb8e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  captainManager: {fileID: 0}
+  iapManager: {fileID: 0}
+  sceneLoader: {fileID: 0}
+  themeManager: {fileID: 0}
+  cameraManager: {fileID: 0}
+  postProcessingManager: {fileID: 0}
 --- !u!114 &4798048649644018183
 MonoBehaviour:
   m_ObjectHideFlags: 0
