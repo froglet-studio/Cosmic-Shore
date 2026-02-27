@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer && _processedClients.Add(netPlayer.OwnerClientId))
-                    OnClientConnected(netPlayer.OwnerClientId);
+                    HandleNewPlayer(netPlayer.OwnerClientId);
             }
         }
 
@@ -137,14 +137,14 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer && _processedClients.Add(netPlayer.OwnerClientId))
-                    OnClientConnected(netPlayer.OwnerClientId);
+                    HandleNewPlayer(netPlayer.OwnerClientId);
             }
         }
 
         // ----------------------------
         // Process a newly spawned player
         // ----------------------------
-        protected virtual void OnClientConnected(ulong clientId)
+        protected virtual void HandleNewPlayer(ulong clientId)
         {
             bool isLocalHost = clientId == NetworkManager.Singleton.LocalClientId;
             bool needsAI = isLocalHost && (IsSoloWithAI || NeedsAIBackfill);
