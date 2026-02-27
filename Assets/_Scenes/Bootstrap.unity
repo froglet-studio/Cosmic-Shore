@@ -833,9 +833,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  AllGames: {fileID: 11400000, guid: 295aa0134b55e474d9aceca4bbb5b444, type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  _onSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
+  waitBeforeLoading: 0.5
 --- !u!4 &442144521
 Transform:
   m_ObjectHideFlags: 0
@@ -1040,7 +1038,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cloudSaveProfileKey: player_profile
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!114 &483927159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3613,6 +3610,11 @@ PrefabInstance:
       propertyPath: gameSetting
       value: 
       objectReference: {fileID: 207728440}
+    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
+        type: 3}
+      propertyPath: sceneLoader
+      value: 
+      objectReference: {fileID: 7845463}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
       propertyPath: themeManager
