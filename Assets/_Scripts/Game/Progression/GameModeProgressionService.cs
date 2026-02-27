@@ -218,32 +218,68 @@ namespace CosmicShore.Game.Progression
         }
 
         /// <summary>
-        /// Returns how many quests the player has completed (for slider normalization).
+        /// Returns how many quests have been claimed (next mode unlocked).
+        /// Used by the slider — only advances on claim, not on quest-target completion.
         /// </summary>
-        public int GetCompletedQuestCount()
+        public int GetClaimedQuestCount()
         {
             if (questList == null) return 0;
 
             int count = 0;
+            for (int i = 0; i + 1 < questList.Quests.Count; i++)
+            {
+                if (ProgressionData.IsUnlocked(questList.Quests[i + 1].GameMode.ToString()))
+                    count++;
+            }
+
+            return count;
+        }
+
+        // ── Debug / Editor ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Resets all progression data and re-locks every mode except the first.
+        /// </summary>
+        public void ResetAllProgress()
+        {
+            ProgressionData = new GameModeProgressionData();
+            EnsureFirstModeUnlocked();
+            OnProgressionChanged?.Invoke(ProgressionData);
+            ScheduleDebouncedSave();
+            CSDebug.Log("[GameModeProgressionService] All quest progress reset.");
+        }
+
+        /// <summary>
+        /// Finds the first uncompleted, unlocked quest and marks it as completed
+        /// (ReadyToClaim). Useful for editor testing.
+        /// </summary>
+        public void DebugCompleteCurrentQuest()
+        {
+            if (questList == null) return;
+
             for (int i = 0; i < questList.Quests.Count; i++)
             {
                 var quest = questList.Quests[i];
                 string modeName = quest.GameMode.ToString();
 
-                // A mode is "past" if it's unlocked AND either:
-                //  - the next mode is also unlocked, OR
-                //  - its quest is completed
-                if (ProgressionData.IsUnlocked(modeName) || i == 0)
-                {
-                    if (ProgressionData.IsQuestCompleted(modeName))
-                        count++;
-                    else if (i + 1 < questList.Quests.Count &&
-                             ProgressionData.IsUnlocked(questList.Quests[i + 1].GameMode.ToString()))
-                        count++;
-                }
+                bool isUnlocked = i == 0 || ProgressionData.IsUnlocked(modeName);
+                if (!isUnlocked) continue;
+
+                // Skip already completed or already claimed
+                if (ProgressionData.IsQuestCompleted(modeName)) continue;
+                if (i + 1 < questList.Quests.Count &&
+                    ProgressionData.IsUnlocked(questList.Quests[i + 1].GameMode.ToString()))
+                    continue;
+
+                ProgressionData.MarkQuestCompleted(modeName);
+                CSDebug.Log($"[GameModeProgressionService] Debug-completed quest for {quest.GameMode}.");
+                OnQuestCompleted?.Invoke(quest);
+                OnProgressionChanged?.Invoke(ProgressionData);
+                ScheduleDebouncedSave();
+                return;
             }
 
-            return count;
+            CSDebug.LogWarning("[GameModeProgressionService] No uncompleted quest found to debug-complete.");
         }
 
         // ── Internal ────────────────────────────────────────────────────────────

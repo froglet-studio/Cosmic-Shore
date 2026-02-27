@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 
+using CosmicShore.Game.Progression;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -77,6 +78,47 @@ namespace CosmicShore.Utility.Tools
             // Open the Photo Booth in the Editor (do not enter Play Mode)
             EditorSceneManager.OpenScene($"Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity", OpenSceneMode.Single);
             CSDebug.LogFormat("{0} - {1} - Opening PlayFab Test Sandbox.", nameof(FrogletTools), nameof(OpenPlayFabSandbox));
+        }
+
+        // ─── Quest Debug ────────────────────────────────
+
+        [MenuItem("FrogletTools/Quest Debug/Reset All Quests", false, 200)]
+        private static void ResetAllQuests()
+        {
+            if (!Application.isPlaying)
+            {
+                Debug.LogWarning("[FrogletTools] Quest Debug only works in Play Mode.");
+                return;
+            }
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null)
+            {
+                Debug.LogWarning("[FrogletTools] GameModeProgressionService not found.");
+                return;
+            }
+
+            service.ResetAllProgress();
+            Debug.Log("[FrogletTools] All quest progress has been reset.");
+        }
+
+        [MenuItem("FrogletTools/Quest Debug/Complete Current Quest", false, 201)]
+        private static void CompleteCurrentQuest()
+        {
+            if (!Application.isPlaying)
+            {
+                Debug.LogWarning("[FrogletTools] Quest Debug only works in Play Mode.");
+                return;
+            }
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null)
+            {
+                Debug.LogWarning("[FrogletTools] GameModeProgressionService not found.");
+                return;
+            }
+
+            service.DebugCompleteCurrentQuest();
         }
     }
 }

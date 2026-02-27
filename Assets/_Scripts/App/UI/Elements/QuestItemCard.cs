@@ -24,6 +24,8 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] private GameObject lockedOverlay;
         [Tooltip("Shown when the quest is fully complete and claimed")]
         [SerializeField] private GameObject completedOverlay;
+        [Tooltip("Icon shown when the mode is unlocked (open padlock / glow)")]
+        [SerializeField] private GameObject unlockableIcon;
         [Tooltip("Button shown when the quest target is met but not yet claimed")]
         [SerializeField] private Button claimButton;
 
@@ -61,16 +63,23 @@ namespace CosmicShore.App.UI.Elements
         /// </summary>
         public void SetState(QuestItemState state)
         {
-            bool isLocked      = state == QuestItemState.Locked;
+            bool isLocked       = state == QuestItemState.Locked;
             bool isReadyToClaim = state == QuestItemState.ReadyToClaim;
             bool isClaimed      = state == QuestItemState.Claimed;
+            bool isUnlocked     = !isLocked;
 
+            // Lock / unlock overlays
             if (lockedOverlay != null)
                 lockedOverlay.SetActive(isLocked);
 
             if (completedOverlay != null)
                 completedOverlay.SetActive(isClaimed);
 
+            // Unlockable icon — visible whenever the mode is unlocked
+            if (unlockableIcon != null)
+                unlockableIcon.SetActive(isUnlocked);
+
+            // Claim button — only when target met and awaiting player tap
             if (claimButton != null)
                 claimButton.gameObject.SetActive(isReadyToClaim);
 
@@ -78,9 +87,13 @@ namespace CosmicShore.App.UI.Elements
             if (cardBackground != null)
                 cardBackground.color = isLocked ? lockedTint : _originalBgColor;
 
-            // Update description text based on state
+            // Text visibility — show name and description when unlocked
+            if (nameText != null)
+                nameText.gameObject.SetActive(isUnlocked);
+
             if (descriptionText != null)
             {
+                descriptionText.gameObject.SetActive(isUnlocked);
                 if (isClaimed)
                     descriptionText.text = "Completed";
             }

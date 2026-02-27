@@ -189,10 +189,11 @@ namespace CosmicShore.App.UI.Views
 
             // The first mode is always unlocked, so the baseline is 1/N.
             // Each completed quest adds another 1/N on top of that.
+            // Only count claimed quests so the slider animates on claim tap, not on target-met.
             var service = GameModeProgressionService.Instance;
-            int completed = service != null ? service.GetCompletedQuestCount() : 0;
+            int claimed = service != null ? service.GetClaimedQuestCount() : 0;
 
-            return Mathf.Clamp01((float)(1 + completed) / total);
+            return Mathf.Clamp01((float)(1 + claimed) / total);
         }
 
         // ── Cleanup ─────────────────────────────────────────────────────────────
