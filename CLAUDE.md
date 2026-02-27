@@ -209,7 +209,7 @@ Existing custom SOAP types (14 subdirectories): `AbilityStats`, `AuthenticationD
 The application uses an industry-standard bootstrap pattern (`Assets/_Scripts/System/Bootstrap/`):
 
 1. **Bootstrap scene** (build index 0) → `BootstrapController` initializes all `IBootstrapService` implementations in order
-2. **Authentication scene** → `SplashToAuthFlow` handles auth flow
+2. **Splash / Authentication scene** → checks cached auth, signs in or shows auth UI
 3. **Menu_Main scene** → main menu entry point
 
 Key classes:
@@ -218,6 +218,115 @@ Key classes:
 - `SceneTransitionManager` — unified scene loading with fade transitions
 - `ApplicationLifecycleManager` — application lifecycle events
 - `BootstrapConfigSO` — configures: first scene, main menu scene, service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
+
+### Authentication & Session Flow
+
+Authentication uses **Unity Gaming Services (UGS)** exclusively. Legacy PlayFab auth files exist under `_Scripts/System/Playfab/Authentication/` but are deprecated and inert.
+
+#### Architecture
+
+The auth system follows a **single-writer / multi-reader** pattern through SOAP:
+
+- **`AuthenticationServiceFacade`** (plain C# singleton, Reflex DI) — the **sole writer** to `AuthenticationDataVariable`. Handles UGS initialization, anonymous sign-in, cached session restore, event wiring, and sign-out. Created by `AppManager.InstallBindings()` as a lazy singleton.
+- **`AuthenticationDataVariable`** (SOAP `ScriptableVariable<AuthenticationData>`) — the **shared state**. All other systems read from this or subscribe to its events.
+- **`AuthenticationController`** (MonoBehaviour) — thin adapter that delegates to the facade via `[Inject]`. Exists for scenes that need a GameObject entry point (e.g., inspector-driven `autoSignInAnonymously` toggle).
+- **`AuthenticationSceneController`** (MonoBehaviour) — orchestrates the Authentication scene UI: auto-skip on cached auth, guest login button, username setup panel, navigation to main menu. All async work uses `CancellationToken` and `UniTask`.
+- **`SplashToAuthFlow`** (MonoBehaviour) — placed on the splash scene. After splash display, reads `AuthenticationDataVariable` to decide: skip to `Menu_Main` (if signed in) or load the Authentication scene.
+
+#### Execution Flow
+
+```
+Bootstrap Scene (build index 0)
+│ BootstrapController → ConfigurePlatform, InitializeServices
+│ └─ Load AppManager prefab (Reflex DI root, DontDestroyOnLoad)
+│
+├─ AppManager.InstallBindings()
+│   ├─ Register AuthenticationDataVariable (SO asset)
+│   ├─ Register AuthenticationServiceFacade (Singleton, Lazy)
+│   ├─ Register NetworkMonitor (Singleton, Lazy)
+│   └─ Register PlayerDataService, GameSetting, etc.
+│
+├─ AppManager.Start()
+│   ├─ facade.StartAuthentication()  ← fire-and-forget
+│   │   ├─ UnityServices.InitializeAsync()
+│   │   ├─ WireAuthEventsOnce()
+│   │   ├─ SignInAnonymouslyAsync()
+│   │   └─ OnSignInSuccess() → AuthenticationData SOAP events
+│   │       └─ OnSignedIn.Raise() ──► PlayerDataService.HandleSignedIn()
+│   │                                  └─ CloudSave load/merge → IsInitialized = true
+│   └─ networkMonitor.StartMonitoring()
+│
+└─ SceneTransitionManager.LoadSceneAsync(BootstrapConfigSO.FirstSceneName)
+    │
+    ▼
+Splash Scene (optional, if configured as first scene)
+│ SplashToAuthFlow.Start()
+│ ├─ UniTask.Delay(splashDisplayDuration)
+│ ├─ Read AuthenticationDataVariable (SOAP)
+│ ├─ If auth in-flight → UniTask.WaitUntil(settled, timeout)
+│ ├─ If signed in → Menu_Main
+│ └─ If not signed in → Authentication scene
+│
+    ▼
+Authentication Scene
+│ AuthenticationSceneController.Start()
+│ ├─ [1] Already signed in? → HandlePostAuthFlow → Menu_Main
+│ ├─ [2] facade.TrySignInCachedAsync() succeeds? → HandlePostAuthFlow → Menu_Main
+│ ├─ [3] Show auth panel (or auto-anonymous sign-in if no panel)
+│ │   └─ Guest Login button → facade.EnsureSignedInAnonymouslyAsync()
+│ ├─ HandlePostAuthFlow:
+│ │   ├─ Wait for PlayerDataService.IsInitialized (with timeout)
+│ │   ├─ Username needed? → Show username setup panel
+│ │   └─ Otherwise → Menu_Main
+│ └─ Safety timeout (configurable) → force-navigate to Menu_Main
+│
+    ▼
+Menu_Main Scene
+```
+
+#### SOAP Data Flow
+
+```
+AuthenticationServiceFacade (single writer)
+        │ writes to
+        ▼
+AuthenticationDataVariable (ScriptableObject asset)
+  └─ AuthenticationData
+       ├─ .State        (NotInitialized → Initializing → Ready → SigningIn → SignedIn)
+       ├─ .IsSignedIn   (bool)
+       ├─ .PlayerId     (string)
+       ├─ .OnSignedIn   ──► PlayerDataService.HandleSignedIn()
+       ├─ .OnSignedOut  ──► (listeners clear session state)
+       └─ .OnSignInFailed ──► (listeners handle error UI)
+```
+
+Readers: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService`, `AuthenticationController`.
+
+#### Key Files
+
+| Role | File | Location |
+|---|---|---|
+| Auth facade (single writer) | `AuthenticationServiceFacade.cs` | `_Scripts/System/` |
+| Scene controller | `AuthenticationSceneController.cs` | `_Scripts/System/` |
+| MonoBehaviour adapter | `AuthenticationController.cs` | `_Scripts/System/Systems/Authentication/` |
+| Splash → auth routing | `SplashToAuthFlow.cs` | `_Scripts/System/` |
+| DI root / service registry | `AppManager.cs` | `_Scripts/System/` |
+| Network monitor | `NetworkMonitor.cs` | `_Scripts/System/` |
+| SOAP auth state | `AuthenticationData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| SOAP auth variable | `AuthenticationDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| SOAP network state | `NetworkMonitorData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| Player profile service | `PlayerDataService.cs` | `_Scripts/UI/Views/` |
+| Auth SO asset instance | `AuthenticationData.asset` | `_SO_Assets/Authentication Data/` |
+| Legacy PlayFab auth (deprecated) | `AuthenticationManager.cs` | `_Scripts/System/Playfab/Authentication/` |
+| Legacy PlayFab UI (deprecated) | `AuthenticationView.cs` | `_Scripts/System/Playfab/Authentication/` |
+
+#### Auth Patterns to Follow
+
+- **Single writer**: Only `AuthenticationServiceFacade` writes to `AuthenticationData`. Scene controllers and UI read state and subscribe to SOAP events — they never mutate auth state directly.
+- **UniTask + CancellationToken**: All auth async paths use `UniTask` with `CancellationTokenSource` tied to `OnEnable`/`OnDisable` lifecycle. No raw `Task.Delay` or manual elapsed-time polling.
+- **Timeout via linked CTS**: Use `CancellationTokenSource.CreateLinkedTokenSource(ct)` + `CancelAfter()` for timeouts, not polling loops.
+- **Button interactability**: Disable buttons during async operations instead of boolean `_isProcessing` guards.
+- **Facade via DI**: Scene scripts get the facade via `[Inject]`, not by creating their own `AuthenticationController` GameObjects at runtime.
 
 ### Input Strategy Pattern
 
@@ -314,7 +423,10 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
 | Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
-| App systems | Audio, Auth, Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP | `_Scripts/System/` |
+| Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
+| Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| App systems | Audio, Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP | `_Scripts/System/` |
 | ScriptableObjects | `SO_Vessel`, `SO_Captain`, `SO_Game`, `SO_ArcadeGame`, `SO_Element`, `SO_Mission`, etc. | `_Scripts/ScriptableObjects/` |
 
 ### Async Pattern
