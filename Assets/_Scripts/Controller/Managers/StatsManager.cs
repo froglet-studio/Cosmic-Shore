@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
 
         public void LifeformCreated(int cellID)
         {
-            if (!_allowRecord) return;
+            if (!_allowRecord || cellData == null) return;
 
             var cellStatsList = cellData.CellStatsList;
 
@@ -89,7 +89,7 @@ namespace CosmicShore.Gameplay
 
         public void LifeformDestroyed(int cellID)
         {
-            if (!_allowRecord) return;
+            if (!_allowRecord || cellData == null) return;
 
             var cellStatsList = cellData.CellStatsList;
 
