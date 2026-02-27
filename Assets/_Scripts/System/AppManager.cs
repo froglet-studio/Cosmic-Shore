@@ -36,7 +36,6 @@ namespace CosmicShore.Core
         [SerializeField] ThemeManager themeManager;
         [SerializeField] CameraManager cameraManager;
         [SerializeField] PostProcessingManager postProcessingManager;
-        [SerializeField] StatsManager statsManager;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
@@ -88,7 +87,6 @@ namespace CosmicShore.Core
             ResolveManager(ref themeManager, nameof(themeManager));
             ResolveManager(ref cameraManager, nameof(cameraManager));
             ResolveManager(ref postProcessingManager, nameof(postProcessingManager));
-            ResolveManager(ref statsManager, nameof(statsManager));
         }
 
         /// <summary>
@@ -139,7 +137,6 @@ namespace CosmicShore.Core
             RegisterIfNotNull(builder, themeManager, nameof(themeManager));
             RegisterIfNotNull(builder, cameraManager, nameof(cameraManager));
             RegisterIfNotNull(builder, postProcessingManager, nameof(postProcessingManager));
-            RegisterIfNotNull(builder, statsManager, nameof(statsManager));
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             if (authenticationDataVariable != null)
