@@ -42,10 +42,6 @@ namespace CosmicShore.Core
         [SerializeField] private Button confirmUsernameButton;
         [SerializeField] private TMP_Text usernameStatusText;
 
-        [Header("Networking")]
-        [SerializeField, Tooltip("NetworkManager prefab to instantiate before starting host. Must have NetworkManager + UnityTransport.")]
-        private GameObject _networkManagerPrefab;
-
         [Header("Timeouts")]
         [SerializeField, Tooltip("Seconds to wait for cached auth before showing UI.")]
         private float cachedAuthTimeout = 3f;
@@ -56,6 +52,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Hard safety timeout — force-navigates to main menu if everything hangs.")]
         private float safetyTimeout = 10f;
 
+        [SerializeField, Tooltip("Seconds to wait for the network host to become ready before falling back to direct scene load.")]
+        private float networkHostTimeout = 3f;
+
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
         [Inject] private PlayerDataService _playerDataService;
@@ -63,7 +62,6 @@ namespace CosmicShore.Core
 
         CancellationTokenSource _cts;
         bool _navigated;
-        bool _approvalCallbackRegistered;
 
         AuthenticationData AuthData => _authDataVariable?.Value;
 
@@ -93,12 +91,6 @@ namespace CosmicShore.Core
 
             if (confirmUsernameButton)
                 confirmUsernameButton.onClick.RemoveListener(OnConfirmUsernameClicked);
-
-            if (_approvalCallbackRegistered && NetworkManager.Singleton != null)
-            {
-                NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApproval;
-                _approvalCallbackRegistered = false;
-            }
         }
 
         void Start()
@@ -424,49 +416,37 @@ namespace CosmicShore.Core
             _navigated = true;
 
             CSDebug.Log("[AuthScene] Navigating to Main Menu...");
-            StartHostAndLoadMainMenuAsync(_cts?.Token ?? CancellationToken.None).Forget();
+            LoadMainMenuNetworkedAsync(_cts?.Token ?? CancellationToken.None).Forget();
         }
 
-        // ──────────────────────────────────────────────
-        //  Network Host + Networked Scene Load
-        // ──────────────────────────────────────────────
-
-        async UniTaskVoid StartHostAndLoadMainMenuAsync(CancellationToken ct)
+        /// <summary>
+        /// Waits for the network host (started by the persistent MultiplayerSetup
+        /// in response to OnSignedIn) to be ready, then loads Menu_Main via
+        /// networked scene management. Falls back to a direct scene load if the
+        /// host does not become ready within <see cref="networkHostTimeout"/>.
+        /// </summary>
+        async UniTaskVoid LoadMainMenuNetworkedAsync(CancellationToken ct)
         {
             try
             {
-                if (NetworkManager.Singleton == null)
-                {
-                    if (_networkManagerPrefab != null)
-                    {
-                        Instantiate(_networkManagerPrefab);
-                        await UniTask.Yield(ct);
-                    }
-                    else
-                    {
-                        CSDebug.LogWarning("[AuthScene] No NetworkManager prefab assigned. Falling back to direct scene load.");
-                        LoadMainMenuDirect();
-                        return;
-                    }
-                }
+                // Wait for MultiplayerSetup to instantiate NetworkManager and start host.
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(networkHostTimeout));
 
-                var nm = NetworkManager.Singleton;
-                if (nm == null)
+                try
                 {
-                    CSDebug.LogWarning("[AuthScene] NetworkManager.Singleton is null after instantiation. Falling back to direct scene load.");
+                    await UniTask.WaitUntil(
+                        () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
+                        cancellationToken: timeoutCts.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    CSDebug.LogWarning($"[AuthScene] Network host not ready after {networkHostTimeout}s. Falling back to direct scene load.");
                     LoadMainMenuDirect();
                     return;
                 }
 
-                if (!nm.IsListening)
-                {
-                    nm.ConnectionApprovalCallback += OnConnectionApproval;
-                    _approvalCallbackRegistered = true;
-
-                    CSDebug.Log("[AuthScene] Starting as network host...");
-                    nm.StartHost();
-                }
-
+                var nm = NetworkManager.Singleton;
                 string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
                 CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
                 nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
@@ -474,19 +454,9 @@ namespace CosmicShore.Core
             catch (OperationCanceledException) { /* scene destroyed */ }
             catch (Exception ex)
             {
-                CSDebug.LogWarning($"[AuthScene] Network host startup failed: {ex.Message}. Falling back to direct scene load.");
+                CSDebug.LogWarning($"[AuthScene] Networked scene load failed: {ex.Message}. Falling back to direct scene load.");
                 LoadMainMenuDirect();
             }
-        }
-
-        void OnConnectionApproval(
-            NetworkManager.ConnectionApprovalRequest request,
-            NetworkManager.ConnectionApprovalResponse response)
-        {
-            response.Approved = true;
-            response.CreatePlayerObject = false;
-            response.Position = Vector3.zero;
-            response.Rotation = Quaternion.identity;
         }
 
         void LoadMainMenuDirect()
