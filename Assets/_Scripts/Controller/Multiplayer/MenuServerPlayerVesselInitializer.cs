@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
@@ -5,18 +6,32 @@ using Unity.Netcode;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Menu_Main vessel initializer. Spawns the host player's vessel via the
-    /// base <see cref="ServerPlayerVesselInitializer"/> flow, initializes it,
-    /// then activates it in autopilot mode. No AI opponents are spawned.
+    /// Menu_Main vessel initializer. Owns the full menu vessel lifecycle:
     ///
-    /// Post-initialization responsibilities (on <see cref="GameDataSO.OnClientReady"/>):
-    ///   1. Activate the player (start vessel motion, enable subsystems).
-    ///   2. Enable AI pilot on the host's vessel.
-    ///   3. Pause player input (autopilot drives the vessel).
-    ///   4. Fire menu lifecycle events (round started, turn started).
+    /// Pre-spawn (Start):
+    ///   1. Force vessel class to Squirrel.
+    ///   2. Initialize game data.
+    ///
+    /// Spawn (OnClientConnected):
+    ///   3. Spawn only the host's vessel — no AI opponents.
+    ///
+    /// Post-initialization (OnClientReady):
+    ///   4. Activate the player (start vessel motion, enable subsystems).
+    ///   5. Enable AI pilot on the host's vessel.
+    ///   6. Pause player input (autopilot drives the vessel).
+    ///   7. Switch Cinemachine menu camera to follow the vessel.
+    ///   8. Fire menu lifecycle events (round started, turn started).
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
+        void Start()
+        {
+            // Force Squirrel for the menu vessel. Player.OnNetworkSpawn reads
+            // selectedVesselClass to set NetDefaultVesselType.
+            gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
+            gameData.InitializeGame();
+        }
+
         protected override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
