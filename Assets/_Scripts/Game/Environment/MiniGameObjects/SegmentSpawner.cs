@@ -25,6 +25,11 @@ public class SegmentSpawner : MonoBehaviour
              "When set, overrides random selection for that intensity.")]
     [SerializeField] SpawnableBase[] spawnableByIntensity;
 
+    // Legacy fields — kept for backward compatibility with scenes serialized before
+    // the WeightedSpawnable refactor. Migrated to weightedSegments at startup.
+    [SerializeField, HideInInspector] List<SpawnableBase> spawnableSegments;
+    [SerializeField, HideInInspector] List<float> spawnSegmentWeights;
+
     [Header("Configuration")]
     [SerializeField] public int Seed;
     [SerializeField] Transform parent;
@@ -46,10 +51,33 @@ public class SegmentSpawner : MonoBehaviour
 
     void Start()
     {
+        MigrateLegacyFields();
+
         if (SpawnedSegmentContainer == null) CreateContainer();
 
         if (InitializeOnStart)
             Initialize();
+    }
+
+    void MigrateLegacyFields()
+    {
+        if (spawnableSegments is not { Count: > 0 }) return;
+        if (weightedSegments is { Count: > 0 }) return;
+
+        for (int i = 0; i < spawnableSegments.Count; i++)
+        {
+            float w = (spawnSegmentWeights != null && i < spawnSegmentWeights.Count)
+                ? spawnSegmentWeights[i]
+                : 1f;
+            weightedSegments.Add(new WeightedSpawnable
+            {
+                spawnable = spawnableSegments[i],
+                weight = w
+            });
+        }
+
+        spawnableSegments = null;
+        spawnSegmentWeights = null;
     }
 
     private void OnEnable()
