@@ -103,6 +103,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void SyncInvertSettings()
         {
+            // Fallback: InputController is often added dynamically via GetOrAdd,
+            // which means Reflex DI never runs on it. Resolve manually if needed.
+            if (gameSetting == null)
+                gameSetting = FindFirstObjectByType<GameSetting>();
+
             if (gameSetting != null)
             {
                 InputStatus.InvertYEnabled = gameSetting.InvertYEnabled;
@@ -111,12 +116,7 @@ namespace CosmicShore.Gameplay
                 currentStrategy?.SetInvertY(gameSetting.InvertYEnabled);
                 currentStrategy?.SetInvertThrottle(gameSetting.InvertThrottleEnabled);
 
-
                 CSDebug.Log($"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
-            }
-            else
-            {
-                CSDebug.LogWarning("[InputController] Injected GameSetting is null, cannot sync invert settings!");
             }
         }
 

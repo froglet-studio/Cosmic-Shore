@@ -38,17 +38,17 @@ namespace CosmicShore.UI
         private void OnEnable()
         {
             OnProfileChanged += SyncProfileToGameData;
-
-            if (authenticationDataVariable != null)
-                authenticationData.OnSignedIn.OnRaised += HandleSignedIn;
-            else
-                Debug.LogWarning("[PlayerDataService] authenticationDataVariable was not injected — auth events will not be observed.");
         }
 
         async void Start()
         {
             try
             {
+                // Subscribe to auth events here (not OnEnable) because Reflex
+                // DI injection happens after Awake/OnEnable but before Start.
+                if (authenticationDataVariable != null)
+                    authenticationData.OnSignedIn.OnRaised += HandleSignedIn;
+
                 CreateLocalDefaultProfile(null);
 
                 // If already signed in, initialize immediately
