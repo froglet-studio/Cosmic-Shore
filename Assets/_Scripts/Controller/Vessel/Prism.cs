@@ -288,7 +288,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
+            audioSystem?.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -305,7 +305,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
+            audioSystem?.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
