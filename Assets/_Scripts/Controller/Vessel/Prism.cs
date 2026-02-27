@@ -5,7 +5,6 @@ using CosmicShore.Core;
 using CosmicShore.Utility;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
-using Reflex.Attributes;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
 using System.Linq;
@@ -17,10 +16,9 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(PrismStateManager))]
     public class Prism : MonoBehaviour
     {
-        [Inject] AudioSystem audioSystem;
         protected const string DEFAULT_PLAYER_NAME = "DefaultPlayer";
 
-        [Header("Prism Properties")] 
+        [Header("Prism Properties")]
         [SerializeField] public PrismProperties prismProperties;
         public GameObject ParticleEffect;
         public Trail Trail;
@@ -39,7 +37,8 @@ namespace CosmicShore.Gameplay
         [Header("Team Ownership")] 
         public string ownerID;
 
-        [Header("Event Channels")] 
+        [Header("Event Channels")]
+        [SerializeField] ScriptableEventGameplaySFX gameplaySFXEvent;
         [SerializeField] ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
         [SerializeField] ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
         [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
@@ -288,7 +287,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            audioSystem?.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
+            gameplaySFXEvent.Raise(GameplaySFXCategory.BlockDestroy);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -305,7 +304,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            audioSystem?.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
+            gameplaySFXEvent.Raise(GameplaySFXCategory.BlockDestroy);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
