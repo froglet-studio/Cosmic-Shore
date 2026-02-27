@@ -92,16 +92,16 @@ namespace CosmicShore.Core
                     }
                 }
 
+                // Always route through the Authentication scene. Even when already
+                // signed in, the auth scene ensures the network host is started and
+                // loads Menu_Main via Netcode scene management, which is required for
+                // player spawning (OnNetworkSpawn).
                 if (authData.IsSignedIn)
-                {
-                    CSDebug.Log("[SplashToAuthFlow] Already signed in. Going to main menu.");
-                    await LoadSceneWithTransitionAsync(_sceneNames.MainMenuScene);
-                }
+                    CSDebug.Log("[SplashToAuthFlow] Already signed in. Routing through auth scene for network setup.");
                 else
-                {
                     CSDebug.Log("[SplashToAuthFlow] Not signed in. Going to auth scene.");
-                    await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
-                }
+
+                await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
             }
             catch (OperationCanceledException) { /* scene destroyed — expected */ }
             catch (Exception ex)
