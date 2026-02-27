@@ -197,7 +197,7 @@ namespace CosmicShore.UI
                     rowIndex++;
                     if (rowIndex < MaxGameRows && gameIndex != games.Count) // Second check is to prevent an empty row from being displayed
                     {
-                        row = CaptainPurchaseRows[rowIndex];
+                        row = GamePurchaseRows[rowIndex];
                         row.gameObject.SetActive(true);
                     }
                 }
