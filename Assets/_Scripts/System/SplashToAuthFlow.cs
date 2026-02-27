@@ -20,10 +20,6 @@ namespace CosmicShore.Core
     /// </summary>
     public class SplashToAuthFlow : MonoBehaviour
     {
-        [Header("Scene Names")]
-        [SerializeField] private string authSceneName = "Authentication";
-        [SerializeField] private string mainMenuSceneName = "Menu_Main";
-
         [Header("Splash")]
         [SerializeField] private float splashDisplayDuration = 2f;
 
@@ -32,6 +28,7 @@ namespace CosmicShore.Core
         private float authWaitTimeout = 5f;
 
         [Inject] private AuthenticationDataVariable authenticationDataVariable;
+        [Inject] private SceneNameListSO _sceneNames;
 
         CancellationTokenSource _cts;
 
@@ -65,7 +62,7 @@ namespace CosmicShore.Core
                 if (authenticationDataVariable == null)
                 {
                     CSDebug.LogWarning("[SplashToAuthFlow] AuthenticationDataVariable not injected. Going to auth scene.");
-                    await LoadSceneWithTransitionAsync(authSceneName);
+                    await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
                     return;
                 }
 
@@ -96,19 +93,19 @@ namespace CosmicShore.Core
                 if (authData.IsSignedIn)
                 {
                     CSDebug.Log("[SplashToAuthFlow] Already signed in. Going to main menu.");
-                    await LoadSceneWithTransitionAsync(mainMenuSceneName);
+                    await LoadSceneWithTransitionAsync(_sceneNames.MainMenuScene);
                 }
                 else
                 {
                     CSDebug.Log("[SplashToAuthFlow] Not signed in. Going to auth scene.");
-                    await LoadSceneWithTransitionAsync(authSceneName);
+                    await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
                 }
             }
             catch (OperationCanceledException) { /* scene destroyed — expected */ }
             catch (Exception ex)
             {
                 CSDebug.LogWarning($"[SplashToAuthFlow] Error during splash flow: {ex.Message}. Falling back to auth scene.");
-                await LoadSceneWithTransitionAsync(authSceneName);
+                await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
             }
         }
 

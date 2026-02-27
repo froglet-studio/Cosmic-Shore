@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using CosmicShore.UI;
@@ -25,9 +24,8 @@ namespace CosmicShore.Core
     ///   1. Establish the DontDestroyOnLoad root for all persistent objects.
     ///   2. Configure platform settings (framerate, vsync, screen sleep).
     ///   3. Resolve and register all persistent managers via Reflex DI.
-    ///   4. Initialize IBootstrapService implementations in declared order.
-    ///   5. Start authentication and network monitoring.
-    ///   6. Transition to the first gameplay scene.
+    ///   4. Start authentication and network monitoring.
+    ///   5. Transition to the first gameplay scene.
     ///
     /// Execution order is set to -100 so Awake/Start run before all other scripts,
     /// including SceneTransitionManager (-50) and AudioSystem (-1).
@@ -39,16 +37,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Bootstrap settings asset. Create via ScriptableObjects/Core/BootstrapConfig.")]
         BootstrapConfigSO _bootstrapConfig;
 
-        [Header("Persistent Root")]
-        [SerializeField, Tooltip("The root GameObject that receives DontDestroyOnLoad. " +
-                                  "All persistent services should be children of this object. " +
-                                  "If null, this GameObject is used.")]
-        Transform _persistentRoot;
-
-        [Header("Bootstrap Services")]
-        [SerializeField, Tooltip("MonoBehaviours implementing IBootstrapService. " +
-                                  "Initialized in list order during bootstrap.")]
-        List<MonoBehaviour> _bootstrapServices = new();
+        [Header("Scene Names")]
+        [SerializeField, Tooltip("Centralized scene name list. Registered in DI for all consumers.")]
+        SceneNameListSO _sceneNames;
 
         [Header("Scene Transition")]
         [SerializeField, Tooltip("Optional CanvasGroup for a fade-out effect before scene load.")]
@@ -113,7 +104,7 @@ namespace CosmicShore.Core
                 return;
             }
 
-            SetupPersistentRoot();
+            DontDestroyOnLoad(gameObject);
             ConfigurePlatform();
             ResolveAndValidateManagers();
         }
@@ -148,14 +139,6 @@ namespace CosmicShore.Core
 
         #region Platform Configuration
 
-        void SetupPersistentRoot()
-        {
-            // Use a local so we never write back to the serialized field at runtime,
-            // which would mark the scene dirty.
-            var root = _persistentRoot != null ? _persistentRoot : transform;
-            DontDestroyOnLoad(root.gameObject);
-        }
-
         void ConfigurePlatform()
         {
             if (_bootstrapConfig == null)
@@ -188,13 +171,10 @@ namespace CosmicShore.Core
                 // Wait one frame so all Awake() calls complete across the scene.
                 await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
 
-                // Phase 1: Initialize services in declared order.
-                await InitializeServicesAsync(ct);
-
-                // Phase 2: Wait one more frame so any Start()-driven systems settle.
+                // Wait one more frame so any Start()-driven systems settle.
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
-                // Phase 3: Enforce minimum splash duration.
+                // Enforce minimum splash duration.
                 // When auto-created (no config), use a short default so existing
                 // services like auth have time to start.
                 const float DefaultMinSplash = 0.5f;
@@ -209,18 +189,18 @@ namespace CosmicShore.Core
                         cancellationToken: ct);
                 }
 
-                // Phase 4: Fade out splash if present.
+                // Fade out splash if present.
                 if (_splashCanvasGroup != null)
                     await FadeOutSplashAsync(ct);
 
-                // Phase 5: Mark complete and transition.
+                // Mark complete and transition.
                 _hasBootstrapped = true;
                 stopwatch.Stop();
                 Log($"Bootstrap complete in {stopwatch.Elapsed.TotalSeconds:F2}s");
 
                 OnBootstrapComplete?.Invoke();
 
-                string targetScene = _bootstrapConfig != null ? _bootstrapConfig.FirstSceneName : "Authentication";
+                string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).
@@ -238,65 +218,6 @@ namespace CosmicShore.Core
                 Debug.LogError($"[AppManager] Fatal bootstrap error: {ex}");
                 OnBootstrapFailed?.Invoke(ex.Message);
             }
-        }
-
-        async UniTask InitializeServicesAsync(CancellationToken ct)
-        {
-            if (_bootstrapServices == null || _bootstrapServices.Count == 0)
-            {
-                Log("No IBootstrapService entries. Skipping service initialization phase.");
-                return;
-            }
-
-            float timeout = _bootstrapConfig != null ? _bootstrapConfig.ServiceInitTimeoutSeconds : 15f;
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
-            var linkedToken = linkedCts.Token;
-
-            int initialized = 0;
-            int total = 0;
-
-            foreach (var mb in _bootstrapServices)
-            {
-                if (mb == null) continue;
-
-                if (mb is not IBootstrapService service)
-                {
-                    Debug.LogWarning($"[AppManager] '{mb.name}' does not implement IBootstrapService. Skipping.");
-                    continue;
-                }
-
-                total++;
-                Log($"  Initializing: {service.ServiceName}");
-                var sw = Stopwatch.StartNew();
-
-                try
-                {
-                    await service.InitializeAsync(linkedToken);
-                    sw.Stop();
-
-                    if (service.IsInitialized)
-                    {
-                        initialized++;
-                        Log($"  {service.ServiceName} ready ({sw.ElapsedMilliseconds}ms)");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[AppManager] {service.ServiceName} returned without error but reports not initialized.");
-                    }
-                }
-                catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
-                {
-                    Debug.LogError($"[AppManager] Timeout ({timeout}s) reached during {service.ServiceName}.");
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[AppManager] {service.ServiceName} failed: {ex.Message}");
-                }
-            }
-
-            Log($"Service initialization complete: {initialized}/{total} services ready.");
         }
 
         async UniTask FadeOutSplashAsync(CancellationToken ct)
@@ -379,6 +300,7 @@ namespace CosmicShore.Core
             ResolveAndValidateManagers();
 
             // ScriptableObject assets / Variables
+            RegisterIfNotNull(builder, _sceneNames, nameof(_sceneNames));
             RegisterIfNotNull(builder, gameData, nameof(gameData));
             RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));

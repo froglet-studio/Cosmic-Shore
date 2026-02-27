@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     {
         const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = 0.5f;
 
-        [SerializeField] SceneNameListSO _sceneNames;
+        [Inject] SceneNameListSO _sceneNames;
         [SerializeField] SO_GameList AllGames;
         [Inject] protected GameDataSO gameData;
         [SerializeField] ScriptableEventBool _onSceneTransition;

@@ -11,9 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b410e44b72119a1499594c70fc419a69, type: 3}
   m_Name: BootstrapConfig
-  m_EditorClassIdentifier: 
-  _firstSceneName: Authentication
-  _mainMenuSceneName: Menu_Main
+  m_EditorClassIdentifier:
   _serviceInitTimeoutSeconds: 15
   _minimumSplashDuration: 1
   _targetFrameRate: 60
