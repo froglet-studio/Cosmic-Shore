@@ -85,6 +85,6 @@ public class SpawnableLightning : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(height, width, zigzagSegments, baseBlockCount, intensityLevel, seed);
+        return System.HashCode.Combine(height, width, zigzagSegments, baseBlockCount, intensityLevel, seed, domain);
     }
 }

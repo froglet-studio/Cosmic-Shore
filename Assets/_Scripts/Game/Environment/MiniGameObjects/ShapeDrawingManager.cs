@@ -46,10 +46,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [Header("Scoring")]
         [Tooltip("How often (in seconds) to sample the player position for accuracy scoring.")]
         [SerializeField] float positionSampleInterval = 0.15f;
-        [Tooltip("Maximum distance (units) from ideal path that still counts as 100% accurate for that sample.")]
-        [SerializeField] float perfectDistanceThreshold = 5f;
-        [Tooltip("Distance at which accuracy drops to 0% for that sample.")]
-        [SerializeField] float zeroAccuracyDistance = 30f;
+        [Tooltip("Fraction of average segment length that counts as 100% accurate. 0.02 = within 2% of segment length.")]
+        [SerializeField] float perfectDistanceFraction = 0.02f;
+        [Tooltip("Fraction of average segment length at which accuracy drops to 0%. 0.15 = 15% of segment length.")]
+        [SerializeField] float zeroAccuracyFraction = 0.15f;
 
         [Header("Preview Cinematic")]
         [Tooltip("Seconds the camera holds on the top-down shape view.")]
@@ -759,6 +759,18 @@ namespace CosmicShore.Game.ShapeDrawing
             var worldWaypoints = GetAllWorldWaypoints();
             int waypointCount = worldWaypoints.Length;
 
+            // Compute average segment length — thresholds scale with the shape's size
+            float totalSegLength = 0f;
+            int segCount = 0;
+            for (int i = 0; i < waypointCount - 1; i++)
+            {
+                totalSegLength += Vector3.Distance(worldWaypoints[i], worldWaypoints[i + 1]);
+                segCount++;
+            }
+            float avgSegLength = segCount > 0 ? totalSegLength / segCount : 100f;
+            float perfectThreshold = avgSegLength * perfectDistanceFraction;
+            float zeroThreshold = avgSegLength * zeroAccuracyFraction;
+
             float totalAccuracy = 0f;
             int validSamples = 0;
 
@@ -785,13 +797,13 @@ namespace CosmicShore.Game.ShapeDrawing
                 if (minDist < float.MaxValue)
                 {
                     float sampleAccuracy;
-                    if (minDist <= perfectDistanceThreshold)
+                    if (minDist <= perfectThreshold)
                         sampleAccuracy = 1f;
-                    else if (minDist >= zeroAccuracyDistance)
+                    else if (minDist >= zeroThreshold)
                         sampleAccuracy = 0f;
                     else
-                        sampleAccuracy = 1f - (minDist - perfectDistanceThreshold) /
-                                         (zeroAccuracyDistance - perfectDistanceThreshold);
+                        sampleAccuracy = 1f - (minDist - perfectThreshold) /
+                                         (zeroThreshold - perfectThreshold);
 
                     totalAccuracy += sampleAccuracy;
                     validSamples++;

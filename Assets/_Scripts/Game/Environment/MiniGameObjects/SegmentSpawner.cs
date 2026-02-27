@@ -115,14 +115,13 @@ public class SegmentSpawner : MonoBehaviour
             layoutIndex++;
         }
 
-        // Spawn guaranteed shapes (all of them, every time)
+        // Spawn guaranteed shapes (all of them, every time).
+        // These keep their inspector-configured domain — shape-drawing shapes
+        // intentionally have per-shape domains set in the editor.
         for (int i = 0; i < guaranteedSpawnables.Count; i++)
         {
             var spawnable = guaranteedSpawnables[i];
             if (spawnable == null) continue;
-
-            if (playerDomains.Count > 0)
-                spawnable.domain = playerDomains[layoutIndex % playerDomains.Count];
 
             SpawnAndLayout(spawnable, currentIntensity, layoutIndex);
             layoutIndex++;

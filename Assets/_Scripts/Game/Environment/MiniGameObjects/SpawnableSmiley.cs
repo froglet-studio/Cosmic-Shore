@@ -30,9 +30,9 @@ public class SpawnableSmiley : SpawnableShapeBase
 
         return new[]
         {
-            new SpawnTrailData(leftEye, true, Domains.Jade),
-            new SpawnTrailData(rightEye, true, Domains.Ruby),
-            new SpawnTrailData(mouth, false, Domains.Gold),
+            new SpawnTrailData(leftEye, true, domain),
+            new SpawnTrailData(rightEye, true, domain),
+            new SpawnTrailData(mouth, false, domain),
         };
     }
 
@@ -84,6 +84,6 @@ public class SpawnableSmiley : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(faceRadius, baseBlockCount, intensityLevel, seed);
+        return System.HashCode.Combine(faceRadius, baseBlockCount, intensityLevel, seed, domain);
     }
 }

@@ -90,6 +90,7 @@ public class SpawnableArrow : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(headWidth, headHeight, shaftLength, shaftWidth, baseBlockCount, intensityLevel, seed);
+        return System.HashCode.Combine(headWidth, headHeight, shaftLength, shaftWidth, baseBlockCount, intensityLevel,
+            System.HashCode.Combine(seed, domain));
     }
 }
