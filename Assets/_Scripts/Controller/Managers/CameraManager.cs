@@ -3,6 +3,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using Reflex.Attributes;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -15,7 +16,7 @@ namespace CosmicShore.Gameplay
         [SerializeField]
         CellRuntimeDataSO cellData;
     
-        [SerializeField]
+        [Inject]
         SceneNameListSO _sceneNameList;
     
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;

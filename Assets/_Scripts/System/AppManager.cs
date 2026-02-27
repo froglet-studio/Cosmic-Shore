@@ -39,6 +39,10 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Bootstrap settings asset. Create via ScriptableObjects/Core/BootstrapConfig.")]
         BootstrapConfigSO _bootstrapConfig;
 
+        [Header("Scene Names")]
+        [SerializeField, Tooltip("Centralized scene name list. Registered in DI for all consumers.")]
+        SceneNameListSO _sceneNames;
+
         [Header("Persistent Root")]
         [SerializeField, Tooltip("The root GameObject that receives DontDestroyOnLoad. " +
                                   "All persistent services should be children of this object. " +
@@ -220,7 +224,7 @@ namespace CosmicShore.Core
 
                 OnBootstrapComplete?.Invoke();
 
-                string targetScene = _bootstrapConfig != null ? _bootstrapConfig.FirstSceneName : "Authentication";
+                string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).
@@ -379,6 +383,7 @@ namespace CosmicShore.Core
             ResolveAndValidateManagers();
 
             // ScriptableObject assets / Variables
+            RegisterIfNotNull(builder, _sceneNames, nameof(_sceneNames));
             RegisterIfNotNull(builder, gameData, nameof(gameData));
             RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));

@@ -21,18 +21,6 @@ namespace CosmicShore.Core
         }
 
         [Test]
-        public void DefaultFirstSceneName_IsAuthentication()
-        {
-            Assert.AreEqual("Authentication", _config.FirstSceneName);
-        }
-
-        [Test]
-        public void DefaultMainMenuSceneName_IsMenuMain()
-        {
-            Assert.AreEqual("Menu_Main", _config.MainMenuSceneName);
-        }
-
-        [Test]
         public void DefaultServiceInitTimeout_Is15Seconds()
         {
             Assert.AreEqual(15f, _config.ServiceInitTimeoutSeconds);
@@ -85,8 +73,6 @@ namespace CosmicShore.Core
         {
             var so = new UnityEditor.SerializedObject(_config);
 
-            so.FindProperty("_firstSceneName").stringValue = "TestScene";
-            so.FindProperty("_mainMenuSceneName").stringValue = "TestMenu";
             so.FindProperty("_serviceInitTimeoutSeconds").floatValue = 30f;
             so.FindProperty("_minimumSplashDuration").floatValue = 2.5f;
             so.FindProperty("_targetFrameRate").intValue = 120;
@@ -95,8 +81,6 @@ namespace CosmicShore.Core
             so.FindProperty("_verboseLogging").boolValue = true;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            Assert.AreEqual("TestScene", _config.FirstSceneName);
-            Assert.AreEqual("TestMenu", _config.MainMenuSceneName);
             Assert.AreEqual(30f, _config.ServiceInitTimeoutSeconds);
             Assert.AreEqual(2.5f, _config.MinimumSplashDuration);
             Assert.AreEqual(120, _config.TargetFrameRate);
