@@ -114,6 +114,7 @@ namespace CosmicShore.Gameplay
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Players.Add(this);
+            gameData.InvokePlayerNetworkSpawned();
 
             VesselNetId = NetVesselId.Value;
 

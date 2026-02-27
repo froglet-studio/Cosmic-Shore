@@ -530,6 +530,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - For ScriptableObjects that need async: use a `CoroutineRunner` singleton proxy or async/await with cancellation tokens
 - Always include `CancellationToken` for anything non-trivial — UniTask respects play mode lifecycle better than raw `Task`
 - Bootstrap uses `UniTaskVoid` with `CancellationTokenSource` for the async startup sequence
+- Prefer SOAP event channels (`ScriptableEvent`) over `UniTask.WaitUntil` polling for waiting on state changes from other systems. Subscribe to the relevant event and react when it fires, rather than polling a condition every frame
 
 ### Anti-Patterns to Avoid
 
