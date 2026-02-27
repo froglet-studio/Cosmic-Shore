@@ -1,3 +1,5 @@
+using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using System.Collections;
@@ -10,7 +12,7 @@ using TMPro;
 
 namespace CosmicShore.UI
 {
-    public class HangarScreen : MonoBehaviour
+    public class HangarScreen : MonoBehaviour, IScreen
     {
         [SerializeField] SO_ShipList ShipList;
         [SerializeField] Transform ShipSelectionContainer;
@@ -33,6 +35,14 @@ namespace CosmicShore.UI
 
         List<SO_Ship> Ships;
         SO_Ship SelectedShip;
+
+        public void OnScreenEnter()
+        {
+            UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
+            LoadView();
+        }
+
+        public void OnScreenExit() { }
 
         public void LoadView()
         {

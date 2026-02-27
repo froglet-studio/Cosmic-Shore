@@ -1,25 +1,18 @@
 using CosmicShore.UI;
-using Reflex.Attributes;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Provides high level functionality to panels in the main menu scene
+    /// Provides high level functionality to panels in the main menu scene.
+    /// Profile display is handled by a ProfileDisplayWidget component on the same or child GameObject.
     /// </summary>
     public class HomeScreen : MonoBehaviour
     {
         [SerializeField] bool DebugFirstAppLaunch = false;
         [SerializeField] GameObject FirstAppLaunchScreen;
         [SerializeField] GameObject NavBar;
-
-        [Header("Profile Display")]
-        [SerializeField] private TMP_Text usernameText;
-        [SerializeField] private Image avatarImage;
-        [Inject] private PlayerDataService playerDataService;
 
         enum PlayerPrefKeys
         {
@@ -34,35 +27,6 @@ namespace CosmicShore.UI
             {
                 FirstAppLaunchScreen.SetActive(true);
                 NavBar.SetActive(false);
-            }
-
-            if (playerDataService != null)
-            {
-                playerDataService.OnProfileChanged += RefreshProfile;
-
-                if (playerDataService.IsInitialized)
-                    RefreshProfile(playerDataService.CurrentProfile);
-            }
-        }
-
-        void OnDestroy()
-        {
-            if (playerDataService != null)
-                playerDataService.OnProfileChanged -= RefreshProfile;
-        }
-
-        void RefreshProfile(PlayerProfileData profile)
-        {
-            if (profile == null) return;
-
-            if (usernameText != null)
-                usernameText.text = profile.displayName;
-
-            if (avatarImage != null && playerDataService != null)
-            {
-                var sprite = playerDataService.GetAvatarSprite(profile.avatarId);
-                avatarImage.sprite = sprite;
-                avatarImage.enabled = sprite != null;
             }
         }
 
