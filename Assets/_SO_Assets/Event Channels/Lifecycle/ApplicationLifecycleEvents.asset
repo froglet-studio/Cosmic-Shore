@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2001ac9ed15448ba6991b7d494d2489, type: 3}
+  m_Name: ApplicationLifecycleEvents
+  m_EditorClassIdentifier:
+  OnAppPaused: {fileID: 11400000, guid: bc49eff9346647eba3d8e5334769c4ff, type: 2}
+  OnAppFocusChanged: {fileID: 11400000, guid: 1fdca5834b584180ace9fed3091b0376,
+    type: 2}
+  OnAppQuitting: {fileID: 11400000, guid: 5f3f55c90a11473e8a5e2efd80ab4849, type: 2}
+  OnSceneLoaded: {fileID: 11400000, guid: 5a500b8af2084696a5df96caadcf5242, type: 2}
+  OnSceneUnloading: {fileID: 11400000, guid: ecc81118710e4ae8b90eda2efd64f08f,
+    type: 2}

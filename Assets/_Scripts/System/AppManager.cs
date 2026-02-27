@@ -58,6 +58,10 @@ namespace CosmicShore.Core
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
 
+        [Header("Lifecycle Events")]
+        [SerializeField, Tooltip("SOAP event container for application lifecycle events (pause, focus, quit, scene load/unload).")]
+        ApplicationLifecycleEventsContainerSO lifecycleEvents;
+
         [Header("Singleton Persistent Scene References")]
         [SerializeField] GameSetting gameSetting;
         [SerializeField] AudioSystem audioSystem;
@@ -296,6 +300,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, gameData, nameof(gameData));
             RegisterAsset(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
+            RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
 
             // ── MonoBehaviour singletons (lazy factory) ──────────────────
             // Scene-resolved managers may not exist in the Bootstrap scene at
