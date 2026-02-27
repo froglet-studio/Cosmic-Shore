@@ -37,6 +37,7 @@ namespace CosmicShore.Utility
         public ScriptableEventNoParam OnResetForReplay;
         public ScriptableEventNoParam OnSessionEnded;
         public ScriptableEventNoParam OnPlayerNetworkSpawned;
+        public ScriptableEventNoParam OnVesselNetworkSpawned;
         public event Action<string, Domains> OnPlayerAdded;
 
         [Header("UI Flow")]
@@ -140,6 +141,7 @@ namespace CosmicShore.Utility
         public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         public void InvokePlayerNetworkSpawned() => OnPlayerNetworkSpawned.Raise();
+        public void InvokeVesselNetworkSpawned() => OnVesselNetworkSpawned.Raise();
 
         public void ResetForReplay()
         {

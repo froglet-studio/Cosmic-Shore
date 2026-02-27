@@ -9,7 +9,15 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Extension of ServerPlayerVesselInitializer:
-    /// spawns server-owned AI players and their vessels before the host vessel.
+    /// spawns server-owned AI players and their vessels, then delegates
+    /// human player handling to the base class via OnPlayerNetworkSpawned.
+    ///
+    /// OnNetworkSpawn flow:
+    ///   1. SetupSpawnPositions()
+    ///   2. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawned
+    ///      for each, but we haven't subscribed yet so the base ignores them)
+    ///   3. Mark AI players in _processedPlayers so the base never processes them
+    ///   4. SubscribeAndProcessPlayers() — subscribes to event + processes human players
     /// </summary>
     public class ServerPlayerVesselInitializerWithAI : ServerPlayerVesselInitializer
     {
@@ -38,22 +46,23 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            gameData.SetSpawnPositions(_playerOrigins);
-            DomainAssigner.Initialize();
+            SetupSpawnPositions();
 
+            // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawned.
+            // AI players fire the event during Spawn(), but since we haven't
+            // subscribed yet, those events are harmlessly ignored.
             if (spawnAIOnServerReady)
                 SpawnAIs();
 
-            var hostClientId = NetworkManager.Singleton.LocalClientId;
-            var player = FindPlayerByClientId(hostClientId);
-            if (player == null)
+            // Mark all AI players as processed so the base skips them
+            foreach (var p in gameData.Players)
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] Host player not found for client {hostClientId}. " +
-                                 $"Players registered: {gameData.Players.Count}");
-                return;
+                if (p is Player aiPlayer && aiPlayer.NetIsAI.Value)
+                    _processedPlayers.Add(aiPlayer.NetworkObjectId);
             }
 
-            SpawnVesselAndInitialize(hostClientId, player);
+            // Now subscribe and handle human players (host + future remote clients)
+            SubscribeAndProcessPlayers();
         }
 
         void SpawnAIs()

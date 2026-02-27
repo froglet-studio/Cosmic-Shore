@@ -29,6 +29,8 @@ MonoBehaviour:
   OnSessionEnded: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}
   OnPlayerNetworkSpawned: {fileID: 11400000, guid: 14fbb8d83426486b98c2b8568bd9c63f,
     type: 2}
+  OnVesselNetworkSpawned: {fileID: 11400000, guid: c864ae0be6654a12a4120c7192add02c,
+    type: 2}
   OnShowGameEndScreen: {fileID: 11400000, guid: 4c4df83a7f0a61f4aa7b643396bc9d45,
     type: 2}
   selectedVesselClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,

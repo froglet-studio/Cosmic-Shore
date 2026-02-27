@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 
 namespace CosmicShore.Gameplay
@@ -16,27 +17,14 @@ namespace CosmicShore.Gameplay
             gameData.InitializeGame();
         }
 
-        protected override void OnNetworkSpawn()
+        /// <summary>
+        /// Menu override: after the base spawns the vessel, activate autopilot.
+        /// </summary>
+        protected override async UniTask SpawnVesselWhenReady(Player player)
         {
-            if (!NetworkManager.Singleton.IsServer)
-            {
-                enabled = false;
-                return;
-            }
+            // Let the base handle waiting for vesselType + spawning
+            await base.SpawnVesselWhenReady(player);
 
-            gameData.SetSpawnPositions(_playerOrigins);
-            DomainAssigner.Initialize();
-
-            var hostClientId = NetworkManager.Singleton.LocalClientId;
-            var player = FindPlayerByClientId(hostClientId);
-            if (player == null)
-            {
-                CSDebug.LogError($"[MenuServerVesselInit] Host player not found for client {hostClientId}. " +
-                                 $"Players registered: {gameData.Players.Count}");
-                return;
-            }
-
-            SpawnVesselAndInitialize(hostClientId, player);
             ActivateAutopilot();
         }
 
