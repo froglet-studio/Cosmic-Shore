@@ -15,9 +15,12 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField]
         CellRuntimeDataSO cellData;
-    
+
         [Inject]
         SceneNameListSO _sceneNameList;
+
+        [Inject]
+        GameDataSO _gameData;
     
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
         [SerializeField] private ScriptableEventNoParam _onReturnToMainMenu;
@@ -112,6 +115,7 @@ namespace CosmicShore.Gameplay
         {
             SetMainMenuCameraActive();
             _themeManagerData.SetBackgroundColor(Camera.main);
+            _gameData.InvokeSceneTransition(true);
         }
 
         public void SetupGamePlayCameras(Transform followTarget)
