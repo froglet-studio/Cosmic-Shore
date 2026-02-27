@@ -53,8 +53,12 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Hard safety timeout — force-navigates to main menu if everything hangs.")]
         private float safetyTimeout = 10f;
 
-        [SerializeField, Tooltip("Seconds to wait for the network host to become ready before falling back to direct scene load.")]
+        [SerializeField, Tooltip("Seconds to wait for the network host to become ready before starting it from the auth scene.")]
         private float networkHostTimeout = 3f;
+
+        [Header("Networking")]
+        [SerializeField, Tooltip("NetworkManager prefab. Used to start the network host before loading Menu_Main when MultiplayerSetup has not yet started it.")]
+        private GameObject _networkManagerPrefab;
 
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
@@ -424,36 +428,30 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Waits for the network host (started by the persistent MultiplayerSetup
-        /// in response to OnSignedIn) to be ready, then loads Menu_Main via
-        /// networked scene management. Falls back to a direct scene load if the
-        /// host does not become ready within <see cref="networkHostTimeout"/>.
+        /// Ensures a network host is running, then loads Menu_Main via Netcode
+        /// scene management so that scene-placed NetworkObjects (including
+        /// MenuServerPlayerVesselInitializer) receive OnNetworkSpawn.
         /// </summary>
         async UniTaskVoid LoadMainMenuNetworkedAsync(CancellationToken ct)
         {
             try
             {
-                // Wait for MultiplayerSetup to instantiate NetworkManager and start host.
-                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                timeoutCts.CancelAfter(TimeSpan.FromSeconds(networkHostTimeout));
-
-                try
-                {
-                    await UniTask.WaitUntil(
-                        () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
-                        cancellationToken: timeoutCts.Token);
-                }
-                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-                {
-                    CSDebug.LogWarning($"[AuthScene] Network host not ready after {networkHostTimeout}s. Falling back to direct scene load.");
-                    LoadMainMenuDirect();
-                    return;
-                }
+                await EnsureHostStartedAsync(ct);
 
                 var nm = NetworkManager.Singleton;
                 string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
-                CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
-                nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+
+                if (nm != null && nm.IsListening)
+                {
+                    CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
+                    nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+                }
+                else
+                {
+                    CSDebug.LogError($"[AuthScene] Host not running after startup attempt. " +
+                        $"Loading {menuScene} directly — player spawning will not work.");
+                    LoadMainMenuDirect();
+                }
             }
             catch (OperationCanceledException) { /* scene destroyed */ }
             catch (Exception ex)
@@ -461,6 +459,85 @@ namespace CosmicShore.Core
                 CSDebug.LogWarning($"[AuthScene] Networked scene load failed: {ex.Message}. Falling back to direct scene load.");
                 LoadMainMenuDirect();
             }
+        }
+
+        /// <summary>
+        /// Guarantees the network host is running before Menu_Main is loaded.
+        /// First waits for MultiplayerSetup to start the host (via OnSignedIn).
+        /// If that doesn't happen within <see cref="networkHostTimeout"/>, creates
+        /// the NetworkManager from prefab and starts the host directly.
+        /// </summary>
+        async UniTask EnsureHostStartedAsync(CancellationToken ct)
+        {
+            // Already running — nothing to do.
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                CSDebug.Log("[AuthScene] Network host already running.");
+                return;
+            }
+
+            // Wait for MultiplayerSetup (if present in the scene) to start the host.
+            using (var waitCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+            {
+                waitCts.CancelAfter(TimeSpan.FromSeconds(networkHostTimeout));
+
+                try
+                {
+                    await UniTask.WaitUntil(
+                        () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
+                        cancellationToken: waitCts.Token);
+                    CSDebug.Log("[AuthScene] Network host started (by MultiplayerSetup).");
+                    return;
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    CSDebug.Log("[AuthScene] MultiplayerSetup did not start host within timeout. Starting host from auth scene.");
+                }
+            }
+
+            // Instantiate NetworkManager from prefab if it doesn't exist yet.
+            if (NetworkManager.Singleton == null)
+            {
+                if (_networkManagerPrefab == null)
+                {
+                    CSDebug.LogError("[AuthScene] Cannot start host — no NetworkManager exists and no prefab assigned.");
+                    return;
+                }
+
+                Instantiate(_networkManagerPrefab);
+                // Wait one frame for NetworkManager.Awake() to register as Singleton.
+                await UniTask.Yield(ct);
+            }
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
+            {
+                CSDebug.LogError("[AuthScene] NetworkManager.Singleton is null after prefab instantiation.");
+                return;
+            }
+
+            if (nm.IsListening)
+                return;
+
+            // Register connection approval so the host's player object is created.
+            nm.ConnectionApprovalCallback += OnConnectionApproval;
+
+            CSDebug.Log("[AuthScene] Starting network host...");
+            nm.StartHost();
+
+            // Wait one frame for the host to finish starting.
+            await UniTask.Yield(ct);
+        }
+
+        static void OnConnectionApproval(
+            NetworkManager.ConnectionApprovalRequest request,
+            NetworkManager.ConnectionApprovalResponse response)
+        {
+            response.Approved = true;
+            response.CreatePlayerObject = true;
+            response.Position = Vector3.zero;
+            response.Rotation = Quaternion.identity;
+            response.PlayerPrefabHash = null;
         }
 
         void LoadMainMenuDirect()
