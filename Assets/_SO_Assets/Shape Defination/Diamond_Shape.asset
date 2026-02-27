@@ -10,28 +10,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
-  m_Name: Star_Shape
+  m_Name: Diamond_Shape
   m_EditorClassIdentifier: 
-  shapeName: Star
+  shapeName: Diamond
   description: This is a Star Shape
   thumbnail: {fileID: 21300000, guid: badec3d57590b2e479701bb3abcbe5b8, type: 3}
   autoGeneratePreset: 0
   autoGenerateRadius: 100
   waypoints:
-  - {x: -0.000004371139, y: -100, z: 0}
-  - {x: 19.999998, y: -34.641018, z: 0}
-  - {x: 86.60254, y: -50, z: 0}
-  - {x: 40, y: 0, z: 0}
-  - {x: 86.60254, y: 50, z: 0}
-  - {x: 19.999998, y: 34.641018, z: 0}
-  - {x: -0.000004371139, y: 100, z: 0}
-  - {x: -20.000002, y: 34.641014, z: 0}
-  - {x: -86.60254, y: 50.000008, z: 0}
-  - {x: -40, y: -0.0000034969112, z: 0}
-  - {x: -86.60252, y: -50.00002, z: 0}
-  - {x: -19.999996, y: -34.641018, z: 0}
-  - {x: 0.0000011924881, y: -100, z: 0}
-  trailEnabledPerSegment: 01010101010101010101010101
+  - {x: 0, y: 100, z: 0}
+  - {x: 22.5, y: 70, z: 0}
+  - {x: 45, y: 35, z: 0}
+  - {x: 50, y: 10, z: 0}
+  - {x: 30.000002, y: -30.000002, z: 0}
+  - {x: 0, y: -100, z: 0}
+  - {x: -30.000002, y: -30.000002, z: 0}
+  - {x: -50, y: 10, z: 0}
+  - {x: -45, y: 35, z: 0}
+  - {x: -22.5, y: 70, z: 0}
+  - {x: 0, y: 100, z: 0}
+  - {x: -50, y: 10, z: 0}
+  - {x: 50, y: 10, z: 0}
+  trailEnabledPerSegment: 01010101010101010101000101
   playerStartOffset: {x: 0, y: 0, z: -150}
   playerStartEuler: {x: 0, y: 0, z: 0}
   revealCameraEuler: {x: 90, y: 0, z: 0}
