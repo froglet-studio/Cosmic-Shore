@@ -32,6 +32,7 @@ namespace CosmicShore.Core
         private void OnEnable()
         {
             PauseSystem.TogglePauseGame(false);
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void Start()
@@ -47,8 +48,15 @@ namespace CosmicShore.Core
 
         private void OnDisable()
         {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
             if (!gameData) return;
             gameData.OnLaunchGame.OnRaised -= LaunchGame;
+        }
+
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (gameData)
+                gameData.InvokeSceneTransition(true);
         }
 
         #endregion
