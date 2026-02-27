@@ -57791,6 +57791,7 @@ GameObject:
   - component: {fileID: 1486013843}
   - component: {fileID: 1486013842}
   - component: {fileID: 1486013850}
+  - component: {fileID: 1486013851}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -57926,6 +57927,39 @@ MonoBehaviour:
   - {fileID: 673228694}
   - {fileID: 1419570605}
   - {fileID: 1867942830}
+--- !u!114 &1486013850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486013830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6071829304a5b6c7d8e9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  menuCanvasGroups:
+  - {fileID: 1867118905}
+  fadeDuration: 0.5
+  raycastDistance: 2000
+  centerTapRadius: 0.12
+--- !u!114 &1486013851
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486013830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d759a309d5838254980724692bce6225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  menuVesselClass: 6
+  menuPlayerCount: 3
+  menuIntensity: 1
 --- !u!1 &1486054860
 GameObject:
   m_ObjectHideFlags: 0
@@ -74873,6 +74907,18 @@ MonoBehaviour:
   phoneFlipThreshold: 0.1
   PhoneFlipState: 0
   currentOrientation: 0
+--- !u!225 &1867118905
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1867118896}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &1867600098
 GameObject:
   m_ObjectHideFlags: 0
@@ -108491,36 +108537,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 611885215}
   m_SourcePrefab: {fileID: 100100000, guid: 50fad7f9ece027942a19eaa47b068b47, type: 3}
---- !u!225 &1867118905
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1867118896}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
---- !u!114 &1486013850
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1486013830}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6071829304a5b6c7d8e9f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  menuCanvasGroups:
-  - {fileID: 1867118905}
-  fadeDuration: 0.5
-  raycastDistance: 2000
-  centerTapRadius: 0.12
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

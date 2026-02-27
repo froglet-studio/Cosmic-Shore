@@ -31,6 +31,7 @@ MonoBehaviour:
     type: 2}
   OnVesselNetworkSpawned: {fileID: 11400000, guid: c864ae0be6654a12a4120c7192add02c,
     type: 2}
+  OnMenuReady: {fileID: 11400000, guid: 74b62623b2c53e44ab457670b15723d8, type: 2}
   OnShowGameEndScreen: {fileID: 11400000, guid: 4c4df83a7f0a61f4aa7b643396bc9d45,
     type: 2}
   selectedVesselClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
@@ -50,8 +51,11 @@ MonoBehaviour:
   SceneName: MinigameHexRace
   GameMode: 0
   LocalPlayerDisplayName: 
+  LocalPlayerAvatarId: 0
+  LocalPlayerXP: 0
   IsDailyChallenge: 0
   IsTraining: 0
   IsMission: 0
   IsMultiplayerMode: 0
+  RequestedAIBackfillCount: 0
   TurnStartTime: 0
