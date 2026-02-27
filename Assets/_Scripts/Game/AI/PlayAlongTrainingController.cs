@@ -31,6 +31,13 @@ namespace CosmicShore.Game.AI
 
         void OnEnable()
         {
+            if (gameData == null)
+            {
+                Debug.LogError("[PlayAlongTraining] GameDataSO not assigned!", this);
+                enabled = false;
+                return;
+            }
+
             if (gameData.SelectedIntensity != null)
                 gameData.SelectedIntensity.Value = trainingIntensity;
 
@@ -39,6 +46,7 @@ namespace CosmicShore.Game.AI
 
         void OnDisable()
         {
+            if (gameData == null) return;
             gameData.OnMiniGameEnd -= OnRaceEnd;
         }
 

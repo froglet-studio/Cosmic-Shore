@@ -31,48 +31,47 @@ namespace CosmicShore.Game.AI
         [SerializeField] float delayBetweenRaces = 1f;
         [SerializeField] float raceTimeoutSeconds = 120f;
         [SerializeField, Range(1, 4)] int trainingIntensity = 4;
+
+        [Header("Crystal Target (fallback if turn monitor unavailable)")]
+        [Tooltip("Set to 0 to read from the turn monitor automatically.")]
+        [SerializeField] int fallbackCrystalTarget = 0;
+
+        [Header("Spectator Camera")]
         [SerializeField] float cameraShowOthersInterval = 4f;
         [SerializeField] float cameraShowOthersDuration = 1.5f;
 
         int _racesCompleted;
         float _raceStartTime;
         bool _raceActive;
-        bool _cameraInitialized;
         int _crystalTarget;
         float _nextShowOtherTime;
         int _currentShowOtherIndex;
+        Coroutine _cameraReturnCoroutine;
 
         void OnEnable()
         {
+            if (gameData == null)
+            {
+                Debug.LogError("[AITraining] GameDataSO not assigned!", this);
+                enabled = false;
+                return;
+            }
+
             if (gameData.SelectedIntensity != null)
                 gameData.SelectedIntensity.Value = trainingIntensity;
 
             gameData.OnMiniGameEnd += OnRaceEnd;
             gameData.OnMiniGameRoundStarted.OnRaised += OnRoundStarted;
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-            gameData.OnWinnerCalculated += SkipEndGameScreen;
-            gameData.OnShowGameEndScreen.OnRaised += SkipScoreboard;
         }
 
         void OnDisable()
         {
+            if (gameData == null) return;
+
             gameData.OnMiniGameEnd -= OnRaceEnd;
             gameData.OnMiniGameRoundStarted.OnRaised -= OnRoundStarted;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
-            gameData.OnWinnerCalculated -= SkipEndGameScreen;
-            gameData.OnShowGameEndScreen.OnRaised -= SkipScoreboard;
-        }
-
-        void SkipEndGameScreen()
-        {
-            // Prevent victory lap and cinematic sequence
-            Debug.Log("[AITraining] Skipping end game cinematic");
-        }
-
-        void SkipScoreboard()
-        {
-            // Prevent scoreboard from showing
-            Debug.Log("[AITraining] Skipping scoreboard display");
         }
 
         void OnRoundStarted()
@@ -88,7 +87,10 @@ namespace CosmicShore.Game.AI
         IEnumerator AutoClickReady()
         {
             yield return null;
-            gameController.OnReadyClicked();
+            if (gameController != null)
+                gameController.OnReadyClicked();
+            else
+                Debug.LogError("[AITraining] MiniGameControllerBase not assigned! Cannot auto-start race.", this);
         }
 
         void OnTurnStarted()
@@ -98,18 +100,42 @@ namespace CosmicShore.Game.AI
             _nextShowOtherTime = Time.time + cameraShowOthersInterval;
             _currentShowOtherIndex = 0;
 
-            // Cache the crystal target from the turn monitor (set during StartMonitor)
+            // Read crystal target after one frame to ensure the turn monitor has run StartMonitor.
+            // In all-AI mode, CrystalCollisionTurnMonitor.ownStats is null (no local player),
+            // so GetRemainingCrystalsCountToCollect returns the total CrystalCollisions target.
+            StartCoroutine(ReadCrystalTargetDeferred());
+
+            // Point camera at the first AI vessel
+            if (gameData.Players.Count > 0)
+                SetupSpectatorCamera(0);
+        }
+
+        IEnumerator ReadCrystalTargetDeferred()
+        {
+            // Wait one frame so TurnMonitorController.StartMonitors() has run
+            yield return null;
+
             if (turnMonitor != null)
             {
-                if (int.TryParse(turnMonitor.GetRemainingCrystalsCountToCollect(), out int remaining))
+                if (int.TryParse(turnMonitor.GetRemainingCrystalsCountToCollect(), out int remaining) && remaining > 0)
+                {
                     _crystalTarget = remaining;
+                    Debug.Log($"[AITraining] Crystal target from monitor: {_crystalTarget}");
+                    yield break;
+                }
             }
 
-            // Point camera at the first AI vessel on the first turn
-            if (!_cameraInitialized && gameData.Players.Count > 0)
+            // Fallback: use inspector value
+            if (fallbackCrystalTarget > 0)
             {
-                SetupSpectatorCamera(0);
-                _cameraInitialized = true;
+                _crystalTarget = fallbackCrystalTarget;
+                Debug.Log($"[AITraining] Crystal target from fallback: {_crystalTarget}");
+            }
+            else
+            {
+                // Last resort default
+                _crystalTarget = 39;
+                Debug.LogWarning("[AITraining] Could not determine crystal target; defaulting to 39");
             }
         }
 
@@ -121,15 +147,10 @@ namespace CosmicShore.Game.AI
             var vessel = player.Vessel;
             if (vessel == null) return;
 
-            vessel.VesselStatus.VesselCameraCustomizer.Initialize(vessel);
+            var customizer = vessel.VesselStatus.VesselCameraCustomizer;
+            if (customizer == null) return;
 
-            // Display genome index for this pilot
-            var aiPilot = vessel.VesselStatus.AIPilot;
-            if (aiPilot != null)
-            {
-                int genomeIndex = aiPilot.CurrentGenomeIndex;
-                Debug.Log($"[AITraining] Camera on {vessel.VesselStatus.PlayerName} (Genome #{genomeIndex})");
-            }
+            customizer.Initialize(vessel);
         }
 
         void Update()
@@ -143,8 +164,10 @@ namespace CosmicShore.Game.AI
                 SetupSpectatorCamera(_currentShowOtherIndex);
                 _nextShowOtherTime = Time.time + cameraShowOthersInterval;
 
-                // After showing others for brief duration, switch back to leader
-                StartCoroutine(ReturnToLeaderCamera());
+                // Cancel any pending camera return so they don't stack
+                if (_cameraReturnCoroutine != null)
+                    StopCoroutine(_cameraReturnCoroutine);
+                _cameraReturnCoroutine = StartCoroutine(ReturnToLeaderCamera());
             }
 
             // Check if any AI has collected enough crystals to finish the race.
@@ -153,8 +176,7 @@ namespace CosmicShore.Game.AI
             if (_crystalTarget > 0 && CheckAnyPlayerFinished())
             {
                 Debug.Log($"[AITraining] Race finished!");
-                _raceActive = false;
-                gameData.InvokeGameTurnConditionsMet();
+                EndRace();
                 return;
             }
 
@@ -162,9 +184,23 @@ namespace CosmicShore.Game.AI
             if (Time.time - _raceStartTime > raceTimeoutSeconds)
             {
                 Debug.LogWarning($"[AITraining] Race timed out after {raceTimeoutSeconds}s, forcing turn end");
-                _raceActive = false;
-                gameData.InvokeGameTurnConditionsMet();
+                EndRace();
             }
+        }
+
+        void EndRace()
+        {
+            if (!_raceActive) return;
+            _raceActive = false;
+
+            // Cancel camera coroutines before signaling turn end
+            if (_cameraReturnCoroutine != null)
+            {
+                StopCoroutine(_cameraReturnCoroutine);
+                _cameraReturnCoroutine = null;
+            }
+
+            gameData.InvokeGameTurnConditionsMet();
         }
 
         IEnumerator ReturnToLeaderCamera()
@@ -172,14 +208,17 @@ namespace CosmicShore.Game.AI
             yield return new WaitForSeconds(cameraShowOthersDuration);
             if (_raceActive && gameData.Players.Count > 0)
                 SetupSpectatorCamera(0);
+            _cameraReturnCoroutine = null;
         }
 
         bool CheckAnyPlayerFinished()
         {
             var stats = gameData.RoundStatsList;
+            if (stats == null) return false;
+
             for (int i = 0; i < stats.Count; i++)
             {
-                if (stats[i].CrystalsCollected >= _crystalTarget)
+                if (stats[i] != null && stats[i].CrystalsCollected >= _crystalTarget)
                     return true;
             }
             return false;
@@ -204,11 +243,18 @@ namespace CosmicShore.Game.AI
         IEnumerator RestartRace()
         {
             yield return new WaitForSeconds(delayBetweenRaces);
+
+            // Reset intensity in case anything changed it
+            if (gameData.SelectedIntensity != null)
+                gameData.SelectedIntensity.Value = trainingIntensity;
+
             gameData.ResetForReplay();
         }
 
         void LogProgress()
         {
+            if (evolution == null) return;
+
             var best = evolution.BestGenome;
             string bestFitness = best != null ? best.fitness.ToString("F1") : "N/A";
 
@@ -222,6 +268,8 @@ namespace CosmicShore.Game.AI
 
         void LogBestGenome()
         {
+            if (evolution == null) return;
+
             var best = evolution.BestGenome;
             if (best == null) return;
 

@@ -37,8 +37,15 @@ namespace CosmicShore.Game.AI
 
         public void StartTracking(IVesselStatus vesselStatus)
         {
+            // Guard against double-subscribe: unsubscribe first if already tracking
+            if (_tracking)
+            {
+                ElementalCrystalImpactor.OnCrystalCollected -= OnCrystalCollected;
+                VesselResetBoostPrismEffectSO.OnPrismCollision -= OnPrismCollision;
+            }
+
             _vesselStatus = vesselStatus;
-            _playerName = vesselStatus.PlayerName;
+            _playerName = vesselStatus != null ? vesselStatus.PlayerName : "";
             _crystalsCollected = 0;
             _prismCollisions = 0;
             _highBoostTime = 0f;

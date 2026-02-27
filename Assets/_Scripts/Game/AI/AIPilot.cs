@@ -190,6 +190,9 @@ namespace CosmicShore.Game.AI
             throttle = defaultThrottle;
 
             _trailBlockLayer = LayerMask.NameToLayer("TrailBlocks");
+
+            // Cache once during initialization - same GameObject, won't change
+            _fitnessTracker = GetComponent<PilotFitnessTracker>();
         }
 
         void LoadGenome()
@@ -200,7 +203,6 @@ namespace CosmicShore.Game.AI
                 _currentGenomeIndex = genomeIndex;
                 throttle = Mathf.Lerp(defaultThrottle, _activeGenome.throttleBase, IntensityT);
 
-                _fitnessTracker = GetComponent<PilotFitnessTracker>();
                 if (_fitnessTracker != null)
                     _fitnessTracker.SetGenomeIndex(genomeIndex);
 
@@ -238,10 +240,9 @@ namespace CosmicShore.Game.AI
             if (_fitnessTracker != null)
                 _fitnessTracker.StopTracking();
 
-            foreach (var ability in abilities)
-            {
-                StopCoroutine(UseAbilityCoroutine(ability));
-            }
+            // StopAllCoroutines to reliably cancel running ability coroutines;
+            // StopCoroutine(IEnumerator) only works with the exact same reference.
+            StopAllCoroutines();
         }
 
         void Update()

@@ -23,9 +23,9 @@ namespace CosmicShore.Game.AI
         [SerializeField] int evaluationIndex;
         [SerializeField] List<PilotGenome> population = new();
 
-        // Runtime tracking for multi-pilot checkout/return (not serialized)
-        int _evaluationsReturned;
-        bool _needsEvolution;
+        // Serialized so they survive editor domain reloads during training
+        [SerializeField, HideInInspector] int _evaluationsReturned;
+        [SerializeField, HideInInspector] bool _needsEvolution;
 
         public int Generation => generation;
         public int PopulationSize => population.Count;
