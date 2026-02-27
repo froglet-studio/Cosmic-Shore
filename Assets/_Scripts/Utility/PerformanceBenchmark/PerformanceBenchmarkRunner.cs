@@ -24,6 +24,27 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     {
         static readonly ProfilerMarker s_benchmarkMarker = new("CosmicShore.BenchmarkCapture");
 
+        // ── Custom Profiler Counters ─────────────────────
+        // These show up in Unity's Profiler window under the "CosmicShore" module,
+        // giving real-time visibility into benchmark metrics without the editor window.
+        static readonly ProfilerCategory s_cosmicCategory = ProfilerCategory.Scripts;
+
+        static readonly ProfilerCounterValue<float> s_counterFps =
+            new(s_cosmicCategory, "Benchmark FPS", ProfilerMarkerDataUnit.Count,
+                ProfilerCounterOptions.FlushOnEndOfFrame);
+
+        static readonly ProfilerCounterValue<float> s_counterFrameTimeMs =
+            new(s_cosmicCategory, "Benchmark Frame Time (ms)", ProfilerMarkerDataUnit.TimeNanoseconds,
+                ProfilerCounterOptions.FlushOnEndOfFrame);
+
+        static readonly ProfilerCounterValue<int> s_counterDrawCalls =
+            new(s_cosmicCategory, "Benchmark Draw Calls", ProfilerMarkerDataUnit.Count,
+                ProfilerCounterOptions.FlushOnEndOfFrame);
+
+        static readonly ProfilerCounterValue<int> s_counterFramesCaptured =
+            new(s_cosmicCategory, "Benchmark Frames Captured", ProfilerMarkerDataUnit.Count,
+                ProfilerCounterOptions.FlushOnEndOfFrame);
+
         [Header("Configuration")]
         [SerializeField] private BenchmarkConfigSO config;
 
@@ -234,6 +255,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
                 snapshots.Add(snapshot);
 
+                // Write to custom profiler counters — visible in Unity Profiler window
+                s_counterFps.Value = fps;
+                s_counterFrameTimeMs.Value = frameTimeMs;
+                s_counterDrawCalls.Value = snapshot.drawCalls;
+                s_counterFramesCaptured.Value = frameCounter;
+
                 if (benchmarkData != null)
                     benchmarkData.FramesCaptured = frameCounter;
             }
@@ -248,6 +275,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             currentReport.ComputeStatistics();
 
             string filePath = currentReport.SaveToFile(config.OutputFolder);
+
+            // Auto-index in history so every run is retrievable for comparison
+            BenchmarkHistory.AddToHistory(currentReport, filePath, config.OutputFolder);
 
             // Update SOAP data container
             if (benchmarkData != null)

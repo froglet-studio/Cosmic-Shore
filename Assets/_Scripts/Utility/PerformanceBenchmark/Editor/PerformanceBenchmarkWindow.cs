@@ -13,19 +13,22 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
     public class PerformanceBenchmarkWindow : EditorWindow
     {
         // ── Tab state ───────────────────────────────────
-        enum Tab { Run, Reports, Compare }
+        enum Tab { Run, History, Compare }
         Tab activeTab = Tab.Run;
 
         // ── Run tab ─────────────────────────────────────
         BenchmarkConfigSO config;
         BenchmarkDataSO benchmarkData;
         PerformanceBenchmarkRunner activeRunner;
+        BenchmarkReport lastReport;
         string lastReportPath;
+        bool showSettingsFoldout;
 
-        // ── Reports tab ─────────────────────────────────
-        Vector2 reportsScroll;
-        List<ReportEntry> reportEntries = new();
-        string reportsFolder;
+        // ── History tab ─────────────────────────────────
+        Vector2 historyScroll;
+        List<BenchmarkHistory.IndexEntry> historyEntries = new();
+        string tagEditId;
+        string tagEditValue = "";
 
         // ── Compare tab ─────────────────────────────────
         Vector2 compareScroll;
@@ -34,24 +37,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         BenchmarkComparer.ComparisonResult comparisonResult;
         string comparisonText;
 
-        struct ReportEntry
-        {
-            public string filePath;
-            public string fileName;
-            public BenchmarkReport report;
-        }
-
         [MenuItem("FrogletTools/Performance Benchmark", false, 20)]
         public static void Open()
         {
             var window = GetWindow<PerformanceBenchmarkWindow>("Performance Benchmark");
-            window.minSize = new Vector2(520, 400);
+            window.minSize = new Vector2(560, 420);
             window.Show();
         }
 
         void OnEnable()
         {
-            RefreshReportsList();
+            RefreshHistory();
         }
 
         void OnGUI()
@@ -61,7 +57,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             switch (activeTab)
             {
                 case Tab.Run: DrawRunTab(); break;
-                case Tab.Reports: DrawReportsTab(); break;
+                case Tab.History: DrawHistoryTab(); break;
                 case Tab.Compare: DrawCompareTab(); break;
             }
         }
@@ -79,111 +75,206 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             if (GUILayout.Toggle(activeTab == Tab.Run, "Run", EditorStyles.toolbarButton))
                 activeTab = Tab.Run;
-            if (GUILayout.Toggle(activeTab == Tab.Reports, "Reports", EditorStyles.toolbarButton))
-                activeTab = Tab.Reports;
+            if (GUILayout.Toggle(activeTab == Tab.History, $"History ({historyEntries.Count})", EditorStyles.toolbarButton))
+                activeTab = Tab.History;
             if (GUILayout.Toggle(activeTab == Tab.Compare, "Compare", EditorStyles.toolbarButton))
                 activeTab = Tab.Compare;
             EditorGUILayout.EndHorizontal();
         }
 
+        // ════════════════════════════════════════════════
         // ── Run Tab ─────────────────────────────────────
+        // ════════════════════════════════════════════════
 
         void DrawRunTab()
         {
             EditorGUILayout.Space(8);
-            EditorGUILayout.LabelField("Run Benchmark", EditorStyles.boldLabel);
 
+            // ── Config assignment ──────────────────────
             config = (BenchmarkConfigSO)EditorGUILayout.ObjectField(
                 "Config", config, typeof(BenchmarkConfigSO), false);
 
             benchmarkData = (BenchmarkDataSO)EditorGUILayout.ObjectField(
-                "Data Container", benchmarkData, typeof(BenchmarkDataSO), false);
+                "Data Container (optional)", benchmarkData, typeof(BenchmarkDataSO), false);
 
             if (config == null)
             {
-                EditorGUILayout.HelpBox("Assign a BenchmarkConfigSO to get started.\nCreate one via: Assets > Create > CosmicShore > Tools > Benchmark Config", MessageType.Info);
+                EditorGUILayout.Space(8);
+                EditorGUILayout.HelpBox(
+                    "Getting started:\n" +
+                    "1. Right-click in Project > Create > CosmicShore > Tools > Benchmark Config\n" +
+                    "2. Drag the new asset into the Config slot above\n" +
+                    "3. Enter Play Mode and click 'Start Benchmark'\n\n" +
+                    "Every run is saved automatically. You can compare any two runs in the History tab.",
+                    MessageType.Info);
                 return;
             }
 
-            if (benchmarkData == null)
+            // ── Settings foldout ───────────────────────
+            showSettingsFoldout = EditorGUILayout.Foldout(showSettingsFoldout, "Benchmark Settings", true);
+            if (showSettingsFoldout)
             {
-                EditorGUILayout.HelpBox("Assign a BenchmarkDataSO for SOAP event integration.\nCreate one via: Assets > Create > ScriptableObjects > DataContainers > Benchmark Data", MessageType.Warning);
-            }
+                EditorGUI.indentLevel++;
+                EditorGUILayout.LabelField("Warmup", $"{config.WarmupDuration}s  (scene stabilizes before measurement)");
+                EditorGUILayout.LabelField("Sample Duration", $"{config.SampleDuration}s  (how long to record)");
+                EditorGUILayout.LabelField("Label", string.IsNullOrEmpty(config.BenchmarkLabel) ? "(none — set one to identify this run)" : config.BenchmarkLabel);
 
-            EditorGUILayout.Space(4);
-            EditorGUILayout.LabelField("Settings Preview", EditorStyles.miniBoldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.LabelField("Warmup", $"{config.WarmupDuration}s");
-            EditorGUILayout.LabelField("Sample Duration", $"{config.SampleDuration}s");
-            EditorGUILayout.LabelField("Label", string.IsNullOrEmpty(config.BenchmarkLabel) ? "(none)" : config.BenchmarkLabel);
-            EditorGUILayout.LabelField("Rendering Stats", config.CaptureRenderingStats ? "Yes" : "No");
-            EditorGUILayout.LabelField("Memory Stats", config.CaptureMemoryStats ? "Yes" : "No");
-            EditorGUILayout.LabelField("Physics Stats", config.CapturePhysicsStats ? "Yes" : "No");
-            EditorGUI.indentLevel--;
+                EditorGUILayout.Space(2);
+                EditorGUILayout.LabelField("Capturing:", EditorStyles.miniBoldLabel);
+                DrawCaptureToggle("Rendering (draw calls, batches, triangles)", config.CaptureRenderingStats);
+                DrawCaptureToggle("Memory (heap size, GC allocations)", config.CaptureMemoryStats);
+                DrawCaptureToggle("Physics (active rigidbodies)", config.CapturePhysicsStats);
+                EditorGUI.indentLevel--;
+            }
 
             EditorGUILayout.Space(8);
 
+            // ── Run / Progress ─────────────────────────
             bool isPlaying = Application.isPlaying;
 
             if (activeRunner != null && activeRunner.IsRunning)
             {
                 float progress = activeRunner.Progress;
-                var rect = EditorGUILayout.GetControlRect(false, 20);
+                var rect = EditorGUILayout.GetControlRect(false, 22);
                 EditorGUI.ProgressBar(rect, progress, $"Benchmarking... {progress * 100:F0}%");
 
-                // Live stats from SOAP data container
                 if (benchmarkData != null && benchmarkData.IsSampling)
                 {
                     EditorGUILayout.LabelField(
-                        $"Frames: {benchmarkData.FramesCaptured}  |  Label: {benchmarkData.ActiveLabel}",
+                        $"  Frames captured: {benchmarkData.FramesCaptured}",
                         EditorStyles.miniLabel);
                 }
 
                 EditorGUILayout.Space(4);
                 if (GUILayout.Button("Stop Early"))
-                {
                     activeRunner.StopBenchmark();
-                }
             }
             else
             {
                 if (!isPlaying)
                 {
-                    EditorGUILayout.HelpBox("Enter Play Mode to run a benchmark.", MessageType.Warning);
+                    EditorGUILayout.HelpBox(
+                        "Enter Play Mode to run a benchmark.\n" +
+                        "Tip: Open Unity's Profiler window (Window > Analysis > Profiler) alongside " +
+                        "this tool to see real-time counters under 'Scripts' module while the benchmark runs.",
+                        MessageType.Warning);
                 }
 
                 using (new EditorGUI.DisabledScope(!isPlaying))
                 {
-                    if (GUILayout.Button("Start Benchmark", GUILayout.Height(30)))
-                    {
+                    if (GUILayout.Button("Start Benchmark", GUILayout.Height(32)))
                         StartBenchmarkInPlayMode();
-                    }
                 }
             }
 
-            if (!string.IsNullOrEmpty(lastReportPath))
+            // ── Last result summary ────────────────────
+            if (lastReport?.statistics != null)
             {
-                EditorGUILayout.Space(8);
-                EditorGUILayout.LabelField("Last Report", EditorStyles.miniBoldLabel);
-                EditorGUILayout.SelectableLabel(lastReportPath, EditorStyles.miniLabel, GUILayout.Height(16));
+                EditorGUILayout.Space(12);
+                DrawHealthGrade(lastReport.statistics);
 
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Last Run Results", EditorStyles.boldLabel);
+                DrawStatsSummary(lastReport.statistics);
+
+                EditorGUILayout.Space(4);
                 EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Open in File Explorer"))
+                if (GUILayout.Button("View in History"))
                 {
+                    RefreshHistory();
+                    activeTab = Tab.History;
+                }
+                if (!string.IsNullOrEmpty(lastReportPath) && GUILayout.Button("Open JSON File"))
                     EditorUtility.RevealInFinder(lastReportPath);
-                }
-                if (GUILayout.Button("Refresh Reports List"))
-                {
-                    RefreshReportsList();
-                    activeTab = Tab.Reports;
-                }
                 EditorGUILayout.EndHorizontal();
             }
         }
 
+        void DrawCaptureToggle(string label, bool enabled)
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(enabled ? "  [x]" : "  [ ]", GUILayout.Width(30));
+            EditorGUILayout.LabelField(label, EditorStyles.miniLabel);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawHealthGrade(BenchmarkStatistics stats)
+        {
+            // Simple health grading: A/B/C/D/F based on avg FPS and frame time stability
+            string grade;
+            string explanation;
+            Color gradeColor;
+
+            if (stats.avgFps >= 55 && stats.p99FrameTimeMs < 25 && stats.stdDevFrameTimeMs < 5)
+            {
+                grade = "A"; explanation = "Excellent — smooth and stable"; gradeColor = new Color(0.2f, 0.8f, 0.3f);
+            }
+            else if (stats.avgFps >= 45 && stats.p99FrameTimeMs < 35)
+            {
+                grade = "B"; explanation = "Good — playable with minor hitches"; gradeColor = new Color(0.5f, 0.8f, 0.2f);
+            }
+            else if (stats.avgFps >= 30 && stats.p99FrameTimeMs < 50)
+            {
+                grade = "C"; explanation = "Acceptable — noticeable frame drops"; gradeColor = new Color(0.9f, 0.75f, 0.1f);
+            }
+            else if (stats.avgFps >= 20)
+            {
+                grade = "D"; explanation = "Poor — frequent stutters, needs optimization"; gradeColor = new Color(0.9f, 0.4f, 0.1f);
+            }
+            else
+            {
+                grade = "F"; explanation = "Critical — not playable"; gradeColor = new Color(0.85f, 0.2f, 0.2f);
+            }
+
+            var rect = EditorGUILayout.GetControlRect(false, 36);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), new Color(gradeColor.r, gradeColor.g, gradeColor.b, 0.15f));
+
+            var gradeStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 22, alignment = TextAnchor.MiddleLeft };
+            gradeStyle.normal.textColor = gradeColor;
+            EditorGUI.LabelField(new Rect(rect.x + 8, rect.y, 40, rect.height), grade, gradeStyle);
+
+            var explStyle = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleLeft };
+            EditorGUI.LabelField(new Rect(rect.x + 48, rect.y, rect.width - 56, rect.height), explanation, explStyle);
+        }
+
+        void DrawStatsSummary(BenchmarkStatistics stats)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+            DrawStatRow("Avg FPS", $"{stats.avgFps:F1}", "Higher is better. Target: 60 for mobile.");
+            DrawStatRow("Worst 1% FPS", $"{stats.p1Fps:F1}", "FPS during the worst spikes. Below 30 = visible stutter.");
+            DrawStatRow("Avg Frame Time", $"{stats.avgFrameTimeMs:F2} ms", "Time per frame. 16.7ms = 60fps, 33.3ms = 30fps.");
+            DrawStatRow("Worst 1% Frame Time", $"{stats.p99FrameTimeMs:F2} ms", "Frame time during the worst spikes.");
+            DrawStatRow("Stability (StdDev)", $"{stats.stdDevFrameTimeMs:F2} ms", "Lower = more consistent. Above 5ms = noticeable hitching.");
+
+            if (stats.avgDrawCalls > 0)
+            {
+                EditorGUILayout.Space(2);
+                DrawStatRow("Draw Calls", $"{stats.avgDrawCalls:F0}", "GPU commands per frame. Lower is better.");
+                DrawStatRow("Batches", $"{stats.avgBatches:F0}", "Grouped draw calls. Lower = better batching.");
+                DrawStatRow("Triangles", $"{stats.avgTriangles:F0}", "Total scene geometry per frame.");
+            }
+
+            if (stats.peakAllocatedMemory > 0)
+            {
+                EditorGUILayout.Space(2);
+                DrawStatRow("Peak Memory", $"{stats.peakAllocatedMemory / (1024f * 1024f):F1} MB", "Maximum memory used during the run.");
+                DrawStatRow("GC Allocations", $"{stats.totalGcAllocated / (1024f * 1024f):F2} MB", "Total garbage created. Causes stutter when collected.");
+            }
+
+            EditorGUILayout.EndVertical();
+        }
+
+        void DrawStatRow(string label, string value, string tooltip)
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(new GUIContent(label, tooltip), GUILayout.Width(160));
+            EditorGUILayout.LabelField(value, EditorStyles.boldLabel);
+            EditorGUILayout.EndHorizontal();
+        }
+
         void StartBenchmarkInPlayMode()
         {
-            // Find or create the runner in the scene
             activeRunner = FindFirstObjectByType<PerformanceBenchmarkRunner>();
 
             if (activeRunner == null)
@@ -192,13 +283,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 activeRunner = go.AddComponent<PerformanceBenchmarkRunner>();
             }
 
-            // Inject config and SOAP data container via serialized fields
             var so = new SerializedObject(activeRunner);
             so.FindProperty("config").objectReferenceValue = config;
             so.FindProperty("benchmarkData").objectReferenceValue = benchmarkData;
             so.ApplyModifiedProperties();
 
-            // Subscribe to SOAP completion event if available
             if (benchmarkData != null && benchmarkData.OnBenchmarkCompleted != null)
                 benchmarkData.OnBenchmarkCompleted.OnRaised += OnRunFinishedSOAP;
 
@@ -209,119 +298,189 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             lastReportPath = stateData.ReportFilePath;
 
+            if (!string.IsNullOrEmpty(lastReportPath))
+                lastReport = BenchmarkReport.LoadFromFile(lastReportPath);
+
             if (benchmarkData != null && benchmarkData.OnBenchmarkCompleted != null)
                 benchmarkData.OnBenchmarkCompleted.OnRaised -= OnRunFinishedSOAP;
 
-            RefreshReportsList();
+            RefreshHistory();
             Repaint();
         }
 
-        // ── Reports Tab ─────────────────────────────────
+        // ════════════════════════════════════════════════
+        // ── History Tab ─────────────────────────────────
+        // ════════════════════════════════════════════════
 
-        void DrawReportsTab()
+        void DrawHistoryTab()
         {
             EditorGUILayout.Space(8);
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Saved Reports", EditorStyles.boldLabel);
-            if (GUILayout.Button("Refresh", GUILayout.Width(70)))
-                RefreshReportsList();
+            EditorGUILayout.LabelField("Benchmark History", EditorStyles.boldLabel);
+            if (GUILayout.Button("Refresh", GUILayout.Width(60)))
+                RefreshHistory();
+            if (GUILayout.Button("Rebuild Index", GUILayout.Width(95)))
+            {
+                int count = BenchmarkHistory.RebuildIndex(GetOutputFolder());
+                RefreshHistory();
+                Debug.Log($"[Benchmark] Index rebuilt: {count} reports found.");
+            }
             EditorGUILayout.EndHorizontal();
 
-            if (reportEntries.Count == 0)
+            if (historyEntries.Count == 0)
             {
-                EditorGUILayout.HelpBox("No benchmark reports found.\nRun a benchmark first, or check the output folder.", MessageType.Info);
+                EditorGUILayout.HelpBox(
+                    "No benchmark snapshots yet.\n\n" +
+                    "Every time you run a benchmark from the Run tab, the results are automatically " +
+                    "saved here. You can then tag runs (e.g., 'baseline', 'after-optimization') " +
+                    "and compare any two runs side-by-side in the Compare tab.",
+                    MessageType.Info);
                 return;
             }
 
-            EditorGUILayout.LabelField($"Folder: {GetBenchmarksFolder()}", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField($"{historyEntries.Count} snapshots saved", EditorStyles.miniLabel);
             EditorGUILayout.Space(4);
 
-            reportsScroll = EditorGUILayout.BeginScrollView(reportsScroll);
+            historyScroll = EditorGUILayout.BeginScrollView(historyScroll);
 
-            for (int i = 0; i < reportEntries.Count; i++)
+            for (int i = 0; i < historyEntries.Count; i++)
             {
-                var entry = reportEntries[i];
-                var r = entry.report;
-
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField($"{r.label}", EditorStyles.boldLabel, GUILayout.Width(160));
-                EditorGUILayout.LabelField($"{r.gitBranch}/{r.gitCommitHash}", EditorStyles.miniLabel);
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.LabelField($"Scene: {r.sceneName}  |  {r.timestamp}  |  {r.statistics?.totalFrames ?? 0} frames", EditorStyles.miniLabel);
-
-                if (r.statistics != null)
-                {
-                    EditorGUILayout.LabelField(
-                        $"FPS avg:{r.statistics.avgFps:F1} min:{r.statistics.minFps:F1} p1:{r.statistics.p1Fps:F1}  |  " +
-                        $"Frame avg:{r.statistics.avgFrameTimeMs:F1}ms p95:{r.statistics.p95FrameTimeMs:F1}ms  |  " +
-                        $"Draw:{r.statistics.avgDrawCalls:F0} Batch:{r.statistics.avgBatches:F0}",
-                        EditorStyles.miniLabel);
-                }
-
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Set as Baseline", GUILayout.Width(110)))
-                {
-                    baselineIndex = i;
-                    TryCompare();
-                    activeTab = Tab.Compare;
-                }
-                if (GUILayout.Button("Set as Current", GUILayout.Width(110)))
-                {
-                    currentIndex = i;
-                    TryCompare();
-                    activeTab = Tab.Compare;
-                }
-                if (GUILayout.Button("Open JSON", GUILayout.Width(80)))
-                {
-                    EditorUtility.RevealInFinder(entry.filePath);
-                }
-                if (GUILayout.Button("Delete", GUILayout.Width(55)))
-                {
-                    if (EditorUtility.DisplayDialog("Delete Report",
-                        $"Delete benchmark report \"{entry.fileName}\"?", "Delete", "Cancel"))
-                    {
-                        File.Delete(entry.filePath);
-                        RefreshReportsList();
-                        GUIUtility.ExitGUI();
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.EndVertical();
-                EditorGUILayout.Space(2);
+                var e = historyEntries[i];
+                DrawHistoryEntry(e, i);
             }
 
             EditorGUILayout.EndScrollView();
         }
 
+        void DrawHistoryEntry(BenchmarkHistory.IndexEntry e, int index)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+            // ── Header row: label + tag + branch ──────
+            EditorGUILayout.BeginHorizontal();
+
+            string displayLabel = string.IsNullOrEmpty(e.label) ? "(untitled)" : e.label;
+            EditorGUILayout.LabelField(displayLabel, EditorStyles.boldLabel, GUILayout.Width(140));
+
+            if (!string.IsNullOrEmpty(e.tag))
+            {
+                var prevBg = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(0.3f, 0.6f, 1f);
+                GUILayout.Label(e.tag, EditorStyles.miniButton, GUILayout.Width(80));
+                GUI.backgroundColor = prevBg;
+            }
+
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.LabelField($"{e.gitBranch}/{e.gitCommitHash}", EditorStyles.miniLabel, GUILayout.Width(180));
+            EditorGUILayout.EndHorizontal();
+
+            // ── Stats row ─────────────────────────────
+            string date = e.timestamp?.Length > 19 ? e.timestamp[..19].Replace("T", " ") : e.timestamp ?? "?";
+            EditorGUILayout.LabelField(
+                $"{date}  |  {e.sceneName}  |  {e.totalFrames} frames  |  " +
+                $"FPS: {e.avgFps:F1} (p1: {e.p1Fps:F1})  |  Frame: {e.avgFrameTimeMs:F1}ms (p99: {e.p99FrameTimeMs:F1}ms)",
+                EditorStyles.miniLabel);
+
+            // ── Action row ────────────────────────────
+            EditorGUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("Baseline", GUILayout.Width(65)))
+            {
+                baselineIndex = index;
+                TryCompare();
+                activeTab = Tab.Compare;
+            }
+            if (GUILayout.Button("Current", GUILayout.Width(60)))
+            {
+                currentIndex = index;
+                TryCompare();
+                activeTab = Tab.Compare;
+            }
+
+            // Tag editing
+            if (tagEditId == e.reportId)
+            {
+                tagEditValue = EditorGUILayout.TextField(tagEditValue, GUILayout.Width(80));
+                if (GUILayout.Button("Save", GUILayout.Width(40)))
+                {
+                    BenchmarkHistory.TagReport(e.reportId, tagEditValue, GetOutputFolder());
+                    tagEditId = null;
+                    RefreshHistory();
+                }
+                if (GUILayout.Button("X", GUILayout.Width(20)))
+                    tagEditId = null;
+            }
+            else
+            {
+                if (GUILayout.Button("Tag", GUILayout.Width(35)))
+                {
+                    tagEditId = e.reportId;
+                    tagEditValue = e.tag ?? "";
+                }
+            }
+
+            GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button("JSON", GUILayout.Width(40)))
+            {
+                if (File.Exists(e.filePath))
+                    EditorUtility.RevealInFinder(e.filePath);
+            }
+            if (GUILayout.Button("Del", GUILayout.Width(30)))
+            {
+                if (EditorUtility.DisplayDialog("Delete Snapshot",
+                    $"Delete benchmark snapshot \"{e.label}\" ({e.timestamp})?", "Delete", "Cancel"))
+                {
+                    BenchmarkHistory.RemoveEntry(e.reportId, GetOutputFolder());
+                    RefreshHistory();
+                    GUIUtility.ExitGUI();
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(2);
+        }
+
+        // ════════════════════════════════════════════════
         // ── Compare Tab ─────────────────────────────────
+        // ════════════════════════════════════════════════
 
         void DrawCompareTab()
         {
             EditorGUILayout.Space(8);
-            EditorGUILayout.LabelField("Compare Two Reports", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Compare Two Snapshots", EditorStyles.boldLabel);
 
-            if (reportEntries.Count < 2)
+            if (historyEntries.Count < 2)
             {
-                EditorGUILayout.HelpBox("Need at least 2 reports to compare. Run benchmarks from the Run tab.", MessageType.Info);
+                EditorGUILayout.HelpBox(
+                    "Run at least 2 benchmarks to compare them.\n\n" +
+                    "Typical workflow:\n" +
+                    "1. Run a benchmark before making changes (tag it 'baseline')\n" +
+                    "2. Make your optimization changes\n" +
+                    "3. Run another benchmark\n" +
+                    "4. Compare the two to see what improved or regressed",
+                    MessageType.Info);
                 return;
             }
 
-            string[] reportNames = reportEntries
-                .Select((e, i) => $"[{i}] {e.report.label} ({e.report.gitBranch}/{e.report.gitCommitHash})")
+            string[] names = historyEntries
+                .Select((e, i) =>
+                {
+                    string tag = string.IsNullOrEmpty(e.tag) ? "" : $" [{e.tag}]";
+                    string date = e.timestamp?.Length > 10 ? e.timestamp[..10] : "?";
+                    return $"{e.label}{tag} ({e.gitBranch} {date})";
+                })
                 .ToArray();
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Baseline (before):", GUILayout.Width(130));
-            int newBaseline = EditorGUILayout.Popup(baselineIndex, reportNames);
+            int newBaseline = EditorGUILayout.Popup(baselineIndex, names);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Current (after):", GUILayout.Width(130));
-            int newCurrent = EditorGUILayout.Popup(currentIndex, reportNames);
+            int newCurrent = EditorGUILayout.Popup(currentIndex, names);
             EditorGUILayout.EndHorizontal();
 
             if (newBaseline != baselineIndex || newCurrent != currentIndex)
@@ -334,33 +493,33 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorGUILayout.Space(4);
 
             if (GUILayout.Button("Compare", GUILayout.Height(24)))
-            {
                 TryCompare();
-            }
 
             if (comparisonResult == null || string.IsNullOrEmpty(comparisonText))
             {
-                EditorGUILayout.HelpBox("Select a baseline and current report, then click Compare.", MessageType.Info);
+                EditorGUILayout.HelpBox(
+                    "Pick a 'Baseline' and a 'Current' snapshot from the dropdowns above, " +
+                    "then click Compare.\n\nTip: You can also set these from the History tab by " +
+                    "clicking the Baseline/Current buttons on any snapshot.",
+                    MessageType.Info);
                 return;
             }
 
             EditorGUILayout.Space(4);
 
-            // Summary badges
+            // ── Summary badges ─────────────────────────
             EditorGUILayout.BeginHorizontal();
             DrawBadge($"{comparisonResult.improvements} Improved", new Color(0.2f, 0.7f, 0.3f));
             DrawBadge($"{comparisonResult.neutral} Unchanged", new Color(0.6f, 0.6f, 0.6f));
             DrawBadge($"{comparisonResult.regressions} Regressed", new Color(0.85f, 0.25f, 0.25f));
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Copy to Clipboard", GUILayout.Width(130)))
-            {
+            if (GUILayout.Button("Copy Text Report", GUILayout.Width(120)))
                 GUIUtility.systemCopyBuffer = comparisonText;
-            }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(4);
 
-            // Detailed table
+            // ── Detailed comparison table ──────────────
             compareScroll = EditorGUILayout.BeginScrollView(compareScroll);
 
             var headerStyle = new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Bold };
@@ -401,7 +560,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                     _ => "~"
                 };
                 EditorGUILayout.LabelField(verdictLabel, EditorStyles.miniLabel, GUILayout.Width(70));
-
                 EditorGUILayout.EndHorizontal();
             }
 
@@ -419,62 +577,38 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         void TryCompare()
         {
             if (baselineIndex < 0 || currentIndex < 0) return;
-            if (baselineIndex >= reportEntries.Count || currentIndex >= reportEntries.Count) return;
+            if (baselineIndex >= historyEntries.Count || currentIndex >= historyEntries.Count) return;
             if (baselineIndex == currentIndex) return;
 
-            comparisonResult = BenchmarkComparer.Compare(
-                reportEntries[baselineIndex].report,
-                reportEntries[currentIndex].report);
+            var baselineReport = BenchmarkHistory.LoadReport(historyEntries[baselineIndex]);
+            var currentReport = BenchmarkHistory.LoadReport(historyEntries[currentIndex]);
 
+            if (baselineReport == null || currentReport == null)
+            {
+                comparisonResult = null;
+                comparisonText = null;
+                return;
+            }
+
+            comparisonResult = BenchmarkComparer.Compare(baselineReport, currentReport);
             comparisonText = BenchmarkComparer.FormatAsText(comparisonResult);
         }
 
-        // ── Report Discovery ────────────────────────────
+        // ── Data Access ─────────────────────────────────
 
-        string GetBenchmarksFolder()
+        string GetOutputFolder()
         {
-            string folder = "Benchmarks";
             if (config != null && !string.IsNullOrEmpty(config.OutputFolder))
-                folder = config.OutputFolder;
-            return Path.Combine(Application.persistentDataPath, folder);
+                return config.OutputFolder;
+            return "Benchmarks";
         }
 
-        void RefreshReportsList()
+        void RefreshHistory()
         {
-            reportEntries.Clear();
-            reportsFolder = GetBenchmarksFolder();
+            historyEntries = BenchmarkHistory.GetAll(GetOutputFolder());
 
-            if (!Directory.Exists(reportsFolder))
-                return;
-
-            var files = Directory.GetFiles(reportsFolder, "*.json")
-                .OrderByDescending(File.GetLastWriteTimeUtc)
-                .ToArray();
-
-            foreach (var file in files)
-            {
-                try
-                {
-                    var report = BenchmarkReport.LoadFromFile(file);
-                    if (report != null)
-                    {
-                        reportEntries.Add(new ReportEntry
-                        {
-                            filePath = file,
-                            fileName = Path.GetFileName(file),
-                            report = report
-                        });
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[Benchmark] Failed to load report {file}: {e.Message}");
-                }
-            }
-
-            // Reset comparison indices if out of range
-            if (baselineIndex >= reportEntries.Count) baselineIndex = -1;
-            if (currentIndex >= reportEntries.Count) currentIndex = -1;
+            if (baselineIndex >= historyEntries.Count) baselineIndex = -1;
+            if (currentIndex >= historyEntries.Count) currentIndex = -1;
         }
     }
 }
