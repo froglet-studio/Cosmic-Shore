@@ -17,7 +17,7 @@ namespace CosmicShore.Core
     ///   - Network scene loading (server-authoritative via Netcode)
     ///   - Manual fade control for custom sequences
     ///
-    /// Place on the Bootstrap persistent root. Registers itself in ServiceLocator on Awake.
+    /// Place on the Bootstrap persistent root. Registered in Reflex DI via AppManager.
     /// </summary>
     [DefaultExecutionOrder(-50)]
     public class SceneTransitionManager : MonoBehaviour
@@ -54,7 +54,6 @@ namespace CosmicShore.Core
         {
             _cts = new CancellationTokenSource();
             CreateFadeOverlay();
-            ServiceLocator.Register(this);
         }
 
         void OnDestroy()
@@ -62,7 +61,6 @@ namespace CosmicShore.Core
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
-            ServiceLocator.Unregister<SceneTransitionManager>();
         }
 
         #endregion
@@ -88,8 +86,6 @@ namespace CosmicShore.Core
 
                 if (fadeOut)
                     await FadeAsync(0f, 1f, ct);
-
-                ServiceLocator.ClearSceneServices();
 
                 await SceneManager.LoadSceneAsync(sceneName).ToUniTask(cancellationToken: ct);
 
@@ -133,8 +129,6 @@ namespace CosmicShore.Core
                 var ct = _cts.Token;
 
                 await FadeAsync(0f, 1f, ct);
-
-                ServiceLocator.ClearSceneServices();
 
                 var nm = NetworkManager.Singleton;
 

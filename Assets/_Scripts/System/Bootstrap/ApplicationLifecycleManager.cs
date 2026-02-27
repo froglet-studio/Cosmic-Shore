@@ -83,7 +83,6 @@ namespace CosmicShore.Core
             _isQuitting = true;
             OnAppQuitting?.Invoke();
             _lifecycleEvents?.OnAppQuitting.Raise();
-            ServiceLocator.ClearAll();
         }
 
         void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -94,8 +93,6 @@ namespace CosmicShore.Core
 
         void HandleSceneUnloaded(Scene scene)
         {
-            // Clear scene-scoped services when any scene unloads.
-            ServiceLocator.ClearSceneServices();
             OnSceneUnloading?.Invoke(scene);
             _lifecycleEvents?.OnSceneUnloading.Raise(scene.name);
         }

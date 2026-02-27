@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField]
         GameDataSO gameData;
-        
+
         [SerializeField]
         CellRuntimeDataSO cellData;
 

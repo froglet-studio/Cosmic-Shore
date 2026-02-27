@@ -13,14 +13,12 @@ namespace CosmicShore.Core
         {
             // Reset the static _hasBootstrapped flag before each test.
             ResetHasBootstrapped();
-            ServiceLocator.ClearAll();
         }
 
         [TearDown]
         public void TearDown()
         {
             ResetHasBootstrapped();
-            ServiceLocator.ClearAll();
         }
 
         static void ResetHasBootstrapped()

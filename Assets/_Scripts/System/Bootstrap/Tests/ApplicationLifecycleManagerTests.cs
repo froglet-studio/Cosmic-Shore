@@ -18,7 +18,6 @@ namespace CosmicShore.Core
         {
             // Reset static state before each test.
             ResetStatics();
-            ServiceLocator.ClearAll();
 
             _go = new GameObject("TestLifecycleManager");
             _manager = _go.AddComponent<ApplicationLifecycleManager>();
@@ -31,7 +30,6 @@ namespace CosmicShore.Core
                 UnityEngine.Object.DestroyImmediate(_go);
 
             ResetStatics();
-            ServiceLocator.ClearAll();
         }
 
         /// <summary>
@@ -136,19 +134,6 @@ namespace CosmicShore.Core
             Assert.IsTrue(ApplicationLifecycleManager.IsQuitting);
         }
 
-        [Test]
-        public void OnAppQuitting_ClearsServiceLocator()
-        {
-            ServiceLocator.Register(new object());
-
-            var method = typeof(ApplicationLifecycleManager)
-                .GetMethod("OnApplicationQuit",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            method?.Invoke(_manager, null);
-
-            Assert.IsFalse(ServiceLocator.IsRegistered<object>());
-        }
-
         #endregion
 
         #region SOAP Container Wiring
@@ -251,19 +236,6 @@ namespace CosmicShore.Core
         #endregion
 
         #region Scene Events
-
-        [Test]
-        public void HandleSceneUnloaded_ClearsSceneServices()
-        {
-            ServiceLocator.RegisterSceneService(new object());
-
-            var method = typeof(ApplicationLifecycleManager)
-                .GetMethod("HandleSceneUnloaded",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            method?.Invoke(_manager, new object[] { SceneManager.GetActiveScene() });
-
-            Assert.IsFalse(ServiceLocator.IsRegistered<object>());
-        }
 
         [Test]
         public void HandleSceneLoaded_FiresOnSceneLoadedEvent()

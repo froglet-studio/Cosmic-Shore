@@ -59,6 +59,7 @@ namespace CosmicShore.Core
         [Inject] private AuthenticationDataVariable _authDataVariable;
         [Inject] private PlayerDataService _playerDataService;
         [Inject] private SceneNameListSO _sceneNames;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
 
         CancellationTokenSource _cts;
         bool _navigated;
@@ -463,10 +464,9 @@ namespace CosmicShore.Core
         {
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
 
-            if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager)
-                && !transitionManager.IsTransitioning)
+            if (_sceneTransitionManager != null && !_sceneTransitionManager.IsTransitioning)
             {
-                transitionManager.LoadSceneAsync(menuScene).Forget();
+                _sceneTransitionManager.LoadSceneAsync(menuScene).Forget();
             }
             else
             {
