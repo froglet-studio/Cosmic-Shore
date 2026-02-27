@@ -16,8 +16,11 @@ namespace CosmicShore.Gameplay
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
         const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
-        
-        
+
+        [Header("Networking")]
+        [SerializeField, Tooltip("NetworkManager prefab to instantiate when none exists in the scene (e.g. during Bootstrap).")]
+        private GameObject _networkManagerPrefab;
+
         [Inject] GameDataSO gameData;
         [Inject] AuthenticationDataVariable authenticationDataVariable;
         AuthenticationData authenticationData => authenticationDataVariable.Value;
@@ -25,15 +28,6 @@ namespace CosmicShore.Gameplay
         private bool _leaving;
 
         private NetworkManager networkManager;
-
-         void Awake()
-        {
-            networkManager = NetworkManager.Singleton; // or NetworkManager.Instance if you’ve wrapped it
-            if (!networkManager)
-            {
-                CSDebug.LogError("[MultiplayerSetup] NetworkManager missing in scene!");
-            }
-        }
 
         private void Start()
         {
@@ -45,15 +39,8 @@ namespace CosmicShore.Gameplay
 
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
 
-            if (networkManager != null)
-            {
-                networkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-                networkManager.OnClientDisconnectCallback += OnClientDisconnect;
-                networkManager.OnTransportFailure         += OnTransportFailure;
-            }
-
-            // If already authenticated (e.g. Menu_Main loaded after auth completed),
-            // start the host and run any game-scene setup immediately.
+            // If already authenticated (e.g. Bootstrap auth completed before Start),
+            // start the host immediately.
             if (authenticationData.IsSignedIn)
             {
                 OnAuthenticationSignedIn();
@@ -80,7 +67,12 @@ namespace CosmicShore.Gameplay
 
         void OnAuthenticationSignedIn()
         {
-            EnsureHostStarted();
+            OnAuthenticationSignedInAsync().Forget();
+        }
+
+        async UniTaskVoid OnAuthenticationSignedInAsync()
+        {
+            await EnsureHostStartedAsync();
 
             if (gameData.IsMultiplayerMode)
             {
@@ -90,26 +82,61 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Starts the Netcode host exactly once. Subsequent calls are no-ops
-        /// while the host is already listening. Called after authentication
-        /// completes — typically in Menu_Main, then skipped in game scenes.
+        /// Ensures the NetworkManager exists, registers Netcode callbacks, and
+        /// starts the host exactly once. Instantiates the NetworkManager prefab
+        /// when no Singleton is present (e.g. when running from Bootstrap before
+        /// any gameplay scene has loaded). Subsequent calls are no-ops while the
+        /// host is already listening.
         /// </summary>
-        void EnsureHostStarted()
+        async UniTask EnsureHostStartedAsync()
         {
-            if (networkManager == null)
+            // Instantiate NetworkManager prefab if none exists yet.
+            if (NetworkManager.Singleton == null)
             {
-                CSDebug.LogError("[MultiplayerSetup] Cannot start host — NetworkManager is null.");
+                if (_networkManagerPrefab != null)
+                {
+                    Instantiate(_networkManagerPrefab);
+                    // Wait one frame for NetworkManager.Awake() to register as Singleton.
+                    await UniTask.Yield();
+                }
+                else
+                {
+                    CSDebug.LogError("[MultiplayerSetup] Cannot start host — no NetworkManager and no prefab assigned.");
+                    return;
+                }
+            }
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
+            {
+                CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null after instantiation.");
                 return;
             }
 
-            if (networkManager.IsListening)
+            // Re-cache and wire callbacks if the NetworkManager instance changed.
+            if (networkManager != nm)
+            {
+                if (networkManager != null)
+                {
+                    networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                    networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                    networkManager.OnTransportFailure         -= OnTransportFailure;
+                }
+
+                networkManager = nm;
+                nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+                nm.OnClientDisconnectCallback += OnClientDisconnect;
+                nm.OnTransportFailure         += OnTransportFailure;
+            }
+
+            if (nm.IsListening)
             {
                 CSDebug.Log("[MultiplayerSetup] Host already running.");
                 return;
             }
 
             CSDebug.Log("[MultiplayerSetup] Starting as Host.");
-            networkManager.StartHost();
+            nm.StartHost();
         }
 
         private async UniTaskVoid ExecuteMultiplayerSetup()

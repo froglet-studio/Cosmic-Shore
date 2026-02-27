@@ -6,6 +6,7 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
+using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -50,6 +51,9 @@ namespace CosmicShore.Core
 
         [SerializeField, Tooltip("Hard safety timeout — force-navigates to main menu if everything hangs.")]
         private float safetyTimeout = 10f;
+
+        [SerializeField, Tooltip("Seconds to wait for the network host to become ready before falling back to direct scene load.")]
+        private float networkHostTimeout = 3f;
 
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
@@ -412,15 +416,61 @@ namespace CosmicShore.Core
             _navigated = true;
 
             CSDebug.Log("[AuthScene] Navigating to Main Menu...");
+            LoadMainMenuNetworkedAsync(_cts?.Token ?? CancellationToken.None).Forget();
+        }
+
+        /// <summary>
+        /// Waits for the network host (started by the persistent MultiplayerSetup
+        /// in response to OnSignedIn) to be ready, then loads Menu_Main via
+        /// networked scene management. Falls back to a direct scene load if the
+        /// host does not become ready within <see cref="networkHostTimeout"/>.
+        /// </summary>
+        async UniTaskVoid LoadMainMenuNetworkedAsync(CancellationToken ct)
+        {
+            try
+            {
+                // Wait for MultiplayerSetup to instantiate NetworkManager and start host.
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(networkHostTimeout));
+
+                try
+                {
+                    await UniTask.WaitUntil(
+                        () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
+                        cancellationToken: timeoutCts.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    CSDebug.LogWarning($"[AuthScene] Network host not ready after {networkHostTimeout}s. Falling back to direct scene load.");
+                    LoadMainMenuDirect();
+                    return;
+                }
+
+                var nm = NetworkManager.Singleton;
+                string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+                CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
+                nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+            }
+            catch (OperationCanceledException) { /* scene destroyed */ }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Networked scene load failed: {ex.Message}. Falling back to direct scene load.");
+                LoadMainMenuDirect();
+            }
+        }
+
+        void LoadMainMenuDirect()
+        {
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
 
             if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager)
                 && !transitionManager.IsTransitioning)
             {
-                transitionManager.LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
+                transitionManager.LoadSceneAsync(menuScene).Forget();
             }
             else
             {
-                SceneManager.LoadScene(_sceneNames.MainMenuScene);
+                SceneManager.LoadScene(menuScene);
             }
         }
     }
