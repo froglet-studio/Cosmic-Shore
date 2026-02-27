@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -9,13 +10,12 @@ using UnityEngine.InputSystem;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Toggles between menu mode (crystal camera + autopilot) and gameplay mode
-    /// (vessel follow camera + player control) on Menu_Main.
+    /// Toggles between menu mode (Cinemachine crystal camera + autopilot) and
+    /// gameplay mode (Cinemachine follows vessel + player control) on Menu_Main.
     ///
-    /// Menu mode: end camera looks at the crystal (already implemented in scene).
-    ///   The crystal sits at screen center. Player taps the crystal → gameplay mode.
-    /// Gameplay mode: player camera follows the vessel, player has control.
-    ///   Player taps screen center → back to menu mode.
+    /// Uses Cinemachine retargeting on the "CM Main Menu" virtual camera.
+    /// CinemachineBrain handles smooth transitions via its default blend (EaseInOut 2s)
+    /// and CinemachineFollow/RotationComposer damping.
     /// </summary>
     public class MenuCrystalClickHandler : MonoBehaviour
     {
@@ -37,6 +37,9 @@ namespace CosmicShore.Gameplay
         bool _isTransitioning;
         CancellationTokenSource _cts;
 
+        CinemachineCamera _menuVCam;
+        Transform _originalFollow;
+
         void OnEnable()
         {
             _cts = new CancellationTokenSource();
@@ -49,9 +52,23 @@ namespace CosmicShore.Gameplay
             _cts = null;
         }
 
+        void Start()
+        {
+            if (!CameraManager.Instance) return;
+
+            var cmTransform = CameraManager.Instance.transform.Find("CM Main Menu");
+            if (cmTransform)
+            {
+                _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
+                if (_menuVCam)
+                    _originalFollow = _menuVCam.Follow;
+            }
+        }
+
         void Update()
         {
             if (_isTransitioning) return;
+            if (!_menuVCam) return;
             if (gameData.LocalPlayer?.Vessel == null) return;
             if (!DetectTap(out Vector2 screenPos)) return;
 
@@ -129,21 +146,16 @@ namespace CosmicShore.Gameplay
             var ct = _cts.Token;
             var player = gameData.LocalPlayer;
 
-            // Fade out menu UI
             await FadeCanvasGroups(0f, ct);
 
             PauseSystem.TogglePauseGame(false);
 
-            // Disable autopilot, give player control
             player.Vessel.ToggleAIPilot(false);
             player.InputController.SetPause(false);
 
-            // Switch to gameplay follow camera
-            if (CameraManager.Instance)
-            {
-                var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
-                CameraManager.Instance.SetupGamePlayCameras(followTarget);
-            }
+            // Retarget Cinemachine — CinemachineFollow damping handles smooth transition
+            _menuVCam.Follow = player.Vessel.VesselStatus.CameraFollowTarget;
+            _menuVCam.LookAt = player.Vessel.Transform;
 
             _isInGameplay = true;
             _isTransitioning = false;
@@ -155,18 +167,13 @@ namespace CosmicShore.Gameplay
             var ct = _cts.Token;
             var player = gameData.LocalPlayer;
 
-            // Remove player control, re-enable autopilot
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // Switch back to crystal camera (end camera)
-            if (CameraManager.Instance)
-            {
-                var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
-                CameraManager.Instance.SetupEndCameraFollow(followTarget);
-            }
+            // Restore Cinemachine to original menu targets
+            _menuVCam.Follow = _originalFollow;
+            _menuVCam.LookAt = null;
 
-            // Fade in menu UI
             await FadeCanvasGroups(1f, ct);
 
             _isInGameplay = false;
