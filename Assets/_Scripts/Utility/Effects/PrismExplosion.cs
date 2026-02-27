@@ -90,10 +90,7 @@ namespace CosmicShore.Game
         public void TriggerExplosion(Vector3 velocity)
         {
             if (_renderer == null || _mpb == null)
-            {
-                Debug.LogError("[PrismExplosionDbg] Missing required components, cannot trigger explosion.");
                 return;
-            }
 
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * minSpeed;
@@ -174,8 +171,7 @@ namespace CosmicShore.Game
 
             if (OnReturnToPool == null)
             {
-                Debug.LogWarning($"[PrismExplosionDbg] OnReturnToPool is null on '{name}' (id={GetInstanceID()}). " +
-                                 "Object will not be returned to pool — deactivating as fallback.");
+                // Fallback: deactivate so the object doesn't linger visibly in the scene.
                 gameObject.SetActive(false);
                 return;
             }
