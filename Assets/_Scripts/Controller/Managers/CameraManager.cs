@@ -1,5 +1,7 @@
+using System.Threading;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
@@ -35,6 +37,7 @@ namespace CosmicShore.Gameplay
 
         private Transform _playerFollowTarget;
         private const int ActivePriority = 10;
+        private CancellationTokenSource _lookAtCrystalCts;
 
         public Transform PlayerFollowTarget
         {
@@ -60,6 +63,9 @@ namespace CosmicShore.Gameplay
         {
             _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
             _onInitializePlayerCamera.OnRaised -= SetupGamePlayCameras;
+            _lookAtCrystalCts?.Cancel();
+            _lookAtCrystalCts?.Dispose();
+            _lookAtCrystalCts = null;
         }
 
         void Start()
@@ -142,13 +148,22 @@ namespace CosmicShore.Gameplay
                 endCamera.Deactivate();
 
             _activeController = null;
-            Invoke("LookAtCrystal", 1f);
+            ScheduleLookAtCrystal();
         }
 
-        void LookAtCrystal()
+        void ScheduleLookAtCrystal()
         {
+            _lookAtCrystalCts?.Cancel();
+            _lookAtCrystalCts?.Dispose();
+            _lookAtCrystalCts = new CancellationTokenSource();
+            LookAtCrystalDelayed(_lookAtCrystalCts.Token).Forget();
+        }
+
+        async UniTaskVoid LookAtCrystalDelayed(CancellationToken ct)
+        {
+            await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, cancellationToken: ct);
             if (mainMenuCamera)
-                mainMenuCamera.LookAt = cellData.CrystalTransform; // CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
+                mainMenuCamera.LookAt = cellData.CrystalTransform;
         }
 
 

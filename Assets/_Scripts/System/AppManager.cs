@@ -49,6 +49,7 @@ namespace CosmicShore.Core
         StatsManager _statsManager;
 
         bool _gameplayManagersResolved;
+        bool _persistentSystemsResolved;
 
         void Awake()
         {
@@ -80,6 +81,9 @@ namespace CosmicShore.Core
         /// </summary>
         void ResolvePersistentSystems()
         {
+            if (_persistentSystemsResolved) return;
+            _persistentSystemsResolved = true;
+
             gameSetting = EnsureService(gameSetting);
             audioSystem = EnsureService(audioSystem);
             playerDataService = EnsureService(playerDataService);
