@@ -89,7 +89,7 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Language**: C#
 - **Architecture**: ScriptableObject-driven configuration + SOAP (Scriptable Object Architecture Pattern) for event-driven, decoupled communication
 - **Async**: UniTask with CancellationToken throughout
-- **DI**: Reflex dependency injection
+- **DI**: Reflex dependency injection — `AppManager` as root `IInstaller`, lazy singleton factories, `[Inject]` across gameplay and UI systems
 - **Auth**: Unity Gaming Services (UGS) Authentication — anonymous sign-in, cached sessions, SOAP-driven state via `AuthenticationDataVariable`
 - **Networking**: Unity Netcode for GameObjects (multiplayer with AI backfill)
 - **Camera**: Cinemachine 3.1.2 with per-vessel settings
@@ -116,9 +116,11 @@ See [`GIT_RULES.md`](./GIT_RULES.md) for branching model, commit conventions, an
 ### Application Flow
 
 ```
-Bootstrap Scene → AppManager (DI root, persists across scenes)
+Bootstrap Scene → AppManager (DI root + orchestrator, persists across scenes)
+    ├─ Reflex DI: registers all managers, SO assets, services
     ├─ AuthenticationServiceFacade → UGS sign-in → SOAP state
-    └─ SceneTransitionManager → Splash / Auth → Menu_Main
+    ├─ SceneLoader → game launch, restart, return-to-menu (NetworkBehaviour)
+    └─ SceneTransitionManager → Authentication → Menu_Main
                                                     │
                                                     ▼
                                               ScreenSwitcher
@@ -128,7 +130,9 @@ Bootstrap Scene → AppManager (DI root, persists across scenes)
                                     ← slide left / right →
 ```
 
-The app boots through a Bootstrap scene that initializes services and Reflex DI bindings. Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. The splash screen reads this state to skip auth when a cached session exists.
+The app boots through a Bootstrap scene where `AppManager` serves as both the top-level orchestrator (`[DefaultExecutionOrder(-100)]`) and the Reflex DI root (`IInstaller`). It configures the platform, registers all persistent managers and SO assets (including `GameDataSO` and `SceneNameListSO`), starts authentication and network monitoring, then transitions to the Authentication scene.
+
+Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. Scene loading is managed by `SceneLoader`, a `NetworkBehaviour` that auto-selects local vs network scene loading and handles game restarts.
 
 The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./CLAUDE.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) sections in CLAUDE.md for details.
 
@@ -152,15 +156,16 @@ Assets/
 │   │   ├── AI/                # AIPilot, AIGunner
 │   │   └── ...                # Projectiles, IO, FX, Managers, etc.
 │   ├── System/                # Application-level systems (~126 files)
-│   │   ├── Bootstrap/         # BootstrapController, ServiceLocator, SceneTransitionManager
+│   │   ├── Bootstrap/         # BootstrapConfigSO, ServiceLocator, SceneTransitionManager
 │   │   ├── Systems/Auth/      # AuthenticationController (MonoBehaviour adapter)
 │   │   ├── Playfab/           # Legacy PlayFab integration (deprecated auth)
 │   │   ├── Instrumentation/   # Analytics, Firebase
 │   │   ├── Runtime/           # Dialogue runtime
+│   │   ├── AppManager.cs      # Top-level orchestrator + Reflex DI root
+│   │   ├── SceneLoader.cs     # Scene loading, restart, return-to-menu (NetworkBehaviour)
 │   │   ├── AuthenticationServiceFacade.cs
 │   │   ├── AuthenticationSceneController.cs
 │   │   ├── SplashToAuthFlow.cs
-│   │   ├── AppManager.cs      # Reflex DI root, service registration
 │   │   ├── NetworkMonitor.cs
 │   │   └── ...                # Audio, LoadOut, Quest, Ads, etc.
 │   ├── UI/                    # Game & app UI (~188 files)

@@ -63,7 +63,7 @@ Assets/
 │   │   ├── ImpactEffects/     # Impactors (11 types) + Effect SOs (20+ types)
 │   │   ├── Arcade/            # Mini-game controllers, scoring, turn monitors
 │   │   ├── Projectiles/       # Projectile systems, guns, mines, AOE effects
-│   │   ├── Managers/          # PrismScaleManager, MaterialStateManager, PrismStateManager, GameManager, ThemeManager
+│   │   ├── Managers/          # PrismScaleManager, MaterialStateManager, PrismStateManager, ThemeManager
 │   │   ├── IO/                # Input strategies (Keyboard, Gamepad, Touch)
 │   │   ├── Animation/         # Per-vessel animation controllers
 │   │   ├── Camera/            # CustomCameraController, CameraSettingsSO, ICameraController
@@ -78,7 +78,7 @@ Assets/
 │   │   ├── XP/                # Experience point controllers
 │   │   └── Settings/          # Runtime settings
 │   ├── System/                # Application-level systems (~126 files)
-│   │   ├── Bootstrap/         # BootstrapController, ServiceLocator, SceneTransitionManager, ApplicationLifecycleManager
+│   │   ├── Bootstrap/         # BootstrapConfigSO, ServiceLocator, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Playfab/           # PlayFab integration (Auth, Economy, Groups, PlayerData, PlayStream)
 │   │   ├── Instrumentation/   # CSAnalyticsManager, Firebase analytics, data collectors
 │   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
@@ -206,20 +206,22 @@ Existing custom SOAP types (14 subdirectories): `AbilityStats`, `AuthenticationD
 
 ### Bootstrap & Scene Flow
 
-The application uses an industry-standard bootstrap pattern (`Assets/_Scripts/System/Bootstrap/`):
+The application uses a unified bootstrap pattern centered on `AppManager`:
 
-1. **Bootstrap scene** (build index 0) → `BootstrapController` initializes all `IBootstrapService` implementations in order
-2. **Splash / Authentication scene** → checks cached auth, signs in or shows auth UI
+1. **Bootstrap scene** (build index 0) → `AppManager` configures platform, registers DI bindings, starts auth, transitions to Authentication scene
+2. **Authentication scene** → checks cached auth, signs in or shows auth UI
 3. **Menu_Main scene** → main menu entry point
 
 Key classes:
-- `BootstrapController` — top-level orchestrator (`[DefaultExecutionOrder(-100)]`), configures platform settings, initializes services, transitions to first scene
+- `AppManager` (`_Scripts/System/AppManager.cs`) — top-level orchestrator and Reflex DI root (`[DefaultExecutionOrder(-100)]`, implements `IInstaller`). Handles platform configuration, DI registration of all persistent managers and SO assets, auth/network startup, splash fade, and scene transition. Lives on a `DontDestroyOnLoad` root.
+- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading and game-restart service. Extends `NetworkBehaviour` for multiplayer-aware scene loading. Handles launching gameplay scenes (local + network), restart/replay, and returning to main menu. Registered as a DI singleton via AppManager. Replaces the former `GameManager`/`NetworkGameManager`.
+- `SceneNameListSO` (`_Scripts/Utility/DataContainers/SceneNameListSO.cs`) — centralized scene name registry (Bootstrap, Authentication, Menu_Main, Multiplayer). Registered in DI and injected where scene names are needed, replacing hardcoded strings.
 - `ServiceLocator` — lightweight service registry for bootstrap-time services (e.g., `SceneTransitionManager`)
 - `SceneTransitionManager` — unified scene loading with fade transitions
 - `ApplicationLifecycleManager` — application lifecycle events
-- `BootstrapConfigSO` — configures: first scene, main menu scene, service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
+- `BootstrapConfigSO` — configures: service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
 
-See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the full bootstrap scene audit: all 16 root GameObjects, execution order map, applied fixes, and deferred issues.
+See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scene audit: root GameObjects, execution order map, applied fixes, and deferred issues.
 
 ### Authentication & Session Flow
 
@@ -239,35 +241,33 @@ The auth system follows a **single-writer / multi-reader** pattern through SOAP:
 
 ```
 Bootstrap Scene (build index 0)
-│ BootstrapController → ConfigurePlatform, InitializeServices
-│ └─ Load AppManager prefab (Reflex DI root, DontDestroyOnLoad)
 │
-├─ AppManager.InstallBindings()
-│   ├─ Register AuthenticationDataVariable (SO asset)
-│   ├─ Register AuthenticationServiceFacade (Singleton, Lazy)
-│   ├─ Register NetworkMonitor (Singleton, Lazy)
-│   └─ Register PlayerDataService, GameSetting, etc.
+├─ AppManager.Awake() [DefaultExecutionOrder(-100)]
+│   ├─ DontDestroyOnLoad(gameObject)
+│   ├─ ConfigurePlatform() (framerate, vsync, screen sleep via BootstrapConfigSO)
+│   └─ TryResolveManagersEarly() (find scene managers, mark DontDestroyOnLoad)
+│
+├─ AppManager.InstallBindings() (Reflex IInstaller)
+│   ├─ RegisterValue: SceneNameListSO, GameDataSO, AuthenticationDataVariable, NetworkMonitorDataVariable
+│   ├─ RegisterFactory (Lazy Singleton): GameSetting, AudioSystem, PlayerDataService,
+│   │   UGSStatsManager, CaptainManager, IAPManager, SceneLoader, ThemeManager, CameraManager, PostProcessingManager
+│   └─ RegisterFactory (Lazy Singleton): AuthenticationServiceFacade, NetworkMonitor
 │
 ├─ AppManager.Start()
-│   ├─ facade.StartAuthentication()  ← fire-and-forget
+│   ├─ ConfigureGameData()
+│   ├─ StartNetworkMonitor()
+│   ├─ StartAuthentication()  ← fire-and-forget
 │   │   ├─ UnityServices.InitializeAsync()
 │   │   ├─ WireAuthEventsOnce()
 │   │   ├─ SignInAnonymouslyAsync()
 │   │   └─ OnSignInSuccess() → AuthenticationData SOAP events
 │   │       └─ OnSignedIn.Raise() ──► PlayerDataService.HandleSignedIn()
 │   │                                  └─ CloudSave load/merge → IsInitialized = true
-│   └─ networkMonitor.StartMonitoring()
-│
-└─ SceneTransitionManager.LoadSceneAsync(BootstrapConfigSO.FirstSceneName)
-    │
-    ▼
-Splash Scene (optional, if configured as first scene)
-│ SplashToAuthFlow.Start()
-│ ├─ UniTask.Delay(splashDisplayDuration)
-│ ├─ Read AuthenticationDataVariable (SOAP)
-│ ├─ If auth in-flight → UniTask.WaitUntil(settled, timeout)
-│ ├─ If signed in → Menu_Main
-│ └─ If not signed in → Authentication scene
+│   └─ RunBootstrapAsync().Forget()
+│       ├─ Yield frames (let Awake/Start settle)
+│       ├─ Enforce minimum splash duration
+│       ├─ Fade out splash CanvasGroup
+│       └─ Load Authentication scene (via SceneTransitionManager or direct)
 │
     ▼
 Authentication Scene
@@ -312,7 +312,7 @@ Readers: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService
 | Scene controller | `AuthenticationSceneController.cs` | `_Scripts/System/` |
 | MonoBehaviour adapter | `AuthenticationController.cs` | `_Scripts/System/Systems/Authentication/` |
 | Splash → auth routing | `SplashToAuthFlow.cs` | `_Scripts/System/` |
-| DI root / service registry | `AppManager.cs` | `_Scripts/System/` |
+| DI root / bootstrap orchestrator | `AppManager.cs` | `_Scripts/System/` |
 | Network monitor | `NetworkMonitor.cs` | `_Scripts/System/` |
 | SOAP auth state | `AuthenticationData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | SOAP auth variable | `AuthenticationDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
@@ -329,6 +329,22 @@ Readers: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService
 - **Timeout via linked CTS**: Use `CancellationTokenSource.CreateLinkedTokenSource(ct)` + `CancelAfter()` for timeouts, not polling loops.
 - **Button interactability**: Disable buttons during async operations instead of boolean `_isProcessing` guards.
 - **Facade via DI**: Scene scripts get the facade via `[Inject]`, not by creating their own `AuthenticationController` GameObjects at runtime.
+
+### Dependency Injection (Reflex)
+
+The project uses Reflex DI with `AppManager` as the root `IInstaller`. All persistent services and shared assets are registered in `AppManager.InstallBindings()`:
+
+**SO asset registration** (`RegisterValue`): `SceneNameListSO`, `GameDataSO`, `AuthenticationDataVariable`, `NetworkMonitorDataVariable`. These are project-level assets wired via inspector on AppManager.
+
+**MonoBehaviour singleton registration** (`RegisterFactory`, Lazy): `GameSetting`, `AudioSystem`, `PlayerDataService`, `UGSStatsManager`, `CaptainManager`, `IAPManager`, `SceneLoader`, `ThemeManager`, `CameraManager`, `PostProcessingManager`. These use a lazy factory that prefers the serialized reference and falls back to a scene search at first injection time.
+
+**Pure C# singleton registration** (`RegisterFactory`, Lazy): `AuthenticationServiceFacade`, `NetworkMonitor`.
+
+#### DI Patterns to Follow
+
+- **Use `[Inject]` for shared assets**: `GameDataSO`, `SceneNameListSO`, and other DI-registered assets should be accessed via `[Inject]`, not `[SerializeField]`. This eliminates manual inspector wiring and serialization drift.
+- **Injection timing**: `[Inject]` fields are populated after `Awake()` but before `Start()`. Access injected fields in `Start()` or later — never in `Awake()`. If you need to subscribe to events in `OnEnable()`, use a deferred pattern: attempt in `OnEnable()`, retry with duplicate guards in `Start()`.
+- **ContainerScope per scene**: Each scene that uses `[Inject]` must have a Reflex `ContainerScope` component (via the `ContainerScope.prefab` in `_Prefabs/CORE/`). The Bootstrap scene's scope is the root; other scenes get child scopes.
 
 ### Input Strategy Pattern
 
@@ -356,10 +372,12 @@ Key interfaces: `IImpactor` / `IImpactCollider`
 The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
 
 - `ClientPlayerVesselInitializer` / `ServerPlayerVesselInitializer` — vessel spawning on client/server
-- `ServerPlayerVesselInitializerWithAI` — AI opponent spawning
+- `ServerPlayerVesselInitializerWithAI` — AI opponent spawning (shared base logic, deduplicated)
 - `MultiplayerSetup` — lobby/connection setup
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
 - `DomainAssigner` — team assignment
+
+Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `NetworkBehaviour` and auto-selects local vs network scene loading based on whether a host/server is running.
 
 `VesselStatus` extends `NetworkBehaviour`. Multiplayer game modes can also run solo with AI opponents via the AI Profile system.
 
@@ -485,6 +503,8 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
 | Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
+| Bootstrap / DI | `AppManager` (orchestrator + IInstaller), `BootstrapConfigSO`, `ServiceLocator`, `SceneTransitionManager`, `ApplicationLifecycleManager` | `_Scripts/System/`, `_Scripts/System/Bootstrap/` |
+| Scene management | `SceneLoader` (NetworkBehaviour, game launch + restart + return-to-menu), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
@@ -547,7 +567,7 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 
 - **Framework**: Unity Test Framework 1.6.0 (NUnit-based)
 - **Edit-mode tests**: `Assets/_Scripts/Tests/EditMode/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
-- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `BootstrapControllerTests`, `ServiceLocatorTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `SceneFlowIntegrationTests`, `BootstrapConfigSOTests`
+- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `ServiceLocatorTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `SceneFlowIntegrationTests`
 - **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/` — `DomainAssignerTests`
 - **PlayFab tests**: `Assets/_Scripts/System/Playfab/PlayFabTests/` — `PlayFabCatalogTests`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
