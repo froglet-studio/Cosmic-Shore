@@ -48,7 +48,7 @@ namespace CosmicShore.App.Profile
             transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
 
-            // Always have a profile ready so AddXP/GetXP never fail.
+            // Always have a profile ready so API calls never fail.
             // Cloud data will merge on top once auth completes.
             CreateLocalDefaultProfile(null);
         }
@@ -162,14 +162,6 @@ namespace CosmicShore.App.Profile
                     if (cloudData != null)
                     {
                         bool needsResync = false;
-
-                        // Merge XP: keep the higher value (local may have earned XP before cloud loaded)
-                        int localXP = CurrentProfile.xp;
-                        if (localXP > cloudData.xp)
-                        {
-                            cloudData.xp = localXP;
-                            needsResync = true;
-                        }
 
                         // Merge unlocked rewards: union of local + cloud sets
                         var localRewards = CurrentProfile.unlockedRewardIds ?? new List<string>();
@@ -322,7 +314,6 @@ namespace CosmicShore.App.Profile
             {
                 gameData.LocalPlayerDisplayName = data.displayName;
                 gameData.LocalPlayerAvatarId = data.avatarId;
-                gameData.LocalPlayerXP = data.xp;
             }
         }
 
@@ -338,29 +329,6 @@ namespace CosmicShore.App.Profile
             }
 
             return profileIcons.profileIcons[0].IconSprite;
-        }
-
-        /// <summary>
-        /// Returns the player's current XP, or 0 if no profile is loaded.
-        /// </summary>
-        public int GetXP()
-        {
-            return CurrentProfile?.xp ?? 0;
-        }
-
-        /// <summary>
-        /// Adds XP to the player's profile and syncs to Cloud Save.
-        /// Returns the new total XP.
-        /// </summary>
-        public void AddXP(int amount)
-        {
-            if (CurrentProfile == null || amount <= 0)
-                return;
-
-            CurrentProfile.xp += amount;
-            OnProfileChanged?.Invoke(CurrentProfile);
-            ScheduleDebouncedSave();
-            CSDebug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
         }
 
         /// <summary>

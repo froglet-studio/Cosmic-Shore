@@ -6,6 +6,7 @@ using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Progression;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections.Generic;
@@ -86,6 +87,8 @@ namespace CosmicShore.App.UI.Views
                 return flagComparison;
             });
 
+            var progressionService = GameModeProgressionService.Instance;
+
             for (var i = 0; i < GameCards.Count && i < GameList.Games.Count && i < sortedGames.Count; i++)
             {
                 var game = sortedGames[i];
@@ -96,19 +99,27 @@ namespace CosmicShore.App.UI.Views
                 gameCard.GameMode = game.Mode;
                 gameCard.Favorited = FavoriteSystem.IsFavorited(game.Mode);
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
-                gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
                 gameCard.ExploreView = this;
-                
+
+                // Check if this game mode is unlocked via the quest progression system
+                bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
+                gameCard.SetLocked(isLocked);
+
+                if (!isLocked)
+                {
+                    gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
+                }
+
                 if (gameCard.TryGetComponent(out CallToActionTarget target))
                 {
                     target.TargetID = game.CallToActionTargetType;
                 }
                 else
                 {
-                    CSDebug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.", 
+                    CSDebug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.",
                         nameof(ArcadeExploreView), game.CallToActionTargetType.ToString());
                 }
-                
+
                 gameCard.gameObject.SetActive(true);
             }
         }

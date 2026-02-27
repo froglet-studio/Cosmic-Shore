@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Threading;
-using CosmicShore.Game.XP;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
@@ -39,11 +38,6 @@ namespace CosmicShore.Game.Cinematics
         [Header("Vessel Podium Display")]
         [Tooltip("Manager for vessel icon displays")]
         [SerializeField] EndGameVesselDisplayManager vesselDisplayManager;
-
-        [Header("XP Display")]
-        [Tooltip("Text element to show XP earned (e.g. '+20 XP')")]
-        [SerializeField] TMP_Text xpEarnedText;
-        [SerializeField] CanvasGroup xpEarnedCanvasGroup;
 
         [Header("Connecting Panel")]
         [SerializeField] SceneTransitionModal connectingPanel;
@@ -253,52 +247,6 @@ namespace CosmicShore.Game.Cinematics
         void DisplayVesselImages()
         {
             vesselDisplayManager?.DisplayVessels();
-        }
-
-        /// <summary>
-        /// Shows XP earned with a fade-in animation after the score reveal.
-        /// </summary>
-        public void ShowXPEarned()
-        {
-            if (XPRewardService.Instance == null) return;
-
-            int xpAmount = XPRewardService.Instance.LastXPEarned;
-            if (xpAmount <= 0) return;
-
-            if (xpEarnedText != null)
-            {
-                xpEarnedText.text = $"+{xpAmount} XP";
-                xpEarnedText.gameObject.SetActive(true);
-            }
-
-            if (xpEarnedCanvasGroup != null)
-            {
-                xpEarnedCanvasGroup.alpha = 0f;
-                xpEarnedCanvasGroup.gameObject.SetActive(true);
-
-                var sequence = DOTween.Sequence();
-                sequence.Append(xpEarnedCanvasGroup.DOFade(1f, 0.4f).SetEase(Ease.OutQuad));
-
-                var rectTransform = xpEarnedCanvasGroup.GetComponent<RectTransform>();
-                if (rectTransform != null)
-                {
-                    sequence.Join(rectTransform.DOScale(1.15f, 0.3f).SetEase(Ease.OutBack));
-                    sequence.Append(rectTransform.DOScale(1f, 0.2f).SetEase(Ease.InOutQuad));
-                }
-
-                sequence.Play();
-            }
-        }
-
-        /// <summary>
-        /// Hides the XP earned display.
-        /// </summary>
-        public void HideXPEarned()
-        {
-            if (xpEarnedText != null)
-                xpEarnedText.gameObject.SetActive(false);
-            if (xpEarnedCanvasGroup != null)
-                xpEarnedCanvasGroup.gameObject.SetActive(false);
         }
 
         /// <summary>

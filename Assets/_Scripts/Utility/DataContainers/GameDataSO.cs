@@ -61,7 +61,6 @@ namespace CosmicShore.Soap
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
         public int LocalPlayerAvatarId;
-        public int LocalPlayerXP;
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
