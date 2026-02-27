@@ -1,123 +1,140 @@
 using System.Collections.Generic;
-using System.Threading;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Initializes player-vessel pairs.
+    ///
+    /// Server/host path:
+    ///   Called directly by ServerPlayerVesselInitializer.
+    ///
+    /// Client path (RPCs):
+    ///   InitializeAllPlayersAndVessels_ClientRpc → new client initializes ALL pairs
+    ///   InitializeNewPlayerAndVessel_ClientRpc   → existing client initializes one new pair
+    ///
+    /// When an RPC arrives but objects haven't replicated yet, pairs are queued.
+    /// OnPlayerNetworkSpawned + OnVesselNetworkSpawned SOAP events trigger
+    /// re-processing of the queue — zero WaitUntil polling.
+    /// </summary>
     public class ClientPlayerVesselInitializer : NetworkBehaviour
     {
-        [SerializeField]
-        ThemeManagerDataContainerSO themeManagerData;
+        [SerializeField] ThemeManagerDataContainerSO themeManagerData;
 
-        [Inject]
-        protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
+
+        readonly List<(ulong playerNetId, ulong vesselNetId)> _pendingPairs = new();
+        bool _signalClientReadyWhenDone;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            if (NetworkManager.Singleton.IsServer)
+                return;
+
+            // Subscribe to SOAP events so we can process pending pairs
+            // when objects replicate (event-driven, no polling)
+            gameData.OnPlayerNetworkSpawned.OnRaised += ProcessPendingPairs;
+            gameData.OnVesselNetworkSpawned.OnRaised += ProcessPendingPairs;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            gameData.OnPlayerNetworkSpawned.OnRaised -= ProcessPendingPairs;
+            gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingPairs;
+            _pendingPairs.Clear();
+            base.OnNetworkDespawn();
+        }
 
         /// <summary>
-        /// Timeout (in ms) for waiting on player/vessel NetworkObjects to become
-        /// available on the client before giving up.
+        /// Direct server-side initialization (called by ServerPlayerVesselInitializer on host).
         /// </summary>
-        const int InitTimeoutMs = 10_000;
+        public void InitializePlayerAndVessel(Player player, NetworkObject vesselNO)
+        {
+            if (!vesselNO.TryGetComponent(out IVessel vessel))
+            {
+                CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
+                return;
+            }
+
+            InitializePair(player, vessel);
+        }
 
         /// <summary>
-        /// This is the new client, and we have to initialize all the other client's vessel and player clones in this client.
+        /// RPC sent to NEW client: initialize ALL existing player-vessel pairs.
+        /// Fires ClientReady when all pairs are initialized.
         /// </summary>
         [ClientRpc]
-        internal void InitializeAllPlayersAndVesselsInThisNewClient_ClientRpc(
-            ClientRpcParams clientRpcParams = default)
+        internal void InitializeAllPlayersAndVessels_ClientRpc(
+            ulong[] playerNetIds, ulong[] vesselNetIds,
+            ClientRpcParams rpcParams = default)
         {
-            InitializeAllThenSignalReady(this.GetCancellationTokenOnDestroy()).Forget();
+            _signalClientReadyWhenDone = true;
+
+            for (int i = 0; i < playerNetIds.Length; i++)
+                _pendingPairs.Add((playerNetIds[i], vesselNetIds[i]));
+
+            ProcessPendingPairs();
         }
 
         /// <summary>
-        /// Awaits every player/vessel initialization, then signals ClientReady.
-        /// Replaces the previous fire-and-forget pattern that used a hardcoded
-        /// 1-second delay, which could race against slow vessel spawns.
-        /// </summary>
-        async UniTaskVoid InitializeAllThenSignalReady(CancellationToken token)
-        {
-            // Collect all initialization tasks so we can await them together.
-            var tasks = new List<UniTask>();
-            foreach (var networkPlayer in gameData.Players)
-            {
-                ulong playerId = networkPlayer.PlayerNetId;
-                ulong vesselId = networkPlayer.VesselNetId;
-                tasks.Add(InitializePlayerAndVesselByNetIds(playerId, vesselId, token));
-            }
-
-            await UniTask.WhenAll(tasks);
-
-            if (token.IsCancellationRequested)
-                return;
-
-            gameData.InvokeClientReady();
-        }
-
-        /// <summary>
-        /// A new client joined in this client, we need to initialize the new client's owned vessel and player clone only in the existing client.
+        /// RPC sent to EXISTING clients: initialize just the new player-vessel pair.
+        /// Does not fire ClientReady (already fired on initial join).
         /// </summary>
         [ClientRpc]
-        internal void InitializeNewClientsOwnerPlayerAndVesselInExistingClient_ClientRpc(
-            ulong newJoinedClientId,
-            ClientRpcParams clientRpcParams = default)
+        internal void InitializeNewPlayerAndVessel_ClientRpc(
+            ulong playerNetId, ulong vesselNetId,
+            ClientRpcParams rpcParams = default)
         {
-
-            if (!gameData.TryGetPlayerByOwnerClientId(newJoinedClientId, out var player))
-            {
-                CSDebug.LogError($"No player found for owner client Id: {newJoinedClientId}");
-                return;
-            }
-
-            var ownerPlayerId = player.PlayerNetId;
-            var ownerVesselId = player.VesselNetId;
-            InitializePlayerAndVesselByNetIds(ownerPlayerId, ownerVesselId, this.GetCancellationTokenOnDestroy()).Forget();
+            _pendingPairs.Add((playerNetId, vesselNetId));
+            ProcessPendingPairs();
         }
 
-        async UniTask InitializePlayerAndVesselByNetIds(
-            ulong playerId,
-            ulong vesselId,
-            CancellationToken token)
+        /// <summary>
+        /// Tries to resolve pending (playerNetId, vesselNetId) pairs.
+        /// Called when RPCs arrive AND when SOAP events fire (objects replicate).
+        /// </summary>
+        void ProcessPendingPairs()
         {
-            // Create a linked CTS with a timeout so we don't hang forever
-            // if a NetworkObject fails to replicate.
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-            timeoutCts.CancelAfter(InitTimeoutMs);
-            var linkedToken = timeoutCts.Token;
-
-            try
+            for (int i = _pendingPairs.Count - 1; i >= 0; i--)
             {
-                // Wait until BOTH are available (or timeout/cancel)
-                await UniTask.WaitUntil(() =>
-                        gameData.TryGetPlayerByNetworkObjectId(playerId, out _) &&
-                        gameData.TryGetVesselByNetworkObjectId(vesselId, out _),
-                    cancellationToken: linkedToken);
+                var (pId, vId) = _pendingPairs[i];
+
+                if (!gameData.TryGetPlayerByNetworkObjectId(pId, out var player))
+                    continue;
+                if (!gameData.TryGetVesselByNetworkObjectId(vId, out var vessel))
+                    continue;
+
+                // Already initialized (e.g., duplicate event)
+                if (player.Vessel != null)
+                {
+                    _pendingPairs.RemoveAt(i);
+                    continue;
+                }
+
+                InitializePair(player, vessel);
+                _pendingPairs.RemoveAt(i);
             }
-            catch (System.OperationCanceledException) when (!token.IsCancellationRequested)
+
+            if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
-                // Timeout — not a destroy cancellation
-                CSDebug.LogError($"[ClientVesselInit] Timed out waiting for player {playerId} / vessel {vesselId} to replicate.");
-                return;
+                _signalClientReadyWhenDone = false;
+                gameData.InvokeClientReady();
             }
+        }
 
-            // Now fetch the actual refs (they should exist)
-            if (!gameData.TryGetPlayerByNetworkObjectId(playerId, out var player))
-                return;
-
-            if (!gameData.TryGetVesselByNetworkObjectId(vesselId, out var vessel))
-                return;
-
+        void InitializePair(IPlayer player, IVessel vessel)
+        {
             player.InitializeForMultiplayerMode(vessel);
             vessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, vessel);
             gameData.AddPlayer(player);
 
-            // AddPlayer teleports the vessel to its spawn position.
-            // Re-snap the camera so it starts at the correct location
-            // instead of the pre-teleport position.
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
         }

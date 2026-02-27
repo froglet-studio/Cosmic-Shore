@@ -55,10 +55,11 @@ namespace CosmicShore.Gameplay
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Vessels.Add(this);
-            
-            if (IsOwner) 
+            gameData.InvokeVesselNetworkSpawned();
+
+            if (IsOwner)
                 return;
-            
+
             SubscribeToNetworkVariables();
         }
 
