@@ -111,7 +111,7 @@ Assets/
 │   │   ├── Enums/             # VesselClassType, Domains, ResourceType, ShipActions, InputEvents, etc.
 │   │   └── Structs/           # DailyChallenge, GameplayReward, TrainingGameProgress
 │   ├── ScriptableObjects/     # SO definitions & SOAP types (~70 files)
-│   │   ├── SOAP/              # Custom SOAP types (15 subdirectories)
+│   │   ├── SOAP/              # Custom SOAP types (16 subdirectories)
 │   │   └── SO_*.cs            # Game data SOs (Captain, Vessel, Game, ArcadeGame, Element, etc.)
 │   ├── Utility/               # Effects, PoolsAndBuffers, DataContainers, DataPersistence, ClassExtensions
 │   ├── DialogueSystem/        # Dialogue editor tools, animation, SO assets
@@ -192,7 +192,7 @@ Custom SOAP types live in `Assets/_Scripts/ScriptableObjects/SOAP/` organized by
 4. Create the listener class: `EventListener[TypeName] : EventListenerGeneric<[TypeName]>`
 5. Use namespace `CosmicShore.ScriptableObjects` for all custom SOAP types
 
-Existing custom SOAP types (15 subdirectories): `AbilityStats`, `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `GameplaySFX` (gameplay sound effect category events for decoupled audio), `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `SilhouetteData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
+Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationState` (`ApplicationStateData` + `ApplicationStateDataVariable` + `ScriptableEventApplicationState` — written by `ApplicationStateMachine`), `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `FriendData` (friend relationship data for UGS Friends integration), `GameplaySFX` (gameplay sound effect category events for decoupled audio), `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `SilhouetteData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
 
 #### SOAP Anti-Patterns
 
@@ -206,20 +206,22 @@ Existing custom SOAP types (15 subdirectories): `AbilityStats`, `AuthenticationD
 
 ### Bootstrap & Scene Flow
 
-The application uses a unified bootstrap pattern centered on `AppManager`:
+The application uses a unified bootstrap pattern centered on `AppManager`, with `ApplicationStateMachine` tracking the top-level phase:
 
-1. **Bootstrap scene** (build index 0) → `AppManager` configures platform, registers DI bindings, starts auth, transitions to Authentication scene
-2. **Authentication scene** → checks cached auth, signs in or shows auth UI
-3. **Menu_Main scene** → main menu entry point
+1. **Bootstrap scene** (build index 0) → `AppManager` configures platform, registers DI bindings, starts auth, transitions to Authentication scene. State: `None → Bootstrapping → Authenticating`.
+2. **Authentication scene** → checks cached auth, signs in or shows auth UI. State: `Authenticating → MainMenu`.
+3. **Menu_Main scene** → main menu entry point. State: `MainMenu`.
 
 Key classes:
 - `AppManager` (`_Scripts/System/AppManager.cs`) — top-level orchestrator and Reflex DI root (`[DefaultExecutionOrder(-100)]`, implements `IInstaller`). Handles platform configuration, DI registration of all persistent managers and SO assets, auth/network startup, splash fade, and scene transition. Lives on a `DontDestroyOnLoad` root.
-- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading and game-restart service. Extends `NetworkBehaviour` for multiplayer-aware scene loading. Handles launching gameplay scenes (local + network), restart/replay, and returning to main menu. Registered as a DI singleton via AppManager.
+- `ApplicationStateMachine` (`_Scripts/System/ApplicationStateMachine.cs`) — pure C# class (DI lazy singleton). Single-writer to `ApplicationStateDataVariable` (SOAP). Validates transitions via a table-driven state graph. Auto-subscribes to gameplay SOAP events (`OnSessionStarted`, `OnMiniGameEnd`) and lifecycle events (pause, quit, network loss) for automatic phase transitions. States: `None(0)`, `Bootstrapping(1)`, `Authenticating(2)`, `MainMenu(3)`, `LoadingGame(4)`, `InGame(5)`, `GameOver(6)`, `Paused(7)`, `Disconnected(8)`, `ShuttingDown(9)`.
+- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading and game-restart service. Extends `NetworkBehaviour` for multiplayer-aware scene loading. Handles launching gameplay scenes (local + network), restart/replay, and returning to main menu. Registered as a DI singleton via AppManager. Transitions app state to `LoadingGame` / `MainMenu` on scene changes.
 - `SceneNameListSO` (`_Scripts/Utility/DataContainers/SceneNameListSO.cs`) — centralized scene name registry (Bootstrap, Authentication, Menu_Main, Multiplayer). Registered in DI and injected where scene names are needed, replacing hardcoded strings.
-- `SceneTransitionManager` — unified scene loading with fade transitions, registered as a DI singleton
+- `SceneTransitionManager` — unified scene loading with fade transitions (`[DefaultExecutionOrder(-50)]`), creates its own full-screen fade overlay programmatically. Registered as a DI singleton.
 - `ApplicationLifecycleManager` — application lifecycle events, bridges both static C# events (legacy) and SOAP events via `ApplicationLifecycleEventsContainerSO`
 - `ApplicationLifecycleEventsContainerSO` (`_Scripts/ScriptableObjects/ApplicationLifecycleEventsContainerSO.cs`) — SO container bundling SOAP events for app lifecycle: `OnAppPaused`, `OnAppFocusChanged`, `OnAppQuitting`, `OnSceneLoaded`, `OnSceneUnloading`. Registered in DI.
 - `BootstrapConfigSO` — configures: service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
+- `FriendsServiceFacade` (`_Scripts/System/FriendsServiceFacade.cs`) — pure C# class (DI lazy singleton). Single-writer facade for UGS Friends service. Syncs relationship data into `FriendsDataSO`. Supports friend requests, management, presence, and refresh.
 
 See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scene audit: root GameObjects, execution order map, applied fixes, and deferred issues.
 
@@ -245,15 +247,20 @@ Bootstrap Scene (build index 0)
 ├─ AppManager.Awake() [DefaultExecutionOrder(-100)]
 │   ├─ DontDestroyOnLoad(gameObject)
 │   ├─ ConfigurePlatform() (framerate, vsync, screen sleep via BootstrapConfigSO)
-│   └─ TryResolveManagersEarly() (find scene managers, mark DontDestroyOnLoad)
+│   └─ TryResolveManagersEarly() (find 12 scene managers, mark DontDestroyOnLoad)
 │
 ├─ AppManager.InstallBindings() (Reflex IInstaller)
-│   ├─ RegisterValue: SceneNameListSO, GameDataSO, AuthenticationDataVariable, NetworkMonitorDataVariable
+│   ├─ RegisterValue: SceneNameListSO, GameDataSO, AuthenticationDataVariable,
+│   │   NetworkMonitorDataVariable, FriendsDataSO, ApplicationLifecycleEventsContainerSO,
+│   │   ApplicationStateDataVariable
 │   ├─ RegisterFactory (Lazy Singleton): GameSetting, AudioSystem, PlayerDataService,
-│   │   UGSStatsManager, CaptainManager, IAPManager, SceneLoader, ThemeManager, CameraManager, PostProcessingManager
-│   └─ RegisterFactory (Lazy Singleton): AuthenticationServiceFacade, NetworkMonitor
+│   │   UGSStatsManager, CaptainManager, IAPManager, SceneLoader, ThemeManager,
+│   │   CameraManager, PostProcessingManager, StatsManager, SceneTransitionManager
+│   └─ RegisterFactory (Lazy Singleton): AuthenticationServiceFacade, NetworkMonitor,
+│       FriendsServiceFacade, ApplicationStateMachine
 │
 ├─ AppManager.Start()
+│   ├─ ApplicationStateMachine.TransitionTo(Bootstrapping)
 │   ├─ ConfigureGameData()
 │   ├─ StartNetworkMonitor()
 │   ├─ StartAuthentication()  ← fire-and-forget
@@ -267,6 +274,7 @@ Bootstrap Scene (build index 0)
 │       ├─ Yield frames (let Awake/Start settle)
 │       ├─ Enforce minimum splash duration
 │       ├─ Fade out splash CanvasGroup
+│       ├─ ApplicationStateMachine.TransitionTo(Authenticating)
 │       └─ Load Authentication scene (via SceneTransitionManager or direct)
 │
     ▼
@@ -281,20 +289,49 @@ Authentication Scene
 │ ├─ HandlePostAuthFlow:
 │ │   ├─ Wait for PlayerDataService.IsInitialized (with timeout)
 │ │   ├─ Username needed? → Show username setup panel
-│ │   └─ LoadMainMenuNetworkedAsync():
+│ │   └─ NavigateToMainMenu():
+│ │       ├─ ApplicationStateMachine.TransitionTo(MainMenu)
 │ │       ├─ Wait for NetworkManager.IsListening (3s timeout)
 │ │       ├─ If host ready → nm.SceneManager.LoadScene(Menu_Main)
-│ │       └─ Fallback → direct scene load
-│ └─ Safety timeout (configurable) → force-navigate to Menu_Main
+│ │       └─ Fallback → direct scene load via SceneTransitionManager
+│ └─ Safety timeout (10s configurable) → force-navigate to Menu_Main
 │
     ▼
 Menu_Main Scene (loaded as networked scene when host is running)
 │ MenuServerPlayerVesselInitializer
 │ ├─ Forces Squirrel vessel class
 │ ├─ Spawns autopilot vessel on host connect
+│ ├─ Sets player identity (Jade domain, display name)
 │ ├─ Enables AI pilot, pauses player input
-│ └─ Configures Cinemachine camera to follow vessel
+│ └─ Configures CameraManager to follow vessel
+│
+│ ScreenSwitcher
+│ ├─ Caches IScreen components, lays out panels to viewport width
+│ ├─ Navigates to HOME (or persisted ReturnToScreen)
+│ └─ Screens: STORE(0), ARK(1), HOME(2), PORT(3), HANGAR(4)
 ```
+
+#### Application State Machine
+
+The `ApplicationStateMachine` (pure C# DI singleton) tracks the top-level application phase via `ApplicationStateDataVariable` (SOAP). Transitions are validated against a table; invalid transitions log warnings.
+
+```
+None → Bootstrapping → Authenticating → MainMenu → LoadingGame → InGame → GameOver
+                                           ↑          ↑              ↑        │
+                                           │          └──────────────┘        │
+                                           └──────────────────────────────────┘
+Special states (from any active state):
+  Paused → (previous state)     — driven by ApplicationLifecycleManager.OnAppPaused
+  Disconnected → MainMenu | Authenticating  — driven by NetworkMonitor.OnNetworkLost
+  ShuttingDown                   — terminal, always allowed
+```
+
+Auto-wired SOAP transitions:
+- `GameDataSO.OnSessionStarted` → `InGame`
+- `GameDataSO.OnMiniGameEnd` → `GameOver`
+- `ApplicationLifecycleManager.OnAppPaused` → `Paused` / restore
+- `ApplicationLifecycleManager.OnAppQuitting` → `ShuttingDown`
+- `NetworkMonitorData.OnNetworkLost` → `Disconnected`
 
 #### SOAP Data Flow
 
@@ -304,29 +341,47 @@ AuthenticationServiceFacade (single writer)
         ▼
 AuthenticationDataVariable (ScriptableObject asset)
   └─ AuthenticationData
-       ├─ .State        (NotInitialized → Initializing → Ready → SigningIn → SignedIn)
+       ├─ .State        (NotInitialized → Initializing → Ready → SigningIn → SignedIn | Failed)
        ├─ .IsSignedIn   (bool)
        ├─ .PlayerId     (string)
        ├─ .OnSignedIn   ──► PlayerDataService.HandleSignedIn()
+       │                 ──► MultiplayerSetup.EnsureHostStartedAsync()
        ├─ .OnSignedOut  ──► (listeners clear session state)
        └─ .OnSignInFailed ──► (listeners handle error UI)
+
+ApplicationStateMachine (single writer)
+        │ writes to
+        ▼
+ApplicationStateDataVariable (ScriptableObject asset)
+  └─ ApplicationStateData
+       ├─ .State         (ApplicationState enum)
+       ├─ .PreviousState (ApplicationState enum)
+       └─ .OnStateChanged ──► (ScriptableEventApplicationState — any subscriber)
 ```
 
-Readers: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService`, `AuthenticationController`.
+Readers of auth state: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService`, `AuthenticationController`, `MultiplayerSetup`, `FriendsServiceFacade`.
+
+Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or `ApplicationStateData.OnStateChanged` SOAP event.
 
 #### Key Files
 
 | Role | File | Location |
 |---|---|---|
-| Auth facade (single writer) | `AuthenticationServiceFacade.cs` | `_Scripts/System/` |
-| Scene controller | `AuthenticationSceneController.cs` | `_Scripts/System/` |
-| MonoBehaviour adapter | `AuthenticationController.cs` | `_Scripts/System/Systems/Authentication/` |
-| Splash → auth routing | `SplashToAuthFlow.cs` | `_Scripts/System/` |
 | DI root / bootstrap orchestrator | `AppManager.cs` | `_Scripts/System/` |
+| App state machine (single writer) | `ApplicationStateMachine.cs` | `_Scripts/System/` |
+| Auth facade (single writer) | `AuthenticationServiceFacade.cs` | `_Scripts/System/` |
+| Friends facade (single writer) | `FriendsServiceFacade.cs` | `_Scripts/System/` |
+| Auth scene controller | `AuthenticationSceneController.cs` | `_Scripts/System/` |
+| MonoBehaviour auth adapter | `AuthenticationController.cs` | `_Scripts/System/Systems/Authentication/` |
+| Splash → auth routing | `SplashToAuthFlow.cs` | `_Scripts/System/` |
 | Network monitor | `NetworkMonitor.cs` | `_Scripts/System/` |
 | SOAP auth state | `AuthenticationData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | SOAP auth variable | `AuthenticationDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | SOAP network state | `NetworkMonitorData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| SOAP app state | `ApplicationStateData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/` |
+| SOAP app state variable | `ApplicationStateDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/` |
+| ApplicationState enum | `ApplicationState.cs` | `_Scripts/Data/Enums/` |
+| Friends data SO | `FriendsDataSO.cs` | `_Scripts/Utility/DataContainers/` |
 | Player profile service | `PlayerDataService.cs` | `_Scripts/UI/Views/` |
 | Auth SO asset instance | `AuthenticationData.asset` | `_SO_Assets/Authentication Data/` |
 | Legacy PlayFab auth (deprecated) | `AuthenticationManager.cs` | `_Scripts/System/Playfab/Authentication/` |
@@ -344,11 +399,11 @@ Readers: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService
 
 The project uses Reflex DI with `AppManager` as the root `IInstaller`. All persistent services and shared assets are registered in `AppManager.InstallBindings()`:
 
-**SO asset registration** (`RegisterValue`): `SceneNameListSO`, `GameDataSO`, `AuthenticationDataVariable`, `NetworkMonitorDataVariable`, `ApplicationLifecycleEventsContainerSO`. These are project-level assets wired via inspector on AppManager.
+**SO asset registration** (`RegisterValue`): `SceneNameListSO`, `GameDataSO`, `AuthenticationDataVariable`, `NetworkMonitorDataVariable`, `FriendsDataSO`, `ApplicationLifecycleEventsContainerSO`, `ApplicationStateDataVariable`. These are project-level assets wired via inspector on AppManager.
 
-**MonoBehaviour singleton registration** (`RegisterFactory`, Lazy): `GameSetting`, `AudioSystem`, `PlayerDataService`, `UGSStatsManager`, `CaptainManager`, `IAPManager`, `SceneLoader`, `ThemeManager`, `CameraManager`, `PostProcessingManager`, `SceneTransitionManager`. These use a lazy factory that prefers the serialized reference and falls back to a scene search at first injection time.
+**MonoBehaviour singleton registration** (`RegisterFactory`, Lazy): `GameSetting`, `AudioSystem`, `PlayerDataService`, `UGSStatsManager`, `CaptainManager`, `IAPManager`, `SceneLoader`, `ThemeManager`, `CameraManager`, `PostProcessingManager`, `StatsManager`, `SceneTransitionManager`. These use a lazy factory that prefers the serialized reference and falls back to a scene search at first injection time.
 
-**Pure C# singleton registration** (`RegisterFactory`, Lazy): `AuthenticationServiceFacade`, `NetworkMonitor`.
+**Pure C# singleton registration** (`RegisterFactory`, Lazy): `AuthenticationServiceFacade`, `NetworkMonitor`, `FriendsServiceFacade`, `ApplicationStateMachine`.
 
 #### DI Patterns to Follow
 
@@ -394,7 +449,7 @@ Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/Scen
 
 ### FTUE (First-Time User Experience)
 
-Tutorial system at `Assets/FTUE/` (27 C# files) using adapter pattern with clean interface separation:
+Tutorial system at `Assets/FTUE/` (25 C# files) using adapter pattern with clean interface separation:
 
 - **Interfaces**: `IFlowController`, `ITutorialExecutor`, `ITutorialStepHandler`, `ITutorialUIView`, `IAnimator`, `IOutroHandler`, `ITutorialStepExecutor`
 - **Adapters**: `TutorialExecutorAdapter`, `FTUEIntroAnimatorAdapter`, `TutorialUIViewAdapter`
@@ -515,13 +570,15 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
 | Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
 | Bootstrap / DI | `AppManager` (orchestrator + IInstaller), `BootstrapConfigSO`, `SceneTransitionManager`, `ApplicationLifecycleManager`, `ApplicationLifecycleEventsContainerSO` | `_Scripts/System/`, `_Scripts/System/Bootstrap/`, `_Scripts/ScriptableObjects/` |
+| App state machine | `ApplicationStateMachine` (single-writer phase tracker), `ApplicationStateData` / `ApplicationStateDataVariable` (SOAP state), `ApplicationState` enum | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/`, `_Scripts/Data/Enums/` |
 | Scene management | `SceneLoader` (NetworkBehaviour, game launch + restart + return-to-menu), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| Friends | `FriendsServiceFacade` (facade/writer for UGS Friends), `FriendsDataSO` (shared data) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + lobby), `ClientPlayerVesselInitializer`, `ServerPlayerVesselInitializer`, `MenuServerPlayerVesselInitializer` (menu autopilot), `DomainAssigner` | `_Scripts/Controller/Multiplayer/` |
 | Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
-| App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP | `_Scripts/System/` |
+| App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
 | ScriptableObjects | `SO_Vessel`, `SO_Captain`, `SO_Game`, `SO_ArcadeGame`, `SO_Element`, `SO_Mission`, etc. | `_Scripts/ScriptableObjects/` |
 
 ### Async Pattern
@@ -581,7 +638,7 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 
 - **Framework**: Unity Test Framework 1.6.0 (NUnit-based)
 - **Edit-mode tests**: `Assets/_Scripts/Tests/EditMode/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
-- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `SceneFlowIntegrationTests`
+- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
 - **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/` — `DomainAssignerTests`
 - **PlayFab tests**: `Assets/_Scripts/System/Playfab/PlayFabTests/` — `PlayFabCatalogTests`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
