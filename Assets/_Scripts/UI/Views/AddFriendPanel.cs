@@ -88,9 +88,9 @@ namespace CosmicShore.UI
                 if (nameInputField != null)
                     nameInputField.text = "";
             }
-            catch (Unity.Services.Friends.FriendsServiceException e)
+            catch (Unity.Services.Friends.Exceptions.FriendsServiceException e)
             {
-                SetFeedback($"Could not send request: {e.Reason}", false);
+                SetFeedback($"Could not send request: {e.Message}", false);
             }
             catch (System.Exception e)
             {
