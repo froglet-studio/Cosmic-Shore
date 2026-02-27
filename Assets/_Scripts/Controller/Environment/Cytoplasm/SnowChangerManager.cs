@@ -22,7 +22,10 @@ namespace CosmicShore.Gameplay
         {
             if (!cellData.TryGetLocalCrystal(out _))
                 return;
-            
+
+            if (cellData.Cell == null)
+                return;
+
             cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
             SpawnSnows();
         }
