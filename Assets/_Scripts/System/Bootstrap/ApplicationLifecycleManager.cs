@@ -1,4 +1,6 @@
 using System;
+using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,11 +10,14 @@ namespace CosmicShore.Core
     /// Centralized application lifecycle event dispatcher.
     /// Place on the persistent Bootstrap root so it survives scene loads.
     ///
-    /// Other systems subscribe to the static events instead of implementing
-    /// OnApplicationPause/Focus/Quit in every MonoBehaviour.
+    /// Raises both static C# events (for legacy / programmatic subscribers)
+    /// and SOAP events via <see cref="ApplicationLifecycleEventsContainerSO"/>
+    /// (for inspector-wired listeners and decoupled architecture).
     /// </summary>
     public class ApplicationLifecycleManager : MonoBehaviour
     {
+        [Inject] ApplicationLifecycleEventsContainerSO _lifecycleEvents;
+
         /// <summary>
         /// Fired when the app is paused (true) or resumed (false).
         /// Mobile: triggered by backgrounding/foregrounding.
@@ -61,20 +66,30 @@ namespace CosmicShore.Core
             SceneManager.sceneUnloaded -= HandleSceneUnloaded;
         }
 
-        void OnApplicationPause(bool pauseStatus) => OnAppPaused?.Invoke(pauseStatus);
+        void OnApplicationPause(bool pauseStatus)
+        {
+            OnAppPaused?.Invoke(pauseStatus);
+            _lifecycleEvents?.OnAppPaused.Raise(pauseStatus);
+        }
 
-        void OnApplicationFocus(bool hasFocus) => OnAppFocusChanged?.Invoke(hasFocus);
+        void OnApplicationFocus(bool hasFocus)
+        {
+            OnAppFocusChanged?.Invoke(hasFocus);
+            _lifecycleEvents?.OnAppFocusChanged.Raise(hasFocus);
+        }
 
         void OnApplicationQuit()
         {
             _isQuitting = true;
             OnAppQuitting?.Invoke();
+            _lifecycleEvents?.OnAppQuitting.Raise();
             ServiceLocator.ClearAll();
         }
 
         void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             OnSceneLoaded?.Invoke(scene, mode);
+            _lifecycleEvents?.OnSceneLoaded.Raise(scene.name);
         }
 
         void HandleSceneUnloaded(Scene scene)
@@ -82,6 +97,7 @@ namespace CosmicShore.Core
             // Clear scene-scoped services when any scene unloads.
             ServiceLocator.ClearSceneServices();
             OnSceneUnloading?.Invoke(scene);
+            _lifecycleEvents?.OnSceneUnloading.Raise(scene.name);
         }
 
         /// <summary>

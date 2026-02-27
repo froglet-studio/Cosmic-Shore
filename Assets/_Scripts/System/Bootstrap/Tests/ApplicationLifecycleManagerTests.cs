@@ -1,5 +1,7 @@
 using System;
+using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -41,6 +43,27 @@ namespace CosmicShore.Core
                 .GetMethod("ResetStatics",
                     System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
             method?.Invoke(null, null);
+        }
+
+        /// <summary>
+        /// Creates a fully wired <see cref="ApplicationLifecycleEventsContainerSO"/>
+        /// and injects it into the manager via reflection.
+        /// </summary>
+        static ApplicationLifecycleEventsContainerSO CreateAndInjectContainer(ApplicationLifecycleManager manager)
+        {
+            var container = ScriptableObject.CreateInstance<ApplicationLifecycleEventsContainerSO>();
+            container.OnAppPaused = ScriptableObject.CreateInstance<ScriptableEventBool>();
+            container.OnAppFocusChanged = ScriptableObject.CreateInstance<ScriptableEventBool>();
+            container.OnAppQuitting = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            container.OnSceneLoaded = ScriptableObject.CreateInstance<ScriptableEventString>();
+            container.OnSceneUnloading = ScriptableObject.CreateInstance<ScriptableEventString>();
+
+            var field = typeof(ApplicationLifecycleManager)
+                .GetField("_lifecycleEvents",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            field?.SetValue(manager, container);
+
+            return container;
         }
 
         #region IsQuitting
@@ -124,6 +147,56 @@ namespace CosmicShore.Core
             method?.Invoke(_manager, null);
 
             Assert.IsFalse(ServiceLocator.IsRegistered<object>());
+        }
+
+        #endregion
+
+        #region SOAP Container Wiring
+
+        [Test]
+        public void LifecycleEvents_ContainerCanBeInjected()
+        {
+            var container = CreateAndInjectContainer(_manager);
+
+            var field = typeof(ApplicationLifecycleManager)
+                .GetField("_lifecycleEvents",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var value = field?.GetValue(_manager) as ApplicationLifecycleEventsContainerSO;
+
+            Assert.IsNotNull(value);
+            Assert.AreEqual(container, value);
+        }
+
+        [Test]
+        public void WithoutContainer_StaticEventsStillFire()
+        {
+            // Verify that when no SOAP container is injected, static events still work.
+            bool pauseReceived = false;
+            ApplicationLifecycleManager.OnAppPaused += _ => pauseReceived = true;
+
+            var method = typeof(ApplicationLifecycleManager)
+                .GetMethod("OnApplicationPause",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            method?.Invoke(_manager, new object[] { true });
+
+            Assert.IsTrue(pauseReceived);
+        }
+
+        [Test]
+        public void WithContainer_StaticEventsStillFire()
+        {
+            // Verify static events fire even when SOAP container is present.
+            CreateAndInjectContainer(_manager);
+
+            bool pauseReceived = false;
+            ApplicationLifecycleManager.OnAppPaused += _ => pauseReceived = true;
+
+            var method = typeof(ApplicationLifecycleManager)
+                .GetMethod("OnApplicationPause",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            method?.Invoke(_manager, new object[] { true });
+
+            Assert.IsTrue(pauseReceived);
         }
 
         #endregion
