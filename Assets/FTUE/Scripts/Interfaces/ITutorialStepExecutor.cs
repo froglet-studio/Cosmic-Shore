@@ -1,6 +1,9 @@
-using CosmicShore.FTUE;
+using CosmicShore.Core;
 
-public interface ITutorialStepExecutor
+namespace CosmicShore.Core
 {
-    void ExecutePayload(TutorialStepPayload payload, System.Action onComplete);
+    public interface ITutorialStepExecutor
+    {
+        void ExecutePayload(TutorialStepPayload payload, System.Action onComplete);
+    }
 }

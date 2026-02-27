@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace CosmicShore
+namespace CosmicShore.Editor
 {
-    using UnityEngine;
-    using UnityEditor;
 
     public class TriangleWindowMeshGenerator : EditorWindow
     {

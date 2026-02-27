@@ -5,136 +5,93 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
 
-public class RuntimeTextureMemoryUsageWindow : EditorWindow
+namespace CosmicShore.Editor
 {
-    private Vector2 scrollPosition;
-    private List<KeyValuePair<Texture2D, long>> sortedTextures;
-    private int topN = 10;
-
-    [MenuItem("Tools/Runtime Texture Memory Usage")]
-    public static void ShowWindow()
+    public class RuntimeTextureMemoryUsageWindow : EditorWindow
     {
-        GetWindow<RuntimeTextureMemoryUsageWindow>("Runtime Texture Memory Usage");
-    }
+        private Vector2 scrollPosition;
+        private List<KeyValuePair<Texture2D, long>> sortedTextures;
+        private int topN = 10;
 
-    void OnGUI()
-    {
-        if (GUILayout.Button("Find Largest Memory Consuming Textures"))
+        [MenuItem("Tools/Runtime Texture Memory Usage")]
+        public static void ShowWindow()
         {
-            FindLargestMemoryTextures();
+            GetWindow<RuntimeTextureMemoryUsageWindow>("Runtime Texture Memory Usage");
         }
 
-        GUILayout.Label("Top N Textures to Display:");
-        topN = EditorGUILayout.IntField(topN);
-
-        if (sortedTextures != null)
+        void OnGUI()
         {
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
-            foreach (var kvp in sortedTextures.Take(topN))
+            if (GUILayout.Button("Find Largest Memory Consuming Textures"))
             {
-                GUILayout.Label($"Texture: {kvp.Key.name}, Memory Usage: {kvp.Value / 1024.0 / 1024.0:F2} MB");
+                FindLargestMemoryTextures();
             }
-            GUILayout.EndScrollView();
-        }
-    }
 
-    void FindLargestMemoryTextures()
-    {
-        // Dictionary to hold texture and its memory usage
-        Dictionary<Texture2D, long> textureMemoryUsage = new Dictionary<Texture2D, long>();
+            GUILayout.Label("Top N Textures to Display:");
+            topN = EditorGUILayout.IntField(topN);
 
-        // Find all active renderers in the scene
-        Renderer[] renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
-        foreach (var renderer in renderers)
-        {
-            // Iterate through all materials in the renderer
-            foreach (var material in renderer.sharedMaterials)
+            if (sortedTextures != null)
             {
-                if (material == null) continue;
-
-                // Get all textures in the material
-                foreach (var textureName in material.GetTexturePropertyNames())
+                scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+                foreach (var kvp in sortedTextures.Take(topN))
                 {
-                    Texture texture = material.GetTexture(textureName);
+                    GUILayout.Label($"Texture: {kvp.Key.name}, Memory Usage: {kvp.Value / 1024.0 / 1024.0:F2} MB");
+                }
+                GUILayout.EndScrollView();
+            }
+        }
 
-                    if (texture is Texture2D texture2D)
+        void FindLargestMemoryTextures()
+        {
+            // Dictionary to hold texture and its memory usage
+            Dictionary<Texture2D, long> textureMemoryUsage = new Dictionary<Texture2D, long>();
+
+            // Find all active renderers in the scene
+            Renderer[] renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
+            foreach (var renderer in renderers)
+            {
+                // Iterate through all materials in the renderer
+                foreach (var material in renderer.sharedMaterials)
+                {
+                    if (material == null) continue;
+
+                    // Get all textures in the material
+                    foreach (var textureName in material.GetTexturePropertyNames())
                     {
-                        if (!textureMemoryUsage.ContainsKey(texture2D))
+                        Texture texture = material.GetTexture(textureName);
+
+                        if (texture is Texture2D texture2D)
                         {
-                            // Calculate memory usage for each texture
-                            long memoryUsage = CalculateTextureMemoryUsage(texture2D);
-                            textureMemoryUsage[texture2D] = memoryUsage;
+                            if (!textureMemoryUsage.ContainsKey(texture2D))
+                            {
+                                // Calculate memory usage for each texture
+                                long memoryUsage = CalculateTextureMemoryUsage(texture2D);
+                                textureMemoryUsage[texture2D] = memoryUsage;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Find all UI Images
-        Image[] uiImages = FindObjectsByType<Image>(FindObjectsSortMode.None);
-        foreach (var uiImage in uiImages)
-        {
-            if (uiImage.sprite != null && uiImage.sprite.texture != null)
+            // Find all UI Images
+            Image[] uiImages = FindObjectsByType<Image>(FindObjectsSortMode.None);
+            foreach (var uiImage in uiImages)
             {
-                Texture2D texture2D = uiImage.sprite.texture;
-                if (!textureMemoryUsage.ContainsKey(texture2D))
+                if (uiImage.sprite != null && uiImage.sprite.texture != null)
                 {
-                    long memoryUsage = CalculateTextureMemoryUsage(texture2D);
-                    textureMemoryUsage[texture2D] = memoryUsage;
+                    Texture2D texture2D = uiImage.sprite.texture;
+                    if (!textureMemoryUsage.ContainsKey(texture2D))
+                    {
+                        long memoryUsage = CalculateTextureMemoryUsage(texture2D);
+                        textureMemoryUsage[texture2D] = memoryUsage;
+                    }
                 }
             }
-        }
 
-        // Find all UI RawImages
-        RawImage[] rawImages = FindObjectsByType<RawImage>(FindObjectsSortMode.None);
-        foreach (var rawImage in rawImages)
-        {
-            if (rawImage.texture is Texture2D texture2D)
+            // Find all UI RawImages
+            RawImage[] rawImages = FindObjectsByType<RawImage>(FindObjectsSortMode.None);
+            foreach (var rawImage in rawImages)
             {
-                if (!textureMemoryUsage.ContainsKey(texture2D))
-                {
-                    long memoryUsage = CalculateTextureMemoryUsage(texture2D);
-                    textureMemoryUsage[texture2D] = memoryUsage;
-                }
-            }
-        }
-
-        // Find all Terrain components
-        Terrain[] terrains = FindObjectsByType<Terrain>(FindObjectsSortMode.None);
-        foreach (var terrain in terrains)
-        {
-            foreach (var texture in terrain.terrainData.terrainLayers.Select(layer => layer.diffuseTexture).OfType<Texture2D>())
-            {
-                if (!textureMemoryUsage.ContainsKey(texture))
-                {
-                    long memoryUsage = CalculateTextureMemoryUsage(texture);
-                    textureMemoryUsage[texture] = memoryUsage;
-                }
-            }
-        }
-
-        // Find all Lightmaps
-        LightmapData[] lightmaps = LightmapSettings.lightmaps;
-        foreach (var lightmap in lightmaps)
-        {
-            if (lightmap.lightmapColor is Texture2D texture2D)
-            {
-                if (!textureMemoryUsage.ContainsKey(texture2D))
-                {
-                    long memoryUsage = CalculateTextureMemoryUsage(texture2D);
-                    textureMemoryUsage[texture2D] = memoryUsage;
-                }
-            }
-        }
-
-        // Find all Skybox textures
-        if (RenderSettings.skybox != null)
-        {
-            foreach (var textureName in RenderSettings.skybox.GetTexturePropertyNames())
-            {
-                Texture texture = RenderSettings.skybox.GetTexture(textureName);
-
-                if (texture is Texture2D texture2D)
+                if (rawImage.texture is Texture2D texture2D)
                 {
                     if (!textureMemoryUsage.ContainsKey(texture2D))
                     {
@@ -143,39 +100,85 @@ public class RuntimeTextureMemoryUsageWindow : EditorWindow
                     }
                 }
             }
+
+            // Find all Terrain components
+            Terrain[] terrains = FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+            foreach (var terrain in terrains)
+            {
+                foreach (var texture in terrain.terrainData.terrainLayers.Select(layer => layer.diffuseTexture).OfType<Texture2D>())
+                {
+                    if (!textureMemoryUsage.ContainsKey(texture))
+                    {
+                        long memoryUsage = CalculateTextureMemoryUsage(texture);
+                        textureMemoryUsage[texture] = memoryUsage;
+                    }
+                }
+            }
+
+            // Find all Lightmaps
+            LightmapData[] lightmaps = LightmapSettings.lightmaps;
+            foreach (var lightmap in lightmaps)
+            {
+                if (lightmap.lightmapColor is Texture2D texture2D)
+                {
+                    if (!textureMemoryUsage.ContainsKey(texture2D))
+                    {
+                        long memoryUsage = CalculateTextureMemoryUsage(texture2D);
+                        textureMemoryUsage[texture2D] = memoryUsage;
+                    }
+                }
+            }
+
+            // Find all Skybox textures
+            if (RenderSettings.skybox != null)
+            {
+                foreach (var textureName in RenderSettings.skybox.GetTexturePropertyNames())
+                {
+                    Texture texture = RenderSettings.skybox.GetTexture(textureName);
+
+                    if (texture is Texture2D texture2D)
+                    {
+                        if (!textureMemoryUsage.ContainsKey(texture2D))
+                        {
+                            long memoryUsage = CalculateTextureMemoryUsage(texture2D);
+                            textureMemoryUsage[texture2D] = memoryUsage;
+                        }
+                    }
+                }
+            }
+
+            // Sort textures by memory usage
+            sortedTextures = textureMemoryUsage.OrderByDescending(kvp => kvp.Value).ToList();
+
+            CSDebug.Log($"Runtime textures counted and sorted by memory usage: {sortedTextures.Count} found");
         }
 
-        // Sort textures by memory usage
-        sortedTextures = textureMemoryUsage.OrderByDescending(kvp => kvp.Value).ToList();
-
-        CSDebug.Log($"Runtime textures counted and sorted by memory usage: {sortedTextures.Count} found");
-    }
-
-    long CalculateTextureMemoryUsage(Texture2D texture)
-    {
-        // Calculate memory usage based on texture format and dimensions
-        int width = texture.width;
-        int height = texture.height;
-        int bitsPerPixel = GetBitsPerPixel(texture.format);
-        long memoryUsage = width * height * bitsPerPixel / 8;
-
-        return memoryUsage;
-    }
-
-    int GetBitsPerPixel(TextureFormat format)
-    {
-        // Return the bits per pixel for the given texture format
-        switch (format)
+        long CalculateTextureMemoryUsage(Texture2D texture)
         {
-            case TextureFormat.Alpha8: return 8;
-            case TextureFormat.ARGB4444: return 16;
-            case TextureFormat.RGBA32: return 32;
-            case TextureFormat.ARGB32: return 32;
-            case TextureFormat.RGB24: return 24;
-            case TextureFormat.RGBAHalf: return 64;
-            case TextureFormat.RGBAFloat: return 128;
-            // Add cases for other formats as needed
-            default: return 32; // Default to 32 bits per pixel for unknown formats
+            // Calculate memory usage based on texture format and dimensions
+            int width = texture.width;
+            int height = texture.height;
+            int bitsPerPixel = GetBitsPerPixel(texture.format);
+            long memoryUsage = width * height * bitsPerPixel / 8;
+
+            return memoryUsage;
+        }
+
+        int GetBitsPerPixel(TextureFormat format)
+        {
+            // Return the bits per pixel for the given texture format
+            switch (format)
+            {
+                case TextureFormat.Alpha8: return 8;
+                case TextureFormat.ARGB4444: return 16;
+                case TextureFormat.RGBA32: return 32;
+                case TextureFormat.ARGB32: return 32;
+                case TextureFormat.RGB24: return 24;
+                case TextureFormat.RGBAHalf: return 64;
+                case TextureFormat.RGBAFloat: return 128;
+                // Add cases for other formats as needed
+                default: return 32; // Default to 32 bits per pixel for unknown formats
+            }
         }
     }
 }

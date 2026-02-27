@@ -1,18 +1,24 @@
-﻿using System;
+using System;
 using System.Collections;
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.XP;
-using CosmicShore.Soap;
+using CosmicShore.Core;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.UI;
 using CosmicShore.Utility;
+using System.Linq;
+using DG.Tweening;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     public class EndGameCinematicController : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         [Header("References")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] protected SceneCinematicLibrarySO sceneCinematicLibrary;
         [SerializeField] protected CinematicCameraController cinematicCameraController;
         
@@ -28,20 +34,22 @@ namespace CosmicShore.Game.Cinematics
         protected Coroutine runningRoutine;
         protected float cachedBoostMultiplier;
         
-        protected virtual void OnEnable()
+        protected virtual void Start()
         {
-            if (!gameData) return;
-            gameData.OnWinnerCalculated += OnWinnerCalculated;
+            if (gameData)
+                gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
 
-            if (!view) return;
-            view.Initialize();
-            view.OnContinuePressed += HandleContinuePressed;
+            if (view)
+            {
+                view.Initialize();
+                view.OnContinuePressed += HandleContinuePressed;
+            }
         }
 
         protected virtual void OnDisable()
         {
-            if (!gameData) return;
-            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+            if (gameData)
+                gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
 
             if (view)
                 view.OnContinuePressed -= HandleContinuePressed;
@@ -276,6 +284,7 @@ namespace CosmicShore.Game.Cinematics
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 

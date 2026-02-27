@@ -1,50 +1,45 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
-using CosmicShore.Models.Enums;
+using CosmicShore.Gameplay;
+using CosmicShore.Data;
 using Obvious.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using IPlayer = CosmicShore.Game.IPlayer;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using IPlayer = CosmicShore.Gameplay.IPlayer;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Every MiniGame in the project should use the same asset of this SO.
-    /// It connects MiniGameBase with GameManager, StatsManager, TurnMonitor, Aracade, MultiplayerSetup and others.
+    /// It connects MiniGameBase with SceneLoader, StatsManager, TurnMonitor, Arcade, MultiplayerSetup and others.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "scriptable_variable_" + nameof(GameDataSO),
-        menuName = "ScriptableObjects/DataContainers/" + nameof(GameDataSO))]
+        fileName = "DataContainer_" + nameof(GameDataSO),
+        menuName = "ScriptableObjects/SOAP/Data Containers/" + nameof(GameDataSO))]
     public class GameDataSO : ScriptableObject
     {
-        // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP 
-        public event Action OnLaunchGameScene;
-        public event Action OnSessionStarted;
-        public event Action OnInitializeGame;
+        // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP
+        public ScriptableEventNoParam OnLaunchGame;
+        public ScriptableEventBool OnSceneTransition;
+        public ScriptableEventNoParam OnSessionStarted;
+        public ScriptableEventNoParam OnInitializeGame;
         public ScriptableEventNoParam OnMiniGameRoundStarted;
-        public event Action OnClientReady;
+        public ScriptableEventNoParam OnClientReady;
         public ScriptableEventNoParam OnMiniGameTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
-        // DTFC
         public ScriptableEventNoParam OnMiniGameRoundEnd;
-        public event Action OnMiniGameEnd;
-        public event Action OnWinnerCalculated;
-        public event Action<string, Domains> OnPlayerAdded;
-
+        public ScriptableEventNoParam OnMiniGameEnd;
+        public ScriptableEventNoParam OnWinnerCalculated;
         public ScriptableEventNoParam OnResetForReplay;
-
+        public ScriptableEventNoParam OnSessionEnded;
+        public event Action<string, Domains> OnPlayerAdded;
+        
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
-        public event Action<GameModes> OnGameModeTurnEnd;
-        public event Action<GameModes> OnGameModeRoundEnd;
-        public event Action<GameModes> OnGameModeEnd;
-
-        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         
         // Local player config / state
         public VesselClassTypeVariable selectedVesselClass;
@@ -67,6 +62,14 @@ namespace CosmicShore.Soap
         public bool IsMission;
         public bool IsMultiplayerMode;
         public bool IsPartyMode;
+
+        /// <summary>
+        /// Number of AI players to backfill in multiplayer when not enough
+        /// human players are present. Set by PartyGameLauncher before launch.
+        /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
+        /// </summary>
+        public int RequestedAIBackfillCount;
+
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();
@@ -91,7 +94,7 @@ namespace CosmicShore.Soap
             InvokeInitializeGame();
         }
 
-        public void SetupForMultiplayer()
+        public void DestroyPlayerAndVessel()
         {
             // Ensure the domain pool is fresh for the new session so every
             // player gets a unique domain.  Without this, leftover state from
@@ -114,14 +117,14 @@ namespace CosmicShore.Soap
         {
             IsTurnRunning = true;
             TurnStartTime = Time.time;
-
             InvokeTurnStarted();
         }
-        
-        public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
-        public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
-        public void InvokeInitializeGame() => OnInitializeGame?.Invoke();
-        public void InvokeClientReady() => OnClientReady?.Invoke();
+
+        public void InvokeGameLaunch() => OnLaunchGame?.Raise();
+        public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
+        public void InvokeSessionStarted() => OnSessionStarted?.Raise();
+        public void InvokeInitializeGame() => OnInitializeGame?.Raise();
+        public void InvokeClientReady() => OnClientReady?.Raise();
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
         public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
 
@@ -129,28 +132,13 @@ namespace CosmicShore.Soap
         {
             IsTurnRunning = false;
             OnMiniGameTurnEnd?.Raise();
-            
-            // Fire game mode-specific event
-            OnGameModeTurnEnd?.Invoke(GameMode);
         }
         
-        public void InvokeMiniGameRoundEnd() 
-        {
-            OnMiniGameRoundEnd?.Raise();
-            
-            // Fire game mode-specific event
-            OnGameModeRoundEnd?.Invoke(GameMode);
-        }
-        
-        public void InvokeMiniGameEnd() 
-        {
-            OnMiniGameEnd?.Invoke();
-            
-            // Fire game mode-specific event
-            OnGameModeEnd?.Invoke(GameMode);
-        }
-        
-        public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
+        public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
+        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Raise();
+        public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
+        public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
+        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
 
         public void ResetForReplay()
         {
@@ -172,6 +160,7 @@ namespace CosmicShore.Soap
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
+            RequestedAIBackfillCount = 0;
             _playerSpawnPoseList.Clear();
             LocalPlayer = null;
             LocalRoundStats = null;
@@ -209,7 +198,7 @@ namespace CosmicShore.Soap
             SelectedIntensity.Value = 1;
             
             ResetRuntimeData();
-            
+            DestroyPlayerAndVessel();
             DomainAssigner.Initialize();
         }
 
@@ -381,7 +370,7 @@ namespace CosmicShore.Soap
                 .OrderByDescending(rs => rs.VolumeRemaining)
                 .FirstOrDefault();
 
-            return top is null ? (Domains.Jade, 0f) : (Team: top.Domain, top.VolumeRemaining);
+            return top is null ? (Domains.Jade, 0f) : (top.Domain, top.VolumeRemaining);
         }
         
         public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>

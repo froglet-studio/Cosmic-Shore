@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Gameplay;
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(fileName = "CellConfigData", menuName = "Cosmic Shore/Cells/Cell Config Data")]
     public class CellConfigDataSO : ScriptableObject

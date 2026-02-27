@@ -2,8 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
 
-
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles the display of Popup messages. 
