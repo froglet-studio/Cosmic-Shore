@@ -352,24 +352,6 @@ public class SwingingVesselTransformer : VesselTransformer
     }
 
     /// <summary>
-    /// Computes the world-space aim target by raycasting from the gameplay
-    /// camera through the screen-edge position on this arm's side.
-    /// </summary>
-    Vector3 GetAimTarget(bool left)
-    {
-        var cam = GetGameplayCamera();
-        if (cam == null) return transform.position + transform.forward * maxTetherLength;
-
-        Vector3 screenPos = GetAimScreenPosition(left);
-        Ray ray = cam.ScreenPointToRay(screenPos);
-
-        int layerMask = 1 << TrailBlocksLayer;
-        if (Physics.Raycast(ray, out var hit, maxTetherLength * 2f, layerMask))
-            return hit.point;
-        return ray.GetPoint(maxTetherLength);
-    }
-
-    /// <summary>
     /// Computes the arm direction (unit vector) for a given side.
     /// The arm always points toward its screen edge from the vessel center.
     /// </summary>
@@ -399,6 +381,8 @@ public class SwingingVesselTransformer : VesselTransformer
     /// <summary>
     /// Computes the spinneret arm tip position and the aim target.
     /// The tip extends from vessel center toward the screen edge, scaled by XDiff.
+    /// The aim target is along the camera ray through the tip — tethers fire
+    /// "into the screen" (away from camera) from the arm tip, not laterally.
     /// </summary>
     (Vector3 tipPos, Vector3 aimTarget) GetSpinneretAim(bool left)
     {
@@ -406,8 +390,19 @@ public class SwingingVesselTransformer : VesselTransformer
         Vector3 dir = GetArmDirection(left);
         Vector3 tip = transform.position + dir * len;
 
-        Vector3 target = GetAimTarget(left);
-        return (tip, target);
+        var cam = GetGameplayCamera();
+        if (cam == null)
+            return (tip, tip + transform.forward * maxTetherLength);
+
+        // Ray from camera through the arm tip's screen projection —
+        // this sends the tether forward into the scene from the tip.
+        Vector3 tipScreen = cam.WorldToScreenPoint(tip);
+        Ray ray = cam.ScreenPointToRay(tipScreen);
+
+        int layerMask = 1 << TrailBlocksLayer;
+        if (Physics.Raycast(ray, out var hit, maxTetherLength * 2f, layerMask))
+            return (tip, hit.point);
+        return (tip, ray.GetPoint(maxTetherLength));
     }
 
     /// <summary>
