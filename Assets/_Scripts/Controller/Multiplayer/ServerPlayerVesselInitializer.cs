@@ -50,6 +50,25 @@ namespace CosmicShore.Gameplay
 
         public Action OnAllPlayersSpawned;
 
+        public enum PartyModeState
+        {
+            /// <summary>Not in party mode — normal standalone behavior.</summary>
+            Off,
+            /// <summary>Party mode first round — spawns vessels when triggered by party controller.</summary>
+            SpawnMode,
+            /// <summary>Party mode subsequent rounds — fully inert, vessels already exist.</summary>
+            InertMode
+        }
+
+        /// <summary>
+        /// Controls how this SPVI behaves in party mode.
+        /// Set by PartyGameController before the environment is activated.
+        /// </summary>
+        public PartyModeState PartyMode { get; set; } = PartyModeState.Off;
+
+        /// <summary>Convenience check.</summary>
+        public bool IsInPartyMode => PartyMode != PartyModeState.Off;
+
         bool IsSoloWithAI => !gameData.IsMultiplayerMode;
 
         protected virtual void Awake()
@@ -74,6 +93,37 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual void OnNetworkSpawn()
         {
+            // Party InertMode: skip everything — vessels already exist from a previous round
+            if (PartyMode == PartyModeState.InertMode)
+            {
+                CSDebug.Log($"[SPVI] OnNetworkSpawn — PARTY INERT on '{gameObject.name}', skipping all.");
+                enabled = false;
+                return;
+            }
+
+            // Party SpawnMode: set spawn positions but DON'T subscribe to OnClientConnected.
+            // The party controller will call SpawnVesselsForParty() explicitly.
+            if (PartyMode == PartyModeState.SpawnMode)
+            {
+                if (!NetworkManager.Singleton.IsServer)
+                {
+                    enabled = false;
+                    return;
+                }
+
+                if (_playerOrigins is not { Length: > 0 } || _playerOrigins[0] == null)
+                {
+                    CSDebug.LogWarning($"[SPVI] PARTY SPAWN on '{gameObject.name}' but no _playerOrigins!");
+                    enabled = false;
+                    return;
+                }
+
+                gameData.SetSpawnPositions(_playerOrigins);
+                CSDebug.Log($"[SPVI] OnNetworkSpawn — PARTY SPAWN on '{gameObject.name}', positions set. Waiting for trigger.");
+                return;
+            }
+
+            // Normal standalone mode
             if (!NetworkManager.Singleton.IsServer)
             {
                 enabled = false;

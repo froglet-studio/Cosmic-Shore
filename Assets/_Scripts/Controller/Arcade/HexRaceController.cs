@@ -1,5 +1,4 @@
 using System.Linq;
-using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;

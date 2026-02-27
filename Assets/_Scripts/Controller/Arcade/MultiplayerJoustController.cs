@@ -1,6 +1,5 @@
 // MultiplayerJoustController.cs
 using System.Linq;
-using CosmicShore.Utility.ClassExtensions;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;

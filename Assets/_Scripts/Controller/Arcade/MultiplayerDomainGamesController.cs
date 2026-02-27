@@ -20,9 +20,7 @@ namespace CosmicShore.Gameplay
 
         protected override void OnCountdownTimerEnded()
         {
-            if (!IsServer)
-                return;
-
+            if (!this.IsServerSafe()) return;
             OnCountdownTimerEnded_ClientRpc();
         }
 
@@ -79,7 +77,7 @@ namespace CosmicShore.Gameplay
 
         protected override void SetupNewRound()
         {
-            if (IsServer)
+            if (this.IsServerSafe())
             {
                 readyClientCount = 0;
             }

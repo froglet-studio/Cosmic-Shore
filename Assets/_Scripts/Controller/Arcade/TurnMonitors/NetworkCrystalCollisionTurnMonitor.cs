@@ -12,6 +12,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private HexRaceController controller;
 
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
+        private int _localCrystalTarget;
 
         public override void OnNetworkSpawn()
         {
@@ -22,9 +23,10 @@ namespace CosmicShore.Gameplay
         {
             base.StartMonitor();
 
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             int target = GetCrystalCollisionCount();
-            _netCrystalCollisions.Value = target;
+            _localCrystalTarget = target;
+            if (IsSpawned) _netCrystalCollisions.Value = target;
             controller?.SetCrystalsToFinishServer(target);
 
             CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
@@ -40,7 +42,7 @@ namespace CosmicShore.Gameplay
 
         public override void StopMonitor()
         {
-            if (IsServer)
+            if (this.IsServerSafe())
             {
                 foreach (var stat in gameData.RoundStatsList)
                     stat.OnCrystalsCollectedChanged -= ServerSideCrystalSync;
@@ -51,17 +53,17 @@ namespace CosmicShore.Gameplay
 
         void ServerSideCrystalSync(IRoundStats stats)
         {
-            if (!IsServer) return;
+            if (!this.IsServerSafe()) return;
             controller?.NotifyCrystalsCollected(stats.Name, stats.CrystalsCollected);
         }
 
         public override bool CheckForEndOfTurn()
         {
-            if (!IsServer) return false;
+            if (!this.IsServerSafe()) return false;
 
             int target = _netCrystalCollisions.Value > 0
                 ? _netCrystalCollisions.Value
-                : CrystalCollisions;
+                : (_localCrystalTarget > 0 ? _localCrystalTarget : CrystalCollisions);
 
             return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target);
         }
@@ -70,7 +72,7 @@ namespace CosmicShore.Gameplay
         {
             int target = _netCrystalCollisions.Value > 0
                 ? _netCrystalCollisions.Value
-                : CrystalCollisions;
+                : (_localCrystalTarget > 0 ? _localCrystalTarget : CrystalCollisions);
 
             int current = ownStats?.CrystalsCollected ?? 0;
             int remaining = Mathf.Max(0, target - current);

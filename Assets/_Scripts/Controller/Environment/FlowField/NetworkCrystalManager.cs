@@ -23,21 +23,60 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            if (spawnOnClientReady)
+            SubscribeToCrystalEvents();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            UnsubscribeFromCrystalEvents();
+        }
+
+        /// <summary>
+        /// Re-subscribe when the environment is reactivated (party mode SetActive
+        /// toggling). OnDisable already unsubscribes so events from inactive
+        /// environments don't fire and spawn invisible crystals.
+        /// In party mode, subscribe even when IsSpawned is false — the environment
+        /// was deactivated during network spawn so IsSpawned may be unreliable,
+        /// but the host is both server and client so direct spawning works.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (IsSpawned || IsPartyMode)
+                SubscribeToCrystalEvents();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFromCrystalEvents();
+        }
+
+        void SubscribeToCrystalEvents()
+        {
+            // Unsubscribe first to prevent double-subscription when both
+            // OnNetworkSpawn and OnEnable fire in the same lifecycle.
+            UnsubscribeFromCrystalEvents();
+
+            // In party mode, always use OnMiniGameTurnStarted (not OnClientReady)
+            // to avoid timing issues: Cell.Initialize runs after 1s via InitializeAfterDelay,
+            // but OnClientReady fires at 0.5s on round 2+. Spawning crystals before Cell
+            // init causes null refs in SnowChangerManager and other cell-dependent systems.
+            if (spawnOnClientReady && !IsPartyMode)
                 gameData.OnClientReady.OnRaised += OnClientReadySpawn;
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
 
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
-            n_Positions.OnListChanged += OnPositionsChanged;
+
+            if (n_Positions != null)
+                n_Positions.OnListChanged += OnPositionsChanged;
         }
 
-        public override void OnNetworkDespawn()
+        void UnsubscribeFromCrystalEvents()
         {
+            // Always unsubscribe from both paths to be safe
             if (spawnOnClientReady)
                 gameData.OnClientReady.OnRaised -= OnClientReadySpawn;
-            else
-                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
 
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
 
@@ -51,6 +90,17 @@ namespace CosmicShore.Gameplay
 
         void OnResetForReplay()
         {
+            // In party mode, bypass NetworkList and destroy crystals directly.
+            // The host is both server and client so no replication is needed.
+            // IsSpawned/IsServer may be unreliable after environment deactivation/reactivation.
+            if (IsPartyMode)
+            {
+                ResetSpawnState();
+                serverBatchAnchorIndex = 0;
+                CSDebug.Log("[NetworkCrystalManager] Party mode reset — crystals destroyed.");
+                return;
+            }
+
             // Reset base class spawn state on ALL clients — destroys old crystals,
             // clears anchor/position tracking so spawning starts fresh from index 0.
             ResetSpawnState();

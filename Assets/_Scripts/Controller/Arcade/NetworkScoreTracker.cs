@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 
@@ -7,26 +8,56 @@ namespace CosmicShore.Gameplay
     {
         public override void OnNetworkSpawn()
         {
-            if (!IsServer)
-                return;
+            if (!this.IsServerSafe()) return;
+            SubscribeScoreEvents();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            // Use IsServerSafe: after SetActive toggling IsServer may be stale
+            if (!this.IsServerSafe()) return;
+            UnsubscribeScoreEvents();
+        }
+
+        /// <summary>
+        /// Re-subscribe when the environment is reactivated (party mode SetActive
+        /// toggling). Requires IsSpawned (normal) or IsPartyMode (reactivation —
+        /// IsSpawned may be stale after SetActive toggling) so we don't subscribe
+        /// too early during initial scene load (before OnNetworkSpawn).
+        /// </summary>
+        private void OnEnable()
+        {
+            bool spawned = IsSpawned || (gameData != null && gameData.IsPartyMode);
+            if (spawned && this.IsServerSafe())
+                SubscribeScoreEvents();
+        }
+
+        private void OnDisable()
+        {
+            if (!this.IsServerSafe()) return;
+            UnsubscribeScoreEvents();
+        }
+
+        void SubscribeScoreEvents()
+        {
+            // Unsubscribe first to prevent double-subscription when both
+            // OnNetworkSpawn and OnEnable fire (party mode SetActive toggling).
+            UnsubscribeScoreEvents();
 
             gameData.OnInitializeGame.OnRaised += InitializeScoringMode;
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised += CalculateWinnerOnServer;
-            OnClickToMainMenu.OnRaised += OnTurnEnded;
+            if (OnClickToMainMenu) OnClickToMainMenu.OnRaised += OnTurnEnded;
         }
 
-        public override void OnNetworkDespawn()
+        void UnsubscribeScoreEvents()
         {
-            if (!IsServer)
-                return;
-
             gameData.OnInitializeGame.OnRaised -= InitializeScoringMode;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised -= CalculateWinnerOnServer;
-            OnClickToMainMenu.OnRaised -= OnTurnEnded;
+            if (OnClickToMainMenu) OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
 
         private void CalculateWinnerOnServer()

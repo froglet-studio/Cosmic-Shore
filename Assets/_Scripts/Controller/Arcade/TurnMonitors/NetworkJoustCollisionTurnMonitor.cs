@@ -1,5 +1,6 @@
 // NetworkJoustCollisionTurnMonitor.cs
 using CosmicShore.Data;
+using CosmicShore.Utility;
 using Unity.Netcode;
 using System.Linq;
 using UnityEngine;
@@ -29,14 +30,14 @@ namespace CosmicShore.Gameplay
 
         void OnCollisionChanged(IRoundStats stats)
         {
-            if (IsServer)
+            if (this.IsServerSafe())
             {
                 // Server detects it directly — notify controller to sync down to clients
                 controller?.NotifyCollision(stats.Name, stats.JoustCollisions);
             }
             else
             {
-                // Client detected a collision the server missed (high-speed physics) 
+                // Client detected a collision the server missed (high-speed physics)
                 // — report it up so the server can authoritative sync everyone
                 controller?.ReportCollisionToServer(stats.Name, stats.JoustCollisions);
             }
@@ -45,7 +46,7 @@ namespace CosmicShore.Gameplay
         public override bool CheckForEndOfTurn()
         {
             // Only server ends the turn authoritatively
-            if (!IsServer) return false;
+            if (!this.IsServerSafe()) return false;
 
             return gameData.RoundStatsList
                 .Any(stats => stats.JoustCollisions >= CollisionsNeeded);

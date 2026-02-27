@@ -24,6 +24,14 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
+            // In party mode, skip all autonomous lifecycle management.
+            // The PartyGameController will call into us when needed.
+            if (IsPartyMode)
+            {
+                CSDebug.Log($"[{GetType().Name}] OnNetworkSpawn — PARTY MODE, skipping autonomous init.");
+                return;
+            }
+
             if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
@@ -40,10 +48,51 @@ namespace CosmicShore.Gameplay
                 gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised -= SubscribeToSessionEvents;
             }
-            
+
             UnsubscribeFromSessionEvents();
-            
+
             base.OnNetworkDespawn();
+        }
+
+        // ==================== Party Mode API ====================
+        // These methods are called by PartyGameController to drive gameplay
+        // without the controller's own lifecycle getting in the way.
+
+        /// <summary>
+        /// Called by PartyGameController when this mini-game's environment is activated.
+        /// Subscribes to turn-end events so gameplay mechanics work,
+        /// but does NOT call InitializeGame or SetupNewRound.
+        /// </summary>
+        public virtual void PartyMode_Activate()
+        {
+            if (!IsPartyMode) return;
+
+            if (this.IsServerSafe())
+            {
+                gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
+            }
+
+            // Initialize the mini-game and show its ready button so the
+            // player can click Ready to start the countdown + gameplay.
+            InitializeAfterDelay().Forget();
+
+            CSDebug.Log($"[{GetType().Name}] PartyMode_Activate — subscribed to turn events, initializing.");
+        }
+
+        /// <summary>
+        /// Called by PartyGameController when this mini-game's round is complete.
+        /// Unsubscribes from events to prevent stale callbacks.
+        /// </summary>
+        public virtual void PartyMode_Deactivate()
+        {
+            if (!IsPartyMode) return;
+
+            if (this.IsServerSafe())
+            {
+                gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
+            }
+
+            CSDebug.Log($"[{GetType().Name}] PartyMode_Deactivate — unsubscribed from turn events.");
         }
 
         // ---------------- Session Management ----------------
@@ -75,36 +124,38 @@ namespace CosmicShore.Gameplay
             // Base implementation does nothing
         }
 
-        /// <summary>
-        /// Runs Initialize() after a small delay (server only).
-        /// </summary>
         async UniTaskVoid InitializeAfterDelay()
         {
             try
             {
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
-                
+
+                // If the environment was deactivated while we waited (e.g. the
+                // initial spawn → deactivate cycle in party mode), bail out.
+                // Without this, autonomous init from OnNetworkSpawn would fire
+                // gameData.InitializeGame() on all 3 deactivated environments
+                // into the shared GameDataSO.
+                if (!gameObject.activeInHierarchy) return;
+
                 gameData.InitializeGame();
-                
-                if (!IsServer)
-                    return;
-                
+                if (!this.IsServerSafe()) return;
                 SetupNewRound();
+
+                // In party mode, auto-start the game — no manual ready-click required.
+                // This triggers the countdown → SetPlayersActive → StartTurn, which
+                // fires OnMiniGameTurnStarted and initialises HUD, score cards, and
+                // turn monitors.
+                if (IsPartyMode)
+                    OnReadyClicked();
             }
-            catch (OperationCanceledException)
-            {
-                // Task was cancelled, ignore
-            }
+            catch (OperationCanceledException) { }
         }
         
         // ---------------- Turn & Round Flow ----------------
 
         protected override void OnCountdownTimerEnded()
         {
-            if (!IsServer)
-                return;
-                
-            // Server activates players and starts turn
+            if (!this.IsServerSafe()) return;
             OnCountdownTimerEnded_ClientRpc();
         }
         
@@ -115,15 +166,23 @@ namespace CosmicShore.Gameplay
             gameData.StartTurn();
         }
         
-        /// <summary>
-        /// Handles turn end event from server.
-        /// </summary>
         void HandleTurnEnd()
         {
-            if (!IsServer)
-                return;
+            if (!this.IsServerSafe()) return;
 
-            SyncTurnEnd_ClientRpc();
+            if (IsPartyMode)
+            {
+                // RPCs not registered — do turn-end work locally.
+                // Host is the only human client in party mode.
+                if (ShouldResetPlayersOnTurnEnd)
+                    gameData.ResetPlayers();
+                OnTurnEndedCustom();
+            }
+            else
+            {
+                SyncTurnEnd_ClientRpc();
+            }
+
             ExecuteServerTurnEnd();
         }
         
@@ -151,16 +210,16 @@ namespace CosmicShore.Gameplay
 
         void ExecuteServerRoundEnd()
         {
-            if (!IsServer)
-                return;
-            
-            // Notify all clients
-            SyncRoundEnd_ClientRpc();
+            if (!this.IsServerSafe()) return;
+
+            // Sync to remote clients (not needed in party mode — RPCs not registered)
+            if (!IsPartyMode)
+                SyncRoundEnd_ClientRpc();
+
             gameData.RoundsPlayed++;
             gameData.InvokeMiniGameRoundEnd();
-            
             OnRoundEndedCustom();
-            
+
             if (HasEndGame && gameData.RoundsPlayed >= numberOfRounds)
                 ExecuteServerGameEnd();
             else
@@ -178,20 +237,32 @@ namespace CosmicShore.Gameplay
         
         void ExecuteServerGameEnd()
         {
-            if (!IsServer)
+            if (!this.IsServerSafe()) return;
+
+            if (IsPartyMode)
+            {
+                // In party mode, trigger the end-game cinematic locally.
+                // InvokeWinnerCalculated starts the cinematic → score reveal → Continue.
+                // Don't fire InvokeMiniGameEnd — CompleteRound is driven by
+                // OnShowGameEndScreen after the cinematic finishes.
+                // The isRunning guard in EndGameCinematicController prevents double-starts
+                // when game-specific controllers (HexRace, Joust) fire this first.
+                gameData.SortRoundStats(UseGolfRules);
+                gameData.CalculateDomainStats(UseGolfRules);
+                gameData.InvokeWinnerCalculated();
+                CSDebug.Log($"[{GetType().Name}] ExecuteServerGameEnd — party mode, fired WinnerCalculated.");
                 return;
-                
+            }
+
             SyncGameEnd_ClientRpc();
         }
-        
+
         [ClientRpc]
         void SyncGameEnd_ClientRpc()
         {
             if (!ShowEndGameSequence) return;
-
             gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules); 
-            
+            gameData.CalculateDomainStats(UseGolfRules);
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
@@ -199,16 +270,20 @@ namespace CosmicShore.Gameplay
         protected override void SetupNewTurn()
         {
             base.SetupNewTurn();
-            
-            if (IsServer)
+
+            if (IsPartyMode)
+                RaiseToggleReadyButtonEvent(true);
+            else if (IsServer)
                 ShowReadyButton_ClientRpc();
         }
-        
+
         protected override void SetupNewRound()
         {
             base.SetupNewRound();
-            
-            if (IsServer)
+
+            if (IsPartyMode)
+                RaiseToggleReadyButtonEvent(true);
+            else if (IsServer)
                 ShowReadyButton_ClientRpc();
         }
         
