@@ -20,7 +20,7 @@ namespace CosmicShore.UI
         [SerializeField] private SO_ProfileIconList profileIcons;
 
         [Header("Game Data")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         public PlayerProfileData CurrentProfile { get; private set; }
         public bool              IsInitialized  { get; private set; }

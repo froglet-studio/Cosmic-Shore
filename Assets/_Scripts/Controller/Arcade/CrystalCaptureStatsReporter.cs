@@ -10,7 +10,7 @@ namespace CosmicShore.Gameplay
 {
     public class CrystalCaptureStatsReporter : MonoBehaviour
     {
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] private GameModes gameMode = GameModes.MultiplayerCrystalCapture;
 
         [Inject] UGSStatsManager ugsStatsManager;

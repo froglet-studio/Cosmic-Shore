@@ -2,6 +2,7 @@ using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using Obvious.Soap;
 using CosmicShore.Data;
@@ -11,7 +12,7 @@ namespace CosmicShore.Gameplay
     public class SegmentSpawner : MonoBehaviour
     {
         [Header("Dependencies")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] List<SpawnableBase> spawnableSegments;
 
         [Header("Intensity-Mapped Spawning")]

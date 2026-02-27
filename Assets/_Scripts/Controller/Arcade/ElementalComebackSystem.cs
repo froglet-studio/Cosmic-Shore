@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -31,7 +32,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Config")]
         [SerializeField] SO_ElementalComebackProfile comebackProfile;
-        [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
 
         [Header("Scoring")]
         [Tooltip("Which stat drives the comeback calculation")]

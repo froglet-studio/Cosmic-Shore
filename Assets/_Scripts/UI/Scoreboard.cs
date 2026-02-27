@@ -17,7 +17,7 @@ namespace CosmicShore.UI
         #region Serialized Fields
 
         [Header("Data")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
         [Inject] UGSStatsManager ugsStatsManager;

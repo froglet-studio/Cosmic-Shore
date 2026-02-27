@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
 
         [Inject] SceneNameListSO _sceneNames;
         [SerializeField] SO_GameList AllGames;
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] ScriptableEventBool _onSceneTransition;
         
         

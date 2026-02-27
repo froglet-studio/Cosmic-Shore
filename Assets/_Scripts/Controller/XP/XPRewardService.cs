@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private SO_XPTrackData xpTrackData;
 
         [Header("Game Data")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         [Inject] private PlayerDataService playerDataService;
 

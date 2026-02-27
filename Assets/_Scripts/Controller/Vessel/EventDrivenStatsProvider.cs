@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.UI;
 using System;
@@ -18,7 +19,7 @@ namespace CosmicShore.Gameplay
     public class EventDrivenStatsProvider : ScoreboardStatsProvider
     {
         [Header("Data")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         private readonly Dictionary<VesselStatEventSO, float> _latestValues = new();
         private readonly List<(VesselStatEventSO stat, System.Action<float> handler)> _subscriptions = new();

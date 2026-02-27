@@ -13,13 +13,14 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
+using Reflex.Attributes;
 namespace CosmicShore.UI
 {
     [RequireComponent(typeof(MiniGameHUDView))]
     public class MiniGameHUD : MonoBehaviour
     {
         [Header("Data")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
 
         [Header("View")]
         [SerializeField] protected MiniGameHUDView view;

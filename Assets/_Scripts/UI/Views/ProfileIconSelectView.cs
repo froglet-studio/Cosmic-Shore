@@ -37,7 +37,7 @@ namespace CosmicShore.UI
 
         [Header("Profile / UGS")]
         [Inject] private PlayerDataService dataService;
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         // Internal state
         private ProfileIconSelectButton _selectedButton;

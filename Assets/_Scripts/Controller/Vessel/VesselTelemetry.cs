@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.UI;
 namespace CosmicShore.Gameplay
@@ -17,7 +18,7 @@ namespace CosmicShore.Gameplay
     public abstract class VesselTelemetry : MonoBehaviour
     {
         [Header("Data")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
 
         [Header("Stat Events — Flight (all vessels)")]
         [SerializeField] private VesselStatEventSO longestDriftStat;
