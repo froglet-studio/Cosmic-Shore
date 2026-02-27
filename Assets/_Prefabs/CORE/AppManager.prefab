@@ -60,6 +60,8 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   lifecycleEvents: {fileID: 11400000, guid: cec451821b7e4bf6a7cb130e72e09ead,
     type: 2}
+  applicationStateDataVariable: {fileID: 11400000, guid: 18ceced7226bbe51dd9542bc4cad3203,
+    type: 2}
   gameSetting: {fileID: 0}
   audioSystem: {fileID: 0}
   playerDataService: {fileID: 0}
@@ -70,6 +72,8 @@ MonoBehaviour:
   themeManager: {fileID: 0}
   cameraManager: {fileID: 0}
   postProcessingManager: {fileID: 0}
+  statsManager: {fileID: 0}
+  sceneTransitionManager: {fileID: 0}
 --- !u!114 &974600371733867531
 MonoBehaviour:
   m_ObjectHideFlags: 0

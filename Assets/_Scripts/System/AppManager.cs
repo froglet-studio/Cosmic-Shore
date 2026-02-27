@@ -62,6 +62,10 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("SOAP event container for application lifecycle events (pause, focus, quit, scene load/unload).")]
         ApplicationLifecycleEventsContainerSO lifecycleEvents;
 
+        [Header("Application State")]
+        [SerializeField, Tooltip("SOAP variable holding the current application state. Written by ApplicationStateMachine.")]
+        ApplicationStateDataVariable applicationStateDataVariable;
+
         [Header("Singleton Persistent Scene References")]
         [SerializeField] GameSetting gameSetting;
         [SerializeField] AudioSystem audioSystem;
@@ -78,6 +82,7 @@ namespace CosmicShore.Core
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
+        [Inject] ApplicationStateMachine applicationStateMachine;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -117,6 +122,8 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            applicationStateMachine?.TransitionTo(ApplicationState.Bootstrapping);
+
             ConfigureGameData();
             StartNetworkMonitor();
             StartAuthentication();
@@ -137,6 +144,7 @@ namespace CosmicShore.Core
 
         void Shutdown()
         {
+            applicationStateMachine?.TransitionTo(ApplicationState.ShuttingDown);
             StopNetworkMonitor();
             gameData?.ResetAllData();
         }
@@ -205,6 +213,7 @@ namespace CosmicShore.Core
                 Log($"Bootstrap complete in {stopwatch.Elapsed.TotalSeconds:F2}s");
 
                 OnBootstrapComplete?.Invoke();
+                applicationStateMachine?.TransitionTo(ApplicationState.Authenticating);
 
                 string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");
@@ -301,6 +310,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
+            RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
 
             // ── MonoBehaviour singletons (lazy factory) ──────────────────
             // Scene-resolved managers may not exist in the Bootstrap scene at
@@ -331,6 +341,16 @@ namespace CosmicShore.Core
 
             builder.RegisterFactory(
                 _ => new NetworkMonitor(networkMonitorDataVariable),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new ApplicationStateMachine(
+                    applicationStateDataVariable,
+                    gameData,
+                    networkMonitorDataVariable,
+                    _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
