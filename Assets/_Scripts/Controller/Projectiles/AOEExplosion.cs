@@ -95,7 +95,7 @@ namespace CosmicShore.Gameplay
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.Explosion);
+            audioSystem?.PlayGameplaySFX(GameplaySFXCategory.Explosion);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 
