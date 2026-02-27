@@ -11,14 +11,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8a8764ba76f0f83b6b8d150236b16359, type: 3}
   m_Name: ApplicationStateData
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   CategoryIndex: 0
-  Description:
+  Description: 
   _guid: 18ceced7226bbe51dd9542bc4cad3203
   _saveGuid: 0
   _value:
-    OnStateChanged: {fileID: 11400000, guid: a5ca124b4f1d13dc9f8977d9d59c9b67,
-      type: 2}
+    OnStateChanged: {fileID: 11400000, guid: a5ca124b4f1d13dc9f8977d9d59c9b67, type: 2}
   _debugLogEnabled: 0
   _saved: 0
   _defaultValue:

@@ -1,21 +1,21 @@
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using Unity.Netcode;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Menu_Main vessel initializer. Forces Squirrel, spawns the host vessel,
+    /// Menu_Main vessel initializer. Spawns the host vessel on the network,
     /// initializes it, then activates autopilot.
+    ///
+    /// Game data configuration (vessel class, player count, intensity) is handled
+    /// by <see cref="Core.MainMenuController"/> — this class only handles the
+    /// network spawn chain and autopilot activation.
+    ///
+    /// Signals completion via <see cref="GameDataSO.OnMenuReady"/> SOAP event
+    /// so any system can react to the menu being fully interactive.
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
-        void Start()
-        {
-            gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
-            gameData.InitializeGame();
-        }
-
         /// <summary>
         /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
         /// </summary>
@@ -46,8 +46,7 @@ namespace CosmicShore.Gameplay
                 CameraManager.Instance.SetupEndCameraFollow(followTarget);
             }
 
-            gameData.InvokeMiniGameRoundStarted();
-            gameData.InvokeTurnStarted();
+            gameData.InvokeMenuReady();
         }
 
         void InitializeMenuPlayerIdentity(IPlayer player)

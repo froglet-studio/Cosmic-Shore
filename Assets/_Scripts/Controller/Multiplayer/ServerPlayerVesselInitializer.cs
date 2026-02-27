@@ -6,6 +6,7 @@ using CosmicShore.Utility;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -17,8 +18,8 @@ namespace CosmicShore.Gameplay
     ///
     /// Flow:
     ///   OnNetworkSpawn → subscribe to OnPlayerNetworkSpawned
-    ///   OnPlayerNetworkSpawned → listen to NetDefaultVesselType.OnValueChanged
-    ///   OnValueChanged → spawn vessel → server-side init → RPC to clients
+    ///   OnPlayerNetworkSpawned → assign domain + AI flag, wait for vessel type AND name
+    ///   Both ready → spawn vessel → server-side init → RPC to clients
     ///
     /// RPCs:
     ///   New client   → InitializeAllPlayersAndVessels_ClientRpc (all pairs)
@@ -118,12 +119,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// If the player's vessel type is already set, spawn immediately.
-        /// Otherwise, subscribe to OnValueChanged and spawn when the client sets it.
+        /// Assigns domain and AI flag immediately, then waits for both vessel type
+        /// and name to be set before proceeding with the spawn chain. This ensures
+        /// name and domain are always available when InitializeForMultiplayerMode runs.
         /// </summary>
         void HandleNewPlayer(Player player)
         {
-            if (IsValidVesselType(player.NetDefaultVesselType.Value))
+            player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+            player.NetIsAI.Value = false;
+
+            if (IsReadyToSpawn(player))
             {
                 OnPlayerReadyToSpawn(player);
                 return;
@@ -131,12 +136,22 @@ namespace CosmicShore.Gameplay
 
             void OnVesselTypeChanged(VesselClassType _, VesselClassType newVal)
             {
-                if (!IsValidVesselType(newVal)) return;
+                if (!IsReadyToSpawn(player)) return;
                 player.NetDefaultVesselType.OnValueChanged -= OnVesselTypeChanged;
+                player.NetName.OnValueChanged -= OnNameChanged;
+                OnPlayerReadyToSpawn(player);
+            }
+
+            void OnNameChanged(FixedString128Bytes _, FixedString128Bytes newVal)
+            {
+                if (!IsReadyToSpawn(player)) return;
+                player.NetDefaultVesselType.OnValueChanged -= OnVesselTypeChanged;
+                player.NetName.OnValueChanged -= OnNameChanged;
                 OnPlayerReadyToSpawn(player);
             }
 
             player.NetDefaultVesselType.OnValueChanged += OnVesselTypeChanged;
+            player.NetName.OnValueChanged += OnNameChanged;
         }
 
         /// <summary>
@@ -153,9 +168,6 @@ namespace CosmicShore.Gameplay
 
         protected void SpawnVesselAndInitialize(ulong clientId, Player player)
         {
-            player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
-            player.NetIsAI.Value = false;
-
             var vesselNO = SpawnVesselForPlayer(clientId, player);
             if (vesselNO == null)
                 return;
@@ -242,6 +254,16 @@ namespace CosmicShore.Gameplay
             }
             return null;
         }
+
+        /// <summary>
+        /// A player is ready to spawn when both vessel type and name are set.
+        /// For the host, both are written in OnNetworkSpawn before the event fires.
+        /// For remote clients, NetworkVariable changes may arrive in separate ticks,
+        /// so we wait for both.
+        /// </summary>
+        bool IsReadyToSpawn(Player player) =>
+            IsValidVesselType(player.NetDefaultVesselType.Value)
+            && !string.IsNullOrEmpty(player.NetName.Value.ToString());
 
         static bool IsValidVesselType(VesselClassType type) =>
             type != VesselClassType.Random && type != VesselClassType.Any;
