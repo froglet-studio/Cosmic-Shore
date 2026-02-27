@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -26,6 +27,7 @@ namespace CosmicShore.Core
         [SerializeField] float waitBeforeLoading = 0.5f;
         [Inject] GameDataSO gameData;
         [Inject] SceneNameListSO _sceneNames;
+        [Inject] ApplicationStateMachine _appStateMachine;
 
         #region Unity Lifecycle
 
@@ -70,6 +72,7 @@ namespace CosmicShore.Core
         /// </summary>
         void LaunchGame()
         {
+            _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
             LoadSceneAsync(gameData.SceneName, useNetworkSceneLoading).Forget();
@@ -82,6 +85,7 @@ namespace CosmicShore.Core
         /// </summary>
         public void ReturnToMainMenu()
         {
+            _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;

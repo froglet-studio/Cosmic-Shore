@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -59,6 +60,8 @@ namespace CosmicShore.Core
         [Inject] private AuthenticationDataVariable _authDataVariable;
         [Inject] private PlayerDataService _playerDataService;
         [Inject] private SceneNameListSO _sceneNames;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private ApplicationStateMachine _appStateMachine;
 
         CancellationTokenSource _cts;
         bool _navigated;
@@ -415,6 +418,7 @@ namespace CosmicShore.Core
             if (_navigated) return;
             _navigated = true;
 
+            _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
             CSDebug.Log("[AuthScene] Navigating to Main Menu...");
             LoadMainMenuNetworkedAsync(_cts?.Token ?? CancellationToken.None).Forget();
         }
@@ -463,10 +467,9 @@ namespace CosmicShore.Core
         {
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
 
-            if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager)
-                && !transitionManager.IsTransitioning)
+            if (_sceneTransitionManager != null && !_sceneTransitionManager.IsTransitioning)
             {
-                transitionManager.LoadSceneAsync(menuScene).Forget();
+                _sceneTransitionManager.LoadSceneAsync(menuScene).Forget();
             }
             else
             {
