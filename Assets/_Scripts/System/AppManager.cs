@@ -69,6 +69,7 @@ namespace CosmicShore.Core
         [SerializeField] ThemeManager themeManager;
         [SerializeField] CameraManager cameraManager;
         [SerializeField] PostProcessingManager postProcessingManager;
+        [SerializeField] StatsManager statsManager;
         [SerializeField] SceneTransitionManager sceneTransitionManager;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
@@ -263,6 +264,7 @@ namespace CosmicShore.Core
             TryResolveManager(ref themeManager);
             TryResolveManager(ref cameraManager);
             TryResolveManager(ref postProcessingManager);
+            TryResolveManager(ref statsManager);
             TryResolveManager(ref sceneTransitionManager);
         }
 
@@ -310,6 +312,7 @@ namespace CosmicShore.Core
             RegisterManagerSingleton<ThemeManager>(builder, themeManager);
             RegisterManagerSingleton<CameraManager>(builder, cameraManager);
             RegisterManagerSingleton<PostProcessingManager>(builder, postProcessingManager);
+            RegisterManagerSingleton<StatsManager>(builder, statsManager);
             RegisterManagerSingleton<SceneTransitionManager>(builder, sceneTransitionManager);
 
             // ── Pure C# service singletons ───────────────────────────────
