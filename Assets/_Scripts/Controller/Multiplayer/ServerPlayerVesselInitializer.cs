@@ -129,14 +129,10 @@ namespace CosmicShore.Gameplay
         protected virtual void OnClientConnected(ulong clientId)
         {
             bool isLocalHost = clientId == NetworkManager.Singleton.LocalClientId;
+            bool needsAI = isLocalHost && (IsSoloWithAI || NeedsAIBackfill);
 
-            if (IsSoloWithAI && isLocalHost)
+            if (needsAI)
             {
-                SpawnPlayerThenAI(clientId).Forget();
-            }
-            else if (NeedsAIBackfill && isLocalHost)
-            {
-                // Multiplayer with AI backfill (party has fewer humans than player count)
                 SpawnPlayerThenAI(clientId).Forget();
             }
             else
@@ -325,7 +321,7 @@ namespace CosmicShore.Gameplay
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
 
-        bool TrySpawnVesselForAI(Player aiPlayer, out NetworkObject vesselNO)
+        protected bool TrySpawnVesselForAI(Player aiPlayer, out NetworkObject vesselNO)
         {
             vesselNO = null;
             var vesselType = aiPlayer.NetDefaultVesselType.Value;
