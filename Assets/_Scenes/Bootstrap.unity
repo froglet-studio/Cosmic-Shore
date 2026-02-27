@@ -764,6 +764,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8c61f782db244c468ebf6a9644a063b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _networkManagerPrefab: {fileID: 0}
 --- !u!114 &369571799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1284,7 +1285,6 @@ GameObject:
   - component: {fileID: 820208344}
   - component: {fileID: 820208343}
   - component: {fileID: 820208342}
-  - component: {fileID: 820208341}
   - component: {fileID: 820208340}
   - component: {fileID: 820208345}
   m_Layer: 5
@@ -1306,23 +1306,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &820208341
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 820208339}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
-  m_BlockingObjects: 0
-  m_BlockingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
 --- !u!114 &820208342
 MonoBehaviour:
   m_ObjectHideFlags: 0
