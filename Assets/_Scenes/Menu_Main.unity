@@ -10943,7 +10943,6 @@ MonoBehaviour:
     type: 2}
   shipSelectionGrid: {fileID: 0}
   slots: []
-  gameData: {fileID: 0}
   shipsCatalog: []
   verboseLogging: 0
 --- !u!1 &248031521
@@ -14628,6 +14627,74 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 313530545}
   m_CullTransparentMesh: 1
+--- !u!1001 &315852000
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8128551553174941014, guid: e8e93793df963174bb54c51ec8b0ace4,
+        type: 3}
+      propertyPath: m_Name
+      value: ContainerScope
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e8e93793df963174bb54c51ec8b0ace4, type: 3}
 --- !u!1 &322992210
 GameObject:
   m_ObjectHideFlags: 0
@@ -24245,8 +24312,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ecb86e29d62f9bf49a772769d69c827e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayNameText: {fileID: 231317289}
-  avatarImage: {fileID: 653179561}
 --- !u!1 &535000372
 GameObject:
   m_ObjectHideFlags: 0
@@ -37732,8 +37797,6 @@ MonoBehaviour:
   - id: 0
     root: {fileID: 534436443}
   NavBar: {fileID: 1658454450}
-  HangarMenu: {fileID: 5840560526924786829}
-  LeaderboardMenu: {fileID: 772964168}
   arcadePanelRoot: {fileID: 4125016652594217642}
   NavBarLine: {fileID: 1892901532}
   NavBarLineSprites:
@@ -46232,7 +46295,6 @@ MonoBehaviour:
     type: 2}
   shipSelectionGrid: {fileID: 0}
   slots: []
-  gameData: {fileID: 0}
   shipsCatalog: []
   verboseLogging: 0
 --- !u!1 &1166627647
@@ -54257,7 +54319,6 @@ MonoBehaviour:
     itemView: {fileID: 1946949950}
   - vesselType: 7
     itemView: {fileID: 1432154681}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   shipsCatalog:
   - {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
   - {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
@@ -55114,6 +55175,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1419553151}
   m_CullTransparentMesh: 1
+--- !u!1 &1419570604
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1419570605}
+  m_Layer: 0
+  m_Name: 3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1419570605
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1419570604}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1943945029}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1420466520
 GameObject:
   m_ObjectHideFlags: 0
@@ -57456,7 +57548,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
     type: 3}
@@ -57491,13 +57582,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   clientPlayerVesselInitializer: {fileID: 1486013842}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
+  gameList: {fileID: 0}
+  aiProfileList: {fileID: 0}
+  shutdownNetworkOnDespawn: 1
   _playerOrigins:
   - {fileID: 1564324325}
   - {fileID: 673228694}
+  - {fileID: 1419570605}
+  - {fileID: 1867942830}
 --- !u!114 &1486013842
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -69965,7 +70060,6 @@ MonoBehaviour:
   displayNameSaveButton: {fileID: 190471413}
   displayNameCancelButton: {fileID: 2030694569}
   avatarPanelRoot: {fileID: 1439167150}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &1759176356
 GameObject:
   m_ObjectHideFlags: 0
@@ -73658,7 +73752,6 @@ MonoBehaviour:
   configChangedEvent: {fileID: 11400000, guid: be9184fc21a77ea49b462437de5232b7, type: 2}
   startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
     type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   shipClassTypeVariable: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
     type: 2}
   partyGameLauncher: {fileID: 0}
@@ -74633,6 +74726,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   category: 5
+--- !u!1 &1867942829
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1867942830}
+  m_Layer: 0
+  m_Name: 4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1867942830
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1867942829}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1943945029}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1868794352
 GameObject:
   m_ObjectHideFlags: 0
@@ -77691,6 +77815,8 @@ Transform:
   m_Children:
   - {fileID: 1564324325}
   - {fileID: 673228694}
+  - {fileID: 1419570605}
+  - {fileID: 1867942830}
   m_Father: {fileID: 1486013831}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1944765221
@@ -91583,7 +91709,6 @@ MonoBehaviour:
     type: 2}
   shipSelectionGrid: {fileID: 0}
   slots: []
-  gameData: {fileID: 0}
   shipsCatalog: []
   verboseLogging: 0
 --- !u!224 &2399981116694018909
@@ -107526,8 +107651,6 @@ MonoBehaviour:
   DebugFirstAppLaunch: 1
   FirstAppLaunchScreen: {fileID: 0}
   NavBar: {fileID: 1658454449}
-  usernameText: {fileID: 1314398021}
-  avatarImage: {fileID: 534303185}
 --- !u!222 &8986689966932541172
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -108045,74 +108168,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 611885215}
   m_SourcePrefab: {fileID: 100100000, guid: 50fad7f9ece027942a19eaa47b068b47, type: 3}
---- !u!1001 &315852000
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3519534511314129792, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8128551553174941014, guid: e8e93793df963174bb54c51ec8b0ace4,
-        type: 3}
-      propertyPath: m_Name
-      value: ContainerScope
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: e8e93793df963174bb54c51ec8b0ace4, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
