@@ -122,6 +122,15 @@ namespace CosmicShore.Gameplay
         private const int INITIAL_CAPACITY = 4096;
         private const int JOB_BATCH_SIZE = 256;
 
+        /// <summary>
+        /// Maximum NEW prism hits to process per frame per explosion.
+        /// Spreading damage across frames prevents catastrophic frame spikes
+        /// (e.g. 2000+ prisms destroyed in one frame → 426ms).
+        /// Unprocessed hits are NOT added to alreadyHit and will be
+        /// re-found by the Burst spatial query on subsequent frames.
+        /// </summary>
+        private const int MAX_NEW_HITS_PER_FRAME = 48;
+
         // Hot: scanned by Burst job every frame during AOE
         private NativeArray<PrismSpatialData> _spatial;
 
@@ -162,6 +171,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public int Register(Prism prism)
         {
+            if (!_spatial.IsCreated) return -1;
             int index;
             if (_freeList.Count > 0)
             {
@@ -197,6 +207,7 @@ namespace CosmicShore.Gameplay
 
         public void Unregister(int index)
         {
+            if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             s.Flags = 0; // clear all flags including IsActive
@@ -207,6 +218,7 @@ namespace CosmicShore.Gameplay
 
         public void MarkDestroyed(int index)
         {
+            if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             s.Flags |= PrismFlags.Destroyed;
@@ -215,6 +227,7 @@ namespace CosmicShore.Gameplay
 
         public void UpdateShieldState(int index, bool shielded, bool superShielded)
         {
+            if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             // Clear shield bits, then set
@@ -226,6 +239,7 @@ namespace CosmicShore.Gameplay
 
         public void UpdateDomain(int index, int domain)
         {
+            if (!_damage.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var d = _damage[index];
             d.Domain = domain;
@@ -237,6 +251,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void UpdateVolume(int index, float volume)
         {
+            if (!_damage.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var d = _damage[index];
             d.Volume = volume;
@@ -276,7 +291,7 @@ namespace CosmicShore.Gameplay
             IVessel vessel,
             HashSet<int> alreadyHit)
         {
-            if (_highWaterMark == 0) return true;
+            if (_highWaterMark == 0 || !_spatial.IsCreated) return true;
 
             // --- Phase 1: Burst job over hot spatial data ---
             _hitIndices.Clear();
@@ -312,12 +327,22 @@ namespace CosmicShore.Gameplay
                 vesselPlayerName = status.Player.Name;
             }
 
+            int newHitCount = 0;
             for (int i = 0; i < _hitIndices.Length; i++)
             {
                 int idx = _hitIndices[i];
 
                 // Skip if already hit by this explosion (mirrors OnTriggerEnter once-per-pair behavior)
-                if (!alreadyHit.Add(idx)) continue;
+                if (alreadyHit.Contains(idx)) continue;
+
+                // Cap new damage per frame to spread load across frames.
+                // Don't add to alreadyHit — the Burst job will re-find these
+                // prisms next frame and we'll process them then.
+                if (newHitCount >= MAX_NEW_HITS_PER_FRAME)
+                    continue;
+
+                alreadyHit.Add(idx);
+                newHitCount++;
 
                 var prism = _prisms[idx];
                 if (prism == null || prism.destroyed) continue;
