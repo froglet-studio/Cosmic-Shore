@@ -268,6 +268,17 @@ namespace CosmicShore.Gameplay
         {
             if (_presenceLobby != null) return;
 
+            // Skip if NetworkManager is already running as host (e.g. menu
+            // autopilot started by MultiplayerSetup). The presence lobby uses
+            // WithRelayNetwork() which reconfigures the transport and attempts
+            // to restart the host, corrupting the existing local session.
+            if (Unity.Netcode.NetworkManager.Singleton != null &&
+                Unity.Netcode.NetworkManager.Singleton.IsListening)
+            {
+                Debug.Log("[HostConnectionService] Deferring presence lobby — NetworkManager already hosting.");
+                return;
+            }
+
             try
             {
                 var queryOptions = new QuerySessionsOptions();
