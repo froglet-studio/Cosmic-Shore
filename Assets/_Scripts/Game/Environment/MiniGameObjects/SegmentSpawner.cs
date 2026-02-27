@@ -1,5 +1,4 @@
 using CosmicShore.Game.Spawning;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Soap;
@@ -210,7 +209,7 @@ public class SegmentSpawner : MonoBehaviour
     {
         if (weightedSegments == null || weightedSegments.Count == 0)
         {
-            _normalizedWeights = Array.Empty<float>();
+            _normalizedWeights = System.Array.Empty<float>();
             return;
         }
 
@@ -260,7 +259,7 @@ public class SegmentSpawner : MonoBehaviour
                 if (s != null) s.domain = domain;
     }
 
-    [Serializable]
+    [System.Serializable]
     public struct WeightedSpawnable
     {
         [Tooltip("The spawnable to instantiate.")]
