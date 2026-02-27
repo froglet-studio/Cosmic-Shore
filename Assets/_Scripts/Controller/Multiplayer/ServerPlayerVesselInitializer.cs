@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;
@@ -17,9 +16,12 @@ namespace CosmicShore.Gameplay
     ///
     /// Flow:
     ///   OnNetworkSpawn → subscribe to OnPlayerNetworkSpawned
-    ///   OnPlayerNetworkSpawned → wait for NetDefaultVesselType → spawn vessel → initialize → ClientReady
+    ///   OnPlayerNetworkSpawned → listen to NetDefaultVesselType.OnValueChanged
+    ///   OnValueChanged → spawn vessel → server-side init → RPC to clients
     ///
-    /// Handles both the host player and late-joining remote clients uniformly.
+    /// RPCs:
+    ///   New client   → InitializeAllPlayersAndVessels_ClientRpc (all pairs)
+    ///   Existing clients → InitializeNewPlayerAndVessel_ClientRpc (just the new pair)
     /// </summary>
     [RequireComponent(typeof(NetcodeHooks))]
     public class ServerPlayerVesselInitializer : MonoBehaviour
@@ -46,9 +48,8 @@ namespace CosmicShore.Gameplay
         public Action OnAllPlayersSpawned;
 
         /// <summary>
-        /// Tracks players that have already been processed (keyed by NetworkObjectId).
-        /// Using NetworkObjectId instead of OwnerClientId because server-owned AI players
-        /// share the host's OwnerClientId.
+        /// Tracks players already processed (keyed by NetworkObjectId).
+        /// Using NetworkObjectId because server-owned AI players share the host's OwnerClientId.
         /// </summary>
         protected readonly HashSet<ulong> _processedPlayers = new();
 
@@ -89,19 +90,12 @@ namespace CosmicShore.Gameplay
                 NetworkManager.Singleton.Shutdown();
         }
 
-        /// <summary>
-        /// Initializes spawn positions and domain assignment. Safe to call once.
-        /// </summary>
         protected void SetupSpawnPositions()
         {
             gameData.SetSpawnPositions(_playerOrigins);
             DomainAssigner.Initialize();
         }
 
-        /// <summary>
-        /// Subscribes to OnPlayerNetworkSpawned and processes any players already
-        /// present in gameData. Call after any pre-spawn work (e.g., AI spawning).
-        /// </summary>
         protected void SubscribeAndProcessPlayers()
         {
             gameData.OnPlayerNetworkSpawned.OnRaised += HandlePlayerNetworkSpawned;
@@ -109,7 +103,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer && _processedPlayers.Add(netPlayer.NetworkObjectId))
-                    SpawnVesselWhenReady(netPlayer).Forget();
+                    HandleNewPlayer(netPlayer);
             }
         }
 
@@ -118,29 +112,42 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer && _processedPlayers.Add(netPlayer.NetworkObjectId))
-                    SpawnVesselWhenReady(netPlayer).Forget();
+                    HandleNewPlayer(netPlayer);
             }
         }
 
         /// <summary>
-        /// Waits for the player's NetDefaultVesselType to be set (by the owning client),
-        /// then spawns a vessel and initializes the player-vessel pair.
-        ///
-        /// For the host player this resolves within the same frame (set in Player.OnNetworkSpawn).
-        /// For remote clients this waits for network variable replication.
+        /// If the player's vessel type is already set, spawn immediately.
+        /// Otherwise, subscribe to OnValueChanged and spawn when the client sets it.
         /// </summary>
-        protected virtual async UniTask SpawnVesselWhenReady(Player player)
+        void HandleNewPlayer(Player player)
         {
-            var ct = this.GetCancellationTokenOnDestroy();
+            if (IsValidVesselType(player.NetDefaultVesselType.Value))
+            {
+                OnPlayerReadyToSpawn(player);
+                return;
+            }
 
-            // Player.OnNetworkSpawn raises OnPlayerNetworkSpawned BEFORE setting
-            // NetDefaultVesselType, so we always need at least a yield.
-            await UniTask.WaitUntil(
-                () => player.NetDefaultVesselType.Value != VesselClassType.Random
-                   && player.NetDefaultVesselType.Value != VesselClassType.Any,
-                cancellationToken: ct);
+            void OnVesselTypeChanged(VesselClassType _, VesselClassType newVal)
+            {
+                if (!IsValidVesselType(newVal)) return;
+                player.NetDefaultVesselType.OnValueChanged -= OnVesselTypeChanged;
+                OnPlayerReadyToSpawn(player);
+            }
 
+            player.NetDefaultVesselType.OnValueChanged += OnVesselTypeChanged;
+        }
+
+        /// <summary>
+        /// Called when a player's vessel type is confirmed.
+        /// Spawns the vessel, initializes on server, and notifies clients via RPCs.
+        /// Virtual so derived classes (Menu) can add post-init behavior.
+        /// </summary>
+        protected virtual void OnPlayerReadyToSpawn(Player player)
+        {
             SpawnVesselAndInitialize(player.OwnerClientId, player);
+            NotifyClients(player);
+            gameData.InvokeClientReady();
         }
 
         protected void SpawnVesselAndInitialize(ulong clientId, Player player)
@@ -152,10 +159,54 @@ namespace CosmicShore.Gameplay
             if (vesselNO == null)
                 return;
 
-            // Server-side initialization (runs on host)
             clientPlayerVesselInitializer.InitializePlayerAndVessel(player, vesselNO);
-
             OnAllPlayersSpawned?.Invoke();
+        }
+
+        /// <summary>
+        /// Sends RPCs to non-host clients:
+        ///   - New client: "initialize ALL player-vessel pairs"
+        ///   - Existing clients: "initialize just this new pair"
+        /// </summary>
+        void NotifyClients(Player newPlayer)
+        {
+            var newClientId = newPlayer.OwnerClientId;
+            var hostClientId = NetworkManager.Singleton.LocalClientId;
+
+            // Collect ALL player-vessel pairs for the "init all" RPC
+            var playerIds = new List<ulong>();
+            var vesselIds = new List<ulong>();
+            foreach (var p in gameData.Players)
+            {
+                if (p.VesselNetId == 0) continue;
+                playerIds.Add(p.PlayerNetId);
+                vesselIds.Add(p.VesselNetId);
+            }
+
+            // To new client: initialize ALL pairs (host + AI + other clients + self)
+            if (newClientId != hostClientId)
+            {
+                var newTarget = new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { newClientId } }
+                };
+                clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(
+                    playerIds.ToArray(), vesselIds.ToArray(), newTarget);
+            }
+
+            // To existing non-host clients: initialize just the new pair
+            foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+            {
+                if (client.ClientId == newClientId) continue;
+                if (client.ClientId == hostClientId) continue;
+
+                var existingTarget = new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { client.ClientId } }
+                };
+                clientPlayerVesselInitializer.InitializeNewPlayerAndVessel_ClientRpc(
+                    newPlayer.PlayerNetId, newPlayer.VesselNetId, existingTarget);
+            }
         }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer)
@@ -190,5 +241,8 @@ namespace CosmicShore.Gameplay
             }
             return null;
         }
+
+        static bool IsValidVesselType(VesselClassType type) =>
+            type != VesselClassType.Random && type != VesselClassType.Any;
     }
 }

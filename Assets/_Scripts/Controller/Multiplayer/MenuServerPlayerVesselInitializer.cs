@@ -1,6 +1,5 @@
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 
 namespace CosmicShore.Gameplay
@@ -18,13 +17,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Menu override: after the base spawns the vessel, activate autopilot.
+        /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
         /// </summary>
-        protected override async UniTask SpawnVesselWhenReady(Player player)
+        protected override void OnPlayerReadyToSpawn(Player player)
         {
-            // Let the base handle waiting for vesselType + spawning
-            await base.SpawnVesselWhenReady(player);
-
+            base.OnPlayerReadyToSpawn(player);
             ActivateAutopilot();
         }
 
