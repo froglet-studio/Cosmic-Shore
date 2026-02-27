@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     ///   4. Activate the player (start vessel motion, enable subsystems).
     ///   5. Enable AI pilot on the host's vessel.
     ///   6. Pause player input (autopilot drives the vessel).
-    ///   7. Switch Cinemachine menu camera to follow the vessel.
+    ///   7. Switch end camera to follow the vessel.
     ///   8. Fire menu lifecycle events (round started, turn started).
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
@@ -76,11 +76,11 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
-            // Switch the Cinemachine menu camera to follow the autopilot vessel.
+            // Switch the end camera to follow the autopilot vessel.
             if (CameraManager.Instance)
             {
                 var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
-                CameraManager.Instance.FollowVesselInMainMenu(followTarget);
+                CameraManager.Instance.SetupEndCameraFollow(followTarget);
             }
 
             // Signal menu systems that rely on these events.
