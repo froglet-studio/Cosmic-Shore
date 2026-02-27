@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &7236590372946409680
+--- !u!1 &1446207172778866258
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 7628272760065383980}
-  - component: {fileID: 8565176333109452482}
+  - component: {fileID: 6188657666012922906}
+  - component: {fileID: 4820919763090529477}
   m_Layer: 0
-  m_Name: SpawnableConcetricSpheres
+  m_Name: SpawnableSpherene dual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &7628272760065383980
+--- !u!4 &6188657666012922906
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7236590372946409680}
+  m_GameObject: {fileID: 1446207172778866258}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -32,24 +32,32 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8565176333109452482
+--- !u!114 &4820919763090529477
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7236590372946409680}
+  m_GameObject: {fileID: 1446207172778866258}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c008d460af24a1e4cb001349bb42dfb0, type: 3}
+  m_Script: {fileID: 11500000, guid: 5607ad9a1b8bd7f448bc901cd14e3eee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   seed: 0
   domain: 3
-  children:
-  - {fileID: 4820919763090529477, guid: dac5342173738e84face980ebd211968, type: 3}
-  leafPrefab: {fileID: 0}
+  children: []
+  leafPrefab: {fileID: 5776304996075792891, guid: ed9defc56162b4b4588e61c20984b6d9,
+    type: 3}
   intensityLevel: 1
-  layers: 3
-  scaleFalloff: 0.7
-  rotationPerLayer: {x: 0, y: 0, z: 0}
+  prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  blockScale: {x: 1, y: 2, z: 4}
+  subdivisions: 3
+  radius: 150
+  blocksPerEdge: 2
+  undulationAmplitude: 3
+  undulationFrequency: 4
+  undulationPhase: 0
+  edgeDomain: 3
+  pentagonDomain: 4
+  highlightPentagons: 1
