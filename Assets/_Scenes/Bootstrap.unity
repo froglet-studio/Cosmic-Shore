@@ -776,91 +776,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &442144518
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 442144521}
-  - component: {fileID: 442144519}
-  - component: {fileID: 442144520}
-  - component: {fileID: 442144522}
-  m_Layer: 0
-  m_Name: GameManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &442144519
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442144518}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3042648210
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
---- !u!114 &442144520
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442144518}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0d50c8fe93514b6da4c03b2a947bff62, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  waitBeforeLoading: 0.5
---- !u!4 &442144521
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442144518}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &442144522
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442144518}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &452571397
 GameObject:
   m_ObjectHideFlags: 0
@@ -3591,20 +3506,9 @@ PrefabInstance:
       objectReference: {fileID: 2100000006}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
-      propertyPath: _sceneNames
-      value: 
-      objectReference: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004,
-        type: 2}
-    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
-        type: 3}
       propertyPath: audioSystem
       value: 
       objectReference: {fileID: 1967332583}
-    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
-        type: 3}
-      propertyPath: gameManager
-      value: 
-      objectReference: {fileID: 442144520}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
       propertyPath: gameSetting
@@ -3637,12 +3541,6 @@ PrefabInstance:
       objectReference: {fileID: 684811275}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
-      propertyPath: _bootstrapConfig
-      value: 
-      objectReference: {fileID: 11400000, guid: d6eff71c1de600547829b04174eaea6e,
-        type: 2}
-    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
-        type: 3}
       propertyPath: playerDataService
       value: 
       objectReference: {fileID: 483927158}
@@ -3660,11 +3558,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: AppManager
-      objectReference: {fileID: 0}
-    - target: {fileID: 6778103901198434919, guid: 4eee63018bbefa743845cd8125957a2d,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9113152145594744158, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
@@ -3741,6 +3634,5 @@ SceneRoots:
   - {fileID: 7845462}
   - {fileID: 2100000002}
   - {fileID: 2100000005}
-  - {fileID: 442144521}
   - {fileID: 820208344}
   - {fileID: 1922865232}
