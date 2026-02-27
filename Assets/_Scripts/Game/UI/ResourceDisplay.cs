@@ -1,11 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_EDITOR
 using UnityEditor;
-using CosmicShore.Utility;
 #endif
 
 namespace CosmicShore.Game.UI
