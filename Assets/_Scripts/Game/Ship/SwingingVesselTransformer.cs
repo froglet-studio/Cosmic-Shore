@@ -301,128 +301,77 @@ public class SwingingVesselTransformer : VesselTransformer
         return Camera.main;
     }
 
+    // ==================================================================
+    //  CURSOR POSITIONING (screen-space horizontal axis)
+    // ==================================================================
+
     /// <summary>
-    /// Computes the world-space half-width of the camera frustum at the vessel's depth.
-    /// This is how far (in world units) the screen edge is from the vessel's position
-    /// projected onto the camera's horizontal plane.
+    /// Computes the world-space cursor position for a given side.
+    /// Cursors are pinned to the vessel's horizontal screen axis.
+    /// XDiff controls position: 0 = at vessel, 1 = at screen edge.
     /// </summary>
-    float GetScreenEdgeDistance()
+    Vector3 GetCursorWorldPosition(bool left)
     {
         var cam = GetGameplayCamera();
-        if (cam == null) return 20f; // sane fallback
+        if (cam == null)
+        {
+            float fallbackLen = 20f * (InputStatus?.XDiff ?? 0.5f);
+            return transform.position + (left ? -transform.right : transform.right) * fallbackLen;
+        }
 
-        float depth = Vector3.Dot(
-            transform.position - cam.transform.position,
-            cam.transform.forward);
-        depth = Mathf.Max(depth, 0.1f);
-
-        if (cam.orthographic)
-            return cam.orthographicSize * cam.aspect;
-
-        float halfHeight = depth * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-        return halfHeight * cam.aspect;
-    }
-
-    /// <summary>
-    /// Computes the arm length for a given side based on XDiff.
-    /// XDiff controls both arms symmetrically: 0.5 (neutral) = halfway to edge,
-    /// 0 (inward) = arms at vessel center, 1 (outward) = arms at screen edge.
-    /// </summary>
-    float GetArmLength()
-    {
+        Vector3 vesselScreen = cam.WorldToScreenPoint(transform.position);
+        float edgeX = left ? 0f : Screen.width;
         float xDiff = InputStatus?.XDiff ?? 0.5f;
-        float edgeDist = GetScreenEdgeDistance();
-        // XDiff 0→0, 0.5→half, 1→full edge
-        return edgeDist * xDiff;
-    }
 
-    /// <summary>
-    /// Screen-space aim position for a given side — the arm points from vessel
-    /// center toward the screen edge on that side.
-    /// </summary>
-    Vector3 GetAimScreenPosition(bool left)
-    {
-        float sh = Screen.height;
-        float sw = Screen.width;
+        float cursorX = Mathf.Lerp(vesselScreen.x, edgeX, xDiff);
+        Vector3 cursorScreen = new Vector3(cursorX, vesselScreen.y, vesselScreen.z);
 
-        // Arms point toward their respective screen edges
-        // Left arm → left edge, right arm → right edge
-        float x = left ? 0f : sw;
-        return new Vector3(x, sh * 0.5f, 0f);
-    }
-
-    /// <summary>
-    /// Computes the arm direction (unit vector) for a given side.
-    /// The arm always points toward its screen edge from the vessel center.
-    /// </summary>
-    Vector3 GetArmDirection(bool left)
-    {
-        var cam = GetGameplayCamera();
-        if (cam == null) return left ? -transform.right : transform.right;
-
-        Vector3 screenEdge = GetAimScreenPosition(left);
-        Ray edgeRay = cam.ScreenPointToRay(screenEdge);
-
-        // Intersect with the plane at the vessel's depth
-        Vector3 camFwd = cam.transform.forward;
-        float depth = Vector3.Dot(transform.position - cam.transform.position, camFwd);
-        if (depth < 0.1f) depth = 0.1f;
-
-        float denom = Vector3.Dot(edgeRay.direction, camFwd);
-        if (Mathf.Abs(denom) < 0.0001f) return left ? -transform.right : transform.right;
-
-        float t = depth / denom;
-        Vector3 edgeWorldPos = edgeRay.origin + edgeRay.direction * t;
-
-        Vector3 dir = edgeWorldPos - transform.position;
-        return dir.sqrMagnitude > 0.001f ? dir.normalized : (left ? -transform.right : transform.right);
+        return cam.ScreenToWorldPoint(cursorScreen);
     }
 
     /// <summary>
     /// Computes the spinneret arm tip position and the aim target.
-    /// The tip extends from vessel center toward the screen edge, scaled by XDiff.
-    /// The aim target is along the camera ray through the tip — tethers fire
-    /// "into the screen" (away from camera) from the arm tip, not laterally.
+    /// Fire direction is the ray from camera through the cursor (screen→world).
     /// </summary>
     (Vector3 tipPos, Vector3 aimTarget) GetSpinneretAim(bool left)
     {
-        float len = GetArmLength();
-        Vector3 dir = GetArmDirection(left);
-        Vector3 tip = transform.position + dir * len;
+        Vector3 tip = GetCursorWorldPosition(left);
 
         var cam = GetGameplayCamera();
         if (cam == null)
             return (tip, tip + transform.forward * maxTetherLength);
 
-        // Ray from camera through the arm tip's screen projection —
-        // this sends the tether forward into the scene from the tip.
-        Vector3 tipScreen = cam.WorldToScreenPoint(tip);
-        Ray ray = cam.ScreenPointToRay(tipScreen);
+        // Fire direction: difference between cursor world pos and camera pos
+        Vector3 fireDir = (tip - cam.transform.position).normalized;
 
         int layerMask = 1 << TrailBlocksLayer;
-        if (Physics.Raycast(ray, out var hit, maxTetherLength * 2f, layerMask))
+        if (Physics.Raycast(tip, fireDir, out var hit, maxTetherLength, layerMask))
             return (tip, hit.point);
-        return (tip, ray.GetPoint(maxTetherLength));
+        return (tip, tip + fireDir * maxTetherLength);
     }
 
     /// <summary>
     /// Computes the arm tip position for a given side based on current tether state.
-    /// Anchored: points toward anchor. Firing: points in fire direction. Free: points toward screen edge.
-    /// Length always controlled by XDiff.
+    /// Anchored: points toward anchor. Firing: points in fire direction. Free: at cursor.
     /// </summary>
     Vector3 GetArmTipPosition(TetherState tether, bool isLeft)
     {
-        float len = GetArmLength();
+        Vector3 cursorPos = GetCursorWorldPosition(isLeft);
 
-        Vector3 dir;
         if (tether.isAnchored && tether.anchor != null)
-            dir = (tether.anchor.position - transform.position).normalized;
-        else if (tether.isFiring)
-            dir = tether.fireDirection;
-        else
-            dir = GetArmDirection(isLeft);
+        {
+            float len = Vector3.Distance(transform.position, cursorPos);
+            Vector3 dir = (tether.anchor.position - transform.position).normalized;
+            return transform.position + dir * len;
+        }
 
-        return transform.position + dir * len;
+        if (tether.isFiring)
+        {
+            float len = Vector3.Distance(transform.position, cursorPos);
+            return transform.position + tether.fireDirection * len;
+        }
+
+        return cursorPos;
     }
 
     void FireTetherFromTip(ref TetherState tether, Vector3 tipPosition, Vector3 aimTarget)
