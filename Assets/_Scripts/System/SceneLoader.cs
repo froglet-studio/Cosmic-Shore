@@ -70,11 +70,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Load the main menu scene.
         /// Called by SOAP EventListener (EventOnClickToMainMenuButton).
+        /// Uses network scene loading when a Netcode host is active.
         /// </summary>
         public void ReturnToMainMenu()
         {
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
-            LoadSceneAsync(menuScene, false).Forget();
+            var nm = NetworkManager.Singleton;
+            bool useNetworkSceneLoading = nm != null && nm.IsServer;
+            LoadSceneAsync(menuScene, useNetworkSceneLoading).Forget();
         }
 
         async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)

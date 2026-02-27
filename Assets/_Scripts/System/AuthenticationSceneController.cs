@@ -6,6 +6,7 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
+using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -41,6 +42,10 @@ namespace CosmicShore.Core
         [SerializeField] private Button confirmUsernameButton;
         [SerializeField] private TMP_Text usernameStatusText;
 
+        [Header("Networking")]
+        [SerializeField, Tooltip("NetworkManager prefab to instantiate before starting host. Must have NetworkManager + UnityTransport.")]
+        private GameObject _networkManagerPrefab;
+
         [Header("Timeouts")]
         [SerializeField, Tooltip("Seconds to wait for cached auth before showing UI.")]
         private float cachedAuthTimeout = 3f;
@@ -58,6 +63,7 @@ namespace CosmicShore.Core
 
         CancellationTokenSource _cts;
         bool _navigated;
+        bool _approvalCallbackRegistered;
 
         AuthenticationData AuthData => _authDataVariable?.Value;
 
@@ -87,6 +93,12 @@ namespace CosmicShore.Core
 
             if (confirmUsernameButton)
                 confirmUsernameButton.onClick.RemoveListener(OnConfirmUsernameClicked);
+
+            if (_approvalCallbackRegistered && NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApproval;
+                _approvalCallbackRegistered = false;
+            }
         }
 
         void Start()
@@ -412,15 +424,83 @@ namespace CosmicShore.Core
             _navigated = true;
 
             CSDebug.Log("[AuthScene] Navigating to Main Menu...");
+            StartHostAndLoadMainMenuAsync(_cts?.Token ?? CancellationToken.None).Forget();
+        }
+
+        // ──────────────────────────────────────────────
+        //  Network Host + Networked Scene Load
+        // ──────────────────────────────────────────────
+
+        async UniTaskVoid StartHostAndLoadMainMenuAsync(CancellationToken ct)
+        {
+            try
+            {
+                if (NetworkManager.Singleton == null)
+                {
+                    if (_networkManagerPrefab != null)
+                    {
+                        Instantiate(_networkManagerPrefab);
+                        await UniTask.Yield(ct);
+                    }
+                    else
+                    {
+                        CSDebug.LogWarning("[AuthScene] No NetworkManager prefab assigned. Falling back to direct scene load.");
+                        LoadMainMenuDirect();
+                        return;
+                    }
+                }
+
+                var nm = NetworkManager.Singleton;
+                if (nm == null)
+                {
+                    CSDebug.LogWarning("[AuthScene] NetworkManager.Singleton is null after instantiation. Falling back to direct scene load.");
+                    LoadMainMenuDirect();
+                    return;
+                }
+
+                if (!nm.IsListening)
+                {
+                    nm.ConnectionApprovalCallback += OnConnectionApproval;
+                    _approvalCallbackRegistered = true;
+
+                    CSDebug.Log("[AuthScene] Starting as network host...");
+                    nm.StartHost();
+                }
+
+                string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+                CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
+                nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+            }
+            catch (OperationCanceledException) { /* scene destroyed */ }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Network host startup failed: {ex.Message}. Falling back to direct scene load.");
+                LoadMainMenuDirect();
+            }
+        }
+
+        void OnConnectionApproval(
+            NetworkManager.ConnectionApprovalRequest request,
+            NetworkManager.ConnectionApprovalResponse response)
+        {
+            response.Approved = true;
+            response.CreatePlayerObject = false;
+            response.Position = Vector3.zero;
+            response.Rotation = Quaternion.identity;
+        }
+
+        void LoadMainMenuDirect()
+        {
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
 
             if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager)
                 && !transitionManager.IsTransitioning)
             {
-                transitionManager.LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
+                transitionManager.LoadSceneAsync(menuScene).Forget();
             }
             else
             {
-                SceneManager.LoadScene(_sceneNames.MainMenuScene);
+                SceneManager.LoadScene(menuScene);
             }
         }
     }
