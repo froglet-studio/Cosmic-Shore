@@ -37,6 +37,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
 
+        [Header("Lifecycle")]
+        [Tooltip("When true, NetworkManager.Shutdown() is called on despawn (game scenes). " +
+                 "Set to false for Menu_Main so the host persists across scene transitions.")]
+        [SerializeField] bool shutdownNetworkOnDespawn = true;
+
         [Header("Spawn Origins")]
         [SerializeField] protected Transform[] _playerOrigins;
 
@@ -104,7 +109,7 @@ namespace CosmicShore.Gameplay
 
             NetworkVesselClientCache.OnNewInstanceAdded -= OnNewVesselClientAdded;
 
-            if (NetworkManager.Singleton)
+            if (shutdownNetworkOnDespawn && NetworkManager.Singleton)
                 NetworkManager.Singleton.Shutdown();
         }
 

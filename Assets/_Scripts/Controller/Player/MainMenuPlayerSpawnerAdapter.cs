@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Menu_Main adapter. Does NOT spawn players or vessels — that is handled by
-    /// MainMenuServerVesselInitializer + ClientPlayerVesselInitializer (same
+    /// ServerPlayerVesselInitializer + ClientPlayerVesselInitializer (same
     /// pattern as Multiplayer_Freestyle).
     ///
     /// Responsibilities:
