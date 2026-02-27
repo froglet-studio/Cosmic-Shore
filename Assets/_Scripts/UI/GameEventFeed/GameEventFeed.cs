@@ -47,14 +47,8 @@ namespace CosmicShore.UI
             gameObject.SetActive(true);
         }
 
-        private void OnEnable()
-        {
-            if (feedChannel != null)
-                feedChannel.OnRaised += OnFeedEvent;
-
-            if (gameData != null)
-                gameData.OnPlayerAdded += OnPlayerAdded;
-        }
+        private void OnEnable() => SubscribeToEvents();
+        private void Start() => SubscribeToEvents();
 
         private void OnDisable()
         {
@@ -63,6 +57,21 @@ namespace CosmicShore.UI
 
             if (gameData != null)
                 gameData.OnPlayerAdded -= OnPlayerAdded;
+        }
+
+        private void SubscribeToEvents()
+        {
+            if (feedChannel != null)
+            {
+                feedChannel.OnRaised -= OnFeedEvent;
+                feedChannel.OnRaised += OnFeedEvent;
+            }
+
+            if (gameData != null)
+            {
+                gameData.OnPlayerAdded -= OnPlayerAdded;
+                gameData.OnPlayerAdded += OnPlayerAdded;
+            }
         }
 
         private void BuildScrollStructure()

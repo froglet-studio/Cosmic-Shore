@@ -18,21 +18,24 @@ namespace CosmicShore.UI
 
         [Inject] private PlayerDataService playerDataService;
 
-        void OnEnable()
-        {
-            if (playerDataService != null)
-            {
-                playerDataService.OnProfileChanged += Refresh;
-
-                if (playerDataService.CurrentProfile != null)
-                    Refresh(playerDataService.CurrentProfile);
-            }
-        }
+        void OnEnable() => SubscribeAndRefresh();
+        void Start() => SubscribeAndRefresh();
 
         void OnDisable()
         {
             if (playerDataService != null)
                 playerDataService.OnProfileChanged -= Refresh;
+        }
+
+        void SubscribeAndRefresh()
+        {
+            if (playerDataService == null) return;
+
+            playerDataService.OnProfileChanged -= Refresh;
+            playerDataService.OnProfileChanged += Refresh;
+
+            if (playerDataService.CurrentProfile != null)
+                Refresh(playerDataService.CurrentProfile);
         }
 
         void Refresh(PlayerProfileData profile)

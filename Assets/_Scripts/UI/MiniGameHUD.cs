@@ -136,6 +136,8 @@ namespace CosmicShore.UI
             CleanupUI();
         }
 
+        protected virtual void Start() => SubscribeToEvents();
+
         protected virtual void OnDisable()
         {
             UnsubscribeFromEvents();
@@ -147,6 +149,10 @@ namespace CosmicShore.UI
 
         protected virtual void SubscribeToEvents()
         {
+            // Unsub-before-sub prevents double-subscription when both
+            // OnEnable and Start call this method.
+            UnsubscribeFromEvents();
+
             if (gameData != null)
             {
                 gameData.OnClientReady.OnRaised += OnClientReady;

@@ -13,18 +13,30 @@ namespace CosmicShore.UI
         private bool _active;
         private bool _running;
 
-        void OnEnable()
+        void OnEnable() => SubscribeToEvents();
+        void Start() => SubscribeToEvents();
+
+        void OnDisable()
         {
+            UnsubscribeFromEvents();
+            _active = false;
+            _running = false;
+        }
+
+        void SubscribeToEvents()
+        {
+            if (gameData == null) return;
+            gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStart;
+            gameData.OnMiniGameTurnEnd.OnRaised -= GameTurnEnd;
             gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStart;
             gameData.OnMiniGameTurnEnd.OnRaised += GameTurnEnd;
         }
 
-        void OnDisable()
+        void UnsubscribeFromEvents()
         {
+            if (gameData == null) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStart;
             gameData.OnMiniGameTurnEnd.OnRaised -= GameTurnEnd;
-            _active = false;
-            _running = false;
         }
 
         private void MiniGameTurnStart()
