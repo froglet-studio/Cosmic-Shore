@@ -28,8 +28,6 @@ namespace CosmicShore.Core
         [Header("Persistent Systems")]
         [SerializeField] GameSetting gameSetting;
         [SerializeField] AudioSystem audioSystem;
-        [SerializeField] CallToActionSystem callToActionSystem;
-        [SerializeField] DailyChallengeSystem dailyChallengeSystem;
         [SerializeField] PlayerDataService playerDataService;
         [SerializeField] UGSStatsManager ugsStatsManager;
         [SerializeField] CaptainManager captainManager;
@@ -84,8 +82,6 @@ namespace CosmicShore.Core
         {
             gameSetting = EnsureService(gameSetting);
             audioSystem = EnsureService(audioSystem);
-            callToActionSystem = EnsureService(callToActionSystem);
-            dailyChallengeSystem = EnsureService(dailyChallengeSystem);
             playerDataService = EnsureService(playerDataService);
             ugsStatsManager = EnsureService(ugsStatsManager);
             captainManager = EnsureService(captainManager);
@@ -135,8 +131,6 @@ namespace CosmicShore.Core
             // Persistent MonoBehaviour systems
             RegisterIfNotNull(builder, gameSetting, nameof(gameSetting));
             RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
-            RegisterIfNotNull(builder, callToActionSystem, nameof(callToActionSystem));
-            RegisterIfNotNull(builder, dailyChallengeSystem, nameof(dailyChallengeSystem));
             RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
             RegisterIfNotNull(builder, ugsStatsManager, nameof(ugsStatsManager));
             RegisterIfNotNull(builder, captainManager, nameof(captainManager));
