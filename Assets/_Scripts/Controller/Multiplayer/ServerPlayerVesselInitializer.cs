@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -54,6 +53,8 @@ namespace CosmicShore.Gameplay
 
         public Action OnAllPlayersSpawned;
 
+        readonly HashSet<ulong> _processedClients = new();
+
         bool IsSoloWithAI => !gameData.IsMultiplayerMode;
 
         protected virtual void Awake()
@@ -85,21 +86,17 @@ namespace CosmicShore.Gameplay
             }
 
             gameData.SetSpawnPositions(_playerOrigins);
+            DomainAssigner.Initialize();
 
-            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            gameData.OnPlayerNetworkSpawned.OnRaised += HandlePlayerNetworkSpawned;
             NetworkVesselClientCache.OnNewInstanceAdded += OnNewVesselClientAdded;
 
-            // Handle clients that connected before this spawner was active
+            // Handle players already registered before this spawner was active
             // (e.g., host started in Menu_Main before the game scene loaded).
-            // Reset the domain pool for this game session, then process them.
-            var connectedIds = NetworkManager.Singleton.ConnectedClientsIds;
-            if (connectedIds.Count > 0)
+            foreach (var p in gameData.Players)
             {
-                DomainAssigner.Initialize();
-                foreach (var clientId in connectedIds)
-                {
-                    OnClientConnected(clientId);
-                }
+                if (p is Player netPlayer && _processedClients.Add(netPlayer.OwnerClientId))
+                    HandleNewPlayer(netPlayer.OwnerClientId);
             }
         }
 
@@ -109,10 +106,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual void OnNetworkDespawn()
         {
-            if (NetworkManager.Singleton)
-                NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
-
+            gameData.OnPlayerNetworkSpawned.OnRaised -= HandlePlayerNetworkSpawned;
             NetworkVesselClientCache.OnNewInstanceAdded -= OnNewVesselClientAdded;
+            _processedClients.Clear();
 
             if (shutdownNetworkOnDespawn && NetworkManager.Singleton)
                 NetworkManager.Singleton.Shutdown();
@@ -134,9 +130,21 @@ namespace CosmicShore.Gameplay
         }
 
         // ----------------------------
-        // New client connected
+        // Player NetworkObject spawned — find and process unhandled players
         // ----------------------------
-        protected virtual void OnClientConnected(ulong clientId)
+        void HandlePlayerNetworkSpawned()
+        {
+            foreach (var p in gameData.Players)
+            {
+                if (p is Player netPlayer && _processedClients.Add(netPlayer.OwnerClientId))
+                    HandleNewPlayer(netPlayer.OwnerClientId);
+            }
+        }
+
+        // ----------------------------
+        // Process a newly spawned player
+        // ----------------------------
+        protected virtual void HandleNewPlayer(ulong clientId)
         {
             bool isLocalHost = clientId == NetworkManager.Singleton.LocalClientId;
             bool needsAI = isLocalHost && (IsSoloWithAI || NeedsAIBackfill);
@@ -405,41 +413,21 @@ namespace CosmicShore.Gameplay
 
         async UniTask DelayedSpawnVesselForPlayerAsync(ulong clientId)
         {
-            await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
+            // Yield one frame so Player.OnNetworkSpawn() finishes setting NetworkVariables
+            // (NetDefaultVesselType is written after InvokePlayerNetworkSpawned).
+            await UniTask.Yield(PlayerLoopTiming.PreLateUpdate);
 
-            // Look up via gameData.Players (reliable during scene transitions)
-            // instead of SpawnManager.GetPlayerNetworkObject (fragile during scene transitions).
             var player = FindPlayerByClientId(clientId);
-
             if (player == null)
             {
-                // Player hasn't registered yet — await the SOAP event.
-                var tcs = new UniTaskCompletionSource();
-                void handler() { if (FindPlayerByClientId(clientId) != null) tcs.TrySetResult(); }
-                gameData.OnPlayerNetworkSpawned.OnRaised += handler;
-                try
-                {
-                    using var cts = new CancellationTokenSource();
-                    cts.CancelAfter(TimeSpan.FromSeconds(5));
-                    await tcs.Task.AttachExternalCancellation(cts.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    CSDebug.LogError($"[ServerPlayerVesselInitializer] Player not found for client {clientId} after timeout. " +
-                                     $"Players registered: {gameData.Players.Count}, NM listening: {NetworkManager.Singleton?.IsListening}");
-                    return;
-                }
-                finally
-                {
-                    gameData.OnPlayerNetworkSpawned.OnRaised -= handler;
-                }
-                player = FindPlayerByClientId(clientId);
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player not found for client {clientId}. " +
+                                 $"Players registered: {gameData.Players.Count}");
+                return;
             }
 
             player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
             player.NetIsAI.Value = false;
 
-            // Spawn initial vessel if type already chosen
             if (player.NetDefaultVesselType.Value == VesselClassType.Random)
             {
                 CSDebug.LogWarning("Vessel type not set, setting default dolphin");

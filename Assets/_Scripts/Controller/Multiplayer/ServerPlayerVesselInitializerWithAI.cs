@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
         [Tooltip(("The informations needed to spawn AI"))]
         [SerializeField] private IPlayer.InitializeData[] aiInitializeDatas;
 
-        protected override void OnClientConnected(ulong clientId)
+        protected override void HandleNewPlayer(ulong clientId)
         {
             SpawnVesselAndInitializeWithPlayer(clientId).Forget();
         }

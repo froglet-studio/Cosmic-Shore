@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     ///   1. Force vessel class to Squirrel.
     ///   2. Initialize game data.
     ///
-    /// Spawn (OnClientConnected):
+    /// Spawn (HandleNewPlayer via OnPlayerNetworkSpawned SOAP event):
     ///   3. Spawn only the host's vessel — no AI opponents.
     ///
     /// Post-initialization (OnClientReady):
@@ -52,7 +52,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Menu override: spawn only the host's vessel — no AI opponents.
         /// </summary>
-        protected override void OnClientConnected(ulong clientId)
+        protected override void HandleNewPlayer(ulong clientId)
         {
             DelayedSpawnVesselForPlayer(clientId).Forget();
         }
