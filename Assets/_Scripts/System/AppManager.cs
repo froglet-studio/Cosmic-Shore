@@ -61,6 +61,14 @@ namespace CosmicShore.Core
         [Header("Friends")]
         [SerializeField] FriendsDataSO friendsData;
 
+        [Header("Lifecycle Events")]
+        [SerializeField, Tooltip("SOAP event container for application lifecycle events (pause, focus, quit, scene load/unload).")]
+        ApplicationLifecycleEventsContainerSO lifecycleEvents;
+
+        [Header("Application State")]
+        [SerializeField, Tooltip("SOAP variable holding the current application state. Written by ApplicationStateMachine.")]
+        ApplicationStateDataVariable applicationStateDataVariable;
+
         [Header("Singleton Persistent Scene References")]
         [SerializeField] GameSetting gameSetting;
         [SerializeField] AudioSystem audioSystem;
@@ -72,10 +80,13 @@ namespace CosmicShore.Core
         [SerializeField] ThemeManager themeManager;
         [SerializeField] CameraManager cameraManager;
         [SerializeField] PostProcessingManager postProcessingManager;
+        [SerializeField] StatsManager statsManager;
+        [SerializeField] SceneTransitionManager sceneTransitionManager;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
+        [Inject] ApplicationStateMachine applicationStateMachine;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -115,6 +126,8 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            applicationStateMachine?.TransitionTo(ApplicationState.Bootstrapping);
+
             ConfigureGameData();
             StartNetworkMonitor();
             StartAuthentication();
@@ -135,6 +148,7 @@ namespace CosmicShore.Core
 
         void Shutdown()
         {
+            applicationStateMachine?.TransitionTo(ApplicationState.ShuttingDown);
             StopNetworkMonitor();
             gameData?.ResetAllData();
         }
@@ -203,13 +217,14 @@ namespace CosmicShore.Core
                 Log($"Bootstrap complete in {stopwatch.Elapsed.TotalSeconds:F2}s");
 
                 OnBootstrapComplete?.Invoke();
+                applicationStateMachine?.TransitionTo(ApplicationState.Authenticating);
 
                 string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).
-                if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
-                    await transitionManager.LoadSceneAsync(targetScene);
+                if (sceneTransitionManager != null)
+                    await sceneTransitionManager.LoadSceneAsync(targetScene);
                 else
                     SceneManager.LoadScene(targetScene);
             }
@@ -266,6 +281,8 @@ namespace CosmicShore.Core
             TryResolveManager(ref themeManager);
             TryResolveManager(ref cameraManager);
             TryResolveManager(ref postProcessingManager);
+            TryResolveManager(ref statsManager);
+            TryResolveManager(ref sceneTransitionManager);
         }
 
         void TryResolveManager<T>(ref T field) where T : Component
@@ -297,6 +314,8 @@ namespace CosmicShore.Core
             RegisterAsset(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
             RegisterAsset(builder, friendsData, nameof(friendsData));
+            RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
+            RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
 
             // ── MonoBehaviour singletons (lazy factory) ──────────────────
             // Scene-resolved managers may not exist in the Bootstrap scene at
@@ -313,6 +332,8 @@ namespace CosmicShore.Core
             RegisterManagerSingleton<ThemeManager>(builder, themeManager);
             RegisterManagerSingleton<CameraManager>(builder, cameraManager);
             RegisterManagerSingleton<PostProcessingManager>(builder, postProcessingManager);
+            RegisterManagerSingleton<StatsManager>(builder, statsManager);
+            RegisterManagerSingleton<SceneTransitionManager>(builder, sceneTransitionManager);
 
             // ── Pure C# service singletons ───────────────────────────────
             // Created by factory, no scene object needed. Lazy so they are
@@ -331,6 +352,16 @@ namespace CosmicShore.Core
 
             builder.RegisterFactory(
                 _ => new FriendsServiceFacade(authenticationDataVariable, friendsData, authenticationWithLog),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new ApplicationStateMachine(
+                    applicationStateDataVariable,
+                    gameData,
+                    networkMonitorDataVariable,
+                    _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
@@ -470,8 +501,8 @@ namespace CosmicShore.Core
 
             var go = new GameObject("[BootstrapFlow]");
 
-            // SceneTransitionManager must be added first so it registers in
-            // ServiceLocator before AppManager.Start() runs.
+            // SceneTransitionManager is added first so it is available when
+            // AppManager resolves managers during Awake.
             go.AddComponent<SceneTransitionManager>();
             go.AddComponent<ApplicationLifecycleManager>();
             go.AddComponent<AppManager>();

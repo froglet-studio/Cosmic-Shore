@@ -401,6 +401,7 @@ GameObject:
   - component: {fileID: 4503039764592346390}
   - component: {fileID: 5246419679807688196}
   - component: {fileID: 1452114705}
+  - component: {fileID: 8156419679807688197}
   m_Layer: 0
   m_Name: AudioSystem
   m_TagString: Untagged
@@ -437,7 +438,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 041326fa7f1db0944a3fa50cbacd061c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   masterMixer: {fileID: 24100000, guid: 1cf03307ae00ea44284cc75693abbb07, type: 2}
   sfxSource: {fileID: 6992457589778822547}
   musicSource1: {fileID: 5079991984299441695}
@@ -506,3 +507,33 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1f7ebca9281b9244ba31143be2de7799, type: 2}
   onDeathSong: {fileID: 0}
   RandomizePlay: 1
+--- !u!114 &8156419679807688197
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4302996649166915022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 815eff92d81847d189f3d8f0ecd917cc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _eventResponses:
+  - _scriptableEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+      type: 2}
+    _response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 5246419679807688196}
+          m_TargetAssemblyTypeName: CosmicShore.Core.AudioSystem, Assembly-CSharp
+          m_MethodName: PlayGameplaySFX
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument:
+            m_BoolArgument: 0
+          m_CallState: 2

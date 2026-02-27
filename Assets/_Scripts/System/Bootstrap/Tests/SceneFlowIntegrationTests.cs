@@ -284,7 +284,6 @@ namespace CosmicShore.Core
             Assert.IsNotNull(go.GetComponent<AppManager>());
 
             Object.DestroyImmediate(go);
-            ServiceLocator.ClearAll();
         }
 
         #endregion
@@ -310,42 +309,6 @@ namespace CosmicShore.Core
         {
             var asset = AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/_Scenes/Menu_Main.unity");
             Assert.IsNotNull(asset, "Menu_Main.unity scene file not found at Assets/_Scenes/Menu_Main.unity");
-        }
-
-        #endregion
-
-        #region ServiceLocator Integration
-
-        [Test]
-        public void SceneTransitionManager_RegistersInServiceLocator_OnAwake()
-        {
-            ServiceLocator.ClearAll();
-
-            var go = new GameObject("[TestSTM]");
-            go.AddComponent<SceneTransitionManager>();
-
-            Assert.IsTrue(ServiceLocator.IsRegistered<SceneTransitionManager>(),
-                "SceneTransitionManager should register itself in ServiceLocator on Awake.");
-
-            Object.DestroyImmediate(go);
-            ServiceLocator.ClearAll();
-        }
-
-        [Test]
-        public void SceneTransitionManager_CanBeRetrievedVia_TryGet()
-        {
-            ServiceLocator.ClearAll();
-
-            var go = new GameObject("[TestSTM]");
-            var stm = go.AddComponent<SceneTransitionManager>();
-
-            bool found = ServiceLocator.TryGet<SceneTransitionManager>(out var retrieved);
-
-            Assert.IsTrue(found);
-            Assert.AreSame(stm, retrieved);
-
-            Object.DestroyImmediate(go);
-            ServiceLocator.ClearAll();
         }
 
         #endregion

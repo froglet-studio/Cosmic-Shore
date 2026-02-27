@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using System.Threading;
@@ -13,7 +14,7 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(MeshRenderer))]
     public class AOEExplosion : ElementalShipComponent
     {
-        [Inject] AudioSystem audioSystem;
+        [SerializeField] ScriptableEventGameplaySFX gameplaySFXEvent;
         protected const float PI_OVER_TWO = Mathf.PI / 2;
 
         [Header("Dependencies")]
@@ -89,13 +90,26 @@ namespace CosmicShore.Gameplay
             Material = initStruct.OverrideMaterial;
 
             explosionCts = new CancellationTokenSource();
+
+            // Subscribe to game events — OnEnable fires before DI injection
+            // for runtime-spawned objects, so retry here after injection.
+            SubscribeToGameEvents();
+        }
+
+        private void SubscribeToGameEvents()
+        {
+            if (gameData == null) return;
+            gameData.OnMiniGameTurnEnd.OnRaised -= CancelExplosion;
+            gameData.OnMiniGameTurnEnd.OnRaised += CancelExplosion;
+            gameData.OnResetForReplay.OnRaised -= PerformResetCleanup;
+            gameData.OnResetForReplay.OnRaised += PerformResetCleanup;
         }
 
         public void Detonate()
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.Explosion);
+            gameplaySFXEvent.Raise(GameplaySFXCategory.Explosion);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 

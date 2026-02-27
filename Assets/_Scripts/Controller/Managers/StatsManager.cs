@@ -37,22 +37,48 @@ namespace CosmicShore.Gameplay
         public float Duration;
     }
 
-    public class StatsManager : Singleton<StatsManager>
+    public class StatsManager : MonoBehaviour
     {
         [SerializeField]
         GameDataSO gameData;
-        
+
         [SerializeField]
         CellRuntimeDataSO cellData;
 
-        protected bool allowRecord = true;
-        
+        [SerializeField]
+        NetcodeHooks _netcodeHooks;
+
+        bool _allowRecord = true;
+
+        void OnEnable()
+        {
+            if (_netcodeHooks != null)
+                _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
+        }
+
+        void OnDisable()
+        {
+            if (_netcodeHooks != null)
+                _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
+        }
+
+        void OnNetworkSpawn()
+        {
+            if (_netcodeHooks.IsServer)
+            {
+                _allowRecord = true;
+                return;
+            }
+
+            _allowRecord = false;
+        }
+
         public void LifeformCreated(int cellID)
         {
-            if (!allowRecord) return;
+            if (!_allowRecord) return;
 
             var cellStatsList = cellData.CellStatsList;
-            
+
             if (!cellStatsList.ContainsKey(cellID))
                 cellStatsList[cellID] = new CellStats();
 
@@ -63,10 +89,10 @@ namespace CosmicShore.Gameplay
 
         public void LifeformDestroyed(int cellID)
         {
-            if (!allowRecord) return;
+            if (!_allowRecord) return;
 
             var cellStatsList = cellData.CellStatsList;
-            
+
             if (!cellStatsList.ContainsKey(cellID))
                 cellStatsList[cellID] = new CellStats();
 
@@ -74,16 +100,16 @@ namespace CosmicShore.Gameplay
             cs.LifeFormsInCell--;
             cellStatsList[cellID] = cs;
         }
-        
+
         public void CrystalCollected(CrystalStats crystalStats)
         {
-            if (!allowRecord) return;
-            
+            if (!_allowRecord) return;
+
             var playerName = crystalStats.PlayerName;
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats))
                 return;
             stats.CrystalsCollected++;
-            
+
             switch (crystalStats.Element)
             {
                 case Element.Omni:
@@ -133,17 +159,17 @@ namespace CosmicShore.Gameplay
 
         public void ExecuteSkimmerShipCollision(string skimmerPlayerName)
         {
-            if (!allowRecord) return;
-            
+            if (!_allowRecord) return;
+
             if (!gameData.TryGetRoundStats(skimmerPlayerName, out var roundStats))
                 return;
             roundStats.SkimmerShipCollisions++;
         }
-        
+
         public void ExecuteJoustCollision(string joustPlayerName)
         {
-            if (!allowRecord) return;
-            
+            if (!_allowRecord) return;
+
             if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats))
                 return;
             roundStats.JoustCollisions++;
@@ -151,7 +177,7 @@ namespace CosmicShore.Gameplay
 
         public void PrismCreated(PrismStats prismStats)
         {
-            if (!allowRecord) return;
+            if (!_allowRecord) return;
 
             if (!gameData.TryGetRoundStats(prismStats.OwnName, out var roundStats))
                 return;
@@ -159,12 +185,12 @@ namespace CosmicShore.Gameplay
             roundStats.BlocksCreated++;
             roundStats.PrismsRemaining++;
             roundStats.VolumeCreated += prismStats.Volume;
-            roundStats.VolumeRemaining += prismStats.Volume; 
+            roundStats.VolumeRemaining += prismStats.Volume;
         }
 
         public void PrismDestroyed(PrismStats prismStats)
         {
-            if (!allowRecord) return;
+            if (!_allowRecord) return;
 
             var attackingPlayerName = prismStats.AttackerName;
             var victimPlayerName = prismStats.OwnName;
@@ -176,7 +202,7 @@ namespace CosmicShore.Gameplay
             {
                 attackerPlayerStats.BlocksDestroyed++;
                 attackerPlayerStats.TotalVolumeDestroyed += prismStats.Volume;
-                
+
                 var isFriendly =
                     attackingPlayerName == victimPlayerName ||
                     (hasVictim && attackerPlayerStats.Domain == victimPlayerStats.Domain);
@@ -200,13 +226,13 @@ namespace CosmicShore.Gameplay
 
         public void PrismRestored(PrismStats prismStats)
         {
-            if (!allowRecord) return;
+            if (!_allowRecord) return;
 
             var restoringPlayerName = prismStats.OwnName;
 
             if (!gameData.TryGetRoundStats(restoringPlayerName, out IRoundStats roundStats))
                 return;
-            
+
             roundStats.BlocksRestored++;
             roundStats.PrismsRemaining++;
             roundStats.VolumeRestored += prismStats.Volume;
@@ -215,10 +241,10 @@ namespace CosmicShore.Gameplay
 
         public void PrismVolumeModified(PrismStats prismStats)
         {
-            if (!allowRecord) return;
+            if (!_allowRecord) return;
 
             var ownerPlayerName = prismStats.OwnName;
-            
+
             if (!gameData.TryGetRoundStats(ownerPlayerName, out IRoundStats roundStats))
                 return;
 
@@ -228,12 +254,12 @@ namespace CosmicShore.Gameplay
 
         public void PrismStolen(PrismStats prismStats)
         {
-            if (!allowRecord) return;
+            if (!_allowRecord) return;
 
             var stealingPlayerName = prismStats.OwnName;
             if (!gameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
                 return;
-            
+
             stealingPlayerStats.PrismStolen++;
             stealingPlayerStats.PrismsRemaining++;
             stealingPlayerStats.VolumeStolen += prismStats.Volume;
@@ -242,15 +268,15 @@ namespace CosmicShore.Gameplay
             var victimPlayerName = prismStats.AttackerName;
             if (!gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
                 return;
-            
+
             victimPlayerStats.PrismsRemaining--;
             victimPlayerStats.VolumeRemaining -= prismStats.Volume;
         }
 
         public void RegisterAbilityExecuted(AbilityStats abilityStats)
         {
-            if (!allowRecord) return;
-            
+            if (!_allowRecord) return;
+
             if (!gameData.TryGetRoundStats(abilityStats.PlayerName, out IRoundStats playerStats))
                 return;
 
@@ -285,6 +311,7 @@ namespace CosmicShore.Gameplay
                     break;
             }
         }
+
         void UpdateStatForPlayer(string playerName, Action<IRoundStats> updateAction)
         {
             if (!gameData.TryGetRoundStats(playerName, out var roundStats))

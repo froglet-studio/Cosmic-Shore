@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &2173894828075591833
+--- !u!1 &7225496175357077209
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,13 +8,13 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2173894828075591839}
-  - component: {fileID: 2173894828075591832}
-  - component: {fileID: 3314645772356284332}
-  - component: {fileID: 9200385528124518983}
-  - component: {fileID: 1550687952167981370}
-  - component: {fileID: 8852999763410383131}
-  - component: {fileID: 7552687411882517949}
+  - component: {fileID: 5630258903609976879}
+  - component: {fileID: 2541830366465995551}
+  - component: {fileID: 1435978927083731771}
+  - component: {fileID: 5564665345163522645}
+  - component: {fileID: 8615016887599944094}
+  - component: {fileID: 546690708871217584}
+  - component: {fileID: 8036904541987693016}
   m_Layer: 0
   m_Name: StatsManager
   m_TagString: Untagged
@@ -22,13 +22,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2173894828075591839
+--- !u!4 &5630258903609976879
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2173894828075591833}
+  m_GameObject: {fileID: 7225496175357077209}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -37,27 +37,13 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2173894828075591832
+--- !u!114 &2541830366465995551
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2173894828075591833}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e50774bfa84874243a429c7097d42f36, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
---- !u!114 &3314645772356284332
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2173894828075591833}
+  m_GameObject: {fileID: 7225496175357077209}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5c9a87fbb7d684449c1381fe91f9d22, type: 3}
@@ -71,8 +57,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: CrystalCollected
           m_Mode: 0
           m_Arguments:
@@ -83,13 +69,13 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
---- !u!114 &9200385528124518983
+--- !u!114 &1435978927083731771
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2173894828075591833}
+  m_GameObject: {fileID: 7225496175357077209}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f30bb439e6d7dc94489cd1be18593b0e, type: 3}
@@ -103,8 +89,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: LifeformCreated
           m_Mode: 0
           m_Arguments:
@@ -120,8 +106,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: LifeformDestroyed
           m_Mode: 0
           m_Arguments:
@@ -132,13 +118,13 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
---- !u!114 &1550687952167981370
+--- !u!114 &5564665345163522645
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2173894828075591833}
+  m_GameObject: {fileID: 7225496175357077209}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0d82de71d6fdd3144a7f77bdb9e6ba01, type: 3}
@@ -152,8 +138,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: PrismCreated
           m_Mode: 0
           m_Arguments:
@@ -169,8 +155,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: PrismDestroyed
           m_Mode: 0
           m_Arguments:
@@ -186,8 +172,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: PrismRestored
           m_Mode: 0
           m_Arguments:
@@ -203,8 +189,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: PrismVolumeModified
           m_Mode: 0
           m_Arguments:
@@ -220,8 +206,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: PrismStolen
           m_Mode: 0
           m_Arguments:
@@ -232,13 +218,13 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
---- !u!114 &8852999763410383131
+--- !u!114 &8615016887599944094
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2173894828075591833}
+  m_GameObject: {fileID: 7225496175357077209}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8def3c7c476922846b93631c9bd37b04, type: 3}
@@ -252,8 +238,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: RegisterAbilityExecuted
           m_Mode: 0
           m_Arguments:
@@ -264,13 +250,13 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
---- !u!114 &7552687411882517949
+--- !u!114 &546690708871217584
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2173894828075591833}
+  m_GameObject: {fileID: 7225496175357077209}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2be4161beb6babe428f8453728aa3300, type: 3}
@@ -284,8 +270,8 @@ MonoBehaviour:
     _response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 2173894828075591832}
-          m_TargetAssemblyTypeName: CosmicShore.Core.StatsManager, Assembly-CSharp
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
           m_MethodName: ExecuteSkimmerShipCollision
           m_Mode: 0
           m_Arguments:
@@ -296,3 +282,35 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+  - Delay: 0
+    _scriptableEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90, type: 2}
+    _response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.StatsManager, Assembly-CSharp
+          m_MethodName: ExecuteJoustCollision
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+--- !u!114 &8036904541987693016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7225496175357077209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acfe33e52a1d81c41abb4173af0785d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  _netcodeHooks: {fileID: 0}

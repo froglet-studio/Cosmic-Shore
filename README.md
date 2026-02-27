@@ -95,7 +95,7 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Camera**: Cinemachine 3.1.2 with per-vessel settings
 - **VFX**: VFX Graph, custom HLSL shaders, Shader Graph, procedural skybox
 - **Input**: Unity Input System with platform-specific strategy pattern (keyboard/mouse, gamepad, touch)
-- **Audio**: Wwise integration
+- **Audio**: Wwise integration + SOAP gameplay SFX events for decoupled audio triggers
 - **Haptics**: NiceVibrations (mobile)
 - **Animation**: Timeline, DOTween
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance, DOTS Entities (incremental adoption)
@@ -119,8 +119,9 @@ See [`GIT_RULES.md`](./GIT_RULES.md) for branching model, commit conventions, an
 Bootstrap Scene → AppManager (DI root + orchestrator, persists across scenes)
     ├─ Reflex DI: registers all managers, SO assets, services
     ├─ AuthenticationServiceFacade → UGS sign-in → SOAP state
+    ├─ MultiplayerSetup → starts network host on sign-in
     ├─ SceneLoader → game launch, restart, return-to-menu (NetworkBehaviour)
-    └─ SceneTransitionManager → Authentication → Menu_Main
+    └─ SceneTransitionManager → Authentication → Menu_Main (networked)
                                                     │
                                                     ▼
                                               ScreenSwitcher
@@ -128,13 +129,15 @@ Bootstrap Scene → AppManager (DI root + orchestrator, persists across scenes)
                                     │Store│Arcade│Home│Port│Hangar│
                                     └────┴────┴────┴────┴────┘
                                     ← slide left / right →
+                                    + MenuServerPlayerVesselInitializer
+                                      (autopilot Squirrel in background)
 ```
 
-The app boots through a Bootstrap scene where `AppManager` serves as both the top-level orchestrator (`[DefaultExecutionOrder(-100)]`) and the Reflex DI root (`IInstaller`). It configures the platform, registers all persistent managers and SO assets (including `GameDataSO` and `SceneNameListSO`), starts authentication and network monitoring, then transitions to the Authentication scene.
+The app boots through a Bootstrap scene where `AppManager` serves as both the top-level orchestrator (`[DefaultExecutionOrder(-100)]`) and the Reflex DI root (`IInstaller`). It configures the platform, registers all persistent managers and SO assets (including `GameDataSO`, `SceneNameListSO`, and `ApplicationLifecycleEventsContainerSO`), starts authentication and network monitoring, then transitions to the Authentication scene.
 
-Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. Scene loading is managed by `SceneLoader`, a `NetworkBehaviour` that auto-selects local vs network scene loading and handles game restarts.
+Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. On sign-in, `MultiplayerSetup` starts the network host, and the menu is loaded as a networked scene. Scene loading is managed by `SceneLoader`, a `NetworkBehaviour` that auto-selects local vs network scene loading and handles game restarts.
 
-The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./CLAUDE.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) sections in CLAUDE.md for details.
+The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. A `MenuServerPlayerVesselInitializer` spawns an autopilot Squirrel vessel in the background with Cinemachine camera tracking. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./CLAUDE.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) sections in CLAUDE.md for details.
 
 ### Architecture Audits
 
@@ -151,12 +154,12 @@ Assets/
 │   │   ├── Environment/       # Cells, crystals, flora/fauna, spawning
 │   │   ├── ImpactEffects/     # Impactors + Effect SOs
 │   │   ├── Arcade/            # Mini-game controllers, scoring
-│   │   ├── Multiplayer/       # Netcode: vessel init, lobby, network stats
+│   │   ├── Multiplayer/       # Netcode: vessel init, lobby, network stats, menu autopilot
 │   │   ├── Camera/            # Per-vessel camera system
 │   │   ├── AI/                # AIPilot, AIGunner
 │   │   └── ...                # Projectiles, IO, FX, Managers, etc.
 │   ├── System/                # Application-level systems (~126 files)
-│   │   ├── Bootstrap/         # BootstrapConfigSO, ServiceLocator, SceneTransitionManager
+│   │   ├── Bootstrap/         # BootstrapConfigSO, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Systems/Auth/      # AuthenticationController (MonoBehaviour adapter)
 │   │   ├── Playfab/           # Legacy PlayFab integration (deprecated auth)
 │   │   ├── Instrumentation/   # Analytics, Firebase
@@ -179,7 +182,7 @@ Assets/
 │   │   └── ...                # FX, Toast, Animations
 │   ├── Data/                  # Enums & data structs
 │   ├── ScriptableObjects/     # SO definitions & SOAP types
-│   │   └── SOAP/              # Custom SOAP types (14 subdirectories)
+│   │   └── SOAP/              # Custom SOAP types (15 subdirectories)
 │   ├── Utility/               # Effects, pooling, data persistence
 │   └── Tests/                 # Edit-mode unit tests
 ├── _SO_Assets/                # ScriptableObject asset instances

@@ -35,7 +35,8 @@ namespace CosmicShore.Gameplay
                 ReturnDelay      = returnDelay,
                 Prefabs          = aoePrefabs,
                 Anonymous        = false,
-                OverrideMaterial = impactor.Projectile.VesselStatus.AOEExplosionMaterial
+                OverrideMaterial = impactor.Projectile.VesselStatus.AOEExplosionMaterial,
+                DIContainer      = impactor.DIContainer
             });
         }
     }
