@@ -167,6 +167,7 @@ namespace CosmicShore.Game
         /// </summary>
         public int Register(Prism prism)
         {
+            if (!_spatial.IsCreated) return -1;
             int index;
             if (_freeList.Count > 0)
             {
@@ -202,6 +203,7 @@ namespace CosmicShore.Game
 
         public void Unregister(int index)
         {
+            if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             s.Flags = 0; // clear all flags including IsActive
@@ -212,6 +214,7 @@ namespace CosmicShore.Game
 
         public void MarkDestroyed(int index)
         {
+            if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             s.Flags |= PrismFlags.Destroyed;
@@ -220,6 +223,7 @@ namespace CosmicShore.Game
 
         public void UpdateShieldState(int index, bool shielded, bool superShielded)
         {
+            if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             // Clear shield bits, then set
@@ -231,6 +235,7 @@ namespace CosmicShore.Game
 
         public void UpdateDomain(int index, int domain)
         {
+            if (!_damage.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var d = _damage[index];
             d.Domain = domain;
@@ -242,6 +247,7 @@ namespace CosmicShore.Game
         /// </summary>
         public void UpdateVolume(int index, float volume)
         {
+            if (!_damage.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var d = _damage[index];
             d.Volume = volume;
@@ -281,7 +287,7 @@ namespace CosmicShore.Game
             IVessel vessel,
             HashSet<int> alreadyHit)
         {
-            if (_highWaterMark == 0) return true;
+            if (_highWaterMark == 0 || !_spatial.IsCreated) return true;
 
             // --- Phase 1: Burst job over hot spatial data ---
             _hitIndices.Clear();

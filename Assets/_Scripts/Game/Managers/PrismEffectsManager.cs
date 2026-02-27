@@ -14,6 +14,10 @@ namespace CosmicShore.Game
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {
+        private static bool _isQuitting;
+
+        private void OnApplicationQuit() => _isQuitting = true;
+
         /// <summary>
         /// Ensures a PrismEffectsManager instance exists. If none was placed in the scene,
         /// creates one automatically so explosion/implosion effects don't silently fail.
@@ -21,6 +25,7 @@ namespace CosmicShore.Game
         public static PrismEffectsManager EnsureInstance()
         {
             if (Instance != null) return Instance;
+            if (_isQuitting) return null;
 
             var go = new GameObject("[PrismEffectsManager]");
             go.AddComponent<PrismEffectsManager>();
