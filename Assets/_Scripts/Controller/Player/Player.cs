@@ -150,16 +150,46 @@ namespace CosmicShore.Gameplay
             {
                 NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
             }
-            
+
             NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
             NetIsAI.Value = IsInitializedAsAI;
-            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
-            // Signal spawn after name is set so server-side handlers see valid values.
+            // If the vessel class is already configured (normal gameplay flow),
+            // set it immediately and signal spawn. Otherwise defer until the SOAP
+            // variable is updated (menu scene: MainMenuController.Start() hasn't
+            // run yet when OnNetworkSpawn fires).
+            var vesselClass = gameData.selectedVesselClass.Value;
+            if (IsValidVesselClass(vesselClass))
+            {
+                NetDefaultVesselType.Value = vesselClass;
+                gameData.InvokePlayerNetworkSpawned();
+                InputController.Initialize();
+            }
+            else
+            {
+                gameData.selectedVesselClass.OnValueChanged += OnSelectedVesselClassChanged;
+            }
+        }
+
+        /// <summary>
+        /// Callback for deferred vessel class assignment. Fires when
+        /// <see cref="GameDataSO.selectedVesselClass"/> is updated after
+        /// this player's <see cref="OnNetworkSpawn"/> (e.g., by
+        /// <see cref="Core.MainMenuController.ConfigureMenuGameData"/>).
+        /// </summary>
+        void OnSelectedVesselClassChanged(VesselClassType newValue)
+        {
+            if (!IsValidVesselClass(newValue))
+                return;
+
+            gameData.selectedVesselClass.OnValueChanged -= OnSelectedVesselClassChanged;
+            NetDefaultVesselType.Value = newValue;
             gameData.InvokePlayerNetworkSpawned();
-
             InputController.Initialize();
         }
+
+        static bool IsValidVesselClass(VesselClassType type) =>
+            type != VesselClassType.Random && type != VesselClassType.Any;
         
         public override void OnNetworkDespawn()
         {
@@ -167,6 +197,7 @@ namespace CosmicShore.Gameplay
             NetName.OnValueChanged -= OnNetNameValueChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
+            gameData.selectedVesselClass.OnValueChanged -= OnSelectedVesselClassChanged;
         }
 
 
