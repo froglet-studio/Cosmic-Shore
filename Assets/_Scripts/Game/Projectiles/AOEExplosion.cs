@@ -36,6 +36,8 @@ namespace CosmicShore.Game.Projectiles
 
         private ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
+        private MaterialPropertyBlock _mpb;
+        private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
 
         protected virtual void Awake()
         {
@@ -43,6 +45,7 @@ namespace CosmicShore.Game.Projectiles
             _explosionImpactor = GetComponent<ExplosionImpactor>();
             var sphereCol = GetComponent<SphereCollider>();
             if (sphereCol) _colliderRadius = sphereCol.radius;
+            _mpb = new MaterialPropertyBlock();
         }
 
         protected virtual void OnEnable()
@@ -87,6 +90,12 @@ namespace CosmicShore.Game.Projectiles
             Material = initStruct.OverrideMaterial;
 
             explosionCts = new CancellationTokenSource();
+
+            // Start invisible — ExplodeAsync enables the renderer once the animation
+            // begins. Without this, the mesh is visible at prefab default scale for
+            // the entire ExplosionDelay, appearing as a full-size opaque sphere.
+            transform.localScale = Vector3.zero;
+            if (meshRenderer) meshRenderer.enabled = false;
         }
 
         public void Detonate()
@@ -136,7 +145,11 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 var cachedTransform = transform;
-                if (meshRenderer) meshRenderer.material = Material;
+                if (meshRenderer)
+                {
+                    meshRenderer.material = Material;
+                    meshRenderer.enabled = true;
+                }
 
                 float time = 0f;
 
@@ -170,7 +183,15 @@ namespace CosmicShore.Game.Projectiles
                         return;
                     }
 
-                    if (Material != null) Material.SetFloat("_Opacity", 1 - ease);
+                    // Use MaterialPropertyBlock for per-instance opacity so multiple
+                    // concurrent explosions sharing the same Material don't fight over
+                    // the shared material's _Opacity value (which caused flickering).
+                    if (meshRenderer)
+                    {
+                        meshRenderer.GetPropertyBlock(_mpb);
+                        _mpb.SetFloat(OpacityID, 1 - ease);
+                        meshRenderer.SetPropertyBlock(_mpb);
+                    }
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
