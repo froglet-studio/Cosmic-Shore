@@ -25,17 +25,23 @@ namespace CosmicShore.Core
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
 
-        [Header("Singleton Persistents")]
-        [Tooltip("Prefabs instantiated once during bootstrap and marked DontDestroyOnLoad. " +
-                 "Components on each spawned instance are automatically discovered and " +
-                 "registered in DI. Keep all service references here (not in the scene) " +
-                 "for git-friendly prefab-to-prefab wiring.")]
-        [SerializeField] GameObject[] _singletonPersistents;
+        [Header("Singleton Persistent Prefabs")]
+        [SerializeField] GameSetting gameSettingPrefab;
+        [SerializeField] AudioSystem audioSystemPrefab;
+        [SerializeField] PlayerDataService playerDataServicePrefab;
+        [SerializeField] UGSStatsManager ugsStatsManagerPrefab;
+        [SerializeField] CaptainManager captainManagerPrefab;
+        [SerializeField] IAPManager iapManagerPrefab;
+        [SerializeField] GameManager gameManagerPrefab;
+        [SerializeField] ThemeManager themeManagerPrefab;
+        [SerializeField] CameraManager cameraManagerPrefab;
+        [SerializeField] PostProcessingManager postProcessingManagerPrefab;
+        [SerializeField] StatsManager statsManagerPrefab;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
 
-        // Cached at spawn time via TryGetComponent — no scene scans needed.
+        // Runtime instances spawned from prefabs above.
         GameSetting _gameSetting;
         AudioSystem _audioSystem;
         PlayerDataService _playerDataService;
@@ -52,7 +58,7 @@ namespace CosmicShore.Core
 
         void Awake()
         {
-            SpawnAndResolveSingletonPersistents();
+            SpawnSingletonPersistents();
         }
 
         void Start()
@@ -71,61 +77,49 @@ namespace CosmicShore.Core
             gameData?.ResetAllData();
         }
 
-        /// <summary>
-        /// Instantiates each singleton persistent prefab, marks it
-        /// DontDestroyOnLoad, and caches known service components directly
-        /// from the spawned instance — zero FindFirstObjectByType calls.
-        /// </summary>
-        void SpawnAndResolveSingletonPersistents()
+        void SpawnSingletonPersistents()
         {
             if (_resolved) return;
             _resolved = true;
 
-            if (_singletonPersistents == null) return;
+            _gameSetting = SpawnPersistent(gameSettingPrefab, nameof(gameSettingPrefab));
+            _audioSystem = SpawnPersistent(audioSystemPrefab, nameof(audioSystemPrefab));
+            _playerDataService = SpawnPersistent(playerDataServicePrefab, nameof(playerDataServicePrefab));
+            _ugsStatsManager = SpawnPersistent(ugsStatsManagerPrefab, nameof(ugsStatsManagerPrefab));
+            _captainManager = SpawnPersistent(captainManagerPrefab, nameof(captainManagerPrefab));
+            _iapManager = SpawnPersistent(iapManagerPrefab, nameof(iapManagerPrefab));
+            _gameManager = SpawnPersistent(gameManagerPrefab, nameof(gameManagerPrefab));
+            _themeManager = SpawnPersistent(themeManagerPrefab, nameof(themeManagerPrefab));
+            _cameraManager = SpawnPersistent(cameraManagerPrefab, nameof(cameraManagerPrefab));
+            _postProcessingManager = SpawnPersistent(postProcessingManagerPrefab, nameof(postProcessingManagerPrefab));
+            _statsManager = SpawnPersistent(statsManagerPrefab, nameof(statsManagerPrefab));
+        }
 
-            foreach (var prefab in _singletonPersistents)
+        static T SpawnPersistent<T>(T prefab, string fieldName) where T : Component
+        {
+            if (prefab == null)
             {
-                if (prefab == null) continue;
-
-                var instance = Instantiate(prefab);
-                DontDestroyOnLoad(instance);
-                CacheServices(instance);
+                Debug.LogError($"[AppManager] {fieldName} is not assigned.");
+                return null;
             }
-        }
 
-        void CacheServices(GameObject instance)
-        {
-            TryCache(instance, ref _gameSetting);
-            TryCache(instance, ref _audioSystem);
-            TryCache(instance, ref _playerDataService);
-            TryCache(instance, ref _ugsStatsManager);
-            TryCache(instance, ref _captainManager);
-            TryCache(instance, ref _iapManager);
-            TryCache(instance, ref _gameManager);
-            TryCache(instance, ref _themeManager);
-            TryCache(instance, ref _cameraManager);
-            TryCache(instance, ref _postProcessingManager);
-            TryCache(instance, ref _statsManager);
-        }
-
-        static void TryCache<T>(GameObject instance, ref T field) where T : Component
-        {
-            if (field == null)
-                instance.TryGetComponent(out field);
+            var instance = Instantiate(prefab);
+            DontDestroyOnLoad(instance.gameObject);
+            return instance;
         }
 
         public void InstallBindings(ContainerBuilder builder)
         {
             // Guarantee singletons are spawned before registration. Reflex may
             // call InstallBindings before Awake, so we cannot rely on Awake alone.
-            SpawnAndResolveSingletonPersistents();
+            SpawnSingletonPersistents();
 
             // ScriptableObject assets / Variables
             RegisterIfNotNull(builder, gameData, nameof(gameData));
             RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
 
-            // Singleton persistent services (cached from spawned prefab instances)
+            // Singleton persistent services
             RegisterIfNotNull(builder, _gameSetting, nameof(_gameSetting));
             RegisterIfNotNull(builder, _audioSystem, nameof(_audioSystem));
             RegisterIfNotNull(builder, _playerDataService, nameof(_playerDataService));
