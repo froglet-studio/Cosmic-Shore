@@ -26,16 +26,16 @@ namespace CosmicShore.Core
         [SerializeField] GameDataSO gameData;
 
         [Header("Singleton Persistents")]
-        [Tooltip("Prefabs spawned during bootstrap and made persistent (DontDestroyOnLoad). " +
-                 "All prefab references live here instead of in the scene for git-friendliness. " +
-                 "If an instance of a prefab's primary component already exists, " +
-                 "that instance is reused instead of spawning a duplicate.")]
+        [Tooltip("Prefabs instantiated once during bootstrap and marked DontDestroyOnLoad. " +
+                 "Components on each spawned instance are automatically discovered and " +
+                 "registered in DI. Keep all service references here (not in the scene) " +
+                 "for git-friendly prefab-to-prefab wiring.")]
         [SerializeField] GameObject[] _singletonPersistents;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
 
-        // Resolved at runtime after spawning singleton persistents
+        // Cached at spawn time via TryGetComponent — no scene scans needed.
         GameSetting _gameSetting;
         AudioSystem _audioSystem;
         PlayerDataService _playerDataService;
@@ -72,56 +72,46 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Spawns all singleton persistent prefabs and discovers their components
-        /// for DI registration. Each prefab is instantiated once and marked
-        /// DontDestroyOnLoad. If an instance already exists in the scene, it is
-        /// reused and persisted instead of spawning a duplicate.
+        /// Instantiates each singleton persistent prefab, marks it
+        /// DontDestroyOnLoad, and caches known service components directly
+        /// from the spawned instance — zero FindFirstObjectByType calls.
         /// </summary>
         void SpawnAndResolveSingletonPersistents()
         {
             if (_resolved) return;
             _resolved = true;
 
-            // Phase 1: Spawn all prefabs (or reuse existing instances)
-            if (_singletonPersistents != null)
-            {
-                foreach (var prefab in _singletonPersistents)
-                {
-                    if (prefab == null) continue;
-                    EnsurePrefabInstance(prefab);
-                }
-            }
+            if (_singletonPersistents == null) return;
 
-            // Phase 2: Discover spawned components for DI registration
-            _gameSetting = FindFirstObjectByType<GameSetting>();
-            _audioSystem = FindFirstObjectByType<AudioSystem>();
-            _playerDataService = FindFirstObjectByType<PlayerDataService>();
-            _ugsStatsManager = FindFirstObjectByType<UGSStatsManager>();
-            _captainManager = FindFirstObjectByType<CaptainManager>();
-            _iapManager = FindFirstObjectByType<IAPManager>();
-            _gameManager = FindFirstObjectByType<GameManager>();
-            _themeManager = FindFirstObjectByType<ThemeManager>();
-            _cameraManager = FindFirstObjectByType<CameraManager>();
-            _postProcessingManager = FindFirstObjectByType<PostProcessingManager>();
-            _statsManager = FindFirstObjectByType<StatsManager>();
+            foreach (var prefab in _singletonPersistents)
+            {
+                if (prefab == null) continue;
+
+                var instance = Instantiate(prefab);
+                DontDestroyOnLoad(instance);
+                CacheServices(instance);
+            }
         }
 
-        void EnsurePrefabInstance(GameObject prefab)
+        void CacheServices(GameObject instance)
         {
-            // Check if an instance of any root-level MonoBehaviour already exists.
-            foreach (var mb in prefab.GetComponents<MonoBehaviour>())
-            {
-                if (mb == null) continue;
-                var existing = FindFirstObjectByType(mb.GetType()) as Component;
-                if (existing != null)
-                {
-                    DontDestroyOnLoad(existing.transform.root.gameObject);
-                    return;
-                }
-            }
+            TryCache(instance, ref _gameSetting);
+            TryCache(instance, ref _audioSystem);
+            TryCache(instance, ref _playerDataService);
+            TryCache(instance, ref _ugsStatsManager);
+            TryCache(instance, ref _captainManager);
+            TryCache(instance, ref _iapManager);
+            TryCache(instance, ref _gameManager);
+            TryCache(instance, ref _themeManager);
+            TryCache(instance, ref _cameraManager);
+            TryCache(instance, ref _postProcessingManager);
+            TryCache(instance, ref _statsManager);
+        }
 
-            var instance = Instantiate(prefab);
-            DontDestroyOnLoad(instance);
+        static void TryCache<T>(GameObject instance, ref T field) where T : Component
+        {
+            if (field == null)
+                instance.TryGetComponent(out field);
         }
 
         public void InstallBindings(ContainerBuilder builder)
@@ -135,7 +125,7 @@ namespace CosmicShore.Core
             RegisterIfNotNull(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterIfNotNull(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
 
-            // Singleton persistent services
+            // Singleton persistent services (cached from spawned prefab instances)
             RegisterIfNotNull(builder, _gameSetting, nameof(_gameSetting));
             RegisterIfNotNull(builder, _audioSystem, nameof(_audioSystem));
             RegisterIfNotNull(builder, _playerDataService, nameof(_playerDataService));
