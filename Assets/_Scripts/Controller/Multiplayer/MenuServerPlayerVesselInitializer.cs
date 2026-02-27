@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Unity.Netcode;
 
 namespace CosmicShore.Gameplay
 {
@@ -11,11 +12,45 @@ namespace CosmicShore.Gameplay
     /// by <see cref="Core.MainMenuController"/> — this class only handles the
     /// network spawn chain and autopilot activation.
     ///
+    /// Defers spawn setup until <see cref="GameDataSO.OnInitializeGame"/> fires,
+    /// because <c>OnNetworkSpawn</c> runs before <c>Start()</c> in Unity's
+    /// execution order, and <see cref="Core.MainMenuController.Start"/> is what
+    /// configures game data and raises <c>OnInitializeGame</c>.
+    ///
     /// Signals completion via <see cref="GameDataSO.OnMenuReady"/> SOAP event
     /// so any system can react to the menu being fully interactive.
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
+        /// <summary>
+        /// Defers spawn setup until game data is configured.
+        /// MainMenuController.Start() → ConfigureMenuGameData() → InitializeGame()
+        /// raises OnInitializeGame, at which point we proceed with the spawn chain.
+        /// </summary>
+        protected override void OnNetworkSpawn()
+        {
+            if (!NetworkManager.Singleton.IsServer)
+            {
+                enabled = false;
+                return;
+            }
+
+            gameData.OnInitializeGame.OnRaised += HandleGameInitialized;
+        }
+
+        protected override void OnNetworkDespawn()
+        {
+            gameData.OnInitializeGame.OnRaised -= HandleGameInitialized;
+            base.OnNetworkDespawn();
+        }
+
+        void HandleGameInitialized()
+        {
+            gameData.OnInitializeGame.OnRaised -= HandleGameInitialized;
+            SetupSpawnPositions();
+            SubscribeAndProcessPlayers();
+        }
+
         /// <summary>
         /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
         /// </summary>
