@@ -58,6 +58,9 @@ namespace CosmicShore.Core
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
 
+        [Header("Friends")]
+        [SerializeField] FriendsDataSO friendsData;
+
         [Header("Singleton Persistent Scene References")]
         [SerializeField] GameSetting gameSetting;
         [SerializeField] AudioSystem audioSystem;
@@ -71,6 +74,7 @@ namespace CosmicShore.Core
         [SerializeField] PostProcessingManager postProcessingManager;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
+        [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
 
         static bool _hasBootstrapped;
@@ -292,6 +296,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, gameData, nameof(gameData));
             RegisterAsset(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
+            RegisterAsset(builder, friendsData, nameof(friendsData));
 
             // ── MonoBehaviour singletons (lazy factory) ──────────────────
             // Scene-resolved managers may not exist in the Bootstrap scene at
@@ -320,6 +325,12 @@ namespace CosmicShore.Core
 
             builder.RegisterFactory(
                 _ => new NetworkMonitor(networkMonitorDataVariable),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new FriendsServiceFacade(authenticationDataVariable, friendsData, authenticationWithLog),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
