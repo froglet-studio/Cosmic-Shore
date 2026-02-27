@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Data;
@@ -23,7 +24,7 @@ namespace CosmicShore.UI
         [SerializeField] private RectTransform contentContainer;
 
         [Header("Data")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         [Header("Domain Styling")]
         [SerializeField] private List<DomainColorDef> domainColors;

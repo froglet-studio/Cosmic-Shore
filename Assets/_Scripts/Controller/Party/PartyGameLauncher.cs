@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using System.Linq;
 
@@ -23,7 +24,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         [Header("Game Config")]
         [Tooltip("Game list used to resolve SO_ArcadeGame from a GameModes enum.")]

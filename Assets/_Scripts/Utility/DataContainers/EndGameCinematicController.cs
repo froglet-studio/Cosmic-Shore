@@ -18,7 +18,7 @@ namespace CosmicShore.Utility
     {
         [Inject] AudioSystem audioSystem;
         [Header("References")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] protected SceneCinematicLibrarySO sceneCinematicLibrary;
         [SerializeField] protected CinematicCameraController cinematicCameraController;
         

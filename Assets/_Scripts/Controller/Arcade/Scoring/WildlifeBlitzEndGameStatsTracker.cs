@@ -1,5 +1,6 @@
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -7,7 +8,7 @@ namespace CosmicShore.Gameplay
     public class WildlifeBlitzEndGameStatsTracker : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
         [SerializeField] SingleplayerWildlifeBlitzTurnMonitor blitzMonitor;
         [SerializeField] TimeBasedTurnMonitor timeMonitor;
         [SerializeField] SinglePlayerWildlifeBlitzScoreTracker scoreTracker;

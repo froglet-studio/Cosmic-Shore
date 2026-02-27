@@ -5,6 +5,7 @@ using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using CosmicShore.Data;
 
 namespace CosmicShore.UI
@@ -15,7 +16,7 @@ namespace CosmicShore.UI
         [SerializeField] private OverviewPanelUI ui;
         [SerializeField] private VesselSpawner vesselSpawner;
         [SerializeField] private ThemeManagerDataContainerSO themeManagerData;
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         private IPlayer Player => gameData?.LocalPlayer;
         private IVessel CurrentVessel => Player?.Vessel;

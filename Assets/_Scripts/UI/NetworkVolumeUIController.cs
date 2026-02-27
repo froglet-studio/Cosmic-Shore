@@ -1,14 +1,14 @@
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.UI
 {
     public class NetworkVolumeUIController : NetworkBehaviour
     {
-        [FormerlySerializedAs("miniGameData")] [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
         [SerializeField] VolumeUI volumeUI;
 
         private bool _active;

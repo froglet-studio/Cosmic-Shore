@@ -3,6 +3,7 @@ using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -12,7 +13,7 @@ namespace CosmicShore.Gameplay
     public abstract class BaseScoreTracker : NetworkBehaviour, IScoreTracker
     {
         [SerializeField] protected ScriptableEventNoParam OnClickToMainMenu;
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] protected bool golfRules;
         [SerializeField] protected ScoringConfig[] scoringConfigs;
 

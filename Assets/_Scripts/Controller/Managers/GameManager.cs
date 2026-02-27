@@ -4,6 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] SceneNameListSO _sceneNames;
         [SerializeField] SO_GameList AllGames;
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] ScriptableEventBool _onSceneTransition;
         
         

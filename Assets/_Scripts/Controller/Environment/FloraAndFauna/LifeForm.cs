@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
     {
         [Inject] AudioSystem audioSystem;
         [Header("Data References")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] protected CellRuntimeDataSO cellData;
 
         [Header("Health & Visuals")]

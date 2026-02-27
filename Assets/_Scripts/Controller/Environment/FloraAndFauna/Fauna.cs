@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
@@ -14,8 +15,7 @@ namespace CosmicShore.Gameplay
     public abstract class Fauna : MonoBehaviour, ILifeFormEntity
     {
         [Header("Data References")]
-        [FormerlySerializedAs("miniGameData")]
-        [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
         [SerializeField] protected CellRuntimeDataSO cellData;
 
         [Header("Team & Goals")]

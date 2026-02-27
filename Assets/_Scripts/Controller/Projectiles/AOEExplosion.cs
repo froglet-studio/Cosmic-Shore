@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
         protected const float PI_OVER_TWO = Mathf.PI / 2;
 
         [Header("Dependencies")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
 
         [Header("Explosion Settings")]
         [SerializeField] protected float ExplosionDuration = 2f;
