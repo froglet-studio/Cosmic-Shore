@@ -176,6 +176,11 @@ namespace CosmicShore.Game
                     sharedMPB.SetFloat(ExplosionAmountID, data.explosionAmount);
                     sharedMPB.SetFloat(OpacityID, data.opacity);
                     renderer.SetPropertyBlock(sharedMPB);
+
+                    // Enable renderer on first animated frame — TriggerExplosion disables it
+                    // to prevent a one-frame flash of the unanimated mesh.
+                    if (!renderer.enabled)
+                        renderer.enabled = true;
                 }
 
                 if (data.elapsed >= data.maxDuration)

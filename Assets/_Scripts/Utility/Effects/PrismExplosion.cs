@@ -65,10 +65,15 @@ namespace CosmicShore.Game
                 PrismEffectsManager.Instance?.UnregisterExplosion(this);
             }
 
-            if (_renderer != null && _mpb != null)
+            if (_renderer != null)
             {
-                _mpb.Clear();
-                _renderer.SetPropertyBlock(_mpb);
+                // Re-enable renderer so it's ready for next pool retrieval
+                _renderer.enabled = true;
+                if (_mpb != null)
+                {
+                    _mpb.Clear();
+                    _renderer.SetPropertyBlock(_mpb);
+                }
             }
         }
 
@@ -110,6 +115,12 @@ namespace CosmicShore.Game
             _mpb.SetFloat(OpacityID, 1f);
             _renderer.SetPropertyBlock(_mpb);
 
+            // Hide renderer until PrismEffectsManager applies the first animated frame.
+            // Without this, explosions spawned after PrismEffectsManager.Update() (e.g. from
+            // AOE batch processing via UniTask) render for one frame at _ExplosionAmount=0 /
+            // _Opacity=1 — a full-size, fully opaque, undistorted sphere flash.
+            _renderer.enabled = false;
+
             // Register with batched manager for frame updates (auto-creates if not in scene)
             PrismEffectsManager.EnsureInstance().RegisterExplosion(this);
         }
@@ -135,10 +146,15 @@ namespace CosmicShore.Game
                 PrismEffectsManager.Instance?.UnregisterExplosion(this);
             }
 
-            if (_renderer != null && _mpb != null)
+            if (_renderer != null)
             {
-                _mpb.Clear();
-                _renderer.SetPropertyBlock(_mpb);
+                // Re-enable renderer so it's ready for next pool retrieval
+                _renderer.enabled = true;
+                if (_mpb != null)
+                {
+                    _mpb.Clear();
+                    _renderer.SetPropertyBlock(_mpb);
+                }
             }
         }
 
