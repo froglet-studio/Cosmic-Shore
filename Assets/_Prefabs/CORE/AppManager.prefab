@@ -58,6 +58,7 @@ MonoBehaviour:
   networkMonitorDataVariable: {fileID: 11400000, guid: c656ab83067d26846b449b637e43320a,
     type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  friendsData: {fileID: 11400000, guid: e69f5c7256384d1cb59d57e12551c123, type: 2}
   lifecycleEvents: {fileID: 11400000, guid: cec451821b7e4bf6a7cb130e72e09ead,
     type: 2}
   applicationStateDataVariable: {fileID: 11400000, guid: 18ceced7226bbe51dd9542bc4cad3203,

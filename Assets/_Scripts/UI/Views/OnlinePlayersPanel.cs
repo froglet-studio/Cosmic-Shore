@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.ScriptableObjects;
@@ -11,6 +13,7 @@ namespace CosmicShore.UI
     /// Reads from <see cref="HostConnectionDataSO.OnlinePlayers"/> (SOAP ScriptableList)
     /// and instantiates <see cref="OnlinePlayerEntry"/> prefabs.
     /// Pressing the "+" on an entry triggers an invite via <see cref="HostConnectionService"/>.
+    /// Optionally shows "Add Friend" buttons if the Friends service is available.
     /// </summary>
     public class OnlinePlayersPanel : MonoBehaviour
     {
@@ -23,8 +26,14 @@ namespace CosmicShore.UI
         [SerializeField] private Button closeButton;
         [SerializeField] private SO_ProfileIconList profileIcons;
 
+        [Header("Friends (optional)")]
+        [SerializeField] private FriendsPanel friendsPanel;
+        [SerializeField] private Button openFriendsButton;
+
         [Header("State")]
         [SerializeField] private GameObject emptyStateLabel;
+
+        [Inject] private FriendsServiceFacade friendsService;
 
         private readonly List<OnlinePlayerEntry> _activeEntries = new();
 
@@ -35,6 +44,7 @@ namespace CosmicShore.UI
         void Awake()
         {
             closeButton?.onClick.AddListener(Hide);
+            openFriendsButton?.onClick.AddListener(OnOpenFriends);
         }
 
         void OnEnable()
@@ -132,7 +142,16 @@ namespace CosmicShore.UI
             if (entry == null) return;
 
             var avatarSprite = ResolveAvatarSprite(info.AvatarId);
-            entry.Populate(info, avatarSprite, OnInviteClicked);
+            bool hasFriends = friendsService != null && friendsService.IsInitialized;
+            bool isAlreadyFriend = hasFriends && friendsService.IsFriend(info.PlayerId);
+
+            entry.Populate(
+                info,
+                avatarSprite,
+                OnInviteClicked,
+                hasFriends ? OnAddFriendClicked : null,
+                isAlreadyFriend);
+
             _activeEntries.Add(entry);
         }
 
@@ -151,6 +170,25 @@ namespace CosmicShore.UI
         {
             if (HostConnectionService.Instance == null) return;
             await HostConnectionService.Instance.SendInviteAsync(target.PlayerId);
+        }
+
+        private async void OnAddFriendClicked(PartyPlayerData target)
+        {
+            if (friendsService == null) return;
+
+            try
+            {
+                await friendsService.SendFriendRequestAsync(target.PlayerId);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[OnlinePlayersPanel] Add friend error: {e.Message}");
+            }
+        }
+
+        private void OnOpenFriends()
+        {
+            friendsPanel?.Show();
         }
 
         // ─────────────────────────────────────────────────────────────────────

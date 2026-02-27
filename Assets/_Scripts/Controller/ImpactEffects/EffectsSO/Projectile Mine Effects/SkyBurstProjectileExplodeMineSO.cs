@@ -48,7 +48,8 @@ namespace CosmicShore.Gameplay
                 DisableColliderNow  = true,
                 Prefabs             = aoePrefabs,
                 Anonymous           = false,
-                OverrideMaterial    = proj.VesselStatus.AOEExplosionMaterial
+                OverrideMaterial    = proj.VesselStatus.AOEExplosionMaterial,
+                DIContainer         = impactor.DIContainer
             });
         }
     }

@@ -4,6 +4,8 @@ using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Reflex.Core;
+using Reflex.Injectors;
 
 namespace CosmicShore.Gameplay
 {
@@ -31,6 +33,7 @@ namespace CosmicShore.Gameplay
             public AOEExplosion[] Prefabs;
             public bool Anonymous;
             public Material OverrideMaterial;
+            public Container DIContainer;
         }
 
         public void Detonate(in Request req)
@@ -85,6 +88,8 @@ namespace CosmicShore.Gameplay
                 {
                     if (!prefab) continue;
                     var spawned = Instantiate(prefab, pos, rot);
+                    if (req.DIContainer != null)
+                        GameObjectInjector.InjectRecursive(spawned.gameObject, req.DIContainer);
                     spawned.Initialize(new AOEExplosion.InitializeStruct
                     {
                         OwnDomain           = status.Domain,

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
@@ -15,7 +17,7 @@ namespace CosmicShore.Gameplay
             float maxExplosionScale,
             Material overrideMaterial,
             int resourceIndex,
-            Vector3 localOffset)   // new parameter
+            Vector3 localOffset)
         {
             if (impactor?.Vessel?.VesselStatus == null) return;
 
@@ -33,7 +35,7 @@ namespace CosmicShore.Gameplay
                 SpawnRotation        = shipTransform.rotation,
             };
 
-            SpawnAllAndDetonate(aoePrefabs, init);
+            SpawnAllAndDetonate(aoePrefabs, init, impactor.DIContainer);
         }
 
 
@@ -59,12 +61,12 @@ namespace CosmicShore.Gameplay
                 SpawnRotation      = proj.transform.rotation
             };
 
-            SpawnAllAndDetonate(aoePrefabs, init);
+            SpawnAllAndDetonate(aoePrefabs, init, impactor.DIContainer);
         }
 
         // ---------- Internals ----------
 
-        static void SpawnAllAndDetonate(IEnumerable<AOEExplosion> prefabs, AOEExplosion.InitializeStruct init)
+        static void SpawnAllAndDetonate(IEnumerable<AOEExplosion> prefabs, AOEExplosion.InitializeStruct init, Container container)
         {
             if (prefabs == null) return;
 
@@ -72,8 +74,9 @@ namespace CosmicShore.Gameplay
             {
                 if (!prefab) continue;
 
-                // Instantiate(T) directly returns AOEExplosion
                 var aoe = Object.Instantiate(prefab);
+                if (container != null)
+                    GameObjectInjector.InjectRecursive(aoe.gameObject, container);
                 aoe.Initialize(init);
                 aoe.Detonate();
             }
