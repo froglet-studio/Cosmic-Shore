@@ -13,7 +13,7 @@ namespace CosmicShore.Tests
     ///
     /// WHY THIS MATTERS:
     /// GameDataSO is the single most important runtime data object. It connects
-    /// MiniGame controllers, GameManager, StatsManager, multiplayer setup, and UI.
+    /// MiniGame controllers, SceneLoader, StatsManager, multiplayer setup, and UI.
     /// It manages player lists, round stats, domain stats, sorting, spawn positions,
     /// and winner calculation. Bugs here cascade to every game mode.
     /// </summary>

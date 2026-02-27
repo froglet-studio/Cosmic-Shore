@@ -68,7 +68,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5036209225001289759}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fcb218adb3f54348a9de015bd773527, type: 3}
+  m_Script: {fileID: 11500000, guid: 0d50c8fe93514b6da4c03b2a947bff62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -97,7 +97,7 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 5036209225001289746}
-          m_TargetAssemblyTypeName: CosmicShore.Core.GameManager, Assembly-CSharp
+          m_TargetAssemblyTypeName: CosmicShore.Core.SceneLoader, Assembly-CSharp
           m_MethodName: ReturnToMainMenu
           m_Mode: 1
           m_Arguments:
@@ -126,7 +126,7 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 5036209225001289746}
-          m_TargetAssemblyTypeName: CosmicShore.Core.GameManager, Assembly-CSharp
+          m_TargetAssemblyTypeName: CosmicShore.Core.SceneLoader, Assembly-CSharp
           m_MethodName: RestartGame
           m_Mode: 1
           m_Arguments:

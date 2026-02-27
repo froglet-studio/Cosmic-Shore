@@ -65,7 +65,7 @@ namespace CosmicShore.Core
         [SerializeField] UGSStatsManager ugsStatsManager;
         [SerializeField] CaptainManager captainManager;
         [SerializeField] IAPManager iapManager;
-        [SerializeField] GameManager gameManager;
+        [SerializeField] SceneLoader sceneLoader;
         [SerializeField] ThemeManager themeManager;
         [SerializeField] CameraManager cameraManager;
         [SerializeField] PostProcessingManager postProcessingManager;
@@ -258,7 +258,7 @@ namespace CosmicShore.Core
             TryResolveManager(ref ugsStatsManager);
             TryResolveManager(ref captainManager);
             TryResolveManager(ref iapManager);
-            TryResolveManager(ref gameManager);
+            TryResolveManager(ref sceneLoader);
             TryResolveManager(ref themeManager);
             TryResolveManager(ref cameraManager);
             TryResolveManager(ref postProcessingManager);
@@ -304,7 +304,7 @@ namespace CosmicShore.Core
             RegisterManagerSingleton<UGSStatsManager>(builder, ugsStatsManager);
             RegisterManagerSingleton<CaptainManager>(builder, captainManager);
             RegisterManagerSingleton<IAPManager>(builder, iapManager);
-            RegisterManagerSingleton<GameManager>(builder, gameManager);
+            RegisterManagerSingleton<SceneLoader>(builder, sceneLoader);
             RegisterManagerSingleton<ThemeManager>(builder, themeManager);
             RegisterManagerSingleton<CameraManager>(builder, cameraManager);
             RegisterManagerSingleton<PostProcessingManager>(builder, postProcessingManager);

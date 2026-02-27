@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
@@ -8,11 +9,24 @@ using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Core
 {
+    /// <summary>
+    /// Persistent scene-loading and game-restart service.
+    ///
+    /// Handles:
+    ///   - Launching gameplay scenes (local + network-aware)
+    ///   - Restarting the current game (single-player + network-synced)
+    ///   - Returning to the main menu
+    ///   - Application quit cleanup
+    ///
+    /// Registered as a DI singleton via AppManager. Lives on a DontDestroyOnLoad root.
+    /// Scene-placed EventListeners wire SOAP events (restart / return-to-menu) to public methods.
+    /// </summary>
     public class SceneLoader : NetworkBehaviour
     {
         [SerializeField] float waitBeforeLoading = 0.5f;
         [Inject] GameDataSO gameData;
-        
+        [Inject] SceneNameListSO _sceneNames;
+
         #region Unity Lifecycle
 
         private void OnEnable()
@@ -39,33 +53,31 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Public API
+        #region Scene Loading
 
         /// <summary>
-        /// Main entry point.
-        /// </summary>
-        void LoadScene(string sceneName, bool useNetworkSceneLoading)
-        {
-            LoadSceneAsync(sceneName, useNetworkSceneLoading).Forget();
-        }
-
-        /// <summary>
-        /// Automatically decides based on whether a host/server is running.
+        /// Automatically decides local vs network scene loading based on whether a host/server is running.
         /// When the Netcode host is active, network scene loading ensures
         /// scene-placed NetworkObjects are properly spawned in the new scene.
         /// </summary>
-        private void LaunchGame()
+        void LaunchGame()
         {
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
-            LoadScene(gameData.SceneName, useNetworkSceneLoading);
+            LoadSceneAsync(gameData.SceneName, useNetworkSceneLoading).Forget();
         }
 
-        #endregion
+        /// <summary>
+        /// Load the main menu scene.
+        /// Called by SOAP EventListener (EventOnClickToMainMenuButton).
+        /// </summary>
+        public void ReturnToMainMenu()
+        {
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            LoadSceneAsync(menuScene, false).Forget();
+        }
 
-        #region Core Logic
-
-        private async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)
+        async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)
         {
             gameData.InvokeSceneTransition(false);
             gameData.ResetRuntimeData();
@@ -90,7 +102,6 @@ namespace CosmicShore.Core
                 return;
             }
 
-            // 🔥 IMPORTANT: Only server loads network scenes
             if (nm.IsServer)
             {
                 LoadNetworkSceneOnServer(sceneName);
@@ -101,7 +112,7 @@ namespace CosmicShore.Core
             }
         }
 
-        private void LoadNetworkSceneOnServer(string sceneName)
+        void LoadNetworkSceneOnServer(string sceneName)
         {
             var nm = NetworkManager.Singleton;
 
@@ -112,18 +123,65 @@ namespace CosmicShore.Core
             }
 
             Debug.Log($"[SceneLoader] Server loading network scene: {sceneName}");
-
             nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
         }
 
         #endregion
 
-        #region RPC
+        #region Restart / Replay
+
+        /// <summary>
+        /// Reset the current game for replay without reloading the scene.
+        /// Called by SOAP EventListener (EventOnClickToRestartButtonNoParam).
+        ///
+        /// In multiplayer, the request is routed through a ServerRpc so all
+        /// clients reset in sync.
+        /// </summary>
+        public void RestartGame()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.IsConnectedClient && !nm.IsServer)
+            {
+                RestartGameServerRpc();
+                return;
+            }
+
+            ExecuteRestart();
+        }
+
+        void ExecuteRestart()
+        {
+            gameData.ResetStatsDataForReplay();
+            gameData.ResetForReplay();
+
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
+        }
+
+        #endregion
+
+        #region RPCs
 
         [ServerRpc(RequireOwnership = false)]
-        private void RequestSceneLoadServerRpc(string sceneName)
+        void RequestSceneLoadServerRpc(string sceneName)
         {
             LoadNetworkSceneOnServer(sceneName);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void RestartGameServerRpc()
+        {
+            gameData.ResetStatsDataForReplay();
+            RestartGameClientRpc();
+        }
+
+        [ClientRpc]
+        void RestartGameClientRpc()
+        {
+            gameData.ResetForReplay();
+
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
 
         #endregion
