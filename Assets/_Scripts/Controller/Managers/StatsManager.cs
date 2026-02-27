@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Obvious.Soap;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 
@@ -41,11 +42,24 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField]
         GameDataSO gameData;
-        
+
         [SerializeField]
         CellRuntimeDataSO cellData;
 
+        [Header("SOAP Event Channels")]
+        [SerializeField] ScriptableEventString onSkimmerShipCollision;
+
         protected bool allowRecord = true;
+
+        protected virtual void OnEnable()
+        {
+            onSkimmerShipCollision.OnRaised += ExecuteSkimmerShipCollision;
+        }
+
+        protected virtual void OnDisable()
+        {
+            onSkimmerShipCollision.OnRaised -= ExecuteSkimmerShipCollision;
+        }
         
         public void LifeformCreated(int cellID)
         {

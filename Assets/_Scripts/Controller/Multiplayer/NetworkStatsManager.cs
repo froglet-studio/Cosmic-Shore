@@ -9,13 +9,15 @@ namespace CosmicShore.Gameplay
         [SerializeField]
         NetcodeHooks _netcodeHooks;
 
-        void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
         }
 
-        void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
         }
 
