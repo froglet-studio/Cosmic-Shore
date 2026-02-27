@@ -250,8 +250,9 @@ namespace CosmicShore.Game.Progression
         }
 
         /// <summary>
-        /// Finds the first uncompleted, unlocked quest and marks it as completed
-        /// (ReadyToClaim). Useful for editor testing.
+        /// Advances the first active quest one step:
+        ///   Unlocked → ReadyToClaim (marks quest completed, shows claim button)
+        ///   ReadyToClaim → Claimed (claims quest, unlocks next mode, animates slider)
         /// </summary>
         public void DebugCompleteCurrentQuest()
         {
@@ -265,12 +266,20 @@ namespace CosmicShore.Game.Progression
                 bool isUnlocked = i == 0 || ProgressionData.IsUnlocked(modeName);
                 if (!isUnlocked) continue;
 
-                // Skip already completed or already claimed
-                if (ProgressionData.IsQuestCompleted(modeName)) continue;
-                if (i + 1 < questList.Quests.Count &&
-                    ProgressionData.IsUnlocked(questList.Quests[i + 1].GameMode.ToString()))
-                    continue;
+                // Already claimed — next mode is unlocked, skip to find active quest
+                bool isClaimed = i + 1 < questList.Quests.Count &&
+                                 ProgressionData.IsUnlocked(questList.Quests[i + 1].GameMode.ToString());
+                if (isClaimed) continue;
 
+                // ReadyToClaim → claim it and unlock next
+                if (ProgressionData.IsQuestCompleted(modeName))
+                {
+                    CSDebug.Log($"[GameModeProgressionService] Debug-claiming quest for {quest.GameMode}.");
+                    ClaimQuestAndUnlockNext(quest.GameMode);
+                    return;
+                }
+
+                // Unlocked → mark as completed (ReadyToClaim)
                 ProgressionData.MarkQuestCompleted(modeName);
                 CSDebug.Log($"[GameModeProgressionService] Debug-completed quest for {quest.GameMode}.");
                 OnQuestCompleted?.Invoke(quest);
@@ -279,7 +288,7 @@ namespace CosmicShore.Game.Progression
                 return;
             }
 
-            CSDebug.LogWarning("[GameModeProgressionService] No uncompleted quest found to debug-complete.");
+            CSDebug.LogWarning("[GameModeProgressionService] No active quest found to advance.");
         }
 
         // ── Internal ────────────────────────────────────────────────────────────

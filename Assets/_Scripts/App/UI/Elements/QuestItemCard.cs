@@ -9,6 +9,7 @@ namespace CosmicShore.App.UI.Elements
     /// <summary>
     /// Attach to the quest item prefab. Exposes serialized references
     /// so QuestTrackView can configure each card without Transform.Find.
+    /// Falls back to auto-resolving children by name if fields are unassigned.
     /// </summary>
     public class QuestItemCard : MonoBehaviour
     {
@@ -37,6 +38,64 @@ namespace CosmicShore.App.UI.Elements
         private GameModes _gameMode;
 
         public GameModes GameMode => _gameMode;
+
+        void Awake()
+        {
+            ResolveReferences();
+        }
+
+        /// <summary>
+        /// Auto-resolve child references by name when serialized fields are unassigned.
+        /// One-time setup — not a hot path.
+        /// </summary>
+        void ResolveReferences()
+        {
+            if (unlockableIcon == null)
+                unlockableIcon = FindChild("UnlockableIconBG");
+
+            if (lockedOverlay == null)
+                lockedOverlay = FindChild("LockedObject") ?? FindChild("LockedIcon");
+
+            if (completedOverlay == null)
+                completedOverlay = FindChild("CompletedObject") ?? FindChild("UnlockedObject");
+
+            if (iconImage == null)
+            {
+                var iconGo = FindChild("Icon");
+                if (iconGo != null)
+                    iconGo.TryGetComponent(out iconImage);
+            }
+
+            if (nameText == null)
+                nameText = FindTMP("GameModeText") ?? FindTMP("UnlockableDetail");
+
+            if (descriptionText == null)
+                descriptionText = FindTMP("ObjectiveText");
+
+            if (claimButton == null)
+            {
+                var btnGo = FindChild("ClaimButton") ?? FindChild("CompleteButton");
+                if (btnGo != null)
+                    btnGo.TryGetComponent(out claimButton);
+            }
+
+            if (cardBackground == null)
+                TryGetComponent(out cardBackground);
+        }
+
+        GameObject FindChild(string childName)
+        {
+            var t = transform.Find(childName);
+            return t != null ? t.gameObject : null;
+        }
+
+        TMP_Text FindTMP(string childName)
+        {
+            var t = transform.Find(childName);
+            if (t != null && t.TryGetComponent<TMP_Text>(out var tmp))
+                return tmp;
+            return null;
+        }
 
         /// <summary>
         /// One-time setup called by QuestTrackView after instantiation.
