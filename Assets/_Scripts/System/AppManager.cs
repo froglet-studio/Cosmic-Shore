@@ -91,7 +91,10 @@ namespace CosmicShore.Core
             }
 
             if (!reference.TryGetComponent<DontDestroyOnLoad>(out _))
-                Debug.LogError($"[AppManager] {fieldName} is missing a DontDestroyOnLoad component.");
+            {
+                Debug.LogWarning($"[AppManager] {fieldName} is missing a DontDestroyOnLoad component — adding one.");
+                reference.gameObject.AddComponent<DontDestroyOnLoad>();
+            }
         }
 
         public void InstallBindings(ContainerBuilder builder)
