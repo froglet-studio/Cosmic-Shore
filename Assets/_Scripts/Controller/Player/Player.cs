@@ -114,7 +114,6 @@ namespace CosmicShore.Gameplay
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Players.Add(this);
-            gameData.InvokePlayerNetworkSpawned();
 
             VesselNetId = NetVesselId.Value;
 
@@ -124,11 +123,16 @@ namespace CosmicShore.Gameplay
             NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
 
             if (!IsLocalUser)
+            {
+                gameData.InvokePlayerNetworkSpawned();
                 return;
+            }
 
-            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
-
-            // Resolve display name & avatar ID with a 3-tier fallback:
+            // Resolve display name & avatar ID BEFORE signaling spawn and setting
+            // the vessel type. Setting NetDefaultVesselType triggers the server-side
+            // spawn chain synchronously, so name must already be written to the
+            // NetworkVariable by that point.
+            // 3-tier fallback:
             // 1. PlayerDataService (live profile from Cloud Save)
             // 2. GameDataSO cached values (set by PlayerDataService.HandleProfileChanged earlier)
             // 3. UGS PlayerName with suffix stripped (last resort)
@@ -146,6 +150,13 @@ namespace CosmicShore.Gameplay
             {
                 NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
             }
+
+            // Signal spawn after name is set so server-side handlers see valid values.
+            gameData.InvokePlayerNetworkSpawned();
+
+            // Setting vessel type triggers the server spawn chain synchronously
+            // (HandleNewPlayer → OnPlayerReadyToSpawn → SpawnVesselAndInitialize).
+            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
             InputController.Initialize();
         }
