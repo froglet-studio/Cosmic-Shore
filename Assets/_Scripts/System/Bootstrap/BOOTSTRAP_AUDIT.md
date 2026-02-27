@@ -2,24 +2,36 @@
 
 ## Summary
 
-Audit of all 16 root GameObjects in `Bootstrap.unity`, mapping every script's execution order (Awake → OnEnable → Start → async) and identifying bugs, anti-patterns, and optimization opportunities.
+Audit of all root GameObjects in `Bootstrap.unity`, mapping every script's execution order (Awake → OnEnable → Start → async) and identifying bugs, anti-patterns, and optimization opportunities.
 
-**Branch**: `claude/scan-bootstrap-scripts-CYLk8`
-**Commit**: `f3b503f2` — `fix(bootstrap): fix bugs and optimize bootstrap scene startup flow`
+**Original branch**: `claude/scan-bootstrap-scripts-CYLk8`
+**Original commit**: `f3b503f2` — `fix(bootstrap): fix bugs and optimize bootstrap scene startup flow`
 
 ---
 
-## Fixes Applied (7 files)
+## Refactors Applied
+
+### BootstrapController merged into AppManager
+
+`BootstrapController` was a separate MonoBehaviour (`[DefaultExecutionOrder(-100)]`) responsible for persistent root setup, platform configuration, `IBootstrapService` initialization, splash fade, and scene transition. `AppManager` (`[DefaultExecutionOrder(0)]`) handled DI registration, manager resolution, and service startup.
+
+These two classes shared the same lifecycle (bootstrap scene, build index 0) with no cross-references, and no `IBootstrapService` implementations existed. The execution-order dance (-100 vs 0) added fragility without benefit. All BootstrapController logic now lives in AppManager at `[DefaultExecutionOrder(-100)]`, eliminating one MonoBehaviour and one GameObject from the bootstrap scene.
+
+**Migration note**: In the Bootstrap scene, the serialized fields from the old BootstrapController GameObject (BootstrapConfigSO, persistent root, splash CanvasGroup) need to be wired to AppManager's new fields in the Unity Inspector. The old BootstrapController GameObject can be removed.
+
+---
+
+## Fixes Applied (7 files, original audit)
 
 | # | File | Issue | Fix |
 |---|---|---|---|
 | 1 | `SceneLoader.cs` | Extended `MonoBehaviour` but used `[ServerRpc]` (requires `NetworkBehaviour`) | Changed base class to `NetworkBehaviour` |
-| 2 | `BootstrapController.cs` | Unused `using DG.Tweening` | Removed |
+| 2 | `BootstrapController.cs` | Unused `using DG.Tweening` | Removed (file now deleted — merged into AppManager) |
 | 3 | `GameSetting.cs` | `PlayerPrefs.Save()` in `Awake()` — sync disk I/O blocking bootstrap | Removed (in-memory reads work immediately without explicit Save) |
 | 4 | `Singleton.cs` | `print()` calls (unfiltered, GC-heavy); no app-quit guard on `Destroy()` | Replaced with `CSDebug.Log`; added `ApplicationLifecycleManager.IsQuitting` guard |
 | 5 | `CameraManager.cs` | `Invoke("LookAtCrystal", 1f)` — reflection-based, fragile, not cancellable | Replaced with cancellable `UniTask.Delay` + `CancellationTokenSource` |
 | 6 | `CaptainManager.cs` | `OnDisable` unsubscribed from events never subscribed in `OnEnable`; line 72 used `+=` instead of `-=` (subscribing during cleanup) | Cleared body to match empty `OnEnable` |
-| 7 | `AppManager.cs` | `ResolvePersistentSystems()` ran twice (Awake + InstallBindings), 6× `FindFirstObjectByType` each time | Added `_persistentSystemsResolved` guard flag |
+| 7 | `AppManager.cs` | `ResolvePersistentSystems()` ran twice (Awake + InstallBindings), 6× `FindFirstObjectByType` each time | Added `_resolved` guard flag |
 
 ---
 
@@ -50,7 +62,7 @@ These require larger cross-cutting refactors and are documented here for future 
 ### 4. Singleton base classes use singleton pattern
 
 **Violates**: CLAUDE.md anti-pattern favoring SOAP over singletons
-**Impact**: `AppManager`, `GameSetting`, `ThemeManager`, `CameraManager`, `CaptainManager` all inherit from `Singleton<T>`
+**Impact**: `GameSetting`, `ThemeManager`, `CameraManager`, `CaptainManager` inherit from `Singleton<T>`
 **Effort**: Large — full migration to SOAP `ScriptableVariable` / DI container, touching most gameplay systems
 **Risk**: High — singletons are load-bearing throughout the codebase; incremental migration recommended
 
@@ -61,31 +73,31 @@ These require larger cross-cutting refactors and are documented here for future 
 ### Phase 0: Static Initialization
 
 ```
-[RuntimeInitializeOnLoadMethod] → BootstrapController static setup
+[RuntimeInitializeOnLoadMethod] → AppManager static setup (reset _hasBootstrapped)
 ```
 
 ### Phase 1: Awake() — ordered by [DefaultExecutionOrder]
 
 ```
--100  BootstrapController       Platform config, DontDestroyOnLoad, service init
+-100  AppManager                 DontDestroyOnLoad, platform config, manager resolution
  -50  SceneTransitionManager    Fade overlay setup, ServiceLocator registration
   -1  AudioSystem               Audio middleware initialization
-   0  AppManager                EnsureGameplayManagers(), ResolvePersistentSystems()
    0  All others                ThemeManager, CameraManager, GameSetting, CaptainManager, etc.
 ```
 
 ### Phase 2: Start()
 
 ```
-BootstrapController.Start()  → RunBootstrapAsync().Forget()
-AppManager.Start()           → ConfigureGameData, StartNetworkMonitor, StartAuthentication
+AppManager.Start()  → ConfigureGameData, StartNetworkMonitor, StartAuthentication, RunBootstrapAsync().Forget()
 ```
 
 ### Phase 3: Async Bootstrap
 
 ```
-BootstrapController.RunBootstrapAsync()
+AppManager.RunBootstrapAsync()
+  → Yield frame (let all Awake() complete)
   → Initialize IBootstrapService implementations (ordered)
+  → Yield frame (let all Start() settle)
   → Splash screen fade
   → Load "Authentication" scene via SceneTransitionManager
 ```
@@ -98,14 +110,13 @@ Authentication scene → auth flow completes → Menu_Main scene
 
 ---
 
-## Bootstrap Scene GameObject Map (16 root objects)
+## Bootstrap Scene GameObject Map
 
 | GameObject | Key Scripts | Notes |
 |---|---|---|
-| BootstrapController | `BootstrapController` | Top-level orchestrator, `[DefaultExecutionOrder(-100)]` |
+| AppManager | `AppManager` | Top-level orchestrator + DI root, `[DefaultExecutionOrder(-100)]` |
 | SceneTransitionManager | `SceneTransitionManager` | Fade overlay, `[DefaultExecutionOrder(-50)]` |
 | AudioSystem | `AudioSystem` | Wwise integration, `[DefaultExecutionOrder(-1)]` |
-| AppManager | `AppManager` | Gameplay manager resolution, auth startup |
 | GameSetting | `GameSetting` | PlayerPrefs wrapper, static events (see deferred issue #1) |
 | ThemeManager | `ThemeManager` | Visual theme management |
 | CameraManager | `CameraManager` | Camera lifecycle, LookAtCrystal |
@@ -117,7 +128,7 @@ Authentication scene → auth flow completes → Menu_Main scene
 | SplashScreen | Splash visual | Fade-out during async bootstrap |
 | DirectionalLight | Light | Scene lighting |
 | Camera | Main Camera | Bootstrap camera |
-| SceneLoader | `SceneLoader` | Network scene loading (now extends NetworkBehaviour) |
+| SceneLoader | `SceneLoader` | Network scene loading (extends NetworkBehaviour) |
 
 ---
 
@@ -127,7 +138,6 @@ Key bootstrap files and their locations:
 
 ```
 Assets/_Scripts/System/Bootstrap/
-├── BootstrapController.cs
 ├── BootstrapConfigSO.cs
 ├── ServiceLocator.cs
 ├── SceneTransitionManager.cs
@@ -135,7 +145,7 @@ Assets/_Scripts/System/Bootstrap/
 ├── IBootstrapService.cs
 ├── BOOTSTRAP_AUDIT.md              ← this file
 └── Tests/
-    ├── BootstrapControllerTests.cs
+    ├── BootstrapControllerTests.cs  (renamed class: AppManagerBootstrapTests)
     ├── ServiceLocatorTests.cs
     ├── SceneTransitionManagerTests.cs
     ├── ApplicationLifecycleManagerTests.cs
@@ -146,7 +156,7 @@ Assets/_Scripts/System/Bootstrap/
 Related files outside the Bootstrap directory:
 
 ```
-Assets/_Scripts/System/AppManager.cs
+Assets/_Scripts/System/AppManager.cs         ← now includes all bootstrap logic
 Assets/_Scripts/Controller/Settings/GameSetting.cs
 Assets/_Scripts/Controller/Managers/CameraManager.cs
 Assets/_Scripts/Controller/Managers/CaptainManager.cs

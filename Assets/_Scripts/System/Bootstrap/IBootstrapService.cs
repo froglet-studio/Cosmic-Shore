@@ -5,8 +5,8 @@ namespace CosmicShore.Core
 {
     /// <summary>
     /// Interface for services that participate in the bootstrap initialization sequence.
-    /// MonoBehaviours implementing this interface can be added to the BootstrapController's
-    /// service list for ordered async initialization.
+    /// MonoBehaviours implementing this interface can be added to AppManager's
+    /// bootstrap service list for ordered async initialization.
     /// </summary>
     public interface IBootstrapService
     {
