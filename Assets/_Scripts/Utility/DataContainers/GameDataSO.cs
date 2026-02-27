@@ -36,8 +36,9 @@ namespace CosmicShore.Utility
         public ScriptableEventNoParam OnWinnerCalculated;
         public ScriptableEventNoParam OnResetForReplay;
         public ScriptableEventNoParam OnSessionEnded;
+        public ScriptableEventNoParam OnPlayerNetworkSpawned;
         public event Action<string, Domains> OnPlayerAdded;
-        
+
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
         
@@ -138,6 +139,7 @@ namespace CosmicShore.Utility
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
         public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
+        public void InvokePlayerNetworkSpawned() => OnPlayerNetworkSpawned.Raise();
 
         public void ResetForReplay()
         {

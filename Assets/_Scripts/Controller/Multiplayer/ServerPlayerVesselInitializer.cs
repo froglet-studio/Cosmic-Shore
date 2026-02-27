@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -406,18 +407,32 @@ namespace CosmicShore.Gameplay
         {
             await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
 
-            var playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (!playerNetObj)
-            {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player object not found for client {clientId}");
-                return;
-            }
+            // Look up via gameData.Players (reliable during scene transitions)
+            // instead of SpawnManager.GetPlayerNetworkObject (fragile during scene transitions).
+            var player = FindPlayerByClientId(clientId);
 
-            var player = playerNetObj.GetComponent<Player>();
-            if (!player)
+            if (player == null)
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player component missing on {clientId}");
-                return;
+                // Player hasn't registered yet — await the SOAP event.
+                var tcs = new UniTaskCompletionSource();
+                void handler() { if (FindPlayerByClientId(clientId) != null) tcs.TrySetResult(); }
+                gameData.OnPlayerNetworkSpawned.OnRaised += handler;
+                try
+                {
+                    using var cts = new CancellationTokenSource();
+                    cts.CancelAfter(TimeSpan.FromSeconds(5));
+                    await tcs.Task.AttachExternalCancellation(cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    CSDebug.LogError($"[ServerPlayerVesselInitializer] Player not found for client {clientId} after timeout");
+                    return;
+                }
+                finally
+                {
+                    gameData.OnPlayerNetworkSpawned.OnRaised -= handler;
+                }
+                player = FindPlayerByClientId(clientId);
             }
 
             player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
@@ -430,6 +445,16 @@ namespace CosmicShore.Gameplay
                 player.NetDefaultVesselType.Value = VesselClassType.Dolphin;
             }
             SpawnVesselForPlayer(clientId, player);
+        }
+
+        Player FindPlayerByClientId(ulong clientId)
+        {
+            foreach (var p in gameData.Players)
+            {
+                if (p is Player netPlayer && netPlayer.OwnerClientId == clientId)
+                    return netPlayer;
+            }
+            return null;
         }
 
         // ----------------------------
