@@ -3,13 +3,17 @@ using CosmicShore.Game.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class SpawnableHeart : SpawnableBase
+/// <summary>
+/// Spawns a heart shape made of prism trails.
+/// Now extends SpawnableShapeBase for trigger collision + intensity scaling.
+/// </summary>
+public class SpawnableHeart : SpawnableShapeBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-    [SerializeField] int blockCount = 60;
 
     protected override SpawnPoint[] GeneratePoints()
     {
+        int blockCount = GetScaledBlockCount();
         var points = new SpawnPoint[blockCount];
         for (int block = 0; block < blockCount; block++)
         {
@@ -31,6 +35,6 @@ public class SpawnableHeart : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(blockCount, seed);
+        return System.HashCode.Combine(baseBlockCount, intensityLevel, seed);
     }
 }
