@@ -10,6 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 9113152145594744158}
   - component: {fileID: 2108845819244561836}
+  - component: {fileID: 974600371733867531}
+  - component: {fileID: 7020590234104356314}
   - component: {fileID: 4798048649644018183}
   m_Layer: 0
   m_Name: AppManager
@@ -65,6 +67,33 @@ MonoBehaviour:
   themeManager: {fileID: 0}
   cameraManager: {fileID: 0}
   postProcessingManager: {fileID: 0}
+--- !u!114 &974600371733867531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6778103901198434919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 621b2788bb4141fa90f26bb44247998c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _fadeDuration: 0.4
+  _fadeColor: {r: 0, g: 0, b: 0, a: 1}
+  _postLoadSettleDelay: 0.1
+--- !u!114 &7020590234104356314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6778103901198434919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20624a295beaa9748929cf395a9c9be8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &4798048649644018183
 MonoBehaviour:
   m_ObjectHideFlags: 0
