@@ -13,6 +13,8 @@ namespace CosmicShore.Gameplay
         void Start()
         {
             gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
+            gameData.SelectedPlayerCount.Value = 3;
+            gameData.SelectedIntensity.Value = 1;
             gameData.InitializeGame();
         }
 
@@ -45,9 +47,6 @@ namespace CosmicShore.Gameplay
                 var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
                 CameraManager.Instance.SetupEndCameraFollow(followTarget);
             }
-
-            gameData.InvokeMiniGameRoundStarted();
-            gameData.InvokeTurnStarted();
         }
 
         void InitializeMenuPlayerIdentity(IPlayer player)
