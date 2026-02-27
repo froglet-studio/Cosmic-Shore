@@ -16,7 +16,6 @@ namespace CosmicShore.UI
         // Color scheme
         private static readonly Color TrackerColor = new Color(0.4f, 0.6f, 0.9f);
         private static readonly Color SuccessColor = new Color(0.3f, 0.8f, 0.4f);
-        private static readonly Color WarningColor = new Color(0.95f, 0.75f, 0.3f);
         private static readonly Color ErrorColor = new Color(0.9f, 0.35f, 0.35f);
         private static readonly Color ListHeaderColor = new Color(0.5f, 0.5f, 0.5f);
         

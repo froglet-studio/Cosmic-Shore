@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,7 +9,7 @@ namespace CosmicShore.UI
 {
     public class DuelCellStatsRoundUIController : MonoBehaviour
     {
-        [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
 
         [Header("Own Player Rows (Local User)")]
         [SerializeField] DuellCellStatsRowUIController ownRound1Row;
@@ -30,17 +31,19 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            ResetStateAndUI();
+        }
+
+        void Start()
+        {
             gameData.OnMiniGameTurnStarted.OnRaised += OnMiniGameTurnStarted;
             gameData.OnMiniGameRoundEnd.OnRaised += OnMiniGameRoundEnd;
-
-            ResetStateAndUI();   // full cleanup when this UI is enabled
         }
 
         void OnDisable()
         {
             gameData.OnMiniGameTurnStarted.OnRaised -= OnMiniGameTurnStarted;
             gameData.OnMiniGameRoundEnd.OnRaised -= OnMiniGameRoundEnd;
-
             UnsubscribeFromRoundStats();
         }
 

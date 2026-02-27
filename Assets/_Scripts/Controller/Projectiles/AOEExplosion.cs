@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -12,10 +13,11 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(MeshRenderer))]
     public class AOEExplosion : ElementalShipComponent
     {
+        [Inject] AudioSystem audioSystem;
         protected const float PI_OVER_TWO = Mathf.PI / 2;
 
         [Header("Dependencies")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
 
         [Header("Explosion Settings")]
         [SerializeField] protected float ExplosionDuration = 2f;
@@ -93,7 +95,7 @@ namespace CosmicShore.Gameplay
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.Explosion);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.Explosion);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 

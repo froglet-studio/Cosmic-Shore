@@ -16,7 +16,6 @@ namespace CosmicShore.UI
 {
     public class ProfileModal : ModalWindowManager
     {
-        [Inject] AudioSystem audioSystem;
         [Inject] PlayerDataService playerDataService;
 
         [SerializeField] GameObject BusyIndicator;
@@ -37,8 +36,6 @@ namespace CosmicShore.UI
         [SerializeField] Button cancelDisplayNameButton;
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
-        [SerializeField] float SuccessMessageFadeAfterSeconds = 2f;
-        [SerializeField] float SuccessMessageFadeDurationSeconds = 3f;
         [SerializeField] AudioClip TypingAudio;
         [SerializeField] bool FocusDisplayNameInputFieldEnabled;
 

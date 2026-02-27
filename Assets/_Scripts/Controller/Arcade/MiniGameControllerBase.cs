@@ -1,6 +1,7 @@
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -18,7 +19,7 @@ namespace CosmicShore.Gameplay
         
         [Header("Scene References")]
         [SerializeField] protected CountdownTimer countdownTimer;
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] protected ScriptableEventBool _onToggleReadyButton;
 
         protected virtual bool HasEndGame => true;

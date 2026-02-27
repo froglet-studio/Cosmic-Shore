@@ -1,25 +1,15 @@
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Obvious.Soap;
-using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
 {
     public class CameraManager : Singleton<CameraManager>
     {
-        [SerializeField]
-        CellRuntimeDataSO cellData;
-    
-        [SerializeField]
-        SceneNameListSO _sceneNameList;
-    
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
-        [SerializeField] private ScriptableEventNoParam _onReturnToMainMenu;
         [SerializeField] private ScriptableEventTransform _onInitializePlayerCamera;
-    
+
         // TODO - Need to have a game over event, to activate the end camera
         // += SetEndCameraActive
         // [SerializeField] private ScriptableEventNoParam _onGameOver;
@@ -27,24 +17,18 @@ namespace CosmicShore.Gameplay
         private ICameraController _playerCamera;
         private ICameraController _deathCamera;
         private ICameraController _activeController;
-    
-        [SerializeField] private CustomCameraController endCamera; 
-        [SerializeField] private CinemachineCamera mainMenuCamera;
+
+        [SerializeField] private CustomCameraController endCamera;
         [SerializeField] private Transform endCameraFollowTarget;
         [SerializeField] private Transform endCameraLookAtTarget;
-        [SerializeField] private float startTransitionDistance = 40f;
-    
+
         private Transform _playerFollowTarget;
-        private const int ActivePriority = 10;
 
         public Transform PlayerFollowTarget
         {
             get => _playerFollowTarget;
             set => _playerFollowTarget = value;
         }
-
-        private Camera _vCam;
-        private IVesselStatus vesselStatus;
 
         public override void Awake()
         {
@@ -53,35 +37,17 @@ namespace CosmicShore.Gameplay
             _deathCamera = GetOrFindCameraController("CM DeathCam");
             endCamera = GetOrFindCameraController("CM EndCam") as CustomCameraController;
         }
-    
+
         private void OnEnable()
         {
-            _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
             _onInitializePlayerCamera.OnRaised += SetupGamePlayCameras;
         }
 
         void OnDisable()
         {
-            _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
             _onInitializePlayerCamera.OnRaised -= SetupGamePlayCameras;
         }
 
-        void Start()
-        {
-            _vCam = (_playerCamera as CustomCameraController)?.Camera;
-            InitializeSceneCamera();
-        }
-
-        private void InitializeSceneCamera()
-        {
-            var activeScene = SceneManager.GetActiveScene().name;
-
-            if (activeScene == _sceneNameList.MainMenuScene)
-            {
-                OnEnteredMainMenu();
-            }
-        }
-    
         private ICameraController GetOrFindCameraController(string name)
         {
             Transform t = transform.Find(name);
@@ -99,12 +65,6 @@ namespace CosmicShore.Gameplay
         }
 
         public Transform GetCloseCamera() => (_playerCamera as CustomCameraController)?.transform;
-    
-        void OnEnteredMainMenu()
-        {
-            SetMainMenuCameraActive();
-            _themeManagerData.SetBackgroundColor(Camera.main);
-        }
 
         public void SetupGamePlayCameras(Transform followTarget)
         {
@@ -127,35 +87,23 @@ namespace CosmicShore.Gameplay
                 pcc.SnapToTarget();
         }
 
-        public void SetMainMenuCameraActive()
+        /// <summary>
+        /// Configures the end camera to follow the given target with the vessel's
+        /// camera settings applied. Used by Menu_Main to follow the autopilot vessel.
+        /// </summary>
+        public void SetupEndCameraFollow(Transform followTarget)
         {
-            if (mainMenuCamera != null)
-            {
-                mainMenuCamera.Priority = ActivePriority;
-                mainMenuCamera.gameObject.SetActive(true);
-            }
-            else
-            {
-                CSDebug.LogWarning("[CameraManager] Main menu camera is not assigned!");
-            }
-        
-            if (_playerCamera is CustomCameraController pcc)
-                pcc.Deactivate();
-            if (_deathCamera is CustomCameraController dcc)
-                dcc.Deactivate();
-            if (endCamera != null)
-                endCamera.Deactivate();
+            if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
-            _activeController = null;
-            Invoke("LookAtCrystal", 1f);
+            endCamera.SetFollowTarget(followTarget);
+
+            var customizer = followTarget.GetComponent<VesselCameraCustomizer>();
+            customizer.Configure(endCamera);
+
+            endCamera.SnapToTarget();
+            SetEndCameraActive();
+            _themeManagerData.SetBackgroundColor(Camera.main);
         }
-
-        void LookAtCrystal()
-        {
-            if (mainMenuCamera)
-                mainMenuCamera.LookAt = cellData.CrystalTransform; // CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
-        }
-
 
         public void SetCloseCameraActive() => SetActiveCamera(_playerCamera);
 
@@ -169,10 +117,8 @@ namespace CosmicShore.Gameplay
                 if (_deathCamera != null) _deathCamera.Deactivate();
                 if (endCamera != null) endCamera.Deactivate();
 
-
             controller?.Activate();
             _activeController = controller;
-            mainMenuCamera.gameObject.SetActive(false);
         }
 
         public ICameraController GetActiveController() => _activeController;

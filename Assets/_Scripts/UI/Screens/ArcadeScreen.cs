@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.UI;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -10,6 +11,8 @@ namespace CosmicShore.UI
 {
     public class ArcadeScreen : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [FormerlySerializedAs("exploreMenu")]
         [SerializeField] ArcadeExploreView ExploreView;
         [FormerlySerializedAs("loadoutMenu")]
@@ -29,7 +32,7 @@ namespace CosmicShore.UI
             else
                 UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeExploreMenu);
 
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.SwitchView);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.SwitchView);
             LoadoutView.gameObject.SetActive(loadout);
             ExploreView.gameObject.SetActive(!loadout);
         }

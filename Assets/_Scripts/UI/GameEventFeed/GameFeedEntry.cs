@@ -120,7 +120,7 @@ namespace CosmicShore.UI
             tmp.alignment = TextAlignmentOptions.Right;
             tmp.richText = true;
             tmp.overflowMode = TextOverflowModes.Truncate;
-            tmp.enableWordWrapping = true;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
 
             var entry = go.GetComponent<GameFeedEntry>();
             entry.textComponent = tmp;

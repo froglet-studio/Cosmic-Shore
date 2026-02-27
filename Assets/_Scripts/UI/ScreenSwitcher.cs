@@ -55,7 +55,6 @@ namespace CosmicShore.UI
         }
 
         [Header("Swipe Settings")]
-        [SerializeField] private float percentThreshold = 0.2f; // Smaller = more sensitive
         [SerializeField] private float easing = 0.5f;           // Slide duration
 
         [Header("State")]
@@ -68,8 +67,6 @@ namespace CosmicShore.UI
 
         [Header("Scene References")]
         [SerializeField] private Transform NavBar;
-        [SerializeField] private HangarScreen HangarMenu;
-        [SerializeField] private LeaderboardsMenu LeaderboardMenu;
 
         [Header("Arcade Panel (separate)")]
         [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
@@ -81,6 +78,10 @@ namespace CosmicShore.UI
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
         private RectTransform _canvasRect;
+        private MenuAudio _menuAudio;
+
+        // Cached IScreen components per screen index for lifecycle callbacks
+        private readonly Dictionary<int, IScreen> _screenMap = new();
 
         // Old constants kept for compatibility
         private const int STORE  = (int)MenuScreens.STORE;
@@ -193,7 +194,9 @@ namespace CosmicShore.UI
         {
             _rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
+            _menuAudio = GetComponent<MenuAudio>();
 
+            CacheScreenComponents();
             LayoutScreensToViewport();
 
             panelLocation = transform.position;
@@ -332,6 +335,21 @@ namespace CosmicShore.UI
 
         #region Screen Mapping Helpers
 
+        private void CacheScreenComponents()
+        {
+            int count = GetScreenCount();
+            for (int i = 0; i < count; i++)
+            {
+                RectTransform rt = GetScreenRootRT(i);
+                if (rt == null) continue;
+
+                // Check same GameObject first, then scan children
+                var screen = rt.GetComponentInChildren<IScreen>(true);
+                if (screen != null)
+                    _screenMap[i] = screen;
+            }
+        }
+
         private int GetScreenCount()
         {
             if (screens != null && screens.Count > 0)
@@ -394,24 +412,16 @@ namespace CosmicShore.UI
             if (ScreenIndex == currentScreen)
                 return;
 
+            // Notify the outgoing screen
+            if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
+                exitingScreen.OnScreenExit();
+
             // Map index → logical enum id
             MenuScreens screenId = GetScreenIdForIndex(ScreenIndex);
 
-            switch (screenId)
-            {
-                // If someone tries to navigate to the ARCADE index,
-                // treat it as opening the separate arcade panel instead of sliding.
-                // case MenuScreens.ARK:
-                //     OpenArcadePanel();
-                //     return;
-                case MenuScreens.HANGAR:
-                {
-                    UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
-                    if (HangarMenu)
-                        HangarMenu.LoadView();
-                    break;
-                }
-            }
+            // Notify the incoming screen
+            if (_screenMap.TryGetValue(ScreenIndex, out var enteringScreen))
+                enteringScreen.OnScreenEnter();
 
             if (screenId == MenuScreens.HOME)
                 PauseSystem.TogglePauseGame(false);
@@ -424,9 +434,8 @@ namespace CosmicShore.UI
 
             if (animate)
             {
-                var menuAudio = GetComponent<MenuAudio>();
-                if (menuAudio)
-                    menuAudio.PlayAudio();
+                if (_menuAudio)
+                    _menuAudio.PlayAudio();
 
                 if (navigateCoroutine != null)
                     StopCoroutine(navigateCoroutine);
@@ -466,9 +475,6 @@ namespace CosmicShore.UI
 
         public void OnClickPortNav()
         {
-            if (LeaderboardMenu != null)
-                LeaderboardMenu.LoadView();
-
             NavigateTo(MenuScreens.PORT);
         }
 

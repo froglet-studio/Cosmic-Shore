@@ -8,11 +8,13 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.UI
 {
     public class StoreScreen : View
     {
+        [Inject] CaptainManager _captainManager;
         [Header("Crystal Balance")]
         [SerializeField] TMP_Text CrystalBalance;
         [SerializeField] TMP_Text TicketBalance;
@@ -115,7 +117,7 @@ namespace CosmicShore.UI
             captains = captains
                 .Where(x =>
                 {
-                    var captain = CaptainManager.Instance.GetCaptainByName(x.Name);
+                    var captain = _captainManager.GetCaptainByName(x.Name);
 
                     // If this assert is triggered, it suggests a configuration mismatch between playfab and scriptable objects
                     Assert.AreNotEqual(captain, null, $"Could not find captain while loading store catalog - Captain Name: {x.Name}");
@@ -195,7 +197,7 @@ namespace CosmicShore.UI
                     rowIndex++;
                     if (rowIndex < MaxGameRows && gameIndex != games.Count) // Second check is to prevent an empty row from being displayed
                     {
-                        row = CaptainPurchaseRows[rowIndex];
+                        row = GamePurchaseRows[rowIndex];
                         row.gameObject.SetActive(true);
                     }
                 }

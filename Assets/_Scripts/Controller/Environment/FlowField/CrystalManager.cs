@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -32,7 +33,7 @@ namespace CosmicShore.Gameplay
         private const float MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS = 25f;
 
         [Header("Dependencies")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] protected CellRuntimeDataSO cellData;
 
         [Header("Crystal Prefab")]

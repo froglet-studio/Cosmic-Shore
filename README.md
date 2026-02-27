@@ -88,7 +88,9 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Engine**: Unity 6+ with URP (Universal Render Pipeline)
 - **Language**: C#
 - **Architecture**: ScriptableObject-driven configuration + SOAP (Scriptable Object Architecture Pattern) for event-driven, decoupled communication
-- **Async**: UniTask
+- **Async**: UniTask with CancellationToken throughout
+- **DI**: Reflex dependency injection — `AppManager` as root `IInstaller`, lazy singleton factories, `[Inject]` across gameplay and UI systems
+- **Auth**: Unity Gaming Services (UGS) Authentication — anonymous sign-in, cached sessions, SOAP-driven state via `AuthenticationDataVariable`
 - **Networking**: Unity Netcode for GameObjects (multiplayer with AI backfill)
 - **Camera**: Cinemachine 3.1.2 with per-vessel settings
 - **VFX**: VFX Graph, custom HLSL shaders, Shader Graph, procedural skybox
@@ -96,9 +98,8 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Audio**: Wwise integration
 - **Haptics**: NiceVibrations (mobile)
 - **Animation**: Timeline, DOTween
-- **DI**: Reflex dependency injection
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance, DOTS Entities (incremental adoption)
-- **Backend**: PlayFab, Firebase, Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, IAP, Ads)
+- **Backend**: Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, IAP, Ads), PlayFab (legacy, migrating off), Firebase
 - **Testing**: Unity Test Framework (NUnit)
 - **Tutorial**: Custom FTUE system with adapter pattern
 - **Dialogue**: Custom dialogue system with editor tools
@@ -112,22 +113,80 @@ See [`CLAUDE.md`](./CLAUDE.md) for architecture patterns, coding standards, and 
 
 See [`GIT_RULES.md`](./GIT_RULES.md) for branching model, commit conventions, and PR standards.
 
+### Application Flow
+
+```
+Bootstrap Scene → AppManager (DI root + orchestrator, persists across scenes)
+    ├─ Reflex DI: registers all managers, SO assets, services
+    ├─ AuthenticationServiceFacade → UGS sign-in → SOAP state
+    ├─ SceneLoader → game launch, restart, return-to-menu (NetworkBehaviour)
+    └─ SceneTransitionManager → Authentication → Menu_Main
+                                                    │
+                                                    ▼
+                                              ScreenSwitcher
+                                    ┌────┬────┬────┬────┬────┐
+                                    │Store│Arcade│Home│Port│Hangar│
+                                    └────┴────┴────┴────┴────┘
+                                    ← slide left / right →
+```
+
+The app boots through a Bootstrap scene where `AppManager` serves as both the top-level orchestrator (`[DefaultExecutionOrder(-100)]`) and the Reflex DI root (`IInstaller`). It configures the platform, registers all persistent managers and SO assets (including `GameDataSO` and `SceneNameListSO`), starts authentication and network monitoring, then transitions to the Authentication scene.
+
+Authentication is handled by the `AuthenticationServiceFacade` which writes to a shared SOAP `AuthenticationDataVariable`. Scene loading is managed by `SceneLoader`, a `NetworkBehaviour` that auto-selects local vs network scene loading and handles game restarts.
+
+The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navigation between five screen panels. Screens implement the `IScreen` interface for lifecycle callbacks (`OnScreenEnter`/`OnScreenExit`), allowing the switcher to notify screens without hard-coded references. See the [Menu Screen Navigation](./CLAUDE.md#menu-screen-navigation-menu_main-scene) and [Authentication & Session Flow](./CLAUDE.md#authentication--session-flow) sections in CLAUDE.md for details.
+
+### Architecture Audits
+
+- **[Bootstrap Scene Audit](./Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md)** — All 16 root GameObjects, execution order map, applied fixes, and deferred refactoring issues
+- **[Prism Performance Audit](./Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md)** — Per-prism component stack, Jobs+Burst optimizations, and remaining main-thread bottlenecks
+
 ### Project Structure
 
 ```
 Assets/
-├── _Scripts/       # All first-party C# code (~1,100 files)
-│   ├── App/        # Application systems (Auth, Audio, IAP, Ads, Quests, etc.)
-│   ├── Game/       # Gameplay systems (~600 files)
-│   ├── Systems/    # Bootstrap, scene flow, core systems
-│   ├── Models/     # Enums, data models
-│   ├── Utility/    # SOAP types, effects, pooling, data persistence
-│   └── DialogueSystem/
-├── _SO_Assets/     # ScriptableObject asset instances
-├── _Prefabs/       # Prefabs organized by category
-├── _Scenes/        # Game scenes (singleplayer, multiplayer, test)
-├── FTUE/           # Tutorial / first-time user experience
-└── Plugins/        # Third-party (SOAP, DOTween, etc.)
+├── _Scripts/                  # All first-party C# code (~1,100 files)
+│   ├── Controller/            # Gameplay systems (~536 files)
+│   │   ├── Vessel/            # Vessel core, actions, prisms, trails
+│   │   ├── Environment/       # Cells, crystals, flora/fauna, spawning
+│   │   ├── ImpactEffects/     # Impactors + Effect SOs
+│   │   ├── Arcade/            # Mini-game controllers, scoring
+│   │   ├── Multiplayer/       # Netcode: vessel init, lobby, network stats
+│   │   ├── Camera/            # Per-vessel camera system
+│   │   ├── AI/                # AIPilot, AIGunner
+│   │   └── ...                # Projectiles, IO, FX, Managers, etc.
+│   ├── System/                # Application-level systems (~126 files)
+│   │   ├── Bootstrap/         # BootstrapConfigSO, ServiceLocator, SceneTransitionManager
+│   │   ├── Systems/Auth/      # AuthenticationController (MonoBehaviour adapter)
+│   │   ├── Playfab/           # Legacy PlayFab integration (deprecated auth)
+│   │   ├── Instrumentation/   # Analytics, Firebase
+│   │   ├── Runtime/           # Dialogue runtime
+│   │   ├── AppManager.cs      # Top-level orchestrator + Reflex DI root
+│   │   ├── SceneLoader.cs     # Scene loading, restart, return-to-menu (NetworkBehaviour)
+│   │   ├── AuthenticationServiceFacade.cs
+│   │   ├── AuthenticationSceneController.cs
+│   │   ├── SplashToAuthFlow.cs
+│   │   ├── NetworkMonitor.cs
+│   │   └── ...                # Audio, LoadOut, Quest, Ads, etc.
+│   ├── UI/                    # Game & app UI (~188 files)
+│   │   ├── Screens/           # Menu screens (Home, Arcade, Store, Hangar, Leaderboards, Episodes)
+│   │   ├── Interfaces/        # IScreen, IVesselHUDController, IVesselHUDView
+│   │   ├── Elements/          # Reusable components (NavLink, NavGroup, ProfileDisplayWidget)
+│   │   ├── Views/             # PlayerDataService, screen views
+│   │   ├── Controller/        # HUD controllers
+│   │   ├── Modals/            # ModalWindowManager, Settings, Profile, Purchase dialogs
+│   │   ├── ScreenSwitcher.cs  # Central menu navigation (slide + IScreen lifecycle)
+│   │   └── ...                # FX, Toast, Animations
+│   ├── Data/                  # Enums & data structs
+│   ├── ScriptableObjects/     # SO definitions & SOAP types
+│   │   └── SOAP/              # Custom SOAP types (14 subdirectories)
+│   ├── Utility/               # Effects, pooling, data persistence
+│   └── Tests/                 # Edit-mode unit tests
+├── _SO_Assets/                # ScriptableObject asset instances
+├── _Prefabs/                  # Prefabs organized by category
+├── _Scenes/                   # Game scenes (singleplayer, multiplayer, test)
+├── FTUE/                      # Tutorial / first-time user experience
+└── Plugins/                   # Third-party (SOAP, DOTween, etc.)
 ```
 
 ---

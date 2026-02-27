@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
@@ -120,33 +119,6 @@ namespace CosmicShore.Gameplay
                 idx = idx % _playerOrigins.Length;
             }
             return _playerOrigins[idx];
-        }
-
-        private bool TrySpawnVesselForAI(Player aiPlayer, out NetworkObject vesselNO)
-        {
-            vesselNO = null;
-
-            var vesselType = aiPlayer.NetDefaultVesselType.Value;
-
-            if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
-            {
-                CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] No prefab for AI vessel type {vesselType}");
-                return false;
-            }
-
-            if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
-            {
-                CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] Prefab {shipPrefabTransform.name} missing NetworkObject");
-                return false;
-            }
-
-            vesselNO = Instantiate(shipNetworkObject);
-
-            // Place at AI player position (or tweak as needed)
-            vesselNO.transform.SetPositionAndRotation(aiPlayer.transform.position, aiPlayer.transform.rotation);
-            vesselNO.Spawn(true); // server-owned
-            aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
-            return true;
         }
     }
 }

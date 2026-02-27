@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    public class GameSetting : SingletonPersistent<GameSetting>
+    public class GameSetting : MonoBehaviour
     {
         public delegate void OnChangeMusicEnabledStatusEvent(bool status);
         public static event OnChangeMusicEnabledStatusEvent OnChangeMusicEnabledStatus;
@@ -51,15 +51,17 @@ namespace CosmicShore.Gameplay
     }
 
         #region Settings
-        [SerializeField] bool musicEnabled = true;
-        [SerializeField] bool sfxEnabled = true;
-        [SerializeField] bool hapticsEnabled = true;
-        [SerializeField] bool invertYEnabled = false;
-        [SerializeField] bool invertThrottleEnabled = false;
-        [SerializeField] bool joystickVisualsEnabled = true;
-        [SerializeField] float musicLevel = 1.0f;
-        [SerializeField] float sfxLevel = 1.0f;
-        [SerializeField] float hapticsLevel = 1.0f;
+        // Runtime state — always populated from PlayerPrefs in Awake().
+        // Not serialized to avoid dirtying the scene when values change at runtime.
+        bool musicEnabled = true;
+        bool sfxEnabled = true;
+        bool hapticsEnabled = true;
+        bool invertYEnabled;
+        bool invertThrottleEnabled;
+        bool joystickVisualsEnabled = true;
+        float musicLevel = 1.0f;
+        float sfxLevel = 1.0f;
+        float hapticsLevel = 1.0f;
 
         public bool MusicEnabled { get => musicEnabled; }
         public bool SFXEnabled { get => sfxEnabled; }
@@ -72,10 +74,8 @@ namespace CosmicShore.Gameplay
         public float HapticsLevel { get => hapticsLevel; }
         #endregion
 
-        public override void Awake()
+        void Awake()
         {
-            base.Awake();
-
             SetPlayerPrefDefault(PlayerPrefKeys.MusicEnabled, 1);
             SetPlayerPrefDefault(PlayerPrefKeys.SFXEnabled, 1);
             SetPlayerPrefDefault(PlayerPrefKeys.HapticsEnabled, 1);
@@ -87,7 +87,10 @@ namespace CosmicShore.Gameplay
             SetPlayerPrefDefault(PlayerPrefKeys.SFXLevel, 1);
             SetPlayerPrefDefault(PlayerPrefKeys.HapticsLevel, 1);
 
-            PlayerPrefs.Save();
+            // PlayerPrefs are readable in-memory immediately after Set; the
+            // explicit Save() was performing synchronous disk I/O during
+            // bootstrap, blocking the main thread. Unity auto-saves prefs
+            // on application quit.
 
             musicEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.MusicEnabled)) == 1;
             sfxEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.SFXEnabled)) == 1;

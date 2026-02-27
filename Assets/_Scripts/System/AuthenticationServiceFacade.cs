@@ -1,7 +1,8 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using CosmicShore.ScriptableObjects;
-using UnityEngine;
+using CosmicShore.Utility;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 
@@ -15,25 +16,29 @@ namespace CosmicShore.Core
         public string PlayerId =>
             IsSignedIn ? AuthenticationService.Instance.PlayerId : string.Empty;
 
-        // Safe null-guard (and returns "No" if service isn't available yet)
-        private string SessionTokenExists =>
-            (AuthenticationService.Instance != null && AuthenticationService.Instance.SessionTokenExists) ? "Yes" : "No";
+        public bool SessionTokenExists =>
+            AuthenticationService.Instance != null && AuthenticationService.Instance.SessionTokenExists;
+
+        readonly AuthenticationDataVariable _authenticationDataVariable;
+        readonly bool _allowLog;
+
+        AuthenticationData authenticationData => _authenticationDataVariable.Value;
 
         bool _startupAttempted;
-        bool _allowLog;
-
-        AuthenticationDataVariable _authenticationDataVariable;
-        private AuthenticationData authenticationData => _authenticationDataVariable.Value;
-
         bool _eventsWired;
-        bool _successNotified; // prevents double-raising SignedIn if we get both await + event
+        bool _successNotified;
+        Task _initTask;
 
         public AuthenticationServiceFacade(AuthenticationDataVariable authenticationDataVariable, bool allowLog)
         {
             _authenticationDataVariable = authenticationDataVariable;
             _allowLog = allowLog;
         }
-        
+
+        /// <summary>
+        /// Kicks off initialization + anonymous sign-in.
+        /// Safe to call from AppManager.Start() as fire-and-forget.
+        /// </summary>
         public async void StartAuthentication()
         {
             if (_startupAttempted)
@@ -48,8 +53,107 @@ namespace CosmicShore.Core
             }
             catch (Exception e)
             {
-                // Any exception from init/sign-in should be treated as sign-in failure
                 OnSignInFailed(e);
+            }
+        }
+
+        /// <summary>
+        /// Initializes Unity Services and wires auth events.
+        /// Coalesces concurrent callers into a single initialization attempt.
+        /// </summary>
+        public Task EnsureInitializedAsync()
+        {
+            if (authenticationData.State == AuthenticationData.AuthState.Ready ||
+                authenticationData.State == AuthenticationData.AuthState.SignedIn)
+                return Task.CompletedTask;
+
+            if (_initTask != null && !_initTask.IsCompleted)
+                return _initTask;
+
+            _initTask = InitializeCore();
+            return _initTask;
+        }
+
+        async Task InitializeCore()
+        {
+            authenticationData.State = AuthenticationData.AuthState.Initializing;
+            Log("Initializing Unity Services...");
+
+            await UnityServices.InitializeAsync();
+            WireAuthEventsOnce();
+
+            authenticationData.State = AuthenticationData.AuthState.Ready;
+            Log("Unity Services initialized.");
+        }
+
+        /// <summary>
+        /// Signs in anonymously if not already signed in.
+        /// Uses cached session token when available for silent re-authentication.
+        /// </summary>
+        public async Task EnsureSignedInAnonymouslyAsync()
+        {
+            await EnsureInitializedAsync();
+
+            if (AuthenticationService.Instance == null)
+            {
+                OnSignInFailed("AuthenticationService.Instance is null after initialization.");
+                return;
+            }
+
+            if (AuthenticationService.Instance.IsSignedIn)
+            {
+                Log($"Already signed in. PlayerId={AuthenticationService.Instance.PlayerId}");
+                OnSignInSuccess();
+                return;
+            }
+
+            authenticationData.State = AuthenticationData.AuthState.SigningIn;
+            Log($"Signing in anonymously... (SessionTokenExists={SessionTokenExists})");
+
+            try
+            {
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                OnSignInSuccess();
+            }
+            catch (Exception e)
+            {
+                OnSignInFailed(e);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to restore a cached session without showing UI.
+        /// Returns true if the user is now signed in.
+        /// </summary>
+        public async Task<bool> TrySignInCachedAsync()
+        {
+            await EnsureInitializedAsync();
+
+            if (AuthenticationService.Instance == null)
+                return false;
+
+            if (AuthenticationService.Instance.IsSignedIn)
+            {
+                OnSignInSuccess();
+                return true;
+            }
+
+            if (!AuthenticationService.Instance.SessionTokenExists)
+                return false;
+
+            try
+            {
+                authenticationData.State = AuthenticationData.AuthState.SigningIn;
+                Log("Attempting cached session sign-in...");
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                OnSignInSuccess();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                authenticationData.State = AuthenticationData.AuthState.Failed;
+                Log($"Cached sign-in failed: {ex.Message}");
+                return false;
             }
         }
 
@@ -65,20 +169,26 @@ namespace CosmicShore.Core
                 if (clearSessionToken)
                     AuthenticationService.Instance.ClearSessionToken();
 
-                // We call our helper here because:
-                // - SignedOut event might fire later, or not at all in some edge cases.
-                // - We want deterministic state + event raising from this call.
                 OnSignedOut("Manual SignOut invoked.");
             }
             catch (Exception e)
             {
-                // SignOut shouldn't usually fail, but if it does, log it and still move to signed-out-ready state.
                 Log($"SignOut threw exception: {e}");
                 OnSignedOut("Manual SignOut invoked (exception occurred).");
             }
         }
 
-        // ... [Keeping Stubs for Google/Apple/Facebook unchanged] ...
+        /// <summary>
+        /// Allows the caller to reset the startup guard so authentication
+        /// can be re-attempted after a failure or sign-out.
+        /// </summary>
+        public void ResetStartupState()
+        {
+            _startupAttempted = false;
+            _initTask = null;
+        }
+
+        // Provider stubs for future platform sign-in
         public Task SignInWithGoogleAsync(string idToken) => Task.CompletedTask;
         public Task SignInWithAppleAsync(string identityToken) => Task.CompletedTask;
         public Task SignInWithFacebookAsync(string accessToken) => Task.CompletedTask;
@@ -89,59 +199,9 @@ namespace CosmicShore.Core
         public Task LinkWithFacebookAsync(string accessToken) => Task.CompletedTask;
         public Task LinkWithSteamAsync(string steamSessionTicket) => Task.CompletedTask;
 
-        async Task EnsureInitializedAsync()
-        {
-            if (authenticationData.State == AuthenticationData.AuthState.Ready ||
-                authenticationData.State == AuthenticationData.AuthState.SignedIn)
-                return;
-
-            if (authenticationData.State == AuthenticationData.AuthState.Initializing)
-                return;
-
-            authenticationData.State = AuthenticationData.AuthState.Initializing;
-            Log("Initializing Unity Services...");
-
-            await UnityServices.InitializeAsync();
-            WireAuthEventsOnce();
-
-            authenticationData.State = AuthenticationData.AuthState.Ready;
-            Log("Unity Services initialized.");
-        }
-
-        async Task EnsureSignedInAnonymouslyAsync()
-        {
-            await EnsureInitializedAsync();
-
-            if (AuthenticationService.Instance == null)
-            {
-                OnSignInFailed("AuthenticationService.Instance is null after initialization.");
-                return;
-            }
-
-            if (AuthenticationService.Instance.IsSignedIn)
-            {
-                // Already signed in; raise success deterministically (guarded against double-firing).
-                Log($"Already signed in. PlayerId={AuthenticationService.Instance.PlayerId}");
-                OnSignInSuccess();
-                return;
-            }
-
-            authenticationData.State = AuthenticationData.AuthState.SigningIn;
-            Log($"Signing in anonymously... (SessionTokenExists={SessionTokenExists})");
-
-            try
-            {
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-
-                // Some platforms trigger SignedIn event; some flows rely on the await completion.
-                // Call success here, but it's guarded so it won't double-raise if the event also fires.
-                OnSignInSuccess();
-            }
-            catch (Exception e)
-            {
-                OnSignInFailed(e);
-            }
-        }
+        // ──────────────────────────────────────────────
+        //  UGS Auth Event Wiring
+        // ──────────────────────────────────────────────
 
         void WireAuthEventsOnce()
         {
@@ -153,33 +213,18 @@ namespace CosmicShore.Core
 
             _eventsWired = true;
 
-            AuthenticationService.Instance.SignedIn += () =>
-            {
-                // Centralize all success handling
-                OnSignInSuccess();
-            };
+            AuthenticationService.Instance.SignedIn += () => OnSignInSuccess();
 
-            AuthenticationService.Instance.SignInFailed += (RequestFailedException ex) =>
-            {
-                // Centralize all failure handling
-                OnSignInFailed(ex);
-            };
+            AuthenticationService.Instance.SignInFailed += (RequestFailedException ex) => OnSignInFailed(ex);
 
-            AuthenticationService.Instance.SignedOut += () =>
-            {
-                // Centralize all sign-out handling
-                OnSignedOut("Auth event: SignedOut");
-            };
+            AuthenticationService.Instance.SignedOut += () => OnSignedOut("Auth event: SignedOut");
 
-            AuthenticationService.Instance.Expired += () =>
-            {
-                // Session expired != explicit signed-out, but your state/event behavior can be consistent.
-                // If you WANT to treat Expired as signed-out, route through OnSignedOut as well.
-                OnSignedOut("Auth event: Session Expired");
-            };
+            AuthenticationService.Instance.Expired += () => OnSignedOut("Auth event: Session Expired");
         }
 
-        // ---------------- Centralized event/state helpers ----------------
+        // ──────────────────────────────────────────────
+        //  Centralized State + SOAP Event Helpers
+        // ──────────────────────────────────────────────
 
         void OnSignInSuccess()
         {
@@ -225,7 +270,6 @@ namespace CosmicShore.Core
 
         void OnSignedOut(string reason)
         {
-            // Reset the "success notified" flag so future sign-in attempts can raise success again.
             _successNotified = false;
 
             authenticationData.State = AuthenticationData.AuthState.Ready;
@@ -239,7 +283,7 @@ namespace CosmicShore.Core
         void Log(string msg)
         {
             if (_allowLog)
-                Debug.Log($"[UGS Auth] {msg}");
+                CSDebug.Log($"[UGS Auth] {msg}");
         }
     }
 }

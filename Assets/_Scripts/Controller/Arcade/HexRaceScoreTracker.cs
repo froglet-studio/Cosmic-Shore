@@ -39,13 +39,16 @@ namespace CosmicShore.Gameplay
             gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
         }
 
-        void OnDestroy()
+        public override void OnDestroy()
         {
             UnsubscribeEvents();
-            if (gameData == null) return;
-            gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
-            if (gameData.OnMiniGameTurnEnd != null)
-                gameData.OnMiniGameTurnEnd.OnRaised -= HandleGameEnd;
+            if (gameData != null)
+            {
+                gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
+                if (gameData.OnMiniGameTurnEnd != null)
+                    gameData.OnMiniGameTurnEnd.OnRaised -= HandleGameEnd;
+            }
+            base.OnDestroy();
         }
 
         void OnDisable() => _isTracking = false;

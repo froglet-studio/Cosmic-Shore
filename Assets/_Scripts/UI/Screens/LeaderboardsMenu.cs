@@ -12,7 +12,7 @@ using System.Linq;
 namespace CosmicShore.UI
 {
     [RequireComponent(typeof(MenuAudio))]
-    public class LeaderboardsMenu : MonoBehaviour
+    public class LeaderboardsMenu : MonoBehaviour, IScreen
     {
         [SerializeField] 
         SO_GameList allGames;
@@ -28,9 +28,12 @@ namespace CosmicShore.UI
         GameModes SelectedGameMode = GameModes.BlockBandit;
         VesselClassType selectedVesselType = VesselClassType.Any;
 
+        MenuAudio _menuAudio;
+
         int _displayCount;
         void Start()
         {
+            _menuAudio = GetComponent<MenuAudio>();
             // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
             // Copy the game list, but skip Freestyle -- IMPORTANT to copy the list so we don't modify the SO
             foreach (var game in allGames.Games)
@@ -46,6 +49,14 @@ namespace CosmicShore.UI
 
             ShipClassSelection.onValueChanged.AddListener(SelectShipType);
         }
+
+        void OnDestroy()
+        {
+            PlayerDataController.OnProfileLoaded -= FetchLeaderboard;
+        }
+
+        public void OnScreenEnter() => LoadView();
+        public void OnScreenExit() { }
 
         public void LoadView()
         {
@@ -128,7 +139,7 @@ namespace CosmicShore.UI
                     gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
                     gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
                     gameSelection.GetComponent<Button>().onClick
-                        .AddListener(() => GetComponent<MenuAudio>().PlayAudio());
+                        .AddListener(() => _menuAudio.PlayAudio());
                 }
                 catch (UnityException outOfBoundException)
                 {

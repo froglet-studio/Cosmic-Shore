@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using CosmicShore.Data;
@@ -20,7 +21,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Runtime Data")]
         [SerializeField] CellRuntimeDataSO runtime;
-        [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
 
         [SerializeField] float nucleusScaleMultiplier = 1f;
 

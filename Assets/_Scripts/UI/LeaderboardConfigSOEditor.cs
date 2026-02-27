@@ -34,7 +34,7 @@ namespace CosmicShore.UI
             serializedObject.Update();
 
             // Header section
-            DrawHeader();
+            DrawConfigHeader();
 
             EditorGUILayout.Space(5);
 
@@ -74,7 +74,7 @@ namespace CosmicShore.UI
             serializedObject.ApplyModifiedProperties();
         }
 
-        private void DrawHeader()
+        private void DrawConfigHeader()
         {
             var originalColor = GUI.backgroundColor;
             GUI.backgroundColor = headerColor;

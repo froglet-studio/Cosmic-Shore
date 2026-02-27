@@ -3,7 +3,7 @@ using UnityEngine;
 using TMPro;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using UnityEngine.Serialization;
+using Reflex.Attributes;
 using CosmicShore.Data;
 
 namespace CosmicShore.UI
@@ -12,7 +12,7 @@ namespace CosmicShore.UI
     {
         [SerializeField] TMP_Text currentScoreText;
         
-        [FormerlySerializedAs("miniGameData")] [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
 
         void Update()
         {

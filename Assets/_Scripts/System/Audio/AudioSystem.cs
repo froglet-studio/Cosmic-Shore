@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -54,9 +55,14 @@ namespace CosmicShore.Core
     }
 
     [DefaultExecutionOrder(-1)]
-    public class AudioSystem : SingletonPersistent<AudioSystem>
+    public class AudioSystem : MonoBehaviour
     {
         #region Fields
+        [Inject] GameSetting gameSetting;
+
+        [Header("SOAP Event Channels")]
+        [SerializeField] ScriptableEventGameplaySFX gameplaySFXEvent;
+
         [SerializeField] AudioMixer masterMixer;
         [SerializeField] AudioSource sfxSource;
         [SerializeField] AudioSource musicSource1;
@@ -112,8 +118,6 @@ namespace CosmicShore.Core
         Dictionary<MenuAudioCategory, AudioClip> MenuAudioClips;
         Dictionary<GameplaySFXCategory, AudioClip> GameplaySFXClips;
 
-        [Inject] GameSetting gameSetting;
-
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
         #endregion
@@ -123,9 +127,13 @@ namespace CosmicShore.Core
             InitializeMenuAudioClips();
             InitializeGameplaySFXClips();
 
+            // Fallback: when auto-created by AppManager.EnsureService before the
+            // Reflex container is built, [Inject] will not have resolved yet.
+            gameSetting ??= FindFirstObjectByType<GameSetting>();
+
             if (gameSetting == null)
             {
-                CSDebug.LogError("[AudioSystem] gameSetting was not injected — check AppManager DI registration.");
+                CSDebug.LogError("[AudioSystem] GameSetting not injected — ensure GameSetting is registered in the DI container.");
                 return;
             }
 
@@ -142,12 +150,20 @@ namespace CosmicShore.Core
             GameSetting.OnChangeSFXEnabledStatus += ChangeSFXEnabledStatus;
             GameSetting.OnChangeMusicLevel += ChangeMusicLevel;
             GameSetting.OnChangeSFXLevel += ChangeSFXLevel;
+
+            if (gameplaySFXEvent != null)
+                gameplaySFXEvent.OnRaised += PlayGameplaySFX;
         }
 
         void OnDisable()
         {
             GameSetting.OnChangeMusicEnabledStatus -= ChangeMusicEnabledStatus;
             GameSetting.OnChangeSFXEnabledStatus -= ChangeSFXEnabledStatus;
+            GameSetting.OnChangeMusicLevel -= ChangeMusicLevel;
+            GameSetting.OnChangeSFXLevel -= ChangeSFXLevel;
+
+            if (gameplaySFXEvent != null)
+                gameplaySFXEvent.OnRaised -= PlayGameplaySFX;
         }
 
         void ChangeMusicEnabledStatus(bool status)
@@ -166,8 +182,8 @@ namespace CosmicShore.Core
         {
             CSDebug.Log($"ChangeMusicLevel: {level}, {level/5f}");
             musicVolume = level / 5f;   // max .2 -- default max volume is too high
-            musicSource1.volume = musicVolume;
-            musicSource2.volume = musicVolume;
+            if (musicSource1 != null) musicSource1.volume = musicVolume;
+            if (musicSource2 != null) musicSource2.volume = musicVolume;
         }
 
         void ChangeSFXLevel(float level)

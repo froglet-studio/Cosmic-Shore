@@ -24,8 +24,7 @@ namespace CosmicShore.Gameplay
         private ZoomDir _zoomDir   = ZoomDir.None;
         private float _prevRatio = 1f;
         private float _vel; 
-        private const float MaxZoomSpeed = 150f;  
-        private bool _autoPilotEnabled;
+        private const float MaxZoomSpeed = 150f;
     
         public override void StartAction()
         {

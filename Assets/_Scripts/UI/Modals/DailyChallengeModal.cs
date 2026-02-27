@@ -71,7 +71,7 @@ namespace CosmicShore.UI
 
         public void Play()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
             DailyChallengeSystem.Instance.PlayDailyChallenge();
         }
     }

@@ -10,7 +10,6 @@ namespace CosmicShore.Gameplay
     public static class DomainAssigner
     {
         private static List<Domains> availableDomains = new ();
-        private static Dictionary<Domains, int> availableDomainsCount = new();
 
         /// <summary>
         /// Picks a unique random team from all Domains (excluding None, Unassigned, Blue).

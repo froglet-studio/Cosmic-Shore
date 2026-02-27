@@ -63,7 +63,7 @@ Assets/
 │   │   ├── ImpactEffects/     # Impactors (11 types) + Effect SOs (20+ types)
 │   │   ├── Arcade/            # Mini-game controllers, scoring, turn monitors
 │   │   ├── Projectiles/       # Projectile systems, guns, mines, AOE effects
-│   │   ├── Managers/          # PrismScaleManager, MaterialStateManager, PrismStateManager, GameManager, ThemeManager
+│   │   ├── Managers/          # PrismScaleManager, MaterialStateManager, PrismStateManager, ThemeManager
 │   │   ├── IO/                # Input strategies (Keyboard, Gamepad, Touch)
 │   │   ├── Animation/         # Per-vessel animation controllers
 │   │   ├── Camera/            # CustomCameraController, CameraSettingsSO, ICameraController
@@ -78,7 +78,7 @@ Assets/
 │   │   ├── XP/                # Experience point controllers
 │   │   └── Settings/          # Runtime settings
 │   ├── System/                # Application-level systems (~126 files)
-│   │   ├── Bootstrap/         # BootstrapController, ServiceLocator, SceneTransitionManager, ApplicationLifecycleManager
+│   │   ├── Bootstrap/         # BootstrapConfigSO, ServiceLocator, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Playfab/           # PlayFab integration (Auth, Economy, Groups, PlayerData, PlayStream)
 │   │   ├── Instrumentation/   # CSAnalyticsManager, Firebase analytics, data collectors
 │   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
@@ -97,8 +97,8 @@ Assets/
 │   ├── UI/                    # Game & app UI (~188 files)
 │   │   ├── Controller/        # VesselHUD controllers (Manta, Rhino, Serpent, Sparrow)
 │   │   ├── View/              # VesselHUD views (all vessel types + Minigame, Multiplayer)
-│   │   ├── Interfaces/        # IVesselHUDController, IVesselHUDView, IMinigameHUDController
-│   │   ├── Elements/          # Reusable UI components
+│   │   ├── Interfaces/        # IVesselHUDController, IVesselHUDView, IMinigameHUDController, IScreen
+│   │   ├── Elements/          # Reusable UI components (NavLink, NavGroup, ProfileDisplayWidget, etc.)
 │   │   ├── Views/             # Screen/view implementations (VesselSelection, XPTrack, Profile)
 │   │   ├── Modals/            # Modal dialogs (Settings, Profile, PurchaseConfirmation)
 │   │   ├── Screens/           # Screen containers
@@ -206,18 +206,145 @@ Existing custom SOAP types (14 subdirectories): `AbilityStats`, `AuthenticationD
 
 ### Bootstrap & Scene Flow
 
-The application uses an industry-standard bootstrap pattern (`Assets/_Scripts/System/Bootstrap/`):
+The application uses a unified bootstrap pattern centered on `AppManager`:
 
-1. **Bootstrap scene** (build index 0) → `BootstrapController` initializes all `IBootstrapService` implementations in order
-2. **Authentication scene** → `SplashToAuthFlow` handles auth flow
+1. **Bootstrap scene** (build index 0) → `AppManager` configures platform, registers DI bindings, starts auth, transitions to Authentication scene
+2. **Authentication scene** → checks cached auth, signs in or shows auth UI
 3. **Menu_Main scene** → main menu entry point
 
 Key classes:
-- `BootstrapController` — top-level orchestrator (`[DefaultExecutionOrder(-100)]`), configures platform settings, initializes services, transitions to first scene
+- `AppManager` (`_Scripts/System/AppManager.cs`) — top-level orchestrator and Reflex DI root (`[DefaultExecutionOrder(-100)]`, implements `IInstaller`). Handles platform configuration, DI registration of all persistent managers and SO assets, auth/network startup, splash fade, and scene transition. Lives on a `DontDestroyOnLoad` root.
+- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading and game-restart service. Extends `NetworkBehaviour` for multiplayer-aware scene loading. Handles launching gameplay scenes (local + network), restart/replay, and returning to main menu. Registered as a DI singleton via AppManager. Replaces the former `GameManager`/`NetworkGameManager`.
+- `SceneNameListSO` (`_Scripts/Utility/DataContainers/SceneNameListSO.cs`) — centralized scene name registry (Bootstrap, Authentication, Menu_Main, Multiplayer). Registered in DI and injected where scene names are needed, replacing hardcoded strings.
 - `ServiceLocator` — lightweight service registry for bootstrap-time services (e.g., `SceneTransitionManager`)
 - `SceneTransitionManager` — unified scene loading with fade transitions
 - `ApplicationLifecycleManager` — application lifecycle events
-- `BootstrapConfigSO` — configures: first scene, main menu scene, service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
+- `BootstrapConfigSO` — configures: service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
+
+See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scene audit: root GameObjects, execution order map, applied fixes, and deferred issues.
+
+### Authentication & Session Flow
+
+Authentication uses **Unity Gaming Services (UGS)** exclusively. Legacy PlayFab auth files exist under `_Scripts/System/Playfab/Authentication/` but are deprecated and inert.
+
+#### Architecture
+
+The auth system follows a **single-writer / multi-reader** pattern through SOAP:
+
+- **`AuthenticationServiceFacade`** (plain C# singleton, Reflex DI) — the **sole writer** to `AuthenticationDataVariable`. Handles UGS initialization, anonymous sign-in, cached session restore, event wiring, and sign-out. Created by `AppManager.InstallBindings()` as a lazy singleton.
+- **`AuthenticationDataVariable`** (SOAP `ScriptableVariable<AuthenticationData>`) — the **shared state**. All other systems read from this or subscribe to its events.
+- **`AuthenticationController`** (MonoBehaviour) — thin adapter that delegates to the facade via `[Inject]`. Exists for scenes that need a GameObject entry point (e.g., inspector-driven `autoSignInAnonymously` toggle).
+- **`AuthenticationSceneController`** (MonoBehaviour) — orchestrates the Authentication scene UI: auto-skip on cached auth, guest login button, username setup panel, navigation to main menu. All async work uses `CancellationToken` and `UniTask`.
+- **`SplashToAuthFlow`** (MonoBehaviour) — placed on the splash scene. After splash display, reads `AuthenticationDataVariable` to decide: skip to `Menu_Main` (if signed in) or load the Authentication scene.
+
+#### Execution Flow
+
+```
+Bootstrap Scene (build index 0)
+│
+├─ AppManager.Awake() [DefaultExecutionOrder(-100)]
+│   ├─ DontDestroyOnLoad(gameObject)
+│   ├─ ConfigurePlatform() (framerate, vsync, screen sleep via BootstrapConfigSO)
+│   └─ TryResolveManagersEarly() (find scene managers, mark DontDestroyOnLoad)
+│
+├─ AppManager.InstallBindings() (Reflex IInstaller)
+│   ├─ RegisterValue: SceneNameListSO, GameDataSO, AuthenticationDataVariable, NetworkMonitorDataVariable
+│   ├─ RegisterFactory (Lazy Singleton): GameSetting, AudioSystem, PlayerDataService,
+│   │   UGSStatsManager, CaptainManager, IAPManager, SceneLoader, ThemeManager, CameraManager, PostProcessingManager
+│   └─ RegisterFactory (Lazy Singleton): AuthenticationServiceFacade, NetworkMonitor
+│
+├─ AppManager.Start()
+│   ├─ ConfigureGameData()
+│   ├─ StartNetworkMonitor()
+│   ├─ StartAuthentication()  ← fire-and-forget
+│   │   ├─ UnityServices.InitializeAsync()
+│   │   ├─ WireAuthEventsOnce()
+│   │   ├─ SignInAnonymouslyAsync()
+│   │   └─ OnSignInSuccess() → AuthenticationData SOAP events
+│   │       └─ OnSignedIn.Raise() ──► PlayerDataService.HandleSignedIn()
+│   │                                  └─ CloudSave load/merge → IsInitialized = true
+│   └─ RunBootstrapAsync().Forget()
+│       ├─ Yield frames (let Awake/Start settle)
+│       ├─ Enforce minimum splash duration
+│       ├─ Fade out splash CanvasGroup
+│       └─ Load Authentication scene (via SceneTransitionManager or direct)
+│
+    ▼
+Authentication Scene
+│ AuthenticationSceneController.Start()
+│ ├─ [1] Already signed in? → HandlePostAuthFlow → Menu_Main
+│ ├─ [2] facade.TrySignInCachedAsync() succeeds? → HandlePostAuthFlow → Menu_Main
+│ ├─ [3] Show auth panel (or auto-anonymous sign-in if no panel)
+│ │   └─ Guest Login button → facade.EnsureSignedInAnonymouslyAsync()
+│ ├─ HandlePostAuthFlow:
+│ │   ├─ Wait for PlayerDataService.IsInitialized (with timeout)
+│ │   ├─ Username needed? → Show username setup panel
+│ │   └─ Otherwise → Menu_Main
+│ └─ Safety timeout (configurable) → force-navigate to Menu_Main
+│
+    ▼
+Menu_Main Scene
+```
+
+#### SOAP Data Flow
+
+```
+AuthenticationServiceFacade (single writer)
+        │ writes to
+        ▼
+AuthenticationDataVariable (ScriptableObject asset)
+  └─ AuthenticationData
+       ├─ .State        (NotInitialized → Initializing → Ready → SigningIn → SignedIn)
+       ├─ .IsSignedIn   (bool)
+       ├─ .PlayerId     (string)
+       ├─ .OnSignedIn   ──► PlayerDataService.HandleSignedIn()
+       ├─ .OnSignedOut  ──► (listeners clear session state)
+       └─ .OnSignInFailed ──► (listeners handle error UI)
+```
+
+Readers: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService`, `AuthenticationController`.
+
+#### Key Files
+
+| Role | File | Location |
+|---|---|---|
+| Auth facade (single writer) | `AuthenticationServiceFacade.cs` | `_Scripts/System/` |
+| Scene controller | `AuthenticationSceneController.cs` | `_Scripts/System/` |
+| MonoBehaviour adapter | `AuthenticationController.cs` | `_Scripts/System/Systems/Authentication/` |
+| Splash → auth routing | `SplashToAuthFlow.cs` | `_Scripts/System/` |
+| DI root / bootstrap orchestrator | `AppManager.cs` | `_Scripts/System/` |
+| Network monitor | `NetworkMonitor.cs` | `_Scripts/System/` |
+| SOAP auth state | `AuthenticationData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| SOAP auth variable | `AuthenticationDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| SOAP network state | `NetworkMonitorData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| Player profile service | `PlayerDataService.cs` | `_Scripts/UI/Views/` |
+| Auth SO asset instance | `AuthenticationData.asset` | `_SO_Assets/Authentication Data/` |
+| Legacy PlayFab auth (deprecated) | `AuthenticationManager.cs` | `_Scripts/System/Playfab/Authentication/` |
+| Legacy PlayFab UI (deprecated) | `AuthenticationView.cs` | `_Scripts/System/Playfab/Authentication/` |
+
+#### Auth Patterns to Follow
+
+- **Single writer**: Only `AuthenticationServiceFacade` writes to `AuthenticationData`. Scene controllers and UI read state and subscribe to SOAP events — they never mutate auth state directly.
+- **UniTask + CancellationToken**: All auth async paths use `UniTask` with `CancellationTokenSource` tied to `OnEnable`/`OnDisable` lifecycle. No raw `Task.Delay` or manual elapsed-time polling.
+- **Timeout via linked CTS**: Use `CancellationTokenSource.CreateLinkedTokenSource(ct)` + `CancelAfter()` for timeouts, not polling loops.
+- **Button interactability**: Disable buttons during async operations instead of boolean `_isProcessing` guards.
+- **Facade via DI**: Scene scripts get the facade via `[Inject]`, not by creating their own `AuthenticationController` GameObjects at runtime.
+
+### Dependency Injection (Reflex)
+
+The project uses Reflex DI with `AppManager` as the root `IInstaller`. All persistent services and shared assets are registered in `AppManager.InstallBindings()`:
+
+**SO asset registration** (`RegisterValue`): `SceneNameListSO`, `GameDataSO`, `AuthenticationDataVariable`, `NetworkMonitorDataVariable`. These are project-level assets wired via inspector on AppManager.
+
+**MonoBehaviour singleton registration** (`RegisterFactory`, Lazy): `GameSetting`, `AudioSystem`, `PlayerDataService`, `UGSStatsManager`, `CaptainManager`, `IAPManager`, `SceneLoader`, `ThemeManager`, `CameraManager`, `PostProcessingManager`. These use a lazy factory that prefers the serialized reference and falls back to a scene search at first injection time.
+
+**Pure C# singleton registration** (`RegisterFactory`, Lazy): `AuthenticationServiceFacade`, `NetworkMonitor`.
+
+#### DI Patterns to Follow
+
+- **Use `[Inject]` for shared assets**: `GameDataSO`, `SceneNameListSO`, and other DI-registered assets should be accessed via `[Inject]`, not `[SerializeField]`. This eliminates manual inspector wiring and serialization drift.
+- **Injection timing**: `[Inject]` fields are populated after `Awake()` but before `Start()`. Access injected fields in `Start()` or later — never in `Awake()`. If you need to subscribe to events in `OnEnable()`, use a deferred pattern: attempt in `OnEnable()`, retry with duplicate guards in `Start()`.
+- **ContainerScope per scene**: Each scene that uses `[Inject]` must have a Reflex `ContainerScope` component (via the `ContainerScope.prefab` in `_Prefabs/CORE/`). The Bootstrap scene's scope is the root; other scenes get child scopes.
 
 ### Input Strategy Pattern
 
@@ -245,10 +372,12 @@ Key interfaces: `IImpactor` / `IImpactCollider`
 The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
 
 - `ClientPlayerVesselInitializer` / `ServerPlayerVesselInitializer` — vessel spawning on client/server
-- `ServerPlayerVesselInitializerWithAI` — AI opponent spawning
+- `ServerPlayerVesselInitializerWithAI` — AI opponent spawning (shared base logic, deduplicated)
 - `MultiplayerSetup` — lobby/connection setup
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
 - `DomainAssigner` — team assignment
+
+Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `NetworkBehaviour` and auto-selects local vs network scene loading based on whether a host/server is running.
 
 `VesselStatus` extends `NetworkBehaviour`. Multiplayer game modes can also run solo with AI opponents via the AI Profile system.
 
@@ -283,6 +412,64 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
 
+### Menu Screen Navigation (Menu_Main Scene)
+
+The main menu uses a horizontal sliding panel system managed by `ScreenSwitcher`. Screen panels are laid out side-by-side and the container slides left/right to reveal each screen.
+
+#### IScreen Interface
+
+All menu screens that need lifecycle notifications implement `IScreen` (`Assets/_Scripts/UI/Interfaces/IScreen.cs`):
+
+```csharp
+public interface IScreen
+{
+    void OnScreenEnter();  // Called when this screen becomes active
+    void OnScreenExit();   // Called when navigating away from this screen
+}
+```
+
+`ScreenSwitcher` discovers `IScreen` components on screen root GameObjects (via `GetComponentInChildren<IScreen>`) at startup and caches them in a dictionary. On navigation, it calls `OnScreenExit()` on the outgoing screen and `OnScreenEnter()` on the incoming screen automatically — no hard-coded screen references needed.
+
+**Current `IScreen` implementors**: `HangarScreen`, `LeaderboardsMenu`
+
+#### Screen Inventory
+
+| Screen | Class | Extends `IScreen` | Init Pattern |
+|---|---|---|---|
+| Home | `HomeScreen` | No | `Start()` |
+| Arcade (ARK) | `ArcadeScreen` | No | `Start()` |
+| Store | `StoreScreen` (extends `View`) | No | `Start()` + `OnEnable()` events |
+| Port (Leaderboards) | `LeaderboardsMenu` | Yes | `OnScreenEnter()` → `LoadView()` |
+| Hangar | `HangarScreen` | Yes | `OnScreenEnter()` → `LoadView()` |
+| Episodes | `EpisodeScreen` | No | Lazy `LoadView()` on panel toggle |
+
+#### ScreenSwitcher
+
+`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`) is the central navigation hub:
+
+- Maps `MenuScreens` enum values to screen panel `RectTransform`s via inspector-configured `ScreenEntry` list
+- Handles horizontal slide animations between screens
+- Manages a modal window stack (`PushModal`/`PopModal`) for overlay modals
+- Persists return-to-screen/modal state via `PlayerPrefs` across scene reloads
+- Notifies `IScreen` implementors on navigation transitions
+- Supports gamepad left/right trigger navigation
+
+**Adding a new screen**: Create a `MonoBehaviour` implementing `IScreen` if it needs enter/exit lifecycle. Add a `ScreenEntry` in the `ScreenSwitcher` inspector mapping. The switcher will discover and call the `IScreen` automatically.
+
+#### Reusable UI Components
+
+- **`ProfileDisplayWidget`** (`Assets/_Scripts/UI/Elements/ProfileDisplayWidget.cs`) — Displays player name + avatar. Uses `[Inject] PlayerDataService` and subscribes to `OnProfileChanged`. Drop onto any menu screen that needs profile display — replaces inline profile display logic.
+- **`NavLink` / `NavGroup`** (`Assets/_Scripts/UI/Elements/`) — Tab navigation within a screen. `NavGroup` discovers child `NavLink` components and manages selection state with crossfade animations.
+- **`ModalWindowManager`** (`Assets/_Scripts/UI/Modals/ModalWindowManager.cs`) — Base class for modal windows. Caches `ScreenSwitcher` reference at startup. Handles open/close animations, audio, and modal stack integration.
+
+#### Menu Screen Patterns to Follow
+
+- **Implement `IScreen`** for any screen that needs to refresh data when navigated to — do not add direct screen references to `ScreenSwitcher`
+- **Use `ProfileDisplayWidget`** for profile display instead of duplicating `PlayerDataService` subscription logic
+- **Cache component lookups** — use `Start()` or `Awake()` for `GetComponent` calls, not per-frame or per-event
+- **Unsubscribe from events** — always pair event subscriptions in `OnEnable`/`OnDisable` or `Start`/`OnDestroy`
+- **Use `[Inject]` for audio** — prefer `[Inject] AudioSystem` via Reflex DI over `[RequireComponent(typeof(MenuAudio))]` + `GetComponent` for new code
+
 ### Namespace Convention
 
 All game code lives under `CosmicShore.*` with 8 primary namespaces:
@@ -311,10 +498,17 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
 | Player system | `Player`, `PlayerSpawner`, `IPlayer`, platform-specific adapters | `_Scripts/Controller/Player/` |
+| Menu navigation | `ScreenSwitcher`, `IScreen`, `ModalWindowManager`, `ProfileDisplayWidget`, `NavLink`/`NavGroup` | `_Scripts/UI/`, `_Scripts/UI/Interfaces/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Modals/` |
+| Menu screens | `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen` | `_Scripts/UI/Screens/` |
 | UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
 | Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
-| App systems | Audio, Auth, Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP | `_Scripts/System/` |
+| Bootstrap / DI | `AppManager` (orchestrator + IInstaller), `BootstrapConfigSO`, `ServiceLocator`, `SceneTransitionManager`, `ApplicationLifecycleManager` | `_Scripts/System/`, `_Scripts/System/Bootstrap/` |
+| Scene management | `SceneLoader` (NetworkBehaviour, game launch + restart + return-to-menu), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
+| Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
+| Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| App systems | Audio, Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP | `_Scripts/System/` |
 | ScriptableObjects | `SO_Vessel`, `SO_Captain`, `SO_Game`, `SO_ArcadeGame`, `SO_Element`, `SO_Mission`, etc. | `_Scripts/ScriptableObjects/` |
 
 ### Async Pattern
@@ -373,7 +567,7 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 
 - **Framework**: Unity Test Framework 1.6.0 (NUnit-based)
 - **Edit-mode tests**: `Assets/_Scripts/Tests/EditMode/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
-- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `BootstrapControllerTests`, `ServiceLocatorTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `SceneFlowIntegrationTests`, `BootstrapConfigSOTests`
+- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `ServiceLocatorTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `SceneFlowIntegrationTests`
 - **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/` — `DomainAssignerTests`
 - **PlayFab tests**: `Assets/_Scripts/System/Playfab/PlayFabTests/` — `PlayFabCatalogTests`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`

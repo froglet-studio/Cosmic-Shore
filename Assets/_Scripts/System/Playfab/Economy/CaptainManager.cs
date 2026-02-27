@@ -50,10 +50,10 @@ namespace CosmicShore.Core
         }
     }
 
-    public  class CaptainManager : SingletonPersistent<CaptainManager>
+    public class CaptainManager : MonoBehaviour
     {
-        public static event Action OnLoadCaptainData;
-        public static bool CaptainDataLoaded { get; private set; }
+        public event Action OnLoadCaptainData;
+        public bool CaptainDataLoaded { get; private set; }
         [SerializeField] SO_CaptainList AllCaptains;
         CaptainData captainData;
 
@@ -63,20 +63,11 @@ namespace CosmicShore.Core
         void OnEnable()
         {
             // [PLAYFAB DISABLED] Captain management will be rebuilt on UGS. Pending removal.
-            return;
-
-            XpHandler.OnCaptainDataLoaded += LoadCaptainsData;
-
-            CatalogManager.OnLoadInventory += LoadCaptainsData;
-            CatalogManager.OnInventoryChange += LoadCaptainsData;
         }
 
         void OnDisable()
         {
-            XpHandler.OnCaptainDataLoaded -= LoadCaptainsData;
-
-            CatalogManager.OnLoadInventory += LoadCaptainsData;
-            CatalogManager.OnInventoryChange -= LoadCaptainsData;
+            // [PLAYFAB DISABLED] Matching OnEnable — nothing to unsubscribe.
         }
 
         void LoadCaptainsData()

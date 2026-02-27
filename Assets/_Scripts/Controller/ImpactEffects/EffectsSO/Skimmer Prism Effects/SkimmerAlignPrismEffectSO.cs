@@ -18,24 +18,15 @@ namespace CosmicShore.Gameplay
         private float alignDivisor = 15f;
 
         [Header("Position Nudging")]
-        [SerializeField, Range(1f, 8f), Tooltip("Nudge force magnitude (old default was 4)")]
-        private float nudgeForce = 4f;
-
         [SerializeField, Range(0.5f, 5f), Tooltip("Margin around sweet spot (old default was 3)")]
         private float sweetSpotMargin = 3f;
 
         [Header("Look-Ahead")]
-        [SerializeField, Range(1, 4)]
-        private int backStep = 0;
-
         //[SerializeField, Range(5, 10)]
         //private int lookAhead = 6;
 
         [SerializeField, Range(0, 3)]
         private float LookAheadTime = .5f;
-
-        [SerializeField, Range(3, 6), Tooltip("Which block to use for tube forward direction")]
-        private int forwardReferenceIndex = 4;
 
         private const int MinBlocksRequired = 3;
 

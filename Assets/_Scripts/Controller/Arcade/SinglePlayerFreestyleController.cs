@@ -16,7 +16,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] int baseNumberOfSegments = 10;
         [SerializeField] int baseStraightLineLength = 400;
         [SerializeField] bool resetEnvironmentOnEachTurn = true;
-        [SerializeField] bool scaleCrystalPositionWithIntensity = true;
         [SerializeField] bool scaleLengthWithIntensity = true;
         [SerializeField] bool scaleSegmentsWithIntensity = true;
         

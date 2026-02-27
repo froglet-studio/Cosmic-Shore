@@ -12,10 +12,8 @@ namespace CosmicShore.Core
         [SetUp]
         public void SetUp()
         {
-            ServiceLocator.ClearAll();
-
             _go = new GameObject("TestSceneTransition");
-            // AddComponent calls Awake(), which creates the overlay and registers in ServiceLocator.
+            // AddComponent calls Awake(), which creates the overlay.
             _manager = _go.AddComponent<SceneTransitionManager>();
         }
 
@@ -24,31 +22,7 @@ namespace CosmicShore.Core
         {
             if (_go != null)
                 Object.DestroyImmediate(_go);
-
-            ServiceLocator.ClearAll();
         }
-
-        #region Registration
-
-        [Test]
-        public void Awake_RegistersSelfInServiceLocator()
-        {
-            Assert.IsTrue(ServiceLocator.IsRegistered<SceneTransitionManager>());
-
-            var retrieved = ServiceLocator.Get<SceneTransitionManager>();
-            Assert.AreSame(_manager, retrieved);
-        }
-
-        [Test]
-        public void OnDestroy_UnregistersSelfFromServiceLocator()
-        {
-            Object.DestroyImmediate(_go);
-            _go = null;
-
-            Assert.IsFalse(ServiceLocator.IsRegistered<SceneTransitionManager>());
-        }
-
-        #endregion
 
         #region Overlay Creation
 

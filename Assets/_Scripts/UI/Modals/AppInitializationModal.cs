@@ -1,12 +1,21 @@
-using CosmicShore.Core;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
 using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// Shows an initialization overlay until UGS authentication completes.
+    /// Replaces legacy PlayFab event subscriptions with direct UGS auth polling.
+    ///
+    /// The bootstrap flow (AppManager → AuthenticationServiceFacade)
+    /// normally completes authentication before Menu_Main loads, so this modal closes
+    /// almost immediately. A timeout fallback ensures the UI is never permanently blocked.
+    /// </summary>
     public class AppInitializationModal : MonoBehaviour
     {
         [SerializeField] TMP_Text InitializingText;
@@ -17,22 +26,6 @@ namespace CosmicShore.UI
         [SerializeField] Image ProgressIndicatorBackground;
 
         static bool NetworkInitialized = false;
-
-        void OnEnable()
-        {
-            AuthenticationManager.OnLoginSuccess += OnAuthenticated;
-            PlayerDataController.OnProfileLoaded += OnProfileLoaded;
-            CatalogManager.OnLoadCatalogSuccess += OnCatalogLoaded;
-            CatalogManager.OnLoadInventory += OnInventoryLoaded;
-        }
-
-        void OnDisable()
-        {
-            AuthenticationManager.OnLoginSuccess -= OnAuthenticated;
-            PlayerDataController.OnProfileLoaded -= OnProfileLoaded;
-            CatalogManager.OnLoadCatalogSuccess -= OnCatalogLoaded;
-            CatalogManager.OnLoadInventory -= OnInventoryLoaded;
-        }
 
         void Awake()
         {
@@ -47,32 +40,63 @@ namespace CosmicShore.UI
             }
             else
             {
-                NavBar.SetActive(false);
-                Menu.SetActive(false);
-                StartCoroutine(UpdateTextCoroutine());
+                // Keep NavBar and Menu enabled so scene systems (MultiplayerSetup,
+                // ServerPlayerVesselInitializer, etc.) can start their lifecycle.
+                // The modal overlay visually covers them until auth completes.
+                StartCoroutine(WaitForAuthCoroutine());
             }
         }
 
-        IEnumerator UpdateTextCoroutine()
+        /// <summary>
+        /// Polls UGS authentication state. Closes as soon as auth succeeds,
+        /// or after a timeout enters offline mode and closes anyway.
+        /// </summary>
+        IEnumerator WaitForAuthCoroutine()
         {
-            var stopWatch = 0;
-
-            while (stopWatch < 6)
+            // If UGS auth is already complete (bootstrap finished before scene load), close immediately.
+            if (IsUGSSignedIn())
             {
-                InitializingText.text = "Initializing";
-                yield return new WaitForSecondsRealtime(.2f);
-                InitializingText.text = "Initializing.";
-                yield return new WaitForSecondsRealtime(.2f);
-                InitializingText.text = "Initializing..";
-                yield return new WaitForSecondsRealtime(.2f);
-                InitializingText.text = "Initializing...";
-                yield return new WaitForSecondsRealtime(.4f);
-                stopWatch++;
+                StartCoroutine(CloseCoroutine());
+                yield break;
             }
-            InitializingText.text = "Offline Mode";
 
+            float elapsed = 0f;
+            const float timeout = 8f;
+            const float pollInterval = 0.3f;
+
+            while (elapsed < timeout)
+            {
+                int dots = ((int)(elapsed / pollInterval)) % 4;
+                InitializingText.text = "Initializing" + new string('.', dots);
+
+                yield return new WaitForSecondsRealtime(pollInterval);
+                elapsed += pollInterval;
+
+                if (IsUGSSignedIn())
+                {
+                    StartCoroutine(CloseCoroutine());
+                    yield break;
+                }
+            }
+
+            // Timeout reached — enter offline mode and unblock the menu.
+            InitializingText.text = "Offline Mode";
             CSDebug.LogWarning("Entering Offline Mode");
             StartCoroutine(CloseCoroutine());
+        }
+
+        static bool IsUGSSignedIn()
+        {
+            try
+            {
+                return UnityServices.State == ServicesInitializationState.Initialized
+                    && AuthenticationService.Instance != null
+                    && AuthenticationService.Instance.IsSignedIn;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         IEnumerator CloseCoroutine()
@@ -89,27 +113,6 @@ namespace CosmicShore.UI
 
             Animator.StopPlayback();
             gameObject.SetActive(false);
-
-            FTUEEventManager.OnInitializeFTUECalled();
-        }
-
-        void OnAuthenticated()
-        {
-            ProgressIndicator.rectTransform.sizeDelta = new Vector2(100, 5);
-        }
-        void OnProfileLoaded()
-        {
-            ProgressIndicator.rectTransform.sizeDelta = new Vector2(200, 5);
-        }
-
-        void OnCatalogLoaded()
-        {
-            ProgressIndicator.rectTransform.sizeDelta = new Vector2(300, 5);
-        }
-        void OnInventoryLoaded()
-        {
-            ProgressIndicator.rectTransform.sizeDelta = new Vector2(400, 5);
-            StartCoroutine(CloseCoroutine());
         }
     }
 }

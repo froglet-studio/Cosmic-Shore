@@ -7,6 +7,7 @@ using CosmicShore.UI;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,8 @@ namespace CosmicShore.UI
 {
     public class ArcadeGameConfigureModal : ModalWindowManager
     {
+        [Inject] CaptainManager _captainManager;
+
         // TEMP for legacy systems (e.g. DailyChallengeSystem)
         public static ArcadeGameConfigureModal Instance { get; private set; }
 
@@ -25,7 +28,7 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventNoParam startGameRequestedEvent;
 
         [Header("Shared Game Data")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
         [Header("Party Launcher")]
@@ -214,9 +217,9 @@ namespace CosmicShore.UI
                 .Select(c => c.Ship)
                 .ToList();
 
-            if (respectInventoryForShipSelection && CaptainManager.Instance)
+            if (respectInventoryForShipSelection && _captainManager)
             {
-                var unlocked = CaptainManager.Instance.UnlockedShips;
+                var unlocked = _captainManager.UnlockedShips;
                 ships = ships.Where(s => unlocked.Contains(s)).ToList();
             }
 
@@ -436,7 +439,7 @@ namespace CosmicShore.UI
         // Screen 1 → Screen 2
         public void OnConfirmConfiguration()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
             ShowGameDetailScreen();
         }
 
@@ -449,7 +452,7 @@ namespace CosmicShore.UI
         // Start Game button on Screen 2
         public void OnStartGameClicked()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
 
             // Route multiplayer modes through PartyGameLauncher for
             // party reconciliation (AI backfill, kick extras).

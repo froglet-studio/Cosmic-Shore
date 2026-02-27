@@ -13,9 +13,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Yaw in degrees applied to the victim. Sign decided via attacker vs victim facing.")]
         private float yawDegrees = 15f;
 
-        [SerializeField, Tooltip("Duration (seconds) for SpinShip.")]
-        private float spinDuration = 0.6f;
-
         [Header("Optional lateral shove (0 disables)")]
         [SerializeField] private float lateralSpeed = 0f;
         [SerializeField] private float accelScale   = 15f;

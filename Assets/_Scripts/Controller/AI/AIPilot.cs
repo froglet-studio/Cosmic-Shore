@@ -6,6 +6,7 @@ using CosmicShore.Utility;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using CosmicShore.Data;
+using Reflex.Attributes;
 using System.Linq;
 
 namespace CosmicShore.Gameplay
@@ -49,7 +50,6 @@ namespace CosmicShore.Gameplay
         float avoidance => Mathf.Lerp(avoidanceLow, avoidanceHigh, skillLevel);
         float aggressivenessIncrease => Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, skillLevel);
 
-        float targetUpdateFrequencySeconds = 2f;
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
         [Header("Targeting")]
         [Tooltip("When true, AI targets enemy players instead of crystals/items (used for Joust)")]
         [SerializeField] bool seekPlayers;
-        [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
         [SerializeField] float playerSeekUpdateInterval = 0.5f;
 
         /// <summary>

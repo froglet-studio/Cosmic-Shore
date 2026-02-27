@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -14,6 +15,7 @@ namespace CosmicShore.Gameplay
 {
     public class ConsumeBoostActionExecutor : ShipActionExecutorBase
     {
+        [Inject] AudioSystem audioSystem;
         public event Action<int, int> OnChargesSnapshot;
         public event Action<int, float> OnChargeConsumed;
         public event Action<float> OnReloadStarted;
@@ -89,7 +91,7 @@ namespace CosmicShore.Gameplay
         {
             if (!so || status == null) return;
 
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
 
             if (_status is { IsTranslationRestricted: true }) return;
         

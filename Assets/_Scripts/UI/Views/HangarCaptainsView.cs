@@ -8,11 +8,13 @@ using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.UI
 {
     public class HangarCaptainsView : View
     {
+        [Inject] CaptainManager _captainManager;
         [Header("Captain Details")]
         [SerializeField] TMP_Text SelectedCaptainName;
         [SerializeField] TMP_Text SelectedCaptainElementLabel;
@@ -52,13 +54,16 @@ namespace CosmicShore.UI
         const string CrystalRequirementTemplate = "<color=#{2}>{0}</color> / {1}";
         const string XPRequirementTemplate = "<color=#{2}>{0}</color> / {1} XP";
 
-        void OnEnable()
+        void Start()
         {
-            CaptainManager.OnLoadCaptainData += NewCaptainData;
+            if (_captainManager != null)
+                _captainManager.OnLoadCaptainData += NewCaptainData;
         }
+
         void OnDisable()
         {
-            CaptainManager.OnLoadCaptainData -= NewCaptainData;
+            if (_captainManager != null)
+                _captainManager.OnLoadCaptainData -= NewCaptainData;
         }
 
         void NewCaptainData()
@@ -76,7 +81,7 @@ namespace CosmicShore.UI
         public override void UpdateView()
         {
             var model = SelectedModel as SO_Captain;
-            captain = CaptainManager.Instance.GetCaptainByName(model.Name);
+            captain = _captainManager.GetCaptainByName(model.Name);
 
             CSDebug.Log($"Populating Captain Details List: {captain.Name}");
             CSDebug.Log($"Populating Captain Details List: {captain.Description}");
@@ -112,7 +117,7 @@ namespace CosmicShore.UI
                 // TODO: remove once testing is complete
                 EncounterButton.gameObject.SetActive(true);
                 EncounterButton.onClick.RemoveAllListeners();
-                EncounterButton.onClick.AddListener(() => CaptainManager.Instance.EncounterCaptain(captain.Name));
+                EncounterButton.onClick.AddListener(() => _captainManager.EncounterCaptain(captain.Name));
 
                 GoToStoreButton.gameObject.SetActive(false);
                 UpgradeButton.gameObject.SetActive(true);
@@ -135,7 +140,7 @@ namespace CosmicShore.UI
                 if (upgrade != null)
                 {
                     // XP Requirement
-                    var xpNeeded = CaptainManager.Instance.GetCaptainUpgradeXPRequirement(captain);
+                    var xpNeeded = _captainManager.GetCaptainUpgradeXPRequirement(captain);
                     xpRequirementSatisfied = captain.XP >= xpNeeded;
                     SelectedUpgradeXPRequirement.text = string.Format(XPRequirementTemplate, captain.XP, xpNeeded, xpRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
 
@@ -201,7 +206,7 @@ namespace CosmicShore.UI
 
         public void OnCaptainUpgraded()
         {
-            CaptainManager.Instance.LoadCaptainData(captain);
+            _captainManager.LoadCaptainData(captain);
             UpgradeMenuAudio.PlayAudio();
             UpdateView();
 

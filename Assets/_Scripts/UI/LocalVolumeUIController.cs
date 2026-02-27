@@ -1,19 +1,19 @@
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.UI
 {
     public class LocalVolumeUIController : MonoBehaviour
     {
-        [FormerlySerializedAs("miniGameData")] [SerializeField] GameDataSO gameData;
+        [Inject] GameDataSO gameData;
         [SerializeField] VolumeUI volumeUI;
 
         private bool _active;
         private bool _running;
 
-        void OnEnable()
+        void Start()
         {
             gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStart;
             gameData.OnMiniGameTurnEnd.OnRaised += GameTurnEnd;

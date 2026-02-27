@@ -1,5 +1,6 @@
 using System.Collections;
 using CosmicShore.Core;
+using Reflex.Attributes;
 using UnityEngine;
 using static CosmicShore.UI.ScreenSwitcher;
 
@@ -7,6 +8,8 @@ namespace CosmicShore.UI
 {
     public class ModalWindowManager : MonoBehaviour
     {
+        [Inject] protected AudioSystem audioSystem;
+
         [Header("Settings")]
         public bool sharpAnimations;
 
@@ -15,12 +18,14 @@ namespace CosmicShore.UI
         [SerializeField] Animator windowAnimator;
         bool isOn;
 
+        ScreenSwitcher _screenSwitcher;
+
         protected virtual void Start()
         {
             if(windowAnimator == null)
                 windowAnimator = GetComponent<Animator>();
-                
-            //gameObject.SetActive(false);
+
+            _screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
         }
 
         public void ModalWindowIn()
@@ -29,16 +34,15 @@ namespace CosmicShore.UI
 
             if (isOn == false)
             {
-                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
-                if (screenSwitcher != null)
-                    screenSwitcher.PushModal(ModalType);
+                if (_screenSwitcher != null)
+                    _screenSwitcher.PushModal(ModalType);
 
                 if (sharpAnimations == false)
                     windowAnimator.CrossFade("Window In", 0.1f);
                 else
                     windowAnimator.Play("Window In");
 
-                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OpenView);
+                audioSystem.PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
             }
         }
@@ -47,16 +51,15 @@ namespace CosmicShore.UI
         {
             if (isOn)
             {
-                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
-                if (screenSwitcher)
-                    screenSwitcher.PopModal();
+                if (_screenSwitcher != null)
+                    _screenSwitcher.PopModal();
 
                 if (sharpAnimations == false)
                     windowAnimator.CrossFade("Window Out", 0.1f);
                 else
                     windowAnimator.Play("Window Out");
 
-                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.CloseView);
+                audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
                 isOn = false;
             }
             if(ModalType == ModalWindows.SETTINGS) return;

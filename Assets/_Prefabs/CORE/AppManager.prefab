@@ -10,8 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 9113152145594744158}
   - component: {fileID: 2108845819244561836}
-  - component: {fileID: 5456740058571604360}
-  - component: {fileID: 4798048649644018183}
+  - component: {fileID: 974600371733867531}
+  - component: {fileID: 7020590234104356314}
+  - component: {fileID: 2002937497533718780}
+  - component: {fileID: 7023092432296079887}
   m_Layer: 0
   m_Name: AppManager
   m_TagString: Untagged
@@ -46,13 +48,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e302c18e9e54be68a27007ba98cf5b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _bootstrapConfig: {fileID: 11400000, guid: d6eff71c1de600547829b04174eaea6e, type: 2}
+  _sceneNames: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
+  _splashCanvasGroup: {fileID: 0}
+  _fadeOutDuration: 0.5
   authenticationDataVariable: {fileID: 11400000, guid: 875bcedfcf3335047b416297732cba15,
     type: 2}
   authenticationWithLog: 0
   networkMonitorDataVariable: {fileID: 11400000, guid: c656ab83067d26846b449b637e43320a,
     type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
---- !u!114 &5456740058571604360
+  lifecycleEvents: {fileID: 11400000, guid: cec451821b7e4bf6a7cb130e72e09ead,
+    type: 2}
+  gameSetting: {fileID: 0}
+  audioSystem: {fileID: 0}
+  playerDataService: {fileID: 0}
+  ugsStatsManager: {fileID: 0}
+  captainManager: {fileID: 0}
+  iapManager: {fileID: 0}
+  sceneLoader: {fileID: 0}
+  themeManager: {fileID: 0}
+  cameraManager: {fileID: 0}
+  postProcessingManager: {fileID: 0}
+--- !u!114 &974600371733867531
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -61,10 +79,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 6778103901198434919}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5312032623c34414a54ea00e35a7eb8e, type: 3}
+  m_Script: {fileID: 11500000, guid: 621b2788bb4141fa90f26bb44247998c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &4798048649644018183
+  _fadeDuration: 0.4
+  _fadeColor: {r: 0, g: 0, b: 0, a: 1}
+  _postLoadSettleDelay: 0.1
+--- !u!114 &7020590234104356314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6778103901198434919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20624a295beaa9748929cf395a9c9be8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2002937497533718780
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -74,5 +107,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &7023092432296079887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6778103901198434919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5312032623c34414a54ea00e35a7eb8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

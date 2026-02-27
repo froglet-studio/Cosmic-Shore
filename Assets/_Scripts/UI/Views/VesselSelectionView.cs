@@ -3,18 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Data;
 
 namespace CosmicShore.UI
 {
-    [Serializable]
-    public struct ShipSelectionSlot
-    {
-        public VesselClassType vesselType;
-        public ShipSelectionItemView itemView;
-    }
-
     /// <summary>
     /// Type-driven ship selection view.
     /// - Each slot is bound to a VesselClassType.
@@ -28,7 +22,7 @@ namespace CosmicShore.UI
         [SerializeField] private List<ShipSelectionSlot> slots = new(); // wired in inspector
 
         [Header("Data")]
-        [SerializeField] private GameDataSO gameData;                   // the shared GameDataSO
+        [Inject] private GameDataSO gameData;                            // the shared GameDataSO
         [SerializeField] private List<SO_Ship> shipsCatalog = new();    // all ships, one per class
 
         [SerializeField] private bool verboseLogging;
@@ -45,7 +39,9 @@ namespace CosmicShore.UI
                 _menuAudio = shipSelectionGrid.GetComponent<MenuAudio>();
         }
 
-        void OnEnable()
+        void Start() => NormalizeAndPaint();
+
+        void NormalizeAndPaint()
         {
             EnsureLookup();
 

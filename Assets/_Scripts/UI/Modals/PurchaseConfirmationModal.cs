@@ -1,7 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
-using CosmicShore.Core;
+using Reflex.Attributes;
 using System;
 using System.Collections;
 using TMPro;
@@ -13,6 +13,8 @@ namespace CosmicShore.UI
 {
     public class PurchaseConfirmationModal : ModalWindowManager
     {
+        [Inject] CaptainManager _captainManager;
+
         [SerializeField] TMP_Text PriceLabel;
         [SerializeField] TMP_Text UnlockText;
         [SerializeField] TMP_Text CrystalBalanceText;
@@ -39,7 +41,7 @@ namespace CosmicShore.UI
             switch(virtualItem.ContentType) 
             {
                 case "Captain":
-                    var captain = CaptainManager.Instance.GetCaptainByName(virtualItem.Name);
+                    var captain = _captainManager.GetCaptainByName(virtualItem.Name);
                     GameImage.gameObject.SetActive(false);
                     TicketImage.gameObject.SetActive(false);
                     CaptainImage.gameObject.SetActive(true);
@@ -53,7 +55,7 @@ namespace CosmicShore.UI
                     GameImage.sprite = game.CardBackground;
                     break;*/
                 case "CaptainUpgrade":
-                    var upgradeCaptain = CaptainManager.Instance.GetCaptainFromUpgrade(virtualItem);
+                    var upgradeCaptain = _captainManager.GetCaptainFromUpgrade(virtualItem);
                     GameImage.gameObject.SetActive(false);
                     TicketImage.gameObject.SetActive(false);
                     CaptainImage.gameObject.SetActive(true);
@@ -76,7 +78,7 @@ namespace CosmicShore.UI
 
         public void Confirm()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
             OnConfirm?.Invoke();
         }
 

@@ -18,11 +18,6 @@ namespace CosmicShore.Core
         private void Start()
         {
             // [PLAYFAB DISABLED] Analytics will be rebuilt on UGS. Pending removal.
-            return;
-
-            // Load Player Client Instance API
-            AuthenticationManager.OnLoginSuccess += InitializePlayerClientInstanceAPI;
-            AuthenticationManager.OnLoginSuccess += InitializeEventsInstanceAPI;
         }
 
         private void OnDestroy()

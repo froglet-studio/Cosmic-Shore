@@ -39,52 +39,6 @@ namespace CosmicShore.Core
         void Start()
         {
             // [PLAYFAB DISABLED] This view relied on PlayFab AuthenticationManager. Pending removal.
-            return;
-
-            // Subscribe Button OnClick Events
-            setDisplayNameButton.onClick.AddListener(SetPlayerNameButton_OnClicked);
-
-            // Set default player display name
-            displayNameResultMessage.text = displayNameDefaultText;
-            
-            // Email login input field initialization
-            // This one is secret secret
-            if (passwordLoginField != null )
-                passwordLoginField.contentType = TMP_InputField.ContentType.Password;
-            
-            if (emailLoginInputField != null)
-            {
-                emailLoginInputField.contentType = TMP_InputField.ContentType.EmailAddress;
-                emailLoginInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
-                emailLoginInputField.onEndEdit.AddListener(OnEndEdit);
-            }
-
-            if (stayLoggedInToggle != null)
-            {
-                stayLoggedInToggle.onValueChanged.AddListener(delegate { StayLoggedIn_OnToggled(stayLoggedInToggle.isOn);});
-            }
-
-            if (loginButton != null)
-                loginButton.onClick.AddListener(LoginButton_OnClick);
-            
-            
-            // Account register input fields initialization
-            if (passwordRegisterInputField != null)
-                passwordRegisterInputField.contentType = TMP_InputField.ContentType.Password;
-
-            if (emailRegisterInputField != null)  
-            {
-                emailRegisterInputField.contentType = TMP_InputField.ContentType.EmailAddress;
-                emailRegisterInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
-                emailRegisterInputField.onEndEdit.AddListener(OnEndEdit);
-            }
-            
-            if(registerButton!=null)
-                registerButton.onClick.AddListener(RegisterButton_OnClick);
-            
-            AuthenticationManager.Instance.AnonymousLogin();
-            AuthenticationManager.OnLoginSuccess += PlayerDataController.Instance.LoadPlayerProfile;
-            PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
 
         void OnEndEdit(string text)

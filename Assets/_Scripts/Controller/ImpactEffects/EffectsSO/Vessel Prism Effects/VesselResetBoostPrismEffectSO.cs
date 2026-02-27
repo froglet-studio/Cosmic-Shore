@@ -1,12 +1,10 @@
-using System; // Required for Action
+using System;
 using UnityEngine;
 using Obvious.Soap;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using CosmicShore.UI;
-using System;
-using System.Linq;
 namespace CosmicShore.Gameplay
 {
     [CreateAssetMenu(fileName = "VesselResetBoostPrismEffect",
@@ -19,6 +17,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Events")]
         [SerializeField] private ScriptableEventBoostChanged boostChanged;
+        [SerializeField] private ScriptableEventString onSkimmerShipCollision;
 
         // [Visual Note] 1. New Event for the Tracker to listen to
         public static event Action OnPrismCollision;
@@ -30,9 +29,8 @@ namespace CosmicShore.Gameplay
             // [Visual Note] 2. Fire the Streak Reset Event
             OnPrismCollision?.Invoke();
 
-            // 3. Stats Logging (Optional, kept for backend data)
-            if (StatsManager.Instance)
-                StatsManager.Instance.ExecuteSkimmerShipCollision(impactor.Vessel.VesselStatus.PlayerName);
+            // 3. Stats Logging via SOAP event
+            onSkimmerShipCollision.Raise(impactor.Vessel.VesselStatus.PlayerName);
 
             // 4. Reset Boost Logic
             var status = impactor.Vessel.VesselStatus;

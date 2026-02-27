@@ -6,33 +6,31 @@ using System.Collections.Generic;
 namespace CosmicShore.Core
 {
     [TestFixture]
-    public class BootstrapControllerTests
+    public class AppManagerBootstrapTests
     {
         [SetUp]
         public void SetUp()
         {
             // Reset the static _hasBootstrapped flag before each test.
             ResetHasBootstrapped();
-            ServiceLocator.ClearAll();
         }
 
         [TearDown]
         public void TearDown()
         {
             ResetHasBootstrapped();
-            ServiceLocator.ClearAll();
         }
 
         static void ResetHasBootstrapped()
         {
-            var field = typeof(BootstrapController)
+            var field = typeof(AppManager)
                 .GetField("_hasBootstrapped", BindingFlags.Static | BindingFlags.NonPublic);
             field?.SetValue(null, false);
         }
 
         static void SetHasBootstrapped(bool value)
         {
-            var field = typeof(BootstrapController)
+            var field = typeof(AppManager)
                 .GetField("_hasBootstrapped", BindingFlags.Static | BindingFlags.NonPublic);
             field?.SetValue(null, value);
         }
@@ -42,7 +40,7 @@ namespace CosmicShore.Core
         [Test]
         public void HasBootstrapped_InitiallyFalse()
         {
-            Assert.IsFalse(BootstrapController.HasBootstrapped);
+            Assert.IsFalse(AppManager.HasBootstrapped);
         }
 
         [Test]
@@ -50,7 +48,7 @@ namespace CosmicShore.Core
         {
             SetHasBootstrapped(true);
 
-            Assert.IsTrue(BootstrapController.HasBootstrapped);
+            Assert.IsTrue(AppManager.HasBootstrapped);
         }
 
         #endregion
@@ -63,11 +61,11 @@ namespace CosmicShore.Core
             SetHasBootstrapped(true);
 
             // Invoke the static initializer method.
-            var method = typeof(BootstrapController)
+            var method = typeof(AppManager)
                 .GetMethod("EnsureBootstrapOnStartup", BindingFlags.Static | BindingFlags.NonPublic);
             method?.Invoke(null, null);
 
-            Assert.IsFalse(BootstrapController.HasBootstrapped);
+            Assert.IsFalse(AppManager.HasBootstrapped);
         }
 
         #endregion
@@ -77,14 +75,14 @@ namespace CosmicShore.Core
         [Test]
         public void Awake_NoPersistentRoot_UsesSelf()
         {
-            var go = new GameObject("TestBootstrap");
+            var go = new GameObject("TestAppManager");
             // Don't set _persistentRoot — Awake will use transform as fallback.
-            var controller = go.AddComponent<BootstrapController>();
+            var manager = go.AddComponent<AppManager>();
 
-            // Verify the persistent root field was set to the controller's own transform.
-            var field = typeof(BootstrapController)
+            // Verify the persistent root field was set to the manager's own transform.
+            var field = typeof(AppManager)
                 .GetField("_persistentRoot", BindingFlags.Instance | BindingFlags.NonPublic);
-            var persistentRoot = field?.GetValue(controller) as Transform;
+            var persistentRoot = field?.GetValue(manager) as Transform;
 
             Assert.AreSame(go.transform, persistentRoot);
 
@@ -95,21 +93,21 @@ namespace CosmicShore.Core
         public void Awake_WithPersistentRoot_UsesAssigned()
         {
             var rootGo = new GameObject("PersistentRoot");
-            var go = new GameObject("TestBootstrap");
+            var go = new GameObject("TestAppManager");
 
             // Set the persistent root via serialized field before Awake.
             // We need to set it before AddComponent, but AddComponent calls Awake immediately.
             // Instead, we create the component on a disabled GO, set the field, then enable.
             go.SetActive(false);
-            var controller = go.AddComponent<BootstrapController>();
+            var manager = go.AddComponent<AppManager>();
 
-            var field = typeof(BootstrapController)
+            var field = typeof(AppManager)
                 .GetField("_persistentRoot", BindingFlags.Instance | BindingFlags.NonPublic);
-            field?.SetValue(controller, rootGo.transform);
+            field?.SetValue(manager, rootGo.transform);
 
             go.SetActive(true); // Triggers Awake.
 
-            var persistentRoot = field?.GetValue(controller) as Transform;
+            var persistentRoot = field?.GetValue(manager) as Transform;
             Assert.AreSame(rootGo.transform, persistentRoot);
 
             Object.DestroyImmediate(go);
@@ -125,20 +123,20 @@ namespace CosmicShore.Core
         {
             SetHasBootstrapped(true);
 
-            var go = new GameObject("TestBootstrapDuplicate");
-            go.AddComponent<BootstrapController>();
+            var go = new GameObject("TestAppManagerDuplicate");
+            go.AddComponent<AppManager>();
 
             // The Awake should have scheduled destruction. In edit mode, we need DestroyImmediate
-            // but the controller uses Destroy (deferred). Check the object is still valid but
+            // but the manager uses Destroy (deferred). Check the object is still valid but
             // verify the guard path was taken by confirming _persistentRoot was NOT set up.
-            var field = typeof(BootstrapController)
+            var field = typeof(AppManager)
                 .GetField("_persistentRoot", BindingFlags.Instance | BindingFlags.NonPublic);
-            var controller = go.GetComponent<BootstrapController>();
+            var manager = go.GetComponent<AppManager>();
 
             // In the duplicate path, _persistentRoot is never assigned because
             // SetupPersistentRoot() is skipped. The field stays at its default (null)
             // because Destroy(gameObject) is called before SetupPersistentRoot.
-            var persistentRoot = field?.GetValue(controller) as Transform;
+            var persistentRoot = field?.GetValue(manager) as Transform;
             Assert.IsNull(persistentRoot);
 
             Object.DestroyImmediate(go);
@@ -151,15 +149,15 @@ namespace CosmicShore.Core
         [Test]
         public void ConfigurePlatform_NullConfig_SetsDefaultFrameRate()
         {
-            var go = new GameObject("TestBootstrap");
+            var go = new GameObject("TestAppManager");
             go.SetActive(false);
 
-            var controller = go.AddComponent<BootstrapController>();
+            var manager = go.AddComponent<AppManager>();
 
-            // Ensure _config is null (default).
-            var configField = typeof(BootstrapController)
-                .GetField("_config", BindingFlags.Instance | BindingFlags.NonPublic);
-            configField?.SetValue(controller, null);
+            // Ensure _bootstrapConfig is null (default).
+            var configField = typeof(AppManager)
+                .GetField("_bootstrapConfig", BindingFlags.Instance | BindingFlags.NonPublic);
+            configField?.SetValue(manager, null);
 
             go.SetActive(true); // Triggers Awake -> ConfigurePlatform.
 
@@ -176,14 +174,14 @@ namespace CosmicShore.Core
             so.FindProperty("_targetFrameRate").intValue = 120;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            var go = new GameObject("TestBootstrap");
+            var go = new GameObject("TestAppManager");
             go.SetActive(false);
 
-            var controller = go.AddComponent<BootstrapController>();
+            var manager = go.AddComponent<AppManager>();
 
-            var configField = typeof(BootstrapController)
-                .GetField("_config", BindingFlags.Instance | BindingFlags.NonPublic);
-            configField?.SetValue(controller, config);
+            var configField = typeof(AppManager)
+                .GetField("_bootstrapConfig", BindingFlags.Instance | BindingFlags.NonPublic);
+            configField?.SetValue(manager, config);
 
             go.SetActive(true);
 
@@ -201,14 +199,14 @@ namespace CosmicShore.Core
             so.FindProperty("_vSyncCount").intValue = 1;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            var go = new GameObject("TestBootstrap");
+            var go = new GameObject("TestAppManager");
             go.SetActive(false);
 
-            var controller = go.AddComponent<BootstrapController>();
+            var manager = go.AddComponent<AppManager>();
 
-            var configField = typeof(BootstrapController)
-                .GetField("_config", BindingFlags.Instance | BindingFlags.NonPublic);
-            configField?.SetValue(controller, config);
+            var configField = typeof(AppManager)
+                .GetField("_bootstrapConfig", BindingFlags.Instance | BindingFlags.NonPublic);
+            configField?.SetValue(manager, config);
 
             go.SetActive(true);
 
@@ -226,24 +224,24 @@ namespace CosmicShore.Core
         public void OnBootstrapComplete_CanSubscribeWithoutError()
         {
             bool fired = false;
-            BootstrapController.OnBootstrapComplete += () => fired = true;
+            AppManager.OnBootstrapComplete += () => fired = true;
 
             // Just verifying subscription works — the event won't fire without the full async flow.
             Assert.IsFalse(fired);
 
             // Clean up.
-            BootstrapController.OnBootstrapComplete -= () => fired = true;
+            AppManager.OnBootstrapComplete -= () => fired = true;
         }
 
         [Test]
         public void OnBootstrapFailed_CanSubscribeWithoutError()
         {
             string errorMsg = null;
-            BootstrapController.OnBootstrapFailed += msg => errorMsg = msg;
+            AppManager.OnBootstrapFailed += msg => errorMsg = msg;
 
             Assert.IsNull(errorMsg);
 
-            BootstrapController.OnBootstrapFailed -= msg => errorMsg = msg;
+            AppManager.OnBootstrapFailed -= msg => errorMsg = msg;
         }
 
         #endregion
@@ -253,13 +251,13 @@ namespace CosmicShore.Core
         [Test]
         public void BootstrapServices_DefaultsToEmptyList()
         {
-            var go = new GameObject("TestBootstrap");
+            var go = new GameObject("TestAppManager");
             go.SetActive(false);
-            var controller = go.AddComponent<BootstrapController>();
+            var manager = go.AddComponent<AppManager>();
 
-            var field = typeof(BootstrapController)
+            var field = typeof(AppManager)
                 .GetField("_bootstrapServices", BindingFlags.Instance | BindingFlags.NonPublic);
-            var services = field?.GetValue(controller) as System.Collections.Generic.List<MonoBehaviour>;
+            var services = field?.GetValue(manager) as System.Collections.Generic.List<MonoBehaviour>;
 
             Assert.IsNotNull(services);
             Assert.AreEqual(0, services.Count);

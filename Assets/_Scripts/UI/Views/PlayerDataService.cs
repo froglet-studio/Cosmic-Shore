@@ -20,14 +20,15 @@ namespace CosmicShore.UI
         [SerializeField] private SO_ProfileIconList profileIcons;
 
         [Header("Game Data")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
 
         public PlayerProfileData CurrentProfile { get; private set; }
         public bool              IsInitialized  { get; private set; }
 
         public event Action<PlayerProfileData> OnProfileChanged;
-        
-        [Inject] AuthenticationController authenticationController;
+
+        [Inject] AuthenticationDataVariable authenticationDataVariable;
+        AuthenticationData authenticationData => authenticationDataVariable.Value;
 
         // Save debouncing: coalesces rapid saves into a single cloud call
         private const float SAVE_DEBOUNCE_SECONDS = 1.5f;
@@ -37,22 +38,21 @@ namespace CosmicShore.UI
         private void OnEnable()
         {
             OnProfileChanged += SyncProfileToGameData;
-
-            // Subscribe to auth events via singleton (survives scene transitions)
-            if (authenticationController != null)
-                authenticationController.OnSignedIn += HandleSignedInFromAuth;
-            else
-                Debug.LogWarning("[PlayerDataService] authenticationController was not injected — auth events will not be observed.");
         }
 
         async void Start()
         {
             try
             {
+                // Subscribe to auth events here (not OnEnable) because Reflex
+                // DI injection happens after Awake/OnEnable but before Start.
+                if (authenticationDataVariable != null)
+                    authenticationData.OnSignedIn.OnRaised += HandleSignedIn;
+
                 CreateLocalDefaultProfile(null);
 
                 // If already signed in, initialize immediately
-                if (authenticationController != null && authenticationController.IsSignedIn)
+                if (authenticationDataVariable != null && authenticationData.IsSignedIn)
                 {
                     await InitializeAfterAuth();
                 }
@@ -62,15 +62,15 @@ namespace CosmicShore.UI
                 CSDebug.LogError($"[PlayerDataService] Start failed: {e.Message}");
             }
         }
-        
+
         void OnDestroy()
         {
-            if (authenticationController != null)
-                authenticationController.OnSignedIn -= HandleSignedInFromAuth;
+            if (authenticationDataVariable != null)
+                authenticationData.OnSignedIn.OnRaised -= HandleSignedIn;
             OnProfileChanged -= SyncProfileToGameData;
         }
 
-        async void HandleSignedInFromAuth(string playerId)
+        async void HandleSignedIn()
         {
             try
             {
@@ -81,7 +81,7 @@ namespace CosmicShore.UI
             }
             catch (Exception e)
             {
-                CSDebug.LogError($"[PlayerDataService] HandleSignedInFromAuth failed: {e.Message}");
+                CSDebug.LogError($"[PlayerDataService] HandleSignedIn failed: {e.Message}");
             }
         }
 

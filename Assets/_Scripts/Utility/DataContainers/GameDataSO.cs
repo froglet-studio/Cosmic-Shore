@@ -15,7 +15,7 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Every MiniGame in the project should use the same asset of this SO.
-    /// It connects MiniGameBase with GameManager, StatsManager, TurnMonitor, Aracade, MultiplayerSetup and others.
+    /// It connects MiniGameBase with SceneLoader, StatsManager, TurnMonitor, Arcade, MultiplayerSetup and others.
     /// </summary>
     [CreateAssetMenu(
         fileName = "DataContainer_" + nameof(GameDataSO),
@@ -368,7 +368,7 @@ namespace CosmicShore.Utility
                 .OrderByDescending(rs => rs.VolumeRemaining)
                 .FirstOrDefault();
 
-            return top is null ? (Domains.Jade, 0f) : (Team: top.Domain, top.VolumeRemaining);
+            return top is null ? (Domains.Jade, 0f) : (top.Domain, top.VolumeRemaining);
         }
         
         public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>

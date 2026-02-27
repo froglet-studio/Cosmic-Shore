@@ -4,6 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.UI;
 using System;
 using System.Collections;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,6 +22,8 @@ namespace CosmicShore.UI
 
     public class GameplayRewardButton : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [Range(1,3)]
         [SerializeField] int RewardTier;
         [SerializeField] TMP_Text ScoreRequirementLabel;
@@ -65,7 +68,7 @@ namespace CosmicShore.UI
 
         public void ClaimReward()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
             switch (RewardButtonType)
             {
                 case RewardButtonType.DailyChallenge:

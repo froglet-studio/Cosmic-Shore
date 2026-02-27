@@ -16,9 +16,6 @@ namespace CosmicShore.Core
         public void Start()
         {
             // [PLAYFAB DISABLED] Daily rewards will be rebuilt on UGS. Pending removal.
-            return;
-
-            AuthenticationManager.OnLoginSuccess += InitEntity;
         }
 
         public void OnDisable()

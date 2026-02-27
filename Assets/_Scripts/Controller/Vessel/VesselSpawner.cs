@@ -1,5 +1,8 @@
 using System;
 using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
@@ -9,9 +12,11 @@ namespace CosmicShore.Gameplay
 {
     public class VesselSpawner : MonoBehaviour
     {
-        [FormerlySerializedAs("_shipPrefabContainer")] [SerializeField] 
+        [FormerlySerializedAs("_shipPrefabContainer")] [SerializeField]
         VesselPrefabContainer vesselPrefabContainer;
-        
+
+        [Inject] Container _container;
+
         public bool SpawnShip(VesselClassType vesselType, out IVessel vessel)
         {
             if (vesselType == VesselClassType.Random)
@@ -20,16 +25,18 @@ namespace CosmicShore.Gameplay
                 var random = new System.Random();
                 vesselType = (VesselClassType)values.GetValue(random.Next(1, values.Length));
             }
-            
+
             vessel = null;
-            
+
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefab))
             {
                 CSDebug.LogError($"Could not find vessel prefab for {vesselType}");
                 return false;
             }
 
-            Instantiate(shipPrefab).TryGetComponent(out vessel);
+            var spawned = Instantiate(shipPrefab);
+            GameObjectInjector.InjectRecursive(spawned.gameObject, _container);
+            spawned.TryGetComponent(out vessel);
             return true;
         }
     }

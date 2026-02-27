@@ -16,8 +16,11 @@ namespace CosmicShore.Gameplay
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
         const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
-        
-        
+
+        [Header("Networking")]
+        [SerializeField, Tooltip("NetworkManager prefab to instantiate when none exists in the scene (e.g. during Bootstrap).")]
+        private GameObject _networkManagerPrefab;
+
         [Inject] GameDataSO gameData;
         [Inject] AuthenticationDataVariable authenticationDataVariable;
         AuthenticationData authenticationData => authenticationDataVariable.Value;
@@ -25,15 +28,6 @@ namespace CosmicShore.Gameplay
         private bool _leaving;
 
         private NetworkManager networkManager;
-
-         void Awake()
-        {
-            networkManager = NetworkManager.Singleton; // or NetworkManager.Instance if you’ve wrapped it
-            if (!networkManager)
-            {
-                CSDebug.LogError("[MultiplayerSetup] NetworkManager missing in scene!");
-            }
-        }
 
         private void Start()
         {
@@ -45,11 +39,11 @@ namespace CosmicShore.Gameplay
 
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
 
-            if (networkManager != null)
+            // If already authenticated (e.g. Bootstrap auth completed before Start),
+            // start the host immediately.
+            if (authenticationData.IsSignedIn)
             {
-                networkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-                networkManager.OnClientDisconnectCallback += OnClientDisconnect;
-                networkManager.OnTransportFailure         += OnTransportFailure;
+                OnAuthenticationSignedIn();
             }
         }
 
@@ -73,47 +67,88 @@ namespace CosmicShore.Gameplay
 
         void OnAuthenticationSignedIn()
         {
+            OnAuthenticationSignedInAsync().Forget();
+        }
+
+        async UniTaskVoid OnAuthenticationSignedInAsync()
+        {
+            await EnsureHostStartedAsync();
+
             if (gameData.IsMultiplayerMode)
             {
                 gameData.DestroyPlayerAndVessel();
                 ExecuteMultiplayerSetup().Forget();
             }
-            else
-            {
-                // Solo play with AI — start a local host so NetworkBehaviours work
-                // without online matchmaking. The ServerPlayerVesselInitializer will
-                // detect solo mode and spawn AI opponents.
-                StartLocalHostForSoloPlay();
-            }
         }
-        
-        private async void StartLocalHostForSoloPlay()
+
+        /// <summary>
+        /// Ensures the NetworkManager exists, registers Netcode callbacks, and
+        /// starts the host exactly once. Instantiates the NetworkManager prefab
+        /// when no Singleton is present (e.g. when running from Bootstrap before
+        /// any gameplay scene has loaded). Subsequent calls are no-ops while the
+        /// host is already listening.
+        /// </summary>
+        async UniTask EnsureHostStartedAsync()
         {
-            if (networkManager == null)
+            // Instantiate NetworkManager prefab if none exists yet.
+            if (NetworkManager.Singleton == null)
             {
-                CSDebug.LogError("[MultiplayerSetup] Cannot start local host — NetworkManager is null.");
+                if (_networkManagerPrefab != null)
+                {
+                    Instantiate(_networkManagerPrefab);
+                    // Wait one frame for NetworkManager.Awake() to register as Singleton.
+                    await UniTask.Yield();
+                }
+                else
+                {
+                    CSDebug.LogError("[MultiplayerSetup] Cannot start host — no NetworkManager and no prefab assigned.");
+                    return;
+                }
+            }
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
+            {
+                CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null after instantiation.");
                 return;
             }
 
-            // Wait for any previous session's shutdown to complete before starting a new host
-            if (networkManager.IsListening)
+            // Re-cache and wire callbacks if the NetworkManager instance changed.
+            if (networkManager != nm)
+            {
+                if (networkManager != null)
+                {
+                    networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                    networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                    networkManager.OnTransportFailure         -= OnTransportFailure;
+                }
+
+                networkManager = nm;
+                nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+                nm.OnClientDisconnectCallback += OnClientDisconnect;
+                nm.OnTransportFailure         += OnTransportFailure;
+            }
+
+            if (nm.IsListening)
+            {
+                CSDebug.Log("[MultiplayerSetup] Host already running.");
+                return;
+            }
+
+            CSDebug.Log("[MultiplayerSetup] Starting as Host.");
+            nm.StartHost();
+        }
+
+        private async UniTaskVoid ExecuteMultiplayerSetup()
+        {
+            // Shutdown the local host before creating a Relay-based multiplayer session.
+            // This is the single intentional transition from local to Relay transport.
+            if (networkManager != null && networkManager.IsListening)
             {
                 networkManager.Shutdown();
                 await UniTask.WaitUntil(() => !networkManager.IsListening);
             }
 
-            // Ensure domain pool is fresh so the host and AI opponents each get
-            // a unique domain.  The multiplayer path does this inside
-            // SetupForMultiplayer(); the solo path was missing it, which caused
-            // every player (and their crystals) to get Domains.Unassigned.
-            DomainAssigner.Initialize();
-
-            CSDebug.Log("[MultiplayerSetup] Starting local host for solo play with AI.");
-            networkManager.StartHost();
-        }
-        
-        private async UniTaskVoid ExecuteMultiplayerSetup()
-        {
             // If a party session was already handed off (e.g. from PartyGameLauncher),
             // skip matchmaking and use the existing session directly.
             if (gameData.ActiveSession != null)
@@ -182,8 +217,6 @@ namespace CosmicShore.Gameplay
         private async UniTask StartSessionAsHost()
         {
             // Ensure domain pool is fresh before any players connect.
-            // The solo path does this in StartLocalHostForSoloPlay(); the multiplayer
-            // host path needs it here so connecting clients get unique domains.
             DomainAssigner.Initialize();
 
             var playerProperties  = await GetPlayerProperties();

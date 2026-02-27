@@ -11,6 +11,12 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            if (CallToActionSystem.Instance == null)
+            {
+                CSDebug.LogWarning($"{nameof(CallToActionTarget)}: CallToActionSystem.Instance is null — skipping registration. GameObject: {gameObject.name}");
+                return;
+            }
+
             CallToActionSystem.Instance.RegisterCallToActionTarget(TargetID, WhenDutyCalls, WhenTheCallHasBeenAnswered);
 
             if (AmIActive())
@@ -27,12 +33,15 @@ namespace CosmicShore.Core
 
         void WhenTheCallHasBeenAnswered()
         {
+            if (ActiveIndicator == null)
+                return;
+
             ActiveIndicator.SetActive(false);
         }
 
         bool AmIActive()
         {
-            return CallToActionSystem.Instance.IsCallToActionTargetActive(TargetID);
+            return CallToActionSystem.Instance != null && CallToActionSystem.Instance.IsCallToActionTargetActive(TargetID);
         }
     }
 }

@@ -1,15 +1,16 @@
 using System;
-using System.Threading.Tasks;
+using System.Threading;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
-using CosmicShore.Core;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
+using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -21,6 +22,8 @@ namespace CosmicShore.Core
     ///   2. If signed in, auto-skips to the main menu.
     ///   3. Otherwise, shows the auth panel for guest login / username setup.
     ///
+    /// Auth state is read from the <see cref="AuthenticationDataVariable"/> SOAP asset.
+    /// Sign-in is performed via the DI-provided <see cref="AuthenticationServiceFacade"/>.
     /// Uses SceneTransitionManager for fade transitions when available.
     /// </summary>
     public class AuthenticationSceneController : MonoBehaviour
@@ -39,99 +42,134 @@ namespace CosmicShore.Core
         [SerializeField] private Button confirmUsernameButton;
         [SerializeField] private TMP_Text usernameStatusText;
 
-        [Header("Dependencies")]
-        [SerializeField] private AuthenticationController authController;
-        [Inject] private PlayerDataService playerDataService;
-
-        [Header("Navigation")]
-        [SerializeField] private string mainMenuSceneName = "Menu_Main";
-
-        [Header("Auto-Skip")]
+        [Header("Timeouts")]
         [SerializeField, Tooltip("Seconds to wait for cached auth before showing UI.")]
-        private float _cachedAuthTimeout = 3f;
+        private float cachedAuthTimeout = 3f;
 
-        private bool _isProcessing;
+        [SerializeField, Tooltip("Seconds to wait for PlayerDataService init after auth.")]
+        private float playerDataTimeout = 5f;
 
-        void Start()
+        [SerializeField, Tooltip("Hard safety timeout — force-navigates to main menu if everything hangs.")]
+        private float safetyTimeout = 10f;
+
+        [SerializeField, Tooltip("Seconds to wait for the network host to become ready before falling back to direct scene load.")]
+        private float networkHostTimeout = 3f;
+
+        [Inject] private AuthenticationServiceFacade _facade;
+        [Inject] private AuthenticationDataVariable _authDataVariable;
+        [Inject] private PlayerDataService _playerDataService;
+        [Inject] private SceneNameListSO _sceneNames;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
+
+        CancellationTokenSource _cts;
+        bool _navigated;
+
+        AuthenticationData AuthData => _authDataVariable?.Value;
+
+        // ──────────────────────────────────────────────
+        //  Lifecycle
+        // ──────────────────────────────────────────────
+
+        void OnEnable()
         {
-            EnsureAuthController();
-            SetupUI();
-            RunAuthFlowAsync().Forget();
-        }
+            _cts = new CancellationTokenSource();
 
-        void EnsureAuthController()
-        {
-            if (authController != null) return;
-
-#if UNITY_2023_1_OR_NEWER
-            authController = FindAnyObjectByType<AuthenticationController>();
-#else
-            authController = FindObjectOfType<AuthenticationController>();
-#endif
-
-            if (authController != null)
-            {
-                CSDebug.Log("[AuthScene] Found existing AuthenticationController in scene.");
-                return;
-            }
-
-            CSDebug.Log("[AuthScene] No AuthenticationController found. Creating one.");
-            var go = new GameObject("[AuthenticationController]");
-            authController = go.AddComponent<AuthenticationController>();
-        }
-
-        void SetupUI()
-        {
             if (guestLoginButton)
                 guestLoginButton.onClick.AddListener(OnGuestLoginClicked);
 
             if (confirmUsernameButton)
                 confirmUsernameButton.onClick.AddListener(OnConfirmUsernameClicked);
-
-            ClearStatusMessages();
         }
 
-        // ----- Auto-Skip / Cached Auth -----
-
-        async UniTaskVoid RunAuthFlowAsync()
+        void OnDisable()
         {
-            // Start with loading state while we check cached auth.
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+
+            if (guestLoginButton)
+                guestLoginButton.onClick.RemoveListener(OnGuestLoginClicked);
+
+            if (confirmUsernameButton)
+                confirmUsernameButton.onClick.RemoveListener(OnConfirmUsernameClicked);
+        }
+
+        void Start()
+        {
+            ClearStatusMessages();
+            RunAuthFlowAsync(_cts.Token).Forget();
+        }
+
+        // ──────────────────────────────────────────────
+        //  Main Auth Flow
+        // ──────────────────────────────────────────────
+
+        async UniTaskVoid RunAuthFlowAsync(CancellationToken ct)
+        {
             HideAllPanels();
             ShowLoading();
 
             try
             {
-                // Check if Bootstrap's auto-auth already signed us in.
-                if (IsAlreadySignedIn())
-                {
-                    CSDebug.Log("[AuthScene] Already signed in from Bootstrap. Auto-skipping.");
-                    await HandlePostAuthFlowAsync();
-                    return;
-                }
+                // Race the entire auth flow against a hard safety timeout.
+                // WhenAny returns the 0-based index of the first task to complete.
+                int winnerIndex = await UniTask.WhenAny(
+                    RunAuthFlowCoreAsync(ct),
+                    UniTask.Delay(TimeSpan.FromSeconds(safetyTimeout), ignoreTimeScale: true, cancellationToken: ct)
+                );
 
-                // Try cached session sign-in.
-                if (authController != null)
+                if (winnerIndex == 1 && !_navigated)
                 {
-                    bool cached = await TrySignInCachedWithTimeoutAsync();
-                    if (cached)
-                    {
-                        CSDebug.Log("[AuthScene] Cached session valid. Auto-skipping.");
-                        await HandlePostAuthFlowAsync();
-                        return;
-                    }
+                    CSDebug.LogWarning($"[AuthScene] Safety timeout reached after {safetyTimeout}s. Force-navigating to main menu.");
+                    NavigateToMainMenu();
                 }
-
-                // No cached auth — show the login UI.
-                HideLoading();
-                ShowAuthPanel();
             }
+            catch (OperationCanceledException) { /* scene destroyed — expected */ }
             catch (Exception ex)
             {
-                CSDebug.LogWarning($"[AuthScene] Auto-skip check failed: {ex.Message}. Showing auth panel.");
-                HideLoading();
-                ShowAuthPanel();
+                CSDebug.LogWarning($"[AuthScene] Auth flow failed: {ex.Message}. Navigating to main menu.");
+                NavigateToMainMenu();
             }
         }
+
+        async UniTask RunAuthFlowCoreAsync(CancellationToken ct)
+        {
+            // 1. Already signed in from Bootstrap?
+            if (IsAlreadySignedIn())
+            {
+                CSDebug.Log("[AuthScene] Already signed in from Bootstrap. Auto-skipping.");
+                await HandlePostAuthFlowAsync(ct);
+                return;
+            }
+
+            // 2. Try cached session sign-in with a timeout.
+            if (_facade != null)
+            {
+                bool cached = await TrySignInCachedWithTimeoutAsync(ct);
+                if (cached)
+                {
+                    CSDebug.Log("[AuthScene] Cached session valid. Auto-skipping.");
+                    await HandlePostAuthFlowAsync(ct);
+                    return;
+                }
+            }
+
+            // 3. No cached auth — show UI or auto-login.
+            HideLoading();
+            if (authPanel != null)
+            {
+                ShowAuthPanel();
+            }
+            else
+            {
+                CSDebug.LogWarning("[AuthScene] No auth panel in scene — attempting automatic anonymous sign-in.");
+                await AttemptAutoSignInAsync(ct);
+            }
+        }
+
+        // ──────────────────────────────────────────────
+        //  Cached Auth
+        // ──────────────────────────────────────────────
 
         bool IsAlreadySignedIn()
         {
@@ -146,20 +184,191 @@ namespace CosmicShore.Core
             }
         }
 
-        async Task<bool> TrySignInCachedWithTimeoutAsync()
+        async UniTask<bool> TrySignInCachedWithTimeoutAsync(CancellationToken ct)
         {
-            var cachedTask = authController.TrySignInCachedAsync();
-            var delayTask = Task.Delay(TimeSpan.FromSeconds(_cachedAuthTimeout));
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(cachedAuthTimeout));
 
-            var completed = await Task.WhenAny(cachedTask, delayTask);
-
-            if (completed == cachedTask && cachedTask.IsCompletedSuccessfully)
-                return cachedTask.Result;
-
-            return false;
+            try
+            {
+                return await _facade.TrySignInCachedAsync().AsUniTask()
+                    .AttachExternalCancellation(timeoutCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                CSDebug.Log("[AuthScene] Cached auth timed out.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Cached auth failed: {ex.Message}");
+                return false;
+            }
         }
 
-        // ----- Panel Management -----
+        // ──────────────────────────────────────────────
+        //  Auto Sign-In (no UI panel)
+        // ──────────────────────────────────────────────
+
+        async UniTask AttemptAutoSignInAsync(CancellationToken ct)
+        {
+            try
+            {
+                if (_facade != null)
+                    await _facade.EnsureSignedInAnonymouslyAsync().AsUniTask()
+                        .AttachExternalCancellation(ct);
+
+                await HandlePostAuthFlowAsync(ct);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Auto sign-in failed: {ex.Message}. Navigating to main menu.");
+                NavigateToMainMenu();
+            }
+        }
+
+        // ──────────────────────────────────────────────
+        //  Guest Login (button handler)
+        // ──────────────────────────────────────────────
+
+        void OnGuestLoginClicked()
+        {
+            OnGuestLoginAsync(_cts?.Token ?? CancellationToken.None).Forget();
+        }
+
+        async UniTaskVoid OnGuestLoginAsync(CancellationToken ct)
+        {
+            if (guestLoginButton) guestLoginButton.interactable = false;
+            ClearStatusMessages();
+            ShowLoading();
+
+            try
+            {
+                if (_facade != null)
+                    await _facade.EnsureSignedInAnonymouslyAsync().AsUniTask()
+                        .AttachExternalCancellation(ct);
+
+                await HandlePostAuthFlowAsync(ct);
+            }
+            catch (OperationCanceledException) { /* scene destroyed */ }
+            catch (Exception ex)
+            {
+                HideLoading();
+                ShowAuthPanel();
+                if (statusText)
+                    statusText.text = $"Guest login failed: {ex.Message}";
+                CSDebug.LogWarning($"[AuthScene] Guest login failed: {ex}");
+            }
+            finally
+            {
+                if (guestLoginButton) guestLoginButton.interactable = true;
+            }
+        }
+
+        // ──────────────────────────────────────────────
+        //  Post-Auth Flow
+        // ──────────────────────────────────────────────
+
+        async UniTask HandlePostAuthFlowAsync(CancellationToken ct)
+        {
+            ShowLoading();
+
+            // Wait for PlayerDataService to initialize, with a timeout.
+            if (_playerDataService != null && !_playerDataService.IsInitialized)
+            {
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(playerDataTimeout));
+
+                try
+                {
+                    await UniTask.WaitUntil(
+                        () => _playerDataService.IsInitialized,
+                        cancellationToken: timeoutCts.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    CSDebug.LogWarning("[AuthScene] PlayerDataService init timed out. Continuing anyway.");
+                }
+            }
+
+            if (CheckIfUsernameNeeded())
+            {
+                HideLoading();
+                ShowUsernameSetup();
+            }
+            else
+            {
+                NavigateToMainMenu();
+            }
+        }
+
+        bool CheckIfUsernameNeeded()
+        {
+            if (_playerDataService == null || !_playerDataService.IsInitialized)
+                return false;
+
+            var profile = _playerDataService.CurrentProfile;
+            return profile == null
+                || string.IsNullOrEmpty(profile.displayName)
+                || profile.displayName.StartsWith("Pilot", StringComparison.Ordinal);
+        }
+
+        // ──────────────────────────────────────────────
+        //  Username Setup (button handler)
+        // ──────────────────────────────────────────────
+
+        void OnConfirmUsernameClicked()
+        {
+            OnConfirmUsernameAsync(_cts?.Token ?? CancellationToken.None).Forget();
+        }
+
+        async UniTaskVoid OnConfirmUsernameAsync(CancellationToken ct)
+        {
+            string username = usernameInputField ? usernameInputField.text?.Trim() : string.Empty;
+
+            if (string.IsNullOrEmpty(username) || username.Length < 3 || username.Length > 25)
+            {
+                if (usernameStatusText)
+                    usernameStatusText.text = "Username must be between 3 and 25 characters.";
+                return;
+            }
+
+            if (confirmUsernameButton) confirmUsernameButton.interactable = false;
+
+            try
+            {
+                if (_playerDataService != null && _playerDataService.IsInitialized)
+                    _playerDataService.SetDisplayName(username);
+
+                try
+                {
+                    await AuthenticationService.Instance.UpdatePlayerNameAsync(username)
+                        .AsUniTask().AttachExternalCancellation(ct);
+                }
+                catch (Exception ex)
+                {
+                    CSDebug.LogWarning($"[AuthScene] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+                }
+
+                NavigateToMainMenu();
+            }
+            catch (OperationCanceledException) { /* scene destroyed */ }
+            catch (Exception ex)
+            {
+                if (usernameStatusText)
+                    usernameStatusText.text = $"Failed to set username: {ex.Message}";
+                CSDebug.LogWarning($"[AuthScene] Set username failed: {ex}");
+            }
+            finally
+            {
+                if (confirmUsernameButton) confirmUsernameButton.interactable = true;
+            }
+        }
+
+        // ──────────────────────────────────────────────
+        //  Panel Management
+        // ──────────────────────────────────────────────
 
         void HideAllPanels()
         {
@@ -198,140 +407,70 @@ namespace CosmicShore.Core
             if (usernameStatusText) usernameStatusText.text = string.Empty;
         }
 
-        // ----- Guest Login -----
-
-        async void OnGuestLoginClicked()
-        {
-            if (_isProcessing) return;
-            _isProcessing = true;
-
-            ClearStatusMessages();
-            ShowLoading();
-
-            try
-            {
-                await authController.EnsureSignedInAnonymouslyAsync();
-                await HandlePostAuthFlowAsync();
-            }
-            catch (Exception ex)
-            {
-                HideLoading();
-                ShowAuthPanel();
-                if (statusText)
-                    statusText.text = $"Guest login failed: {ex.Message}";
-                CSDebug.LogWarning($"[AuthScene] Guest login failed: {ex}");
-            }
-            finally
-            {
-                _isProcessing = false;
-            }
-        }
-
-        // ----- Post-Auth Flow -----
-
-        async Task HandlePostAuthFlowAsync()
-        {
-            ShowLoading();
-
-            // Wait for PlayerDataService to initialize after auth.
-            if (playerDataService != null)
-            {
-                float timeout = 5f;
-                float elapsed = 0f;
-                while (!playerDataService.IsInitialized && elapsed < timeout)
-                {
-                    await Task.Delay(100);
-                    elapsed += 0.1f;
-                }
-            }
-
-            bool needsUsername = CheckIfUsernameNeeded();
-
-            if (needsUsername)
-            {
-                HideLoading();
-                ShowUsernameSetup();
-            }
-            else
-            {
-                NavigateToMainMenu();
-            }
-        }
-
-        bool CheckIfUsernameNeeded()
-        {
-            // If PlayerDataService isn't available (e.g. Reflex injection not ready),
-            // skip username check and proceed to main menu. Username can be set later.
-            if (playerDataService == null || !playerDataService.IsInitialized)
-                return false;
-
-            var profile = playerDataService.CurrentProfile;
-            return profile == null
-                || string.IsNullOrEmpty(profile.displayName)
-                || profile.displayName == "Pilot";
-        }
-
-        // ----- Username Setup -----
-
-        async void OnConfirmUsernameClicked()
-        {
-            if (_isProcessing) return;
-
-            string username = usernameInputField ? usernameInputField.text?.Trim() : string.Empty;
-
-            if (string.IsNullOrEmpty(username) || username.Length < 3 || username.Length > 25)
-            {
-                if (usernameStatusText)
-                    usernameStatusText.text = "Username must be between 3 and 25 characters.";
-                return;
-            }
-
-            _isProcessing = true;
-
-            try
-            {
-                if (playerDataService != null && playerDataService.IsInitialized)
-                {
-                    playerDataService.SetDisplayName(username);
-                }
-
-                // Also set the UGS player name for multiplayer.
-                try
-                {
-                    await AuthenticationService.Instance.UpdatePlayerNameAsync(username);
-                }
-                catch (Exception ex)
-                {
-                    CSDebug.LogWarning($"[AuthScene] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
-                }
-
-                NavigateToMainMenu();
-            }
-            catch (Exception ex)
-            {
-                if (usernameStatusText)
-                    usernameStatusText.text = $"Failed to set username: {ex.Message}";
-                CSDebug.LogWarning($"[AuthScene] Set username failed: {ex}");
-            }
-            finally
-            {
-                _isProcessing = false;
-            }
-        }
-
-        // ----- Navigation -----
+        // ──────────────────────────────────────────────
+        //  Navigation
+        // ──────────────────────────────────────────────
 
         void NavigateToMainMenu()
         {
-            CSDebug.Log("[AuthScene] Navigating to Main Menu...");
+            if (_navigated) return;
+            _navigated = true;
 
-            if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
+            CSDebug.Log("[AuthScene] Navigating to Main Menu...");
+            LoadMainMenuNetworkedAsync(_cts?.Token ?? CancellationToken.None).Forget();
+        }
+
+        /// <summary>
+        /// Waits for the network host (started by the persistent MultiplayerSetup
+        /// in response to OnSignedIn) to be ready, then loads Menu_Main via
+        /// networked scene management. Falls back to a direct scene load if the
+        /// host does not become ready within <see cref="networkHostTimeout"/>.
+        /// </summary>
+        async UniTaskVoid LoadMainMenuNetworkedAsync(CancellationToken ct)
+        {
+            try
             {
-                transitionManager.LoadSceneAsync(mainMenuSceneName).Forget();
+                // Wait for MultiplayerSetup to instantiate NetworkManager and start host.
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(networkHostTimeout));
+
+                try
+                {
+                    await UniTask.WaitUntil(
+                        () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
+                        cancellationToken: timeoutCts.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    CSDebug.LogWarning($"[AuthScene] Network host not ready after {networkHostTimeout}s. Falling back to direct scene load.");
+                    LoadMainMenuDirect();
+                    return;
+                }
+
+                var nm = NetworkManager.Singleton;
+                string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+                CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
+                nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+            }
+            catch (OperationCanceledException) { /* scene destroyed */ }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Networked scene load failed: {ex.Message}. Falling back to direct scene load.");
+                LoadMainMenuDirect();
+            }
+        }
+
+        void LoadMainMenuDirect()
+        {
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+
+            if (_sceneTransitionManager != null && !_sceneTransitionManager.IsTransitioning)
+            {
+                _sceneTransitionManager.LoadSceneAsync(menuScene).Forget();
             }
             else
             {
-                SceneManager.LoadScene(mainMenuSceneName);
+                SceneManager.LoadScene(menuScene);
             }
         }
     }

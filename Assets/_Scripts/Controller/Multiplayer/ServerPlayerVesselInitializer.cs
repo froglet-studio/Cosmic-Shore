@@ -4,6 +4,9 @@ using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -22,7 +25,8 @@ namespace CosmicShore.Gameplay
     public class ServerPlayerVesselInitializer : MonoBehaviour
     {
         [Header("Dependencies")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
+        [Inject] protected Container _container;
 
         [FormerlySerializedAs("clientPlayerSpawner")]
         [SerializeField] protected ClientPlayerVesselInitializer clientPlayerVesselInitializer;
@@ -36,6 +40,11 @@ namespace CosmicShore.Gameplay
         [Header("AI Profiles")]
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
+
+        [Header("Lifecycle")]
+        [Tooltip("When true, NetworkManager.Shutdown() is called on despawn (game scenes). " +
+                 "Set to false for Menu_Main so the host persists across scene transitions.")]
+        [SerializeField] bool shutdownNetworkOnDespawn = true;
 
         [Header("Spawn Origins")]
         [SerializeField] protected Transform[] _playerOrigins;
@@ -78,6 +87,19 @@ namespace CosmicShore.Gameplay
 
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkVesselClientCache.OnNewInstanceAdded += OnNewVesselClientAdded;
+
+            // Handle clients that connected before this spawner was active
+            // (e.g., host started in Menu_Main before the game scene loaded).
+            // Reset the domain pool for this game session, then process them.
+            var connectedIds = NetworkManager.Singleton.ConnectedClientsIds;
+            if (connectedIds.Count > 0)
+            {
+                DomainAssigner.Initialize();
+                foreach (var clientId in connectedIds)
+                {
+                    OnClientConnected(clientId);
+                }
+            }
         }
 
         /// <summary>
@@ -91,7 +113,7 @@ namespace CosmicShore.Gameplay
 
             NetworkVesselClientCache.OnNewInstanceAdded -= OnNewVesselClientAdded;
 
-            if (NetworkManager.Singleton)
+            if (shutdownNetworkOnDespawn && NetworkManager.Singleton)
                 NetworkManager.Singleton.Shutdown();
         }
 
@@ -116,14 +138,10 @@ namespace CosmicShore.Gameplay
         protected virtual void OnClientConnected(ulong clientId)
         {
             bool isLocalHost = clientId == NetworkManager.Singleton.LocalClientId;
+            bool needsAI = isLocalHost && (IsSoloWithAI || NeedsAIBackfill);
 
-            if (IsSoloWithAI && isLocalHost)
+            if (needsAI)
             {
-                SpawnPlayerThenAI(clientId).Forget();
-            }
-            else if (NeedsAIBackfill && isLocalHost)
-            {
-                // Multiplayer with AI backfill (party has fewer humans than player count)
                 SpawnPlayerThenAI(clientId).Forget();
             }
             else
@@ -206,6 +224,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < aiCount; i++)
             {
                 var aiPlayerNO = Instantiate(playerPrefabNO);
+                GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
                 // Position AI at successive spawn points (index 1, 2, ...)
                 if (_playerOrigins != null && _playerOrigins.Length > 0)
@@ -312,7 +331,7 @@ namespace CosmicShore.Gameplay
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
 
-        bool TrySpawnVesselForAI(Player aiPlayer, out NetworkObject vesselNO)
+        protected bool TrySpawnVesselForAI(Player aiPlayer, out NetworkObject vesselNO)
         {
             vesselNO = null;
             var vesselType = aiPlayer.NetDefaultVesselType.Value;
@@ -330,6 +349,7 @@ namespace CosmicShore.Gameplay
             }
 
             vesselNO = Instantiate(shipNetworkObject);
+            GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
             vesselNO.transform.SetPositionAndRotation(aiPlayer.transform.position, aiPlayer.transform.rotation);
             vesselNO.Spawn(true); // server-owned
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
@@ -432,6 +452,7 @@ namespace CosmicShore.Gameplay
             }
 
             var networkVessel = Instantiate(shipNetworkObject);
+            GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
             networkVessel.SpawnWithOwnership(clientId, true);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
         }

@@ -13,13 +13,14 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
+using Reflex.Attributes;
 namespace CosmicShore.UI
 {
     [RequireComponent(typeof(MiniGameHUDView))]
     public class MiniGameHUD : MonoBehaviour
     {
         [Header("Data")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
 
         [Header("View")]
         [SerializeField] protected MiniGameHUDView view;
@@ -131,9 +132,10 @@ namespace CosmicShore.UI
             _connectingCts?.Dispose();
             _connectingCts = new CancellationTokenSource();
 
-            SubscribeToEvents();
             CleanupUI();
         }
+
+        protected virtual void Start() => SubscribeToEvents();
 
         protected virtual void OnDisable()
         {

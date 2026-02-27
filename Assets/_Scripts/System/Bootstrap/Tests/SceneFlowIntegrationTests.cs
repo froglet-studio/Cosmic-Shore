@@ -10,6 +10,9 @@ namespace CosmicShore.Core
     /// <summary>
     /// Integration tests that verify the Bootstrap → Authentication → Menu_Main
     /// scene flow is correctly wired across all configuration assets and code.
+    ///
+    /// Scene names are centralized in <see cref="CosmicShore.Utility.SceneNameListSO"/>,
+    /// registered in DI via AppManager. All consumers inject it.
     /// </summary>
     [TestFixture]
     public class SceneFlowIntegrationTests
@@ -114,66 +117,6 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region BootstrapConfigSO Validation
-
-        [Test]
-        public void BootstrapConfigSO_FirstSceneName_MatchesBuildSettings()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-
-            var enabledPaths = EditorBuildSettings.scenes
-                .Where(s => s.enabled)
-                .Select(s => System.IO.Path.GetFileNameWithoutExtension(s.path))
-                .ToHashSet();
-
-            Assert.IsTrue(
-                enabledPaths.Contains(config.FirstSceneName),
-                $"BootstrapConfigSO.FirstSceneName ('{config.FirstSceneName}') not found in build settings.");
-
-            Object.DestroyImmediate(config);
-        }
-
-        [Test]
-        public void BootstrapConfigSO_MainMenuSceneName_MatchesBuildSettings()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-
-            var enabledPaths = EditorBuildSettings.scenes
-                .Where(s => s.enabled)
-                .Select(s => System.IO.Path.GetFileNameWithoutExtension(s.path))
-                .ToHashSet();
-
-            Assert.IsTrue(
-                enabledPaths.Contains(config.MainMenuSceneName),
-                $"BootstrapConfigSO.MainMenuSceneName ('{config.MainMenuSceneName}') not found in build settings.");
-
-            Object.DestroyImmediate(config);
-        }
-
-        [Test]
-        public void BootstrapConfigSO_FirstSceneName_IsAuthentication()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-
-            Assert.AreEqual("Authentication", config.FirstSceneName,
-                "BootstrapConfigSO.FirstSceneName should default to 'Authentication'.");
-
-            Object.DestroyImmediate(config);
-        }
-
-        [Test]
-        public void BootstrapConfigSO_MainMenuSceneName_IsMenuMain()
-        {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-
-            Assert.AreEqual("Menu_Main", config.MainMenuSceneName,
-                "BootstrapConfigSO.MainMenuSceneName should default to 'Menu_Main'.");
-
-            Object.DestroyImmediate(config);
-        }
-
-        #endregion
-
         #region SceneNameListSO Asset Validation
 
         [Test]
@@ -183,6 +126,41 @@ namespace CosmicShore.Core
             Assert.IsTrue(guids.Length > 0,
                 "No SceneNameListSO asset found in the project. " +
                 "Create one via ScriptableObjects/SceneNameListSO.");
+        }
+
+        [Test]
+        public void SceneNameListSOAsset_AuthenticationScene_MatchesBuildSettings()
+        {
+            var guids = AssetDatabase.FindAssets("t:SceneNameListSO");
+            if (guids.Length == 0)
+            {
+                Assert.Inconclusive("No SceneNameListSO asset to validate.");
+                return;
+            }
+
+            var enabledNames = EditorBuildSettings.scenes
+                .Where(s => s.enabled)
+                .Select(s => System.IO.Path.GetFileNameWithoutExtension(s.path))
+                .ToHashSet();
+
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+                Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
+
+                var so = new SerializedObject(asset);
+                var authProp = so.FindProperty("_authenticationScene");
+                Assert.IsNotNull(authProp,
+                    $"SceneNameListSO at {path} is missing '_authenticationScene' field.");
+
+                var authValue = authProp.stringValue;
+                Assert.IsFalse(string.IsNullOrEmpty(authValue),
+                    $"SceneNameListSO at {path} has empty AuthenticationScene.");
+                Assert.IsTrue(enabledNames.Contains(authValue),
+                    $"SceneNameListSO.AuthenticationScene ('{authValue}') at {path} " +
+                    $"not found in enabled build settings scenes.");
+            }
         }
 
         [Test]
@@ -203,14 +181,13 @@ namespace CosmicShore.Core
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
-                // Load the asset as a generic ScriptableObject and read the field via SerializedObject
                 var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
                 Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
 
                 var so = new SerializedObject(asset);
-                var mainMenuProp = so.FindProperty("MainMenuScene");
+                var mainMenuProp = so.FindProperty("_mainMenuScene");
                 Assert.IsNotNull(mainMenuProp,
-                    $"SceneNameListSO at {path} is missing 'MainMenuScene' field.");
+                    $"SceneNameListSO at {path} is missing '_mainMenuScene' field.");
 
                 var mainMenuValue = mainMenuProp.stringValue;
                 Assert.IsFalse(string.IsNullOrEmpty(mainMenuValue),
@@ -243,9 +220,9 @@ namespace CosmicShore.Core
                 Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
 
                 var so = new SerializedObject(asset);
-                var multiplayerProp = so.FindProperty("MultiplayerScene");
+                var multiplayerProp = so.FindProperty("_multiplayerScene");
                 Assert.IsNotNull(multiplayerProp,
-                    $"SceneNameListSO at {path} is missing 'MultiplayerScene' field.");
+                    $"SceneNameListSO at {path} is missing '_multiplayerScene' field.");
 
                 var multiplayerValue = multiplayerProp.stringValue;
                 if (string.IsNullOrEmpty(multiplayerValue))
@@ -260,46 +237,27 @@ namespace CosmicShore.Core
             }
         }
 
-        #endregion
-
-        #region Cross-System Scene Name Consistency
-
         [Test]
-        public void BootstrapConfig_And_SceneNameListSO_MainMenu_AreConsistent()
+        public void SceneNameListSO_DefaultValues_AreCorrect()
         {
-            var config = ScriptableObject.CreateInstance<BootstrapConfigSO>();
-            string configMainMenu = config.MainMenuSceneName;
-            Object.DestroyImmediate(config);
+            var sceneNames = ScriptableObject.CreateInstance<Utility.SceneNameListSO>();
 
-            var guids = AssetDatabase.FindAssets("t:SceneNameListSO");
-            if (guids.Length == 0)
-            {
-                Assert.Inconclusive("No SceneNameListSO asset to compare against.");
-                return;
-            }
+            Assert.AreEqual("Bootstrap", sceneNames.BootstrapScene);
+            Assert.AreEqual("Authentication", sceneNames.AuthenticationScene);
+            Assert.AreEqual("Menu_Main", sceneNames.MainMenuScene);
+            Assert.AreEqual("MinigameFreestyleMultiplayer_Gameplay", sceneNames.MultiplayerScene);
 
-            foreach (var guid in guids)
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
-                var so = new SerializedObject(asset);
-                var mainMenuProp = so.FindProperty("MainMenuScene");
-
-                Assert.AreEqual(configMainMenu, mainMenuProp.stringValue,
-                    $"BootstrapConfigSO.MainMenuSceneName ('{configMainMenu}') doesn't match " +
-                    $"SceneNameListSO.MainMenuScene ('{mainMenuProp.stringValue}') at {path}. " +
-                    $"These must be the same scene name.");
-            }
+            Object.DestroyImmediate(sceneNames);
         }
 
         #endregion
 
-        #region BootstrapController Fallback Validation
+        #region AppManager Fallback Validation
 
         [Test]
-        public void BootstrapController_NullConfig_FallbackScene_IsAuthentication()
+        public void AppManager_NullConfig_FallbackScene_IsAuthentication()
         {
-            // When _config is null, BootstrapController falls back to "Authentication".
+            // When _sceneNames is null, AppManager falls back to "Authentication".
             // Verify that scene exists in build settings.
             var enabledNames = EditorBuildSettings.scenes
                 .Where(s => s.enabled)
@@ -307,26 +265,25 @@ namespace CosmicShore.Core
                 .ToHashSet();
 
             Assert.IsTrue(enabledNames.Contains("Authentication"),
-                "BootstrapController falls back to 'Authentication' when no config is assigned. " +
+                "AppManager falls back to 'Authentication' when no SceneNameListSO is assigned. " +
                 "This scene must exist in build settings.");
         }
 
         [Test]
-        public void BootstrapController_AutoCreate_ComponentsAreCorrect()
+        public void AppManager_AutoCreate_ComponentsAreCorrect()
         {
             // Verify that the auto-create flow would produce the right components.
             var go = new GameObject("[TestAutoCreate]");
 
             go.AddComponent<SceneTransitionManager>();
             go.AddComponent<ApplicationLifecycleManager>();
-            var controller = go.AddComponent<BootstrapController>();
+            var manager = go.AddComponent<AppManager>();
 
             Assert.IsNotNull(go.GetComponent<SceneTransitionManager>());
             Assert.IsNotNull(go.GetComponent<ApplicationLifecycleManager>());
-            Assert.IsNotNull(go.GetComponent<BootstrapController>());
+            Assert.IsNotNull(go.GetComponent<AppManager>());
 
             Object.DestroyImmediate(go);
-            ServiceLocator.ClearAll();
         }
 
         #endregion
@@ -352,42 +309,6 @@ namespace CosmicShore.Core
         {
             var asset = AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/_Scenes/Menu_Main.unity");
             Assert.IsNotNull(asset, "Menu_Main.unity scene file not found at Assets/_Scenes/Menu_Main.unity");
-        }
-
-        #endregion
-
-        #region ServiceLocator Integration
-
-        [Test]
-        public void SceneTransitionManager_RegistersInServiceLocator_OnAwake()
-        {
-            ServiceLocator.ClearAll();
-
-            var go = new GameObject("[TestSTM]");
-            go.AddComponent<SceneTransitionManager>();
-
-            Assert.IsTrue(ServiceLocator.IsRegistered<SceneTransitionManager>(),
-                "SceneTransitionManager should register itself in ServiceLocator on Awake.");
-
-            Object.DestroyImmediate(go);
-            ServiceLocator.ClearAll();
-        }
-
-        [Test]
-        public void SceneTransitionManager_CanBeRetrievedVia_TryGet()
-        {
-            ServiceLocator.ClearAll();
-
-            var go = new GameObject("[TestSTM]");
-            var stm = go.AddComponent<SceneTransitionManager>();
-
-            bool found = ServiceLocator.TryGet<SceneTransitionManager>(out var retrieved);
-
-            Assert.IsTrue(found);
-            Assert.AreSame(stm, retrieved);
-
-            Object.DestroyImmediate(go);
-            ServiceLocator.ClearAll();
         }
 
         #endregion

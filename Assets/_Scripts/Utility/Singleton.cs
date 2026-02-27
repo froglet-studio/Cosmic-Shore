@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -21,13 +22,9 @@ namespace CosmicShore.Utility
             if (Instance == null)
             {
                 Instance = this as T;
-
-                print("Instantiate Singleton : " + Instance);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
-                print("Destroy Singleton: " + gameObject.name);
-
                 Destroy(gameObject);
             }
         }
@@ -43,13 +40,9 @@ namespace CosmicShore.Utility
             {
                 Instance = this as T;
                 DontDestroyOnLoad(this);
-
-                print("Instantiate SingletonPersistent : " + Instance);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
-                print("Destroy SingletonPersistent: " + gameObject.name);
-
                 Destroy(gameObject);
             }
         }
@@ -64,13 +57,9 @@ namespace CosmicShore.Utility
             if (Instance == null)
             {
                 Instance = this as T;
-
-                print("Instantiate SingletonNetwork: " + Instance);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
-                print("Destroy SingletonNetwork: " + Instance);
-
                 Destroy(gameObject);
             }
         }
@@ -86,13 +75,9 @@ namespace CosmicShore.Utility
             {
                 Instance = this as T;
                 DontDestroyOnLoad(this);
-
-                print("Instantiate SingletonNetworkPersistent: " + Instance);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
-                print("Destroy SingletonNetworkPersistent: " + Instance);
-
                 Destroy(gameObject);
             }
         }

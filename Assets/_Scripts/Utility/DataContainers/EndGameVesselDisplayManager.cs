@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -16,7 +17,7 @@ namespace CosmicShore.Utility
     public class EndGameVesselDisplayManager : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] private VesselIconLibrarySO vesselIconLibrary;
 
         [Header("Vessel Display")]

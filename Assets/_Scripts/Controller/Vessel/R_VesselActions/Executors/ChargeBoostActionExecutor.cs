@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -11,6 +12,7 @@ namespace CosmicShore.Gameplay
 {
     public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
     {
+        [Inject] AudioSystem audioSystem;
         public event Action<float> OnChargeStarted;
         public event Action<float> OnChargeProgress;
         public event Action OnChargeEnded;
@@ -74,7 +76,7 @@ namespace CosmicShore.Gameplay
         {
             End();
             _charging = false;
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
 
             if (!_resources) return;
 
