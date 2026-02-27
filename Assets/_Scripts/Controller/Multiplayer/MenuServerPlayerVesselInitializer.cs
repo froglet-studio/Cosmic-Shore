@@ -16,11 +16,12 @@ namespace CosmicShore.Gameplay
     ///   3. Spawn only the host's vessel — no AI opponents.
     ///
     /// Post-initialization (OnClientReady):
-    ///   4. Activate the player (start vessel motion, enable subsystems).
-    ///   5. Enable AI pilot on the host's vessel.
-    ///   6. Pause player input (autopilot drives the vessel).
-    ///   7. Switch end camera to follow the vessel.
-    ///   8. Fire menu lifecycle events (round started, turn started).
+    ///   4. Initialize player identity (domain + playerName).
+    ///   5. Activate the player (start vessel motion, enable subsystems).
+    ///   6. Enable AI pilot on the host's vessel.
+    ///   7. Pause player input (autopilot drives the vessel).
+    ///   8. Switch end camera to follow the vessel.
+    ///   9. Fire menu lifecycle events (round started, turn started).
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
@@ -69,6 +70,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Ensure domain and player name are set before activating.
+            // Mirrors the HexRace multiplayer pattern where domain and
+            // playerName are explicitly assigned after player/vessel init.
+            InitializeMenuPlayerIdentity(player);
+
             // Activate the player (starts vessel motion, enables subsystems).
             gameData.SetPlayersActive();
 
@@ -88,6 +94,34 @@ namespace CosmicShore.Gameplay
             gameData.InvokeTurnStarted();
 
             CSDebug.Log("[MenuServerVesselInit] Host vessel initialized and activated in autopilot mode.");
+        }
+
+        /// <summary>
+        /// Sets domain to Jade and resolves the player display name for the
+        /// menu background vessel.  Follows the HexRace multiplayer pattern
+        /// where domain and playerName are explicitly written to the player's
+        /// NetworkVariables after spawning.
+        /// </summary>
+        void InitializeMenuPlayerIdentity(IPlayer player)
+        {
+            if (player is not Player netPlayer)
+                return;
+
+            // Domain — always Jade for the menu background vessel.
+            netPlayer.NetDomain.Value = Domains.Jade;
+
+            // Display name — resolve from cached profile data if not already set.
+            if (string.IsNullOrEmpty(player.Name))
+            {
+                string displayName = !string.IsNullOrEmpty(gameData.LocalPlayerDisplayName)
+                    ? gameData.LocalPlayerDisplayName
+                    : "Pilot";
+                netPlayer.NetName.Value = displayName;
+            }
+
+            // Sync RoundStats with the resolved identity values.
+            player.RoundStats.Domain = player.Domain;
+            player.RoundStats.Name = player.Name;
         }
     }
 }
