@@ -97,8 +97,8 @@ namespace CosmicShore.Core
 
         void SubscribeEvents()
         {
-            if (_gameData?.OnMenuReady != null)
-                _gameData.OnMenuReady.OnRaised += HandleMenuReady;
+            if (_gameData?.OnClientReady != null)
+                _gameData.OnClientReady.OnRaised += HandleMenuReady;
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised += HandleLaunchGame;
@@ -106,8 +106,8 @@ namespace CosmicShore.Core
 
         void UnsubscribeEvents()
         {
-            if (_gameData?.OnMenuReady != null)
-                _gameData.OnMenuReady.OnRaised -= HandleMenuReady;
+            if (_gameData?.OnClientReady != null)
+                _gameData.OnClientReady.OnRaised -= HandleMenuReady;
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised -= HandleLaunchGame;
@@ -128,6 +128,9 @@ namespace CosmicShore.Core
         void HandleMenuReady()
         {
             TransitionTo(MainMenuState.Ready);
+            _gameData.InitializeGame();
+            _gameData.InvokeMiniGameRoundStarted();
+            _gameData.InvokeTurnStarted();
         }
 
         void HandleLaunchGame()

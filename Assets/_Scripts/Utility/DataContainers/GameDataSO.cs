@@ -40,9 +40,6 @@ namespace CosmicShore.Utility
         public ScriptableEventNoParam OnVesselNetworkSpawned;
         public event Action<string, Domains> OnPlayerAdded;
 
-        [Header("Menu")]
-        public ScriptableEventNoParam OnMenuReady;
-
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
         
@@ -143,7 +140,7 @@ namespace CosmicShore.Utility
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
         public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
-        public void InvokeMenuReady() => OnMenuReady.Raise();
+
         public void InvokePlayerNetworkSpawned(ulong ownerClientId) => OnPlayerNetworkSpawnedUlong.Raise(ownerClientId);
         public void InvokeVesselNetworkSpawned() => OnVesselNetworkSpawned.Raise();
 

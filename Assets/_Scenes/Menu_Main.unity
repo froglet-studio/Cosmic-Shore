@@ -57786,12 +57786,12 @@ GameObject:
   - component: {fileID: 1486013831}
   - component: {fileID: 1486013832}
   - component: {fileID: 1486013833}
-  - component: {fileID: 1486013836}
   - component: {fileID: 1486013840}
   - component: {fileID: 1486013843}
   - component: {fileID: 1486013842}
   - component: {fileID: 1486013850}
   - component: {fileID: 1486013851}
+  - component: {fileID: 1486013852}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -57857,28 +57857,6 @@ MonoBehaviour:
   fieldHeight: 0
   fieldThickness: 0
   fieldMax: 0
---- !u!114 &1486013836
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1486013830}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ecf969c97eb48db8c29be6969f25375, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
-  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
-    type: 3}
-  scaleCrystalPositionWithIntensity: 0
-  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  listOfCrystalPositions: []
-  spawnCrystalWithPlayerDomain: 0
-  extraCrystalsToSpawnBeyondPlayerCount: 0
-  spawnOnClientReady: 0
 --- !u!114 &1486013840
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -57922,6 +57900,8 @@ MonoBehaviour:
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
   shutdownNetworkOnDespawn: 1
+  preSpawnDelayMs: 200
+  postSpawnDelayMs: 200
 --- !u!114 &1486013850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -57960,6 +57940,28 @@ MonoBehaviour:
   menuVesselClass: 6
   menuPlayerCount: 3
   menuIntensity: 1
+--- !u!114 &1486013852
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486013830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90215a90a50249e8a32f1bd48fb31fb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
+  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
+    type: 3}
+  scaleCrystalPositionWithIntensity: 0
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  listOfCrystalPositions: []
+  spawnCrystalWithPlayerDomain: 0
+  extraCrystalsToSpawnBeyondPlayerCount: 0
+  spawnOnClientReady: 0
 --- !u!1 &1486054860
 GameObject:
   m_ObjectHideFlags: 0

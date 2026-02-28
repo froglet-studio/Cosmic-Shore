@@ -46,8 +46,6 @@ namespace CosmicShore.Gameplay
                 var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
                 CameraManager.Instance.SetupEndCameraFollow(followTarget);
             }
-
-            gameData.InvokeMenuReady();
         }
     }
 }
