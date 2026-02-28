@@ -11157,25 +11157,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 243294586}
   m_CullTransparentMesh: 1
---- !u!224 &243594589
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 627043571}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1867118901}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.7, y: 0.8}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -10, y: -10}
-  m_SizeDelta: {x: -20, y: -20}
-  m_Pivot: {x: 1, y: 1}
 --- !u!1 &246467979
 GameObject:
   m_ObjectHideFlags: 0
@@ -20477,14 +20458,6 @@ RectTransform:
   m_AnchoredPosition: {x: -20, y: 80}
   m_SizeDelta: {x: 50, y: 40}
   m_Pivot: {x: 1, y: 0}
---- !u!222 &431041964
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 433381585}
-  m_CullTransparentMesh: 1
 --- !u!1 &431147218
 GameObject:
   m_ObjectHideFlags: 0
@@ -20622,25 +20595,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 431147218}
   m_CullTransparentMesh: 1
---- !u!1 &433381585
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 665985210}
-  - component: {fileID: 431041964}
-  - component: {fileID: 724821769}
-  - component: {fileID: 724821770}
-  m_Layer: 5
-  m_Name: FriendAddedNotificationUI
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
 --- !u!1 &434880001
 GameObject:
   m_ObjectHideFlags: 0
@@ -24249,14 +24203,6 @@ SpriteMask:
   m_IsCustomRangeActive: 0
   m_SpriteSortPoint: 0
   m_MaskSource: 0
---- !u!222 &519693663
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 627043571}
-  m_CullTransparentMesh: 1
 --- !u!114 &521718113
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27598,25 +27544,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 619258074}
   m_CullTransparentMesh: 1
---- !u!1 &627043571
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 243594589}
-  - component: {fileID: 519693663}
-  - component: {fileID: 672320701}
-  - component: {fileID: 672320702}
-  m_Layer: 5
-  m_Name: FriendRequestNotificationUI
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
 --- !u!1 &627612090
 GameObject:
   m_ObjectHideFlags: 0
@@ -29407,55 +29334,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 665302836}
   m_CullTransparentMesh: 1
---- !u!224 &665985210
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 433381585}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1867118901}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.7, y: 0.6}
-  m_AnchorMax: {x: 1, y: 0.8}
-  m_AnchoredPosition: {x: -10, y: 10}
-  m_SizeDelta: {x: -20, y: -20}
-  m_Pivot: {x: 1, y: 1}
---- !u!114 &672320701
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 627043571}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 51ec3f996b944d2288c100c3bacdbb4c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  friendsData: {fileID: 11400000, guid: e69f5c7256384d1cb59d57e12551c123, type: 2}
-  messageText: {fileID: 0}
-  acceptButton: {fileID: 0}
-  declineButton: {fileID: 0}
-  dismissButton: {fileID: 0}
-  autoDismissSeconds: 10
---- !u!225 &672320702
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 627043571}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!1 &673228693
 GameObject:
   m_ObjectHideFlags: 0
@@ -31612,34 +31490,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!114 &724821769
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 433381585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e90fd78d5a8d4e07b0aa8260a9343ba1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  friendsData: {fileID: 11400000, guid: e69f5c7256384d1cb59d57e12551c123, type: 2}
-  messageText: {fileID: 0}
-  dismissButton: {fileID: 0}
-  autoDismissSeconds: 5
---- !u!225 &724821770
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 433381585}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!1 &739198026
 GameObject:
   m_ObjectHideFlags: 0
@@ -75697,8 +75547,6 @@ RectTransform:
   - {fileID: 934141875}
   - {fileID: 4125016652594217641}
   - {fileID: 4983872992474410972}
-  - {fileID: 243594589}
-  - {fileID: 665985210}
   - {fileID: 1210044415}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

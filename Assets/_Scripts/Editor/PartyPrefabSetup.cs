@@ -28,9 +28,7 @@ namespace CosmicShore.Editor
 
             CreateOnlinePlayerEntryPrefab();
             CreateOnlinePlayersPanelPrefab();
-            CreatePartySlotViewPrefab();
             CreatePartyInviteNotificationPrefab();
-            CreateInviteNotificationUIPrefab();
             CreatePartyAreaPanelPrefab();
 
             WireOnlinePlayersPanelReferences();
@@ -113,8 +111,8 @@ namespace CosmicShore.Editor
 
             // 4. Check required prefabs exist
             string[] requiredPrefabs = {
-                "OnlinePlayerEntry", "OnlinePlayersPanel", "PartySlotView",
-                "PartyInviteNotificationPanel", "InviteNotificationUI", "PartyAreaPanel"
+                "OnlinePlayerEntry", "OnlinePlayersPanel",
+                "PartyInviteNotificationPanel", "PartyAreaPanel"
             };
             foreach (var name in requiredPrefabs)
             {
@@ -209,9 +207,7 @@ namespace CosmicShore.Editor
 
             CreateOnlinePlayerEntryPrefab();
             CreateOnlinePlayersPanelPrefab();
-            CreatePartySlotViewPrefab();
             CreatePartyInviteNotificationPrefab();
-            CreateInviteNotificationUIPrefab();
             CreatePartyAreaPanelPrefab();
 
             AssetDatabase.SaveAssets();
@@ -337,51 +333,6 @@ namespace CosmicShore.Editor
             Debug.Log($"[PartyPrefabSetup] Created {path}");
         }
 
-        [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Party Slot View")]
-        static void CreatePartySlotViewPrefab()
-        {
-            string path = $"{PrefabFolder}/PartySlotView.prefab";
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
-            {
-                Debug.Log($"[PartyPrefabSetup] Skipped — {path} already exists.");
-                return;
-            }
-
-            var root = CreateUIRoot("PartySlotView", 80, 80);
-
-            // Occupied state root
-            var occupiedGo = new GameObject("OccupiedRoot");
-            occupiedGo.transform.SetParent(root.transform, false);
-            var occupiedRT = occupiedGo.AddComponent<RectTransform>();
-            occupiedRT.sizeDelta = new Vector2(80, 80);
-
-            var avatarGo = CreateChildImage(occupiedGo.transform, "Avatar", 60, 60, Vector2.zero);
-            var nameGo = CreateChildText(occupiedGo.transform, "DisplayName", "Name", 10,
-                new Vector2(0, -35), new Vector2(80, 16));
-
-            // Empty state root
-            var emptyGo = new GameObject("EmptyRoot");
-            emptyGo.transform.SetParent(root.transform, false);
-            var emptyRT = emptyGo.AddComponent<RectTransform>();
-            emptyRT.sizeDelta = new Vector2(80, 80);
-
-            var addBtnGo = CreateChildButton(emptyGo.transform, "AddButton", "+", 60, 60, Vector2.zero);
-
-            // Add component and wire
-            var slot = root.AddComponent<PartySlotView>();
-            var so = new SerializedObject(slot);
-            so.FindProperty("occupiedRoot").objectReferenceValue = occupiedGo;
-            so.FindProperty("avatarImage").objectReferenceValue = avatarGo.GetComponent<Image>();
-            so.FindProperty("displayNameText").objectReferenceValue = nameGo.GetComponent<TMP_Text>();
-            so.FindProperty("emptyRoot").objectReferenceValue = emptyGo;
-            so.FindProperty("addButton").objectReferenceValue = addBtnGo.GetComponent<Button>();
-            so.ApplyModifiedPropertiesWithoutUndo();
-
-            PrefabUtility.SaveAsPrefabAsset(root, path);
-            Object.DestroyImmediate(root);
-            Debug.Log($"[PartyPrefabSetup] Created {path}");
-        }
-
         [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Party Invite Notification")]
         static void CreatePartyInviteNotificationPrefab()
         {
@@ -413,56 +364,6 @@ namespace CosmicShore.Editor
             so.FindProperty("acceptButton").objectReferenceValue = acceptBtnGo.GetComponent<Button>();
             so.FindProperty("declineButton").objectReferenceValue = declineBtnGo.GetComponent<Button>();
             so.FindProperty("panelRoot").objectReferenceValue = root;
-
-            // Wire SO references
-            var connectionData = FindAsset<HostConnectionDataSO>();
-            if (connectionData != null)
-                WireIfExists(so, "connectionData", connectionData);
-
-            so.ApplyModifiedPropertiesWithoutUndo();
-
-            root.SetActive(false);
-
-            PrefabUtility.SaveAsPrefabAsset(root, path);
-            Object.DestroyImmediate(root);
-            Debug.Log($"[PartyPrefabSetup] Created {path}");
-        }
-
-        [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Invite Notification UI")]
-        static void CreateInviteNotificationUIPrefab()
-        {
-            string path = $"{PrefabFolder}/InviteNotificationUI.prefab";
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
-            {
-                Debug.Log($"[PartyPrefabSetup] Skipped — {path} already exists.");
-                return;
-            }
-
-            var root = CreateUIRoot("InviteNotificationUI", 350, 120);
-            var bg = root.AddComponent<Image>();
-            bg.color = new Color(0.1f, 0.1f, 0.2f, 0.95f);
-
-            var avatarGo = CreateChildImage(root.transform, "HostAvatar", 50, 50,
-                new Vector2(-130, 10));
-            var nameGo = CreateChildText(root.transform, "HostName", "Player invited you!",
-                16, new Vector2(20, 10), new Vector2(220, 30));
-
-            var acceptBtnGo = CreateChildButton(root.transform, "AcceptButton", "Accept", 100, 36,
-                new Vector2(-50, -30));
-            var declineBtnGo = CreateChildButton(root.transform, "DeclineButton", "Decline", 100, 36,
-                new Vector2(60, -30));
-
-            var transitionGo = CreateChildText(root.transform, "TransitionIndicator", "Connecting...",
-                12, new Vector2(0, -30), new Vector2(200, 20));
-            transitionGo.SetActive(false);
-
-            var ui = root.AddComponent<InviteNotificationUI>();
-            var so = new SerializedObject(ui);
-            so.FindProperty("hostAvatarImage").objectReferenceValue = avatarGo.GetComponent<Image>();
-            so.FindProperty("hostNameText").objectReferenceValue = nameGo.GetComponent<TMP_Text>();
-            so.FindProperty("acceptButton").objectReferenceValue = acceptBtnGo.GetComponent<Button>();
-            so.FindProperty("declineButton").objectReferenceValue = declineBtnGo.GetComponent<Button>();
-            so.FindProperty("transitionIndicator").objectReferenceValue = transitionGo;
 
             // Wire SO references
             var connectionData = FindAsset<HostConnectionDataSO>();

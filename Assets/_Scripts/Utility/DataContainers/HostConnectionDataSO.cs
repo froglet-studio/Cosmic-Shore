@@ -6,8 +6,8 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Central SOAP data container for the host connection and party system.
-    /// Holds runtime state + SOAP events that decouple PartyManager from all UI consumers.
-    /// Create one asset and wire it into PartyManager, PartyArcadeView, OnlinePlayersPanel, etc.
+    /// Holds runtime state + SOAP events that decouple HostConnectionService from all UI consumers.
+    /// Create one asset and wire it into HostConnectionService, PartyArcadeView, OnlinePlayersPanel, etc.
     /// </summary>
     [CreateAssetMenu(
         fileName = "HostConnectionData",
