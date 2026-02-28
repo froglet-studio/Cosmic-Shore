@@ -157,11 +157,11 @@ namespace CosmicShore.Gameplay
                 // Key: INVITE_DATA_KEY stores the party session info.
                 string inviteData = $"{connectionData.LocalPlayerId}|{_partySession.Id}|{connectionData.LocalDisplayName}|{connectionData.LocalAvatarId}";
 
-                _presenceLobby.SetPlayerProperty(INVITE_TARGET_KEY,
+                _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
-                _presenceLobby.SetPlayerProperty(INVITE_DATA_KEY,
+                _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(inviteData, VisibilityPropertyOptions.Public));
-                await _presenceLobby.SavePlayerPropertiesAsync();
+                await _presenceLobby.SaveCurrentPlayerDataAsync();
 
                 // Find the target in online players and raise OnInviteSent
                 foreach (var player in connectionData.OnlinePlayers)
@@ -518,11 +518,11 @@ namespace CosmicShore.Gameplay
             try
             {
                 // Any player can clear their own player properties.
-                _presenceLobby.SetPlayerProperty(INVITE_TARGET_KEY,
+                _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                _presenceLobby.SetPlayerProperty(INVITE_DATA_KEY,
+                _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                await _presenceLobby.SavePlayerPropertiesAsync();
+                await _presenceLobby.SaveCurrentPlayerDataAsync();
 
                 _lastFiredInvite = null;
             }
