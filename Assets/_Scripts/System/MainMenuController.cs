@@ -55,6 +55,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
         MenuFreestyleEventsContainerSO _freestyleEvents;
 
+        [SerializeField, Tooltip("Cell runtime data used to find the crystal tracking target at runtime.")]
+        CellRuntimeDataSO _cellData;
+
         [Inject] GameDataSO _gameData;
 
         CinemachineCamera _menuVCam;
@@ -127,6 +130,8 @@ namespace CosmicShore.Core
 
             _freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
             _freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
+
+            _cellData.OnCrystalSpawned.OnRaised += HandleCrystalSpawned;
         }
 
         void UnsubscribeEvents()
@@ -139,6 +144,8 @@ namespace CosmicShore.Core
 
             _freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
             _freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
+
+            _cellData.OnCrystalSpawned.OnRaised -= HandleCrystalSpawned;
         }
 
         // ── Game Data Configuration ─────────────────────────────────────
@@ -184,6 +191,11 @@ namespace CosmicShore.Core
             ActivateMenuCamera();
         }
 
+        void HandleCrystalSpawned()
+        {
+            SetMenuVCamTarget();
+        }
+
         // ── Autopilot ─────────────────────────────────────────────
 
         /// <summary>
@@ -208,19 +220,38 @@ namespace CosmicShore.Core
         {
             if (!CameraManager.Instance) return;
             var cmTransform = CameraManager.Instance.transform.Find("CM Main Menu");
-            if (cmTransform)
-                _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
+            if (!cmTransform) return;
+
+            _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
         }
 
         /// <summary>
         /// Activates the CM Main Menu Cinemachine camera for menu state.
-        /// Deactivates all CameraManager gameplay cameras.
+        /// Deactivates all CameraManager gameplay cameras and points the menu
+        /// camera at the crystal target.
         /// </summary>
         void ActivateMenuCamera()
         {
             if (!CameraManager.Instance) return;
             CameraManager.Instance.DeactivateAllCameras();
-            if (_menuVCam) _menuVCam.gameObject.SetActive(true);
+
+            if (_menuVCam)
+            {
+                SetMenuVCamTarget();
+                _menuVCam.gameObject.SetActive(true);
+            }
+        }
+
+        void SetMenuVCamTarget()
+        {
+            if (!_menuVCam) return;
+
+            var crystalTransform = _cellData.CrystalTransform;
+            if (!crystalTransform) return;
+
+            var target = _menuVCam.Target;
+            target.TrackingTarget = crystalTransform;
+            _menuVCam.Target = target;
         }
 
         /// <summary>
