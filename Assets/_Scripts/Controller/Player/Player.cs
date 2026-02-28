@@ -154,47 +154,40 @@ namespace CosmicShore.Gameplay
             NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
             NetIsAI.Value = IsInitializedAsAI;
 
-            // Read the configured vessel class. If it's still Random/Any, it means
-            // MainMenuController.Start() (or the game scene controller) hasn't
-            // configured game data yet. Defer the assignment until OnInitializeGame
-            // fires so the server-side spawn chain sees a valid vessel type.
-            var vesselClass = gameData.selectedVesselClass.Value;
-            if (vesselClass != VesselClassType.Random && vesselClass != VesselClassType.Any)
-            {
-                NetDefaultVesselType.Value = vesselClass;
-            }
-            else
-            {
-                gameData.OnInitializeGame.OnRaised += HandleDeferredVesselTypeAssignment;
-            }
+            // Always subscribe — vessel class may not be configured yet (menu scene)
+            // or may already be valid (gameplay scene). The callback handles both:
+            // subscribe first, then check current value to proceed immediately if ready.
+            gameData.selectedVesselClass.OnValueChanged += OnSelectedVesselClassChanged;
+            TrySetVesselType(gameData.selectedVesselClass.Value);
+        }
 
-            // Signal spawn after name is set so server-side handlers see valid values.
+        /// <summary>
+        /// Reacts to <see cref="GameDataSO.selectedVesselClass"/> changes.
+        /// In the menu scene this fires when <see cref="Core.MainMenuController.ConfigureMenuGameData"/>
+        /// sets the vessel class after <see cref="OnNetworkSpawn"/>.
+        /// In gameplay scenes the eager check in <see cref="OnNetworkSpawn"/> resolves immediately.
+        /// </summary>
+        void OnSelectedVesselClassChanged(VesselClassType newValue) =>
+            TrySetVesselType(newValue);
+
+        void TrySetVesselType(VesselClassType vesselClass)
+        {
+            if (vesselClass == VesselClassType.Random || vesselClass == VesselClassType.Any)
+                return;
+
+            gameData.selectedVesselClass.OnValueChanged -= OnSelectedVesselClassChanged;
+            NetDefaultVesselType.Value = vesselClass;
             gameData.InvokePlayerNetworkSpawned();
-
             InputController.Initialize();
         }
 
-        void HandleDeferredVesselTypeAssignment()
-        {
-            gameData.OnInitializeGame.OnRaised -= HandleDeferredVesselTypeAssignment;
-
-            var vesselClass = gameData.selectedVesselClass.Value;
-            if (vesselClass == VesselClassType.Random || vesselClass == VesselClassType.Any)
-            {
-                CSDebug.LogWarning("[Player] selectedVesselClass still not configured after OnInitializeGame. Defaulting to Manta.");
-                vesselClass = VesselClassType.Manta;
-            }
-
-            NetDefaultVesselType.Value = vesselClass;
-        }
-        
         public override void OnNetworkDespawn()
         {
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
-            gameData.OnInitializeGame.OnRaised -= HandleDeferredVesselTypeAssignment;
+            gameData.selectedVesselClass.OnValueChanged -= OnSelectedVesselClassChanged;
         }
 
 
