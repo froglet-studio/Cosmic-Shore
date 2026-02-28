@@ -1,0 +1,1 @@
+C:\Users\gradi\source\repos\Star-Writer2\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\RelWithDebInfo\5t4i5y2y\obj\armeabi-v7a
