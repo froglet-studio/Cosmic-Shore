@@ -71,12 +71,16 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            for (int i = 0; i < aiInitializeDatas.Length; i++)
-            {
-                var data = aiInitializeDatas[i];
-                if (!data.AllowSpawning)
-                    return;
+            int aiCount = gameData.RequestedAIBackfillCount;
+            if (aiCount <= 0) return;
 
+            // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
+            System.Collections.Generic.List<AIProfile> profiles = null;
+            if (aiProfileList != null)
+                profiles = aiProfileList.PickRandom(aiCount);
+
+            for (int i = 0; i < aiCount; i++)
+            {
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
@@ -93,13 +97,24 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                var aiVesselType = data.vesselClass;
+                // Use template data if available, otherwise derive values dynamically
+                var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
+
+                var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
                 if (aiVesselType == VesselClassType.Any || aiVesselType == VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
 
+                var aiName = profiles != null && i < profiles.Count
+                    ? profiles[i].Name
+                    : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
+
+                var aiDomain = hasTemplate
+                    ? aiInitializeDatas[i].domain
+                    : DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
-                aiPlayer.NetName.Value = data.PlayerName;
-                aiPlayer.NetDomain.Value = data.domain;
+                aiPlayer.NetName.Value = aiName;
+                aiPlayer.NetDomain.Value = aiDomain;
                 aiPlayer.NetIsAI.Value = true;
 
                 if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
@@ -114,7 +129,7 @@ namespace CosmicShore.Gameplay
                     CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
                     return;
                 }
-            
+
                 clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
                 ConfigureAIPilot(aiVesselNO);
             }
