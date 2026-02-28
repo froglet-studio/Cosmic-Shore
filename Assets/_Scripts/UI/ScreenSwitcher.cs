@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using System.Collections;
 using System.Collections.Generic;
@@ -68,12 +69,17 @@ namespace CosmicShore.UI
         [Header("Scene References")]
         [SerializeField] private Transform NavBar;
 
+        [Header("Freestyle State")]
+        [Tooltip("SOAP events raised by MenuCrystalClickHandler when toggling freestyle/menu.")]
+        [SerializeField] private MenuFreestyleEventsContainerSO freestyleEvents;
+
         [Header("Arcade Panel (separate)")]
         [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
         [SerializeField] private GameObject arcadePanelRoot;
 
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
+        private bool _isInFreestyle;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
@@ -190,6 +196,24 @@ namespace CosmicShore.UI
             }
         }
 
+        private void OnEnable()
+        {
+            if (freestyleEvents)
+            {
+                freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
+                freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (freestyleEvents)
+            {
+                freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
+                freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
+            }
+        }
+
         private void Start()
         {
             _rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
@@ -232,6 +256,7 @@ namespace CosmicShore.UI
 
         private void Update()
         {
+            if (_isInFreestyle) return;
             if (Gamepad.current == null) return;
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
@@ -400,6 +425,9 @@ namespace CosmicShore.UI
 
         private void NavigateTo(int ScreenIndex, bool animate = true)
         {
+            // Block screen navigation while in freestyle mode
+            if (_isInFreestyle) return;
+
             int max = GetScreenCount() - 1;
             if (max < 0)
             {
@@ -570,6 +598,36 @@ namespace CosmicShore.UI
                 if (i < NavInactiveImages.Count && NavInactiveImages[i])
                     NavInactiveImages[i].SetActive(!isActive);
             }
+        }
+
+        #endregion
+
+        #region Freestyle State
+
+        private void HandleEnterFreestyle()
+        {
+            _isInFreestyle = true;
+
+            // Notify the current screen that it's being exited
+            if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
+                exitingScreen.OnScreenExit();
+
+            // Hide NavBar
+            if (NavBar)
+                NavBar.gameObject.SetActive(false);
+        }
+
+        private void HandleExitFreestyle()
+        {
+            _isInFreestyle = false;
+
+            // Show NavBar
+            if (NavBar)
+                NavBar.gameObject.SetActive(true);
+
+            // Notify the current screen that it's being re-entered
+            if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
+                enteringScreen.OnScreenEnter();
         }
 
         #endregion
