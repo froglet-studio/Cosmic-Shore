@@ -23,6 +23,7 @@ namespace CosmicShore.UI
             HOME   = 2,
             PORT   = 3,
             HANGAR = 4,
+            PARTY  = 5,
         }
 
         public enum ModalWindows
@@ -519,6 +520,11 @@ namespace CosmicShore.UI
         public void OnClickArkNav()
         {
             NavigateTo(MenuScreens.ARK);
+        }
+
+        public void OnClickPartyNav()
+        {
+            NavigateTo(MenuScreens.PARTY);
         }
 
         public void OnClickArcadeNav()
