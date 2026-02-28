@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Injectors;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,6 +13,9 @@ namespace CosmicShore.Gameplay
     /// Extension of ServerPlayerVesselInitializer:
     /// spawns server-owned AI players and their vessels, then delegates
     /// human player handling to the base class via OnPlayerNetworkSpawnedUlong.
+    ///
+    /// AI count is driven by <see cref="GameDataSO.RequestedAIBackfillCount"/>.
+    /// When it is 0, no AI players are spawned.
     ///
     /// OnNetworkSpawn flow:
     ///   1. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawnedUlong
@@ -26,15 +31,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("NetworkObject prefab that contains your Player component (must be a registered NetworkPrefab).")]
         [SerializeField] NetworkObject aiPlayerPrefab;
 
-        [Tooltip("The data needed to spawn AI")]
-        [SerializeField] IPlayer.InitializeData[] aiInitializeDatas;
-
         [Header("AI Ship Selection")]
         [Tooltip("Game list used to look up available ships for AI opponents. If unset, AI defaults to Sparrow.")]
         [SerializeField] SO_GameList gameList;
 
         [Header("AI Profiles")]
-        [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
+        [Tooltip("AI profile list for assigning unique names/avatars to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
 
         protected override void OnNetworkSpawn()
@@ -65,18 +67,21 @@ namespace CosmicShore.Gameplay
 
         void SpawnAIs()
         {
+            int aiCount = gameData.RequestedAIBackfillCount;
+            if (aiCount <= 0) return;
+
             if (!aiPlayerPrefab)
             {
                 CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
                 return;
             }
 
-            for (int i = 0; i < aiInitializeDatas.Length; i++)
-            {
-                var data = aiInitializeDatas[i];
-                if (!data.AllowSpawning)
-                    return;
+            List<AIProfile> profiles = aiProfileList != null
+                ? aiProfileList.PickRandom(aiCount)
+                : null;
 
+            for (int i = 0; i < aiCount; i++)
+            {
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
@@ -93,13 +98,15 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                var aiVesselType = data.vesselClass;
-                if (aiVesselType == VesselClassType.Any || aiVesselType == VesselClassType.Random)
-                    aiVesselType = PickAIVesselType();
+                var aiVesselType = PickAIVesselType();
+                string aiName = profiles != null && i < profiles.Count
+                    ? profiles[i].Name
+                    : $"AI_{i + 1}";
+                var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
-                aiPlayer.NetName.Value = data.PlayerName;
-                aiPlayer.NetDomain.Value = data.domain;
+                aiPlayer.NetName.Value = new FixedString128Bytes(aiName);
+                aiPlayer.NetDomain.Value = aiDomain;
                 aiPlayer.NetIsAI.Value = true;
 
                 if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
@@ -111,10 +118,10 @@ namespace CosmicShore.Gameplay
                 // Server-side initialization of the AI player-vessel pair
                 if (!aiVesselNO.TryGetComponent(out IVessel vessel))
                 {
-                    CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
+                    CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] Spawned vessel missing IVessel component.");
                     return;
                 }
-            
+
                 clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
                 ConfigureAIPilot(aiVesselNO);
             }

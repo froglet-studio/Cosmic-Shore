@@ -30,6 +30,9 @@ namespace CosmicShore.UI
         [Inject] private GameDataSO gameData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
+        [Header("Party / Lobby")]
+        [Inject] private HostConnectionDataSO hostConnectionData;
+
         [Header("External Views")]
         [SerializeField] private ArcadeExploreView arcadeExploreView;
 
@@ -449,7 +452,9 @@ namespace CosmicShore.UI
         {
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
 
+            SyncGameDataForLaunch();
             startGameRequestedEvent?.Raise();
+            gameData.InvokeGameLaunch();
         }
 
         #endregion
@@ -470,6 +475,24 @@ namespace CosmicShore.UI
         #endregion
 
         #region GameData sync helpers
+
+        void SyncGameDataForLaunch()
+        {
+            if (!gameData || config?.SelectedGame == null) return;
+
+            var game = config.SelectedGame;
+            gameData.SceneName = game.SceneName;
+            gameData.GameMode = game.Mode;
+            gameData.IsMultiplayerMode = game.IsMultiplayer;
+
+            int lobbyPlayerCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
+                ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
+                : 1;
+
+            int totalDesired = config.PlayerCount;
+            gameData.SelectedPlayerCount.Value = totalDesired;
+            gameData.RequestedAIBackfillCount = Mathf.Max(0, totalDesired - lobbyPlayerCount);
+        }
 
         void SyncGameDataConfig()
         {
