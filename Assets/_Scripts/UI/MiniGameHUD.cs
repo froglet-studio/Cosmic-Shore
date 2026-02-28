@@ -217,6 +217,10 @@ namespace CosmicShore.UI
             if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null)
                 return;
 
+            // Avoid duplicate — reuse existing card if already created
+            if (_localPlayerCard != null)
+                return;
+
             var localPlayer = gameData.LocalPlayer;
             var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
@@ -239,7 +243,10 @@ namespace CosmicShore.UI
 
         private void SetupAICards()
         {
-            _aiCards.Clear();
+            // Avoid duplicates — skip if cards already exist
+            if (_aiCards.Count > 0)
+                return;
+
             _aiScoreHandlers.Clear();
             AssignAIProfiles();
 
@@ -470,6 +477,12 @@ namespace CosmicShore.UI
         public void Show() => view.ToggleView(true);
         public void Hide() => view.ToggleView(false);
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
+
+        /// <summary>
+        /// Shows the connecting panel flow (connecting → wait → ready button).
+        /// Called externally when re-entering the game flow after shape drawing.
+        /// </summary>
+        public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
 

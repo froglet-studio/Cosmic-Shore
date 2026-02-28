@@ -54,6 +54,8 @@ namespace CosmicShore.Gameplay
             SpawnBatchIfMissing();
         }
         
+        public void ManualTurnEnded() => OnTurnEnded();
+        
         void OnTurnEnded()
         {
             var crystals = cellData.Crystals;

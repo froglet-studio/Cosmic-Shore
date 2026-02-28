@@ -1,7 +1,7 @@
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 
-#if UNITY_EDITOR
 namespace CosmicShore.Core
 {
     [CustomPropertyDrawer(typeof(OptionalParticleSettings))]

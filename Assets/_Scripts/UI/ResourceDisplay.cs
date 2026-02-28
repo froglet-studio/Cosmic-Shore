@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 #if UNITY_EDITOR
 using UnityEditor;
-using CosmicShore.Utility;
-
 #endif
 
 namespace CosmicShore.UI
