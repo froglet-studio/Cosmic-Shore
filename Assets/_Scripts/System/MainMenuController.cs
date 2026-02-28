@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -42,7 +44,13 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Game intensity for the menu background scene.")]
         int menuIntensity = 1;
 
+        [Header("Camera Switching")]
+        [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
+        MenuFreestyleEventsContainerSO _freestyleEvents;
+
         [Inject] GameDataSO _gameData;
+
+        CinemachineCamera _menuVCam;
 
         MainMenuState _state = MainMenuState.None;
 
@@ -81,6 +89,7 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            CacheMenuVCam();
             ConfigureMenuGameData();
             SubscribeEvents();
             TransitionTo(MainMenuState.Initializing);
@@ -102,6 +111,9 @@ namespace CosmicShore.Core
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised += HandleLaunchGame;
+
+            _freestyleEvents.OnEnterFreestyle.OnRaised += ActivateGameplayCamera;
+            _freestyleEvents.OnExitFreestyle.OnRaised += ActivateMenuCamera;
         }
 
         void UnsubscribeEvents()
@@ -111,6 +123,9 @@ namespace CosmicShore.Core
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised -= HandleLaunchGame;
+
+            _freestyleEvents.OnEnterFreestyle.OnRaised -= ActivateGameplayCamera;
+            _freestyleEvents.OnExitFreestyle.OnRaised -= ActivateMenuCamera;
         }
 
         // ── Game Data Configuration ─────────────────────────────────────
@@ -128,12 +143,50 @@ namespace CosmicShore.Core
         void HandleMenuReady()
         {
             TransitionTo(MainMenuState.Ready);
+            ActivateMenuCamera();
             _gameData.InitializeGame();
         }
 
         void HandleLaunchGame()
         {
             TransitionTo(MainMenuState.LaunchingGame);
+        }
+
+        // ── Camera Switching ───────────────────────────────────────
+
+        void CacheMenuVCam()
+        {
+            if (!CameraManager.Instance) return;
+            var cmTransform = CameraManager.Instance.transform.Find("CM Main Menu");
+            if (cmTransform)
+                _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
+        }
+
+        /// <summary>
+        /// Activates the CM Main Menu Cinemachine camera for menu state.
+        /// Deactivates all CameraManager gameplay cameras.
+        /// </summary>
+        void ActivateMenuCamera()
+        {
+            if (!CameraManager.Instance) return;
+            CameraManager.Instance.DeactivateAllCameras();
+            if (_menuVCam) _menuVCam.gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// Activates CM PlayerCam for freestyle/game state.
+        /// Disables the CM Main Menu Cinemachine camera.
+        /// </summary>
+        void ActivateGameplayCamera()
+        {
+            if (!CameraManager.Instance) return;
+            if (_menuVCam) _menuVCam.gameObject.SetActive(false);
+
+            var player = _gameData.LocalPlayer;
+            if (player?.Vessel == null) return;
+
+            var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
+            CameraManager.Instance.SetupGamePlayCameras(followTarget);
         }
 
         // ── State Machine ───────────────────────────────────────────────
