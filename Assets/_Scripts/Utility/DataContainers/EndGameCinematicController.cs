@@ -1,43 +1,55 @@
-﻿using System;
+using System;
 using System.Collections;
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.XP;
-using CosmicShore.Soap;
+using CosmicShore.Core;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.UI;
 using CosmicShore.Utility;
+using System.Linq;
+using DG.Tweening;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     public class EndGameCinematicController : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         [Header("References")]
-        [SerializeField] protected GameDataSO gameData;
+        [Inject] protected GameDataSO gameData;
         [SerializeField] protected SceneCinematicLibrarySO sceneCinematicLibrary;
         [SerializeField] protected CinematicCameraController cinematicCameraController;
         
         [Header("View")]
         [SerializeField] protected EndGameCinematicView view;
 
+        [Header("Party Mode")]
+        [Tooltip("Set by PartyGameController. Skips connecting panel and ResetGameForNewRound.")]
+        public bool IsPartyMode;
+
         protected bool isRunning;
         protected bool localPlayerWon;
         protected Coroutine runningRoutine;
         protected float cachedBoostMultiplier;
         
-        protected virtual void OnEnable()
+        protected virtual void Start()
         {
-            if (!gameData) return;
-            gameData.OnWinnerCalculated += OnWinnerCalculated;
+            if (gameData)
+                gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
 
-            if (!view) return;
-            view.Initialize();
-            view.OnContinuePressed += HandleContinuePressed;
+            if (view)
+            {
+                view.Initialize();
+                view.OnContinuePressed += HandleContinuePressed;
+            }
         }
 
         protected virtual void OnDisable()
         {
-            if (!gameData) return;
-            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+            if (gameData)
+                gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
 
             if (view)
                 view.OnContinuePressed -= HandleContinuePressed;
@@ -110,12 +122,16 @@ namespace CosmicShore.Game.Cinematics
                 yield return new WaitUntil(() => !view.IsContinueButtonActive());
             }
             
-            if (view && cinematic)
+            if (view && cinematic && !IsPartyMode)
             {
                 view.ShowConnectingPanel();
                 yield return new WaitForSeconds(cinematic.connectingPanelDuration);
-                ResetGameForNewRound();
             }
+
+            // Always reset vessel state (AI, input, camera, boost) between rounds.
+            // In party mode the connecting panel is skipped but the reset is still
+            // needed so the player regains input control on the next round.
+            ResetGameForNewRound();
 
             if (view)
             {
@@ -268,6 +284,7 @@ namespace CosmicShore.Game.Cinematics
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 
@@ -332,7 +349,16 @@ namespace CosmicShore.Game.Cinematics
                 CSDebug.Log($"Found cinematic definition for scene: {sceneName}");
                 return fromLibrary;
             }
-            
+
+            // In party mode the active scene is the party scene, not the mini-game.
+            // Fall back to gameData.SceneName which the party controller sets per round.
+            if (IsPartyMode && gameData && !string.IsNullOrEmpty(gameData.SceneName) &&
+                sceneCinematicLibrary && sceneCinematicLibrary.TryGet(gameData.SceneName, out var fromGameData))
+            {
+                CSDebug.Log($"Found cinematic definition via gameData.SceneName: {gameData.SceneName}");
+                return fromGameData;
+            }
+
             CSDebug.LogWarning($"No cinematic definition found for scene: {sceneName}");
             return null;
         }

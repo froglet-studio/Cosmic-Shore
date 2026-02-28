@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections;
 using System.Threading;
-using CosmicShore.Game.XP;
+using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using System.Linq;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// View component responsible for all UI presentation during end-game cinematics.

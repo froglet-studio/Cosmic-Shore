@@ -1,7 +1,8 @@
 using System;
-using CosmicShore.App.Systems.CTA;
+using CosmicShore.Core;
+using CosmicShore.Data;
 
-namespace CosmicShore.Events
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Central hub for FTUE-related events.
@@ -9,7 +10,7 @@ namespace CosmicShore.Events
     public static class FTUEEventManager
     {
         /// <summary>
-        /// Fired when the player clicks “Next” on any FTUE step.
+        /// Fired when the player clicks ï¿½Nextï¿½ on any FTUE step.
         /// </summary>
         public static event Action OnNextPressed;
         public static void RaiseNextPressed() => OnNextPressed?.Invoke();

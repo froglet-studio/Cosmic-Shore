@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Data storage of all the valid strings used to create a player's name.

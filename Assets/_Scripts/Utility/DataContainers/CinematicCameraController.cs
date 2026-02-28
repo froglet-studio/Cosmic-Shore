@@ -1,7 +1,8 @@
 using CosmicShore.Utility;
+
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles cinematic camera behaviors during end-game sequences.
@@ -19,7 +20,6 @@ namespace CosmicShore.Game.Cinematics
         // Static camera state
         private Vector3 fixedCameraPosition;
         private Quaternion fixedCameraRotation;
-        private bool isStaticShot;
         
         // Circle camera state
         private float circleAngle;
@@ -48,7 +48,7 @@ namespace CosmicShore.Game.Cinematics
             currentSetup = setup;
             isActive = true;
             setupStartTime = Time.time;
-            isStaticShot = false;
+
 
             CSDebug.Log($"Starting camera setup: {setup.cameraType}");
 
@@ -81,7 +81,7 @@ namespace CosmicShore.Game.Cinematics
         public void StopCameraSetup()
         {
             isActive = false;
-            isStaticShot = false;
+
             currentSetup = null;
             CSDebug.Log("Camera setup stopped");
         }
@@ -129,7 +129,7 @@ namespace CosmicShore.Game.Cinematics
             cameraTransform.position = fixedCameraPosition;
             cameraTransform.rotation = fixedCameraRotation;
             
-            isStaticShot = true;
+
             
             CSDebug.Log($"Static Front View initialized at {fixedCameraPosition}, looking at {vesselTransform.position}");
         }
@@ -165,7 +165,7 @@ namespace CosmicShore.Game.Cinematics
             cameraTransform.position = fixedCameraPosition;
             cameraTransform.rotation = fixedCameraRotation;
             
-            isStaticShot = true;
+
             
             CSDebug.Log($"Static Side View initialized at {fixedCameraPosition}");
         }
@@ -320,7 +320,7 @@ namespace CosmicShore.Game.Cinematics
         public void RestoreNormalMode()
         {
             isActive = false;
-            isStaticShot = false;
+
             CSDebug.Log("Camera restored to normal mode");
         }
         

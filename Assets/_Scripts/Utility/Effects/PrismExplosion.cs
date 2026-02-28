@@ -1,8 +1,9 @@
 using System;
 using UnityEngine;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles visual + positional explosion effect for prism destruction.

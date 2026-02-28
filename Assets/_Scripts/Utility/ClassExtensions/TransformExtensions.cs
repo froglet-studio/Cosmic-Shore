@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace CosmicShore.Utility.ClassExtensions
+namespace CosmicShore.Utility
 {
     public static class TransformExtensions
     {

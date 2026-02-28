@@ -1,7 +1,7 @@
-using CosmicShore.Core;
+using CosmicShore.Utility;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Gameplay;
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Object pool manager for prism explosion effects.

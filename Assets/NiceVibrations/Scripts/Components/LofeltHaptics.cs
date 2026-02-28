@@ -6,7 +6,6 @@ using System.Text;
 using System.Runtime.InteropServices;
 #elif (UNITY_IOS && !UNITY_EDITOR)
 using UnityEngine.iOS;
-using System.Runtime.InteropServices;
 #endif
 
 namespace Lofelt.NiceVibrations

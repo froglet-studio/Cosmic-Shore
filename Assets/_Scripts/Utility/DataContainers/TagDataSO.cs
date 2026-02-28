@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(fileName = "TagData", menuName = "ScriptableObjects/DataContainers/TagDataSO")]
     public class TagDataSO : GenericDataSO<TagSO> { }

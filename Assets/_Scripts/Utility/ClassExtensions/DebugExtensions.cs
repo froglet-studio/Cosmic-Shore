@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Utility.ClassExtensions
+namespace CosmicShore.Utility
 {
     public static class DebugExtensions
     {
