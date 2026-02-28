@@ -7,9 +7,10 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Toast popup for incoming party invitations.
+    /// Popup for incoming party invitations.
     /// Subscribes to <see cref="HostConnectionDataSO.OnInviteReceived"/> (SOAP event)
-    /// and calls <see cref="HostConnectionService"/> to accept or decline.
+    /// and delegates the full accept/decline flow to <see cref="PartyInviteController"/>,
+    /// which orchestrates Netcode host-to-client transitions and post-join initialization.
     /// </summary>
     public class InviteNotificationUI : MonoBehaviour
     {
@@ -21,6 +22,7 @@ namespace CosmicShore.UI
         [SerializeField] private TMP_Text hostNameText;
         [SerializeField] private Button acceptButton;
         [SerializeField] private Button declineButton;
+        [SerializeField] private GameObject transitionIndicator;
 
         [Header("Data")]
         [SerializeField] private SO_ProfileIconList profileIcons;
@@ -64,6 +66,8 @@ namespace CosmicShore.UI
             if (sprite != null)
                 hostAvatarImage.sprite = sprite;
 
+            SetButtonsInteractable(true);
+            transitionIndicator?.SetActive(false);
             gameObject.SetActive(true);
         }
 
@@ -78,23 +82,44 @@ namespace CosmicShore.UI
 
         private async void OnAccept()
         {
-            HidePopup();
+            SetButtonsInteractable(false);
+            transitionIndicator?.SetActive(true);
 
-            if (HostConnectionService.Instance != null)
+            var controller = PartyInviteController.Instance;
+            if (controller != null)
+            {
+                // Full flow: shutdown host → join as client → scene sync → vessel spawn
+                await controller.AcceptInviteAsync(_pendingInvite);
+            }
+            else if (HostConnectionService.Instance != null)
+            {
+                // Fallback: UGS session join only (no Netcode transition)
                 await HostConnectionService.Instance.AcceptInviteAsync(_pendingInvite);
+            }
+
+            HidePopup();
         }
 
         private async void OnDecline()
         {
             HidePopup();
 
-            if (HostConnectionService.Instance != null)
+            var controller = PartyInviteController.Instance;
+            if (controller != null)
+                await controller.DeclineInviteAsync();
+            else if (HostConnectionService.Instance != null)
                 await HostConnectionService.Instance.DeclineInviteAsync();
         }
 
         // ─────────────────────────────────────────────────────────────────────
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
+
+        private void SetButtonsInteractable(bool interactable)
+        {
+            if (acceptButton != null) acceptButton.interactable = interactable;
+            if (declineButton != null) declineButton.interactable = interactable;
+        }
 
         private Sprite ResolveAvatarSprite(int avatarId)
         {
