@@ -4,8 +4,6 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 namespace CosmicShore.Gameplay
 {
@@ -19,6 +17,8 @@ namespace CosmicShore.Gameplay
     ///
     /// Camera switching is handled by <see cref="Core.MainMenuController"/> in response
     /// to the freestyle SOAP events.
+    ///
+    /// Transition is triggered externally via <see cref="ToggleTransition"/> (e.g. from a UI button).
     /// </summary>
     public class MenuCrystalClickHandler : MonoBehaviour
     {
@@ -39,10 +39,6 @@ namespace CosmicShore.Gameplay
 
         [Header("Settings")]
         [SerializeField] float fadeDuration = 0.5f;
-        [SerializeField] float raycastDistance = 2000f;
-
-        [Tooltip("Fraction of screen height defining the center-tap radius for returning to menu.")]
-        [SerializeField, Range(0.05f, 0.3f)] float centerTapRadius = 0.12f;
 
         bool _isInFreestyle;
         bool _isTransitioning;
@@ -69,77 +65,21 @@ namespace CosmicShore.Gameplay
             ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
         }
 
-        void Update()
+        /// <summary>
+        /// Toggles between menu and freestyle states.
+        /// Safe to call from a UI Button — silently ignored while transitioning
+        /// or before the local player vessel is ready.
+        /// </summary>
+        public void ToggleTransition()
         {
             if (_isTransitioning) return;
             if (gameData.LocalPlayer?.Vessel == null) return;
-            if (!DetectTap(out Vector2 screenPos)) return;
 
             if (_isInFreestyle)
-            {
-                if (IsCenterTap(screenPos))
-                    TransitionToMenu().Forget();
-            }
+                TransitionToMenu().Forget();
             else
-            {
-                if (RaycastCrystal(screenPos))
-                    TransitionToFreestyle().Forget();
-            }
+                TransitionToFreestyle().Forget();
         }
-
-        #region Input Detection
-
-        bool DetectTap(out Vector2 screenPos)
-        {
-            screenPos = default;
-
-            if (Touchscreen.current != null)
-            {
-                var primaryTouch = Touchscreen.current.primaryTouch;
-                if (primaryTouch.press.wasPressedThisFrame)
-                {
-                    screenPos = primaryTouch.position.ReadValue();
-                    return !IsPointerOverUI();
-                }
-            }
-
-            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-            {
-                screenPos = Mouse.current.position.ReadValue();
-                return !IsPointerOverUI();
-            }
-
-            return false;
-        }
-
-        static bool IsPointerOverUI()
-        {
-            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-        }
-
-        bool IsCenterTap(Vector2 screenPos)
-        {
-            var center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-            float radius = Screen.height * centerTapRadius;
-            return Vector2.Distance(screenPos, center) <= radius;
-        }
-
-        bool RaycastCrystal(Vector2 screenPos)
-        {
-            var cam = Camera.main;
-            if (!cam) return false;
-
-            var ray = cam.ScreenPointToRay(screenPos);
-            if (Physics.Raycast(ray, out RaycastHit hit, raycastDistance,
-                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide))
-            {
-                return hit.collider.GetComponentInParent<Crystal>() != null;
-            }
-
-            return false;
-        }
-
-        #endregion
 
         #region Transitions
 
