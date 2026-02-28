@@ -170,10 +170,16 @@ namespace CosmicShore.Gameplay
         void SpawnVesselAndInitialize(ulong clientId, Player player)
         {
             var vesselNO = SpawnVesselForPlayer(clientId, player);
-            if (vesselNO == null)
+            if (!vesselNO)
                 return;
 
-            clientPlayerVesselInitializer.InitializePlayerAndVessel(player, vesselNO);
+            if (!vesselNO.TryGetComponent(out IVessel vessel))
+            {
+                CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
+                return;
+            }
+            
+            clientPlayerVesselInitializer.InitializePlayerAndVessel(player, vessel);
         }
 
         /// <summary>

@@ -54,14 +54,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Direct server-side initialization (called by ServerPlayerVesselInitializer on host).
         /// </summary>
-        public void InitializePlayerAndVessel(Player player, NetworkObject vesselNO)
+        public void InitializePlayerAndVessel(Player player, IVessel vessel)
         {
-            if (!vesselNO.TryGetComponent(out IVessel vessel))
-            {
-                CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
-                return;
-            }
-
             InitializePair(player, vessel);
         }
 
@@ -80,6 +74,8 @@ namespace CosmicShore.Gameplay
                 _pendingPairs.Add((playerNetIds[i], vesselNetIds[i]));
 
             ProcessPendingPairs();
+
+            gameData.OnClientReady.Raise();
         }
 
         /// <summary>

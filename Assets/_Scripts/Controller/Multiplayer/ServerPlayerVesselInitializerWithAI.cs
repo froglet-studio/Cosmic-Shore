@@ -109,7 +109,13 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Server-side initialization of the AI player-vessel pair
-                clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, aiVesselNO);
+                if (!aiVesselNO.TryGetComponent(out IVessel vessel))
+                {
+                    CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
+                    return;
+                }
+            
+                clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
                 ConfigureAIPilot(aiVesselNO);
             }
         }
