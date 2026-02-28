@@ -10,6 +10,7 @@ namespace CosmicShore.App.UI.Elements
     /// Attach to the quest item prefab. Exposes serialized references
     /// so QuestTrackView can configure each card without Transform.Find.
     /// Falls back to auto-resolving children by name if fields are unassigned.
+    /// UnlockableIconBG is never controlled — it stays on at all times.
     /// </summary>
     public class QuestItemCard : MonoBehaviour
     {
@@ -25,8 +26,6 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] private GameObject lockedOverlay;
         [Tooltip("Shown when the quest is fully complete and claimed")]
         [SerializeField] private GameObject completedOverlay;
-        [Tooltip("Icon shown when the mode is unlocked (open padlock / glow)")]
-        [SerializeField] private GameObject unlockableIcon;
         [Tooltip("Button shown when the quest target is met but not yet claimed")]
         [SerializeField] private Button claimButton;
 
@@ -50,9 +49,6 @@ namespace CosmicShore.App.UI.Elements
         /// </summary>
         void ResolveReferences()
         {
-            if (unlockableIcon == null)
-                unlockableIcon = FindChild("UnlockableIconBG");
-
             if (lockedOverlay == null)
                 lockedOverlay = FindChild("LockedObject") ?? FindChild("LockedIcon");
 
@@ -127,22 +123,15 @@ namespace CosmicShore.App.UI.Elements
             bool isClaimed      = state == QuestItemState.Claimed;
             bool isUnlocked     = !isLocked;
 
-            // Lock / unlock overlays
             if (lockedOverlay != null)
                 lockedOverlay.SetActive(isLocked);
 
             if (completedOverlay != null)
                 completedOverlay.SetActive(isClaimed);
 
-            // Unlockable icon — visible whenever the mode is unlocked
-            if (unlockableIcon != null)
-                unlockableIcon.SetActive(isUnlocked);
-
-            // Claim button — only when target met and awaiting player tap
             if (claimButton != null)
                 claimButton.gameObject.SetActive(isReadyToClaim);
 
-            // Tint background when locked
             if (cardBackground != null)
                 cardBackground.color = isLocked ? lockedTint : _originalBgColor;
 

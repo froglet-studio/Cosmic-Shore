@@ -26,6 +26,10 @@ namespace CosmicShore.App.UI.Views
         [Header("Container")]
         [SerializeField] private Transform questItemContainer;
 
+        [Header("Scroll")]
+        [Tooltip("Optional — auto-resolved from questItemContainer if null")]
+        [SerializeField] private ScrollRect scrollRect;
+
         [Header("Slider")]
         [SerializeField] private Slider progressSlider;
 
@@ -38,6 +42,7 @@ namespace CosmicShore.App.UI.Views
 
         void OnEnable()
         {
+            ConfigureScrollRect();
             LoadTrack();
 
             if (GameModeProgressionService.Instance != null)
@@ -62,6 +67,17 @@ namespace CosmicShore.App.UI.Views
         {
             SpawnCards();
             SetSliderImmediate();
+        }
+
+        // ── Scroll ───────────────────────────────────────────────────────────
+
+        void ConfigureScrollRect()
+        {
+            if (scrollRect == null && questItemContainer != null)
+                scrollRect = questItemContainer.GetComponentInParent<ScrollRect>();
+
+            if (scrollRect != null)
+                scrollRect.movementType = ScrollRect.MovementType.Clamped;
         }
 
         // ── Spawning ────────────────────────────────────────────────────────────
@@ -167,8 +183,11 @@ namespace CosmicShore.App.UI.Views
 
         void SetSliderImmediate()
         {
-            if (progressSlider != null)
-                progressSlider.value = GetNormalizedProgress();
+            if (progressSlider == null) return;
+
+            // Force all canvas layouts so card world positions are accurate
+            Canvas.ForceUpdateCanvases();
+            progressSlider.value = GetNormalizedProgress();
         }
 
         void AnimateSlider()
@@ -182,18 +201,40 @@ namespace CosmicShore.App.UI.Views
                 .SetUpdate(true);
         }
 
+        /// <summary>
+        /// Calculates the slider value so that the fill aligns with the center
+        /// of the current card (the first unclaimed card) in world space.
+        /// </summary>
         float GetNormalizedProgress()
         {
-            int total = questList != null ? questList.Quests.Count : 0;
-            if (total == 0) return 0f;
+            if (_cards.Count == 0 || progressSlider == null) return 0f;
 
-            // The first mode is always unlocked, so the baseline is 1/N.
-            // Each completed quest adds another 1/N on top of that.
-            // Only count claimed quests so the slider animates on claim tap, not on target-met.
             var service = GameModeProgressionService.Instance;
             int claimed = service != null ? service.GetClaimedQuestCount() : 0;
 
-            return Mathf.Clamp01((float)(1 + claimed) / total);
+            // Slider points to the center of the current active card.
+            // With 0 claimed → card 0 (first, always unlocked).
+            // With N claimed → card N (next unclaimed).
+            int targetIndex = Mathf.Clamp(claimed, 0, _cards.Count - 1);
+
+            var cardRect = _cards[targetIndex].transform as RectTransform;
+            var sliderRect = progressSlider.transform as RectTransform;
+            if (cardRect == null || sliderRect == null) return 0f;
+
+            // Card center in world space
+            Vector3[] cardCorners = new Vector3[4];
+            cardRect.GetWorldCorners(cardCorners);
+            float cardCenterWorldX = (cardCorners[0].x + cardCorners[2].x) * 0.5f;
+
+            // Slider extent in world space
+            Vector3[] sliderCorners = new Vector3[4];
+            sliderRect.GetWorldCorners(sliderCorners);
+            float sliderLeftX = sliderCorners[0].x;
+            float sliderWidth = sliderCorners[2].x - sliderLeftX;
+
+            if (sliderWidth <= 0f) return 0f;
+
+            return Mathf.Clamp01((cardCenterWorldX - sliderLeftX) / sliderWidth);
         }
 
         // ── Cleanup ─────────────────────────────────────────────────────────────
