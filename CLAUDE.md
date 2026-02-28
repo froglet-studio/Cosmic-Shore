@@ -575,6 +575,8 @@ Player.OnNetworkSpawn()
 
 **Menu_Main spawning specifics** (via `MainMenuController` + `MenuServerPlayerVesselInitializer`):
 
+**Host path (initial menu load):**
+
 | Step | Actor | Action |
 |---|---|---|
 | 1 | `MainMenuController.Start()` | Configure game data: vessel=Squirrel, players=3, intensity=1, spawn positions |
@@ -582,9 +584,24 @@ Player.OnNetworkSpawn()
 | 3 | `Player.OnNetworkSpawn()` | Host Player (spawned in Auth scene) fires `OnPlayerNetworkSpawnedUlong` |
 | 4 | `ServerPlayerVesselInitializer` | `ProcessPreExistingPlayers()` catches the already-spawned host Player |
 | 5 | `ServerPlayerVesselInitializer` | Spawns vessel, initializes pair |
-| 6 | `MenuServerPlayerVesselInitializer` | Override: `ActivateAutopilot()` — AI on, input paused, camera follows |
+| 6 | `MenuServerPlayerVesselInitializer` | Override: `ActivateAutopilot()` — AI on, input paused |
 | 7 | `ClientPlayerVesselInitializer` | `InvokeClientReady()` for local user |
 | 8 | `MainMenuController` | `HandleMenuReady()` → `TransitionTo(Ready)` — menu interactive |
+
+**Client path (joining via party invite):**
+
+| Step | Actor | Action |
+|---|---|---|
+| 1 | `PartyInviteController` | `AcceptInviteAsync()` — shutdown local host, join Relay party session |
+| 2 | `PartyInviteController` | `WaitForClientConnectionAsync()` + `WaitForSceneLoadAsync()` — Menu_Main syncs from host |
+| 3 | `Player.OnNetworkSpawn()` | Client Player fires `OnPlayerNetworkSpawnedUlong(clientId)` |
+| 4 | Host `ServerPlayerVesselInitializer` | `HandlePlayerNetworkSpawned(clientId)` — spawns vessel, initializes pair |
+| 5 | Host `MenuServerPlayerVesselInitializer` | `ActivateAutopilot()` — AI on, input paused on host side |
+| 6 | Host `ServerPlayerVesselInitializer` | `NotifyClients()` — RPCs all player-vessel pairs to new client |
+| 7 | Client `ClientPlayerVesselInitializer` | Receives `InitializeAllPlayersAndVessels_ClientRpc`, queues pairs |
+| 8 | Client `ClientPlayerVesselInitializer` | SOAP events resolve pairs → `InitializePair()` → `InvokeClientReady()` for local user |
+| 9 | Client `MainMenuController` | `HandleMenuReady()` → `SetNonOwnerPlayersActiveInNewClient()` activates host's vessel |
+| 10 | Client `MainMenuController` | `ActivateLocalPlayerAutopilot()` — ensures client vessel starts in autopilot |
 
 **`MainMenuController` sub-state machine** (`MainMenuState` enum):
 
@@ -704,6 +721,70 @@ Recipient's refresh loop detects invite
           └─ Host's MenuServerPlayerVesselInitializer spawns vessel + autopilot
 ```
 
+#### Multiplayer Freestyle Flight in Menu_Main
+
+After a client joins via party invite, both host and client spawn with vessels and can fly together. The system uses a unified Netcode + SOAP pipeline — no special-case code for menu multiplayer.
+
+**Client join vessel spawn chain:**
+
+```
+Client joins party session via Relay
+  │
+  ├─ Client's Player.OnNetworkSpawn()
+  │   ├─ gameData.Players.Add(this)
+  │   ├─ Raise OnPlayerNetworkSpawnedUlong(clientId)
+  │   └─ Set NetDefaultVesselType, NetName, NetDomain
+  │
+  ├─ Host's ServerPlayerVesselInitializer receives OnPlayerNetworkSpawnedUlong(clientId)
+  │   ├─ Wait preSpawnDelayMs (200ms) for NetworkVariables to sync
+  │   ├─ SpawnVesselForPlayer(clientId) → vessel spawned + DI injection
+  │   ├─ ClientPlayerVesselInitializer.InitializePlayerAndVessel()
+  │   ├─ MenuServerPlayerVesselInitializer.ActivateAutopilot(player)
+  │   │   ├─ player.StartPlayer()
+  │   │   ├─ player.Vessel.ToggleAIPilot(true)
+  │   │   └─ player.InputController.SetPause(true)
+  │   ├─ Wait postSpawnDelayMs (200ms) for replication
+  │   └─ NotifyClients():
+  │       ├─ InitializeAllPlayersAndVessels_ClientRpc → new client (all pairs)
+  │       └─ InitializeNewPlayerAndVessel_ClientRpc → existing clients (new pair only)
+  │
+  ├─ Client's ClientPlayerVesselInitializer receives RPC
+  │   ├─ Queues pending (playerNetId, vesselNetId) pairs
+  │   ├─ SOAP events (OnPlayerNetworkSpawnedUlong, OnVesselNetworkSpawned) → ProcessPendingPairs()
+  │   ├─ InitializePair() for each resolved pair
+  │   └─ gameData.InvokeClientReady() for local user → fires OnClientReady
+  │
+  └─ Client's MainMenuController.HandleMenuReady()
+      ├─ TransitionTo(Ready)
+      ├─ ActivateMenuCamera()
+      ├─ ActivateLocalPlayerAutopilot() — ensures client vessel starts in autopilot
+      └─ gameData.SetNonOwnerPlayersActiveInNewClient() — activates host's vessel on client screen
+```
+
+**Freestyle toggle (autopilot ↔ player control):**
+
+`MenuCrystalClickHandler.ToggleTransition()` lets each player independently switch between autopilot and freestyle flight:
+
+| Guard | Purpose |
+|---|---|
+| `localPlayer.IsLocalUser` | Only the locally-owned vessel can be toggled |
+| `IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) | Skips `Time.timeScale` changes in multiplayer to avoid freezing remote players |
+| `_isTransitioning` | Prevents concurrent toggle transitions |
+
+Each client has its own Cinemachine camera following its own vessel. No network syncing of freestyle state is needed — each client independently toggles their own vessel via `MenuFreestyleEventsContainerSO` SOAP events.
+
+**What works in multiplayer menu:**
+- Both players spawn with network-owned vessels
+- Both vessels visible and active on all clients' screens
+- Each player independently toggles autopilot ↔ freestyle control
+- Independent Cinemachine cameras per client — no conflicts
+- Network ownership prevents cross-control of vessels
+
+**Limitations:**
+- Party size bounded by `HostConnectionDataSO.MaxPartySlots`
+- No AI backfill in menu — `MenuServerPlayerVesselInitializer` does not pre-spawn AI opponents (unlike `ServerPlayerVesselInitializerWithAI` in game scenes)
+- Freestyle state is local-only — other players cannot see whether you are in autopilot or freestyle mode (vessel behavior replicates, but the mode label does not)
+
 #### UI Components
 
 | Component | File | Purpose |
@@ -766,7 +847,10 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 - **Lobby-only session**: Presence lobby uses no Relay — coexists with active NetworkManager.
 - **UniTask + CancellationToken**: All async transitions use `UniTask` with linked CTS for timeouts.
 - **Dedup guard**: `_lastFiredInvite` prevents re-firing the same invite on repeated refreshes.
-- **Client autopilot**: `MainMenuController.HandleMenuReady()` activates autopilot for the local player's vessel, ensuring both host and joining clients start in autopilot mode.
+- **Client autopilot**: `MainMenuController.HandleMenuReady()` calls `ActivateLocalPlayerAutopilot()` for the local player's vessel, ensuring both host and joining clients start in autopilot mode. For hosts this is redundant with `MenuServerPlayerVesselInitializer.ActivateAutopilot()`, but for remote clients it is the primary activation path.
+- **Non-owner vessel activation**: `MainMenuController.HandleMenuReady()` calls `gameData.SetNonOwnerPlayersActiveInNewClient()` so joining clients see and render existing players' vessels.
+- **Local-only freestyle toggle**: `MenuCrystalClickHandler` toggles autopilot ↔ freestyle per-client with `IsLocalUser` guard. No network RPC needed — vessel behavior replicates automatically via Netcode.
+- **TimeScale safety**: `MenuCrystalClickHandler.IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) prevents `Time.timeScale` changes in multiplayer, which would freeze all local rendering including other players' vessels.
 
 ### FTUE (First-Time User Experience)
 
