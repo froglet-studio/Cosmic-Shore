@@ -114,6 +114,7 @@ namespace CosmicShore.Gameplay
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Players.Add(this);
+            gameData.OnPlayerNetworkSpawned.Raise();
 
             VesselNetId = NetVesselId.Value;
 
@@ -121,12 +122,9 @@ namespace CosmicShore.Gameplay
             NetName.OnValueChanged += OnNetNameValueChanged;
             NetVesselId.OnValueChanged += OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
-
-            if (!IsLocalUser)
-            {
-                gameData.InvokePlayerNetworkSpawned();
-                return;
-            }
+            
+            if (IsServer)
+                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
 
             // Resolve display name & avatar ID BEFORE signaling spawn and setting
             // the vessel type. Setting NetDefaultVesselType triggers the server-side
@@ -150,34 +148,10 @@ namespace CosmicShore.Gameplay
             {
                 NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
             }
-
-            NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+            
             NetIsAI.Value = IsInitializedAsAI;
-
-            // Always subscribe — vessel class may not be configured yet (menu scene)
-            // or may already be valid (gameplay scene). The callback handles both:
-            // subscribe first, then check current value to proceed immediately if ready.
-            gameData.selectedVesselClass.OnValueChanged += OnSelectedVesselClassChanged;
-            TrySetVesselType(gameData.selectedVesselClass.Value);
-        }
-
-        /// <summary>
-        /// Reacts to <see cref="GameDataSO.selectedVesselClass"/> changes.
-        /// In the menu scene this fires when <see cref="Core.MainMenuController.ConfigureMenuGameData"/>
-        /// sets the vessel class after <see cref="OnNetworkSpawn"/>.
-        /// In gameplay scenes the eager check in <see cref="OnNetworkSpawn"/> resolves immediately.
-        /// </summary>
-        void OnSelectedVesselClassChanged(VesselClassType newValue) =>
-            TrySetVesselType(newValue);
-
-        void TrySetVesselType(VesselClassType vesselClass)
-        {
-            if (vesselClass == VesselClassType.Random || vesselClass == VesselClassType.Any)
-                return;
-
-            gameData.selectedVesselClass.OnValueChanged -= OnSelectedVesselClassChanged;
-            NetDefaultVesselType.Value = vesselClass;
-            gameData.InvokePlayerNetworkSpawned();
+            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+            
             InputController.Initialize();
         }
 
@@ -187,7 +161,6 @@ namespace CosmicShore.Gameplay
             NetName.OnValueChanged -= OnNetNameValueChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
-            gameData.selectedVesselClass.OnValueChanged -= OnSelectedVesselClassChanged;
         }
 
 
