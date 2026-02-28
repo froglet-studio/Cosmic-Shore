@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using System.Threading;
@@ -10,11 +11,15 @@ using UnityEngine.InputSystem;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Toggles between menu mode (Cinemachine crystal camera + autopilot) and
-    /// gameplay mode (Cinemachine follows vessel + player control) on Menu_Main.
+    /// Toggles between menu state (Cinemachine crystal revolve + autopilot + menu UI)
+    /// and freestyle state (Cinemachine vessel follow + player control + freestyle UI)
+    /// on Menu_Main.
+    ///
+    /// Raises SOAP events via <see cref="MenuFreestyleEventsContainerSO"/> so decoupled
+    /// systems (ScreenSwitcher, NavBar, HUD) can react without direct references.
     ///
     /// Uses Cinemachine retargeting on the "CM Main Menu" virtual camera.
-    /// CinemachineBrain handles smooth transitions via its default blend (EaseInOut 2s)
+    /// CinemachineBrain handles smooth camera transitions via its default blend
     /// and CinemachineFollow/RotationComposer damping.
     /// </summary>
     public class MenuCrystalClickHandler : MonoBehaviour
@@ -22,9 +27,17 @@ namespace CosmicShore.Gameplay
         [Header("References")]
         [SerializeField] GameDataSO gameData;
 
+        [Header("SOAP Events")]
+        [Tooltip("Container holding OnEnterFreestyle / OnExitFreestyle SOAP events.")]
+        [SerializeField] MenuFreestyleEventsContainerSO freestyleEvents;
+
         [Header("Menu UI")]
-        [Tooltip("CanvasGroups to fade when toggling between menu and gameplay.")]
+        [Tooltip("CanvasGroups to fade OUT when entering freestyle (menu chrome, nav bar, etc).")]
         [SerializeField] CanvasGroup[] menuCanvasGroups;
+
+        [Header("Freestyle UI")]
+        [Tooltip("CanvasGroups to fade IN when entering freestyle (vessel HUD, freestyle controls, etc).")]
+        [SerializeField] CanvasGroup[] freestyleCanvasGroups;
 
         [Header("Settings")]
         [SerializeField] float fadeDuration = 0.5f;
@@ -33,12 +46,15 @@ namespace CosmicShore.Gameplay
         [Tooltip("Fraction of screen height defining the center-tap radius for returning to menu.")]
         [SerializeField, Range(0.05f, 0.3f)] float centerTapRadius = 0.12f;
 
-        bool _isInGameplay;
+        bool _isInFreestyle;
         bool _isTransitioning;
         CancellationTokenSource _cts;
 
         CinemachineCamera _menuVCam;
         Transform _originalFollow;
+
+        /// <summary>Whether the menu is currently in freestyle state.</summary>
+        public bool IsInFreestyle => _isInFreestyle;
 
         void OnEnable()
         {
@@ -63,6 +79,9 @@ namespace CosmicShore.Gameplay
                 if (_menuVCam)
                     _originalFollow = _menuVCam.Follow;
             }
+
+            // Freestyle UI starts hidden
+            ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
         }
 
         void Update()
@@ -72,7 +91,7 @@ namespace CosmicShore.Gameplay
             if (gameData.LocalPlayer?.Vessel == null) return;
             if (!DetectTap(out Vector2 screenPos)) return;
 
-            if (_isInGameplay)
+            if (_isInFreestyle)
             {
                 if (IsCenterTap(screenPos))
                     TransitionToMenu().Forget();
@@ -80,7 +99,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 if (RaycastCrystal(screenPos))
-                    TransitionToGameplay().Forget();
+                    TransitionToFreestyle().Forget();
             }
         }
 
@@ -140,13 +159,14 @@ namespace CosmicShore.Gameplay
 
         #region Transitions
 
-        async UniTaskVoid TransitionToGameplay()
+        async UniTaskVoid TransitionToFreestyle()
         {
             _isTransitioning = true;
             var ct = _cts.Token;
             var player = gameData.LocalPlayer;
 
-            await FadeCanvasGroups(0f, ct);
+            // Fade out menu UI, fade in freestyle UI
+            await FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct);
 
             PauseSystem.TogglePauseGame(false);
 
@@ -157,8 +177,10 @@ namespace CosmicShore.Gameplay
             _menuVCam.Follow = player.Vessel.VesselStatus.CameraFollowTarget;
             _menuVCam.LookAt = player.Vessel.Transform;
 
-            _isInGameplay = true;
+            _isInFreestyle = true;
             _isTransitioning = false;
+
+            freestyleEvents.OnEnterFreestyle.Raise();
         }
 
         async UniTaskVoid TransitionToMenu()
@@ -170,33 +192,34 @@ namespace CosmicShore.Gameplay
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // Restore Cinemachine to original menu targets
+            // Restore Cinemachine to original menu targets (crystal revolve)
             _menuVCam.Follow = _originalFollow;
             _menuVCam.LookAt = null;
 
-            await FadeCanvasGroups(1f, ct);
+            // Fade out freestyle UI, fade in menu UI
+            await FadeBetweenStates(menuAlpha: 1f, freestyleAlpha: 0f, ct);
 
-            _isInGameplay = false;
+            _isInFreestyle = false;
             _isTransitioning = false;
+
+            freestyleEvents.OnExitFreestyle.Raise();
         }
 
         #endregion
 
         #region UI Fade
 
-        async UniTask FadeCanvasGroups(float targetAlpha, CancellationToken ct)
+        async UniTask FadeBetweenStates(float menuAlpha, float freestyleAlpha, CancellationToken ct)
         {
-            if (menuCanvasGroups is not { Length: > 0 }) return;
-
             if (fadeDuration <= 0f)
             {
-                ApplyCanvasGroupAlpha(targetAlpha);
+                ApplyCanvasGroupState(menuCanvasGroups, menuAlpha);
+                ApplyCanvasGroupState(freestyleCanvasGroups, freestyleAlpha);
                 return;
             }
 
-            float[] startAlphas = new float[menuCanvasGroups.Length];
-            for (int i = 0; i < menuCanvasGroups.Length; i++)
-                startAlphas[i] = menuCanvasGroups[i] ? menuCanvasGroups[i].alpha : 0f;
+            float[] menuStartAlphas = CaptureAlphas(menuCanvasGroups);
+            float[] freestyleStartAlphas = CaptureAlphas(freestyleCanvasGroups);
 
             float elapsed = 0f;
             while (elapsed < fadeDuration)
@@ -204,21 +227,42 @@ namespace CosmicShore.Gameplay
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / fadeDuration);
 
-                for (int i = 0; i < menuCanvasGroups.Length; i++)
-                {
-                    if (!menuCanvasGroups[i]) continue;
-                    menuCanvasGroups[i].alpha = Mathf.Lerp(startAlphas[i], targetAlpha, t);
-                }
+                LerpCanvasGroupAlphas(menuCanvasGroups, menuStartAlphas, menuAlpha, t);
+                LerpCanvasGroupAlphas(freestyleCanvasGroups, freestyleStartAlphas, freestyleAlpha, t);
 
                 await UniTask.Yield(ct);
             }
 
-            ApplyCanvasGroupAlpha(targetAlpha);
+            ApplyCanvasGroupState(menuCanvasGroups, menuAlpha);
+            ApplyCanvasGroupState(freestyleCanvasGroups, freestyleAlpha);
         }
 
-        void ApplyCanvasGroupAlpha(float alpha)
+        static float[] CaptureAlphas(CanvasGroup[] groups)
         {
-            foreach (var cg in menuCanvasGroups)
+            if (groups is not { Length: > 0 }) return System.Array.Empty<float>();
+
+            var alphas = new float[groups.Length];
+            for (int i = 0; i < groups.Length; i++)
+                alphas[i] = groups[i] ? groups[i].alpha : 0f;
+            return alphas;
+        }
+
+        static void LerpCanvasGroupAlphas(CanvasGroup[] groups, float[] startAlphas, float targetAlpha, float t)
+        {
+            if (groups is not { Length: > 0 }) return;
+
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (!groups[i]) continue;
+                groups[i].alpha = Mathf.Lerp(startAlphas[i], targetAlpha, t);
+            }
+        }
+
+        static void ApplyCanvasGroupState(CanvasGroup[] groups, float alpha)
+        {
+            if (groups is not { Length: > 0 }) return;
+
+            foreach (var cg in groups)
             {
                 if (!cg) continue;
                 cg.alpha = alpha;
