@@ -180,7 +180,7 @@ namespace CosmicShore.Gameplay
             gameData.InvokePlayerNetworkSpawned();
             InputController.Initialize();
         }
-        
+
         public override void OnNetworkDespawn()
         {
             NetDomain.OnValueChanged -= OnNetDomainChanged;
