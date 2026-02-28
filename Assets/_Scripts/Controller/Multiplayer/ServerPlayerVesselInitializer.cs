@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
