@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Now subscribe and handle human players (host + future remote clients)
-            SubscribeAndProcessPlayers();
+            HandleGameInitialized();
         }
 
         void SpawnAIs()
