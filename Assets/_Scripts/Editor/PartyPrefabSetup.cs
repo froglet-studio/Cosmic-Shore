@@ -26,6 +26,10 @@ namespace CosmicShore.Editor
             if (!AssetDatabase.IsValidFolder(PrefabFolder))
                 AssetDatabase.CreateFolder("Assets/_Prefabs/UI Elements/Panels", "Party");
 
+            CreateFriendEntryViewPrefab();
+            CreateFriendRequestEntryViewPrefab();
+            CreateAddFriendPanelPrefab();
+            CreateFriendsPanelPrefab();
             CreateOnlinePlayerEntryPrefab();
             CreateOnlinePlayersPanelPrefab();
             CreatePartyInviteNotificationPrefab();
@@ -112,7 +116,9 @@ namespace CosmicShore.Editor
             // 4. Check required prefabs exist
             string[] requiredPrefabs = {
                 "OnlinePlayerEntry", "OnlinePlayersPanel",
-                "PartyInviteNotificationPanel", "PartyAreaPanel"
+                "PartyInviteNotificationPanel", "PartyAreaPanel",
+                "FriendEntryView", "FriendRequestEntryView",
+                "AddFriendPanel", "FriendsPanel"
             };
             foreach (var name in requiredPrefabs)
             {
@@ -149,6 +155,30 @@ namespace CosmicShore.Editor
         }
 
         // ── Wire SO References ────────────────────────────────────────────
+
+        [MenuItem("Tools/Cosmic Shore/Rebuild Friends Panel Prefab")]
+        public static void RebuildFriendsPanelPrefab()
+        {
+            string path = $"{PrefabFolder}/FriendsPanel.prefab";
+            var existingPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existingPrefab != null)
+            {
+                AssetDatabase.DeleteAsset(path);
+                Debug.Log($"[PartyPrefabSetup] Deleted existing {path} for rebuild.");
+            }
+
+            // Also rebuild entry prefabs if missing
+            if (AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/FriendEntryView.prefab") == null)
+                CreateFriendEntryViewPrefab();
+            if (AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/FriendRequestEntryView.prefab") == null)
+                CreateFriendRequestEntryViewPrefab();
+
+            CreateFriendsPanelPrefab();
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("[PartyPrefabSetup] FriendsPanel prefab rebuilt with all references wired.");
+        }
 
         [MenuItem("Tools/Cosmic Shore/Wire Party SO References")]
         public static void WireOnlinePlayersPanelReferences()
@@ -205,6 +235,10 @@ namespace CosmicShore.Editor
             if (!AssetDatabase.IsValidFolder(PrefabFolder))
                 AssetDatabase.CreateFolder("Assets/_Prefabs/UI Elements/Panels", "Party");
 
+            CreateFriendEntryViewPrefab();
+            CreateFriendRequestEntryViewPrefab();
+            CreateAddFriendPanelPrefab();
+            CreateFriendsPanelPrefab();
             CreateOnlinePlayerEntryPrefab();
             CreateOnlinePlayersPanelPrefab();
             CreatePartyInviteNotificationPrefab();
@@ -214,6 +248,516 @@ namespace CosmicShore.Editor
             AssetDatabase.Refresh();
             Debug.Log("[PartyPrefabSetup] Party prefabs created.");
         }
+
+        // ── Friends Prefabs ──────────────────────────────────────────────
+
+        [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Friend Entry View")]
+        static void CreateFriendEntryViewPrefab()
+        {
+            string path = $"{PrefabFolder}/FriendEntryView.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
+            {
+                Debug.Log($"[PartyPrefabSetup] Skipped — {path} already exists.");
+                return;
+            }
+
+            var root = CreateUIRoot("FriendEntryView", 400, 60);
+            var bg = root.AddComponent<Image>();
+            bg.color = new Color(0.15f, 0.15f, 0.2f, 0.8f);
+            var hlg = root.AddComponent<HorizontalLayoutGroup>();
+            hlg.spacing = 8;
+            hlg.padding = new RectOffset(8, 8, 4, 4);
+            hlg.childAlignment = TextAnchor.MiddleLeft;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = false;
+
+            // Online indicator (small circle)
+            var indicatorGo = CreateChildImage(root.transform, "OnlineIndicator", 12, 12, Vector2.zero);
+            var indicatorImage = indicatorGo.GetComponent<Image>();
+            indicatorImage.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+
+            // Display name
+            var nameGo = CreateChildText(root.transform, "DisplayName", "Friend Name", 16,
+                Vector2.zero, new Vector2(140, 40));
+            var nameLE = nameGo.AddComponent<LayoutElement>();
+            nameLE.flexibleWidth = 1;
+
+            // Status text
+            var statusGo = CreateChildText(root.transform, "StatusText", "Offline", 12,
+                Vector2.zero, new Vector2(60, 30));
+            var statusText = statusGo.GetComponent<TMP_Text>();
+            statusText.color = new Color(0.7f, 0.7f, 0.7f);
+
+            // Invite button
+            var inviteBtnGo = CreateChildButton(root.transform, "InviteButton", "Invite", 60, 30, Vector2.zero);
+
+            // Invite sent indicator
+            var sentGo = CreateChildText(root.transform, "InviteSentIndicator", "Sent", 12,
+                Vector2.zero, new Vector2(40, 20));
+            sentGo.SetActive(false);
+
+            // Remove button
+            var removeBtnGo = CreateChildButton(root.transform, "RemoveButton", "X", 30, 30, Vector2.zero);
+            removeBtnGo.GetComponent<Image>().color = new Color(0.8f, 0.2f, 0.2f, 1f);
+
+            // Add component and wire
+            var entry = root.AddComponent<FriendEntryView>();
+            var so = new SerializedObject(entry);
+            so.FindProperty("displayNameText").objectReferenceValue = nameGo.GetComponent<TMP_Text>();
+            so.FindProperty("statusText").objectReferenceValue = statusText;
+            so.FindProperty("onlineIndicator").objectReferenceValue = indicatorImage;
+            so.FindProperty("inviteButton").objectReferenceValue = inviteBtnGo.GetComponent<Button>();
+            so.FindProperty("removeButton").objectReferenceValue = removeBtnGo.GetComponent<Button>();
+            so.FindProperty("inviteSentIndicator").objectReferenceValue = sentGo;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            Debug.Log($"[PartyPrefabSetup] Created {path}");
+        }
+
+        [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Friend Request Entry View")]
+        static void CreateFriendRequestEntryViewPrefab()
+        {
+            string path = $"{PrefabFolder}/FriendRequestEntryView.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
+            {
+                Debug.Log($"[PartyPrefabSetup] Skipped — {path} already exists.");
+                return;
+            }
+
+            var root = CreateUIRoot("FriendRequestEntryView", 400, 60);
+            var bg = root.AddComponent<Image>();
+            bg.color = new Color(0.15f, 0.15f, 0.2f, 0.8f);
+            var hlg = root.AddComponent<HorizontalLayoutGroup>();
+            hlg.spacing = 8;
+            hlg.padding = new RectOffset(8, 8, 4, 4);
+            hlg.childAlignment = TextAnchor.MiddleLeft;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = false;
+
+            // Display name
+            var nameGo = CreateChildText(root.transform, "DisplayName", "Player Name", 16,
+                Vector2.zero, new Vector2(140, 40));
+            var nameLE = nameGo.AddComponent<LayoutElement>();
+            nameLE.flexibleWidth = 1;
+
+            // Direction label (Incoming / Sent)
+            var dirGo = CreateChildText(root.transform, "DirectionLabel", "Incoming", 12,
+                Vector2.zero, new Vector2(60, 30));
+            var dirText = dirGo.GetComponent<TMP_Text>();
+            dirText.color = new Color(0.6f, 0.8f, 1f);
+
+            // Accept button
+            var acceptBtnGo = CreateChildButton(root.transform, "AcceptButton", "Accept", 60, 30, Vector2.zero);
+            acceptBtnGo.GetComponent<Image>().color = new Color(0.2f, 0.7f, 0.3f, 1f);
+
+            // Decline button
+            var declineBtnGo = CreateChildButton(root.transform, "DeclineButton", "Decline", 60, 30, Vector2.zero);
+            declineBtnGo.GetComponent<Image>().color = new Color(0.8f, 0.2f, 0.2f, 1f);
+
+            // Cancel button (for outgoing requests)
+            var cancelBtnGo = CreateChildButton(root.transform, "CancelButton", "Cancel", 60, 30, Vector2.zero);
+            cancelBtnGo.GetComponent<Image>().color = new Color(0.6f, 0.3f, 0.1f, 1f);
+            cancelBtnGo.SetActive(false);
+
+            // Add component and wire
+            var entry = root.AddComponent<FriendRequestEntryView>();
+            var so = new SerializedObject(entry);
+            so.FindProperty("displayNameText").objectReferenceValue = nameGo.GetComponent<TMP_Text>();
+            so.FindProperty("directionLabel").objectReferenceValue = dirText;
+            so.FindProperty("acceptButton").objectReferenceValue = acceptBtnGo.GetComponent<Button>();
+            so.FindProperty("declineButton").objectReferenceValue = declineBtnGo.GetComponent<Button>();
+            so.FindProperty("cancelButton").objectReferenceValue = cancelBtnGo.GetComponent<Button>();
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            Debug.Log($"[PartyPrefabSetup] Created {path}");
+        }
+
+        [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Add Friend Panel")]
+        static void CreateAddFriendPanelPrefab()
+        {
+            string path = $"{PrefabFolder}/AddFriendPanel.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
+            {
+                Debug.Log($"[PartyPrefabSetup] Skipped — {path} already exists.");
+                return;
+            }
+
+            var root = CreateUIRoot("AddFriendPanel", 380, 180);
+
+            // Input row
+            var inputRow = new GameObject("InputRow", typeof(RectTransform));
+            inputRow.transform.SetParent(root.transform, false);
+            var inputRowRT = inputRow.GetComponent<RectTransform>();
+            inputRowRT.anchoredPosition = new Vector2(0, 30);
+            inputRowRT.sizeDelta = new Vector2(360, 40);
+            var inputHlg = inputRow.AddComponent<HorizontalLayoutGroup>();
+            inputHlg.spacing = 8;
+            inputHlg.childForceExpandWidth = false;
+            inputHlg.childForceExpandHeight = true;
+
+            // TMP_InputField
+            var inputFieldGo = new GameObject("NameInputField", typeof(RectTransform), typeof(Image));
+            inputFieldGo.transform.SetParent(inputRow.transform, false);
+            inputFieldGo.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f, 1f);
+            var inputFieldLE = inputFieldGo.AddComponent<LayoutElement>();
+            inputFieldLE.flexibleWidth = 1;
+            inputFieldLE.preferredHeight = 40;
+
+            // Text Area child for TMP_InputField
+            var textAreaGo = new GameObject("Text Area", typeof(RectTransform));
+            textAreaGo.transform.SetParent(inputFieldGo.transform, false);
+            var textAreaRT = textAreaGo.GetComponent<RectTransform>();
+            textAreaRT.anchorMin = Vector2.zero;
+            textAreaRT.anchorMax = Vector2.one;
+            textAreaRT.offsetMin = new Vector2(10, 0);
+            textAreaRT.offsetMax = new Vector2(-10, 0);
+
+            // Placeholder
+            var placeholderGo = new GameObject("Placeholder", typeof(RectTransform));
+            placeholderGo.transform.SetParent(textAreaGo.transform, false);
+            var placeholderRT = placeholderGo.GetComponent<RectTransform>();
+            placeholderRT.anchorMin = Vector2.zero;
+            placeholderRT.anchorMax = Vector2.one;
+            placeholderRT.offsetMin = Vector2.zero;
+            placeholderRT.offsetMax = Vector2.zero;
+            var placeholderTmp = placeholderGo.AddComponent<TextMeshProUGUI>();
+            placeholderTmp.text = "Enter player name...";
+            placeholderTmp.fontSize = 14;
+            placeholderTmp.fontStyle = FontStyles.Italic;
+            placeholderTmp.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+            placeholderTmp.alignment = TextAlignmentOptions.MidlineLeft;
+
+            // Input Text
+            var inputTextGo = new GameObject("Text", typeof(RectTransform));
+            inputTextGo.transform.SetParent(textAreaGo.transform, false);
+            var inputTextRT = inputTextGo.GetComponent<RectTransform>();
+            inputTextRT.anchorMin = Vector2.zero;
+            inputTextRT.anchorMax = Vector2.one;
+            inputTextRT.offsetMin = Vector2.zero;
+            inputTextRT.offsetMax = Vector2.zero;
+            var inputTextTmp = inputTextGo.AddComponent<TextMeshProUGUI>();
+            inputTextTmp.fontSize = 14;
+            inputTextTmp.color = Color.white;
+            inputTextTmp.alignment = TextAlignmentOptions.MidlineLeft;
+
+            var inputField = inputFieldGo.AddComponent<TMP_InputField>();
+            inputField.textViewport = textAreaRT;
+            inputField.textComponent = inputTextTmp;
+            inputField.placeholder = placeholderTmp;
+            inputField.fontAsset = inputTextTmp.font;
+
+            // Send button
+            var sendBtnGo = CreateChildButton(inputRow.transform, "SendButton", "Send", 70, 40, Vector2.zero);
+            sendBtnGo.GetComponent<Image>().color = new Color(0.2f, 0.6f, 1f, 1f);
+
+            // Feedback text
+            var feedbackGo = CreateChildText(root.transform, "FeedbackText", "", 13,
+                new Vector2(0, -20), new Vector2(360, 30));
+            var feedbackText = feedbackGo.GetComponent<TMP_Text>();
+            feedbackText.color = new Color(0.2f, 0.9f, 0.3f);
+
+            // Close button (top-right)
+            var closeBtnGo = CreateChildButton(root.transform, "CloseButton", "X", 30, 30,
+                new Vector2(165, 70));
+            closeBtnGo.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.4f, 1f);
+
+            // Add component and wire
+            var panel = root.AddComponent<AddFriendPanel>();
+            var so = new SerializedObject(panel);
+            so.FindProperty("nameInputField").objectReferenceValue = inputField;
+            so.FindProperty("sendButton").objectReferenceValue = sendBtnGo.GetComponent<Button>();
+            so.FindProperty("closeButton").objectReferenceValue = closeBtnGo.GetComponent<Button>();
+            so.FindProperty("feedbackText").objectReferenceValue = feedbackText;
+
+            // Wire FriendsDataSO if found
+            var friendsData = FindAsset<FriendsDataSO>();
+            WireIfExists(so, "friendsData", friendsData);
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            Debug.Log($"[PartyPrefabSetup] Created {path}");
+        }
+
+        [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Friends Panel")]
+        static void CreateFriendsPanelPrefab()
+        {
+            string path = $"{PrefabFolder}/FriendsPanel.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
+            {
+                Debug.Log($"[PartyPrefabSetup] Skipped — {path} already exists.");
+                return;
+            }
+
+            var root = CreateUIRoot("FriendsPanel", 420, 550);
+            var bg = root.AddComponent<Image>();
+            bg.color = new Color(0.08f, 0.08f, 0.12f, 0.95f);
+            var rootVlg = root.AddComponent<VerticalLayoutGroup>();
+            rootVlg.spacing = 4;
+            rootVlg.padding = new RectOffset(8, 8, 8, 8);
+            rootVlg.childForceExpandWidth = true;
+            rootVlg.childForceExpandHeight = false;
+
+            // ── Header Bar ──
+            var headerBar = new GameObject("HeaderBar", typeof(RectTransform));
+            headerBar.transform.SetParent(root.transform, false);
+            var headerBarLE = headerBar.AddComponent<LayoutElement>();
+            headerBarLE.preferredHeight = 40;
+            var headerBarHlg = headerBar.AddComponent<HorizontalLayoutGroup>();
+            headerBarHlg.spacing = 8;
+            headerBarHlg.padding = new RectOffset(4, 4, 4, 4);
+            headerBarHlg.childAlignment = TextAnchor.MiddleLeft;
+            headerBarHlg.childForceExpandWidth = false;
+            headerBarHlg.childForceExpandHeight = false;
+
+            // Header text
+            var headerTextGo = CreateChildText(headerBar.transform, "HeaderText", "Friends", 20,
+                Vector2.zero, new Vector2(200, 36));
+            var headerTextLE = headerTextGo.AddComponent<LayoutElement>();
+            headerTextLE.flexibleWidth = 1;
+            var headerTmp = headerTextGo.GetComponent<TMP_Text>();
+            headerTmp.alignment = TextAlignmentOptions.MidlineLeft;
+
+            // Requests badge
+            var badgeGo = CreateChildText(headerBar.transform, "RequestsBadge", "0", 12,
+                Vector2.zero, new Vector2(24, 24));
+            var badgeBg = badgeGo.AddComponent<Image>();
+            badgeBg.color = new Color(0.9f, 0.2f, 0.2f, 1f);
+            var badgeTmp = badgeGo.GetComponent<TMP_Text>();
+            badgeTmp.alignment = TextAlignmentOptions.Center;
+            var badgeLE = badgeGo.AddComponent<LayoutElement>();
+            badgeLE.preferredWidth = 24;
+            badgeLE.preferredHeight = 24;
+            badgeGo.SetActive(false);
+
+            // Refresh button
+            var refreshBtnGo = CreateChildButton(headerBar.transform, "RefreshButton", "Refresh", 70, 30, Vector2.zero);
+            refreshBtnGo.GetComponent<Image>().color = new Color(0.3f, 0.5f, 0.7f, 1f);
+
+            // Close button
+            var closeBtnGo = CreateChildButton(headerBar.transform, "CloseButton", "X", 30, 30, Vector2.zero);
+            closeBtnGo.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.4f, 1f);
+
+            // ── Tab Bar ──
+            var tabBar = new GameObject("TabBar", typeof(RectTransform));
+            tabBar.transform.SetParent(root.transform, false);
+            var tabBarLE = tabBar.AddComponent<LayoutElement>();
+            tabBarLE.preferredHeight = 36;
+            var tabBarHlg = tabBar.AddComponent<HorizontalLayoutGroup>();
+            tabBarHlg.spacing = 4;
+            tabBarHlg.childForceExpandWidth = true;
+            tabBarHlg.childForceExpandHeight = true;
+
+            var friendsTabGo = CreateChildButton(tabBar.transform, "FriendsTabButton", "Friends", 100, 32, Vector2.zero);
+            friendsTabGo.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.3f);
+
+            var requestsTabGo = CreateChildButton(tabBar.transform, "RequestsTabButton", "Requests", 100, 32, Vector2.zero);
+            requestsTabGo.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.1f);
+
+            var addFriendTabGo = CreateChildButton(tabBar.transform, "AddFriendTabButton", "Add Friend", 100, 32, Vector2.zero);
+            addFriendTabGo.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.1f);
+
+            // ── Friends List Content ──
+            var friendsListGo = new GameObject("FriendsListContent", typeof(RectTransform));
+            friendsListGo.transform.SetParent(root.transform, false);
+            var friendsListLE = friendsListGo.AddComponent<LayoutElement>();
+            friendsListLE.flexibleHeight = 1;
+
+            // Scroll view for friends
+            var friendsScrollGo = new GameObject("FriendsContainer", typeof(RectTransform));
+            friendsScrollGo.transform.SetParent(friendsListGo.transform, false);
+            var friendsScrollRT = friendsScrollGo.GetComponent<RectTransform>();
+            friendsScrollRT.anchorMin = Vector2.zero;
+            friendsScrollRT.anchorMax = Vector2.one;
+            friendsScrollRT.offsetMin = Vector2.zero;
+            friendsScrollRT.offsetMax = Vector2.zero;
+            var friendsVlg = friendsScrollGo.AddComponent<VerticalLayoutGroup>();
+            friendsVlg.spacing = 4;
+            friendsVlg.childForceExpandWidth = true;
+            friendsVlg.childForceExpandHeight = false;
+            var friendsCSF = friendsScrollGo.AddComponent<ContentSizeFitter>();
+            friendsCSF.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // Friends empty state
+            var friendsEmptyGo = CreateChildText(friendsListGo.transform, "FriendsEmptyState",
+                "No friends yet.\nAdd friends to see them here!", 14,
+                Vector2.zero, new Vector2(300, 60));
+            var friendsEmptyRT = friendsEmptyGo.GetComponent<RectTransform>();
+            friendsEmptyRT.anchorMin = new Vector2(0.5f, 0.5f);
+            friendsEmptyRT.anchorMax = new Vector2(0.5f, 0.5f);
+            var friendsEmptyText = friendsEmptyGo.GetComponent<TMP_Text>();
+            friendsEmptyText.color = new Color(0.6f, 0.6f, 0.6f);
+            friendsEmptyGo.SetActive(false);
+
+            // ── Requests List Content ──
+            var requestsListGo = new GameObject("RequestsListContent", typeof(RectTransform));
+            requestsListGo.transform.SetParent(root.transform, false);
+            var requestsListLE = requestsListGo.AddComponent<LayoutElement>();
+            requestsListLE.flexibleHeight = 1;
+            requestsListGo.SetActive(false);
+
+            // Scroll view for requests
+            var requestsScrollGo = new GameObject("RequestsContainer", typeof(RectTransform));
+            requestsScrollGo.transform.SetParent(requestsListGo.transform, false);
+            var requestsScrollRT = requestsScrollGo.GetComponent<RectTransform>();
+            requestsScrollRT.anchorMin = Vector2.zero;
+            requestsScrollRT.anchorMax = Vector2.one;
+            requestsScrollRT.offsetMin = Vector2.zero;
+            requestsScrollRT.offsetMax = Vector2.zero;
+            var requestsVlg = requestsScrollGo.AddComponent<VerticalLayoutGroup>();
+            requestsVlg.spacing = 4;
+            requestsVlg.childForceExpandWidth = true;
+            requestsVlg.childForceExpandHeight = false;
+            var requestsCSF = requestsScrollGo.AddComponent<ContentSizeFitter>();
+            requestsCSF.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // Requests empty state
+            var requestsEmptyGo = CreateChildText(requestsListGo.transform, "RequestsEmptyState",
+                "No pending requests.", 14,
+                Vector2.zero, new Vector2(300, 40));
+            var requestsEmptyRT = requestsEmptyGo.GetComponent<RectTransform>();
+            requestsEmptyRT.anchorMin = new Vector2(0.5f, 0.5f);
+            requestsEmptyRT.anchorMax = new Vector2(0.5f, 0.5f);
+            var requestsEmptyText = requestsEmptyGo.GetComponent<TMP_Text>();
+            requestsEmptyText.color = new Color(0.6f, 0.6f, 0.6f);
+            requestsEmptyGo.SetActive(false);
+
+            // ── Add Friend Content (embedded AddFriendPanel) ──
+            var addFriendGo = new GameObject("AddFriendContent", typeof(RectTransform));
+            addFriendGo.transform.SetParent(root.transform, false);
+            var addFriendLE = addFriendGo.AddComponent<LayoutElement>();
+            addFriendLE.flexibleHeight = 1;
+            addFriendGo.SetActive(false);
+
+            // Input row inside add friend content
+            var addInputRow = new GameObject("InputRow", typeof(RectTransform));
+            addInputRow.transform.SetParent(addFriendGo.transform, false);
+            var addInputRowRT = addInputRow.GetComponent<RectTransform>();
+            addInputRowRT.anchoredPosition = new Vector2(0, 30);
+            addInputRowRT.sizeDelta = new Vector2(380, 40);
+            var addInputHlg = addInputRow.AddComponent<HorizontalLayoutGroup>();
+            addInputHlg.spacing = 8;
+            addInputHlg.childForceExpandWidth = false;
+            addInputHlg.childForceExpandHeight = true;
+
+            // TMP_InputField for add friend
+            var addInputFieldGo = new GameObject("NameInputField", typeof(RectTransform), typeof(Image));
+            addInputFieldGo.transform.SetParent(addInputRow.transform, false);
+            addInputFieldGo.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f, 1f);
+            var addInputFieldLE = addInputFieldGo.AddComponent<LayoutElement>();
+            addInputFieldLE.flexibleWidth = 1;
+            addInputFieldLE.preferredHeight = 40;
+
+            var addTextArea = new GameObject("Text Area", typeof(RectTransform));
+            addTextArea.transform.SetParent(addInputFieldGo.transform, false);
+            var addTextAreaRT = addTextArea.GetComponent<RectTransform>();
+            addTextAreaRT.anchorMin = Vector2.zero;
+            addTextAreaRT.anchorMax = Vector2.one;
+            addTextAreaRT.offsetMin = new Vector2(10, 0);
+            addTextAreaRT.offsetMax = new Vector2(-10, 0);
+
+            var addPlaceholderGo = new GameObject("Placeholder", typeof(RectTransform));
+            addPlaceholderGo.transform.SetParent(addTextArea.transform, false);
+            var addPlaceholderRT = addPlaceholderGo.GetComponent<RectTransform>();
+            addPlaceholderRT.anchorMin = Vector2.zero;
+            addPlaceholderRT.anchorMax = Vector2.one;
+            addPlaceholderRT.offsetMin = Vector2.zero;
+            addPlaceholderRT.offsetMax = Vector2.zero;
+            var addPlaceholderTmp = addPlaceholderGo.AddComponent<TextMeshProUGUI>();
+            addPlaceholderTmp.text = "Enter player name...";
+            addPlaceholderTmp.fontSize = 14;
+            addPlaceholderTmp.fontStyle = FontStyles.Italic;
+            addPlaceholderTmp.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+            addPlaceholderTmp.alignment = TextAlignmentOptions.MidlineLeft;
+
+            var addInputTextGo = new GameObject("Text", typeof(RectTransform));
+            addInputTextGo.transform.SetParent(addTextArea.transform, false);
+            var addInputTextRT = addInputTextGo.GetComponent<RectTransform>();
+            addInputTextRT.anchorMin = Vector2.zero;
+            addInputTextRT.anchorMax = Vector2.one;
+            addInputTextRT.offsetMin = Vector2.zero;
+            addInputTextRT.offsetMax = Vector2.zero;
+            var addInputTextTmp = addInputTextGo.AddComponent<TextMeshProUGUI>();
+            addInputTextTmp.fontSize = 14;
+            addInputTextTmp.color = Color.white;
+            addInputTextTmp.alignment = TextAlignmentOptions.MidlineLeft;
+
+            var addInputField = addInputFieldGo.AddComponent<TMP_InputField>();
+            addInputField.textViewport = addTextAreaRT;
+            addInputField.textComponent = addInputTextTmp;
+            addInputField.placeholder = addPlaceholderTmp;
+            addInputField.fontAsset = addInputTextTmp.font;
+
+            var addSendBtnGo = CreateChildButton(addInputRow.transform, "SendButton", "Send", 70, 40, Vector2.zero);
+            addSendBtnGo.GetComponent<Image>().color = new Color(0.2f, 0.6f, 1f, 1f);
+
+            var addFeedbackGo = CreateChildText(addFriendGo.transform, "FeedbackText", "", 13,
+                new Vector2(0, -20), new Vector2(360, 30));
+            var addFeedbackText = addFeedbackGo.GetComponent<TMP_Text>();
+            addFeedbackText.color = new Color(0.2f, 0.9f, 0.3f);
+
+            // Attach AddFriendPanel component to the add friend content
+            var addFriendPanel = addFriendGo.AddComponent<AddFriendPanel>();
+            var addFriendSO = new SerializedObject(addFriendPanel);
+            addFriendSO.FindProperty("nameInputField").objectReferenceValue = addInputField;
+            addFriendSO.FindProperty("sendButton").objectReferenceValue = addSendBtnGo.GetComponent<Button>();
+            addFriendSO.FindProperty("feedbackText").objectReferenceValue = addFeedbackText;
+            var friendsData = FindAsset<FriendsDataSO>();
+            WireIfExists(addFriendSO, "friendsData", friendsData);
+            addFriendSO.ApplyModifiedPropertiesWithoutUndo();
+
+            // ── Wire FriendsPanel component ──
+            var friendsPanel = root.AddComponent<FriendsPanel>();
+            var so = new SerializedObject(friendsPanel);
+
+            // SOAP Data
+            WireIfExists(so, "friendsData", friendsData);
+            var connectionData = FindAsset<HostConnectionDataSO>();
+            WireIfExists(so, "connectionData", connectionData);
+
+            // Tab Buttons
+            so.FindProperty("friendsTabButton").objectReferenceValue = friendsTabGo.GetComponent<Button>();
+            so.FindProperty("requestsTabButton").objectReferenceValue = requestsTabGo.GetComponent<Button>();
+            so.FindProperty("addFriendTabButton").objectReferenceValue = addFriendTabGo.GetComponent<Button>();
+
+            // Tab Content Panels
+            so.FindProperty("friendsListContent").objectReferenceValue = friendsListGo;
+            so.FindProperty("requestsListContent").objectReferenceValue = requestsListGo;
+            so.FindProperty("addFriendContent").objectReferenceValue = addFriendPanel;
+
+            // Friends List
+            var friendEntryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/FriendEntryView.prefab");
+            WireIfExists(so, "friendEntryPrefab", friendEntryPrefab);
+            so.FindProperty("friendsContainer").objectReferenceValue = friendsScrollGo.transform;
+            so.FindProperty("friendsEmptyState").objectReferenceValue = friendsEmptyGo;
+
+            // Requests List
+            var requestEntryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/FriendRequestEntryView.prefab");
+            WireIfExists(so, "friendRequestEntryPrefab", requestEntryPrefab);
+            so.FindProperty("requestsContainer").objectReferenceValue = requestsScrollGo.transform;
+            so.FindProperty("requestsEmptyState").objectReferenceValue = requestsEmptyGo;
+
+            // Header
+            so.FindProperty("headerText").objectReferenceValue = headerTmp;
+            so.FindProperty("requestsBadge").objectReferenceValue = badgeTmp;
+            so.FindProperty("closeButton").objectReferenceValue = closeBtnGo.GetComponent<Button>();
+            so.FindProperty("refreshButton").objectReferenceValue = refreshBtnGo.GetComponent<Button>();
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            root.SetActive(false);
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            Debug.Log($"[PartyPrefabSetup] Created {path}");
+        }
+
+        // ── Online / Party Prefabs ──────────────────────────────────────────
 
         [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Online Player Entry")]
         static void CreateOnlinePlayerEntryPrefab()
