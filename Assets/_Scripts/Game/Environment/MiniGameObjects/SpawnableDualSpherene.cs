@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
@@ -190,24 +191,9 @@ namespace CosmicShore
                     edgeDomain, pentagonDomain, highlightPentagons, seed));
         }
 
-        /// <summary>
-        /// Two-octave Perlin noise sampled from a unit-sphere direction.
-        /// Returns a value in roughly [-1, 1].
-        /// </summary>
         float SampleUndulation(Vector3 normal)
         {
-            float noise = Mathf.PerlinNoise(
-                (normal.x + 1f) * undulationFrequency + undulationPhase,
-                (normal.y + 1f) * undulationFrequency + undulationPhase * 0.7f
-            ) * 2f - 1f;
-
-            // Second octave for more organic feel
-            noise += 0.5f * (Mathf.PerlinNoise(
-                (normal.z + 1f) * undulationFrequency * 2f + undulationPhase * 1.3f,
-                (normal.x + 1f) * undulationFrequency * 2f + undulationPhase * 0.4f
-            ) * 2f - 1f);
-
-            return noise / 1.5f;
+            return DualMeshUtility.SampleUndulation(normal, undulationFrequency, undulationPhase);
         }
 
         /// <summary>
