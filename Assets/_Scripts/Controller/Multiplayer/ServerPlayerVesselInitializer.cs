@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using Cysharp.UniTask;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;

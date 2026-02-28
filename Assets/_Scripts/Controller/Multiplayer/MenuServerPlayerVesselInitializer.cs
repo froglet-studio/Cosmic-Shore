@@ -1,6 +1,6 @@
 using System.Threading;
 using CosmicShore.Utility;
-using Cysharp.UniTask;
+using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Gameplay
 {
