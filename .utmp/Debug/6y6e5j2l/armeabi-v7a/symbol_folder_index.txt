@@ -1,1 +1,0 @@
-C:\Users\gradi\source\repos\Star-Writer2\Library\PramData\AndroidApplicationController\Cache\com.FrogletGames.TailGlider\gradle-project\unityLibrary\build\intermediates\cxx\Debug\6y6e5j2l\obj\armeabi-v7a

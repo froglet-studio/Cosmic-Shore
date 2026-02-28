@@ -1,1 +1,0 @@
-C:\Users\gradi\source\repos\Star-Writer2\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\FramePacing\UnitySwappyWrapper.h
