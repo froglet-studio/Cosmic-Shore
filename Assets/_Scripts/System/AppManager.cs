@@ -445,9 +445,7 @@ namespace CosmicShore.Core
 
             gameData.ResetAllData();
 
-            // Set sane defaults; the actual game mode, player count, and
-            // intensity are configured by PartyGameLauncher when the host
-            // picks a mode and presses play.
+            // Set sane defaults for the menu scene.
             gameData.SelectedPlayerCount.Value = 1;
             gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
             gameData.SelectedIntensity.Value = 1;

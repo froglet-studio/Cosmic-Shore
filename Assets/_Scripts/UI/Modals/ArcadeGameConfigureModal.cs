@@ -2,7 +2,6 @@ using CosmicShore.ScriptableObjects;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
-using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -30,10 +29,6 @@ namespace CosmicShore.UI
         [Header("Shared Game Data")]
         [Inject] private GameDataSO gameData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
-
-        [Header("Party Launcher")]
-        [Tooltip("Handles multiplayer game launch with party reconciliation. Optional — if null, falls back to startGameRequestedEvent.")]
-        [SerializeField] private PartyGameLauncher partyGameLauncher;
 
         [Header("External Views")]
         [SerializeField] private ArcadeExploreView arcadeExploreView;
@@ -453,18 +448,6 @@ namespace CosmicShore.UI
         public void OnStartGameClicked()
         {
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
-
-            // Route multiplayer modes through PartyGameLauncher for
-            // party reconciliation (AI backfill, kick extras).
-            if (_selectedGame != null && _selectedGame.IsMultiplayer
-                && _selectedGame.Mode == GameModes.MultiplayerFreestyle
-                && partyGameLauncher != null)
-            {
-                partyGameLauncher.LaunchMultiplayerFreestyle(
-                    config.PlayerCount,
-                    config.Intensity);
-                return;
-            }
 
             startGameRequestedEvent?.Raise();
         }

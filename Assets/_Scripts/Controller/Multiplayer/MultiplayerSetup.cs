@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.WaitUntil(() => !networkManager.IsListening);
             }
 
-            // If a party session was already handed off (e.g. from PartyGameLauncher),
+            // If a party session was already handed off,
             // skip matchmaking and use the existing session directly.
             if (gameData.ActiveSession != null)
             {

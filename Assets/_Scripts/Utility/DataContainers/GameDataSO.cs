@@ -66,7 +66,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Number of AI players to backfill in multiplayer when not enough
-        /// human players are present. Set by PartyGameLauncher before launch.
+        /// human players are present.
         /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
         /// </summary>
         public int RequestedAIBackfillCount;

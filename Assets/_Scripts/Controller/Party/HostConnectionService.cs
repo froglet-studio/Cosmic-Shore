@@ -249,15 +249,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// Hands the active party session off to GameDataSO for game launch.
-        /// </summary>
-        public void HandOffToMultiplayerSetup(GameDataSO gameData)
-        {
-            if (_partySession != null)
-                gameData.ActiveSession = _partySession;
-        }
-
         public ISession PartySession => _partySession;
 
         /// <summary>
