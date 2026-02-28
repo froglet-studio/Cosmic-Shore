@@ -718,9 +718,6 @@ Recipient's refresh loop detects invite
 | `FriendRequestEntryView` | `_Scripts/UI/Views/` | Request row: incoming (accept/decline) or outgoing (cancel) |
 | `AddFriendPanel` | `_Scripts/UI/Views/` | Text input for friend requests by name |
 | `PartyInviteNotificationPanel` | `_Scripts/UI/Screens/` | Invite popup with accept/decline + auto-decline timeout |
-| `InviteNotificationUI` | `_Scripts/UI/Views/` | Alternative invite popup with transition indicator |
-| `FriendRequestNotificationUI` | `_Scripts/UI/Views/` | Toast notification for incoming friend requests |
-| `PartyManager` | `_Scripts/UI/Views/` | Legacy facade bridging old C# events to SOAP |
 
 #### SO Assets
 
@@ -749,9 +746,8 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 #### Scene Setup Checklist (Menu_Main)
 
 1. **Persistent GameObjects** (in Bootstrap scene, `DontDestroyOnLoad`):
-   - `HostConnectionService` + `PartyInviteController` + `FriendsInitializer` + `PartyManager` on same GameObject
+   - `HostConnectionService` + `PartyInviteController` + `FriendsInitializer` on same GameObject
    - Wire `HostConnectionDataSO`, `AuthenticationDataVariable` in inspector
-   - Wire auth SOAP events (`OnSignedIn` → `HandleSignedInEvent`, `OnSignedOut` → `HandleSignedOutEvent`) via `EventListenerNoParam`
 2. **AppManager** (Bootstrap scene):
    - Assign `HostConnectionData.asset` to `hostConnectionData` field
 3. **Menu_Main scene UI**:
@@ -903,7 +899,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
-| Party UI | `PartyAreaPanel` (3-slot), `PartyArcadeView` (4-slot), `PartySlotView`, `OnlinePlayersPanel`, `OnlinePlayerEntry`, `FriendsPanel`, `FriendEntryView`, `AddFriendPanel`, `PartyInviteNotificationPanel`, `InviteNotificationUI`, `PartyManager` (legacy facade) | `_Scripts/UI/Views/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Screens/` |
+| Party UI | `PartyAreaPanel` (3-slot), `PartyArcadeView` (4-slot), `PartySlotView`, `OnlinePlayersPanel`, `OnlinePlayerEntry`, `FriendsPanel`, `FriendEntryView`, `AddFriendPanel`, `PartyInviteNotificationPanel` | `_Scripts/UI/Views/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Screens/` |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
 | Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
