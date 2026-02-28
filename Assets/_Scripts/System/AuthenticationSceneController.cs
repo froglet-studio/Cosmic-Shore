@@ -59,6 +59,7 @@ namespace CosmicShore.Core
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
         [Inject] private PlayerDataService _playerDataService;
+        [Inject] private GameDataSO _gameData;
         [Inject] private SceneNameListSO _sceneNames;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
         [Inject] private ApplicationStateMachine _appStateMachine;
@@ -505,6 +506,12 @@ namespace CosmicShore.Core
 
             // Register connection approval so the host's player object is created.
             nm.ConnectionApprovalCallback += OnConnectionApproval;
+
+            // Reset vessel class so the Player spawned by StartHost() defers
+            // to MainMenuController.ConfigureMenuGameData() instead of
+            // committing to a stale value from a previous session or bootstrap.
+            if (_gameData != null)
+                _gameData.selectedVesselClass.Value = VesselClassType.Random;
 
             CSDebug.Log("[AuthScene] Starting network host...");
             nm.StartHost();

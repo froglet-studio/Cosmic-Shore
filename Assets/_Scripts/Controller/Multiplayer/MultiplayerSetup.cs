@@ -6,11 +6,20 @@ using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Handles network host startup and multiplayer session management.
+    ///
+    /// Execution order is set to -10 so Start() runs before MainMenuController (default 0).
+    /// This ensures the Netcode host is running and scene-placed NetworkBehaviours have
+    /// received OnNetworkSpawn before MainMenuController.Start() fires InitializeGame.
+    /// </summary>
+    [DefaultExecutionOrder(-10)]
     public class MultiplayerSetup : MonoBehaviour
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
@@ -122,6 +131,15 @@ namespace CosmicShore.Gameplay
                     CSDebug.Log("[MultiplayerSetup] Host already running.");
                     return;
                 }
+
+                // Reset vessel class to Random before starting the host so the
+                // Player object spawned by StartHost() defers its vessel type
+                // assignment. The scene controller (MainMenuController) will set
+                // the actual vessel class in its Start(), which fires the
+                // OnValueChanged callback the Player is waiting for.
+                // Without this, the Player could pick up a stale value from a
+                // previous gameplay session and commit to the wrong vessel type.
+                gameData.selectedVesselClass.Value = VesselClassType.Random;
 
                 CSDebug.Log("[MultiplayerSetup] Starting as Host.");
                 nm.StartHost();
