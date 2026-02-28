@@ -89,6 +89,20 @@ namespace CosmicShore.Gameplay
 
             _cts = new CancellationTokenSource();
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
+
+            // Process players that were already spawned before this initializer
+            // existed (e.g. the host's Player object spawned in the Auth scene
+            // before Menu_Main loaded). Their SOAP event was already raised and missed.
+            ProcessPreExistingPlayers();
+        }
+
+        void ProcessPreExistingPlayers()
+        {
+            foreach (var p in gameData.Players)
+            {
+                if (p is Player netPlayer && netPlayer.IsSpawned)
+                    HandlePlayerNetworkSpawned(netPlayer.OwnerClientId);
+            }
         }
 
         protected virtual void OnNetworkDespawn()
