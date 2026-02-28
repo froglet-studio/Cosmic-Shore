@@ -71,7 +71,7 @@ Assets/
 │   │   ├── Player/            # Player (NetworkBehaviour), PlayerSpawner, IPlayer, PlayerSpawnerAdapterBase, MiniGamePlayerSpawnerAdapter
 │   │   ├── Prisms/            # PrismFactory
 │   │   ├── Assemblers/        # Gyroid/wall assembly systems
-│   │   ├── Party/             # Party/social system
+│   │   ├── Party/             # HostConnectionService, PartyInviteController, FriendsInitializer
 │   │   ├── AI/                # AIPilot, AIGunner
 │   │   ├── FX/                # Visual effects controllers
 │   │   ├── ECS/               # DOTS entity components
@@ -251,8 +251,8 @@ Bootstrap Scene (build index 0)
 │
 ├─ AppManager.InstallBindings() (Reflex IInstaller)
 │   ├─ RegisterValue: SceneNameListSO, GameDataSO, AuthenticationDataVariable,
-│   │   NetworkMonitorDataVariable, FriendsDataSO, ApplicationLifecycleEventsContainerSO,
-│   │   ApplicationStateDataVariable
+│   │   NetworkMonitorDataVariable, FriendsDataSO, HostConnectionDataSO,
+│   │   ApplicationLifecycleEventsContainerSO, ApplicationStateDataVariable
 │   ├─ RegisterFactory (Lazy Singleton): GameSetting, AudioSystem, PlayerDataService,
 │   │   UGSStatsManager, CaptainManager, IAPManager, SceneLoader, ThemeManager,
 │   │   CameraManager, PostProcessingManager, StatsManager, SceneTransitionManager
@@ -462,7 +462,7 @@ Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or 
 
 The project uses Reflex DI with `AppManager` as the root `IInstaller`. All persistent services and shared assets are registered in `AppManager.InstallBindings()`:
 
-**SO asset registration** (`RegisterValue`): `SceneNameListSO`, `GameDataSO`, `AuthenticationDataVariable`, `NetworkMonitorDataVariable`, `FriendsDataSO`, `ApplicationLifecycleEventsContainerSO`, `ApplicationStateDataVariable`. These are project-level assets wired via inspector on AppManager.
+**SO asset registration** (`RegisterValue`): `SceneNameListSO`, `GameDataSO`, `AuthenticationDataVariable`, `NetworkMonitorDataVariable`, `FriendsDataSO`, `HostConnectionDataSO`, `ApplicationLifecycleEventsContainerSO`, `ApplicationStateDataVariable`. These are project-level assets wired via inspector on AppManager.
 
 **MonoBehaviour singleton registration** (`RegisterFactory`, Lazy): `GameSetting`, `AudioSystem`, `PlayerDataService`, `UGSStatsManager`, `CaptainManager`, `IAPManager`, `SceneLoader`, `ThemeManager`, `CameraManager`, `PostProcessingManager`, `StatsManager`, `SceneTransitionManager`. These use a lazy factory that prefers the serialized reference and falls back to a scene search at first injection time.
 
@@ -634,6 +634,144 @@ MiniGamePlayerSpawnerAdapter.InitializeGame() [on OnInitializeGame]
 | Menu scene controller | `MainMenuController.cs` | `_Scripts/System/` |
 | Menu sub-state enum | `MainMenuState.cs` | `_Scripts/Data/Enums/` |
 
+### Party / Invite Lobby System
+
+The invite lobby system enables multiplayer freestyle roaming in Menu_Main. Players discover each other via a shared **presence lobby** (UGS session without Relay) and send invites. Accepting an invite transitions the recipient from local host to Relay client, connecting to the inviter's party session. The host's `MenuServerPlayerVesselInitializer` spawns a vessel for the joining client with autopilot enabled.
+
+#### Two-Level Session Architecture
+
+| Layer | Purpose | Relay? | Max Players |
+|---|---|---|---|
+| **Presence Lobby** | Player discovery, invite property exchange | No (lobby-only) | 100 |
+| **Party Session** | Actual gameplay networking via Relay | Yes (`WithRelayNetwork()`) | 4 |
+
+The presence lobby is a lobby-only UGS session (no Relay transport) that coexists safely with an active NetworkManager. Players set their own player properties to send invites — no host privilege required.
+
+#### Core Services
+
+- **`HostConnectionService`** (`_Scripts/Controller/Party/`) — Singleton + `DontDestroyOnLoad`. Single-writer to `HostConnectionDataSO`. Auto-joins the presence lobby on auth sign-in. Periodically refreshes (3s) to sync online player list and detect incoming invites. Manages party session creation (with Relay) for actual gameplay.
+- **`PartyInviteController`** (`_Scripts/Controller/Party/`) — Singleton + `DontDestroyOnLoad`. Orchestrates Netcode transitions: host→client for accepting invites, local→Relay for sending first invite. Uses `UniTask` + `CancellationToken` with configurable timeouts. Recovers from failed transitions by restarting local host.
+- **`FriendsInitializer`** (`_Scripts/Controller/Party/`) — MonoBehaviour bridge. Initializes `FriendsServiceFacade` on auth sign-in. Manages presence updates for scene transitions.
+
+#### SOAP Data Containers
+
+- **`HostConnectionDataSO`** (`_Scripts/Utility/DataContainers/`) — Central data container for all party/lobby state. SOAP events: `OnHostConnectionEstablished`, `OnHostConnectionLost`, `OnPartyMemberJoined`, `OnPartyMemberLeft`, `OnPartyMemberKicked`, `OnInviteReceived`, `OnInviteSent`, `OnPartyJoinCompleted`. SOAP lists: `OnlinePlayers`, `PartyMembers`. Registered in AppManager DI.
+- **`FriendsDataSO`** (`_Scripts/Utility/DataContainers/`) — Friends service state. SOAP lists: `Friends`, `IncomingRequests`, `OutgoingRequests`, `BlockedPlayers`. SOAP events: `OnFriendAdded`, `OnFriendRemoved`, `OnFriendRequestReceived`, `OnFriendsServiceReady`.
+
+#### SOAP Types (PartyData)
+
+Location: `_Scripts/ScriptableObjects/SOAP/ScriptablePartyData/`
+
+| Type | Purpose |
+|---|---|
+| `PartyInviteData` | Immutable invite payload: hostPlayerId, partySessionId, hostDisplayName, hostAvatarId |
+| `PartyPlayerData` | Immutable player identity: playerId, displayName, avatarId (equality by playerId) |
+| `ScriptableEventPartyInviteData` | SOAP event for invite notifications |
+| `ScriptableEventPartyPlayerData` | SOAP event for party member changes |
+| `ScriptableListPartyPlayerData` | SOAP reactive list for online players / party members |
+| `EventListenerPartyInviteData` | MonoBehaviour listener for invite events |
+| `EventListenerPartyPlayerData` | MonoBehaviour listener for party member events |
+
+#### Invite Flow
+
+```
+Sender presses "+" on empty party slot
+  ├─ PartyAreaPanel.OnAddSlotPressed() / PartyArcadeView.OnAddSlotPressed()
+  ├─ PartyInviteController.TransitionToPartyHostAsync() [if first invite]
+  │   ├─ CleanUpCurrentSession() — despawn menu vessels
+  │   ├─ ShutdownNetworkManagerAsync() — shutdown local host
+  │   ├─ HostConnectionService.CreatePartySessionPublicAsync() — Relay party session
+  │   └─ Load Menu_Main as network scene
+  ├─ OnlinePlayersPanel.Show() — display all online players
+  └─ User clicks "+" on a player entry
+      └─ HostConnectionService.SendInviteAsync(targetPlayerId)
+          ├─ Sets own player properties: invite_target, invite_data
+          └─ OnInviteSent SOAP event
+
+Recipient's refresh loop detects invite
+  ├─ HostConnectionService.RefreshAsync() [every 3s]
+  │   └─ Scans all lobby players' properties for invite_target matching local ID
+  ├─ OnInviteReceived SOAP event raised
+  ├─ PartyInviteNotificationPanel shows Accept/Decline
+  └─ User presses Accept
+      └─ PartyInviteController.AcceptInviteAsync(invite)
+          ├─ CleanUpCurrentSession()
+          ├─ ShutdownNetworkManagerAsync() — shutdown local host
+          ├─ HostConnectionService.AcceptInviteAsync() — join party session via Relay
+          ├─ WaitForClientConnectionAsync() — poll nm.IsConnectedClient
+          ├─ WaitForSceneLoadAsync() — wait for Menu_Main scene sync
+          ├─ OnPartyJoinCompleted SOAP event
+          └─ Host's MenuServerPlayerVesselInitializer spawns vessel + autopilot
+```
+
+#### UI Components
+
+| Component | File | Purpose |
+|---|---|---|
+| `PartyAreaPanel` | `_Scripts/UI/Elements/` | 3-slot party panel for Home screen |
+| `PartyArcadeView` | `_Scripts/UI/Views/` | 4-slot party panel for Arcade screen with friends button |
+| `PartySlotView` | `_Scripts/UI/Views/` | Single slot: occupied (avatar + name) or empty ("+" button) |
+| `OnlinePlayersPanel` | `_Scripts/UI/Views/` | Modal listing all online players with invite + add friend buttons |
+| `OnlinePlayerEntry` | `_Scripts/UI/Views/` | Individual row in online players panel |
+| `FriendsPanel` | `_Scripts/UI/Views/` | Tabbed panel: friends list, requests, add friend |
+| `FriendEntryView` | `_Scripts/UI/Views/` | Friend row with online status, invite, remove buttons |
+| `FriendRequestEntryView` | `_Scripts/UI/Views/` | Request row: incoming (accept/decline) or outgoing (cancel) |
+| `AddFriendPanel` | `_Scripts/UI/Views/` | Text input for friend requests by name |
+| `PartyInviteNotificationPanel` | `_Scripts/UI/Screens/` | Invite popup with accept/decline + auto-decline timeout |
+| `InviteNotificationUI` | `_Scripts/UI/Views/` | Alternative invite popup with transition indicator |
+| `FriendRequestNotificationUI` | `_Scripts/UI/Views/` | Toast notification for incoming friend requests |
+| `PartyManager` | `_Scripts/UI/Views/` | Legacy facade bridging old C# events to SOAP |
+
+#### SO Assets
+
+Location: `_SO_Assets/Host Connection Data/`
+
+| Asset | Type |
+|---|---|
+| `HostConnectionData.asset` | `HostConnectionDataSO` |
+| `Event_HostConnectionEstablished.asset` | `ScriptableEventNoParam` |
+| `Event_HostConnectionLost.asset` | `ScriptableEventNoParam` |
+| `Event_InviteReceived.asset` | `ScriptableEventPartyInviteData` |
+| `Event_InviteSent.asset` | `ScriptableEventPartyPlayerData` |
+| `Event_PartyMemberJoined.asset` | `ScriptableEventPartyPlayerData` |
+| `Event_PartyMemberLeft.asset` | `ScriptableEventPartyPlayerData` |
+| `Event_PartyMemberKicked.asset` | `ScriptableEventPartyPlayerData` |
+| `Event_PartyJoinCompleted.asset` | `ScriptableEventNoParam` |
+| `List_OnlinePlayers.asset` | `ScriptableListPartyPlayerData` |
+| `List_PartyMembers.asset` | `ScriptableListPartyPlayerData` |
+
+#### Prefabs
+
+Location: `_Prefabs/UI Elements/Panels/Party/`
+
+Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate missing prefabs with auto-wired component references. SO data container references (`HostConnectionDataSO`, `FriendsDataSO`, `SO_ProfileIconList`) must be wired manually in the inspector after creation.
+
+#### Scene Setup Checklist (Menu_Main)
+
+1. **Persistent GameObjects** (in Bootstrap scene, `DontDestroyOnLoad`):
+   - `HostConnectionService` + `PartyInviteController` + `FriendsInitializer` + `PartyManager` on same GameObject
+   - Wire `HostConnectionDataSO`, `AuthenticationDataVariable` in inspector
+   - Wire auth SOAP events (`OnSignedIn` → `HandleSignedInEvent`, `OnSignedOut` → `HandleSignedOutEvent`) via `EventListenerNoParam`
+2. **AppManager** (Bootstrap scene):
+   - Assign `HostConnectionData.asset` to `hostConnectionData` field
+3. **Menu_Main scene UI**:
+   - `PartyAreaPanel` or `PartyArcadeView` as child of Home/Arcade screen
+   - `OnlinePlayersPanel`, `FriendsPanel`, `PartyInviteNotificationPanel` as children of party area (start inactive)
+   - Wire `HostConnectionData.asset` into all party UI components
+   - Wire `FriendsData.asset` into `FriendsPanel` and `PartyArcadeView`
+   - Wire `OnlinePlayerEntry` prefab into `OnlinePlayersPanel.playerEntryPrefab`
+   - Wire `FriendEntryView` prefab into `FriendsPanel.friendEntryPrefab`
+   - Wire `FriendRequestEntryView` prefab into `FriendsPanel.friendRequestEntryPrefab`
+
+#### Party System Patterns to Follow
+
+- **Single writer**: Only `HostConnectionService` writes to `HostConnectionDataSO`. UI reads via SOAP events/lists.
+- **Player properties for invites**: Use per-player properties (not session properties) so any lobby member can send invites.
+- **Lobby-only session**: Presence lobby uses no Relay — coexists with active NetworkManager.
+- **UniTask + CancellationToken**: All async transitions use `UniTask` with linked CTS for timeouts.
+- **Dedup guard**: `_lastFiredInvite` prevents re-firing the same invite on repeated refreshes.
+- **Client autopilot**: `MainMenuController.HandleMenuReady()` activates autopilot for the local player's vessel, ensuring both host and joining clients start in autopilot mode.
+
 ### FTUE (First-Time User Experience)
 
 Tutorial system at `Assets/FTUE/` (25 C# files) using adapter pattern with clean interface separation:
@@ -764,6 +902,8 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
+| Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
+| Party UI | `PartyAreaPanel` (3-slot), `PartyArcadeView` (4-slot), `PartySlotView`, `OnlinePlayersPanel`, `OnlinePlayerEntry`, `FriendsPanel`, `FriendEntryView`, `AddFriendPanel`, `PartyInviteNotificationPanel`, `InviteNotificationUI`, `PartyManager` (legacy facade) | `_Scripts/UI/Views/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Screens/` |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
 | Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
