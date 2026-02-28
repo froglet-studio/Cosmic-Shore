@@ -3,6 +3,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -11,12 +12,13 @@ namespace CosmicShore.Gameplay
     /// Toggles between menu state (autopilot + menu UI) and freestyle state
     /// (player control + freestyle UI) on Menu_Main.
     ///
-    /// Raises SOAP events via <see cref="MenuFreestyleEventsContainerSO"/> so decoupled
-    /// systems (<see cref="Core.MainMenuController"/> for camera switching,
-    /// ScreenSwitcher, NavBar, HUD) can react without direct references.
+    /// Operates exclusively on <see cref="GameDataSO.LocalPlayer"/> — in multiplayer,
+    /// each client has its own instance controlling only the locally-owned vessel.
+    /// Other clients' vessels are unaffected by this toggle.
     ///
-    /// Camera switching is handled by <see cref="Core.MainMenuController"/> in response
-    /// to the freestyle SOAP events.
+    /// Raises SOAP events via <see cref="MenuFreestyleEventsContainerSO"/> so decoupled
+    /// systems (<see cref="Core.MainMenuController"/> for camera switching + state tracking,
+    /// ScreenSwitcher, NavBar, HUD) can react without direct references.
     ///
     /// Transition is triggered externally via <see cref="ToggleTransition"/> (e.g. from a UI button).
     /// </summary>
@@ -67,13 +69,21 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Toggles between menu and freestyle states.
-        /// Safe to call from a UI Button — silently ignored while transitioning
-        /// or before the local player vessel is ready.
+        /// Safe to call from a UI Button — silently ignored while transitioning,
+        /// before the local player vessel is ready, or if the local player does
+        /// not own their vessel (multiplayer ownership guard).
         /// </summary>
         public void ToggleTransition()
         {
             if (_isTransitioning) return;
-            if (gameData.LocalPlayer?.Vessel == null) return;
+
+            var localPlayer = gameData.LocalPlayer;
+            if (localPlayer?.Vessel == null) return;
+
+            // Only the owner of the vessel can toggle their own freestyle state.
+            // In multiplayer, LocalPlayer is always the locally-owned player,
+            // but guard explicitly in case of edge cases.
+            if (!localPlayer.IsLocalUser) return;
 
             if (_isInFreestyle)
                 TransitionToMenu().Forget();
@@ -92,7 +102,11 @@ namespace CosmicShore.Gameplay
             // Fade out menu UI, fade in freestyle UI
             await FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct);
 
-            PauseSystem.TogglePauseGame(false);
+            // In multiplayer, avoid touching Time.timeScale — it would freeze all
+            // local rendering including other players' vessels. Only unpause for
+            // single-player (local host with no remote clients).
+            if (!IsMultiplayerSession())
+                PauseSystem.TogglePauseGame(false);
 
             player.Vessel.ToggleAIPilot(false);
             player.InputController.SetPause(false);
@@ -100,7 +114,7 @@ namespace CosmicShore.Gameplay
             _isInFreestyle = true;
             _isTransitioning = false;
 
-            // Camera switching handled by MainMenuController via this event
+            // State tracking + camera switching handled by MainMenuController via this event
             freestyleEvents.OnEnterFreestyle.Raise();
         }
 
@@ -113,7 +127,7 @@ namespace CosmicShore.Gameplay
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // Camera switching handled by MainMenuController via this event
+            // State tracking + camera switching handled by MainMenuController via this event
             freestyleEvents.OnExitFreestyle.Raise();
 
             // Fade out freestyle UI, fade in menu UI
@@ -121,6 +135,21 @@ namespace CosmicShore.Gameplay
 
             _isInFreestyle = false;
             _isTransitioning = false;
+        }
+
+        #endregion
+
+        #region Multiplayer Helpers
+
+        /// <summary>
+        /// Returns true when a NetworkManager is active and has remote clients connected,
+        /// indicating a multiplayer party session (not just a local host).
+        /// </summary>
+        static bool IsMultiplayerSession()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return false;
+            return nm.ConnectedClientsIds.Count > 1;
         }
 
         #endregion

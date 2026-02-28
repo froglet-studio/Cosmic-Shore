@@ -21,13 +21,20 @@ namespace CosmicShore.Core
     ///   1. Configure game data for the autopilot vessel display.
     ///   2. Track menu readiness via <see cref="MainMenuState"/> transitions.
     ///   3. Signal state changes so other menu systems can react.
+    ///   4. Activate non-local player vessels for multiplayer party sessions.
     ///
     /// Single-writer: only this class transitions the menu state.
     ///
     /// Flow:
-    ///   None → Initializing  : Start() — configures game data, fires InitializeGame
-    ///   Initializing → Ready : OnMenuReady SOAP event (autopilot vessel spawned and active)
-    ///   Ready → LaunchingGame: OnLaunchGame SOAP event (player selected a game mode)
+    ///   None → Initializing   : Start() — configures game data, fires InitializeGame
+    ///   Initializing → Ready  : OnClientReady SOAP event (autopilot vessel spawned and active)
+    ///   Ready → Freestyle     : OnEnterFreestyle SOAP event (local player takes vessel control)
+    ///   Freestyle → Ready     : OnExitFreestyle SOAP event (local player returns to autopilot)
+    ///   Ready → LaunchingGame : OnLaunchGame SOAP event (player selected a game mode)
+    ///   Freestyle → LaunchingGame : can launch directly from freestyle
+    ///
+    /// In multiplayer party sessions, each client independently toggles between
+    /// Ready and Freestyle for their own vessel. The state is local to each client.
     /// </summary>
     public class MainMenuController : MonoBehaviour
     {
@@ -77,7 +84,13 @@ namespace CosmicShore.Core
             [MainMenuState.Ready] = new HashSet<MainMenuState>
             {
                 MainMenuState.LaunchingGame,
+                MainMenuState.Freestyle,
                 MainMenuState.Initializing, // re-enter from scene reload
+            },
+            [MainMenuState.Freestyle] = new HashSet<MainMenuState>
+            {
+                MainMenuState.Ready,
+                MainMenuState.LaunchingGame, // can launch game from freestyle
             },
             [MainMenuState.LaunchingGame] = new HashSet<MainMenuState>
             {
@@ -112,8 +125,8 @@ namespace CosmicShore.Core
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised += HandleLaunchGame;
 
-            _freestyleEvents.OnEnterFreestyle.OnRaised += ActivateGameplayCamera;
-            _freestyleEvents.OnExitFreestyle.OnRaised += ActivateMenuCamera;
+            _freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
+            _freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
         }
 
         void UnsubscribeEvents()
@@ -124,8 +137,8 @@ namespace CosmicShore.Core
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised -= HandleLaunchGame;
 
-            _freestyleEvents.OnEnterFreestyle.OnRaised -= ActivateGameplayCamera;
-            _freestyleEvents.OnExitFreestyle.OnRaised -= ActivateMenuCamera;
+            _freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
+            _freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
         }
 
         // ── Game Data Configuration ─────────────────────────────────────
@@ -145,12 +158,30 @@ namespace CosmicShore.Core
             TransitionTo(MainMenuState.Ready);
             ActivateMenuCamera();
             ActivateLocalPlayerAutopilot();
+
+            // Activate non-owner players so their vessels render on this client.
+            // Ported from MultiplayerFreestyleController.OnClientReady — ensures
+            // joining clients see existing players' vessels as active.
+            _gameData.SetNonOwnerPlayersActiveInNewClient();
+
             _gameData.InitializeGame();
         }
 
         void HandleLaunchGame()
         {
             TransitionTo(MainMenuState.LaunchingGame);
+        }
+
+        void HandleEnterFreestyle()
+        {
+            TransitionTo(MainMenuState.Freestyle);
+            ActivateGameplayCamera();
+        }
+
+        void HandleExitFreestyle()
+        {
+            TransitionTo(MainMenuState.Ready);
+            ActivateMenuCamera();
         }
 
         // ── Autopilot ─────────────────────────────────────────────
