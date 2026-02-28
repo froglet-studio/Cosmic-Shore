@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 274179554372309264}
   - component: {fileID: 2770779975111849756}
   m_Layer: 5
-  m_Name: Friend Info
+  m_Name: Party Slot View
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
