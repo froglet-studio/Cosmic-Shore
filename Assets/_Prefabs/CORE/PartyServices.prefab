@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2287010195568088798}
   - component: {fileID: 1945351111358374057}
   - component: {fileID: 7831454145019129197}
+  - component: {fileID: 962703032153173525}
   m_Layer: 0
   m_Name: PartyServices
   m_TagString: Untagged
@@ -45,8 +46,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 73552bfa7a29de84a8798a75a69c8b23, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   authenticationDataVariable: {fileID: 11400000, guid: 875bcedfcf3335047b416297732cba15,
     type: 2}
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
@@ -62,8 +63,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 605404ac36604aeba5414e0949ab38a6, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   authenticationDataVariable: {fileID: 11400000, guid: 875bcedfcf3335047b416297732cba15,
     type: 2}
   friendsData: {fileID: 11400000, guid: e69f5c7256384d1cb59d57e12551c123, type: 2}
@@ -77,8 +78,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05d2a62a83d04ff09cf64576701da0c3, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
   authenticationDataVariable: {fileID: 11400000, guid: 875bcedfcf3335047b416297732cba15,
     type: 2}
@@ -92,9 +93,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5235c83966fc58541bce7e23b644af22, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
   shutdownTimeoutSeconds: 5
   connectionTimeoutSeconds: 10
   sceneLoadTimeoutSeconds: 15
+--- !u!114 &962703032153173525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2026847926404610461}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
