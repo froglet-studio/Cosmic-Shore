@@ -10,14 +10,13 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Extension of ServerPlayerVesselInitializer:
     /// spawns server-owned AI players and their vessels, then delegates
-    /// human player handling to the base class via OnPlayerNetworkSpawned.
+    /// human player handling to the base class via OnPlayerNetworkSpawnedUlong.
     ///
     /// OnNetworkSpawn flow:
-    ///   1. SetupSpawnPositions()
-    ///   2. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawned
+    ///   1. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawnedUlong
     ///      for each, but we haven't subscribed yet so the base ignores them)
-    ///   3. Mark AI players in _processedPlayers so the base never processes them
-    ///   4. SubscribeAndProcessPlayers() — subscribes to event + processes human players
+    ///   2. Mark AI players in _processedPlayers so the base never processes them
+    ///   3. base.OnNetworkSpawn() — subscribes to event + handles human players going forward
     /// </summary>
     public class ServerPlayerVesselInitializerWithAI : ServerPlayerVesselInitializer
     {
@@ -45,10 +44,11 @@ namespace CosmicShore.Gameplay
                 enabled = false;
                 return;
             }
-            
-            // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawned.
+
+            // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
             // AI players fire the event during Spawn(), but since we haven't
-            // subscribed yet, those events are harmlessly ignored.
+            // subscribed yet (base.OnNetworkSpawn hasn't run), those events
+            // are harmlessly ignored by the base.
             if (spawnAIOnServerReady)
                 SpawnAIs();
 
@@ -59,8 +59,8 @@ namespace CosmicShore.Gameplay
                     _processedPlayers.Add(aiPlayer.NetworkObjectId);
             }
 
-            // Now subscribe and handle human players (host + future remote clients)
-            HandleGameInitialized();
+            // Now subscribe (via base) and handle human players going forward
+            base.OnNetworkSpawn();
         }
 
         void SpawnAIs()
@@ -177,7 +177,7 @@ namespace CosmicShore.Gameplay
         Pose GetSpawnPoseForAI(int aiIndex)
         {
             var _playerOrigins = gameData.SpawnPoses;
-            
+
             if (_playerOrigins == null || _playerOrigins.Length == 0)
                 return default;
 
