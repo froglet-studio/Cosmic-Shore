@@ -55,6 +55,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
         MenuFreestyleEventsContainerSO _freestyleEvents;
 
+        [SerializeField, Tooltip("Transform the CM Main Menu camera should track (typically the crystal).")]
+        Transform _menuCameraTarget;
+
         [Inject] GameDataSO _gameData;
 
         CinemachineCamera _menuVCam;
@@ -208,19 +211,38 @@ namespace CosmicShore.Core
         {
             if (!CameraManager.Instance) return;
             var cmTransform = CameraManager.Instance.transform.Find("CM Main Menu");
-            if (cmTransform)
-                _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
+            if (!cmTransform) return;
+
+            _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
+            if (_menuVCam && _menuCameraTarget)
+            {
+                var target = _menuVCam.Target;
+                target.TrackingTarget = _menuCameraTarget;
+                _menuVCam.Target = target;
+            }
         }
 
         /// <summary>
         /// Activates the CM Main Menu Cinemachine camera for menu state.
-        /// Deactivates all CameraManager gameplay cameras.
+        /// Deactivates all CameraManager gameplay cameras and points the menu
+        /// camera at the crystal target.
         /// </summary>
         void ActivateMenuCamera()
         {
             if (!CameraManager.Instance) return;
             CameraManager.Instance.DeactivateAllCameras();
-            if (_menuVCam) _menuVCam.gameObject.SetActive(true);
+
+            if (_menuVCam)
+            {
+                if (_menuCameraTarget)
+                {
+                    var target = _menuVCam.Target;
+                    target.TrackingTarget = _menuCameraTarget;
+                    _menuVCam.Target = target;
+                }
+
+                _menuVCam.gameObject.SetActive(true);
+            }
         }
 
         /// <summary>
