@@ -36,12 +36,9 @@ namespace CosmicShore.Utility
         public ScriptableEventNoParam OnWinnerCalculated;
         public ScriptableEventNoParam OnResetForReplay;
         public ScriptableEventNoParam OnSessionEnded;
-        public ScriptableEventNoParam OnPlayerNetworkSpawned;
+        public ScriptableEventUlong OnPlayerNetworkSpawnedUlong;
         public ScriptableEventNoParam OnVesselNetworkSpawned;
         public event Action<string, Domains> OnPlayerAdded;
-
-        [Header("Menu")]
-        public ScriptableEventNoParam OnMenuReady;
 
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
@@ -69,7 +66,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Number of AI players to backfill in multiplayer when not enough
-        /// human players are present. Set by PartyGameLauncher before launch.
+        /// human players are present.
         /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
         /// </summary>
         public int RequestedAIBackfillCount;
@@ -143,8 +140,8 @@ namespace CosmicShore.Utility
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
         public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
-        public void InvokeMenuReady() => OnMenuReady.Raise();
-        public void InvokePlayerNetworkSpawned() => OnPlayerNetworkSpawned.Raise();
+
+        public void InvokePlayerNetworkSpawned(ulong ownerClientId) => OnPlayerNetworkSpawnedUlong.Raise(ownerClientId);
         public void InvokeVesselNetworkSpawned() => OnVesselNetworkSpawned.Raise();
 
         public void ResetForReplay()
@@ -166,10 +163,14 @@ namespace CosmicShore.Utility
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
-            RequestedAIBackfillCount = 0;
             _playerSpawnPoseList.Clear();
             LocalPlayer = null;
             LocalRoundStats = null;
+            // Note: RequestedAIBackfillCount is intentionally NOT reset here.
+            // It is a pre-launch config value set by ArcadeGameConfigureModal
+            // and must survive the ResetRuntimeData() call in SceneLoader.LoadSceneAsync()
+            // so ServerPlayerVesselInitializerWithAI can read it after the game scene loads.
+            // It is reset in ResetAllData() instead.
         }
 
         void ResetRuntimeDataForReplay()
@@ -202,7 +203,8 @@ namespace CosmicShore.Utility
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
-            
+            RequestedAIBackfillCount = 0;
+
             ResetRuntimeData();
             DestroyPlayerAndVessel();
             DomainAssigner.Initialize();

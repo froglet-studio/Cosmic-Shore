@@ -134,22 +134,23 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid ExecuteMultiplayerSetup()
         {
-            // Shutdown the local host before creating a Relay-based multiplayer session.
-            // This is the single intentional transition from local to Relay transport.
-            if (networkManager != null && networkManager.IsListening)
-            {
-                networkManager.Shutdown();
-                await UniTask.WaitUntil(() => !networkManager.IsListening);
-            }
-
-            // If a party session was already handed off (e.g. from PartyGameLauncher),
-            // skip matchmaking and use the existing session directly.
+            // If a party session was already handed off (from the invite/party system),
+            // skip shutdown and matchmaking — the Relay transport is already active
+            // and both host and client are connected through it.
             if (gameData.ActiveSession != null)
             {
                 CSDebug.Log($"[MultiplayerSetup] Using existing party session {gameData.ActiveSession.Id}");
                 DomainAssigner.Initialize();
                 gameData.InvokeSessionStarted();
                 return;
+            }
+
+            // Shutdown the local host before creating a Relay-based multiplayer session.
+            // This is the single intentional transition from local to Relay transport.
+            if (networkManager != null && networkManager.IsListening)
+            {
+                networkManager.Shutdown();
+                await UniTask.WaitUntil(() => !networkManager.IsListening);
             }
 
             // Query sessions for this game mode & player count

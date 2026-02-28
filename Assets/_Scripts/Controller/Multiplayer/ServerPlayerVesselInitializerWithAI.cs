@@ -10,14 +10,13 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Extension of ServerPlayerVesselInitializer:
     /// spawns server-owned AI players and their vessels, then delegates
-    /// human player handling to the base class via OnPlayerNetworkSpawned.
+    /// human player handling to the base class via OnPlayerNetworkSpawnedUlong.
     ///
     /// OnNetworkSpawn flow:
-    ///   1. SetupSpawnPositions()
-    ///   2. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawned
+    ///   1. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawnedUlong
     ///      for each, but we haven't subscribed yet so the base ignores them)
-    ///   3. Mark AI players in _processedPlayers so the base never processes them
-    ///   4. SubscribeAndProcessPlayers() — subscribes to event + processes human players
+    ///   2. Mark AI players in _processedPlayers so the base never processes them
+    ///   3. base.OnNetworkSpawn() — subscribes to event + handles human players going forward
     /// </summary>
     public class ServerPlayerVesselInitializerWithAI : ServerPlayerVesselInitializer
     {
@@ -46,11 +45,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            SetupSpawnPositions();
-
-            // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawned.
+            // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
             // AI players fire the event during Spawn(), but since we haven't
-            // subscribed yet, those events are harmlessly ignored.
+            // subscribed yet (base.OnNetworkSpawn hasn't run), those events
+            // are harmlessly ignored by the base.
             if (spawnAIOnServerReady)
                 SpawnAIs();
 
@@ -61,8 +59,8 @@ namespace CosmicShore.Gameplay
                     _processedPlayers.Add(aiPlayer.NetworkObjectId);
             }
 
-            // Now subscribe and handle human players (host + future remote clients)
-            SubscribeAndProcessPlayers();
+            // Now subscribe (via base) and handle human players going forward
+            base.OnNetworkSpawn();
         }
 
         void SpawnAIs()
@@ -73,18 +71,21 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            for (int i = 0; i < aiInitializeDatas.Length; i++)
-            {
-                var data = aiInitializeDatas[i];
-                if (!data.AllowSpawning)
-                    return;
+            int aiCount = gameData.RequestedAIBackfillCount;
+            if (aiCount <= 0) return;
 
+            // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
+            System.Collections.Generic.List<AIProfile> profiles = null;
+            if (aiProfileList != null)
+                profiles = aiProfileList.PickRandom(aiCount);
+
+            for (int i = 0; i < aiCount; i++)
+            {
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
-                var spawnT = GetSpawnTransformForAI(i);
-                if (spawnT)
-                    aiPlayerNO.transform.SetPositionAndRotation(spawnT.position, spawnT.rotation);
+                var spawnT = GetSpawnPoseForAI(i);
+                aiPlayerNO.transform.SetPositionAndRotation(spawnT.position, spawnT.rotation);
 
                 aiPlayerNO.Spawn(true);
 
@@ -96,13 +97,24 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                var aiVesselType = data.vesselClass;
+                // Use template data if available, otherwise derive values dynamically
+                var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
+
+                var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
                 if (aiVesselType == VesselClassType.Any || aiVesselType == VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
 
+                var aiName = profiles != null && i < profiles.Count
+                    ? profiles[i].Name
+                    : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
+
+                var aiDomain = hasTemplate
+                    ? aiInitializeDatas[i].domain
+                    : DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
-                aiPlayer.NetName.Value = data.PlayerName;
-                aiPlayer.NetDomain.Value = data.domain;
+                aiPlayer.NetName.Value = aiName;
+                aiPlayer.NetDomain.Value = aiDomain;
                 aiPlayer.NetIsAI.Value = true;
 
                 if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
@@ -112,7 +124,13 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Server-side initialization of the AI player-vessel pair
-                clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, aiVesselNO);
+                if (!aiVesselNO.TryGetComponent(out IVessel vessel))
+                {
+                    CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
+                    return;
+                }
+
+                clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
                 ConfigureAIPilot(aiVesselNO);
             }
         }
@@ -177,10 +195,12 @@ namespace CosmicShore.Gameplay
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
 
-        Transform GetSpawnTransformForAI(int aiIndex)
+        Pose GetSpawnPoseForAI(int aiIndex)
         {
+            var _playerOrigins = gameData.SpawnPoses;
+
             if (_playerOrigins == null || _playerOrigins.Length == 0)
-                return null;
+                return default;
 
             int idx = 2 + aiIndex;
             if (idx >= _playerOrigins.Length)

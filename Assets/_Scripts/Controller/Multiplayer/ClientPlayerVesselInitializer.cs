@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     ///   InitializeNewPlayerAndVessel_ClientRpc   → existing client initializes one new pair
     ///
     /// When an RPC arrives but objects haven't replicated yet, pairs are queued.
-    /// OnPlayerNetworkSpawned + OnVesselNetworkSpawned SOAP events trigger
+    /// OnPlayerNetworkSpawnedUlong + OnVesselNetworkSpawned SOAP events trigger
     /// re-processing of the queue — zero WaitUntil polling.
     /// </summary>
     public class ClientPlayerVesselInitializer : NetworkBehaviour
@@ -39,13 +39,13 @@ namespace CosmicShore.Gameplay
 
             // Subscribe to SOAP events so we can process pending pairs
             // when objects replicate (event-driven, no polling)
-            gameData.OnPlayerNetworkSpawned.OnRaised += ProcessPendingPairs;
+            gameData.OnPlayerNetworkSpawnedUlong.OnRaised += OnPlayerNetworkSpawnedForPending;
             gameData.OnVesselNetworkSpawned.OnRaised += ProcessPendingPairs;
         }
 
         public override void OnNetworkDespawn()
         {
-            gameData.OnPlayerNetworkSpawned.OnRaised -= ProcessPendingPairs;
+            gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= OnPlayerNetworkSpawnedForPending;
             gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingPairs;
             _pendingPairs.Clear();
             base.OnNetworkDespawn();
@@ -54,14 +54,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Direct server-side initialization (called by ServerPlayerVesselInitializer on host).
         /// </summary>
-        public void InitializePlayerAndVessel(Player player, NetworkObject vesselNO)
+        public void InitializePlayerAndVessel(Player player, IVessel vessel)
         {
-            if (!vesselNO.TryGetComponent(out IVessel vessel))
-            {
-                CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
-                return;
-            }
-
             InitializePair(player, vessel);
         }
 
@@ -95,6 +89,8 @@ namespace CosmicShore.Gameplay
             ProcessPendingPairs();
         }
 
+        void OnPlayerNetworkSpawnedForPending(ulong _) => ProcessPendingPairs();
+
         /// <summary>
         /// Tries to resolve pending (playerNetId, vesselNetId) pairs.
         /// Called when RPCs arrive AND when SOAP events fire (objects replicate).
@@ -124,7 +120,6 @@ namespace CosmicShore.Gameplay
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
                 _signalClientReadyWhenDone = false;
-                gameData.InvokeClientReady();
             }
         }
 
@@ -137,6 +132,10 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
+            
+            // Invoke Client Ready after few interval
+            if (player.IsLocalUser)
+                gameData.InvokeClientReady();
         }
     }
 }

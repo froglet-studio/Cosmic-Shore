@@ -29,11 +29,8 @@ namespace CosmicShore.UI
 
         [Header("Shared Game Data")]
         [Inject] private GameDataSO gameData;
+        [Inject] private HostConnectionDataSO hostConnectionData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
-
-        [Header("Party Launcher")]
-        [Tooltip("Handles multiplayer game launch with party reconciliation. Optional — if null, falls back to startGameRequestedEvent.")]
-        [SerializeField] private PartyGameLauncher partyGameLauncher;
 
         [Header("External Views")]
         [SerializeField] private ArcadeExploreView arcadeExploreView;
@@ -454,19 +451,30 @@ namespace CosmicShore.UI
         {
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
 
-            // Route multiplayer modes through PartyGameLauncher for
-            // party reconciliation (AI backfill, kick extras).
-            if (_selectedGame != null && _selectedGame.IsMultiplayer
-                && _selectedGame.Mode == GameModes.MultiplayerFreestyle
-                && partyGameLauncher != null)
-            {
-                partyGameLauncher.LaunchMultiplayerFreestyle(
-                    config.PlayerCount,
-                    config.Intensity);
-                return;
-            }
+            SyncAllGameDataForLaunch();
+            gameData.InvokeGameLaunch();
+        }
 
-            startGameRequestedEvent?.Raise();
+        void SyncAllGameDataForLaunch()
+        {
+            if (!gameData || config?.SelectedGame == null) return;
+
+            var selectedGame = config.SelectedGame;
+            gameData.SceneName = selectedGame.SceneName;
+            gameData.GameMode = selectedGame.Mode;
+            gameData.IsMultiplayerMode = selectedGame.IsMultiplayer;
+
+            int humanCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
+                ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
+                : 1;
+
+            gameData.SelectedPlayerCount.Value = humanCount;
+            gameData.RequestedAIBackfillCount = Mathf.Max(0, config.PlayerCount - humanCount);
+
+            // Hand off the party session so MultiplayerSetup in the game scene
+            // knows to reuse the existing Relay connection instead of tearing it down.
+            if (HostConnectionService.Instance?.PartySession != null)
+                gameData.ActiveSession = HostConnectionService.Instance.PartySession;
         }
 
         #endregion

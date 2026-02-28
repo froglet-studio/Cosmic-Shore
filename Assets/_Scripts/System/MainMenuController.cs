@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -18,16 +21,26 @@ namespace CosmicShore.Core
     ///   1. Configure game data for the autopilot vessel display.
     ///   2. Track menu readiness via <see cref="MainMenuState"/> transitions.
     ///   3. Signal state changes so other menu systems can react.
+    ///   4. Activate non-local player vessels for multiplayer party sessions.
     ///
     /// Single-writer: only this class transitions the menu state.
     ///
     /// Flow:
-    ///   None → Initializing  : Start() — configures game data, fires InitializeGame
-    ///   Initializing → Ready : OnMenuReady SOAP event (autopilot vessel spawned and active)
-    ///   Ready → LaunchingGame: OnLaunchGame SOAP event (player selected a game mode)
+    ///   None → Initializing   : Start() — configures game data, fires InitializeGame
+    ///   Initializing → Ready  : OnClientReady SOAP event (autopilot vessel spawned and active)
+    ///   Ready → Freestyle     : OnEnterFreestyle SOAP event (local player takes vessel control)
+    ///   Freestyle → Ready     : OnExitFreestyle SOAP event (local player returns to autopilot)
+    ///   Ready → LaunchingGame : OnLaunchGame SOAP event (player selected a game mode)
+    ///   Freestyle → LaunchingGame : can launch directly from freestyle
+    ///
+    /// In multiplayer party sessions, each client independently toggles between
+    /// Ready and Freestyle for their own vessel. The state is local to each client.
     /// </summary>
     public class MainMenuController : MonoBehaviour
     {
+        [Header("Spawn Origins")]
+        [SerializeField] protected Transform[] _playerOrigins;
+        
         [Header("Menu Autopilot Configuration")]
         [SerializeField, Tooltip("Vessel class displayed as the autopilot in the menu background.")]
         VesselClassType menuVesselClass = VesselClassType.Squirrel;
@@ -38,7 +51,16 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Game intensity for the menu background scene.")]
         int menuIntensity = 1;
 
+        [Header("Camera Switching")]
+        [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
+        MenuFreestyleEventsContainerSO _freestyleEvents;
+
+        [SerializeField, Tooltip("Cell runtime data used to find the crystal tracking target at runtime.")]
+        CellRuntimeDataSO _cellData;
+
         [Inject] GameDataSO _gameData;
+
+        CinemachineCamera _menuVCam;
 
         MainMenuState _state = MainMenuState.None;
 
@@ -65,7 +87,13 @@ namespace CosmicShore.Core
             [MainMenuState.Ready] = new HashSet<MainMenuState>
             {
                 MainMenuState.LaunchingGame,
+                MainMenuState.Freestyle,
                 MainMenuState.Initializing, // re-enter from scene reload
+            },
+            [MainMenuState.Freestyle] = new HashSet<MainMenuState>
+            {
+                MainMenuState.Ready,
+                MainMenuState.LaunchingGame, // can launch game from freestyle
             },
             [MainMenuState.LaunchingGame] = new HashSet<MainMenuState>
             {
@@ -77,9 +105,11 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            CacheMenuVCam();
+            ConfigureMenuGameData();
             SubscribeEvents();
             TransitionTo(MainMenuState.Initializing);
-            ConfigureMenuGameData();
+            DomainAssigner.Initialize();
             _gameData.InitializeGame();
         }
 
@@ -92,26 +122,37 @@ namespace CosmicShore.Core
 
         void SubscribeEvents()
         {
-            if (_gameData?.OnMenuReady != null)
-                _gameData.OnMenuReady.OnRaised += HandleMenuReady;
+            if (_gameData?.OnClientReady != null)
+                _gameData.OnClientReady.OnRaised += HandleMenuReady;
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised += HandleLaunchGame;
+
+            _freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
+            _freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
+
+            _cellData.OnCrystalSpawned.OnRaised += HandleCrystalSpawned;
         }
 
         void UnsubscribeEvents()
         {
-            if (_gameData?.OnMenuReady != null)
-                _gameData.OnMenuReady.OnRaised -= HandleMenuReady;
+            if (_gameData?.OnClientReady != null)
+                _gameData.OnClientReady.OnRaised -= HandleMenuReady;
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised -= HandleLaunchGame;
+
+            _freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
+            _freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
+
+            _cellData.OnCrystalSpawned.OnRaised -= HandleCrystalSpawned;
         }
 
         // ── Game Data Configuration ─────────────────────────────────────
 
         void ConfigureMenuGameData()
         {
+            _gameData.SetSpawnPositions(_playerOrigins);
             _gameData.selectedVesselClass.Value = menuVesselClass;
             _gameData.SelectedPlayerCount.Value = menuPlayerCount;
             _gameData.SelectedIntensity.Value = menuIntensity;
@@ -122,11 +163,111 @@ namespace CosmicShore.Core
         void HandleMenuReady()
         {
             TransitionTo(MainMenuState.Ready);
+            ActivateMenuCamera();
+            ActivateLocalPlayerAutopilot();
+
+            // Activate non-owner players so their vessels render on this client.
+            // Ported from MultiplayerFreestyleController.OnClientReady — ensures
+            // joining clients see existing players' vessels as active.
+            _gameData.SetNonOwnerPlayersActiveInNewClient();
+
+            _gameData.InitializeGame();
         }
 
         void HandleLaunchGame()
         {
             TransitionTo(MainMenuState.LaunchingGame);
+        }
+
+        void HandleEnterFreestyle()
+        {
+            TransitionTo(MainMenuState.Freestyle);
+            ActivateGameplayCamera();
+        }
+
+        void HandleExitFreestyle()
+        {
+            TransitionTo(MainMenuState.Ready);
+            ActivateMenuCamera();
+        }
+
+        void HandleCrystalSpawned()
+        {
+            SetMenuVCamTarget();
+        }
+
+        // ── Autopilot ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Activates autopilot on the local player's vessel (client-side).
+        /// For the host this is redundant with <see cref="MenuServerPlayerVesselInitializer"/>,
+        /// but for remote clients joining via party invite this ensures their vessel
+        /// starts in autopilot mode.
+        /// </summary>
+        void ActivateLocalPlayerAutopilot()
+        {
+            var player = _gameData.LocalPlayer;
+            if (player?.Vessel == null) return;
+
+            player.StartPlayer();
+            player.Vessel.ToggleAIPilot(true);
+            player.InputController?.SetPause(true);
+        }
+
+        // ── Camera Switching ───────────────────────────────────────
+
+        void CacheMenuVCam()
+        {
+            if (!CameraManager.Instance) return;
+            var cmTransform = CameraManager.Instance.transform.Find("CM Main Menu");
+            if (!cmTransform) return;
+
+            _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
+        }
+
+        /// <summary>
+        /// Activates the CM Main Menu Cinemachine camera for menu state.
+        /// Deactivates all CameraManager gameplay cameras and points the menu
+        /// camera at the crystal target.
+        /// </summary>
+        void ActivateMenuCamera()
+        {
+            if (!CameraManager.Instance) return;
+            CameraManager.Instance.DeactivateAllCameras();
+
+            if (_menuVCam)
+            {
+                SetMenuVCamTarget();
+                _menuVCam.gameObject.SetActive(true);
+            }
+        }
+
+        void SetMenuVCamTarget()
+        {
+            if (!_menuVCam) return;
+
+            var crystalTransform = _cellData.CrystalTransform;
+            if (!crystalTransform) return;
+
+            var target = _menuVCam.Target;
+            target.TrackingTarget = crystalTransform;
+            _menuVCam.Target = target;
+        }
+
+        /// <summary>
+        /// Activates CM PlayerCam for freestyle/game state.
+        /// Disables the CM Main Menu Cinemachine camera.
+        /// </summary>
+        void ActivateGameplayCamera()
+        {
+            if (!CameraManager.Instance) return;
+            if (_menuVCam) _menuVCam.gameObject.SetActive(false);
+
+            var player = _gameData.LocalPlayer;
+            if (player?.Vessel == null) return;
+
+            var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
+            CameraManager.Instance.SetupGamePlayCameras(followTarget);
         }
 
         // ── State Machine ───────────────────────────────────────────────

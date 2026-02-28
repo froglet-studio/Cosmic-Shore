@@ -168,6 +168,12 @@ namespace CosmicShore.UI
 
         private async void OnInviteClicked(PartyPlayerData target)
         {
+            // Ensure the host has transitioned to a Relay-backed party session
+            // so invited clients can connect via Relay transport.
+            var controller = PartyInviteController.Instance;
+            if (controller != null)
+                await controller.TransitionToPartyHostAsync();
+
             if (HostConnectionService.Instance == null) return;
             await HostConnectionService.Instance.SendInviteAsync(target.PlayerId);
         }

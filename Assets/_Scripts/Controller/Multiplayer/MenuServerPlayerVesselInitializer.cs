@@ -1,5 +1,6 @@
-using CosmicShore.Data;
+using System.Threading;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Gameplay
 {
@@ -11,6 +12,9 @@ namespace CosmicShore.Gameplay
     /// by <see cref="Core.MainMenuController"/> — this class only handles the
     /// network spawn chain and autopilot activation.
     ///
+    /// Listens to <see cref="GameDataSO.OnPlayerNetworkSpawnedUlong"/> via the base class,
+    /// which waits for NetworkVariables to sync before spawning.
+    ///
     /// Signals completion via <see cref="GameDataSO.OnMenuReady"/> SOAP event
     /// so any system can react to the menu being fully interactive.
     /// </summary>
@@ -19,53 +23,26 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
         /// </summary>
-        protected override void OnPlayerReadyToSpawn(Player player)
+        protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
-            base.OnPlayerReadyToSpawn(player);
-            ActivateAutopilot();
+            await base.OnPlayerReadyToSpawnAsync(player, ct);
+            ActivateAutopilot(player);
         }
 
-        void ActivateAutopilot()
+        void ActivateAutopilot(Player player)
         {
-            var player = gameData.LocalPlayer;
             if (player?.Vessel == null)
             {
                 CSDebug.LogError("[MenuServerVesselInit] LocalPlayer or Vessel not available after initialization.");
                 return;
             }
 
-            InitializeMenuPlayerIdentity(player);
-            gameData.SetPlayersActive();
-
+            player.StartPlayer();
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
-            if (CameraManager.Instance)
-            {
-                var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
-                CameraManager.Instance.SetupEndCameraFollow(followTarget);
-            }
-
-            gameData.InvokeMenuReady();
-        }
-
-        void InitializeMenuPlayerIdentity(IPlayer player)
-        {
-            if (player is not Player netPlayer)
-                return;
-
-            netPlayer.NetDomain.Value = Domains.Jade;
-
-            if (string.IsNullOrEmpty(player.Name))
-            {
-                string displayName = !string.IsNullOrEmpty(gameData.LocalPlayerDisplayName)
-                    ? gameData.LocalPlayerDisplayName
-                    : "Pilot";
-                netPlayer.NetName.Value = displayName;
-            }
-
-            player.RoundStats.Domain = player.Domain;
-            player.RoundStats.Name = player.Name;
+            // Camera setup is handled by MainMenuController.HandleMenuReady()
+            // which activates the CM Main Menu Cinemachine camera for menu state.
         }
     }
 }

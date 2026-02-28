@@ -138,7 +138,10 @@ namespace CosmicShore.Tests
 
             Assert.AreEqual(0, _gameData.RoundsPlayed);
             Assert.AreEqual(0, _gameData.TurnsTakenThisRound);
-            Assert.AreEqual(0, _gameData.RequestedAIBackfillCount);
+            // RequestedAIBackfillCount is a pre-launch config value that must survive
+            // ResetRuntimeData (called during scene loading) so AI opponents spawn correctly.
+            Assert.AreEqual(2, _gameData.RequestedAIBackfillCount,
+                "RequestedAIBackfillCount should NOT be reset by ResetRuntimeData — it is a config value.");
         }
 
         [Test]

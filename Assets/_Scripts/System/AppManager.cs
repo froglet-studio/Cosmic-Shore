@@ -61,6 +61,10 @@ namespace CosmicShore.Core
         [Header("Friends")]
         [SerializeField] FriendsDataSO friendsData;
 
+        [Header("Party / Host Connection")]
+        [SerializeField, Tooltip("SOAP data container for host connection, party members, and invites.")]
+        HostConnectionDataSO hostConnectionData;
+
         [Header("Lifecycle Events")]
         [SerializeField, Tooltip("SOAP event container for application lifecycle events (pause, focus, quit, scene load/unload).")]
         ApplicationLifecycleEventsContainerSO lifecycleEvents;
@@ -314,6 +318,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, authenticationDataVariable, nameof(authenticationDataVariable));
             RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
             RegisterAsset(builder, friendsData, nameof(friendsData));
+            RegisterAsset(builder, hostConnectionData, nameof(hostConnectionData));
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
             RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
 
@@ -445,9 +450,7 @@ namespace CosmicShore.Core
 
             gameData.ResetAllData();
 
-            // Set sane defaults; the actual game mode, player count, and
-            // intensity are configured by PartyGameLauncher when the host
-            // picks a mode and presses play.
+            // Set sane defaults for the menu scene.
             gameData.SelectedPlayerCount.Value = 1;
             gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
             gameData.SelectedIntensity.Value = 1;

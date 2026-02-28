@@ -116,6 +116,7 @@ GameObject:
   - component: {fileID: 5126512456175054008}
   - component: {fileID: 4519708316918401408}
   - component: {fileID: 7041824371073105239}
+  - component: {fileID: 9056926978104251258}
   m_Layer: 0
   m_Name: PrismManagers
   m_TagString: Untagged
@@ -195,6 +196,18 @@ MonoBehaviour:
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
+--- !u!114 &9056926978104251258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3198637200510386836}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24bde90bd97d5c04da417e3f15d8bc22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6139463132727567238
 GameObject:
   m_ObjectHideFlags: 0
@@ -247,6 +260,7 @@ MonoBehaviour:
   maxInstantiateRate: 20
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
+  OnResetForReplay: {fileID: 0}
 --- !u!1001 &932426676636423097
 PrefabInstance:
   m_ObjectHideFlags: 0

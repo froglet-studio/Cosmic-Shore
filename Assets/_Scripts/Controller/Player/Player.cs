@@ -123,6 +123,7 @@ namespace CosmicShore.Gameplay
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Players.Add(this);
+            gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
 
             VesselNetId = NetVesselId.Value;
 
@@ -130,12 +131,9 @@ namespace CosmicShore.Gameplay
             NetName.OnValueChanged += OnNetNameValueChanged;
             NetVesselId.OnValueChanged += OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
-
-            if (!IsLocalUser)
-            {
-                gameData.InvokePlayerNetworkSpawned();
-                return;
-            }
+            
+            if (IsServer)
+                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
 
             // Resolve display name & avatar ID BEFORE signaling spawn and setting
             // the vessel type. Setting NetDefaultVesselType triggers the server-side
@@ -159,19 +157,17 @@ namespace CosmicShore.Gameplay
             {
                 NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
             }
-
-            // Signal spawn after name is set so server-side handlers see valid values.
-            gameData.InvokePlayerNetworkSpawned();
-
-            // Setting vessel type triggers the server spawn chain synchronously
-            // (HandleNewPlayer → OnPlayerReadyToSpawn → SpawnVesselAndInitialize).
+            
+            NetIsAI.Value = IsInitializedAsAI;
             NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
-
+            
             InputController.Initialize();
         }
-        
+
         public override void OnNetworkDespawn()
         {
+            gameData.Players.Remove(this);
+
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
