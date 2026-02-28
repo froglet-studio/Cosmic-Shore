@@ -86,20 +86,11 @@ namespace CosmicShore.Gameplay
             if (shutdownNetworkOnDespawn && NetworkManager.Singleton)
                 NetworkManager.Singleton.Shutdown();
         }
-
-        protected void SubscribeAndProcessPlayers()
-        {
-            HandlePlayerNetworkSpawned();
-        }
         
-        void HandleGameInitialized()
+        protected void HandleGameInitialized()
         {
-            gameData.OnInitializeGame.OnRaised -= HandleGameInitialized;
-            SubscribeAndProcessPlayers();
-        }
-
-        void HandlePlayerNetworkSpawned()
-        {
+            // UniTask wait until 5seconds
+            
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer && _processedPlayers.Add(netPlayer.NetworkObjectId))
@@ -128,8 +119,8 @@ namespace CosmicShore.Gameplay
         protected virtual void OnPlayerReadyToSpawn(Player player)
         {
             SpawnVesselAndInitialize(player.OwnerClientId, player);
+            // Wait 3 seconds
             NotifyClients(player);
-            gameData.InvokeClientReady();
         }
 
         void SpawnVesselAndInitialize(ulong clientId, Player player)
