@@ -58279,6 +58279,7 @@ MonoBehaviour:
   menuVesselClass: 6
   menuPlayerCount: 3
   menuIntensity: 1
+  _freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
 --- !u!114 &1486013852
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74447,7 +74448,6 @@ MonoBehaviour:
     type: 2}
   shipClassTypeVariable: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
     type: 2}
-  partyGameLauncher: {fileID: 0}
   arcadeExploreView: {fileID: 149703240736415088}
   selectedGameName: {fileID: 4125016652399188270}
   selectedGameDescription: {fileID: 4125016652004098476}
