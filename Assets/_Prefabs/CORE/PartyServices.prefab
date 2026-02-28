@@ -91,9 +91,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 2026847926404610461}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b08ee987c6d4dac43b0eca70aa9da030, type: 3}
+  m_Script: {fileID: 11500000, guid: 5235c83966fc58541bce7e23b644af22, type: 3}
   m_Name:
   m_EditorClassIdentifier:
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
-  gameList: {fileID: 11400000, guid: 295aa0134b55e474d9aceca4bbb5b444, type: 2}
-  onPartyGameReady: {fileID: 0}
+  shutdownTimeoutSeconds: 5
+  connectionTimeoutSeconds: 10
+  sceneLoadTimeoutSeconds: 15

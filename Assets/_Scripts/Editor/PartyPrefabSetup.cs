@@ -3,16 +3,202 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using CosmicShore.UI;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Editor utility to create missing Party system prefabs.
-    /// Run via menu: Tools / Cosmic Shore / Create Party Prefabs.
+    /// Editor utility to create and wire missing Party system prefabs and SO references.
+    /// Run via menu: Tools / Cosmic Shore / Party System Setup.
     /// </summary>
     public static class PartyPrefabSetup
     {
         private const string PrefabFolder = "Assets/_Prefabs/UI Elements/Panels/Party";
+        private const string SOFolder = "Assets/_SO_Assets";
+
+        // ── Full Setup ────────────────────────────────────────────────────
+
+        [MenuItem("Tools/Cosmic Shore/Party System Setup (Full)")]
+        public static void FullPartySetup()
+        {
+            if (!AssetDatabase.IsValidFolder(PrefabFolder))
+                AssetDatabase.CreateFolder("Assets/_Prefabs/UI Elements/Panels", "Party");
+
+            CreateOnlinePlayerEntryPrefab();
+            CreateOnlinePlayersPanelPrefab();
+            CreatePartySlotViewPrefab();
+            CreatePartyInviteNotificationPrefab();
+            CreateInviteNotificationUIPrefab();
+            CreatePartyAreaPanelPrefab();
+
+            WireOnlinePlayersPanelReferences();
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            ValidatePartySetup();
+
+            Debug.Log("[PartyPrefabSetup] Full party setup completed.");
+        }
+
+        // ── Validation ────────────────────────────────────────────────────
+
+        [MenuItem("Tools/Cosmic Shore/Validate Party Setup")]
+        public static void ValidatePartySetup()
+        {
+            int issues = 0;
+
+            // 1. Check HostConnectionData SO exists
+            var connectionData = FindAsset<HostConnectionDataSO>();
+            if (connectionData == null)
+            {
+                Debug.LogError("[PartySetup] HostConnectionDataSO asset not found!");
+                issues++;
+            }
+
+            // 2. Check AppManager prefab has hostConnectionData wired
+            var appManagerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Prefabs/CORE/AppManager.prefab");
+            if (appManagerPrefab != null)
+            {
+                var appManager = appManagerPrefab.GetComponent<AppManager>();
+                if (appManager != null)
+                {
+                    var so = new SerializedObject(appManager);
+                    var prop = so.FindProperty("hostConnectionData");
+                    if (prop != null && prop.objectReferenceValue == null)
+                    {
+                        Debug.LogWarning("[PartySetup] AppManager.hostConnectionData is not wired. Attempting auto-wire...");
+                        if (connectionData != null)
+                        {
+                            prop.objectReferenceValue = connectionData;
+                            so.ApplyModifiedPropertiesWithoutUndo();
+                            EditorUtility.SetDirty(appManagerPrefab);
+                            Debug.Log("[PartySetup] Auto-wired AppManager.hostConnectionData.");
+                        }
+                        else
+                            issues++;
+                    }
+                }
+            }
+
+            // 3. Check PartyServices prefab exists and has all components
+            var partyServicesPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Prefabs/CORE/PartyServices.prefab");
+            if (partyServicesPrefab == null)
+            {
+                Debug.LogError("[PartySetup] PartyServices.prefab not found in _Prefabs/CORE/!");
+                issues++;
+            }
+            else
+            {
+                if (partyServicesPrefab.GetComponent<CosmicShore.Gameplay.HostConnectionService>() == null)
+                {
+                    Debug.LogError("[PartySetup] PartyServices prefab missing HostConnectionService!");
+                    issues++;
+                }
+                if (partyServicesPrefab.GetComponent<CosmicShore.Gameplay.PartyInviteController>() == null)
+                {
+                    Debug.LogError("[PartySetup] PartyServices prefab missing PartyInviteController!");
+                    issues++;
+                }
+                if (partyServicesPrefab.GetComponent<CosmicShore.Gameplay.FriendsInitializer>() == null)
+                {
+                    Debug.LogError("[PartySetup] PartyServices prefab missing FriendsInitializer!");
+                    issues++;
+                }
+            }
+
+            // 4. Check required prefabs exist
+            string[] requiredPrefabs = {
+                "OnlinePlayerEntry", "OnlinePlayersPanel", "PartySlotView",
+                "PartyInviteNotificationPanel", "InviteNotificationUI", "PartyAreaPanel"
+            };
+            foreach (var name in requiredPrefabs)
+            {
+                var path = $"{PrefabFolder}/{name}.prefab";
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
+                {
+                    Debug.LogWarning($"[PartySetup] Missing prefab: {path}. Run 'Party System Setup (Full)' to create it.");
+                    issues++;
+                }
+            }
+
+            // 5. Check OnlinePlayersPanel has playerEntryPrefab wired
+            var onlinePanelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                $"{PrefabFolder}/OnlinePlayersPanel.prefab");
+            if (onlinePanelPrefab != null)
+            {
+                var panel = onlinePanelPrefab.GetComponent<OnlinePlayersPanel>();
+                if (panel != null)
+                {
+                    var so = new SerializedObject(panel);
+                    var entryPrefabProp = so.FindProperty("playerEntryPrefab");
+                    if (entryPrefabProp != null && entryPrefabProp.objectReferenceValue == null)
+                    {
+                        Debug.LogWarning("[PartySetup] OnlinePlayersPanel.playerEntryPrefab is not wired.");
+                        issues++;
+                    }
+                }
+            }
+
+            if (issues == 0)
+                Debug.Log("[PartySetup] All validation checks passed!");
+            else
+                Debug.LogWarning($"[PartySetup] {issues} issue(s) found. See warnings above.");
+        }
+
+        // ── Wire SO References ────────────────────────────────────────────
+
+        [MenuItem("Tools/Cosmic Shore/Wire Party SO References")]
+        public static void WireOnlinePlayersPanelReferences()
+        {
+            var connectionData = FindAsset<HostConnectionDataSO>();
+            var profileIcons = FindAsset<SO_ProfileIconList>();
+
+            // Wire OnlinePlayersPanel
+            var onlinePanelPath = $"{PrefabFolder}/OnlinePlayersPanel.prefab";
+            var onlinePanelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(onlinePanelPath);
+            if (onlinePanelPrefab != null)
+            {
+                var panel = onlinePanelPrefab.GetComponent<OnlinePlayersPanel>();
+                if (panel != null)
+                {
+                    var so = new SerializedObject(panel);
+                    WireIfNull(so, "connectionData", connectionData);
+                    WireIfNull(so, "profileIcons", profileIcons);
+
+                    // Wire playerEntryPrefab
+                    var entryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                        $"{PrefabFolder}/OnlinePlayerEntry.prefab");
+                    WireIfNull(so, "playerEntryPrefab", entryPrefab);
+
+                    // Wire entryContainer to Content child
+                    var contentTransform = onlinePanelPrefab.transform.Find("Content");
+                    if (contentTransform != null)
+                        WireIfNull(so, "entryContainer", contentTransform);
+
+                    // Wire closeButton
+                    var closeBtn = onlinePanelPrefab.transform.Find("CloseButton");
+                    if (closeBtn != null)
+                        WireIfNull(so, "closeButton", closeBtn.GetComponent<Button>());
+
+                    // Wire emptyStateLabel
+                    var emptyLabel = onlinePanelPrefab.transform.Find("EmptyLabel");
+                    if (emptyLabel != null)
+                        WireIfNull(so, "emptyStateLabel", emptyLabel.gameObject);
+
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                    EditorUtility.SetDirty(onlinePanelPrefab);
+                    Debug.Log("[PartyPrefabSetup] Wired OnlinePlayersPanel SO references.");
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+        }
+
+        // ── Create Party Prefabs ──────────────────────────────────────────
 
         [MenuItem("Tools/Cosmic Shore/Create Party Prefabs")]
         public static void CreateAllPartyPrefabs()
@@ -29,7 +215,7 @@ namespace CosmicShore.Editor
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[PartyPrefabSetup] Party prefabs created. Wire SO references in the inspector.");
+            Debug.Log("[PartyPrefabSetup] Party prefabs created.");
         }
 
         [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Online Player Entry")]
@@ -105,7 +291,7 @@ namespace CosmicShore.Editor
             bg.color = new Color(0.1f, 0.1f, 0.15f, 0.95f);
 
             // Header
-            var headerGo = CreateChildText(root.transform, "Header", "Online Players", 20,
+            CreateChildText(root.transform, "Header", "Online Players", 20,
                 new Vector2(0, 220), new Vector2(380, 40));
 
             // Close button
@@ -127,6 +313,23 @@ namespace CosmicShore.Editor
             var emptyGo = CreateChildText(root.transform, "EmptyLabel", "No players online", 14,
                 new Vector2(0, 0), new Vector2(300, 40));
             emptyGo.SetActive(false);
+
+            // Add OnlinePlayersPanel component and wire internal refs
+            var panel = root.AddComponent<OnlinePlayersPanel>();
+            var so = new SerializedObject(panel);
+            so.FindProperty("entryContainer").objectReferenceValue = contentGo.transform;
+            so.FindProperty("closeButton").objectReferenceValue = closeBtnGo.GetComponent<Button>();
+            so.FindProperty("emptyStateLabel").objectReferenceValue = emptyGo;
+
+            // Wire SO references
+            var connectionData = FindAsset<HostConnectionDataSO>();
+            var profileIcons = FindAsset<SO_ProfileIconList>();
+            if (connectionData != null)
+                so.FindProperty("connectionData").objectReferenceValue = connectionData;
+            if (profileIcons != null)
+                so.FindProperty("profileIcons").objectReferenceValue = profileIcons;
+
+            so.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
@@ -192,8 +395,6 @@ namespace CosmicShore.Editor
             var bg = root.AddComponent<Image>();
             bg.color = new Color(0.1f, 0.1f, 0.2f, 0.95f);
 
-            var panelRoot = root; // Self is the panel root
-
             var avatarGo = CreateChildImage(root.transform, "InviterAvatar", 50, 50,
                 new Vector2(-130, 20));
             var nameGo = CreateChildText(root.transform, "InviterName", "Player invited you!",
@@ -210,7 +411,13 @@ namespace CosmicShore.Editor
             so.FindProperty("inviterAvatarImage").objectReferenceValue = avatarGo.GetComponent<Image>();
             so.FindProperty("acceptButton").objectReferenceValue = acceptBtnGo.GetComponent<Button>();
             so.FindProperty("declineButton").objectReferenceValue = declineBtnGo.GetComponent<Button>();
-            so.FindProperty("panelRoot").objectReferenceValue = panelRoot;
+            so.FindProperty("panelRoot").objectReferenceValue = root;
+
+            // Wire SO references
+            var connectionData = FindAsset<HostConnectionDataSO>();
+            if (connectionData != null)
+                WireIfExists(so, "connectionData", connectionData);
+
             so.ApplyModifiedPropertiesWithoutUndo();
 
             root.SetActive(false);
@@ -255,6 +462,12 @@ namespace CosmicShore.Editor
             so.FindProperty("acceptButton").objectReferenceValue = acceptBtnGo.GetComponent<Button>();
             so.FindProperty("declineButton").objectReferenceValue = declineBtnGo.GetComponent<Button>();
             so.FindProperty("transitionIndicator").objectReferenceValue = transitionGo;
+
+            // Wire SO references
+            var connectionData = FindAsset<HostConnectionDataSO>();
+            if (connectionData != null)
+                WireIfExists(so, "connectionData", connectionData);
+
             so.ApplyModifiedPropertiesWithoutUndo();
 
             root.SetActive(false);
@@ -293,6 +506,32 @@ namespace CosmicShore.Editor
         }
 
         // ── Helpers ────────────────────────────────────────────────────
+
+        static T FindAsset<T>() where T : Object
+        {
+            string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}");
+            if (guids.Length == 0) return null;
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            return AssetDatabase.LoadAssetAtPath<T>(path);
+        }
+
+        static void WireIfNull(SerializedObject so, string propertyName, Object value)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop != null && prop.objectReferenceValue == null && value != null)
+            {
+                prop.objectReferenceValue = value;
+            }
+        }
+
+        static void WireIfExists(SerializedObject so, string propertyName, Object value)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop != null && value != null)
+            {
+                prop.objectReferenceValue = value;
+            }
+        }
 
         static GameObject CreateUIRoot(string name, float width, float height)
         {
