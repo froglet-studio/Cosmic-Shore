@@ -3,22 +3,20 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using System.Threading;
-using Unity.Cinemachine;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Toggles between menu state (Cinemachine crystal revolve + autopilot + menu UI)
-    /// and freestyle state (Cinemachine vessel follow + player control + freestyle UI)
-    /// on Menu_Main.
+    /// Toggles between menu state (autopilot + menu UI) and freestyle state
+    /// (player control + freestyle UI) on Menu_Main.
     ///
     /// Raises SOAP events via <see cref="MenuFreestyleEventsContainerSO"/> so decoupled
-    /// systems (ScreenSwitcher, NavBar, HUD) can react without direct references.
+    /// systems (<see cref="Core.MainMenuController"/> for camera switching,
+    /// ScreenSwitcher, NavBar, HUD) can react without direct references.
     ///
-    /// Uses Cinemachine retargeting on the "CM Main Menu" virtual camera.
-    /// CinemachineBrain handles smooth camera transitions via its default blend
-    /// and CinemachineFollow/RotationComposer damping.
+    /// Camera switching is handled by <see cref="Core.MainMenuController"/> in response
+    /// to the freestyle SOAP events.
     ///
     /// Transition is triggered externally via <see cref="ToggleTransition"/> (e.g. from a UI button).
     /// </summary>
@@ -46,9 +44,6 @@ namespace CosmicShore.Gameplay
         bool _isTransitioning;
         CancellationTokenSource _cts;
 
-        CinemachineCamera _menuVCam;
-        Transform _originalFollow;
-
         /// <summary>Whether the menu is currently in freestyle state.</summary>
         public bool IsInFreestyle => _isInFreestyle;
 
@@ -66,16 +61,6 @@ namespace CosmicShore.Gameplay
 
         void Start()
         {
-            if (!CameraManager.Instance) return;
-
-            var cmTransform = CameraManager.Instance.transform.Find("CM Main Menu");
-            if (cmTransform)
-            {
-                _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
-                if (_menuVCam)
-                    _originalFollow = _menuVCam.Follow;
-            }
-
             // Freestyle UI starts hidden
             ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
         }
@@ -88,7 +73,6 @@ namespace CosmicShore.Gameplay
         public void ToggleTransition()
         {
             if (_isTransitioning) return;
-            if (!_menuVCam) return;
             if (gameData.LocalPlayer?.Vessel == null) return;
 
             if (_isInFreestyle)
@@ -113,13 +97,10 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(false);
             player.InputController.SetPause(false);
 
-            // Retarget Cinemachine — CinemachineFollow damping handles smooth transition
-            _menuVCam.Follow = player.Vessel.VesselStatus.CameraFollowTarget;
-            _menuVCam.LookAt = player.Vessel.Transform;
-
             _isInFreestyle = true;
             _isTransitioning = false;
 
+            // Camera switching handled by MainMenuController via this event
             freestyleEvents.OnEnterFreestyle.Raise();
         }
 
@@ -132,17 +113,14 @@ namespace CosmicShore.Gameplay
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // Restore Cinemachine to original menu targets (crystal revolve)
-            _menuVCam.Follow = _originalFollow;
-            _menuVCam.LookAt = null;
+            // Camera switching handled by MainMenuController via this event
+            freestyleEvents.OnExitFreestyle.Raise();
 
             // Fade out freestyle UI, fade in menu UI
             await FadeBetweenStates(menuAlpha: 1f, freestyleAlpha: 0f, ct);
 
             _isInFreestyle = false;
             _isTransitioning = false;
-
-            freestyleEvents.OnExitFreestyle.Raise();
         }
 
         #endregion

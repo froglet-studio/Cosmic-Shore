@@ -124,6 +124,18 @@ namespace CosmicShore.Gameplay
         public ICameraController GetActiveController() => _activeController;
 
         /// <summary>
+        /// Deactivates all managed cameras (player, death, end) without activating a replacement.
+        /// Used by the menu to hand control to the Cinemachine-driven main menu camera.
+        /// </summary>
+        public void DeactivateAllCameras()
+        {
+            if (_playerCamera != null) _playerCamera.Deactivate();
+            if (_deathCamera != null) _deathCamera.Deactivate();
+            if (endCamera != null) endCamera.Deactivate();
+            _activeController = null;
+        }
+
+        /// <summary>
         /// Snaps the player camera to its follow target's current position.
         /// Call after vessel teleport or end-game cinematic to reset the camera.
         /// </summary>

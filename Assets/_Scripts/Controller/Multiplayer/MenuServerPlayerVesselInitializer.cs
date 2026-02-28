@@ -41,11 +41,8 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
-            if (CameraManager.Instance)
-            {
-                var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
-                CameraManager.Instance.SetupEndCameraFollow(followTarget);
-            }
+            // Camera setup is handled by MainMenuController.HandleMenuReady()
+            // which activates the CM Main Menu Cinemachine camera for menu state.
         }
     }
 }
