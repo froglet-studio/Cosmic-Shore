@@ -55,8 +55,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 840c572e034b49618dcb6ce05db05236, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  usernameInput: {fileID: 0}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nameInputField: {fileID: 0}
   sendButton: {fileID: 0}
+  closeButton: {fileID: 0}
   feedbackText: {fileID: 0}
+  friendsData: {fileID: 11400000, guid: e69f5c7256384d1cb59d57e12551c123, type: 2}
