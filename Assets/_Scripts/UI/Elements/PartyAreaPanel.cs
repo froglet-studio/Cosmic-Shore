@@ -1,39 +1,36 @@
 using System.Collections.Generic;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using CosmicShore.ScriptableObjects;
+
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Drives the Players Info area on the left side of the Arcade Panel.
-    /// Renders N <see cref="PartySlotView"/> slots sourced from
-    /// <see cref="HostConnectionDataSO"/>.  Slot 0 is always the local player.
-    /// Empty slots show a "+" button that opens the <see cref="OnlinePlayersPanel"/>.
-    /// Includes a "Friends" button to open the <see cref="FriendsPanel"/>.
+    /// Reusable Party Area panel with 3 player slots.
+    ///
+    /// Slot 0 shows the local player. Slots 1-2 show remote party members or
+    /// a "+" button to open the <see cref="OnlinePlayersPanel"/> for inviting.
+    ///
+    /// Reads all state from <see cref="HostConnectionDataSO"/> via SOAP events.
+    /// Can be placed on any menu screen (Home, Arcade, etc.).
+    ///
+    /// When the "+" button is pressed on an empty slot and a
+    /// <see cref="PartyInviteController"/> exists, the host-side Relay transition
+    /// is triggered before opening the invite panel (so clients can actually connect).
     /// </summary>
-    public class PartyArcadeView : MonoBehaviour
+    public class PartyAreaPanel : MonoBehaviour
     {
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
-        [SerializeField] private FriendsDataSO friendsData;
 
         [Header("Slots")]
-        [Tooltip("Pre-placed slot views in the hierarchy (index 0 = local player).")]
+        [Tooltip("Pre-placed slot views in the hierarchy (index 0 = local player, 1-2 = remote).")]
         [SerializeField] private List<PartySlotView> partySlots;
 
         [Header("Online Players Panel")]
         [SerializeField] private OnlinePlayersPanel onlinePlayersPanel;
-
-        [Header("Friends")]
-        [SerializeField] private FriendsPanel friendsPanel;
-        [SerializeField] private Button friendsButton;
-        [SerializeField] private TMP_Text friendsRequestBadge;
-
-        [Header("Data")]
-        [SerializeField] private SO_ProfileIconList profileIcons;
 
         [Inject] private PlayerDataService playerDataService;
 
@@ -44,9 +41,7 @@ namespace CosmicShore.UI
         void Awake()
         {
             foreach (var slot in partySlots)
-                slot.Initialize(OpenOnlinePlayers);
-
-            friendsButton?.onClick.AddListener(OpenFriends);
+                slot.Initialize(OnAddSlotPressed);
         }
 
         void Start()
@@ -67,14 +62,10 @@ namespace CosmicShore.UI
                     connectionData.OnPartyJoinCompleted.OnRaised += RefreshAllSlots;
             }
 
-            if (friendsData?.IncomingRequests != null)
-                friendsData.IncomingRequests.OnItemCountChanged += UpdateFriendsBadge;
-
             if (playerDataService != null)
                 playerDataService.OnProfileChanged += OnLocalProfileChanged;
 
             RefreshAllSlots();
-            UpdateFriendsBadge();
         }
 
         void OnDisable()
@@ -95,9 +86,6 @@ namespace CosmicShore.UI
                     connectionData.OnPartyJoinCompleted.OnRaised -= RefreshAllSlots;
             }
 
-            if (friendsData?.IncomingRequests != null)
-                friendsData.IncomingRequests.OnItemCountChanged -= UpdateFriendsBadge;
-
             if (playerDataService != null)
                 playerDataService.OnProfileChanged -= OnLocalProfileChanged;
         }
@@ -106,9 +94,6 @@ namespace CosmicShore.UI
         // Public
         // ─────────────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Full rebuild of all slot visuals from <see cref="HostConnectionDataSO.PartyMembers"/>.
-        /// </summary>
         public void RefreshAllSlots()
         {
             RefreshLocalPlayerSlot();
@@ -164,26 +149,26 @@ namespace CosmicShore.UI
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Panel
+        // Slot Actions
         // ─────────────────────────────────────────────────────────────────────
 
-        private void OpenOnlinePlayers()
+        private async void OnAddSlotPressed()
         {
+            if (!connectionData.HasOpenSlots)
+            {
+                Debug.Log("[PartyAreaPanel] No open party slots.");
+                return;
+            }
+
+            // If PartyInviteController is available, ensure we're on a Relay host
+            // so invited clients can actually connect.
+            var controller = PartyInviteController.Instance;
+            if (controller != null && connectionData.IsHost)
+            {
+                await controller.TransitionToPartyHostAsync();
+            }
+
             onlinePlayersPanel?.Show();
-        }
-
-        private void OpenFriends()
-        {
-            friendsPanel?.Show();
-        }
-
-        private void UpdateFriendsBadge()
-        {
-            if (friendsRequestBadge == null) return;
-
-            int count = friendsData?.IncomingRequestCount ?? 0;
-            friendsRequestBadge.text = count > 0 ? count.ToString() : "";
-            friendsRequestBadge.gameObject.SetActive(count > 0);
         }
 
         // ─────────────────────────────────────────────────────────────────────

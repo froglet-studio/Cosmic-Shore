@@ -67,6 +67,9 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when an invite has been sent to a target player (carries the target's data).")]
         public ScriptableEventPartyPlayerData OnInviteSent;
 
+        [Tooltip("Raised when the local player has fully completed joining a party (Netcode connected, scene loaded).")]
+        public ScriptableEventNoParam OnPartyJoinCompleted;
+
         // ─────────────────────────────────────────────────────────────────────
         // Local Player Identity
         // ─────────────────────────────────────────────────────────────────────

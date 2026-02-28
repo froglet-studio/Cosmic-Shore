@@ -260,6 +260,23 @@ namespace CosmicShore.Gameplay
 
         public ISession PartySession => _partySession;
 
+        /// <summary>
+        /// Public wrapper for party session creation.
+        /// Used by <see cref="PartyInviteController"/> after shutting down the local
+        /// NetworkManager, so the Relay session can start a fresh host.
+        /// </summary>
+        public async Task CreatePartySessionPublicAsync()
+        {
+            if (_partySession != null)
+            {
+                Debug.Log("[HostConnectionService] Party session already exists.");
+                return;
+            }
+
+            SyncLocalIdentity();
+            await CreatePartySessionAsync();
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Presence Lobby
         // ─────────────────────────────────────────────────────────────────────
