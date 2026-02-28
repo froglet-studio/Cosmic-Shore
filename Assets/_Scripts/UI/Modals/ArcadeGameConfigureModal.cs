@@ -28,6 +28,7 @@ namespace CosmicShore.UI
 
         [Header("Shared Game Data")]
         [Inject] private GameDataSO gameData;
+        [Inject] private HostConnectionDataSO hostConnectionData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
         [Header("External Views")]
@@ -449,7 +450,25 @@ namespace CosmicShore.UI
         {
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
 
-            startGameRequestedEvent?.Raise();
+            SyncAllGameDataForLaunch();
+            gameData.InvokeGameLaunch();
+        }
+
+        void SyncAllGameDataForLaunch()
+        {
+            if (!gameData || config?.SelectedGame == null) return;
+
+            var selectedGame = config.SelectedGame;
+            gameData.SceneName = selectedGame.SceneName;
+            gameData.GameMode = selectedGame.Mode;
+            gameData.IsMultiplayerMode = selectedGame.IsMultiplayer;
+
+            int humanCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
+                ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
+                : 1;
+
+            gameData.SelectedPlayerCount.Value = humanCount;
+            gameData.RequestedAIBackfillCount = Mathf.Max(0, config.PlayerCount - humanCount);
         }
 
         #endregion
