@@ -114,6 +114,12 @@ namespace CosmicShore.Gameplay
                 }
 
                 await HostConnectionService.Instance.AcceptInviteAsync(invite);
+
+                // Store the party session so MultiplayerSetup in the game scene
+                // knows to reuse the existing Relay connection (client side).
+                if (gameData != null && HostConnectionService.Instance.PartySession != null)
+                    gameData.ActiveSession = HostConnectionService.Instance.PartySession;
+
                 Debug.Log("[PartyInviteController] Joined party session via UGS.");
 
                 // Step 4: Wait for Netcode client connection

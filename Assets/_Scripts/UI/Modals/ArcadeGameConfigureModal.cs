@@ -2,6 +2,7 @@ using CosmicShore.ScriptableObjects;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -469,6 +470,11 @@ namespace CosmicShore.UI
 
             gameData.SelectedPlayerCount.Value = humanCount;
             gameData.RequestedAIBackfillCount = Mathf.Max(0, config.PlayerCount - humanCount);
+
+            // Hand off the party session so MultiplayerSetup in the game scene
+            // knows to reuse the existing Relay connection instead of tearing it down.
+            if (HostConnectionService.Instance?.PartySession != null)
+                gameData.ActiveSession = HostConnectionService.Instance.PartySession;
         }
 
         #endregion
