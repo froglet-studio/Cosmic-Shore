@@ -144,12 +144,31 @@ namespace CosmicShore.Core
         {
             TransitionTo(MainMenuState.Ready);
             ActivateMenuCamera();
+            ActivateLocalPlayerAutopilot();
             _gameData.InitializeGame();
         }
 
         void HandleLaunchGame()
         {
             TransitionTo(MainMenuState.LaunchingGame);
+        }
+
+        // ── Autopilot ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Activates autopilot on the local player's vessel (client-side).
+        /// For the host this is redundant with <see cref="MenuServerPlayerVesselInitializer"/>,
+        /// but for remote clients joining via party invite this ensures their vessel
+        /// starts in autopilot mode.
+        /// </summary>
+        void ActivateLocalPlayerAutopilot()
+        {
+            var player = _gameData.LocalPlayer;
+            if (player?.Vessel == null) return;
+
+            player.StartPlayer();
+            player.Vessel.ToggleAIPilot(true);
+            player.InputController?.SetPause(true);
         }
 
         // ── Camera Switching ───────────────────────────────────────

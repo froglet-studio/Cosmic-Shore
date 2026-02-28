@@ -22,3 +22,4 @@ MonoBehaviour:
   maxPartySlots: 4
   OnInviteReceived: {fileID: 11400000, guid: db939ca3a772435abb2ed54650cd49fc, type: 2}
   OnInviteSent: {fileID: 11400000, guid: 3327ddf7fdd8409bba1a0992053e1229, type: 2}
+  OnPartyJoinCompleted: {fileID: 11400000, guid: 82ab7e405f6340b48c876102c08ac4a9, type: 2}
