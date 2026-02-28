@@ -237,6 +237,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer
+                    && netPlayer.IsSpawned
                     && netPlayer.OwnerClientId == ownerClientId
                     && !_processedPlayers.Contains(netPlayer.NetworkObjectId))
                 {

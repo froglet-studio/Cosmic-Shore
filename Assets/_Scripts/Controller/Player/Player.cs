@@ -157,6 +157,8 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            gameData.Players.Remove(this);
+
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
