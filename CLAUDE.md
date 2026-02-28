@@ -67,8 +67,8 @@ Assets/
 │   │   ├── IO/                # Input strategies (Keyboard, Gamepad, Touch)
 │   │   ├── Animation/         # Per-vessel animation controllers
 │   │   ├── Camera/            # CustomCameraController, CameraSettingsSO, ICameraController
-│   │   ├── Multiplayer/       # Netcode: ClientPlayerVesselInitializer, ServerPlayerVesselInitializer, MenuServerPlayerVesselInitializer, NetworkStatsManager
-│   │   ├── Player/            # Player spawning, IPlayer interface
+│   │   ├── Multiplayer/       # Netcode: ServerPlayerVesselInitializer (+ WithAI, Menu variants), ClientPlayerVesselInitializer, MultiplayerSetup, MenuCrystalClickHandler, DomainAssigner, NetworkStatsManager
+│   │   ├── Player/            # Player (NetworkBehaviour), PlayerSpawner, IPlayer, PlayerSpawnerAdapterBase, MiniGamePlayerSpawnerAdapter
 │   │   ├── Prisms/            # PrismFactory
 │   │   ├── Assemblers/        # Gyroid/wall assembly systems
 │   │   ├── Party/             # Party/social system
@@ -298,12 +298,75 @@ Authentication Scene
 │
     ▼
 Menu_Main Scene (loaded as networked scene when host is running)
-│ MenuServerPlayerVesselInitializer
-│ ├─ Forces Squirrel vessel class
-│ ├─ Spawns autopilot vessel on host connect
-│ ├─ Sets player identity (Jade domain, display name)
-│ ├─ Enables AI pilot, pauses player input
-│ └─ Configures CameraManager to follow vessel
+│
+│ MainMenuController.Start()  [Game GameObject]
+│ ├─ ConfigureMenuGameData():
+│ │   ├─ gameData.SetSpawnPositions(_playerOrigins)
+│ │   ├─ gameData.selectedVesselClass = Squirrel (configurable)
+│ │   ├─ gameData.SelectedPlayerCount = 3
+│ │   └─ gameData.SelectedIntensity = 1
+│ ├─ Subscribe to OnClientReady → HandleMenuReady (transitions to Ready state)
+│ ├─ Subscribe to OnLaunchGame → HandleLaunchGame (transitions to LaunchingGame)
+│ ├─ TransitionTo(Initializing)
+│ ├─ DomainAssigner.Initialize()
+│ └─ gameData.InitializeGame() → raises OnInitializeGame
+│
+│ Player Spawning Chain (network-driven):
+│ ├─ Player.OnNetworkSpawn() [host's Player object, spawned in Auth scene]
+│ │   ├─ gameData.Players.Add(this)
+│ │   ├─ Raise OnPlayerNetworkSpawnedUlong(OwnerClientId)
+│ │   ├─ Resolve display name (PlayerDataService → GameDataSO → UGS fallback)
+│ │   ├─ NetDomain = DomainAssigner.GetDomainsByGameModes(gameMode)
+│ │   └─ NetDefaultVesselType = gameData.selectedVesselClass (Squirrel)
+│ │
+│ ├─ ServerPlayerVesselInitializer.OnNetworkSpawn() [via NetcodeHooks]
+│ │   ├─ Subscribe to OnPlayerNetworkSpawnedUlong
+│ │   └─ ProcessPreExistingPlayers() — catches host Player already spawned
+│ │
+│ ├─ HandlePlayerNetworkSpawnedAsync(ownerClientId):
+│ │   ├─ Wait preSpawnDelayMs (200ms) for NetworkVariables to sync
+│ │   ├─ FindUnprocessedPlayerByOwnerClientId()
+│ │   ├─ IsReadyToSpawn() — checks valid vessel type + non-empty name
+│ │   └─ OnPlayerReadyToSpawnAsync(player) [virtual — Menu overrides]
+│ │
+│ ├─ ServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync():
+│ │   ├─ SpawnVesselForPlayer():
+│ │   │   ├─ vesselPrefabContainer.TryGetShipPrefab(vesselType)
+│ │   │   ├─ Instantiate(shipNetworkObject)
+│ │   │   ├─ GameObjectInjector.InjectRecursive() — Reflex DI
+│ │   │   ├─ networkVessel.SpawnWithOwnership(clientId, destroyWithScene: true)
+│ │   │   └─ player.NetVesselId = networkVessel.NetworkObjectId
+│ │   ├─ ClientPlayerVesselInitializer.InitializePlayerAndVessel():
+│ │   │   ├─ player.InitializeForMultiplayerMode(vessel)
+│ │   │   ├─ vessel.Initialize(player)
+│ │   │   ├─ ShipHelper.SetShipProperties(themeManagerData, vessel)
+│ │   │   ├─ gameData.AddPlayer(player) — sets LocalPlayer, assigns spawn pose
+│ │   │   ├─ CameraManager.SnapPlayerCameraToTarget() (if local user)
+│ │   │   └─ gameData.InvokeClientReady() → raises OnClientReady
+│ │   ├─ Wait postSpawnDelayMs (200ms) for vessel to replicate
+│ │   └─ NotifyClients() — RPCs to non-host clients (N/A for menu)
+│ │
+│ └─ MenuServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync() [override]:
+│     ├─ await base.OnPlayerReadyToSpawnAsync() — full chain above
+│     └─ ActivateAutopilot(player):
+│         ├─ player.StartPlayer() — activates vessel, enables input
+│         ├─ player.Vessel.ToggleAIPilot(true)
+│         ├─ player.InputController.SetPause(true)
+│         └─ CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)
+│
+│ MainMenuController.HandleMenuReady() [on OnClientReady]:
+│ ├─ TransitionTo(Ready)  — menu is now fully interactive
+│ └─ gameData.InitializeGame()
+│
+│ MenuCrystalClickHandler (optional play-from-menu):
+│ ├─ Tap crystal → TransitionToGameplay:
+│ │   ├─ Fade out menu UI
+│ │   ├─ Vessel.ToggleAIPilot(false), InputController.SetPause(false)
+│ │   └─ Retarget Cinemachine vCam to vessel follow target
+│ └─ Center tap → TransitionToMenu:
+│     ├─ InputController.SetPause(true), Vessel.ToggleAIPilot(true)
+│     ├─ Restore Cinemachine to original menu targets
+│     └─ Fade in menu UI
 │
 │ ScreenSwitcher
 │ ├─ Caches IScreen components, lays out panels to viewport width
@@ -436,16 +499,140 @@ Key interfaces: `IImpactor` / `IImpactCollider`
 
 The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
 
-- `ClientPlayerVesselInitializer` / `ServerPlayerVesselInitializer` — vessel spawning on client/server. Uses `GameObjectInjector.InjectRecursive()` to provide Reflex DI to runtime-spawned vessel hierarchies.
-- `ServerPlayerVesselInitializerWithAI` — AI opponent spawning (shared base logic, deduplicated)
-- `MenuServerPlayerVesselInitializer` — extends `ServerPlayerVesselInitializer` for main menu autopilot vessel display. Forces Squirrel vessel class, enables AI pilot, pauses player input, and configures the Cinemachine camera to follow the autopilot vessel.
-- `MultiplayerSetup` — lobby/connection setup **and NetworkManager lifecycle management**. Starts the network host in response to `OnSignedIn` SOAP event via `EnsureHostStartedAsync()`. Instantiates `NetworkManager` prefab if needed, registers Netcode callbacks, and calls `StartHost()` exactly once.
+- `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. `shutdownNetworkOnDespawn` toggle: `true` for game scenes, `false` for Menu_Main.
+- `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
+- `ServerPlayerVesselInitializerWithAI` — extends `ServerPlayerVesselInitializer`. Spawns server-owned AI players **before** `base.OnNetworkSpawn()` subscribes to events, so AI spawn events are harmlessly missed. Marks all AI players in `_processedPlayers` so the base class skips them. Picks AI vessel type from `SO_GameList` captains (falls back to Sparrow). Configures `AIPilot` with game-mode-aware seeking and skill level.
+- `MenuServerPlayerVesselInitializer` — extends `ServerPlayerVesselInitializer`. Overrides `OnPlayerReadyToSpawnAsync()` to call `base` then `ActivateAutopilot()`: `player.StartPlayer()`, `Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`, `CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)`. Game data configuration (vessel class, player count, intensity) is handled by `MainMenuController` — this class only handles the network spawn chain and autopilot activation.
+- `MenuCrystalClickHandler` — toggles between menu mode (Cinemachine crystal camera + autopilot) and gameplay mode (Cinemachine follows vessel + player control) on Menu_Main. Tap crystal → fade out menu UI, disable autopilot, enable player input, retarget Cinemachine vCam to vessel follow target. Center tap → restore autopilot and menu UI.
+- `MultiplayerSetup` — bridges authentication → Netcode host lifecycle. `EnsureHostStarted()` registers Netcode callbacks and calls `nm.StartHost()` exactly once (guarded by `_hostStartInProgress` flag). For multiplayer games: shuts down local host, queries/creates/joins UGS Multiplayer sessions with Relay transport, handles race conditions on session joins. Session properties: `gameMode` (String1), `maxPlayers` (String2). Connection approval auto-creates player objects.
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
-- `DomainAssigner` — team assignment
+- `DomainAssigner` — static team pool manager. `Initialize()` fills pool with `[Jade, Ruby, Gold]` (excludes None, Unassigned, Blue). `GetDomainsByGameModes()` picks a random unique domain per player (returns `Domains.Jade` for co-op modes). **Must** be called per session start to prevent duplicate/swapped domains.
 
 Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `NetworkBehaviour` and auto-selects local vs network scene loading based on whether a host/server is running.
 
 `VesselStatus` extends `NetworkBehaviour`. Multiplayer game modes can also run solo with AI opponents via the AI Profile system.
+
+#### Player Spawning Architecture
+
+The player spawning system uses a unified multiplayer-first pipeline — menu vessels spawn through the same Netcode + SOAP pipeline as gameplay vessels.
+
+**Spawning class hierarchy:**
+
+```
+ServerPlayerVesselInitializer (MonoBehaviour + NetcodeHooks)
+├── MenuServerPlayerVesselInitializer (Menu_Main: adds autopilot)
+└── ServerPlayerVesselInitializerWithAI (game scenes: pre-spawns AI)
+
+ClientPlayerVesselInitializer (NetworkBehaviour)
+└── Used by all ServerPlayerVesselInitializer variants
+
+PlayerSpawner / VesselSpawner (single-player, non-networked path)
+└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter, VolumeTestPlayerSpawnerAdapter
+```
+
+**Player (`NetworkBehaviour`) NetworkVariables:**
+
+| Variable | Read | Write | Purpose |
+|---|---|---|---|
+| `NetDefaultVesselType` | Everyone | Owner | Vessel class selection |
+| `NetDomain` | Everyone | Server | Team assignment (via `DomainAssigner`) |
+| `NetName` | Everyone | Owner | Display name (3-tier fallback: PlayerDataService → GameDataSO cache → UGS PlayerName) |
+| `NetVesselId` | Everyone | Server | Linked vessel's `NetworkObjectId` |
+| `NetIsAI` | Everyone | Server | AI flag |
+| `NetAvatarId` | Everyone | Owner | Profile avatar ID |
+
+**Player identity resolution** (`Player.OnNetworkSpawn()`):
+1. `PlayerDataService.CurrentProfile.displayName` (live Cloud Save profile)
+2. `GameDataSO.LocalPlayerDisplayName` (cached by `PlayerDataService.HandleProfileChanged`)
+3. `AuthenticationService.PlayerName` with `#XXXX` suffix stripped (last resort)
+
+**SOAP event flow for spawning:**
+
+```
+Player.OnNetworkSpawn()
+  ├─ gameData.Players.Add(this)
+  ├─ Raise OnPlayerNetworkSpawnedUlong(OwnerClientId)
+  │   └─ ServerPlayerVesselInitializer.HandlePlayerNetworkSpawned()
+  │       ├─ Wait preSpawnDelayMs (200ms) for NetworkVariables
+  │       ├─ SpawnVesselForPlayer():
+  │       │   ├─ vesselPrefabContainer.TryGetShipPrefab(vesselType)
+  │       │   ├─ Instantiate + GameObjectInjector.InjectRecursive()
+  │       │   ├─ SpawnWithOwnership(clientId)
+  │       │   └─ player.NetVesselId = vessel.NetworkObjectId
+  │       ├─ ClientPlayerVesselInitializer.InitializePlayerAndVessel()
+  │       │   ├─ player.InitializeForMultiplayerMode(vessel)
+  │       │   ├─ vessel.Initialize(player)
+  │       │   ├─ ShipHelper.SetShipProperties()
+  │       │   ├─ gameData.AddPlayer() → sets LocalPlayer, assigns spawn pose
+  │       │   └─ gameData.InvokeClientReady() (if IsLocalUser)
+  │       ├─ Wait postSpawnDelayMs (200ms) for replication
+  │       └─ NotifyClients() → RPCs to non-host clients
+  │
+  └─ [Client side: SOAP events drive pending pair resolution]
+      ├─ OnPlayerNetworkSpawnedUlong → ProcessPendingPairs()
+      └─ OnVesselNetworkSpawned → ProcessPendingPairs()
+```
+
+**Menu_Main spawning specifics** (via `MainMenuController` + `MenuServerPlayerVesselInitializer`):
+
+| Step | Actor | Action |
+|---|---|---|
+| 1 | `MainMenuController.Start()` | Configure game data: vessel=Squirrel, players=3, intensity=1, spawn positions |
+| 2 | `MainMenuController` | `DomainAssigner.Initialize()`, `gameData.InitializeGame()` |
+| 3 | `Player.OnNetworkSpawn()` | Host Player (spawned in Auth scene) fires `OnPlayerNetworkSpawnedUlong` |
+| 4 | `ServerPlayerVesselInitializer` | `ProcessPreExistingPlayers()` catches the already-spawned host Player |
+| 5 | `ServerPlayerVesselInitializer` | Spawns vessel, initializes pair |
+| 6 | `MenuServerPlayerVesselInitializer` | Override: `ActivateAutopilot()` — AI on, input paused, camera follows |
+| 7 | `ClientPlayerVesselInitializer` | `InvokeClientReady()` for local user |
+| 8 | `MainMenuController` | `HandleMenuReady()` → `TransitionTo(Ready)` — menu interactive |
+
+**`MainMenuController` sub-state machine** (`MainMenuState` enum):
+
+```
+None(0) → Initializing(1) → Ready(2) → LaunchingGame(3)
+                ↑                            │
+                └────────────────────────────┘
+```
+
+- `None → Initializing`: `Start()` — configures game data, fires `OnInitializeGame`
+- `Initializing → Ready`: `OnClientReady` SOAP event (autopilot vessel spawned and active)
+- `Ready → LaunchingGame`: `OnLaunchGame` SOAP event (player selected a game mode)
+
+**Single-player spawning path** (arcade/campaign, non-networked):
+
+```
+MiniGamePlayerSpawnerAdapter.InitializeGame() [on OnInitializeGame]
+  ├─ PlayerSpawner.SpawnPlayerAndShip(data):
+  │   ├─ Instantiate player prefab + DI inject
+  │   ├─ VesselSpawner.SpawnShip(vesselClass) → Instantiate + DI inject
+  │   ├─ player.InitializeForSinglePlayerMode(data, vessel)
+  │   └─ vessel.Initialize(player)
+  ├─ gameData.AddPlayer(player)
+  └─ SpawnDefaultPlayersAndAddToGameData() (AI opponents)
+```
+
+#### Key Files — Player Spawning
+
+| Role | File | Location |
+|---|---|---|
+| Server vessel spawner (base) | `ServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
+| Client pair initializer | `ClientPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
+| Server AI spawner | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
+| Menu autopilot spawner | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
+| Menu play-from-menu toggle | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
+| NetworkManager lifecycle | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
+| Team assignment | `DomainAssigner.cs` | `_Scripts/Controller/Multiplayer/` |
+| Player NetworkBehaviour | `Player.cs` | `_Scripts/Controller/Player/` |
+| Player interface | `IPlayer.cs` | `_Scripts/Controller/Player/` |
+| Single-player spawner | `PlayerSpawner.cs` | `_Scripts/Controller/Player/` |
+| Single-player adapter base | `PlayerSpawnerAdapterBase.cs` | `_Scripts/Controller/Player/` |
+| Arcade spawn adapter | `MiniGamePlayerSpawnerAdapter.cs` | `_Scripts/Controller/Player/` |
+| Vessel instantiation | `VesselSpawner.cs` | `_Scripts/Controller/Vessel/` |
+| Vessel prefab mapping | `VesselPrefabContainer.cs` | `_Scripts/ScriptableObjects/SOAP/` |
+| NetcodeHooks adapter | `NetcodeHooks.cs` | `_Scripts/Utility/Network/` |
+| Game data + SOAP events | `GameDataSO.cs` | `_Scripts/Utility/DataContainers/` |
+| Menu scene controller | `MainMenuController.cs` | `_Scripts/System/` |
+| Menu sub-state enum | `MainMenuState.cs` | `_Scripts/Data/Enums/` |
 
 ### FTUE (First-Time User Experience)
 
@@ -563,7 +750,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Arcade games | `MiniGameControllerBase`, `SinglePlayerMiniGameControllerBase`, `MultiplayerMiniGameControllerBase`, `CompositeScoring` | `_Scripts/Controller/Arcade/` |
 | Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
-| Player system | `Player`, `PlayerSpawner`, `IPlayer`, platform-specific adapters | `_Scripts/Controller/Player/` |
+| Player system | `Player` (NetworkBehaviour, `IPlayer`), `PlayerSpawner`, `PlayerSpawnerAdapterBase`, `MiniGamePlayerSpawnerAdapter`, `VolumeTestPlayerSpawnerAdapter` | `_Scripts/Controller/Player/` |
 | Menu navigation | `ScreenSwitcher`, `IScreen`, `ModalWindowManager`, `ProfileDisplayWidget`, `NavLink`/`NavGroup` | `_Scripts/UI/`, `_Scripts/UI/Interfaces/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Modals/` |
 | Menu screens | `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen` | `_Scripts/UI/Screens/` |
 | UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
@@ -576,7 +763,8 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Friends | `FriendsServiceFacade` (facade/writer for UGS Friends), `FriendsDataSO` (shared data) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
-| Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + lobby), `ClientPlayerVesselInitializer`, `ServerPlayerVesselInitializer`, `MenuServerPlayerVesselInitializer` (menu autopilot), `DomainAssigner` | `_Scripts/Controller/Multiplayer/` |
+| Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
+| Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
 | Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
 | ScriptableObjects | `SO_Vessel`, `SO_Captain`, `SO_Game`, `SO_ArcadeGame`, `SO_Element`, `SO_Mission`, etc. | `_Scripts/ScriptableObjects/` |
