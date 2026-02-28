@@ -21,6 +21,12 @@ namespace CosmicShore.Game.IO
             ResetInput();
         }
 
+        public override void OnStrategyActivated()
+        {
+            base.OnStrategyActivated();
+            inputStatus.ActiveInputDevice = InputDeviceType.Gamepad;
+        }
+
         public override void ProcessInput()
         {
             if (Gamepad.current == null) return;

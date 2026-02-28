@@ -17,6 +17,8 @@ namespace CosmicShore.Game
         {
             shipControlActions.Clear();
 
+            if (inputEventShipActions == null) return;
+
             foreach (var map in inputEventShipActions)
             {
                 if (!shipControlActions.TryGetValue(map.InputEvent, out var list))
