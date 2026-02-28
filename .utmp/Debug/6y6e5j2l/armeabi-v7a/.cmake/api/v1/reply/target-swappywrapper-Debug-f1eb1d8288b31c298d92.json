@@ -2,7 +2,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/Debug/6y6e5j2l/obj/arm64-v8a/libswappywrapper.so"
+			"path" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/build/intermediates/cxx/Debug/6y6e5j2l/obj/armeabi-v7a/libswappywrapper.so"
 		}
 	],
 	"backtrace" : 1,
@@ -56,7 +56,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D__BIONIC_NO_PAGE_SIZE_MACRO -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -Wall -Wextra -pedantic -Werror -fno-limit-debug-info  -fPIC"
+					"fragment" : "-g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D__BIONIC_NO_PAGE_SIZE_MACRO -D_FORTIFY_SOURCE=2 -march=armv7-a -mthumb -Wformat -Werror=format-security   -Wall -Wextra -pedantic -Werror -fno-limit-debug-info  -fPIC"
 				}
 			],
 			"defines" : 
@@ -73,7 +73,7 @@
 			[
 				{
 					"backtrace" : 4,
-					"path" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/FramePacing"
+					"path" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp/FramePacing"
 				},
 				{
 					"backtrace" : 2,
@@ -98,7 +98,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "-Wl,-z,max-page-size=16384 -Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--no-undefined-version -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments  -Wl,--wrap=__android_log_print",
+				"fragment" : "-Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--no-undefined-version -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments  -Wl,--wrap=__android_log_print",
 				"role" : "flags"
 			},
 			{
@@ -108,7 +108,7 @@
 			},
 			{
 				"backtrace" : 2,
-				"fragment" : "C:\\Users\\gradi\\.gradle\\caches\\8.13\\transforms\\6965e52cd47ead75a4eeb76e0c3cd8ed\\transformed\\jetified-games-frame-pacing-1.10.0\\prefab\\modules\\swappy_static\\libs\\android.arm64-v8a_API28_NDK23_cpp_shared_Release\\libswappy.a",
+				"fragment" : "C:\\Users\\gradi\\.gradle\\caches\\8.13\\transforms\\6965e52cd47ead75a4eeb76e0c3cd8ed\\transformed\\jetified-games-frame-pacing-1.10.0\\prefab\\modules\\swappy_static\\libs\\android.armeabi-v7a_API28_NDK23_cpp_shared_Release\\libswappy.a",
 				"role" : "libraries"
 			},
 			{

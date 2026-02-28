@@ -66,7 +66,7 @@
 				{
 					"directoryIndex" : 1,
 					"id" : "swappywrapper::@7e25bd1f32ce224db4e9",
-					"jsonFile" : "target-swappywrapper-Debug-a60871ce0a131b8846d5.json",
+					"jsonFile" : "target-swappywrapper-Debug-f1eb1d8288b31c298d92.json",
 					"name" : "swappywrapper",
 					"projectIndex" : 1
 				}
@@ -77,7 +77,7 @@
 	"paths" : 
 	{
 		"build" : "C:/Users/gradi/source/repos/Star-Writer2/.utmp/Debug/6y6e5j2l/armeabi-v7a",
-		"source" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp"
+		"source" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp"
 	},
 	"version" : 
 	{

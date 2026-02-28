@@ -130,7 +130,7 @@ CMAKE_FIND_ROOT_PATH:UNINITIALIZED=C:\Users\gradi\source\repos\Star-Writer2\.utm
 CMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/Unity
 
 //No help, variable specified on the command line.
-CMAKE_LIBRARY_OUTPUT_DIRECTORY:UNINITIALIZED=C:\Users\gradi\source\repos\Star-Writer2\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\Debug\6y6e5j2l\obj\armeabi-v7a
+CMAKE_LIBRARY_OUTPUT_DIRECTORY:UNINITIALIZED=C:\Users\gradi\source\repos\Star-Writer2\Library\PramData\AndroidApplicationController\Cache\com.FrogletGames.TailGlider\gradle-project\unityLibrary\build\intermediates\cxx\Debug\6y6e5j2l\obj\armeabi-v7a
 
 //Path to a program.
 CMAKE_LINKER:FILEPATH=D:/Unity/6000.0.62f1/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/toolchains/llvm/prebuilt/windows-x86_64/bin/ld.lld.exe
@@ -182,7 +182,7 @@ CMAKE_RANLIB:FILEPATH=D:/Unity/6000.0.62f1/Editor/Data/PlaybackEngines/AndroidPl
 CMAKE_READELF:FILEPATH=D:/Unity/6000.0.62f1/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-readelf.exe
 
 //No help, variable specified on the command line.
-CMAKE_RUNTIME_OUTPUT_DIRECTORY:UNINITIALIZED=C:\Users\gradi\source\repos\Star-Writer2\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\Debug\6y6e5j2l\obj\armeabi-v7a
+CMAKE_RUNTIME_OUTPUT_DIRECTORY:UNINITIALIZED=C:\Users\gradi\source\repos\Star-Writer2\Library\PramData\AndroidApplicationController\Cache\com.FrogletGames.TailGlider\gradle-project\unityLibrary\build\intermediates\cxx\Debug\6y6e5j2l\obj\armeabi-v7a
 
 //Flags used by the linker during the creation of dll's.
 CMAKE_SHARED_LINKER_FLAGS:STRING=
@@ -255,7 +255,7 @@ Unity_BINARY_DIR:STATIC=C:/Users/gradi/source/repos/Star-Writer2/.utmp/Debug/6y6
 Unity_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
-Unity_SOURCE_DIR:STATIC=C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp
+Unity_SOURCE_DIR:STATIC=C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp
 
 //The directory containing a CMake configuration file for games-frame-pacing.
 games-frame-pacing_DIR:PATH=C:/Users/gradi/source/repos/Star-Writer2/.utmp/Debug/6y6e5j2l/prefab/armeabi-v7a/prefab/lib/arm-linux-androideabi/cmake/games-frame-pacing
@@ -270,7 +270,7 @@ swappywrapper_IS_TOP_LEVEL:STATIC=OFF
 swappywrapper_LIB_DEPENDS:STATIC=general;android;general;games-frame-pacing::swappy_static;general;log;general;c++;
 
 //Value Computed by CMake
-swappywrapper_SOURCE_DIR:STATIC=C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/FramePacing
+swappywrapper_SOURCE_DIR:STATIC=C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp/FramePacing
 
 
 ########################
@@ -353,7 +353,7 @@ CMAKE_GENERATOR_PLATFORM:INTERNAL=
 CMAKE_GENERATOR_TOOLSET:INTERNAL=
 //Source directory with the top level CMakeLists.txt file for this
 // project
-CMAKE_HOME_DIRECTORY:INTERNAL=C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp
+CMAKE_HOME_DIRECTORY:INTERNAL=C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp
 //Install .so files without execute permission.
 CMAKE_INSTALL_SO_NO_EXE:INTERNAL=0
 //ADVANCED property for variable: CMAKE_LINKER

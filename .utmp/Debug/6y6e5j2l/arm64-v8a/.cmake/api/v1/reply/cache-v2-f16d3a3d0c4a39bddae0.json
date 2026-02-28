@@ -250,6 +250,22 @@
 			"value" : "D:/Unity/6000.0.62f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/cmake/3.22.1/bin/ctest.exe"
 		},
 		{
+			"name" : "CMAKE_CXX_COMPILER",
+			"properties" : 
+			[
+				{
+					"name" : "ADVANCED",
+					"value" : "1"
+				},
+				{
+					"name" : "HELPSTRING",
+					"value" : "(This variable does not exist and should not be used)"
+				}
+			],
+			"type" : "UNINITIALIZED",
+			"value" : ""
+		},
+		{
 			"name" : "CMAKE_CXX_COMPILER_AR",
 			"properties" : 
 			[
@@ -376,6 +392,22 @@
 			],
 			"type" : "STRING",
 			"value" : "-latomic -lm"
+		},
+		{
+			"name" : "CMAKE_C_COMPILER",
+			"properties" : 
+			[
+				{
+					"name" : "ADVANCED",
+					"value" : "1"
+				},
+				{
+					"name" : "HELPSTRING",
+					"value" : "(This variable does not exist and should not be used)"
+				}
+			],
+			"type" : "UNINITIALIZED",
+			"value" : ""
 		},
 		{
 			"name" : "CMAKE_C_COMPILER_AR",
@@ -707,7 +739,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp"
+			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -743,7 +775,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\Bee\\Android\\Prj\\IL2CPP\\Gradle\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\arm64-v8a"
+			"value" : "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\PramData\\AndroidApplicationController\\Cache\\com.FrogletGames.TailGlider\\gradle-project\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_LINKER",
@@ -1015,7 +1047,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\Bee\\Android\\Prj\\IL2CPP\\Gradle\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\arm64-v8a"
+			"value" : "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\PramData\\AndroidApplicationController\\Cache\\com.FrogletGames.TailGlider\\gradle-project\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_SHARED_LINKER_FLAGS",
@@ -1255,11 +1287,11 @@
 			[
 				{
 					"name" : "HELPSTRING",
-					"value" : "No help, variable specified on the command line."
+					"value" : "The CMake toolchain file"
 				}
 			],
-			"type" : "UNINITIALIZED",
-			"value" : "D:\\Unity\\6000.0.62f1\\Editor\\Data\\PlaybackEngines\\AndroidPlayer\\NDK\\build\\cmake\\android.toolchain.cmake"
+			"type" : "FILEPATH",
+			"value" : "D:/Unity/6000.0.62f1/Editor/Data/PlaybackEngines/AndroidPlayer/NDK/build/cmake/android.toolchain.cmake"
 		},
 		{
 			"name" : "CMAKE_VERBOSE_MAKEFILE",
@@ -1311,7 +1343,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp"
+			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp"
 		},
 		{
 			"name" : "games-frame-pacing_DIR",
@@ -1371,7 +1403,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/FramePacing"
+			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp/FramePacing"
 		}
 	],
 	"kind" : "cache",

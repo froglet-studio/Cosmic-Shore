@@ -1,7 +1,7 @@
 {
   "buildFiles": [
-    "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\Bee\\Android\\Prj\\IL2CPP\\Gradle\\unityLibrary\\src\\main\\cpp\\CMakeLists.txt",
-    "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\Bee\\Android\\Prj\\IL2CPP\\Gradle\\unityLibrary\\src\\main\\cpp\\FramePacing\\CMakeLists.txt"
+    "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\PramData\\AndroidApplicationController\\Cache\\com.FrogletGames.TailGlider\\gradle-project\\unityLibrary\\src\\main\\cpp\\CMakeLists.txt",
+    "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\PramData\\AndroidApplicationController\\Cache\\com.FrogletGames.TailGlider\\gradle-project\\unityLibrary\\src\\main\\cpp\\FramePacing\\CMakeLists.txt"
   ],
   "cleanCommandsComponents": [
     [
@@ -21,7 +21,7 @@
     "swappywrapper::@7e25bd1f32ce224db4e9": {
       "artifactName": "swappywrapper",
       "abi": "armeabi-v7a",
-      "output": "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\Bee\\Android\\Prj\\IL2CPP\\Gradle\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\armeabi-v7a\\libswappywrapper.so",
+      "output": "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\PramData\\AndroidApplicationController\\Cache\\com.FrogletGames.TailGlider\\gradle-project\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\armeabi-v7a\\libswappywrapper.so",
       "runtimeFiles": []
     }
   }

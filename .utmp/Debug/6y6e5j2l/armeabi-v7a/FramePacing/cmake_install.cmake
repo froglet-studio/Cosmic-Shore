@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/FramePacing
+# Install script for directory: C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp/FramePacing
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

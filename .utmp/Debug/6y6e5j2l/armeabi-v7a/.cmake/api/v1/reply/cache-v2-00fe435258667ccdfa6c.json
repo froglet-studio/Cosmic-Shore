@@ -739,7 +739,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp"
+			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -775,7 +775,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\Bee\\Android\\Prj\\IL2CPP\\Gradle\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\armeabi-v7a"
+			"value" : "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\PramData\\AndroidApplicationController\\Cache\\com.FrogletGames.TailGlider\\gradle-project\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\armeabi-v7a"
 		},
 		{
 			"name" : "CMAKE_LINKER",
@@ -1047,7 +1047,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\Bee\\Android\\Prj\\IL2CPP\\Gradle\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\armeabi-v7a"
+			"value" : "C:\\Users\\gradi\\source\\repos\\Star-Writer2\\Library\\PramData\\AndroidApplicationController\\Cache\\com.FrogletGames.TailGlider\\gradle-project\\unityLibrary\\build\\intermediates\\cxx\\Debug\\6y6e5j2l\\obj\\armeabi-v7a"
 		},
 		{
 			"name" : "CMAKE_SHARED_LINKER_FLAGS",
@@ -1343,7 +1343,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp"
+			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp"
 		},
 		{
 			"name" : "games-frame-pacing_DIR",
@@ -1403,7 +1403,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/FramePacing"
+			"value" : "C:/Users/gradi/source/repos/Star-Writer2/Library/PramData/AndroidApplicationController/Cache/com.FrogletGames.TailGlider/gradle-project/unityLibrary/src/main/cpp/FramePacing"
 		}
 	],
 	"kind" : "cache",
