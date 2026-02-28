@@ -55,8 +55,8 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
         MenuFreestyleEventsContainerSO _freestyleEvents;
 
-        [SerializeField, Tooltip("Transform the CM Main Menu camera should track (typically the crystal).")]
-        Transform _menuCameraTarget;
+        [SerializeField, Tooltip("Cell runtime data used to find the crystal tracking target at runtime.")]
+        CellRuntimeDataSO _cellData;
 
         [Inject] GameDataSO _gameData;
 
@@ -130,6 +130,8 @@ namespace CosmicShore.Core
 
             _freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
             _freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
+
+            _cellData.OnCrystalSpawned.OnRaised += HandleCrystalSpawned;
         }
 
         void UnsubscribeEvents()
@@ -142,6 +144,8 @@ namespace CosmicShore.Core
 
             _freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
             _freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
+
+            _cellData.OnCrystalSpawned.OnRaised -= HandleCrystalSpawned;
         }
 
         // ── Game Data Configuration ─────────────────────────────────────
@@ -187,6 +191,11 @@ namespace CosmicShore.Core
             ActivateMenuCamera();
         }
 
+        void HandleCrystalSpawned()
+        {
+            SetMenuVCamTarget();
+        }
+
         // ── Autopilot ─────────────────────────────────────────────
 
         /// <summary>
@@ -214,12 +223,6 @@ namespace CosmicShore.Core
             if (!cmTransform) return;
 
             _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
-            if (_menuVCam && _menuCameraTarget)
-            {
-                var target = _menuVCam.Target;
-                target.TrackingTarget = _menuCameraTarget;
-                _menuVCam.Target = target;
-            }
         }
 
         /// <summary>
@@ -234,15 +237,21 @@ namespace CosmicShore.Core
 
             if (_menuVCam)
             {
-                if (_menuCameraTarget)
-                {
-                    var target = _menuVCam.Target;
-                    target.TrackingTarget = _menuCameraTarget;
-                    _menuVCam.Target = target;
-                }
-
+                SetMenuVCamTarget();
                 _menuVCam.gameObject.SetActive(true);
             }
+        }
+
+        void SetMenuVCamTarget()
+        {
+            if (!_menuVCam) return;
+
+            var crystalTransform = _cellData.CrystalTransform;
+            if (!crystalTransform) return;
+
+            var target = _menuVCam.Target;
+            target.TrackingTarget = crystalTransform;
+            _menuVCam.Target = target;
         }
 
         /// <summary>
