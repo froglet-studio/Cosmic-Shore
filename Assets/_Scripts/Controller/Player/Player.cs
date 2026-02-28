@@ -150,15 +150,42 @@ namespace CosmicShore.Gameplay
             {
                 NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
             }
-            
+
             NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
             NetIsAI.Value = IsInitializedAsAI;
-            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+
+            // Read the configured vessel class. If it's still Random/Any, it means
+            // MainMenuController.Start() (or the game scene controller) hasn't
+            // configured game data yet. Defer the assignment until OnInitializeGame
+            // fires so the server-side spawn chain sees a valid vessel type.
+            var vesselClass = gameData.selectedVesselClass.Value;
+            if (vesselClass != VesselClassType.Random && vesselClass != VesselClassType.Any)
+            {
+                NetDefaultVesselType.Value = vesselClass;
+            }
+            else
+            {
+                gameData.OnInitializeGame.OnRaised += HandleDeferredVesselTypeAssignment;
+            }
 
             // Signal spawn after name is set so server-side handlers see valid values.
             gameData.InvokePlayerNetworkSpawned();
 
             InputController.Initialize();
+        }
+
+        void HandleDeferredVesselTypeAssignment()
+        {
+            gameData.OnInitializeGame.OnRaised -= HandleDeferredVesselTypeAssignment;
+
+            var vesselClass = gameData.selectedVesselClass.Value;
+            if (vesselClass == VesselClassType.Random || vesselClass == VesselClassType.Any)
+            {
+                CSDebug.LogWarning("[Player] selectedVesselClass still not configured after OnInitializeGame. Defaulting to Manta.");
+                vesselClass = VesselClassType.Manta;
+            }
+
+            NetDefaultVesselType.Value = vesselClass;
         }
         
         public override void OnNetworkDespawn()
@@ -167,6 +194,7 @@ namespace CosmicShore.Gameplay
             NetName.OnValueChanged -= OnNetNameValueChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
+            gameData.OnInitializeGame.OnRaised -= HandleDeferredVesselTypeAssignment;
         }
 
 
