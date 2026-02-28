@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using TMPro;
 using UnityEngine;
 

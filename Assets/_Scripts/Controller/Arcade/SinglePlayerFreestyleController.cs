@@ -1,4 +1,6 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -41,9 +43,8 @@ namespace CosmicShore.Gameplay
             if (cellScript) cellScript.enabled = true;
         }
 
-        protected override void OnEnable()
+        protected virtual void OnEnable()
         {
-            base.OnEnable();
             ShapeSignEvents.OnShapeSelected += HandleShapeCollision;
             if (shapeDrawingManager)
             {
