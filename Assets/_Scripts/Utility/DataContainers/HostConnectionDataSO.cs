@@ -68,6 +68,17 @@ namespace CosmicShore.Utility
         public ScriptableEventPartyPlayerData OnInviteSent;
 
         // ─────────────────────────────────────────────────────────────────────
+        // Network Transition
+        // ─────────────────────────────────────────────────────────────────────
+
+        [Header("Network Transition")]
+        [Tooltip("Raised when the NetworkManager is about to shut down and restart (host→relay or local→client).")]
+        public ScriptableEventNoParam OnNetworkTransitioning;
+
+        [Tooltip("Raised after the NetworkManager transition completes and the new session is ready.")]
+        public ScriptableEventNoParam OnNetworkTransitionComplete;
+
+        // ─────────────────────────────────────────────────────────────────────
         // Local Player Identity
         // ─────────────────────────────────────────────────────────────────────
 

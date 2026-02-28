@@ -6,14 +6,23 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
+using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using CosmicShore.ScriptableObjects;
+
 namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Single-responsibility service that establishes and maintains the host
     /// connection (presence lobby) at the main-menu stage.
+    ///
+    /// The presence lobby is a non-relay UGS session used purely for player
+    /// discovery and invite coordination via session properties.
+    ///
+    /// Party sessions use relay networking so the accepting player can shut
+    /// down their local host and join the inviter's NetworkManager as a client.
     ///
     /// Writes all state into <see cref="HostConnectionDataSO"/> so every UI
     /// consumer can react via SOAP events / lists without coupling to this class.
@@ -39,6 +48,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float refreshIntervalSeconds = 3f;
 
         [Inject] private PlayerDataService playerDataService;
+        [Inject] private SceneNameListSO sceneNames;
 
         // ─────────────────────────────────────────────────────────────────────
         // Static access
@@ -56,6 +66,7 @@ namespace CosmicShore.Gameplay
         private bool _initialized;
         private bool _joining;
         private bool _leaving;
+        private bool _transitioning;
         private PartyInviteData? _lastFiredInvite;
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
@@ -86,7 +97,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_initialized || _presenceLobby == null) return;
+            if (!_initialized || _presenceLobby == null || _transitioning) return;
 
             _refreshTimer += Time.deltaTime;
             if (_refreshTimer >= refreshIntervalSeconds)
@@ -144,6 +155,12 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            if (_transitioning)
+            {
+                Debug.LogWarning("[HostConnectionService] Cannot send invite — network transition in progress.");
+                return;
+            }
+
             try
             {
                 SyncLocalIdentity();
@@ -176,31 +193,71 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Accepts an incoming party invite: shuts down the local NetworkManager host,
+        /// joins the inviter's relay-backed party session as a client, and lets Netcode
+        /// scene sync load Menu_Main from the host.
+        /// The host's <see cref="MenuServerPlayerVesselInitializer"/> will spawn the
+        /// joiner's vessel with autopilot automatically.
+        /// </summary>
         public async Task AcceptInviteAsync(PartyInviteData invite)
         {
+            if (_transitioning)
+            {
+                Debug.LogWarning("[HostConnectionService] Cannot accept invite — network transition in progress.");
+                return;
+            }
+
+            connectionData.OnNetworkTransitioning?.Raise();
+            _transitioning = true;
+
             try
             {
                 SyncLocalIdentity();
 
+                var nm = NetworkManager.Singleton;
+
+                // Shutdown existing local NetworkManager host so we can
+                // restart as a client connected to the inviter's relay host.
+                if (nm != null && nm.IsListening)
+                {
+                    nm.Shutdown();
+                    await UniTask.WaitUntil(() => !nm.IsListening);
+                }
+
+                // Join the relay-backed party session — UGS Multiplayer
+                // automatically configures transport and starts NetworkManager
+                // as client via WithRelayNetwork on the session.
                 _partySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
                     invite.PartySessionId,
                     new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
 
                 connectionData.IsHost = false;
 
-                // Add self + host to party members
+                // Update party members
                 connectionData.PartyMembers?.Clear();
                 connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
                 var hostData = new PartyPlayerData(invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
                 connectionData.PartyMembers?.Add(hostData);
                 connectionData.OnPartyMemberJoined?.Raise(hostData);
 
-                Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
+                // Menu_Main loads automatically via Netcode scene sync from host.
+                // The host's MenuServerPlayerVesselInitializer will spawn our
+                // vessel with autopilot when our Player object is created via
+                // connection approval.
+
+                Debug.Log($"[HostConnectionService] Accepted invite — joined party {_partySession.Id} as client");
                 await RequestClearInviteAsync();
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] AcceptInvite error: {e.Message}");
+                await RecoverLocalHostAsync();
+            }
+            finally
+            {
+                _transitioning = false;
+                connectionData.OnNetworkTransitionComplete?.Raise();
             }
         }
 
@@ -260,6 +317,12 @@ namespace CosmicShore.Gameplay
 
         public ISession PartySession => _partySession;
 
+        /// <summary>
+        /// True while the service is transitioning the NetworkManager
+        /// (shutting down local host and restarting with relay).
+        /// </summary>
+        public bool IsTransitioning => _transitioning;
+
         // ─────────────────────────────────────────────────────────────────────
         // Presence Lobby
         // ─────────────────────────────────────────────────────────────────────
@@ -267,17 +330,6 @@ namespace CosmicShore.Gameplay
         private async Task JoinPresenceLobbyAsync()
         {
             if (_presenceLobby != null) return;
-
-            // Skip if NetworkManager is already running as host (e.g. menu
-            // autopilot started by MultiplayerSetup). The presence lobby uses
-            // WithRelayNetwork() which reconfigures the transport and attempts
-            // to restart the host, corrupting the existing local session.
-            if (Unity.Netcode.NetworkManager.Singleton != null &&
-                Unity.Netcode.NetworkManager.Singleton.IsListening)
-            {
-                Debug.Log("[HostConnectionService] Deferring presence lobby — NetworkManager already hosting.");
-                return;
-            }
 
             try
             {
@@ -320,6 +372,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Creates a presence lobby WITHOUT relay. The lobby is used purely for
+        /// player discovery and invite coordination via session properties.
+        /// No NetworkManager interaction occurs.
+        /// </summary>
         private async Task CreatePresenceLobbyAsync()
         {
             try
@@ -339,11 +396,11 @@ namespace CosmicShore.Gameplay
                                 PropertyIndex.String1)
                         }
                     }
-                }.WithRelayNetwork();
+                };
 
                 _presenceLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
                 connectionData.IsHost = true;
-                Debug.Log($"[HostConnectionService] Created presence lobby {_presenceLobby.Id}");
+                Debug.Log($"[HostConnectionService] Created presence lobby {_presenceLobby.Id} (no relay)");
             }
             catch (Exception e)
             {
@@ -379,7 +436,7 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid RefreshAsync()
         {
-            if (_presenceLobby == null) return;
+            if (_presenceLobby == null || _transitioning) return;
 
             try
             {
@@ -482,19 +539,72 @@ namespace CosmicShore.Gameplay
         // Party Session
         // ─────────────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Creates a relay-backed party session. This involves:
+        /// 1. Shutting down the existing local NetworkManager host
+        /// 2. Creating a UGS session with relay (auto-starts NetworkManager as relay host)
+        /// 3. Reloading Menu_Main via the Netcode scene manager
+        ///
+        /// After this, remote clients can join via <see cref="AcceptInviteAsync"/>
+        /// and their vessels will be spawned by <see cref="MenuServerPlayerVesselInitializer"/>.
+        /// </summary>
         private async Task CreatePartySessionAsync()
         {
-            var opts = new SessionOptions
-            {
-                MaxPlayers = connectionData.MaxPartySlots,
-                IsLocked = false,
-                IsPrivate = true,
-                PlayerProperties = BuildLocalPlayerProperties()
-            }.WithRelayNetwork();
+            connectionData.OnNetworkTransitioning?.Raise();
+            _transitioning = true;
 
-            _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
-            connectionData.IsHost = true;
-            Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
+            try
+            {
+                var nm = NetworkManager.Singleton;
+
+                // Shutdown existing local host so WithRelayNetwork can
+                // reconfigure transport and restart as relay host.
+                if (nm != null && nm.IsListening)
+                {
+                    nm.Shutdown();
+                    await UniTask.WaitUntil(() => !nm.IsListening);
+                }
+
+                var opts = new SessionOptions
+                {
+                    MaxPlayers = connectionData.MaxPartySlots,
+                    IsLocked = false,
+                    IsPrivate = true,
+                    PlayerProperties = BuildLocalPlayerProperties()
+                }.WithRelayNetwork();
+
+                _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
+                connectionData.IsHost = true;
+
+                // Wait for NetworkManager to be listening as relay host
+                nm = NetworkManager.Singleton;
+                if (nm != null)
+                {
+                    await UniTask.WaitUntil(() => nm.IsListening);
+
+                    // Reload Menu_Main via Netcode scene manager so that
+                    // MainMenuController, MenuServerPlayerVesselInitializer,
+                    // and all other scene components reinitialize properly.
+                    string menuScene = sceneNames != null
+                        ? sceneNames.MainMenuScene
+                        : "Menu_Main";
+
+                    nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+                }
+
+                Debug.Log($"[HostConnectionService] Created party session {_partySession.Id} with relay");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[HostConnectionService] CreatePartySession error: {e.Message}");
+                await RecoverLocalHostAsync();
+                throw;
+            }
+            finally
+            {
+                _transitioning = false;
+                connectionData.OnNetworkTransitionComplete?.Raise();
+            }
         }
 
         private async Task RequestClearInviteAsync()
@@ -521,6 +631,41 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] ClearInvite error: {e.Message}");
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Recovery
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Attempts to recover from a failed network transition by restarting
+        /// the local host and reloading Menu_Main.
+        /// </summary>
+        private async Task RecoverLocalHostAsync()
+        {
+            try
+            {
+                var nm = NetworkManager.Singleton;
+                if (nm == null) return;
+
+                if (!nm.IsListening)
+                {
+                    nm.StartHost();
+                    await UniTask.WaitUntil(() => nm.IsListening);
+
+                    string menuScene = sceneNames != null
+                        ? sceneNames.MainMenuScene
+                        : "Menu_Main";
+
+                    nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+
+                    Debug.Log("[HostConnectionService] Recovered — restarted as local host.");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[HostConnectionService] Recovery failed: {e.Message}");
             }
         }
 

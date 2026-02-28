@@ -169,5 +169,22 @@ namespace CosmicShore.Tests
         }
 
         #endregion
+
+        #region Network Transition Events
+
+        [Test]
+        public void OnNetworkTransitioning_IsNull_ByDefault()
+        {
+            // SOAP event fields are null until an asset is wired in the inspector.
+            Assert.IsNull(_data.OnNetworkTransitioning);
+        }
+
+        [Test]
+        public void OnNetworkTransitionComplete_IsNull_ByDefault()
+        {
+            Assert.IsNull(_data.OnNetworkTransitionComplete);
+        }
+
+        #endregion
     }
 }

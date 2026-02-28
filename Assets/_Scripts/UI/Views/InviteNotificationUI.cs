@@ -4,12 +4,18 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.ScriptableObjects;
+
 namespace CosmicShore.UI
 {
     /// <summary>
     /// Toast popup for incoming party invitations.
     /// Subscribes to <see cref="HostConnectionDataSO.OnInviteReceived"/> (SOAP event)
     /// and calls <see cref="HostConnectionService"/> to accept or decline.
+    ///
+    /// On accept, disables both buttons during the async network transition
+    /// (local host shutdown → relay client join) and shows a "Joining..." label.
+    /// The scene reloads via Netcode scene sync so this popup is destroyed
+    /// automatically during the transition.
     /// </summary>
     public class InviteNotificationUI : MonoBehaviour
     {
@@ -64,6 +70,7 @@ namespace CosmicShore.UI
             if (sprite != null)
                 hostAvatarImage.sprite = sprite;
 
+            SetButtonsInteractable(true);
             gameObject.SetActive(true);
         }
 
@@ -78,10 +85,19 @@ namespace CosmicShore.UI
 
         private async void OnAccept()
         {
-            HidePopup();
+            // Disable buttons during the network transition to prevent
+            // double-clicks. Show "Joining..." feedback.
+            SetButtonsInteractable(false);
+            hostNameText.text = $"Joining {_pendingInvite.HostDisplayName}...";
 
             if (HostConnectionService.Instance != null)
                 await HostConnectionService.Instance.AcceptInviteAsync(_pendingInvite);
+
+            // The scene reloads via Netcode scene sync, so this popup
+            // will be destroyed during the transition. If the accept
+            // fails and we're still alive, hide the popup.
+            if (this != null && gameObject != null)
+                HidePopup();
         }
 
         private async void OnDecline()
@@ -95,6 +111,12 @@ namespace CosmicShore.UI
         // ─────────────────────────────────────────────────────────────────────
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
+
+        private void SetButtonsInteractable(bool interactable)
+        {
+            if (acceptButton != null) acceptButton.interactable = interactable;
+            if (declineButton != null) declineButton.interactable = interactable;
+        }
 
         private Sprite ResolveAvatarSprite(int avatarId)
         {
