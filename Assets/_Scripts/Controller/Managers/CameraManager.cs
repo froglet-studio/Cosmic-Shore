@@ -145,6 +145,17 @@ namespace CosmicShore.Gameplay
                 pcc.SnapToTarget();
         }
 
+        /// <summary>
+        /// Blends the player camera from the given pose to its follow target
+        /// over <paramref name="duration"/> seconds. Call after
+        /// <see cref="SetupGamePlayCameras"/> to replace the snap with a smooth transition.
+        /// </summary>
+        public void BlendPlayerCameraFrom(Vector3 fromPos, Quaternion fromRot, float duration)
+        {
+            if (_playerCamera is CustomCameraController pcc)
+                pcc.BlendFromPosition(fromPos, fromRot, duration);
+        }
+
         public void SetNormalizedCloseCameraDistance(float normalizedDistance)
         {
             if (_playerCamera == null) return;

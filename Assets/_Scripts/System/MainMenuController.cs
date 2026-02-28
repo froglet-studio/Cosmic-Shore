@@ -45,6 +45,9 @@ namespace CosmicShore.Core
         int menuIntensity = 1;
 
         [Header("Camera Switching")]
+        [SerializeField, Tooltip("Duration of camera blend when switching between menu and gameplay cameras.")]
+        float _cameraBlendDuration = 1.5f;
+
         [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
         MenuFreestyleEventsContainerSO _freestyleEvents;
 
@@ -112,8 +115,8 @@ namespace CosmicShore.Core
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised += HandleLaunchGame;
 
-            _freestyleEvents.OnEnterFreestyle.OnRaised += ActivateGameplayCamera;
-            _freestyleEvents.OnExitFreestyle.OnRaised += ActivateMenuCamera;
+            _freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
+            _freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
         }
 
         void UnsubscribeEvents()
@@ -124,8 +127,8 @@ namespace CosmicShore.Core
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised -= HandleLaunchGame;
 
-            _freestyleEvents.OnEnterFreestyle.OnRaised -= ActivateGameplayCamera;
-            _freestyleEvents.OnExitFreestyle.OnRaised -= ActivateMenuCamera;
+            _freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
+            _freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
         }
 
         // ── Game Data Configuration ─────────────────────────────────────
@@ -164,7 +167,8 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Activates the CM Main Menu Cinemachine camera for menu state.
-        /// Deactivates all CameraManager gameplay cameras.
+        /// Deactivates all CameraManager gameplay cameras. Used for the initial
+        /// menu setup where no blend is needed.
         /// </summary>
         void ActivateMenuCamera()
         {
@@ -174,19 +178,53 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Activates CM PlayerCam for freestyle/game state.
-        /// Disables the CM Main Menu Cinemachine camera.
+        /// Smoothly transitions from the gameplay camera to the menu camera.
+        /// Positions Camera.main at the gameplay camera's pose so the CinemachineBrain
+        /// blends from there to the menu vCam target.
         /// </summary>
-        void ActivateGameplayCamera()
+        void HandleExitFreestyle()
         {
             if (!CameraManager.Instance) return;
-            if (_menuVCam) _menuVCam.gameObject.SetActive(false);
+
+            // Capture gameplay camera pose before deactivating
+            var playerCamTransform = CameraManager.Instance.GetCloseCamera();
+
+            CameraManager.Instance.DeactivateAllCameras();
+
+            // Position the brain camera at the gameplay camera's last location so
+            // CinemachineBrain blends from here to the menu vCam target.
+            var mainCam = Camera.main;
+            if (mainCam && playerCamTransform)
+                mainCam.transform.SetPositionAndRotation(
+                    playerCamTransform.position, playerCamTransform.rotation);
+
+            if (_menuVCam) _menuVCam.gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// Smoothly transitions from the menu camera to the gameplay camera.
+        /// Captures Camera.main's pose and blends the player camera from that
+        /// position to the vessel's follow target.
+        /// </summary>
+        void HandleEnterFreestyle()
+        {
+            if (!CameraManager.Instance) return;
 
             var player = _gameData.LocalPlayer;
             if (player?.Vessel == null) return;
 
+            // Capture menu camera pose before switching
+            var mainCam = Camera.main;
+            var fromPos = mainCam ? mainCam.transform.position : Vector3.zero;
+            var fromRot = mainCam ? mainCam.transform.rotation : Quaternion.identity;
+
+            if (_menuVCam) _menuVCam.gameObject.SetActive(false);
+
             var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
+
+            // Override the snap with a smooth blend from the menu camera pose
+            CameraManager.Instance.BlendPlayerCameraFrom(fromPos, fromRot, _cameraBlendDuration);
         }
 
         // ── State Machine ───────────────────────────────────────────────

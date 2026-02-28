@@ -24,6 +24,12 @@ namespace CosmicShore.Gameplay
         public bool adaptiveZoomEnabled;
         private float _neutralOffsetZ;
 
+        // --- Blend transition (menu ↔ gameplay) ---
+        private float _blendAlpha = 1f;
+        private float _blendDuration;
+        private Vector3 _blendStartPos;
+        private Quaternion _blendStartRot;
+
         private void Awake()
         {
             Camera = GetComponent<Camera>();
@@ -44,6 +50,27 @@ namespace CosmicShore.Gameplay
                 _lastTargetPos = _followTarget.position;
 
             Vector3 desiredPos = _followTarget.position + _followTarget.rotation * _followOffset;
+
+            // Blend transition override (menu ↔ gameplay camera switch).
+            // While active, smoothly interpolates from the captured start pose
+            // to the follow-target pose, bypassing normal snap/smooth-damp logic.
+            if (_blendAlpha < 1f)
+            {
+                _blendAlpha += Time.deltaTime / _blendDuration;
+                _blendAlpha = Mathf.Clamp01(_blendAlpha);
+                float t = Mathf.SmoothStep(0f, 1f, _blendAlpha);
+
+                transform.position = Vector3.Lerp(_blendStartPos, desiredPos, t);
+
+                if (SafeLookRotation.TryGet(_followTarget.position - transform.position,
+                        _followTarget.up, out var blendRot, this, logError: false))
+                    transform.rotation = Quaternion.Slerp(_blendStartRot, blendRot, t);
+
+                _lastTargetPos = _followTarget.position;
+                _velocity = Vector3.zero;
+                return;
+            }
+
             Vector3 shipDelta = _followTarget.position - _lastTargetPos;
             float fwd = Vector3.Dot(shipDelta, _followTarget.forward);
             float lat = Vector3.Dot(shipDelta, _followTarget.right);
@@ -130,11 +157,27 @@ namespace CosmicShore.Gameplay
             _velocity = Vector3.zero;
         }
 
+        /// <summary>
+        /// Smoothly transitions the camera from the given pose to the current
+        /// follow-target pose over <paramref name="duration"/> seconds.
+        /// Overrides normal smooth-damp / snap logic until the blend completes.
+        /// </summary>
+        public void BlendFromPosition(Vector3 fromPos, Quaternion fromRot, float duration)
+        {
+            _blendStartPos = fromPos;
+            _blendStartRot = fromRot;
+            _blendDuration = Mathf.Max(duration, 0.01f);
+            _blendAlpha = 0f;
+            transform.position = fromPos;
+            transform.rotation = fromRot;
+            _velocity = Vector3.zero;
+        }
+
         public void Activate()
         {
             gameObject.SetActive(true);
             if (!_currentSettings) return;
-            
+
             Camera.nearClipPlane = _currentSettings.nearClipPlane;
             Camera.farClipPlane = _currentSettings.farClipPlane;
         }
