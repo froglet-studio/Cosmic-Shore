@@ -9,6 +9,9 @@ using Unity.Services.Multiplayer;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
+#if UNITY_EDITOR
+using Unity.Multiplayer.Playmode;
+#endif
 namespace CosmicShore.Gameplay
 {
     public class MultiplayerSetup : MonoBehaviour
@@ -119,9 +122,22 @@ namespace CosmicShore.Gameplay
 
                 if (nm.IsListening)
                 {
-                    CSDebug.Log("[MultiplayerSetup] Host already running.");
+                    CSDebug.Log("[MultiplayerSetup] Network already running.");
                     return;
                 }
+
+#if UNITY_EDITOR
+                // When using Multiplayer Play Mode (MPPM), virtual players tagged
+                // as "Client" should join the main editor's host instead of starting
+                // their own. Tags are configured in Window > Multiplayer > MPPM.
+                var mppmTags = CurrentPlayer.ReadOnlyTags();
+                if (mppmTags != null && mppmTags.Contains("Client"))
+                {
+                    CSDebug.Log("[MultiplayerSetup] MPPM clone tagged 'Client' — starting as Client.");
+                    nm.StartClient();
+                    return;
+                }
+#endif
 
                 CSDebug.Log("[MultiplayerSetup] Starting as Host.");
                 nm.StartHost();
