@@ -42,9 +42,8 @@ namespace CosmicShore.Gameplay
                  "Set to false for Menu_Main so the host persists across scene transitions.")]
         [SerializeField] bool shutdownNetworkOnDespawn = true;
 
-        protected NetcodeHooks _netcodeHooks;
-
-        public Action OnAllPlayersSpawned;
+        NetcodeHooks _netcodeHooks;
+        
 
         /// <summary>
         /// Tracks players already processed (keyed by NetworkObjectId).
@@ -81,7 +80,6 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnNetworkDespawn()
         {
-            gameData.OnPlayerNetworkSpawned.OnRaised -= HandlePlayerNetworkSpawned;
             gameData.OnInitializeGame.OnRaised -= HandleGameInitialized;
             _processedPlayers.Clear();
 
@@ -91,7 +89,6 @@ namespace CosmicShore.Gameplay
 
         protected void SubscribeAndProcessPlayers()
         {
-            gameData.OnPlayerNetworkSpawned.OnRaised += HandlePlayerNetworkSpawned;
             HandlePlayerNetworkSpawned();
         }
         
@@ -120,27 +117,7 @@ namespace CosmicShore.Gameplay
             if (IsReadyToSpawn(player))
             {
                 OnPlayerReadyToSpawn(player);
-                return;
             }
-
-            void OnVesselTypeChanged(VesselClassType _, VesselClassType newVal)
-            {
-                if (!IsReadyToSpawn(player)) return;
-                player.NetDefaultVesselType.OnValueChanged -= OnVesselTypeChanged;
-                player.NetName.OnValueChanged -= OnNameChanged;
-                OnPlayerReadyToSpawn(player);
-            }
-
-            void OnNameChanged(FixedString128Bytes _, FixedString128Bytes newVal)
-            {
-                if (!IsReadyToSpawn(player)) return;
-                player.NetDefaultVesselType.OnValueChanged -= OnVesselTypeChanged;
-                player.NetName.OnValueChanged -= OnNameChanged;
-                OnPlayerReadyToSpawn(player);
-            }
-
-            player.NetDefaultVesselType.OnValueChanged += OnVesselTypeChanged;
-            player.NetName.OnValueChanged += OnNameChanged;
         }
 
         /// <summary>
@@ -162,7 +139,6 @@ namespace CosmicShore.Gameplay
                 return;
 
             clientPlayerVesselInitializer.InitializePlayerAndVessel(player, vesselNO);
-            OnAllPlayersSpawned?.Invoke();
         }
 
         /// <summary>
