@@ -17,6 +17,10 @@ namespace CosmicShore.Gameplay
     ///
     /// Writes all state into <see cref="HostConnectionDataSO"/> so every UI
     /// consumer can react via SOAP events / lists without coupling to this class.
+    ///
+    /// When the first party invite is sent, transitions from the local Netcode
+    /// host to a Relay-based party session so that invited clients can connect
+    /// and roam the Menu_Main scene together with the host.
     /// </summary>
     public class HostConnectionService : MonoBehaviour
     {
@@ -39,6 +43,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float refreshIntervalSeconds = 3f;
 
         [Inject] private PlayerDataService playerDataService;
+        [Inject] private GameDataSO gameData;
 
         // ─────────────────────────────────────────────────────────────────────
         // Static access
@@ -149,7 +154,18 @@ namespace CosmicShore.Gameplay
                 SyncLocalIdentity();
 
                 if (_partySession == null)
+                {
+                    // First invite: transition from local Netcode host to
+                    // Relay-based party session so clients can connect.
+                    await PrepareForPartyNetworkAsync();
                     await CreatePartySessionAsync();
+
+                    // Let Netcode settle after Relay host starts, then
+                    // re-initialize the menu to respawn the host vessel.
+                    await Task.Delay(500);
+                    DomainAssigner.Initialize();
+                    gameData.InitializeGame();
+                }
 
                 string inviteKey = $"{INVITE_PREFIX}{targetPlayerId}";
                 string inviteValue = $"{connectionData.LocalPlayerId}|{_partySession.Id}|{connectionData.LocalDisplayName}|{connectionData.LocalAvatarId}";
@@ -181,6 +197,10 @@ namespace CosmicShore.Gameplay
             try
             {
                 SyncLocalIdentity();
+
+                // Shut down the local Netcode host and clean up menu state
+                // before connecting as a Relay client to the host's party.
+                await PrepareForPartyNetworkAsync();
 
                 _partySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
                     invite.PartySessionId,
@@ -268,17 +288,6 @@ namespace CosmicShore.Gameplay
         {
             if (_presenceLobby != null) return;
 
-            // Skip if NetworkManager is already running as host (e.g. menu
-            // autopilot started by MultiplayerSetup). The presence lobby uses
-            // WithRelayNetwork() which reconfigures the transport and attempts
-            // to restart the host, corrupting the existing local session.
-            if (Unity.Netcode.NetworkManager.Singleton != null &&
-                Unity.Netcode.NetworkManager.Singleton.IsListening)
-            {
-                Debug.Log("[HostConnectionService] Deferring presence lobby — NetworkManager already hosting.");
-                return;
-            }
-
             try
             {
                 var queryOptions = new QuerySessionsOptions();
@@ -324,6 +333,9 @@ namespace CosmicShore.Gameplay
         {
             try
             {
+                // Presence lobby is lobby-only (no Relay network) so it can
+                // coexist with the local Netcode host used for the menu
+                // autopilot vessel.  Relay is only used on the party session.
                 var opts = new SessionOptions
                 {
                     MaxPlayers = presenceLobbyMaxPlayers,
@@ -339,7 +351,7 @@ namespace CosmicShore.Gameplay
                                 PropertyIndex.String1)
                         }
                     }
-                }.WithRelayNetwork();
+                };
 
                 _presenceLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
                 connectionData.IsHost = true;
@@ -521,6 +533,29 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] ClearInvite error: {e.Message}");
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Network Transition
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Shuts down the local Netcode host and cleans up game data so the
+        /// network can be restarted with Relay transport for the party session.
+        /// Called before creating or joining a party session.
+        /// </summary>
+        private async Task PrepareForPartyNetworkAsync()
+        {
+            gameData?.DestroyPlayerAndVessel();
+            gameData?.Vessels.Clear();
+
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm != null && nm.IsListening)
+            {
+                nm.Shutdown();
+                while (nm.IsListening)
+                    await Task.Delay(50);
             }
         }
 
