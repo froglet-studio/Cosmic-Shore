@@ -8,6 +8,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Menu_Main.unity
     guid: 102d08d71236a7342a94518fff75949c
+  - enabled: 1
+    path: Assets/_Scenes/Authentication.unity
+    guid: e55a168e79a17c64398aea2ea409923c
   - enabled: 0
     path: Assets/_Scenes/Tools/MattsRecording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37

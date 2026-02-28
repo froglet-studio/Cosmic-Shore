@@ -23,6 +23,7 @@ namespace CosmicShore.Game.IO
         private IInputStrategy currentStrategy;
         private GamepadInputStrategy gamepadStrategy;
         private KeyboardInputStrategy keyboardStrategy;
+        private TouchInputStrategy touchStrategy;
         private DeviceOrientationHandler orientationHandler;
 
         private bool isInitialized;
@@ -126,8 +127,8 @@ namespace CosmicShore.Game.IO
         {
             if (Gamepad.current != null)
                 currentStrategy = gamepadStrategy;
-            //else if (SystemInfo.deviceType == DeviceType.Handheld)
-            //    currentStrategy = touchStrategy;
+            else if (SystemInfo.deviceType == DeviceType.Handheld)
+                currentStrategy = touchStrategy;
             else
                 currentStrategy = keyboardStrategy;
 
@@ -136,16 +137,14 @@ namespace CosmicShore.Game.IO
 
         private void InitializeStrategies()
         {
-            //touchStrategy = new TouchInputStrategy();
-            //keyboardMouseStrategy = new KeyboardMouseInputStrategy();
             gamepadStrategy = new GamepadInputStrategy();
             keyboardStrategy = new KeyboardInputStrategy();
+            touchStrategy = new TouchInputStrategy();
             orientationHandler = new DeviceOrientationHandler();
 
-            //touchStrategy.Initialize(vessel);
-            //keyboardMouseStrategy.Initialize(vessel);
             gamepadStrategy.Initialize(InputStatus);
             keyboardStrategy.Initialize(InputStatus);
+            touchStrategy.Initialize(InputStatus);
             orientationHandler.Initialize(InputStatus, this);
         }
 
@@ -165,11 +164,11 @@ namespace CosmicShore.Game.IO
         {
             IInputStrategy newStrategy = null;
 
-            if (Gamepad.current != null && newStrategy != gamepadStrategy)
+            if (Gamepad.current != null)
                 newStrategy = gamepadStrategy;
-            //else if (Mouse.current.rightButton.isPressed)
-            //    newStrategy = keyboardMouseStrategy;
-            else 
+            else if (SystemInfo.deviceType == DeviceType.Handheld)
+                newStrategy = touchStrategy;
+            else
                 newStrategy = keyboardStrategy;
 
             if (newStrategy != null && newStrategy != currentStrategy)
@@ -177,7 +176,7 @@ namespace CosmicShore.Game.IO
                 currentStrategy?.OnStrategyDeactivated();
                 currentStrategy = newStrategy;
                 currentStrategy.OnStrategyActivated();
-                
+
                 // Re-sync settings when switching strategies
                 SyncInvertSettings();
             }
