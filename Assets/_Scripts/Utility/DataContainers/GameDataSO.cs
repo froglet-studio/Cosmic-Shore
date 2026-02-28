@@ -36,7 +36,7 @@ namespace CosmicShore.Utility
         public ScriptableEventNoParam OnWinnerCalculated;
         public ScriptableEventNoParam OnResetForReplay;
         public ScriptableEventNoParam OnSessionEnded;
-        public ScriptableEventNoParam OnPlayerNetworkSpawned;
+        public ScriptableEventUlong OnPlayerNetworkSpawnedUlong;
         public ScriptableEventNoParam OnVesselNetworkSpawned;
         public event Action<string, Domains> OnPlayerAdded;
 
@@ -144,7 +144,7 @@ namespace CosmicShore.Utility
         public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         public void InvokeMenuReady() => OnMenuReady.Raise();
-        public void InvokePlayerNetworkSpawned() => OnPlayerNetworkSpawned.Raise();
+        public void InvokePlayerNetworkSpawned(ulong ownerClientId) => OnPlayerNetworkSpawnedUlong.Raise(ownerClientId);
         public void InvokeVesselNetworkSpawned() => OnVesselNetworkSpawned.Raise();
 
         public void ResetForReplay()

@@ -1,4 +1,6 @@
+using System.Threading;
 using CosmicShore.Utility;
+using Cysharp.UniTask;
 
 namespace CosmicShore.Gameplay
 {
@@ -10,10 +12,8 @@ namespace CosmicShore.Gameplay
     /// by <see cref="Core.MainMenuController"/> — this class only handles the
     /// network spawn chain and autopilot activation.
     ///
-    /// Defers spawn setup until <see cref="GameDataSO.OnInitializeGame"/> fires,
-    /// because <c>OnNetworkSpawn</c> runs before <c>Start()</c> in Unity's
-    /// execution order, and <see cref="Core.MainMenuController.Start"/> is what
-    /// configures game data and raises <c>OnInitializeGame</c>.
+    /// Listens to <see cref="GameDataSO.OnPlayerNetworkSpawnedUlong"/> via the base class,
+    /// which waits for NetworkVariables to sync before spawning.
     ///
     /// Signals completion via <see cref="GameDataSO.OnMenuReady"/> SOAP event
     /// so any system can react to the menu being fully interactive.
@@ -23,9 +23,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
         /// </summary>
-        protected override void OnPlayerReadyToSpawn(Player player)
+        protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
-            base.OnPlayerReadyToSpawn(player);
+            await base.OnPlayerReadyToSpawnAsync(player, ct);
             ActivateAutopilot(player);
         }
 

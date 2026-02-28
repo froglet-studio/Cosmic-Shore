@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     ///   InitializeNewPlayerAndVessel_ClientRpc   → existing client initializes one new pair
     ///
     /// When an RPC arrives but objects haven't replicated yet, pairs are queued.
-    /// OnPlayerNetworkSpawned + OnVesselNetworkSpawned SOAP events trigger
+    /// OnPlayerNetworkSpawnedUlong + OnVesselNetworkSpawned SOAP events trigger
     /// re-processing of the queue — zero WaitUntil polling.
     /// </summary>
     public class ClientPlayerVesselInitializer : NetworkBehaviour
@@ -39,13 +39,13 @@ namespace CosmicShore.Gameplay
 
             // Subscribe to SOAP events so we can process pending pairs
             // when objects replicate (event-driven, no polling)
-            gameData.OnPlayerNetworkSpawned.OnRaised += ProcessPendingPairs;
+            gameData.OnPlayerNetworkSpawnedUlong.OnRaised += OnPlayerNetworkSpawnedForPending;
             gameData.OnVesselNetworkSpawned.OnRaised += ProcessPendingPairs;
         }
 
         public override void OnNetworkDespawn()
         {
-            gameData.OnPlayerNetworkSpawned.OnRaised -= ProcessPendingPairs;
+            gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= OnPlayerNetworkSpawnedForPending;
             gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingPairs;
             _pendingPairs.Clear();
             base.OnNetworkDespawn();
@@ -94,6 +94,8 @@ namespace CosmicShore.Gameplay
             _pendingPairs.Add((playerNetId, vesselNetId));
             ProcessPendingPairs();
         }
+
+        void OnPlayerNetworkSpawnedForPending(ulong _) => ProcessPendingPairs();
 
         /// <summary>
         /// Tries to resolve pending (playerNetId, vesselNetId) pairs.
