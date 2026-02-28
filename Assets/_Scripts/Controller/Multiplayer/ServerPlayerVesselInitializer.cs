@@ -225,6 +225,8 @@ namespace CosmicShore.Gameplay
                 clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(
                     playerIds.ToArray(), vesselIds.ToArray(), newTarget);
             }
+            
+            // Invoke Client Ready gameData.InvokeClientReady(); after few interval
         }
 
         NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer)

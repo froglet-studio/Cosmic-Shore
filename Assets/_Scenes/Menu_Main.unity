@@ -57961,7 +57961,7 @@ MonoBehaviour:
   listOfCrystalPositions: []
   spawnCrystalWithPlayerDomain: 0
   extraCrystalsToSpawnBeyondPlayerCount: 0
-  spawnOnClientReady: 0
+  spawnOnClientReady: 1
 --- !u!1 &1486054860
 GameObject:
   m_ObjectHideFlags: 0

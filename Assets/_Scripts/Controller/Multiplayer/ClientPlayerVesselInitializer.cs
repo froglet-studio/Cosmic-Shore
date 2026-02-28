@@ -74,8 +74,6 @@ namespace CosmicShore.Gameplay
                 _pendingPairs.Add((playerNetIds[i], vesselNetIds[i]));
 
             ProcessPendingPairs();
-
-            gameData.OnClientReady.Raise();
         }
 
         /// <summary>
@@ -122,7 +120,6 @@ namespace CosmicShore.Gameplay
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
                 _signalClientReadyWhenDone = false;
-                gameData.InvokeClientReady();
             }
         }
 
@@ -135,6 +132,10 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
+            
+            // Invoke Client Ready after few interval
+            if (player.IsLocalUser)
+                gameData.InvokeClientReady();
         }
     }
 }

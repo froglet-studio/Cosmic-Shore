@@ -129,8 +129,6 @@ namespace CosmicShore.Core
         {
             TransitionTo(MainMenuState.Ready);
             _gameData.InitializeGame();
-            _gameData.InvokeMiniGameRoundStarted();
-            _gameData.InvokeTurnStarted();
         }
 
         void HandleLaunchGame()
