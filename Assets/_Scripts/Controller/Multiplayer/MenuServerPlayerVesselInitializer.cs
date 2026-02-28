@@ -37,8 +37,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            gameData.SetPlayersActive();
-
+            player.StartPlayer();
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
