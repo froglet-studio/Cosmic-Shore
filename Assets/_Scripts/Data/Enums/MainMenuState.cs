@@ -21,5 +21,12 @@ namespace CosmicShore.Data
 
         /// <summary>Player selected a game mode — transitioning out of menu.</summary>
         LaunchingGame = 3,
+
+        /// <summary>
+        /// Local player is in freestyle mode — controlling their vessel directly
+        /// while remaining in the Menu_Main scene. Other players may independently
+        /// be in Ready or Freestyle state on their own clients.
+        /// </summary>
+        Freestyle = 4,
     }
 }
