@@ -8,6 +8,7 @@ using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -463,6 +464,8 @@ namespace CosmicShore.Core
         /// First waits for MultiplayerSetup to start the host (via OnSignedIn).
         /// If that doesn't happen within <see cref="networkHostTimeout"/>, starts
         /// the host directly on the existing NetworkManager.
+        /// Does NOT register its own ConnectionApprovalCallback — MultiplayerSetup
+        /// handles that registration during its Start() which runs before this path.
         /// </summary>
         async UniTask EnsureHostStartedAsync(CancellationToken ct)
         {
@@ -503,25 +506,43 @@ namespace CosmicShore.Core
             if (nm.IsListening)
                 return;
 
-            // Register connection approval so the host's player object is created.
-            nm.ConnectionApprovalCallback += OnConnectionApproval;
+            // Try starting the host with port fallback for multi-instance testing.
+            // ConnectionApprovalCallback is already registered by MultiplayerSetup.
+            var transport = nm.GetComponent<UnityTransport>();
+            if (transport == null)
+            {
+                CSDebug.LogError("[AuthScene] UnityTransport not found on NetworkManager.");
+                return;
+            }
 
-            CSDebug.Log("[AuthScene] Starting network host...");
-            nm.StartHost();
+            ushort basePort = transport.ConnectionData.Port;
+            const int maxPortAttempts = 10;
 
-            // Wait one frame for the host to finish starting.
-            await UniTask.Yield(ct);
-        }
+            for (int i = 0; i < maxPortAttempts; i++)
+            {
+                ushort port = (ushort)(basePort + i);
+                if (i > 0)
+                {
+                    transport.SetConnectionData(
+                        transport.ConnectionData.Address,
+                        port,
+                        transport.ConnectionData.ServerListenAddress);
+                }
 
-        static void OnConnectionApproval(
-            NetworkManager.ConnectionApprovalRequest request,
-            NetworkManager.ConnectionApprovalResponse response)
-        {
-            response.Approved = true;
-            response.CreatePlayerObject = true;
-            response.Position = Vector3.zero;
-            response.Rotation = Quaternion.identity;
-            response.PlayerPrefabHash = null;
+                CSDebug.Log($"[AuthScene] Starting network host on port {port}...");
+                bool started = nm.StartHost();
+
+                if (started && nm.IsListening)
+                {
+                    CSDebug.Log($"[AuthScene] Network host started on port {port}.");
+                    await UniTask.Yield(ct);
+                    return;
+                }
+
+                CSDebug.LogWarning($"[AuthScene] StartHost failed on port {port}. Trying next port...");
+            }
+
+            CSDebug.LogError($"[AuthScene] Failed to start host after {maxPortAttempts} port attempts.");
         }
 
         void LoadMainMenuDirect()

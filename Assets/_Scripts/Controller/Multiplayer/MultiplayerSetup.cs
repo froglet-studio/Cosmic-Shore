@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
 using CosmicShore.Utility;
@@ -25,6 +26,7 @@ namespace CosmicShore.Gameplay
 
         private NetworkManager networkManager;
         private bool _hostStartInProgress;
+        private bool _suppressTransportFailure;
 
         private void Start()
         {
@@ -83,6 +85,8 @@ namespace CosmicShore.Gameplay
         /// starts the host exactly once. The NetworkManager lives in the
         /// Bootstrap scene as DontDestroyOnLoad and must already exist.
         /// Subsequent calls are no-ops while the host is already listening.
+        /// If the default port is already in use (e.g. another editor instance),
+        /// retries on incrementing ports.
         /// </summary>
         void EnsureHostStarted()
         {
@@ -123,8 +127,50 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
-                CSDebug.Log("[MultiplayerSetup] Starting as Host.");
-                nm.StartHost();
+                var transport = nm.GetComponent<UnityTransport>();
+                if (transport == null)
+                {
+                    CSDebug.LogError("[MultiplayerSetup] UnityTransport not found on NetworkManager.");
+                    return;
+                }
+
+                ushort basePort = transport.ConnectionData.Port;
+                const int maxPortAttempts = 10;
+
+                // Suppress OnTransportFailure during port retry loop so it
+                // doesn't shut down the NetworkManager between attempts.
+                _suppressTransportFailure = true;
+                try
+                {
+                    for (int i = 0; i < maxPortAttempts; i++)
+                    {
+                        ushort port = (ushort)(basePort + i);
+                        if (i > 0)
+                        {
+                            transport.SetConnectionData(
+                                transport.ConnectionData.Address,
+                                port,
+                                transport.ConnectionData.ServerListenAddress);
+                        }
+
+                        CSDebug.Log($"[MultiplayerSetup] Starting as Host on port {port}...");
+                        bool started = nm.StartHost();
+
+                        if (started && nm.IsListening)
+                        {
+                            CSDebug.Log($"[MultiplayerSetup] Host started on port {port}.");
+                            return;
+                        }
+
+                        CSDebug.LogWarning($"[MultiplayerSetup] StartHost failed on port {port}. Trying next port...");
+                    }
+
+                    CSDebug.LogError($"[MultiplayerSetup] Failed to start host after {maxPortAttempts} port attempts ({basePort}–{(ushort)(basePort + maxPortAttempts - 1)}).");
+                }
+                finally
+                {
+                    _suppressTransportFailure = false;
+                }
             }
             finally
             {
@@ -366,6 +412,10 @@ namespace CosmicShore.Gameplay
         // --------------------------
         private async void OnTransportFailure()
         {
+            // During EnsureHostStarted port-retry loop, suppress so the handler
+            // doesn't shut down the NetworkManager between attempts.
+            if (_suppressTransportFailure) return;
+
             try
             {
                 CSDebug.LogWarning("[Net] Transport failure. Recreating session/join…");
