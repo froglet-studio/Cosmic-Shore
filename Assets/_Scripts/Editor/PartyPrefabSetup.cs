@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -32,6 +33,7 @@ namespace CosmicShore.Editor
             CreateFriendsPanelPrefab();
             CreateOnlinePlayerEntryPrefab();
             CreateOnlinePlayersPanelPrefab();
+            CreateFriendsPanelPrefab();
             CreatePartyInviteNotificationPrefab();
             CreatePartyAreaPanelPrefab();
 
@@ -923,6 +925,152 @@ namespace CosmicShore.Editor
             Debug.Log($"[PartyPrefabSetup] Created {path}");
         }
 
+        [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Friends Panel")]
+        static void CreateFriendsPanelPrefab()
+        {
+            string path = $"{PrefabFolder}/FriendsPanel.prefab";
+
+            var root = CreateUIRoot("FriendsPanel", 420, 500);
+            root.layer = 5; // UI layer
+            var bg = root.AddComponent<Image>();
+            bg.color = new Color(0.08f, 0.08f, 0.12f, 0.95f);
+
+            // Header bar
+            var headerGo = CreateChildText(root.transform, "HeaderText", "Friends", 20,
+                new Vector2(0, 220), new Vector2(300, 40));
+
+            // Requests badge
+            var badgeGo = CreateChildText(root.transform, "RequestsBadge", "", 12,
+                new Vector2(120, 230), new Vector2(30, 24));
+            badgeGo.SetActive(false);
+
+            // Close button
+            var closeBtnGo = CreateChildButton(root.transform, "CloseButton", "X", 30, 30,
+                new Vector2(185, 220));
+
+            // Refresh button
+            var refreshBtnGo = CreateChildButton(root.transform, "RefreshButton", "\u21BB", 30, 30,
+                new Vector2(145, 220));
+
+            // Tab buttons bar
+            var friendsTabGo = CreateChildButton(root.transform, "FriendsTabButton", "Friends", 120, 32,
+                new Vector2(-130, 180));
+            friendsTabGo.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.3f);
+
+            var requestsTabGo = CreateChildButton(root.transform, "RequestsTabButton", "Requests", 120, 32,
+                new Vector2(0, 180));
+            requestsTabGo.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.1f);
+
+            var addFriendTabGo = CreateChildButton(root.transform, "AddFriendTabButton", "Add", 120, 32,
+                new Vector2(130, 180));
+            addFriendTabGo.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.1f);
+
+            // Friends List content panel
+            var friendsListGo = new GameObject("FriendsListContent");
+            friendsListGo.layer = 5;
+            friendsListGo.transform.SetParent(root.transform, false);
+            var friendsListRT = friendsListGo.AddComponent<RectTransform>();
+            friendsListRT.anchoredPosition = new Vector2(0, -20);
+            friendsListRT.sizeDelta = new Vector2(400, 350);
+
+            // Friends container (scrollable content parent)
+            var friendsContainerGo = new GameObject("FriendsContainer");
+            friendsContainerGo.layer = 5;
+            friendsContainerGo.transform.SetParent(friendsListGo.transform, false);
+            var friendsContainerRT = friendsContainerGo.AddComponent<RectTransform>();
+            friendsContainerRT.anchoredPosition = Vector2.zero;
+            friendsContainerRT.sizeDelta = new Vector2(400, 350);
+            var friendsVLG = friendsContainerGo.AddComponent<VerticalLayoutGroup>();
+            friendsVLG.spacing = 4;
+            friendsVLG.childForceExpandWidth = true;
+            friendsVLG.childForceExpandHeight = false;
+
+            // Friends empty state
+            var friendsEmptyGo = CreateChildText(friendsListGo.transform, "FriendsEmptyState",
+                "No friends yet", 14, Vector2.zero, new Vector2(300, 40));
+            friendsEmptyGo.SetActive(false);
+
+            // Requests List content panel
+            var requestsListGo = new GameObject("RequestsListContent");
+            requestsListGo.layer = 5;
+            requestsListGo.transform.SetParent(root.transform, false);
+            var requestsListRT = requestsListGo.AddComponent<RectTransform>();
+            requestsListRT.anchoredPosition = new Vector2(0, -20);
+            requestsListRT.sizeDelta = new Vector2(400, 350);
+            requestsListGo.SetActive(false);
+
+            // Requests container
+            var requestsContainerGo = new GameObject("RequestsContainer");
+            requestsContainerGo.layer = 5;
+            requestsContainerGo.transform.SetParent(requestsListGo.transform, false);
+            var requestsContainerRT = requestsContainerGo.AddComponent<RectTransform>();
+            requestsContainerRT.anchoredPosition = Vector2.zero;
+            requestsContainerRT.sizeDelta = new Vector2(400, 350);
+            var requestsVLG = requestsContainerGo.AddComponent<VerticalLayoutGroup>();
+            requestsVLG.spacing = 4;
+            requestsVLG.childForceExpandWidth = true;
+            requestsVLG.childForceExpandHeight = false;
+
+            // Requests empty state
+            var requestsEmptyGo = CreateChildText(requestsListGo.transform, "RequestsEmptyState",
+                "No pending requests", 14, Vector2.zero, new Vector2(300, 40));
+            requestsEmptyGo.SetActive(false);
+
+            // Add Friend content panel (AddFriendPanel component)
+            var addFriendGo = CreateUIRoot("AddFriendContent", 400, 350);
+            addFriendGo.layer = 5;
+            addFriendGo.transform.SetParent(root.transform, false);
+            addFriendGo.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -20);
+            addFriendGo.SetActive(false);
+            var addFriendPanel = addFriendGo.AddComponent<AddFriendPanel>();
+
+            // Add FriendsPanel component and wire
+            var panel = root.AddComponent<FriendsPanel>();
+            var so = new SerializedObject(panel);
+
+            // Wire SO data
+            var friendsData = FindAsset<FriendsDataSO>();
+            var connectionData = FindAsset<HostConnectionDataSO>();
+            WireIfExists(so, "friendsData", friendsData);
+            WireIfExists(so, "connectionData", connectionData);
+
+            // Wire tab buttons
+            so.FindProperty("friendsTabButton").objectReferenceValue = friendsTabGo.GetComponent<Button>();
+            so.FindProperty("requestsTabButton").objectReferenceValue = requestsTabGo.GetComponent<Button>();
+            so.FindProperty("addFriendTabButton").objectReferenceValue = addFriendTabGo.GetComponent<Button>();
+
+            // Wire content panels
+            so.FindProperty("friendsListContent").objectReferenceValue = friendsListGo;
+            so.FindProperty("requestsListContent").objectReferenceValue = requestsListGo;
+            so.FindProperty("addFriendContent").objectReferenceValue = addFriendPanel;
+
+            // Wire entry prefabs
+            var friendEntryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/FriendEntryView.prefab");
+            WireIfExists(so, "friendEntryPrefab", friendEntryPrefab);
+            var friendRequestEntryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/FriendRequestEntryView.prefab");
+            WireIfExists(so, "friendRequestEntryPrefab", friendRequestEntryPrefab);
+
+            // Wire containers
+            so.FindProperty("friendsContainer").objectReferenceValue = friendsContainerGo.transform;
+            so.FindProperty("friendsEmptyState").objectReferenceValue = friendsEmptyGo;
+            so.FindProperty("requestsContainer").objectReferenceValue = requestsContainerGo.transform;
+            so.FindProperty("requestsEmptyState").objectReferenceValue = requestsEmptyGo;
+
+            // Wire header
+            so.FindProperty("headerText").objectReferenceValue = headerGo.GetComponent<TMP_Text>();
+            so.FindProperty("requestsBadge").objectReferenceValue = badgeGo.GetComponent<TMP_Text>();
+            so.FindProperty("closeButton").objectReferenceValue = closeBtnGo.GetComponent<Button>();
+            so.FindProperty("refreshButton").objectReferenceValue = refreshBtnGo.GetComponent<Button>();
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            root.SetActive(false);
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            Debug.Log($"[PartyPrefabSetup] Created {path}");
+        }
+
         [MenuItem("Tools/Cosmic Shore/Create Party Prefabs/Party Area Panel")]
         static void CreatePartyAreaPanelPrefab()
         {
@@ -951,7 +1099,424 @@ namespace CosmicShore.Editor
             Debug.Log($"[PartyPrefabSetup] Created {path} — add PartySlotView children and PartyAreaPanel component in scene.");
         }
 
+        // ── Scene Wiring (Menu_Main) ──────────────────────────────────
+
+        [MenuItem("Tools/Cosmic Shore/Wire Party Scene References")]
+        public static void WirePartySceneReferences()
+        {
+            var connectionData = FindAsset<HostConnectionDataSO>();
+            var friendsData = FindAsset<FriendsDataSO>();
+            var profileIcons = FindAsset<SO_ProfileIconList>();
+
+            int wired = 0;
+
+            // ── OnlinePlayersPanel ───────────────────────────────────────
+            var onlinePanelGo = FindInScene<OnlinePlayersPanel>();
+            if (onlinePanelGo != null)
+            {
+                wired += WireOnlinePlayersPanelScene(onlinePanelGo, connectionData, profileIcons);
+            }
+            else
+                Debug.LogWarning("[PartySceneWiring] OnlinePlayersPanel not found in scene.");
+
+            // ── FriendsPanel ─────────────────────────────────────────────
+            var friendsPanelGo = FindInScene<FriendsPanel>();
+            if (friendsPanelGo != null)
+            {
+                wired += WireFriendsPanelScene(friendsPanelGo, friendsData, connectionData);
+            }
+            else
+                Debug.LogWarning("[PartySceneWiring] FriendsPanel not found in scene.");
+
+            // ── PartyInviteNotificationPanel ─────────────────────────────
+            var invitePanelGo = FindInScene<PartyInviteNotificationPanel>();
+            if (invitePanelGo != null)
+            {
+                wired += WireInviteNotificationPanelScene(invitePanelGo, connectionData, profileIcons);
+            }
+            else
+                Debug.LogWarning("[PartySceneWiring] PartyInviteNotificationPanel not found in scene.");
+
+            // ── PartyArcadeView ──────────────────────────────────────────
+            var partyArcadeView = FindInScene<PartyArcadeView>();
+            if (partyArcadeView != null)
+            {
+                wired += WirePartyArcadeViewScene(partyArcadeView, onlinePanelGo, friendsPanelGo,
+                    invitePanelGo, connectionData, friendsData, profileIcons);
+            }
+            else
+                Debug.LogWarning("[PartySceneWiring] PartyArcadeView not found in scene.");
+
+            if (wired > 0)
+            {
+                EditorSceneManager.MarkSceneDirty(
+                    UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+            }
+
+            Debug.Log($"[PartySceneWiring] Wired {wired} reference(s). Save the scene to persist.");
+        }
+
+        static int WireOnlinePlayersPanelScene(OnlinePlayersPanel panel,
+            HostConnectionDataSO connectionData, SO_ProfileIconList profileIcons)
+        {
+            int count = 0;
+            var so = new SerializedObject(panel);
+            var root = panel.transform;
+
+            // Wire SO data
+            count += WireIfNullCount(so, "connectionData", connectionData);
+            count += WireIfNullCount(so, "profileIcons", profileIcons);
+
+            // Wire playerEntryPrefab
+            var entryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                $"{PrefabFolder}/OnlinePlayerEntry.prefab");
+            count += WireIfNullCount(so, "playerEntryPrefab", entryPrefab);
+
+            // Wire friendsPanel cross-reference
+            var friendsPanel = FindInScene<FriendsPanel>();
+            count += WireIfNullCount(so, "friendsPanel", friendsPanel);
+
+            // Create or find child elements
+            count += EnsureChildAndWire(so, root, "entryContainer",
+                () => CreateContentContainer(root, "Content", new Vector2(0, -20), new Vector2(400, 400)),
+                go => go.transform);
+
+            count += EnsureChildAndWire(so, root, "closeButton",
+                () => CreateChildButton(root, "CloseButton", "X", 30, 30, new Vector2(180, 220)),
+                go => go.GetComponent<Button>());
+
+            count += EnsureChildAndWire(so, root, "openFriendsButton",
+                () => CreateChildButton(root, "OpenFriendsButton", "Friends", 80, 30, new Vector2(90, 220)),
+                go => go.GetComponent<Button>());
+
+            count += EnsureChildAndWire(so, root, "emptyStateLabel",
+                () => { var g = CreateChildText(root, "EmptyLabel", "No players online", 14,
+                    Vector2.zero, new Vector2(300, 40)); g.SetActive(false); return g; },
+                go => go);
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(panel);
+            Debug.Log($"[PartySceneWiring] OnlinePlayersPanel: wired {count} reference(s).");
+            return count;
+        }
+
+        static int WireFriendsPanelScene(FriendsPanel panel,
+            FriendsDataSO friendsData, HostConnectionDataSO connectionData)
+        {
+            int count = 0;
+            var so = new SerializedObject(panel);
+            var root = panel.transform;
+
+            // Wire SO data
+            count += WireIfNullCount(so, "friendsData", friendsData);
+            count += WireIfNullCount(so, "connectionData", connectionData);
+
+            // Wire entry prefabs
+            var friendEntryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                $"{PrefabFolder}/FriendEntryView.prefab");
+            count += WireIfNullCount(so, "friendEntryPrefab", friendEntryPrefab);
+            var friendRequestEntryPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                $"{PrefabFolder}/FriendRequestEntryView.prefab");
+            count += WireIfNullCount(so, "friendRequestEntryPrefab", friendRequestEntryPrefab);
+
+            // Tab buttons
+            count += EnsureChildAndWire(so, root, "friendsTabButton",
+                () => { var g = CreateChildButton(root, "FriendsTabButton", "Friends", 120, 32,
+                    new Vector2(-130, 180)); g.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.3f); return g; },
+                go => go.GetComponent<Button>());
+
+            count += EnsureChildAndWire(so, root, "requestsTabButton",
+                () => { var g = CreateChildButton(root, "RequestsTabButton", "Requests", 120, 32,
+                    new Vector2(0, 180)); g.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.1f); return g; },
+                go => go.GetComponent<Button>());
+
+            count += EnsureChildAndWire(so, root, "addFriendTabButton",
+                () => { var g = CreateChildButton(root, "AddFriendTabButton", "Add", 120, 32,
+                    new Vector2(130, 180)); g.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.1f); return g; },
+                go => go.GetComponent<Button>());
+
+            // Friends list content panel + container
+            count += EnsureChildAndWire(so, root, "friendsListContent",
+                () => CreateContentPanel(root, "FriendsListContent"),
+                go => go);
+
+            var friendsListContent = root.Find("FriendsListContent");
+            if (friendsListContent != null)
+            {
+                count += EnsureChildAndWire(so, friendsListContent, "friendsContainer",
+                    () => CreateContentContainer(friendsListContent, "FriendsContainer",
+                        Vector2.zero, new Vector2(400, 350)),
+                    go => go.transform);
+
+                count += EnsureChildAndWire(so, friendsListContent, "friendsEmptyState",
+                    () => { var g = CreateChildText(friendsListContent, "FriendsEmptyState",
+                        "No friends yet", 14, Vector2.zero, new Vector2(300, 40));
+                        g.SetActive(false); return g; },
+                    go => go);
+            }
+
+            // Requests list content panel + container
+            count += EnsureChildAndWire(so, root, "requestsListContent",
+                () => { var g = CreateContentPanel(root, "RequestsListContent");
+                    g.SetActive(false); return g; },
+                go => go);
+
+            var requestsListContent = root.Find("RequestsListContent");
+            if (requestsListContent != null)
+            {
+                count += EnsureChildAndWire(so, requestsListContent, "requestsContainer",
+                    () => CreateContentContainer(requestsListContent, "RequestsContainer",
+                        Vector2.zero, new Vector2(400, 350)),
+                    go => go.transform);
+
+                count += EnsureChildAndWire(so, requestsListContent, "requestsEmptyState",
+                    () => { var g = CreateChildText(requestsListContent, "RequestsEmptyState",
+                        "No pending requests", 14, Vector2.zero, new Vector2(300, 40));
+                        g.SetActive(false); return g; },
+                    go => go);
+            }
+
+            // Add Friend content panel
+            count += EnsureChildAndWire(so, root, "addFriendContent",
+                () => { var g = CreateUIRoot("AddFriendContent", 400, 350);
+                    g.layer = 5; g.transform.SetParent(root, false);
+                    g.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -20);
+                    g.SetActive(false); g.AddComponent<AddFriendPanel>(); return g; },
+                go => go.GetComponent<AddFriendPanel>());
+
+            // Header text
+            count += EnsureChildAndWire(so, root, "headerText",
+                () => CreateChildText(root, "HeaderText", "Friends", 20,
+                    new Vector2(0, 220), new Vector2(300, 40)),
+                go => go.GetComponent<TMP_Text>());
+
+            // Requests badge
+            count += EnsureChildAndWire(so, root, "requestsBadge",
+                () => { var g = CreateChildText(root, "RequestsBadge", "", 12,
+                    new Vector2(120, 230), new Vector2(30, 24));
+                    g.SetActive(false); return g; },
+                go => go.GetComponent<TMP_Text>());
+
+            // Close button
+            count += EnsureChildAndWire(so, root, "closeButton",
+                () => CreateChildButton(root, "CloseButton", "X", 30, 30,
+                    new Vector2(185, 220)),
+                go => go.GetComponent<Button>());
+
+            // Refresh button
+            count += EnsureChildAndWire(so, root, "refreshButton",
+                () => CreateChildButton(root, "RefreshButton", "\u21BB", 30, 30,
+                    new Vector2(145, 220)),
+                go => go.GetComponent<Button>());
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(panel);
+            Debug.Log($"[PartySceneWiring] FriendsPanel: wired {count} reference(s).");
+            return count;
+        }
+
+        static int WireInviteNotificationPanelScene(PartyInviteNotificationPanel panel,
+            HostConnectionDataSO connectionData, SO_ProfileIconList profileIcons)
+        {
+            int count = 0;
+            var so = new SerializedObject(panel);
+            var root = panel.transform;
+
+            count += WireIfNullCount(so, "connectionData", connectionData);
+            count += WireIfNullCount(so, "profileIcons", profileIcons);
+            count += WireIfNullCount(so, "panelRoot", panel.gameObject);
+
+            count += EnsureChildAndWire(so, root, "inviterNameText",
+                () => CreateChildText(root, "InviterName", "Player invited you!", 16,
+                    new Vector2(20, 20), new Vector2(220, 30)),
+                go => go.GetComponent<TMP_Text>());
+
+            count += EnsureChildAndWire(so, root, "inviterAvatarImage",
+                () => CreateChildImage(root, "InviterAvatar", 50, 50, new Vector2(-130, 20)),
+                go => go.GetComponent<Image>());
+
+            count += EnsureChildAndWire(so, root, "acceptButton",
+                () => CreateChildButton(root, "AcceptButton", "Accept", 100, 36,
+                    new Vector2(-50, -40)),
+                go => go.GetComponent<Button>());
+
+            count += EnsureChildAndWire(so, root, "declineButton",
+                () => CreateChildButton(root, "DeclineButton", "Decline", 100, 36,
+                    new Vector2(60, -40)),
+                go => go.GetComponent<Button>());
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(panel);
+            Debug.Log($"[PartySceneWiring] PartyInviteNotificationPanel: wired {count} reference(s).");
+            return count;
+        }
+
+        static int WirePartyArcadeViewScene(PartyArcadeView view,
+            OnlinePlayersPanel onlinePanel, FriendsPanel friendsPanel,
+            PartyInviteNotificationPanel invitePanel,
+            HostConnectionDataSO connectionData, FriendsDataSO friendsData,
+            SO_ProfileIconList profileIcons)
+        {
+            int count = 0;
+            var so = new SerializedObject(view);
+            var root = view.transform;
+
+            // Wire SO data
+            count += WireIfNullCount(so, "connectionData", connectionData);
+            count += WireIfNullCount(so, "friendsData", friendsData);
+            count += WireIfNullCount(so, "profileIcons", profileIcons);
+
+            // Wire sub-panel cross-references
+            count += WireIfNullCount(so, "onlinePlayersPanel", onlinePanel);
+            count += WireIfNullCount(so, "friendsPanel", friendsPanel);
+            count += WireIfNullCount(so, "inviteNotificationPanel", invitePanel);
+
+            // Create or find buttons and status text
+            count += EnsureChildAndWire(so, root, "friendsButton",
+                () => CreateChildButton(root, "FriendsButton", "Friends", 90, 32,
+                    new Vector2(0, -40)),
+                go => go.GetComponent<Button>());
+
+            count += EnsureChildAndWire(so, root, "refreshButton",
+                () => CreateChildButton(root, "RefreshButton", "\u21BB", 32, 32,
+                    new Vector2(55, -40)),
+                go => go.GetComponent<Button>());
+
+            count += EnsureChildAndWire(so, root, "friendsRequestBadge",
+                () => { var g = CreateChildText(root, "FriendsRequestBadge", "", 11,
+                    new Vector2(50, -28), new Vector2(24, 24));
+                    g.SetActive(false); return g; },
+                go => go.GetComponent<TMP_Text>());
+
+            count += EnsureChildAndWire(so, root, "partyStatusText",
+                () => CreateChildText(root, "PartyStatusText", "Invite players to your party", 12,
+                    new Vector2(0, -60), new Vector2(200, 24)),
+                go => go.GetComponent<TMP_Text>());
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(view);
+            Debug.Log($"[PartySceneWiring] PartyArcadeView: wired {count} reference(s).");
+            return count;
+        }
+
         // ── Helpers ────────────────────────────────────────────────────
+
+        static T FindInScene<T>() where T : Component
+        {
+            // Search all root objects including inactive ones
+            var roots = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+            foreach (var root in roots)
+            {
+                var comp = root.GetComponentInChildren<T>(true);
+                if (comp != null) return comp;
+            }
+            return null;
+        }
+
+        static int WireIfNullCount(SerializedObject so, string propertyName, Object value)
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop != null && prop.objectReferenceValue == null && value != null)
+            {
+                prop.objectReferenceValue = value;
+                return 1;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Finds an existing child by expected name or creates one, then wires the serialized property.
+        /// Only acts if the property is currently null.
+        /// </summary>
+        static int EnsureChildAndWire<T>(SerializedObject so, Transform parent,
+            string propertyName, System.Func<GameObject> createFn,
+            System.Func<GameObject, T> extractFn) where T : Object
+        {
+            var prop = so.FindProperty(propertyName);
+            if (prop == null || prop.objectReferenceValue != null)
+                return 0;
+
+            // Try to find existing child by common naming conventions
+            string[] candidateNames = GetCandidateNames(propertyName);
+            GameObject existing = null;
+            foreach (var name in candidateNames)
+            {
+                var found = parent.Find(name);
+                if (found != null) { existing = found.gameObject; break; }
+            }
+
+            var target = existing ?? createFn();
+            if (target == null) return 0;
+
+            // Ensure proper layer for UI
+            target.layer = 5;
+
+            var value = extractFn(target);
+            if (value == null) return 0;
+
+            prop.objectReferenceValue = value;
+            return 1;
+        }
+
+        static string[] GetCandidateNames(string propertyName)
+        {
+            // Map serialized field names to common child GameObject names
+            return propertyName switch
+            {
+                "entryContainer" => new[] { "Content", "EntryContainer", "ScrollContent" },
+                "closeButton" => new[] { "CloseButton", "Close", "BtnClose" },
+                "openFriendsButton" => new[] { "OpenFriendsButton", "FriendsButton" },
+                "emptyStateLabel" => new[] { "EmptyLabel", "EmptyState", "EmptyStateLabel" },
+                "friendsTabButton" => new[] { "FriendsTabButton", "FriendsTab" },
+                "requestsTabButton" => new[] { "RequestsTabButton", "RequestsTab" },
+                "addFriendTabButton" => new[] { "AddFriendTabButton", "AddFriendTab" },
+                "friendsListContent" => new[] { "FriendsListContent", "FriendsList" },
+                "requestsListContent" => new[] { "RequestsListContent", "RequestsList" },
+                "addFriendContent" => new[] { "AddFriendContent", "AddFriendPanel" },
+                "friendsContainer" => new[] { "FriendsContainer", "Content" },
+                "friendsEmptyState" => new[] { "FriendsEmptyState", "EmptyState" },
+                "requestsContainer" => new[] { "RequestsContainer", "Content" },
+                "requestsEmptyState" => new[] { "RequestsEmptyState", "EmptyState" },
+                "headerText" => new[] { "HeaderText", "Header" },
+                "requestsBadge" => new[] { "RequestsBadge", "Badge" },
+                "refreshButton" => new[] { "RefreshButton", "Refresh", "BtnRefresh" },
+                "friendsButton" => new[] { "FriendsButton", "Friends", "BtnFriends" },
+                "friendsRequestBadge" => new[] { "FriendsRequestBadge", "RequestBadge" },
+                "partyStatusText" => new[] { "PartyStatusText", "StatusText" },
+                "inviterNameText" => new[] { "InviterName", "InviterNameText" },
+                "inviterAvatarImage" => new[] { "InviterAvatar", "InviterAvatarImage" },
+                "acceptButton" => new[] { "AcceptButton", "Accept" },
+                "declineButton" => new[] { "DeclineButton", "Decline" },
+                _ => new[] { propertyName }
+            };
+        }
+
+        static GameObject CreateContentPanel(Transform parent, string name)
+        {
+            var go = new GameObject(name);
+            go.layer = 5;
+            go.transform.SetParent(parent, false);
+            var rt = go.AddComponent<RectTransform>();
+            rt.anchoredPosition = new Vector2(0, -20);
+            rt.sizeDelta = new Vector2(400, 350);
+            return go;
+        }
+
+        static GameObject CreateContentContainer(Transform parent, string name,
+            Vector2 position, Vector2 size)
+        {
+            var go = new GameObject(name);
+            go.layer = 5;
+            go.transform.SetParent(parent, false);
+            var rt = go.AddComponent<RectTransform>();
+            rt.anchoredPosition = position;
+            rt.sizeDelta = size;
+            var vlg = go.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 4;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+            return go;
+        }
 
         static T FindAsset<T>() where T : Object
         {
