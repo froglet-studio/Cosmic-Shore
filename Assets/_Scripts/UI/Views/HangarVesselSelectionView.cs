@@ -7,7 +7,7 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
-    public class HangarOverviewView : View
+    public class HangarVesselSelectionView : View
     {
         [SerializeField] TMP_Text ShipName;
         [SerializeField] TMP_Text ShipDescription;
@@ -19,13 +19,13 @@ namespace CosmicShore.UI
 
         void Start()
         {
-            if (ShipName == null) CSDebug.LogWarning("HangarOverviewView - ShipName Serialized Field is not set");
-            if (ShipDescription == null) CSDebug.LogWarning("HangarOverviewView - ShipDescription Serialized Field is not set");
-            if (ShipPreviewImage == null) CSDebug.LogWarning("HangarOverviewView - ShipPreviewImage Serialized Field is not set");
-            if (ShipLockedImage == null) CSDebug.LogWarning("HangarOverviewView - ShipLockedImage Serialized Field is not set");
-            if (TrainButton == null) CSDebug.LogWarning("HangarOverviewView - TrainButton Serialized Field is not set");
-            if (UnlockMessagePanel == null) CSDebug.LogWarning("HangarOverviewView - UnlockMessagePanel Serialized Field is not set");
-            if (HangarGameplayParameterDisplayGroup == null) CSDebug.LogWarning("HangarOverviewView - HangarGameplayParameterDisplayGroup Serialized Field is not set");
+            if (ShipName == null) CSDebug.LogWarning("HangarVesselSelectionView - ShipName Serialized Field is not set");
+            if (ShipDescription == null) CSDebug.LogWarning("HangarVesselSelectionView - ShipDescription Serialized Field is not set");
+            if (ShipPreviewImage == null) CSDebug.LogWarning("HangarVesselSelectionView - ShipPreviewImage Serialized Field is not set");
+            if (ShipLockedImage == null) CSDebug.LogWarning("HangarVesselSelectionView - ShipLockedImage Serialized Field is not set");
+            if (TrainButton == null) CSDebug.LogWarning("HangarVesselSelectionView - TrainButton Serialized Field is not set");
+            if (UnlockMessagePanel == null) CSDebug.LogWarning("HangarVesselSelectionView - UnlockMessagePanel Serialized Field is not set");
+            if (HangarGameplayParameterDisplayGroup == null) CSDebug.LogWarning("HangarVesselSelectionView - HangarGameplayParameterDisplayGroup Serialized Field is not set");
         }
 
         public override void UpdateView()

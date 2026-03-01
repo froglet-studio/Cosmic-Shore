@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,16 +8,16 @@ namespace CosmicShore.UI
     /// Manages all UI elements and presentation logic (Show, Hide, alpha, interactable).
     /// No game logic.
     /// </summary>
-    public sealed class OverviewPanelUI : MonoBehaviour
+    public sealed class VesselSelectionPanelUI : MonoBehaviour
     {
         [Header("Panel")]
         [SerializeField] private CanvasGroup panelCanvasGroup;
 
         [Header("Card Grid")]
         [SerializeField] private Transform shipCardContainer;
-        
+
         public Transform ShipCardContainer => shipCardContainer;
-        
+
         // ---------------------------------------------------------
         // UI CONTROL
         // ---------------------------------------------------------

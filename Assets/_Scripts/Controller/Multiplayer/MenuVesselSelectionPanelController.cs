@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Vessel selection panel for Menu_Main freestyle mode.
     ///
-    /// Reuses <see cref="OverviewPanelUI"/> for presentation and <see cref="ShipCardView"/>
+    /// Reuses <see cref="VesselSelectionPanelUI"/> for presentation and <see cref="ShipCardView"/>
     /// for individual vessel cards. Delegates the actual vessel swap to
     /// <see cref="MenuServerPlayerVesselInitializer"/> which handles the Netcode
     /// despawn/spawn/RPC pipeline so the change replicates to all clients.
@@ -23,10 +23,10 @@ namespace CosmicShore.Gameplay
     /// pressing "Resume" triggers the network swap, then restores freestyle control
     /// on the new vessel.
     /// </summary>
-    public sealed class MenuOverviewPanelController : MonoBehaviour
+    public sealed class MenuVesselSelectionPanelController : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] OverviewPanelUI ui;
+        [SerializeField] VesselSelectionPanelUI ui;
         [SerializeField] MenuServerPlayerVesselInitializer serverInitializer;
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 

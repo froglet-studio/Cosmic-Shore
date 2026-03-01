@@ -500,6 +500,7 @@ GameObject:
   - component: {fileID: 357516120}
   - component: {fileID: 357516119}
   - component: {fileID: 357516122}
+  - component: {fileID: 357516123}
   m_Layer: 0
   m_Name: PrismManagers
   m_TagString: Untagged
@@ -589,6 +590,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &357516123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 357516117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24bde90bd97d5c04da417e3f15d8bc22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &369571796

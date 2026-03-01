@@ -21,7 +21,7 @@ namespace CosmicShore.UI
         [SerializeField] NavGroup TopNav;
 
         [Header("Views")]
-        [SerializeField] HangarOverviewView OverviewView;   // TODO: the conversion over to NavLink/NavGroup paradigm isn't complete
+        [SerializeField] HangarVesselSelectionView VesselSelectionView;   // TODO: the conversion over to NavLink/NavGroup paradigm isn't complete
         [SerializeField] HangarAbilitiesView AbilitiesView;
         [SerializeField] HangarCaptainsView CaptainsView;
         [SerializeField] HangarTrainingModal HangarTrainingModal;
@@ -47,7 +47,7 @@ namespace CosmicShore.UI
         public void LoadView()
         {
             Ships = ShipList.ShipList;
-            OverviewView.AssignModels(Ships.ConvertAll(x => (ScriptableObject)x));
+            VesselSelectionView.AssignModels(Ships.ConvertAll(x => (ScriptableObject)x));
             PopulateShipSelectionList();
         }
 
@@ -105,8 +105,8 @@ namespace CosmicShore.UI
 
             SelectedShip = selectedShip;
 
-            // Update the Overview view
-            OverviewView.Select(index);
+            // Update the vessel selection view
+            VesselSelectionView.Select(index);
 
             // populate the abilities/overview views
             foreach (var ability in SelectedShip.Abilities) ability.Ship = selectedShip;

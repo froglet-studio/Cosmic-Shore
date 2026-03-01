@@ -15,6 +15,7 @@ namespace CosmicShore.UI
     /// Pressing the "+" on an entry triggers an invite via <see cref="HostConnectionService"/>.
     /// Optionally shows "Add Friend" buttons if the Friends service is available.
     /// </summary>
+    [RequireComponent(typeof(CanvasGroup))]
     public class OnlinePlayersPanel : MonoBehaviour
     {
         [Header("SOAP Data")]
@@ -36,6 +37,7 @@ namespace CosmicShore.UI
         [Inject] private FriendsServiceFacade friendsService;
 
         private readonly List<OnlinePlayerEntry> _activeEntries = new();
+        private CanvasGroup _canvasGroup;
 
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
@@ -43,6 +45,7 @@ namespace CosmicShore.UI
 
         void Awake()
         {
+            _canvasGroup = GetComponent<CanvasGroup>();
             closeButton?.onClick.AddListener(Hide);
             openFriendsButton?.onClick.AddListener(OnOpenFriends);
         }
@@ -55,8 +58,6 @@ namespace CosmicShore.UI
                 connectionData.OnlinePlayers.OnItemRemoved += OnPlayerRemoved;
                 connectionData.OnlinePlayers.OnCleared += OnPlayersCleared;
             }
-
-            RebuildFromList();
         }
 
         void OnDisable()
@@ -75,12 +76,15 @@ namespace CosmicShore.UI
 
         public void Show()
         {
-            gameObject.SetActive(true);
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+            SetCanvasGroupVisible(true);
+            RebuildFromList();
         }
 
         public void Hide()
         {
-            gameObject.SetActive(false);
+            SetCanvasGroupVisible(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -200,6 +204,17 @@ namespace CosmicShore.UI
         // ─────────────────────────────────────────────────────────────────────
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
+
+        private void SetCanvasGroupVisible(bool visible)
+        {
+            if (_canvasGroup == null)
+                _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) return;
+
+            _canvasGroup.alpha = visible ? 1f : 0f;
+            _canvasGroup.blocksRaycasts = visible;
+            _canvasGroup.interactable = visible;
+        }
 
         private Sprite ResolveAvatarSprite(int avatarId)
         {

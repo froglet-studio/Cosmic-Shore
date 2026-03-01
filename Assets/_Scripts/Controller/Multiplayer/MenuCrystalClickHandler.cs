@@ -50,6 +50,10 @@ namespace CosmicShore.Gameplay
         bool _isTransitioning;
         CancellationTokenSource _cts;
 
+        // Saved menu alphas so we restore to the pre-freestyle state
+        // (e.g. ArcadeScreen at 0 stays at 0, not forced to 1).
+        float[] _savedMenuAlphas;
+
         /// <summary>Whether the menu is currently in freestyle state.</summary>
         public bool IsInFreestyle => _isInFreestyle;
 
@@ -114,6 +118,10 @@ namespace CosmicShore.Gameplay
             player.InputController.SetPause(false);
             _isInFreestyle = true;
 
+            // Save current menu alphas so we can restore them exactly when exiting freestyle.
+            // This preserves hidden panels (e.g. ArcadeScreen at alpha 0).
+            _savedMenuAlphas = CaptureAlphas(menuCanvasGroups);
+
             // Raise SOAP event early so the camera blend starts immediately.
             // The UI fade and camera blend then run in parallel.
             freestyleEvents.OnEnterFreestyle.Raise();
@@ -143,9 +151,11 @@ namespace CosmicShore.Gameplay
             freestyleEvents.OnExitFreestyle.Raise();
 
             // Run UI fade and camera transition duration in parallel.
+            // FadeToSavedMenuAlphas restores each menu canvas group to its pre-freestyle
+            // alpha (not blindly to 1, which would force-show hidden panels like ArcadeScreen).
             // _isTransitioning stays true until both complete — prevents click spam.
             await UniTask.WhenAll(
-                FadeBetweenStates(menuAlpha: 1f, freestyleAlpha: 0f, ct),
+                FadeToSavedMenuAlphas(ct),
                 UniTask.Delay((int)(cameraTransitionDuration * 1000),
                               ignoreTimeScale: true, cancellationToken: ct));
 
@@ -171,6 +181,39 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region UI Fade
+
+        /// <summary>
+        /// Fades menu canvas groups back to their saved pre-freestyle alphas,
+        /// and freestyle groups to 0.
+        /// </summary>
+        async UniTask FadeToSavedMenuAlphas(CancellationToken ct)
+        {
+            if (fadeDuration <= 0f)
+            {
+                ApplyCanvasGroupStates(menuCanvasGroups, _savedMenuAlphas);
+                ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
+                return;
+            }
+
+            float[] menuStartAlphas = CaptureAlphas(menuCanvasGroups);
+            float[] freestyleStartAlphas = CaptureAlphas(freestyleCanvasGroups);
+            float[] menuTargets = _savedMenuAlphas ?? CaptureAlphas(menuCanvasGroups);
+
+            float elapsed = 0f;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / fadeDuration);
+
+                LerpCanvasGroupAlphasToTargets(menuCanvasGroups, menuStartAlphas, menuTargets, t);
+                LerpCanvasGroupAlphas(freestyleCanvasGroups, freestyleStartAlphas, 0f, t);
+
+                await UniTask.Yield(ct);
+            }
+
+            ApplyCanvasGroupStates(menuCanvasGroups, menuTargets);
+            ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
+        }
 
         async UniTask FadeBetweenStates(float menuAlpha, float freestyleAlpha, CancellationToken ct)
         {
@@ -221,6 +264,18 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        static void LerpCanvasGroupAlphasToTargets(CanvasGroup[] groups, float[] startAlphas, float[] targetAlphas, float t)
+        {
+            if (groups is not { Length: > 0 }) return;
+
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (!groups[i]) continue;
+                float target = (targetAlphas != null && i < targetAlphas.Length) ? targetAlphas[i] : 1f;
+                groups[i].alpha = Mathf.Lerp(startAlphas[i], target, t);
+            }
+        }
+
         static void ApplyCanvasGroupState(CanvasGroup[] groups, float alpha)
         {
             if (groups is not { Length: > 0 }) return;
@@ -231,6 +286,20 @@ namespace CosmicShore.Gameplay
                 cg.alpha = alpha;
                 cg.blocksRaycasts = alpha > 0.01f;
                 cg.interactable = alpha > 0.01f;
+            }
+        }
+
+        static void ApplyCanvasGroupStates(CanvasGroup[] groups, float[] alphas)
+        {
+            if (groups is not { Length: > 0 }) return;
+
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (!groups[i]) continue;
+                float alpha = (alphas != null && i < alphas.Length) ? alphas[i] : 1f;
+                groups[i].alpha = alpha;
+                groups[i].blocksRaycasts = alpha > 0.01f;
+                groups[i].interactable = alpha > 0.01f;
             }
         }
 
