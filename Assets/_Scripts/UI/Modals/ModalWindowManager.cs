@@ -1,5 +1,6 @@
 using System.Collections;
 using CosmicShore.Core;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
 using static CosmicShore.UI.ScreenSwitcher;
@@ -30,7 +31,7 @@ namespace CosmicShore.UI
 
         public void ModalWindowIn()
         {
-            gameObject.SetActive(true);
+            gameObject.SetVisible(true);
 
             if (isOn == false)
             {
@@ -69,7 +70,7 @@ namespace CosmicShore.UI
         IEnumerator DisableWindow()
         {
             yield return new WaitForSeconds(0.5f);
-            gameObject.SetActive(false);
+            gameObject.SetVisible(false);
         }
     }
 }

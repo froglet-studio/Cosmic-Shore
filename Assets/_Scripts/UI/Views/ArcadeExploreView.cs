@@ -65,7 +65,7 @@ namespace CosmicShore.UI
                 var gameSelectionRow = GameSelectionGrid.GetChild(i);
                 for (var j = 0; j < gameSelectionRow.childCount; j++)
                 {
-                    gameSelectionRow.GetChild(j).gameObject.SetActive(false);
+                    gameSelectionRow.GetChild(j).gameObject.SetVisible(false);
                     GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
 
                     ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), i+1);
@@ -107,7 +107,7 @@ namespace CosmicShore.UI
                         nameof(ArcadeExploreView), game.CallToActionTargetType.ToString());
                 }
                 
-                gameCard.gameObject.SetActive(true);
+                gameCard.gameObject.SetVisible(true);
             }
         }
 

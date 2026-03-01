@@ -35,9 +35,9 @@ namespace CosmicShore.UI
             if (ShipName != null) ShipName.text = model.Name;
             if (ShipDescription != null) ShipDescription.text = model.Description;
             if (ShipPreviewImage != null) ShipPreviewImage.sprite = Instantiate(model.PreviewImage);
-            if (ShipLockedImage != null) ShipLockedImage.gameObject.SetActive(model.IsLocked);
-            if (TrainButton != null) TrainButton.gameObject.SetActive(!model.IsLocked);
-            if (UnlockMessagePanel != null) UnlockMessagePanel.SetActive(model.IsLocked);
+            if (ShipLockedImage != null) ShipLockedImage.gameObject.SetVisible(model.IsLocked);
+            if (TrainButton != null) TrainButton.gameObject.SetVisible(!model.IsLocked);
+            if (UnlockMessagePanel != null) UnlockMessagePanel.SetVisible(model.IsLocked);
             if (HangarGameplayParameterDisplayGroup != null)
                 HangarGameplayParameterDisplayGroup.AssignGameplayParameters(new List<GameplayParameter>() { model.gameplayParameter1, model.gameplayParameter2, model.gameplayParameter3 });
         }

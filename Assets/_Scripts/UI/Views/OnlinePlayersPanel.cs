@@ -75,12 +75,12 @@ namespace CosmicShore.UI
 
         public void Show()
         {
-            gameObject.SetActive(true);
+            gameObject.SetVisible(true);
         }
 
         public void Hide()
         {
-            gameObject.SetActive(false);
+            gameObject.SetVisible(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -93,11 +93,11 @@ namespace CosmicShore.UI
 
             if (connectionData?.OnlinePlayers == null || connectionData.OnlinePlayers.Count == 0)
             {
-                emptyStateLabel?.SetActive(true);
+                emptyStateLabel?.SetVisible(true);
                 return;
             }
 
-            emptyStateLabel?.SetActive(false);
+            emptyStateLabel?.SetVisible(false);
 
             foreach (var info in connectionData.OnlinePlayers)
                 SpawnEntry(info);
@@ -105,7 +105,7 @@ namespace CosmicShore.UI
 
         private void OnPlayerAdded(PartyPlayerData player)
         {
-            emptyStateLabel?.SetActive(false);
+            emptyStateLabel?.SetVisible(false);
             SpawnEntry(player);
         }
 
@@ -122,13 +122,13 @@ namespace CosmicShore.UI
             }
 
             if (_activeEntries.Count == 0)
-                emptyStateLabel?.SetActive(true);
+                emptyStateLabel?.SetVisible(true);
         }
 
         private void OnPlayersCleared()
         {
             ClearEntries();
-            emptyStateLabel?.SetActive(true);
+            emptyStateLabel?.SetVisible(true);
         }
 
         // ─────────────────────────────────────────────────────────────────────

@@ -39,8 +39,8 @@ namespace CosmicShore.UI
         {
             if (episodePanel == null) return;
 
-            bool show = !episodePanel.activeSelf;
-            episodePanel.SetActive(show);
+            bool show = !episodePanel.IsVisible();
+            episodePanel.SetVisible(show);
 
             if (show && !_loaded)
                 LoadView();
@@ -49,7 +49,7 @@ namespace CosmicShore.UI
         public void ShowPanel()
         {
             if (episodePanel != null)
-                episodePanel.SetActive(true);
+                episodePanel.SetVisible(true);
 
             if (!_loaded)
                 LoadView();
@@ -58,7 +58,7 @@ namespace CosmicShore.UI
         public void HidePanel()
         {
             if (episodePanel != null)
-                episodePanel.SetActive(false);
+                episodePanel.SetVisible(false);
         }
 
         public void LoadView()

@@ -28,7 +28,7 @@ namespace CosmicShore.UI
                 {
                     case NavGroupType.SelectView:
                         if (link.view != null)
-                            link.view.gameObject.SetActive(link.Index == linkToActivate.Index);
+                            link.view.gameObject.SetVisible(link.Index == linkToActivate.Index);
                         break;
                     case NavGroupType.UpdateView:
                         if (link.Index == linkToActivate.Index && link.view != null)

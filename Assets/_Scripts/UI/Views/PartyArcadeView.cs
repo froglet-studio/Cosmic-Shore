@@ -210,7 +210,7 @@ namespace CosmicShore.UI
         /// </summary>
         public void Show()
         {
-            gameObject.SetActive(true);
+            gameObject.SetVisible(true);
         }
 
         /// <summary>
@@ -220,7 +220,7 @@ namespace CosmicShore.UI
         {
             onlinePlayersPanel?.Hide();
             friendsPanel?.Hide();
-            gameObject.SetActive(false);
+            gameObject.SetVisible(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ namespace CosmicShore.UI
 
             int count = friendsData?.IncomingRequestCount ?? 0;
             friendsRequestBadge.text = count > 0 ? count.ToString() : "";
-            friendsRequestBadge.gameObject.SetActive(count > 0);
+            friendsRequestBadge.gameObject.SetVisible(count > 0);
         }
 
         private void UpdatePartyStatus()
