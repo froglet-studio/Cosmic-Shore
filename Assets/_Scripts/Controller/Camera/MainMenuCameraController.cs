@@ -262,12 +262,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Immediate menu camera activation with no transition blend.
         /// Used for initial menu setup when no previous camera state exists.
-        /// Skipped if a blend transition is already in progress (e.g. OnClientReady
-        /// firing while the player is toggling freestyle).
+        /// Skipped if a blend transition is already in progress or if the player
+        /// is currently in freestyle mode (e.g. OnClientReady firing after the
+        /// player toggled freestyle — we must not snap back to the orbit camera).
         /// </summary>
         void ActivateMenuCameraImmediate()
         {
-            if (_isTransitioning) return;
+            if (_isTransitioning || _isInFreestyle) return;
             if (!CameraManager.Instance) return;
 
             CameraManager.Instance.SetMainMenuCameraActive();
