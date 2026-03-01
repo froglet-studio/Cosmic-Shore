@@ -1634,7 +1634,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 1570757006}
-        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuOverviewPanelController,
+        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuVesselSelectionPanelController,
           Assembly-CSharp
         m_MethodName: OnCloseButtonClicked
         m_Mode: 1
@@ -73932,7 +73932,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1570757006}
-        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuOverviewPanelController,
+        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuVesselSelectionPanelController,
           Assembly-CSharp
         m_MethodName: Open
         m_Mode: 1
@@ -92917,7 +92917,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1570757006}
-        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuOverviewPanelController,
+        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuVesselSelectionPanelController,
           Assembly-CSharp
         m_MethodName: OnResumeButtonClicked
         m_Mode: 1
