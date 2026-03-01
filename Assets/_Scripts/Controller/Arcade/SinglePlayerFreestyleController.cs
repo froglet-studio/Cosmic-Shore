@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         [Header("Environment")]
         [SerializeField] SegmentSpawner segmentSpawner;
         [SerializeField] ShapeDrawingManager shapeDrawingManager;
-        [SerializeField] LocalCrystalManager localCrystalManager;
+        [SerializeField] CrystalManager localCrystalManager;
         [SerializeField] Cell cellScript;
 
         [Header("HUD")]

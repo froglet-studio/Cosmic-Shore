@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Dependencies")]
         [SerializeField] ShapeDrawingCrystalManager shapeCrystalManager;
-        [SerializeField] LocalCrystalManager localCrystalManager;
+        [SerializeField] CrystalManager localCrystalManager;
         [SerializeField] Cell cellScript;
         [SerializeField] GameDataSO gameData;
         [SerializeField] CellRuntimeDataSO cellData;

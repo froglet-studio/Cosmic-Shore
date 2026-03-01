@@ -1,19 +1,19 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Crystal manager specialized for Shape Drawing Mode.
     ///
-    /// Inherits from LocalCrystalManager and overrides ExplodeCrystal so that
+    /// Inherits from CrystalManager and overrides ExplodeCrystal so that
     /// when a crystal is hit, instead of a random respawn, we fire OnWaypointCrystalHit.
     /// ShapeDrawingManager listens to this event and decides whether to spawn the next
     /// waypoint crystal or end the sequence.
     ///
-    /// Place this component on the same GameObject as (or replacing) LocalCrystalManager
+    /// Place this component on the same GameObject as (or replacing) CrystalManager
     /// during Shape Drawing Mode. ShapeDrawingManager handles swapping managers.
     /// </summary>
-    public class ShapeDrawingCrystalManager : LocalCrystalManager
+    public class ShapeDrawingCrystalManager : CrystalManager
     {
         // ── Events ────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Shape drawing crystals do NOT respawn. The sequence manager handles spawning
-        /// the next crystal. This prevents the base LocalCrystalManager from trying to
+        /// the next crystal. This prevents the base CrystalManager from trying to
         /// calculate a new position (which fails when Cell is disabled).
         /// </summary>
         public override void RespawnCrystal(int crystalId)
@@ -62,23 +62,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Crystal SpawnAtPosition(int crystalId, Vector3 worldPosition)
         {
-            var crystal = Spawn(crystalId, worldPosition);
+            var crystal = SpawnLocal(crystalId, worldPosition);
             cellData.AddCrystalToList(crystal);
             return crystal;
-        }
-
-        /// <summary>
-        /// Destroy all currently tracked crystals immediately (no explosion VFX).
-        /// Called when shape drawing ends or resets.
-        /// </summary>
-        public void DestroyAllCrystals()
-        {
-            var crystals = cellData.Crystals;
-            for (int i = crystals.Count - 1; i >= 0; i--)
-            {
-                var c = crystals[i];
-                if (c) c.DestroyCrystal();
-            }
         }
     }
 }
