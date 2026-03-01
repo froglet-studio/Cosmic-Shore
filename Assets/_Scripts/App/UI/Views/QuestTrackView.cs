@@ -194,7 +194,7 @@ namespace CosmicShore.App.UI.Views
 
         void KillTween()
         {
-            if (_fillTween is { IsActive: true }) _fillTween.Kill();
+            if (_fillTween != null && _fillTween.IsActive()) _fillTween.Kill();
             _fillTween = null;
         }
     }
