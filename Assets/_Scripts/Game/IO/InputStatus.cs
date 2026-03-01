@@ -25,6 +25,7 @@ namespace CosmicShore.Game
         float   _xSumLocal,   _ySumLocal,   _xDiffLocal,   _yDiffLocal,   _throttleLocal;
         bool    _idleLocal,   _pausedLocal, _gyroLocal,    _invertYLocal, _invertThrotLocal,
                 _oneTouchLocal, _cmdStickLocal;
+        InputDeviceType _activeInputDeviceLocal;
         Vector2 _rHomeLocal,  _lHomeLocal,  _rClampLocal,  _lClampLocal,
                 _rStartLocal, _lStartLocal, _rNormLocal,   _lNormLocal,
                 _rEasedLocal, _lEasedLocal, _singleTouchLocal;
@@ -140,6 +141,12 @@ namespace CosmicShore.Game
         {
             get => IsSpawned ? n_cmd.Value    : _cmdStickLocal;
             set { if (IsSpawned && IsOwner) n_cmd.Value    = value; else _cmdStickLocal = value; }
+        }
+
+        public InputDeviceType ActiveInputDevice
+        {
+            get => _activeInputDeviceLocal;
+            set => _activeInputDeviceLocal = value;
         }
 
         public Vector2 RightJoystickHome

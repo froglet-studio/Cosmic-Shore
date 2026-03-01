@@ -258,6 +258,7 @@ namespace CosmicShore.Game.IO
         public override void OnStrategyActivated()
         {
             ResetSmoothingState();
+            inputStatus.ActiveInputDevice = InputDeviceType.Keyboard;
         }
 
         public override void OnStrategyDeactivated()
