@@ -82,8 +82,8 @@ namespace CosmicShore.Gameplay
         const int LowPriority = 0;
 
         bool _isInFreestyle;
-        bool _isTransitioning;
         CancellationTokenSource _cts;
+        CancellationTokenSource _transitionCts;
 
         // ── Unity Lifecycle ─────────────────────────────────────────────
 
@@ -99,6 +99,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            _transitionCts?.Cancel();
+            _transitionCts?.Dispose();
             _cts?.Cancel();
             _cts?.Dispose();
 
@@ -286,7 +288,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ActivateMenuCameraImmediate()
         {
-            if (_isTransitioning) return;
             if (!CameraManager.Instance) return;
 
             CameraManager.Instance.SetMainMenuCameraActive();
@@ -298,6 +299,20 @@ namespace CosmicShore.Gameplay
             }
 
             _isInFreestyle = false;
+        }
+
+        /// <summary>
+        /// Cancels any in-progress camera transition and returns a linked token
+        /// that respects both the new transition CTS and the component lifetime CTS.
+        /// This allows a new transition to preempt a running one (e.g. the user
+        /// toggles exit-freestyle while the enter-freestyle blend is still running).
+        /// </summary>
+        CancellationToken BeginTransition()
+        {
+            _transitionCts?.Cancel();
+            _transitionCts?.Dispose();
+            _transitionCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+            return _transitionCts.Token;
         }
 
         /// <summary>
@@ -313,13 +328,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         async UniTaskVoid TransitionToGameplayCameraAsync()
         {
-            if (_isTransitioning || !CameraManager.Instance) return;
+            if (!CameraManager.Instance) return;
 
             var player = _gameData.LocalPlayer;
             if (player?.Vessel == null) return;
 
-            _isTransitioning = true;
-            var ct = _cts.Token;
+            var ct = BeginTransition();
             var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
 
             EnsureBridgeVCam();
@@ -348,7 +362,6 @@ namespace CosmicShore.Gameplay
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
 
             _isInFreestyle = true;
-            _isTransitioning = false;
         }
 
         /// <summary>
@@ -365,14 +378,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         async UniTaskVoid TransitionToMenuCameraAsync()
         {
-            if (_isTransitioning || !CameraManager.Instance) return;
+            if (!CameraManager.Instance) return;
             if (!_playerCameraController) { ActivateMenuCameraImmediate(); return; }
 
-            _isTransitioning = true;
-            var ct = _cts.Token;
+            var ct = BeginTransition();
 
             EnsureBridgeVCam();
-            if (!_bridgeVCam) { ActivateMenuCameraImmediate(); _isTransitioning = false; return; }
+            if (!_bridgeVCam) { ActivateMenuCameraImmediate(); return; }
 
             // 1. Position bridge at CM PlayerCam's current location (static snapshot)
             ConfigureBridgeAsSnapshot(
@@ -422,7 +434,6 @@ namespace CosmicShore.Gameplay
             SetVCamPriority(_menuVCam, HighPriority);
 
             _isInFreestyle = false;
-            _isTransitioning = false;
         }
 
         /// <summary>
@@ -433,7 +444,6 @@ namespace CosmicShore.Gameplay
             if (_menuVCam) _menuVCam.gameObject.SetActive(false);
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
             _isInFreestyle = true;
-            _isTransitioning = false;
         }
 
         // ── Bridge vCam Configuration ───────────────────────────────────
