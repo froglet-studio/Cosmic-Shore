@@ -353,13 +353,21 @@ namespace CosmicShore.Gameplay
                 ignoreTimeScale: true,
                 cancellationToken: ct);
 
-            // 4. Hand off to CustomCameraController
-            //    Deactivate Cinemachine cameras first, then activate the proven gameplay pipeline.
-            //    SetupGamePlayCameras calls SnapToTarget — this is imperceptible because the
-            //    camera is already at the vessel follow position after the blend.
+            // 4. Capture where the Brain left the scene camera before tearing down Cinemachine.
+            //    During the blend the vessel keeps moving, so the Brain's output position
+            //    drifts from where CustomCameraController would compute its snap position.
+            var brainCamera = _brain ? _brain.transform : null;
+            var handoffPos = brainCamera ? brainCamera.position : _bridgeVCam.transform.position;
+            var handoffRot = brainCamera ? brainCamera.rotation : _bridgeVCam.transform.rotation;
+
+            // 5. Hand off to CustomCameraController
+            //    SetupGamePlayCameras configures + SnapToTarget, then we override the snap
+            //    with the Brain's actual output so there's zero visual discontinuity.
+            //    SmoothDamp in the next LateUpdate converges naturally from here.
             _bridgeVCam.gameObject.SetActive(false);
             if (_menuVCam) _menuVCam.gameObject.SetActive(false);
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
+            _playerCameraController.transform.SetPositionAndRotation(handoffPos, handoffRot);
 
             _isInFreestyle = true;
         }
