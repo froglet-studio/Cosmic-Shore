@@ -11,6 +11,7 @@ using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
 #if UNITY_EDITOR
 using Unity.Multiplayer.Playmode;
+using Unity.Netcode.Transports.UTP;
 #endif
 namespace CosmicShore.Gameplay
 {
@@ -127,15 +128,20 @@ namespace CosmicShore.Gameplay
                 }
 
 #if UNITY_EDITOR
-                // When using Multiplayer Play Mode (MPPM), virtual players tagged
-                // as "Client" should join the main editor's host instead of starting
-                // their own. Tags are configured in Window > Multiplayer > MPPM.
-                var mppmTags = CurrentPlayer.ReadOnlyTags();
-                if (mppmTags != null && mppmTags.Contains("Client"))
+                // MPPM clones run as separate editor processes on the same machine.
+                // Each starts its own local host, so they need unique ports to avoid
+                // bind conflicts. Relay transport handles actual multiplayer connections.
+                if (!CurrentPlayer.IsMainEditor)
                 {
-                    CSDebug.Log("[MultiplayerSetup] MPPM clone tagged 'Client' — starting as Client.");
-                    nm.StartClient();
-                    return;
+                    var transport = nm.GetComponent<UnityTransport>();
+                    if (transport != null)
+                    {
+                        var tags = CurrentPlayer.ReadOnlyTags();
+                        var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
+                        ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
+                        transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
+                        CSDebug.Log($"[MultiplayerSetup] MPPM clone '{tagKey}' — local host port {port}.");
+                    }
                 }
 #endif
 
