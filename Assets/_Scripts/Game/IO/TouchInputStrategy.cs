@@ -39,6 +39,22 @@ namespace CosmicShore.Game.IO
             inputStatus.ActiveInputDevice = InputDeviceType.Touch;
         }
 
+        /// <summary>
+        /// Touch-tuned easing: mostly linear with a subtle cubic dead zone.
+        /// The gamepad cosine curve crushes mid-range to ~15% output — that
+        /// compensates for stick resistance but feels sluggish on glass where
+        /// there is no friction. This blend keeps a gentle noise filter near
+        /// center while staying responsive through mid-range.
+        ///
+        /// Input [-2, 2] → Output [-1, 1] (same domain/range as gamepad Ease).
+        /// </summary>
+        protected override float Ease(float input)
+        {
+            float t = Mathf.Clamp(input * 0.5f, -1f, 1f);
+            float cubic = t * t * t;
+            return cubic * 0.25f + t * 0.75f;
+        }
+
         public override void ProcessInput()
         {
             var touchCount = Touch.activeTouches.Count;
