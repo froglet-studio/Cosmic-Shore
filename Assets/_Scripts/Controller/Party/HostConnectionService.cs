@@ -56,6 +56,8 @@ namespace CosmicShore.Gameplay
         private bool _initialized;
         private bool _joining;
         private bool _leaving;
+        private bool _refreshing;
+        private bool _refreshPaused;
         private PartyInviteData? _lastFiredInvite;
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
@@ -98,13 +100,14 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_initialized || _presenceLobby == null) return;
+            if (!_initialized || _presenceLobby == null || _refreshPaused) return;
 
             _refreshTimer += Time.deltaTime;
             if (_refreshTimer >= refreshIntervalSeconds)
             {
                 _refreshTimer = 0f;
-                RefreshAsync().Forget();
+                if (!_refreshing)
+                    RefreshAsync().Forget();
             }
         }
 
@@ -145,6 +148,22 @@ namespace CosmicShore.Gameplay
             connectionData.ResetRuntimeData();
             await LeavePresenceLobbyAsync();
             connectionData.OnHostConnectionLost?.Raise();
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Public: Refresh Control
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Pauses or resumes the periodic refresh loop.
+        /// Called by <see cref="PartyInviteController"/> during transitions
+        /// to avoid UGS rate limit conflicts with session creation API calls.
+        /// </summary>
+        public void SetRefreshPaused(bool paused)
+        {
+            _refreshPaused = paused;
+            if (!paused)
+                _refreshTimer = 0f;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -461,7 +480,8 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid RefreshAsync()
         {
-            if (_presenceLobby == null) return;
+            if (_presenceLobby == null || _refreshing) return;
+            _refreshing = true;
 
             try
             {
@@ -506,6 +526,10 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+            }
+            finally
+            {
+                _refreshing = false;
             }
         }
 
