@@ -36,8 +36,8 @@ namespace CosmicShore.Gameplay
     ///   - <c>OnCrystalSpawned</c>     → configure menu orbit target
     ///
     /// Place on the same GameObject as MainMenuController (the Game object in Menu_Main).
-    /// Blend duration/curve is controlled by the CinemachineBrain's DefaultBlend setting
-    /// on the Game Scene Main Camera prefab.
+    /// Blend duration/curve is controlled by the CinemachineBrain's DefaultBlend setting on
+    /// Game Scene Main Camera. Transitions poll <c>IsBlending</c> rather than using a fixed timer.
     /// </summary>
     public class MainMenuCameraController : MonoBehaviour
     {
@@ -50,11 +50,6 @@ namespace CosmicShore.Gameplay
 
         [SerializeField, Tooltip("Orbit speed in degrees per second.")]
         float _orbitSpeed = 5f;
-
-        [Header("Camera Transition")]
-        [SerializeField, Tooltip("Duration to wait for the CinemachineBrain blend to complete. " +
-                                 "Should match the DefaultBlend.Time on Game Scene Main Camera.")]
-        float _transitionDuration = 2f;
 
         [Header("SOAP Events")]
         [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
@@ -341,6 +336,7 @@ namespace CosmicShore.Gameplay
 
             // 1. Configure bridge to track vessel with matching camera offset
             ConfigureBridgeForVessel(followTarget, player.Vessel.VesselStatus.VesselCameraCustomizer);
+            _bridgeVCam.PreviousStateIsValid = false;
 
             // 2. Activate bridge at higher priority → Brain blends menu orbit (A) → bridge (B)
             //    Both vCams evaluated every frame — bridge tracks moving vessel throughout.
@@ -348,15 +344,13 @@ namespace CosmicShore.Gameplay
             SetVCamPriority(_bridgeVCam, HighPriority + 1);
             SetVCamPriority(_menuVCam, HighPriority);
 
-            // 3. Wait for blend to complete
-            await UniTask.Delay(
-                (int)(_transitionDuration * 1000),
-                ignoreTimeScale: true,
-                cancellationToken: ct);
+            // 3. Wait for Brain blend to actually complete (not a fixed timer estimate).
+            while (_brain && _brain.IsBlending)
+                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
             // 4. Hand off to CustomCameraController
-            //    Bridge and PlayerCam both compute: target.position + target.rotation * offset
-            //    with zero damping, so they're at the same position — no forced override needed.
+            //    Bridge and PlayerCam both compute the same position and LookAt rotation,
+            //    so the swap is seamless.
             _bridgeVCam.gameObject.SetActive(false);
             if (_menuVCam) _menuVCam.gameObject.SetActive(false);
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
@@ -432,11 +426,9 @@ namespace CosmicShore.Gameplay
             }
             SetVCamPriority(_menuVCam, HighPriority + 1);
 
-            // 7. Wait for blend to complete.
-            await UniTask.Delay(
-                (int)(_transitionDuration * 1000),
-                ignoreTimeScale: true,
-                cancellationToken: ct);
+            // 7. Wait for Brain blend to actually complete.
+            while (_brain && _brain.IsBlending)
+                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
             // 8. Clean up bridge and normalize menu priority.
             _bridgeVCam.gameObject.SetActive(false);
