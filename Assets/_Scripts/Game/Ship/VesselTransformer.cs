@@ -59,10 +59,13 @@ public class VesselTransformer : MonoBehaviour
     private bool _hasDriftBase;
     private bool _singleDriftActive;
     private bool _sharpDriftActive;
-    [HideInInspector] public float SingleDriftRotMult = 1f;
-    [HideInInspector] public float SingleDriftDamp = 0f;
-    [HideInInspector] public float SharpDriftRotMult = 1f;
-    [HideInInspector] public float SharpDriftDamp = 0f;
+    private bool _singleDriftParamsSet;
+    private bool _sharpDriftParamsSet;
+    private float _singleDriftRotMult = 1f;
+    private float _singleDriftDamp;
+    private float _sharpDriftRotMult = 1f;
+    private float _sharpDriftDamp;
+    private float _frameTriggerSum;
     public bool IsDriftActive => _singleDriftActive || _sharpDriftActive;
 
     // ----------------------------- Update Loop -----------------------------
@@ -74,6 +77,7 @@ public class VesselTransformer : MonoBehaviour
         VesselStatus.blockRotation = transform.rotation;
 
         if (decayBoost) DecayBoost();
+        _frameTriggerSum = GetTriggerSum();
         ApplyAnalogDrift();
         RotateShip();
 
@@ -131,11 +135,13 @@ public class VesselTransformer : MonoBehaviour
         // Drift
         _singleDriftActive = false;
         _sharpDriftActive = false;
+        _singleDriftParamsSet = false;
+        _sharpDriftParamsSet = false;
         RestoreDriftBase();
-        SingleDriftRotMult = 1f;
-        SingleDriftDamp = 0f;
-        SharpDriftRotMult = 1f;
-        SharpDriftDamp = 0f;
+        _singleDriftRotMult = 1f;
+        _singleDriftDamp = 0f;
+        _sharpDriftRotMult = 1f;
+        _sharpDriftDamp = 0f;
 
         // Remove lingering modifiers and states
         ThrottleModifiers.Clear();
@@ -210,15 +216,17 @@ public class VesselTransformer : MonoBehaviour
 
         if (isSharp)
         {
-            SharpDriftRotMult = rotMult;
-            SharpDriftDamp = dampTarget;
+            _sharpDriftRotMult = rotMult;
+            _sharpDriftDamp = dampTarget;
             _sharpDriftActive = true;
+            _sharpDriftParamsSet = true;
         }
         else
         {
-            SingleDriftRotMult = rotMult;
-            SingleDriftDamp = dampTarget;
+            _singleDriftRotMult = rotMult;
+            _singleDriftDamp = dampTarget;
             _singleDriftActive = true;
+            _singleDriftParamsSet = true;
         }
     }
 
@@ -276,13 +284,13 @@ public class VesselTransformer : MonoBehaviour
         if (!_hasDriftBase || VesselStatus == null || !VesselStatus.IsDrifting)
             return;
 
-        float triggerSum = GetTriggerSum();
+        float triggerSum = _frameTriggerSum;
 
-        // Determine which drift params to use, falling back gracefully
-        float singleMult = SingleDriftRotMult > 1f ? SingleDriftRotMult : SharpDriftRotMult;
-        float sharpMult = SharpDriftRotMult > 1f ? SharpDriftRotMult : singleMult;
-        float singleDamp = SingleDriftRotMult > 1f ? SingleDriftDamp : SharpDriftDamp;
-        float sharpDamp = SharpDriftRotMult > 1f ? SharpDriftDamp : singleDamp;
+        // Determine which drift params to use, falling back to whichever tier has been configured
+        float singleMult = _singleDriftParamsSet ? _singleDriftRotMult : _sharpDriftRotMult;
+        float sharpMult = _sharpDriftParamsSet ? _sharpDriftRotMult : singleMult;
+        float singleDamp = _singleDriftParamsSet ? _singleDriftDamp : _sharpDriftDamp;
+        float sharpDamp = _sharpDriftParamsSet ? _sharpDriftDamp : singleDamp;
 
         float effectiveMult;
         float effectiveDamp;
@@ -364,8 +372,7 @@ public class VesselTransformer : MonoBehaviour
         // Drift course: blend between "go forward" and "drift course" based on analog intensity
         if (VesselStatus.IsDrifting && _hasDriftBase)
         {
-            float triggerSum = GetTriggerSum();
-            float driftAmount = Mathf.Clamp01(triggerSum);
+            float driftAmount = Mathf.Clamp01(_frameTriggerSum);
 
             // Compute the drifted course (slow convergence toward facing direction)
             Vector3 driftedCourse = DriftDamping > 0.001f
