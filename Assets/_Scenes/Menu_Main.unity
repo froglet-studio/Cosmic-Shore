@@ -4364,8 +4364,8 @@ MonoBehaviour:
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
@@ -62429,7 +62429,7 @@ MonoBehaviour:
   _orbitRadius: 150
   _orbitHeight: 30
   _orbitSpeed: 5
-  _transitionDuration: 2
+  _transitionDuration: 5
   _freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
   _cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
 --- !u!1 &1486054860
@@ -108453,7 +108453,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f31bbbd0ddad5648b3705a1a6408fdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  view: {fileID: 1810261739}
+  view: {fileID: 0}
   activeImageElements:
   - {fileID: 5840560527785866495}
   inactiveImageElements:
@@ -108985,7 +108985,7 @@ MonoBehaviour:
   ShipSelectCardPrefab: {fileID: 6510446657241822326, guid: 12b4f046973446e409abdfb148bd3aa0,
     type: 3}
   TopNav: {fileID: 5497407957322793862}
-  OverviewView: {fileID: 1810261739}
+  VesselSelectionView: {fileID: 0}
   AbilitiesView: {fileID: 304840938}
   CaptainsView: {fileID: 1957720461}
   HangarTrainingModal: {fileID: 967965495472166764}
