@@ -6,6 +6,7 @@ using static CosmicShore.UI.ScreenSwitcher;
 
 namespace CosmicShore.UI
 {
+    [RequireComponent(typeof(CanvasGroup))]
     public class ModalWindowManager : MonoBehaviour
     {
         [Inject] protected AudioSystem audioSystem;
@@ -19,9 +20,12 @@ namespace CosmicShore.UI
         bool isOn;
 
         ScreenSwitcher _screenSwitcher;
+        CanvasGroup _canvasGroup;
 
         protected virtual void Start()
         {
+            _canvasGroup = GetComponent<CanvasGroup>();
+
             if(windowAnimator == null)
                 windowAnimator = GetComponent<Animator>();
 
@@ -30,7 +34,12 @@ namespace CosmicShore.UI
 
         public void ModalWindowIn()
         {
-            gameObject.SetActive(true);
+            // Activate the GO once if it started disabled (scene backward compat).
+            // After this, the GO stays active and visibility is CanvasGroup-only.
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+
+            SetCanvasGroupVisible(true);
 
             if (isOn == false)
             {
@@ -69,7 +78,18 @@ namespace CosmicShore.UI
         IEnumerator DisableWindow()
         {
             yield return new WaitForSeconds(0.5f);
-            gameObject.SetActive(false);
+            SetCanvasGroupVisible(false);
+        }
+
+        protected void SetCanvasGroupVisible(bool visible)
+        {
+            if (_canvasGroup == null)
+                _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) return;
+
+            _canvasGroup.alpha = visible ? 1f : 0f;
+            _canvasGroup.blocksRaycasts = visible;
+            _canvasGroup.interactable = visible;
         }
     }
 }

@@ -11,6 +11,7 @@ namespace CosmicShore.UI
     /// Panel for sending friend requests by player name.
     /// Provides a text input field and send button.
     /// </summary>
+    [RequireComponent(typeof(CanvasGroup))]
     public class AddFriendPanel : MonoBehaviour
     {
         [Header("UI References")]
@@ -24,20 +25,18 @@ namespace CosmicShore.UI
 
         [Inject] private FriendsServiceFacade friendsService;
 
+        private CanvasGroup _canvasGroup;
+
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
 
         void Awake()
         {
+            _canvasGroup = GetComponent<CanvasGroup>();
             sendButton?.onClick.AddListener(OnSendPressed);
             closeButton?.onClick.AddListener(Hide);
             nameInputField?.onValueChanged.AddListener(OnInputChanged);
-        }
-
-        void OnEnable()
-        {
-            ClearState();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -46,12 +45,15 @@ namespace CosmicShore.UI
 
         public void Show()
         {
-            gameObject.SetActive(true);
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+            SetCanvasGroupVisible(true);
+            ClearState();
         }
 
         public void Hide()
         {
-            gameObject.SetActive(false);
+            SetCanvasGroupVisible(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -124,6 +126,17 @@ namespace CosmicShore.UI
             if (feedbackText == null) return;
             feedbackText.text = message;
             feedbackText.color = success ? new Color(0.2f, 0.9f, 0.3f) : new Color(0.9f, 0.3f, 0.3f);
+        }
+
+        private void SetCanvasGroupVisible(bool visible)
+        {
+            if (_canvasGroup == null)
+                _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) return;
+
+            _canvasGroup.alpha = visible ? 1f : 0f;
+            _canvasGroup.blocksRaycasts = visible;
+            _canvasGroup.interactable = visible;
         }
     }
 }

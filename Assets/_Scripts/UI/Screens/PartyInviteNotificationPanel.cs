@@ -173,12 +173,25 @@ namespace CosmicShore.UI
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
 
+        private CanvasGroup _panelRootCG;
+
         private void ShowPanel(bool show)
         {
-            if (panelRoot != null)
-                panelRoot.SetActive(show);
-            else
-                gameObject.SetActive(show);
+            var target = panelRoot != null ? panelRoot : gameObject;
+
+            // Activate the GO once if it started disabled.
+            if (!target.activeSelf)
+                target.SetActive(true);
+
+            if (_panelRootCG == null)
+            {
+                if (!target.TryGetComponent(out _panelRootCG))
+                    _panelRootCG = target.AddComponent<CanvasGroup>();
+            }
+
+            _panelRootCG.alpha = show ? 1f : 0f;
+            _panelRootCG.blocksRaycasts = show;
+            _panelRootCG.interactable = show;
         }
 
         private void SetButtonsInteractable(bool interactable)

@@ -15,6 +15,7 @@ namespace CosmicShore.UI
     /// Reads from <see cref="FriendsDataSO"/> (SOAP) and delegates actions to
     /// <see cref="FriendsServiceFacade"/> and <see cref="HostConnectionService"/>.
     /// </summary>
+    [RequireComponent(typeof(CanvasGroup))]
     public class FriendsPanel : MonoBehaviour
     {
         // ─────────────────────────────────────────────────────────────────────
@@ -60,6 +61,10 @@ namespace CosmicShore.UI
         private readonly List<FriendEntryView> _friendEntries = new();
         private readonly List<FriendRequestEntryView> _requestEntries = new();
         private int _activeTab; // 0=friends, 1=requests, 2=addFriend
+        private CanvasGroup _canvasGroup;
+        private CanvasGroup _friendsListCG;
+        private CanvasGroup _requestsListCG;
+        private CanvasGroup _addFriendCG;
 
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
@@ -67,6 +72,7 @@ namespace CosmicShore.UI
 
         void Awake()
         {
+            _canvasGroup = GetComponent<CanvasGroup>();
             friendsTabButton?.onClick.AddListener(() => SwitchTab(0));
             requestsTabButton?.onClick.AddListener(() => SwitchTab(1));
             addFriendTabButton?.onClick.AddListener(() => SwitchTab(2));
@@ -97,11 +103,6 @@ namespace CosmicShore.UI
                     friendsData.OutgoingRequests.OnCleared += OnRequestsCleared;
                 }
             }
-
-            SwitchTab(0);
-            RebuildFriendsList();
-            RebuildRequestsList();
-            UpdateBadge();
         }
 
         void OnDisable()
@@ -135,12 +136,18 @@ namespace CosmicShore.UI
 
         public void Show()
         {
-            gameObject.SetActive(true);
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+            SetCanvasGroupVisible(true);
+            SwitchTab(0);
+            RebuildFriendsList();
+            RebuildRequestsList();
+            UpdateBadge();
         }
 
         public void Hide()
         {
-            gameObject.SetActive(false);
+            SetCanvasGroupVisible(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -151,10 +158,10 @@ namespace CosmicShore.UI
         {
             _activeTab = tabIndex;
 
-            friendsListContent?.SetActive(tabIndex == 0);
-            requestsListContent?.SetActive(tabIndex == 1);
-            if (addFriendContent != null)
-                addFriendContent.gameObject.SetActive(tabIndex == 2);
+            EnsureTabCanvasGroups();
+            SetTabCanvasGroupVisible(_friendsListCG, tabIndex == 0);
+            SetTabCanvasGroupVisible(_requestsListCG, tabIndex == 1);
+            SetTabCanvasGroupVisible(_addFriendCG, tabIndex == 2);
 
             SetTabSelected(friendsTabButton, tabIndex == 0);
             SetTabSelected(requestsTabButton, tabIndex == 1);
@@ -170,6 +177,33 @@ namespace CosmicShore.UI
                     _ => "Friends"
                 };
             }
+        }
+
+        private void EnsureTabCanvasGroups()
+        {
+            if (_friendsListCG == null && friendsListContent != null)
+            {
+                if (!friendsListContent.TryGetComponent(out _friendsListCG))
+                    _friendsListCG = friendsListContent.AddComponent<CanvasGroup>();
+            }
+            if (_requestsListCG == null && requestsListContent != null)
+            {
+                if (!requestsListContent.TryGetComponent(out _requestsListCG))
+                    _requestsListCG = requestsListContent.AddComponent<CanvasGroup>();
+            }
+            if (_addFriendCG == null && addFriendContent != null)
+            {
+                if (!addFriendContent.TryGetComponent(out _addFriendCG))
+                    _addFriendCG = addFriendContent.gameObject.AddComponent<CanvasGroup>();
+            }
+        }
+
+        private static void SetTabCanvasGroupVisible(CanvasGroup cg, bool visible)
+        {
+            if (cg == null) return;
+            cg.alpha = visible ? 1f : 0f;
+            cg.blocksRaycasts = visible;
+            cg.interactable = visible;
         }
 
         private static void SetTabSelected(Button button, bool selected)
@@ -395,6 +429,17 @@ namespace CosmicShore.UI
             int count = friendsData?.IncomingRequestCount ?? 0;
             requestsBadge.text = count > 0 ? count.ToString() : "";
             requestsBadge.gameObject.SetActive(count > 0);
+        }
+
+        private void SetCanvasGroupVisible(bool visible)
+        {
+            if (_canvasGroup == null)
+                _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) return;
+
+            _canvasGroup.alpha = visible ? 1f : 0f;
+            _canvasGroup.blocksRaycasts = visible;
+            _canvasGroup.interactable = visible;
         }
     }
 }

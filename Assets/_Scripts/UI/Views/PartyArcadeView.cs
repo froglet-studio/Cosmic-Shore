@@ -23,6 +23,7 @@ namespace CosmicShore.UI
     ///   - Friends button → <see cref="OnFriendsPressed"/>
     ///   - Refresh button → <see cref="OnRefreshPressed"/>
     /// </summary>
+    [RequireComponent(typeof(CanvasGroup))]
     public class PartyArcadeView : MonoBehaviour
     {
         [Header("SOAP Data")]
@@ -51,12 +52,15 @@ namespace CosmicShore.UI
 
         [Inject] private PlayerDataService playerDataService;
 
+        private CanvasGroup _canvasGroup;
+
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
 
         void Awake()
         {
+            _canvasGroup = GetComponent<CanvasGroup>();
             foreach (var slot in partySlots)
                 slot.Initialize(OnAddSlotPressed);
 
@@ -210,7 +214,9 @@ namespace CosmicShore.UI
         /// </summary>
         public void Show()
         {
-            gameObject.SetActive(true);
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+            SetCanvasGroupVisible(true);
         }
 
         /// <summary>
@@ -220,7 +226,7 @@ namespace CosmicShore.UI
         {
             onlinePlayersPanel?.Hide();
             friendsPanel?.Hide();
-            gameObject.SetActive(false);
+            SetCanvasGroupVisible(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -295,6 +301,17 @@ namespace CosmicShore.UI
                 slot0.SetPlayer(new PartyPlayerData(
                     profile.userId, profile.displayName, profile.avatarId));
             }
+        }
+
+        private void SetCanvasGroupVisible(bool visible)
+        {
+            if (_canvasGroup == null)
+                _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null) return;
+
+            _canvasGroup.alpha = visible ? 1f : 0f;
+            _canvasGroup.blocksRaycasts = visible;
+            _canvasGroup.interactable = visible;
         }
     }
 }
