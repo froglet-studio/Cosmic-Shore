@@ -3930,6 +3930,7 @@ GameObject:
   m_Component:
   - component: {fileID: 70617845}
   - component: {fileID: 70617844}
+  - component: {fileID: 70617846}
   m_Layer: 5
   m_Name: AddFriendContent
   m_TagString: Untagged
@@ -3973,6 +3974,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -20}
   m_SizeDelta: {x: 400, y: 350}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &70617846
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 70617843}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &74148660
 GameObject:
   m_ObjectHideFlags: 0
@@ -39113,6 +39126,7 @@ GameObject:
   - component: {fileID: 582556069}
   - component: {fileID: 600580329}
   - component: {fileID: 567302450}
+  - component: {fileID: 903376356}
   m_Layer: 5
   m_Name: PartyArea
   m_TagString: Untagged
@@ -39120,6 +39134,18 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!225 &903376356
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 903376355}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &903765066
 GameObject:
   m_ObjectHideFlags: 0
@@ -39915,7 +39941,7 @@ MonoBehaviour:
     root: {fileID: 534436443}
   NavBar: {fileID: 1658454450}
   freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
-  arcadePanelRoot: {fileID: 4125016652594217642}
+  arcadeScreen: {fileID: 4125016652594217559}
   NavBarLine: {fileID: 1892901532}
   NavBarLineSprites:
   - {fileID: 21300000, guid: 43b41687a05d38249a69233e9d6595de, type: 3}
@@ -60740,6 +60766,7 @@ MonoBehaviour:
   - {fileID: 0}
   freestyleCanvasGroups: []
   fadeDuration: 0.5
+  cameraTransitionDuration: 2
 --- !u!114 &1486013851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -60798,7 +60825,7 @@ MonoBehaviour:
   _orbitRadius: 80
   _orbitHeight: 30
   _orbitSpeed: 5
-  _gameplayFollowOffset: {x: 0, y: 5, z: -25}
+  _transitionDuration: 2
   _freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
   _cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
 --- !u!1 &1486054860
@@ -71090,7 +71117,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument:
+          m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 921072167}
