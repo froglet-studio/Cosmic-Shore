@@ -1,11 +1,8 @@
 using CosmicShore.Core;
 using CosmicShore.Data;
-using CosmicShore.ScriptableObjects;
-using CosmicShore.UI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -56,6 +53,7 @@ namespace CosmicShore.UI
         }
 
         [Header("Swipe Settings")]
+        [SerializeField] private float percentThreshold = 0.2f; // Smaller = more sensitive
         [SerializeField] private float easing = 0.5f;           // Slide duration
 
         [Header("State")]
@@ -68,10 +66,8 @@ namespace CosmicShore.UI
 
         [Header("Scene References")]
         [SerializeField] private Transform NavBar;
-
-        [Header("Freestyle State")]
-        [Tooltip("SOAP events raised by MenuCrystalClickHandler when toggling freestyle/menu.")]
-        [SerializeField] private MenuFreestyleEventsContainerSO freestyleEvents;
+        [SerializeField] private HangarScreen HangarMenu;
+        [SerializeField] private LeaderboardsMenu LeaderboardMenu;
 
         [Header("Arcade Panel (separate)")]
         [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
@@ -79,15 +75,10 @@ namespace CosmicShore.UI
 
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
-        private bool _isInFreestyle;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
         private RectTransform _canvasRect;
-        private MenuAudio _menuAudio;
-
-        // Cached IScreen components per screen index for lifecycle callbacks
-        private readonly Dictionary<int, IScreen> _screenMap = new();
 
         // Old constants kept for compatibility
         private const int STORE  = (int)MenuScreens.STORE;
@@ -160,7 +151,7 @@ namespace CosmicShore.UI
             PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
             PlayerPrefs.Save();
         }
-        
+
         public bool ScreenIsActive(MenuScreens screen)
         {
             return GetScreenIdForIndex(currentScreen) == screen;
@@ -196,31 +187,11 @@ namespace CosmicShore.UI
             }
         }
 
-        private void OnEnable()
-        {
-            if (freestyleEvents)
-            {
-                freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
-                freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
-            }
-        }
-
-        private void OnDisable()
-        {
-            if (freestyleEvents)
-            {
-                freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
-                freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
-            }
-        }
-
         private void Start()
         {
             _rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
-            _menuAudio = GetComponent<MenuAudio>();
 
-            CacheScreenComponents();
             LayoutScreensToViewport();
 
             panelLocation = transform.position;
@@ -256,7 +227,6 @@ namespace CosmicShore.UI
 
         private void Update()
         {
-            if (_isInFreestyle) return;
             if (Gamepad.current == null) return;
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
@@ -360,21 +330,6 @@ namespace CosmicShore.UI
 
         #region Screen Mapping Helpers
 
-        private void CacheScreenComponents()
-        {
-            int count = GetScreenCount();
-            for (int i = 0; i < count; i++)
-            {
-                RectTransform rt = GetScreenRootRT(i);
-                if (rt == null) continue;
-
-                // Check same GameObject first, then scan children
-                var screen = rt.GetComponentInChildren<IScreen>(true);
-                if (screen != null)
-                    _screenMap[i] = screen;
-            }
-        }
-
         private int GetScreenCount()
         {
             if (screens != null && screens.Count > 0)
@@ -425,9 +380,6 @@ namespace CosmicShore.UI
 
         private void NavigateTo(int ScreenIndex, bool animate = true)
         {
-            // Block screen navigation while in freestyle mode
-            if (_isInFreestyle) return;
-
             int max = GetScreenCount() - 1;
             if (max < 0)
             {
@@ -440,16 +392,24 @@ namespace CosmicShore.UI
             if (ScreenIndex == currentScreen)
                 return;
 
-            // Notify the outgoing screen
-            if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
-                exitingScreen.OnScreenExit();
-
             // Map index → logical enum id
             MenuScreens screenId = GetScreenIdForIndex(ScreenIndex);
 
-            // Notify the incoming screen
-            if (_screenMap.TryGetValue(ScreenIndex, out var enteringScreen))
-                enteringScreen.OnScreenEnter();
+            switch (screenId)
+            {
+                // If someone tries to navigate to the ARCADE index,
+                // treat it as opening the separate arcade panel instead of sliding.
+                // case MenuScreens.ARK:
+                //     OpenArcadePanel();
+                //     return;
+                case MenuScreens.HANGAR:
+                {
+                    UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
+                    if (HangarMenu)
+                        HangarMenu.LoadView();
+                    break;
+                }
+            }
 
             if (screenId == MenuScreens.HOME)
                 PauseSystem.TogglePauseGame(false);
@@ -462,8 +422,9 @@ namespace CosmicShore.UI
 
             if (animate)
             {
-                if (_menuAudio)
-                    _menuAudio.PlayAudio();
+                var menuAudio = GetComponent<MenuAudio>();
+                if (menuAudio)
+                    menuAudio.PlayAudio();
 
                 if (navigateCoroutine != null)
                     StopCoroutine(navigateCoroutine);
@@ -488,7 +449,7 @@ namespace CosmicShore.UI
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
             if (arcadePanelRoot)
             {
-                arcadePanelRoot.SetVisible(true);
+                arcadePanelRoot.SetActive(true);
             }
         }
 
@@ -503,6 +464,9 @@ namespace CosmicShore.UI
 
         public void OnClickPortNav()
         {
+            if (LeaderboardMenu != null)
+                LeaderboardMenu.LoadView();
+
             NavigateTo(MenuScreens.PORT);
         }
 
@@ -566,8 +530,8 @@ namespace CosmicShore.UI
                     var child = NavBar.GetChild(i);
                     if (child.childCount < 2) continue;
 
-                    child.GetChild(0).gameObject.SetVisible(true);
-                    child.GetChild(1).gameObject.SetVisible(false);
+                    child.GetChild(0).gameObject.SetActive(true);
+                    child.GetChild(1).gameObject.SetActive(false);
                 }
 
                 if (index >= 0 && index < NavBar.childCount)
@@ -575,8 +539,8 @@ namespace CosmicShore.UI
                     var active = NavBar.GetChild(index);
                     if (active.childCount >= 2)
                     {
-                        active.GetChild(0).gameObject.SetVisible(false);
-                        active.GetChild(1).gameObject.SetVisible(true);
+                        active.GetChild(0).gameObject.SetActive(false);
+                        active.GetChild(1).gameObject.SetActive(true);
                     }
                 }
             }
@@ -593,41 +557,11 @@ namespace CosmicShore.UI
                 bool isActive = (i == index);
 
                 if (NavActiveImages[i])
-                    NavActiveImages[i].SetVisible(isActive);
+                    NavActiveImages[i].SetActive(isActive);
 
                 if (i < NavInactiveImages.Count && NavInactiveImages[i])
-                    NavInactiveImages[i].SetVisible(!isActive);
+                    NavInactiveImages[i].SetActive(!isActive);
             }
-        }
-
-        #endregion
-
-        #region Freestyle State
-
-        private void HandleEnterFreestyle()
-        {
-            _isInFreestyle = true;
-
-            // Notify the current screen that it's being exited
-            if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
-                exitingScreen.OnScreenExit();
-
-            // Hide NavBar
-            if (NavBar)
-                NavBar.gameObject.SetVisible(false);
-        }
-
-        private void HandleExitFreestyle()
-        {
-            _isInFreestyle = false;
-
-            // Show NavBar
-            if (NavBar)
-                NavBar.gameObject.SetVisible(true);
-
-            // Notify the current screen that it's being re-entered
-            if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
-                enteringScreen.OnScreenEnter();
         }
 
         #endregion

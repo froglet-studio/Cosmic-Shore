@@ -17,8 +17,8 @@ namespace CosmicShore.Gameplay
     /// Other clients' vessels are unaffected by this toggle.
     ///
     /// Raises SOAP events via <see cref="MenuFreestyleEventsContainerSO"/> so decoupled
-    /// systems (<see cref="Core.MainMenuController"/> for camera switching + state tracking,
-    /// ScreenSwitcher, NavBar, HUD) can react without direct references.
+    /// systems (camera switching, state tracking, ScreenSwitcher, NavBar, HUD)
+    /// can react without direct references.
     ///
     /// Transition is triggered externally via <see cref="ToggleTransition"/> (e.g. from a UI button).
     /// </summary>
@@ -114,7 +114,7 @@ namespace CosmicShore.Gameplay
             _isInFreestyle = true;
             _isTransitioning = false;
 
-            // State tracking + camera switching handled by MainMenuController via this event
+            // State tracking + camera switching handled by subscribers via this event
             freestyleEvents.OnEnterFreestyle.Raise();
         }
 
@@ -127,7 +127,7 @@ namespace CosmicShore.Gameplay
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // State tracking + camera switching handled by MainMenuController via this event
+            // State tracking + camera switching handled by subscribers via this event
             freestyleEvents.OnExitFreestyle.Raise();
 
             // Fade out freestyle UI, fade in menu UI

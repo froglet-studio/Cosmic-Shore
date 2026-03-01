@@ -9,8 +9,8 @@ namespace CosmicShore.Gameplay
     /// initializes it, then activates autopilot.
     ///
     /// Game data configuration (vessel class, player count, intensity) is handled
-    /// by <see cref="Core.MainMenuController"/> — this class only handles the
-    /// network spawn chain and autopilot activation.
+    /// by the menu scene controller — this class only handles the network spawn
+    /// chain and autopilot activation.
     ///
     /// Listens to <see cref="GameDataSO.OnPlayerNetworkSpawnedUlong"/> via the base class,
     /// which waits for NetworkVariables to sync before spawning.
@@ -41,8 +41,7 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
-            // Camera setup is handled by MainMenuController.HandleMenuReady()
-            // which activates the CM Main Menu Cinemachine camera for menu state.
+            // Camera setup is handled by the menu scene's camera controller.
         }
     }
 }
