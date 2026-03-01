@@ -13,26 +13,31 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Manages cameras for the Menu_Main scene with smooth Cinemachine-blended transitions.
     ///
-    /// Menu state: "CM Main Menu" Cinemachine vCam orbits the crystal at a
-    /// configurable radius/height/speed.
+    /// Two camera endpoints:
+    ///   A = "CM Main Menu" CinemachineCamera — orbits the crystal
+    ///   B = "CM Freestyle Bridge" CinemachineCamera — tracks the vessel via CinemachineFollow
+    ///       (same offset/damping as <see cref="CustomCameraController"/>)
+    ///
+    /// The CinemachineBrain on Game Scene Main Camera blends between A and B.
+    /// Both vCams are evaluated every frame during the blend, so A orbits and B tracks
+    /// the vessel continuously — the blend path stays natural even when the vessel moves.
+    ///
+    /// After the enter-freestyle blend completes (A→B), Bridge and PlayerCam are at the
+    /// same position (same offset, zero damping), so the handoff is seamless.
+    ///
     /// Freestyle state: <see cref="CameraManager.SetupGamePlayCameras"/> activates
     /// the proven <see cref="CustomCameraController"/> ("CM PlayerCam") to follow
     /// the vessel — the same pipeline used by all gameplay scenes.
     ///
-    /// Transitions between states use a "CM Freestyle Bridge" CinemachineCamera that
-    /// enables priority-based blending via the CinemachineBrain on Game Scene Main Camera.
-    /// The bridge vCam is only active during the transition blend — once complete, the
-    /// proven CustomCameraController takes over for actual vessel following.
-    ///
     /// Listens to SOAP events independently from <see cref="Core.MainMenuController"/>:
     ///   - <c>OnClientReady</c>        → activate menu camera (immediate, no transition)
-    ///   - <c>OnEnterFreestyle</c>     → blend to vessel follow, then hand off to CustomCameraController
-    ///   - <c>OnExitFreestyle</c>      → blend from vessel position back to menu orbit
+    ///   - <c>OnEnterFreestyle</c>     → blend A→B, then hand off to CustomCameraController
+    ///   - <c>OnExitFreestyle</c>      → match Bridge to PlayerCam, blend B→A
     ///   - <c>OnCrystalSpawned</c>     → configure menu orbit target
     ///
     /// Place on the same GameObject as MainMenuController (the Game object in Menu_Main).
-    /// Blend duration/curve is controlled by the CinemachineBrain's DefaultBlend setting
-    /// on the Game Scene Main Camera prefab.
+    /// Blend duration/curve is controlled by the CinemachineBrain's DefaultBlend setting on
+    /// Game Scene Main Camera. Transitions poll <c>IsBlending</c> rather than using a fixed timer.
     /// </summary>
     public class MainMenuCameraController : MonoBehaviour
     {
@@ -45,11 +50,6 @@ namespace CosmicShore.Gameplay
 
         [SerializeField, Tooltip("Orbit speed in degrees per second.")]
         float _orbitSpeed = 5f;
-
-        [Header("Camera Transition")]
-        [SerializeField, Tooltip("Duration to wait for the CinemachineBrain blend to complete. " +
-                                 "Should match the DefaultBlend.Time on Game Scene Main Camera.")]
-        float _transitionDuration = 2f;
 
         [Header("SOAP Events")]
         [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
@@ -75,12 +75,15 @@ namespace CosmicShore.Gameplay
         // Cached player camera (CM PlayerCam)
         CustomCameraController _playerCameraController;
 
+        // Cached CinemachineBrain on the scene camera — used to force IgnoreTimeScale
+        CinemachineBrain _brain;
+
         const int HighPriority = 20;
         const int LowPriority = 0;
 
         bool _isInFreestyle;
-        bool _isTransitioning;
         CancellationTokenSource _cts;
+        CancellationTokenSource _transitionCts;
 
         // ── Unity Lifecycle ─────────────────────────────────────────────
 
@@ -89,16 +92,22 @@ namespace CosmicShore.Gameplay
             _cts = new CancellationTokenSource();
             CacheMenuVCam();
             CachePlayerCamera();
+            CacheBrain();
             EnsureBridgeVCam();
             SubscribeEvents();
         }
 
         void OnDestroy()
         {
+            _transitionCts?.Cancel();
+            _transitionCts?.Dispose();
             _cts?.Cancel();
             _cts?.Dispose();
 
             UnsubscribeEvents();
+
+            // Restore Brain's IgnoreTimeScale so gameplay scenes use scaled time for blends
+            if (_brain) _brain.IgnoreTimeScale = false;
 
             // Re-enable RotateAroundOrigin in case CameraManager is reused across scenes
             if (_followTargetRotator) _followTargetRotator.enabled = true;
@@ -172,15 +181,21 @@ namespace CosmicShore.Gameplay
             if (t) _playerCameraController = t.GetComponent<CustomCameraController>();
         }
 
+        void CacheBrain()
+        {
+            var mainCam = Camera.main;
+            if (!mainCam) return;
+
+            _brain = mainCam.GetComponent<CinemachineBrain>();
+            if (_brain)
+                _brain.IgnoreTimeScale = true;
+        }
+
         /// <summary>
         /// Creates or finds the bridge CinemachineCamera used for smooth priority-based
-        /// blending during transitions. The bridge is only active during the blend —
-        /// it is NOT used for ongoing vessel following (CustomCameraController handles that).
-        ///
-        /// For Y→X (enter freestyle): bridge tracks the vessel via CinemachineFollow so
-        /// the CinemachineBrain can blend from the menu orbit toward the vessel position.
-        /// For X→Y (exit freestyle): bridge is positioned as a static snapshot at CM PlayerCam's
-        /// current location so the brain can blend from there back to the orbit.
+        /// blending during transitions. The bridge tracks the vessel via CinemachineFollow
+        /// with zero damping — it is only active during blend transitions, not for ongoing
+        /// vessel following (CustomCameraController handles that).
         /// </summary>
         void EnsureBridgeVCam()
         {
@@ -255,7 +270,7 @@ namespace CosmicShore.Gameplay
 
             var pivot = _crystalTarget.position;
             var offset = _menuFollowTarget.position - pivot;
-            offset = Quaternion.Euler(0, _orbitSpeed * Time.deltaTime, 0) * offset;
+            offset = Quaternion.Euler(0, _orbitSpeed * Time.unscaledDeltaTime, 0) * offset;
             _menuFollowTarget.position = pivot + offset;
         }
 
@@ -269,7 +284,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ActivateMenuCameraImmediate()
         {
-            if (_isTransitioning) return;
             if (!CameraManager.Instance) return;
 
             CameraManager.Instance.SetMainMenuCameraActive();
@@ -284,25 +298,37 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Smooth transition from menu orbit (Y) to vessel follow (X).
+        /// Cancels any in-progress camera transition and returns a linked token
+        /// that respects both the new transition CTS and the component lifetime CTS.
+        /// This allows a new transition to preempt a running one (e.g. the user
+        /// toggles exit-freestyle while the enter-freestyle blend is still running).
+        /// </summary>
+        CancellationToken BeginTransition()
+        {
+            _transitionCts?.Cancel();
+            _transitionCts?.Dispose();
+            _transitionCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+            return _transitionCts.Token;
+        }
+
+        /// <summary>
+        /// Smooth transition from menu orbit (A) to vessel follow (B).
         ///
-        /// 1. Configures the bridge vCam to track the vessel with the same offset as
-        ///    <see cref="CustomCameraController"/> would use.
-        /// 2. Raises bridge priority above menu vCam — CinemachineBrain blends from
-        ///    orbit toward the vessel follow position.
-        /// 3. After blend completes, hands off to CustomCameraController via
-        ///    <see cref="CameraManager.SetupGamePlayCameras"/>. The snap is imperceptible
-        ///    because the camera is already at the vessel follow position.
+        /// 1. Bridge configured to track vessel (CinemachineFollow, zero damping, same offset
+        ///    as <see cref="CustomCameraController"/>). Both A and B are evaluated every frame.
+        /// 2. Bridge priority > menu → Brain blends A→B.
+        /// 3. After blend, Bridge is at the exact vessel follow position. Hand off to
+        ///    CustomCameraController — SnapToTarget computes the same position (same offset),
+        ///    so the swap is seamless with no forced position override.
         /// </summary>
         async UniTaskVoid TransitionToGameplayCameraAsync()
         {
-            if (_isTransitioning || !CameraManager.Instance) return;
+            if (!CameraManager.Instance) return;
 
             var player = _gameData.LocalPlayer;
             if (player?.Vessel == null) return;
 
-            _isTransitioning = true;
-            var ct = _cts.Token;
+            var ct = BeginTransition();
             var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
 
             EnsureBridgeVCam();
@@ -310,70 +336,92 @@ namespace CosmicShore.Gameplay
 
             // 1. Configure bridge to track vessel with matching camera offset
             ConfigureBridgeForVessel(followTarget, player.Vessel.VesselStatus.VesselCameraCustomizer);
+            _bridgeVCam.PreviousStateIsValid = false;
 
-            // 2. Activate bridge at higher priority → CinemachineBrain blends from orbit to bridge
+            // 2. Activate bridge at higher priority → Brain blends menu orbit (A) → bridge (B)
+            //    Both vCams evaluated every frame — bridge tracks moving vessel throughout.
             _bridgeVCam.gameObject.SetActive(true);
             SetVCamPriority(_bridgeVCam, HighPriority + 1);
             SetVCamPriority(_menuVCam, HighPriority);
 
-            // 3. Wait for CinemachineBrain blend to complete
-            await UniTask.Delay(
-                (int)(_transitionDuration * 1000),
-                ignoreTimeScale: true,
-                cancellationToken: ct);
+            // 3. Wait for Brain blend to actually complete.
+            //    Yield one frame first — the Brain hasn't evaluated the priority
+            //    change yet, so IsBlending is false on this frame.
+            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
+            while (_brain && _brain.IsBlending)
+                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
             // 4. Hand off to CustomCameraController
-            //    Deactivate Cinemachine cameras first, then activate the proven gameplay pipeline.
-            //    SetupGamePlayCameras calls SnapToTarget — this is imperceptible because the
-            //    camera is already at the vessel follow position after the blend.
+            //    Bridge and PlayerCam both compute the same position and LookAt rotation,
+            //    so the swap is seamless.
             _bridgeVCam.gameObject.SetActive(false);
             if (_menuVCam) _menuVCam.gameObject.SetActive(false);
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
 
             _isInFreestyle = true;
-            _isTransitioning = false;
         }
 
         /// <summary>
-        /// Smooth transition from vessel follow (X) to menu orbit (Y).
+        /// Smooth transition from vessel follow (B) to menu orbit (A).
         ///
-        /// 1. Positions the bridge vCam as a static snapshot at CustomCameraController's
-        ///    current location.
-        /// 2. Activates bridge at high priority — CinemachineBrain snaps Game Scene Main Camera
-        ///    to the bridge position (hidden behind CM PlayerCam which still renders on top).
-        /// 3. Deactivates CM PlayerCam — now only Game Scene Main Camera renders (at bridge pos).
-        /// 4. Activates menu vCam at higher priority — CinemachineBrain blends from bridge
-        ///    (vessel position) to menu orbit.
-        /// 5. After blend completes, deactivates bridge.
+        /// 1. Bridge configured to track vessel (same offset as PlayerCam) → it naturally
+        ///    matches PlayerCam's pose without any ForceCameraPosition.
+        /// 2. Bridge activates at high priority. The Brain's state is stale (no vCams were
+        ///    active during freestyle), so we temporarily set DefaultBlend to CUT — the Brain
+        ///    snaps to the bridge (= vessel follow pose) instead of blending from stale state.
+        /// 3. PlayerCam deactivated — Brain scene camera is at the same pose, no visible change.
+        /// 4. Menu vCam activated at higher priority → Brain blends B→A. Bridge keeps tracking
+        ///    the vessel every frame, so the "from" side of the blend stays live.
+        /// 5. After blend, bridge deactivated.
         /// </summary>
         async UniTaskVoid TransitionToMenuCameraAsync()
         {
-            if (_isTransitioning || !CameraManager.Instance) return;
+            if (!CameraManager.Instance) return;
             if (!_playerCameraController) { ActivateMenuCameraImmediate(); return; }
 
-            _isTransitioning = true;
-            var ct = _cts.Token;
+            var player = _gameData.LocalPlayer;
+            if (player?.Vessel == null) { ActivateMenuCameraImmediate(); return; }
+
+            var ct = BeginTransition();
 
             EnsureBridgeVCam();
-            if (!_bridgeVCam) { ActivateMenuCameraImmediate(); _isTransitioning = false; return; }
+            if (!_bridgeVCam) { ActivateMenuCameraImmediate(); return; }
 
-            // 1. Position bridge at CM PlayerCam's current location (static snapshot)
-            ConfigureBridgeAsSnapshot(
-                _playerCameraController.transform.position,
-                _playerCameraController.transform.rotation);
+            var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
 
-            // 2. Activate bridge — CinemachineBrain moves Game Scene Main Camera to bridge pos
+            // 1. Configure bridge to track the vessel — it computes the same position as
+            //    PlayerCam (same offset, zero damping), matching its pose naturally.
+            ConfigureBridgeForVessel(followTarget, player.Vessel.VesselStatus.VesselCameraCustomizer);
+            _bridgeVCam.PreviousStateIsValid = false;
+
+            // 2. Temporarily set Brain to CUT so it snaps to the bridge instead of blending
+            //    from stale state (no Cinemachine vCams were active during freestyle).
+            CinemachineBlendDefinition savedBlend = default;
+            if (_brain)
+            {
+                savedBlend = _brain.DefaultBlend;
+                _brain.DefaultBlend = new CinemachineBlendDefinition(
+                    CinemachineBlendDefinition.Styles.Cut, 0f);
+            }
+
+            // 3. Activate bridge — Brain CUTs scene camera to bridge (= vessel follow pose).
+            //    CM PlayerCam still renders on top (depth 0), so no visible change yet.
             _bridgeVCam.gameObject.SetActive(true);
             SetVCamPriority(_bridgeVCam, HighPriority);
 
-            // Wait one frame for CinemachineBrain to process the new vCam
-            await UniTask.Yield(ct);
+            // Let the Brain evaluate with CUT blend.
+            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
-            // 3. Deactivate CM PlayerCam — Game Scene Main Camera is already at the same position
-            //    (renders at depth -1, now unobstructed since CM PlayerCam at depth 0 is gone)
+            // 4. Restore blend setting for the B→A transition.
+            if (_brain)
+                _brain.DefaultBlend = savedBlend;
+
+            // 5. Deactivate PlayerCam — Brain scene camera is at bridge pose (same as
+            //    PlayerCam was), so the swap is invisible.
             CameraManager.Instance.DeactivateAllCameras();
 
-            // 4. Activate menu vCam at higher priority → CinemachineBrain blends bridge → orbit
+            // 6. Activate menu vCam at higher priority → Brain blends bridge (B) → orbit (A).
+            //    Bridge keeps tracking vessel every frame — live "from" side.
             if (_menuVCam)
             {
                 SetMenuVCamTarget();
@@ -381,19 +429,17 @@ namespace CosmicShore.Gameplay
             }
             SetVCamPriority(_menuVCam, HighPriority + 1);
 
-            // 5. Wait for blend to complete
-            //    Bridge must stay active as the "from" side of the CinemachineBrain blend.
-            await UniTask.Delay(
-                (int)(_transitionDuration * 1000),
-                ignoreTimeScale: true,
-                cancellationToken: ct);
+            // 7. Wait for Brain blend to actually complete.
+            //    Yield one frame first so Brain detects the priority change.
+            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
+            while (_brain && _brain.IsBlending)
+                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
-            // 6. Clean up bridge and normalize menu priority
+            // 8. Clean up bridge and normalize menu priority.
             _bridgeVCam.gameObject.SetActive(false);
             SetVCamPriority(_menuVCam, HighPriority);
 
             _isInFreestyle = false;
-            _isTransitioning = false;
         }
 
         /// <summary>
@@ -404,7 +450,6 @@ namespace CosmicShore.Gameplay
             if (_menuVCam) _menuVCam.gameObject.SetActive(false);
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
             _isInFreestyle = true;
-            _isTransitioning = false;
         }
 
         // ── Bridge vCam Configuration ───────────────────────────────────
@@ -445,25 +490,6 @@ namespace CosmicShore.Gameplay
 
             // Zero aim damping — snap to target orientation
             if (_bridgeAim) _bridgeAim.Damping = 0f;
-        }
-
-        /// <summary>
-        /// Configures the bridge vCam as a static snapshot at the given world-space pose.
-        /// Disables CinemachineFollow so the bridge stays put during the menu orbit blend.
-        /// </summary>
-        void ConfigureBridgeAsSnapshot(Vector3 position, Quaternion rotation)
-        {
-            // Disable tracking — make it a static camera
-            if (_bridgeFollow) _bridgeFollow.enabled = false;
-            if (_bridgeAim) _bridgeAim.enabled = false;
-
-            // Clear tracking target
-            var target = _bridgeVCam.Target;
-            target.TrackingTarget = null;
-            _bridgeVCam.Target = target;
-
-            // Position at the snapshot location
-            _bridgeVCam.transform.SetPositionAndRotation(position, rotation);
         }
 
         static void SetVCamPriority(CinemachineCamera cam, int value)

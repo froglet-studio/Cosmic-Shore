@@ -4,15 +4,16 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Cinemachine extension that makes the camera face the same direction as the
-    /// follow target rather than aiming at it. Replaces CinemachineRotationComposer
-    /// for third-person cameras where the camera should share the vessel's orientation
-    /// (forward, up, roll) — critical for space games with full 6DOF movement.
+    /// Cinemachine extension that orients the camera to look AT the follow target
+    /// from the computed camera position. Matches the rotation that
+    /// <see cref="CustomCameraController.SnapToTarget"/> computes via SafeLookRotation:
+    ///   <c>Quaternion.LookRotation(target.position - camera.position, target.up)</c>
     ///
     /// Operates at the Aim pipeline stage: CinemachineFollow handles position (Body),
-    /// then this extension overrides orientation to match the tracking target's rotation.
+    /// then this extension computes orientation from the resulting camera position.
     /// During CinemachineBrain blends, the Brain interpolates between vCam CameraStates
-    /// so transitions remain smooth.
+    /// so transitions remain smooth — and because the look direction shifts naturally
+    /// as position interpolates, rotation and position transition simultaneously.
     /// </summary>
     [AddComponentMenu("")] // Added programmatically by MainMenuCameraController
     public class CinemachineMatchTargetOrientation : CinemachineExtension
@@ -31,11 +32,16 @@ namespace CosmicShore.Gameplay
             var target = vcam.Follow;
             if (target == null) return;
 
-            var targetRot = target.rotation;
+            // LookAt rotation from the computed camera position toward the follow target.
+            // This matches CustomCameraController.SnapToTarget()'s SafeLookRotation so the
+            // bridge→PlayerCam handoff has zero rotation discontinuity.
+            var dir = target.position - state.GetFinalPosition();
+            if (dir.sqrMagnitude < 0.001f) return;
+
+            var targetRot = Quaternion.LookRotation(dir, target.up);
 
             if (Damping > 0.001f && deltaTime >= 0f)
             {
-                // Exponential decay matches CinemachineFollow's smoothing behavior
                 float t = 1f - Mathf.Exp(-deltaTime / Mathf.Max(Damping, 0.0001f));
                 state.RawOrientation = Quaternion.Slerp(state.RawOrientation, targetRot, t);
             }
