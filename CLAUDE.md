@@ -1077,17 +1077,18 @@ Lava-lamp mode merges freestyle gameplay directly into Menu_Main. Instead of lau
 - **Network-aware vessel selection**: Use `MenuVesselSelectionPanelController` (not the singleplayer `VesselSelectionPanelController`) — it delegates vessel swaps to `MenuServerPlayerVesselInitializer` via the Netcode despawn/spawn/RPC pipeline so changes replicate to all clients.
 - **Phased rollout**: Phase 1 (core HUD + vessel selection), Phase 2 (shape drawing), Phase 3 (scoring).
 
-#### Current "Game UI" Container (to be replaced)
+#### Current "Game UI" Container
 
-The existing "Game UI" in Menu_Main has two children that must be replaced:
+The existing "Game UI" in Menu_Main has one child:
 
 ```
-Game UI [RectTransform, CanvasGroup]                    ← keep (already in freestyleCanvasGroups[])
-├── Vessel Selection Panel [VesselSelectionPanelController]  ← REPLACE controller with MenuVesselSelectionPanelController
-│   ├── Buttons (Resume, Close)
-│   └── Menu [GridLayout, 6× ShipCardView]
-└── Vessel Selection Button                              ← REMOVE (panel opens via freestyle HUD button)
+Game UI [RectTransform, CanvasGroup]                    ← already in freestyleCanvasGroups[]
+└── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
+    ├── Buttons (Resume, Close)
+    └── Menu [GridLayout, 6× ShipCardView]
 ```
+
+The standalone "Vessel Selection Button" has been removed. The panel will be opened from the MiniGameHUD's Volume/Pause button once MiniGameHUD is added under Game UI (Phase 1).
 
 #### Phase 1: Core Freestyle HUD (target hierarchy)
 
@@ -1163,7 +1164,7 @@ HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant
 
 #### Vessel Selection Panel (Network-Aware)
 
-Replace the singleplayer `VesselSelectionPanelController` with `MenuVesselSelectionPanelController`:
+The Vessel Selection Panel in Menu_Main already uses `MenuVesselSelectionPanelController` (network-aware). For reference, here is how it differs from the singleplayer variant:
 
 | Aspect | Singleplayer (`VesselSelectionPanelController`) | Menu (`MenuVesselSelectionPanelController`) |
 |---|---|---|
