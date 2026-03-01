@@ -941,6 +941,229 @@ public interface IScreen
 - **Unsubscribe from events** — always pair event subscriptions in `OnEnable`/`OnDisable` or `Start`/`OnDestroy`
 - **Use `[Inject]` for audio** — prefer `[Inject] AudioSystem` via Reflex DI over `[RequireComponent(typeof(MenuAudio))]` + `GetComponent` for new code
 
+### Scene Script Inventories
+
+Complete MonoBehaviour script references for each scene. Use these inventories to understand what systems are active in each scene and where to find or add components.
+
+#### Bootstrap Scene (`Assets/_Scenes/Bootstrap.unity`)
+
+**68 MonoBehaviours** | **35 unique script types** (23 first-party + 12 Unity/third-party) | **33 GameObjects** | **8 prefab instances**
+
+The Bootstrap scene hosts all persistent manager/service GameObjects (marked `DontDestroyOnLoad`) that survive across scene loads, plus the splash screen UI and camera rig.
+
+##### Root GameObjects & Prefab Instances
+
+| Root GameObject | Source | Role |
+|---|---|---|
+| `AppManager` | Prefab (`_Prefabs/CORE/`) | DI root, orchestrator, `SceneTransitionManager` |
+| `EventSystem` | Scene | `EventSystem` + `InputSystemUIInputModule` |
+| `Camera` | Scene | Main camera with `CinemachineBrain` + URP data |
+| `NetworkManager` | Prefab (`_Prefabs/CORE/`) | Netcode `NetworkManager` |
+| `AudioSystem` | Prefab (`_Prefabs/CORE/`) | `AudioSystem` (Wwise integration) |
+| `PrismManagers` | Scene | `PrismFactory`, `PrismScaleManager`, `MaterialStateManager` + 9 child pool objects |
+| `ThemeManager` | Scene | `ThemeManager` |
+| `CameraManager` | Scene | `CameraManager` + Cinemachine virtual cameras (CM PlayerCam, CM EndCam, CM DeathCam, CM Main Menu) + camera follow/look targets |
+| `GameSettings` | Scene | `GameSetting` |
+| `MultiplayerSetup` | Scene | `MultiplayerSetup` |
+| `UGSStatsManager` | Scene | `UGSStatsManager` |
+| `GamepadDebugger` | Scene | `GamepadDebugger` |
+| `PlayerDataService` | Scene | `PlayerDataService` |
+| `SceneLoader` | Scene | `SceneLoader` + `NetworkObject` |
+| `CaptainManager` | Scene | `CaptainManager` |
+| `IAPManager` | Scene | `IAPManager` |
+| `Canvas - Splash Screen` | Scene | Splash UI: `CanvasScaler`, loading panel (`Image`), status text (`TextMeshProUGUI`, `LayoutElement`) |
+| `PostProcessing` | Prefab (`_Prefabs/Environment/`) | `PostProcessingManager` |
+| `CallToActionManager` | Prefab (`_Prefabs/CORE/`) | CTA system |
+| `DailyChallengeSystem` | Prefab (`_Prefabs/CORE/`) | Daily challenge system |
+| `PartyServices` | Prefab (`_Prefabs/CORE/`) | `HostConnectionService`, `PartyInviteController`, `FriendsInitializer` |
+| `StatsManager` | Prefab (`_Prefabs/CORE/`) | `StatsManager` |
+
+##### First-Party Scripts (by category)
+
+**System & Bootstrap**
+
+| Script | Path | GameObject | Instances |
+|---|---|---|---|
+| `DontDestroyOnLoad` | `_Scripts/Utility/DontDestroyOnLoad.cs` | 15 manager GameObjects | 15 |
+| `SceneLoader` | `_Scripts/System/SceneLoader.cs` | SceneLoader | 1 |
+| `SceneTransitionManager` | `_Scripts/System/Bootstrap/SceneTransitionManager.cs` | AppManager (prefab) | 1 |
+| `AudioSystem` | `_Scripts/System/Audio/AudioSystem.cs` | AudioSystem (prefab) | 1 |
+| `IAPManager` | `_Scripts/System/IAPManager.cs` | IAPManager | 1 |
+| `CaptainManager` | `_Scripts/System/Playfab/Economy/CaptainManager.cs` | CaptainManager | 1 |
+| `GameSetting` | `_Scripts/Controller/Settings/GameSetting.cs` | GameSettings | 1 |
+
+**Managers**
+
+| Script | Path | GameObject | Instances |
+|---|---|---|---|
+| `CameraManager` | `_Scripts/Controller/Managers/CameraManager.cs` | CameraManager | 1 |
+| `ThemeManager` | `_Scripts/Controller/Managers/ThemeManager.cs` | ThemeManager | 1 |
+| `PrismScaleManager` | `_Scripts/Controller/Managers/PrismScaleManager.cs` | PrismManagers | 1 |
+| `MaterialStateManager` | `_Scripts/Controller/Managers/MaterialStateManager.cs` | PrismManagers | 1 |
+| `PostProcessingManager` | `_Scripts/Controller/Managers/PostProcessingManager.cs` | PostProcessing (prefab) | 1 |
+| `StatsManager` | `_Scripts/Controller/Managers/StatsManager.cs` | StatsManager (prefab) | 1 |
+
+**Camera & Animation**
+
+| Script | Path | GameObject | Instances |
+|---|---|---|---|
+| `CustomCameraController` | `_Scripts/Controller/Camera/CustomCameraController.cs` | CM PlayerCam, CM EndCam, CM DeathCam | 5 |
+| `RotateAroundOrigin` | `_Scripts/Controller/Animation/RotateAroundOrigin.cs` | EndCam Follow/Look Target, Main Menu Follow Target | 3 |
+
+**Gameplay & Pools**
+
+| Script | Path | GameObject | Instances |
+|---|---|---|---|
+| `InteractivePrismPoolManager` | `_Scripts/Utility/Effects/InteractivePrismPoolManager.cs` | Per-vessel prism pools (Dolphin, Manta, Rhino, Serpent, Sparrow, Squirrel) + PrismInteractivePool | 7 |
+| `PrismFactory` | `_Scripts/Controller/Prisms/PrismFactory.cs` | PrismManagers | 1 |
+| `PrismExplosionPoolManager` | `_Scripts/Utility/Effects/PrismExplosionPoolManager.cs` | PrismExplosionPool | 1 |
+| `PrismImplosionPoolManager` | `_Scripts/Utility/Effects/PrismImplosionPoolManager.cs` | PrismImplosionPool | 1 |
+| `MultiplayerSetup` | `_Scripts/Controller/Multiplayer/MultiplayerSetup.cs` | MultiplayerSetup | 1 |
+
+**Services & UI**
+
+| Script | Path | GameObject | Instances |
+|---|---|---|---|
+| `PlayerDataService` | `_Scripts/UI/Views/PlayerDataService.cs` | PlayerDataService | 1 |
+| `UGSStatsManager` | `_Scripts/UI/UGSStatsManager.cs` | UGSStatsManager | 1 |
+| `GamepadDebugger` | `_Scripts/Utility/GamepadDebugger.cs` | GamepadDebugger | 1 |
+
+##### Unity/Third-Party Components
+
+| Component | Package | Instances |
+|---|---|---|
+| `UniversalAdditionalCameraData` | URP | 4 (Camera, CM PlayerCam, CM EndCam, CM DeathCam) |
+| `CinemachineCamera` | Cinemachine | 3 (CM Main Menu, CM EndCam, CM DeathCam) |
+| `CinemachineBrain` | Cinemachine | 1 (Camera) |
+| `CinemachineFollow` | Cinemachine | 1 (CM Main Menu) |
+| `CinemachineRotationComposer` | Cinemachine | 1 (CM Main Menu) |
+| `NetworkObject` | Netcode | 1 (SceneLoader) |
+| `EventSystem` | EventSystems | 1 |
+| `InputSystemUIInputModule` | Input System | 1 |
+| `CanvasScaler` | UnityEngine.UI | 1 |
+| `Image` | UnityEngine.UI | 1 (LoadingPanel) |
+| `LayoutElement` | UnityEngine.UI | 1 (Status Text) |
+| `TextMeshProUGUI` | TextMeshPro | 1 (Status Text) |
+
+#### Menu_Main Scene (`Assets/_Scenes/Menu_Main.unity`)
+
+**1,282 MonoBehaviours** | **89 unique script types** (63 first-party + 26 Unity/third-party) | **386 GameObjects**
+
+The Menu_Main scene hosts the main menu UI, the autopilot vessel, and the Cinemachine camera system. All persistent managers from Bootstrap are already alive via `DontDestroyOnLoad`.
+
+##### Core Game Systems (on "Game" GameObject)
+
+| Script | Path |
+|---|---|
+| `MainMenuController` | `_Scripts/System/MainMenuController.cs` |
+| `MenuServerPlayerVesselInitializer` | `_Scripts/Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs` |
+| `ClientPlayerVesselInitializer` | `_Scripts/Controller/Multiplayer/ClientPlayerVesselInitializer.cs` |
+| `MenuCrystalClickHandler` | `_Scripts/Controller/Multiplayer/MenuCrystalClickHandler.cs` |
+| `MainMenuCameraController` | `_Scripts/Controller/Camera/MainMenuCameraController.cs` |
+| `NetcodeHooks` | `_Scripts/Utility/Network/NetcodeHooks.cs` |
+| `NetworkCrystalManager` | `_Scripts/Controller/Environment/FlowField/NetworkCrystalManager.cs` |
+| `FlowFieldData` | `_Scripts/Controller/Environment/FlowField/FlowFieldData.cs` |
+
+##### Screen Controllers
+
+| Script | Path | GameObject |
+|---|---|---|
+| `ScreenSwitcher` | `_Scripts/UI/ScreenSwitcher.cs` | Screens |
+| `HomeScreen` | `_Scripts/UI/Screens/HomeScreen.cs` | HomeScreen |
+| `ArcadeScreen` | `_Scripts/UI/Screens/ArcadeScreen.cs` | ArcadeScreen |
+| `StoreScreen` | `_Scripts/UI/Screens/StoreScreen.cs` | ArkScreen |
+| `HangarScreen` | `_Scripts/UI/Screens/HangarScreen.cs` | Hangar Screen |
+| `LeaderboardsMenu` | `_Scripts/UI/Screens/LeaderboardsMenu.cs` | PortScreen |
+| `EpisodeScreen` | `_Scripts/UI/Screens/EpisodeScreen.cs` | EpisodeScreen |
+| `ProfileScreen` | `_Scripts/UI/Views/ProfileScreen.cs` | ProfileScreen |
+
+##### Modals
+
+| Script | Path | GameObject |
+|---|---|---|
+| `ArcadeGameConfigureModal` | `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` | ArcadeGameConfigureModal |
+| `DailyChallengeModal` | `_Scripts/UI/Modals/DailyChallengeModal.cs` | DailyChallengeModal |
+| `HangarTrainingModal` | `_Scripts/UI/Modals/HangarTrainingModal.cs` | HangarTrainingModal |
+| `FactionMissionModal` | `_Scripts/UI/Modals/FactionMissionModal.cs` | ProtectMissionModal |
+| `PurchaseConfirmationModal` | `_Scripts/UI/Modals/PurchaseConfirmationModal.cs` | PurchaseItemConfirmationModal |
+| `AppInitializationModal` | `_Scripts/UI/Modals/AppInitializationModal.cs` | InitializingScreen |
+
+##### Sub-Views & Panels
+
+| Script | Path | GameObject |
+|---|---|---|
+| `ArcadeExploreView` | `_Scripts/UI/Views/ArcadeExploreView.cs` | Explore |
+| `ArcadeDPadNav` | `Assets/ArcadeDPadNav.cs` | Explore |
+| `ArcadeLoadoutView` | `_Scripts/UI/Views/ArcadeLoadoutView.cs` | Loadout |
+| `HangarOverviewView` | `_Scripts/UI/Views/HangarOverviewView.cs` | OverviewView |
+| `HangarAbilitiesView` | `_Scripts/UI/Views/HangarAbilitiesView.cs` | AbilitiesView |
+| `HangarCaptainsView` | `_Scripts/UI/Views/HangarCaptainsView.cs` | CaptainsView |
+| `HangarGameplayParameterDisplayGroup` | `_Scripts/UI/Elements/Hangar/HangarGameplayParameterDisplayGroup.cs` | GameplayParameterDisplay |
+| `HangarGameplayParameterDisplay` | `_Scripts/UI/Elements/Hangar/HangarGameplayParameterDisplay.cs` | ParameterSlider1-3 (x3) |
+| `HangarTrainingGameButton` | `_Scripts/UI/Elements/Hangar/HangarTrainingGameButton.cs` | GameSelectButton1-2 (x2) |
+| `PortSquadView` | `_Scripts/UI/Views/PortSquadView.cs` | SquadView (x2) |
+| `PortSquadCaptainSelectionView` | `_Scripts/UI/Views/PortSquadCaptainSelectionView.cs` | CaptainSelect |
+| `PortSquadMemberConfigureView` | `_Scripts/UI/Views/PortSquadMemberConfigureView.cs` | SquadMemberConfigureModal |
+| `PortFactionView` | `_Scripts/UI/Views/PortFactionView.cs` | FactionView |
+| `FactionMissionGameView` | `_Scripts/UI/Views/FactionMissionGameView.cs` | LeftColumn |
+| `DailyChallengeGameView` | `_Scripts/UI/Views/DailyChallengeGameView.cs` | GameView |
+| `DailyChallengeLeaderboardView` | `_Scripts/UI/Views/DailyChallengeLeaderboardView.cs` | LeaderboardView |
+| `PartyArcadeView` | `_Scripts/UI/Views/PartyArcadeView.cs` | PartyArea |
+| `AddFriendPanel` | `_Scripts/UI/Views/AddFriendPanel.cs` | AddFriendContent |
+| `ProfileIconSelectView` | `_Scripts/UI/Views/ProfileIconSelectView.cs` | PlayerDataSelectModal |
+| `XPTrackView` | `_Scripts/UI/Views/XPTrackView.cs` | ProfileScreen |
+| `VesselSelectionView` | `_Scripts/UI/Views/VesselSelectionView.cs` | Border, Ship Select, ShipSelect (x4) |
+| `VesselSelectionItemView` | `_Scripts/UI/Views/VesselSelectionItemView.cs` | Dolphin, Manta, Rhino, Serpent, Sparrow, Squirrel (x6) |
+
+##### UI Elements & Cards
+
+| Script | Path | Instances |
+|---|---|---|
+| `MenuAudio` | `_Scripts/UI/MenuAudio.cs` | **75** (on most interactive buttons/panels) |
+| `ControllerButtonPress` | `_Scripts/Controller/IO/ControllerButtonPress.cs` | **25** (gamepad support on buttons) |
+| `NavLink` | `_Scripts/UI/Elements/NavLink.cs` | **13** (tab navigation buttons) |
+| `FlipUI` | `_Scripts/Controller/IO/FlipUI.cs` | **7** (screen flip animations) |
+| `SquadMemberCard` | `_Scripts/UI/Elements/SquadMemberCard.cs` | **7** |
+| `IconEmitter` | `_Scripts/UI/FX/IconEmitter.cs` | **6** (reward/purchase VFX) |
+| `NavGroup` | `_Scripts/UI/Elements/NavGroup.cs` | **6** (tab group managers) |
+| `CaptainUpgradeSelectionCard` | `_Scripts/UI/Elements/Buttons/CaptainUpgradeSelectionCard.cs` | 4 (Captain 1-4) |
+| `GameplayRewardButton` | `_Scripts/UI/Elements/Buttons/GameplayRewardButton.cs` | 4 (tier reward buttons) |
+| `CallToActionTarget` | `_Scripts/System/CallToAction/CallToActionTarget.cs` | 4 |
+| `DailyChallengeCard` | `_Scripts/UI/Elements/DailyChallengeCard.cs` | 2 |
+| `PurchaseGameplayTicketCard` | `_Scripts/UI/Elements/Buttons/PurchaseGameplayTicketCard.cs` | 2 |
+| `DailyRewardCard` | `_Scripts/UI/Elements/Buttons/DailyRewardCard.cs` | 1 |
+| `FavoriteIcon` | `_Scripts/UI/Elements/FavoriteIcon.cs` | 1 |
+| `SliderInitializer` | `_Scripts/UI/Elements/SliderInitializer.cs` | 1 |
+| `InfiniteScroll` | `_Scripts/UI/InfiniteScroll.cs` | 1 |
+| `TooltipHandler` | `_Scripts/UI/TooltipHandler.cs` | 1 |
+
+##### Input/IO
+
+| Script | Path | Instances |
+|---|---|---|
+| `PhoneFlipDetector` | `_Scripts/Controller/IO/PhoneFlipDetector.cs` | 1 |
+| `FlipUIScreen` | `_Scripts/Controller/IO/FlipUIScreen.cs` | 1 |
+
+##### Unity/Third-Party Components (top counts)
+
+| Component | Package | Instances |
+|---|---|---|
+| `Image` | UnityEngine.UI | 475 |
+| `TextMeshProUGUI` | TextMeshPro | 248 |
+| `Slider` | UnityEngine.UI | 162 |
+| `LayoutElement` | UnityEngine.UI | 48 |
+| `VerticalLayoutGroup` | UnityEngine.UI | 42 |
+| `HorizontalLayoutGroup` | UnityEngine.UI | 24 |
+| `Mask` | UnityEngine.UI | 11 |
+| `ScrollRect` | UnityEngine.UI | 9 |
+| `ContentSizeFitter` | UnityEngine.UI | 7 |
+| `EventTrigger` | EventSystems | 6 |
+| `RectMask2D` | UnityEngine.UI | 6 |
+| `ToggleGroup` | UnityEngine.UI | 4 |
+| `TMP_Dropdown` | TextMeshPro | 4 |
+| `RawImage` | UnityEngine.UI | 3 |
+| Others (1-2 each) | Various | `GridLayoutGroup`, `Scrollbar`, `Toggle`, `Button`, `CanvasScaler`, `GraphicRaycaster`, `TMP_InputField`, `EventSystem`, `InputSystemUIInputModule`, `CinemachineBrain`, `UniversalAdditionalCameraData`, `NetworkObject` |
+
 ### Namespace Convention
 
 All game code lives under `CosmicShore.*` with 8 primary namespaces:

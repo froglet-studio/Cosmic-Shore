@@ -151,6 +151,30 @@ The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navi
 - **[Bootstrap Scene Audit](./Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md)** — All 16 root GameObjects, execution order map, applied fixes, and deferred refactoring issues
 - **[Prism Performance Audit](./Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md)** — Per-prism component stack, Jobs+Burst optimizations, and remaining main-thread bottlenecks
 
+### Scene Script Inventories
+
+Complete MonoBehaviour inventories for each scene are documented in [`CLAUDE.md` § Scene Script Inventories](./CLAUDE.md#scene-script-inventories):
+
+**Bootstrap Scene** — 68 MonoBehaviours across 33 GameObjects (8 prefab instances). Hosts all persistent `DontDestroyOnLoad` managers and services:
+
+| Category | Key Scripts |
+|---|---|
+| System & Bootstrap | `AppManager` (prefab), `SceneLoader`, `SceneTransitionManager`, `AudioSystem`, `IAPManager`, `CaptainManager`, `GameSetting` |
+| Managers | `CameraManager`, `ThemeManager`, `PrismScaleManager`, `MaterialStateManager`, `PostProcessingManager`, `StatsManager` |
+| Camera Rig | `CustomCameraController` (x5 on CM PlayerCam/EndCam/DeathCam), `CinemachineBrain`, `CinemachineCamera` (x3), `RotateAroundOrigin` (x3 on follow/look targets) |
+| Gameplay & Pools | `PrismFactory`, `InteractivePrismPoolManager` (x7 per-vessel pools), `PrismExplosionPoolManager`, `PrismImplosionPoolManager`, `MultiplayerSetup` |
+| Services | `PlayerDataService`, `UGSStatsManager`, `PartyServices` (prefab: `HostConnectionService`, `PartyInviteController`, `FriendsInitializer`) |
+
+**Menu_Main Scene** — 1,282 MonoBehaviours across 386 GameObjects. Hosts the main menu UI, autopilot vessel, and Cinemachine camera:
+
+| Category | Key Scripts |
+|---|---|
+| Core Systems (on "Game" GO) | `MainMenuController`, `MenuServerPlayerVesselInitializer`, `ClientPlayerVesselInitializer`, `MenuCrystalClickHandler`, `MainMenuCameraController`, `NetcodeHooks`, `NetworkCrystalManager`, `FlowFieldData` |
+| Screen Controllers | `ScreenSwitcher`, `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen`, `ProfileScreen` |
+| Modals | `ArcadeGameConfigureModal`, `DailyChallengeModal`, `HangarTrainingModal`, `FactionMissionModal`, `PurchaseConfirmationModal`, `AppInitializationModal` |
+| High-Instance UI | `MenuAudio` (75), `ControllerButtonPress` (25), `NavLink` (13), `FlipUI` (7), `SquadMemberCard` (7), `IconEmitter` (6), `NavGroup` (6) |
+| Unity Components | `Image` (475), `TextMeshProUGUI` (248), `Slider` (162), `LayoutElement` (48), `VerticalLayoutGroup` (42) |
+
 ### Project Structure
 
 ```
