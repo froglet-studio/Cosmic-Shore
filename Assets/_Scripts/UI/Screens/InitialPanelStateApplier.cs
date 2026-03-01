@@ -34,6 +34,13 @@ namespace CosmicShore.UI
             foreach (var entry in panelStates)
             {
                 if (entry.panel == null) continue;
+
+                // Activate deactivated panels so CanvasGroup-based visibility works.
+                // Panels hidden via CanvasGroup (alpha=0) are cheaper than SetActive(false)
+                // and avoid canvas-rebuild spikes when toggled back on.
+                if (!entry.panel.activeSelf)
+                    entry.panel.SetActive(true);
+
                 entry.panel.SetVisible(entry.startActive);
             }
         }
