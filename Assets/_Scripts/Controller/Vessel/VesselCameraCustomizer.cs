@@ -13,6 +13,9 @@ namespace CosmicShore.Gameplay
     {
         [Header("Per-Vessel Camera Settings")]
         [SerializeField] private CameraSettingsSO settings;
+
+        /// <summary>The per-vessel camera configuration asset.</summary>
+        public CameraSettingsSO Settings => settings;
         
         [SerializeField] ScriptableEventTransform OnInitializePlayerCamera;
 
