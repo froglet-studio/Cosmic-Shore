@@ -88,16 +88,16 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnEnable()
         {
-            // Non-networked path: subscribe immediately.
-            // Networked path: OnNetworkSpawn handles subscription.
-            if (!IsNetworked)
-                SubscribeToEvents();
+            // Subscribe in OnEnable for both networked and non-networked paths.
+            // The _subscribed guard prevents double subscription when OnNetworkSpawn
+            // also fires. In multiplayer, OnSpawnTrigger() gates on IsServer so
+            // early subscription (before network spawn) is harmless.
+            SubscribeToEvents();
         }
 
         protected virtual void OnDisable()
         {
-            if (!IsNetworked)
-                UnsubscribeFromEvents();
+            UnsubscribeFromEvents();
         }
 
         private bool _subscribed;
