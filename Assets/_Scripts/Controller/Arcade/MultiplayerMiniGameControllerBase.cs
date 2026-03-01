@@ -6,13 +6,13 @@ using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.Gameplay
 {
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
-        [Header("Multiplayer")]
-        [SerializeField] protected MultiplayerSetup multiplayerSetup;
+        [Inject] protected MultiplayerSetup multiplayerSetup;
         
         [Header("Rematch")]
         [SerializeField] private Scoreboard localScoreboard;

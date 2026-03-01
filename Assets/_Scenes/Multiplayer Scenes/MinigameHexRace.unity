@@ -808,7 +808,6 @@ MonoBehaviour:
   countdownTimer: {fileID: 1556114764}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  multiplayerSetup: {fileID: 0}
   localScoreboard: {fileID: 1897523411}
   segmentSpawner: {fileID: 1881177335}
   baseNumberOfSegments: 1
