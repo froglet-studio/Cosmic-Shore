@@ -135,10 +135,15 @@ namespace CosmicShore.UI
 
         #region Initialization helpers
 
+        int CurrentPartyHumanCount =>
+            hostConnectionData != null && hostConnectionData.PartyMembers != null
+                ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
+                : 1;
+
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
             config.Intensity   = game.MinIntensity;
-            config.PlayerCount = game.MinPlayers;
+            config.PlayerCount = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
 
             SyncGameDataConfig();
         }
@@ -185,7 +190,9 @@ namespace CosmicShore.UI
                 button.SetSelected(level == config.Intensity);
             }
 
-            // Player count
+            // Player count — enforce minimum = party size so host can't select
+            // fewer total players than there are humans in the lobby.
+            int effectiveMinPlayers = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
             for (int i = 0; i < playerCountButtons.Count; i++)
             {
                 var button = playerCountButtons[i];
@@ -194,7 +201,7 @@ namespace CosmicShore.UI
                 int count = i + 1;
                 button.SetPlayerCount(count);
 
-                bool active = count >= game.MinPlayers && count <= game.MaxPlayers;
+                bool active = count >= effectiveMinPlayers && count <= game.MaxPlayers;
                 button.SetActive(active);
                 button.SetSelected(count == config.PlayerCount);
             }
@@ -337,7 +344,8 @@ namespace CosmicShore.UI
         {
             if (_selectedGame == null || config == null) return;
 
-            playerCount        = Mathf.Clamp(playerCount, _selectedGame.MinPlayers, _selectedGame.MaxPlayers);
+            int effectiveMin = Mathf.Max(_selectedGame.MinPlayers, CurrentPartyHumanCount);
+            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayers);
             config.PlayerCount = playerCount;
 
             foreach (var button in playerCountButtons)
