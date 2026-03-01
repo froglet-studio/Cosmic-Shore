@@ -42,6 +42,10 @@ namespace CosmicShore.Gameplay
         [Header("Settings")]
         [SerializeField] float fadeDuration = 0.5f;
 
+        [SerializeField, Tooltip("How long the camera blend takes (should match MainMenuCameraController). " +
+                                 "The toggle is blocked for this duration to prevent click spam.")]
+        float cameraTransitionDuration = 2f;
+
         bool _isInFreestyle;
         bool _isTransitioning;
         CancellationTokenSource _cts;
@@ -52,6 +56,7 @@ namespace CosmicShore.Gameplay
         void OnEnable()
         {
             _cts = new CancellationTokenSource();
+            _isTransitioning = false; // Reset in case a previous transition was cancelled mid-flight
         }
 
         void OnDisable()
@@ -99,9 +104,6 @@ namespace CosmicShore.Gameplay
             var ct = _cts.Token;
             var player = gameData.LocalPlayer;
 
-            // Fade out menu UI, fade in freestyle UI
-            await FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct);
-
             // In multiplayer, avoid touching Time.timeScale — it would freeze all
             // local rendering including other players' vessels. Only unpause for
             // single-player (local host with no remote clients).
@@ -110,12 +112,20 @@ namespace CosmicShore.Gameplay
 
             player.Vessel.ToggleAIPilot(false);
             player.InputController.SetPause(false);
-
             _isInFreestyle = true;
-            _isTransitioning = false;
 
-            // State tracking + camera switching handled by MainMenuController via this event
+            // Raise SOAP event early so the camera blend starts immediately.
+            // The UI fade and camera blend then run in parallel.
             freestyleEvents.OnEnterFreestyle.Raise();
+
+            // Run UI fade and camera transition duration in parallel.
+            // _isTransitioning stays true until both complete — prevents click spam.
+            await UniTask.WhenAll(
+                FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct),
+                UniTask.Delay((int)(cameraTransitionDuration * 1000),
+                              ignoreTimeScale: true, cancellationToken: ct));
+
+            _isTransitioning = false;
         }
 
         async UniTaskVoid TransitionToMenu()
@@ -127,11 +137,17 @@ namespace CosmicShore.Gameplay
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // State tracking + camera switching handled by MainMenuController via this event
+            // Raise SOAP event early so the camera blend starts immediately.
+            // Camera controller captures CM PlayerCam position as a static snapshot,
+            // then blends back to orbit — runs in parallel with the UI fade.
             freestyleEvents.OnExitFreestyle.Raise();
 
-            // Fade out freestyle UI, fade in menu UI
-            await FadeBetweenStates(menuAlpha: 1f, freestyleAlpha: 0f, ct);
+            // Run UI fade and camera transition duration in parallel.
+            // _isTransitioning stays true until both complete — prevents click spam.
+            await UniTask.WhenAll(
+                FadeBetweenStates(menuAlpha: 1f, freestyleAlpha: 0f, ct),
+                UniTask.Delay((int)(cameraTransitionDuration * 1000),
+                              ignoreTimeScale: true, cancellationToken: ct));
 
             _isInFreestyle = false;
             _isTransitioning = false;
