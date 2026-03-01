@@ -616,6 +616,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
+  snow: {fileID: 5258412105609794183, guid: 2b44c8e8b0e615241b9dc90b06fdc187, type: 3}
+  shardDistance: 100
+  lookAt: 0
 --- !u!114 &1078953718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -755,6 +758,18 @@ MonoBehaviour:
   shutdownNetworkOnDespawn: 1
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
+  spawnAIOnServerReady: 1
+  aiPlayerPrefab: {fileID: -3803897320145675891, guid: 0a8653be5d331c5449d3130cef596493,
+    type: 3}
+  aiInitializeDatas:
+  - vesselClass: 1
+    domain: 1
+    PlayerName: AI_JadeManta1
+    AvatarId: 0
+    IsAI: 1
+    AllowSpawning: 1
+  gameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
+  aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
 --- !u!114 &1078953726
 MonoBehaviour:
   m_ObjectHideFlags: 0
