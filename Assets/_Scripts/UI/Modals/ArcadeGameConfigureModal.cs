@@ -181,7 +181,7 @@ namespace CosmicShore.UI
                 button.SetIntensityLevel(level);
 
                 bool active = level >= game.MinIntensity && level <= game.MaxIntensity;
-                button.SetVisible(active);
+                button.gameObject.SetVisible(active);
                 button.SetSelected(level == config.Intensity);
             }
 
@@ -195,7 +195,7 @@ namespace CosmicShore.UI
                 button.SetPlayerCount(count);
 
                 bool active = count >= game.MinPlayers && count <= game.MaxPlayers;
-                button.SetVisible(active);
+                button.gameObject.SetVisible(active);
                 button.SetSelected(count == config.PlayerCount);
             }
 
