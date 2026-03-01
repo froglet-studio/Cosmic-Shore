@@ -15,12 +15,8 @@ namespace CosmicShore.App.UI.Views
     /// Cards sit above a horizontal fill bar that tracks completion progress.
     ///
     /// UI Setup:
-    ///   progressBarFill — Image component (Type=Filled, FillMethod=Horizontal).
-    ///     Must span the same width as questItemContainer so fillAmount aligns
-    ///     with card centers. This is the AAA approach: no Unity Slider involved.
-    ///
-    ///   Fallback: if progressBarFill is null but progressSlider is set, the old
-    ///     Slider-based path is used (less reliable alignment).
+    ///   progressBarFill — Image (Type=Filled, FillMethod=Horizontal, FillOrigin=Left).
+    ///   Must span the same width as questItemContainer so fillAmount aligns with card centers.
     /// </summary>
     public class QuestTrackView : MonoBehaviour
     {
@@ -39,12 +35,8 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private ScrollRect scrollRect;
 
         [Header("Progress Bar")]
-        [Tooltip("Image with Type=Filled, FillMethod=Horizontal. Must span same width as card container.")]
+        [Tooltip("Image with Type=Filled, FillMethod=Horizontal, FillOrigin=Left. Must span same width as card container.")]
         [SerializeField] private Image progressBarFill;
-
-        [Header("Slider (Legacy Fallback)")]
-        [Tooltip("Only used if progressBarFill is not set")]
-        [SerializeField] private Slider progressSlider;
 
         [Header("Animation")]
         [SerializeField] private float sliderAnimDuration = 1f;
@@ -79,7 +71,6 @@ namespace CosmicShore.App.UI.Views
         public void LoadTrack()
         {
             SpawnCards();
-            // Defer the initial bar set by one frame so layout is fully resolved.
             StartCoroutine(SetProgressBarDeferred());
         }
 
@@ -200,47 +191,29 @@ namespace CosmicShore.App.UI.Views
 
         void SetProgressBarImmediate()
         {
-            float target = GetNormalizedProgress();
-
             if (progressBarFill != null)
-            {
-                progressBarFill.fillAmount = target;
-                return;
-            }
-
-            if (progressSlider != null)
-                progressSlider.value = target;
+                progressBarFill.fillAmount = GetNormalizedProgress();
         }
 
         void AnimateProgressBar()
         {
+            if (progressBarFill == null) return;
+
             KillTween();
             float target = GetNormalizedProgress();
-
-            if (progressBarFill != null)
-            {
-                _fillTween = DOTween.To(
-                        () => progressBarFill.fillAmount,
-                        x => progressBarFill.fillAmount = x,
-                        target,
-                        sliderAnimDuration)
-                    .SetEase(sliderEase)
-                    .SetUpdate(true);
-                return;
-            }
-
-            if (progressSlider != null)
-            {
-                _fillTween = progressSlider.DOValue(target, sliderAnimDuration)
-                    .SetEase(sliderEase)
-                    .SetUpdate(true);
-            }
+            _fillTween = DOTween.To(
+                    () => progressBarFill.fillAmount,
+                    x => progressBarFill.fillAmount = x,
+                    target,
+                    sliderAnimDuration)
+                .SetEase(sliderEase)
+                .SetUpdate(true);
         }
 
         /// <summary>
-        /// Returns a 0–1 value representing where the progress bar should fill to.
-        /// Uses the target card's center position within the content container so
-        /// the fill aligns directly below the card regardless of spacing or padding.
+        /// Returns a 0–1 value representing where the fill bar should reach.
+        /// Uses the target card's center position within the content container
+        /// so the fill aligns directly below the card regardless of spacing or padding.
         /// </summary>
         float GetNormalizedProgress()
         {
@@ -254,7 +227,7 @@ namespace CosmicShore.App.UI.Views
             var cardRect = _cards[targetIndex].transform as RectTransform;
 
             if (contentRect == null || cardRect == null)
-                return _cards.Count > 0 ? (float)(1 + claimed) / _cards.Count : 0f;
+                return (float)(1 + claimed) / _cards.Count;
 
             float contentWidth = contentRect.rect.width;
             if (contentWidth <= 0f) return 0f;
