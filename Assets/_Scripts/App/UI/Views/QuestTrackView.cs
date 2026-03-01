@@ -10,35 +10,13 @@ using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Views
 {
-    /// <summary>
-    /// Displays the game-mode quest progression chain.
-    /// Cards sit above a horizontal fill bar that tracks completion progress.
-    ///
-    /// UI Setup:
-    ///   progressBarFill — Image (Type=Filled, FillMethod=Horizontal, FillOrigin=Left).
-    ///   Must span the same width as questItemContainer so fillAmount aligns with card centers.
-    /// </summary>
     public class QuestTrackView : MonoBehaviour
     {
-        [Header("Data")]
         [SerializeField] private SO_GameModeQuestList questList;
-
-        [Header("Prefab")]
-        [Tooltip("Must have a QuestItemCard component attached")]
         [SerializeField] private GameObject questItemPrefab;
-
-        [Header("Container")]
         [SerializeField] private Transform questItemContainer;
-
-        [Header("Scroll")]
-        [Tooltip("Optional — auto-resolved from questItemContainer if null")]
         [SerializeField] private ScrollRect scrollRect;
-
-        [Header("Progress Bar")]
-        [Tooltip("Image with Type=Filled, FillMethod=Horizontal, FillOrigin=Left. Must span same width as card container.")]
         [SerializeField] private Image progressBarFill;
-
-        [Header("Animation")]
         [SerializeField] private float sliderAnimDuration = 1f;
         [SerializeField] private Ease sliderEase = Ease.OutCubic;
 
@@ -47,9 +25,8 @@ namespace CosmicShore.App.UI.Views
 
         void OnEnable()
         {
-            ConfigureScrollRect();
+            EnsureScrollSetup();
             LoadTrack();
-
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
         }
@@ -58,7 +35,6 @@ namespace CosmicShore.App.UI.Views
         {
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
-
             KillTween();
         }
 
@@ -68,54 +44,83 @@ namespace CosmicShore.App.UI.Views
             AnimateProgressBar();
         }
 
+        void EnsureScrollSetup()
+        {
+            if (scrollRect == null && questItemContainer != null)
+                scrollRect = questItemContainer.GetComponentInParent<ScrollRect>();
+            if (scrollRect == null) return;
+
+            scrollRect.horizontal = true;
+            scrollRect.vertical = false;
+
+            if (questItemContainer is RectTransform containerRect)
+                scrollRect.content = containerRect;
+
+            if (questItemContainer != null)
+            {
+                if (!questItemContainer.TryGetComponent<ContentSizeFitter>(out var csf))
+                    csf = questItemContainer.gameObject.AddComponent<ContentSizeFitter>();
+                csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            }
+
+            if (progressBarFill == null || questItemContainer == null) return;
+            var barRoot = FindDirectChild(progressBarFill.transform, questItemContainer);
+            if (barRoot == null) return;
+
+            if (!barRoot.TryGetComponent<LayoutElement>(out var le))
+                le = barRoot.gameObject.AddComponent<LayoutElement>();
+            le.ignoreLayout = true;
+
+            if (barRoot is RectTransform barRect)
+            {
+                barRect.anchorMin = new Vector2(0f, 0f);
+                barRect.anchorMax = new Vector2(1f, 0f);
+                barRect.offsetMin = new Vector2(0f, 0f);
+                barRect.offsetMax = new Vector2(0f, 20f);
+            }
+        }
+
+        static Transform FindDirectChild(Transform descendant, Transform parent)
+        {
+            var current = descendant;
+            while (current != null && current != parent)
+            {
+                if (current.parent == parent) return current;
+                current = current.parent;
+            }
+            return null;
+        }
+
         public void LoadTrack()
         {
             SpawnCards();
-            StartCoroutine(SetProgressBarDeferred());
+            StartCoroutine(PostLayoutSetup());
         }
 
-        IEnumerator SetProgressBarDeferred()
+        IEnumerator PostLayoutSetup()
         {
             yield return null;
             SetProgressBarImmediate();
         }
 
-        // ── Scroll ───────────────────────────────────────────────────────────
-
-        void ConfigureScrollRect()
-        {
-            if (scrollRect == null && questItemContainer != null)
-                scrollRect = questItemContainer.GetComponentInParent<ScrollRect>();
-
-            if (scrollRect == null) return;
-
-            scrollRect.horizontal = true;
-            scrollRect.vertical = false;
-            scrollRect.movementType = ScrollRect.MovementType.Clamped;
-        }
-
-        // ── Spawning ────────────────────────────────────────────────────────────
-
         void SpawnCards()
         {
             ClearSpawned();
-
             if (questList == null || questList.Quests == null || questItemPrefab == null) return;
 
             for (int i = 0; i < questList.Quests.Count; i++)
             {
-                var quest = questList.Quests[i];
                 var go = Instantiate(questItemPrefab, questItemContainer);
+                if (!go.TryGetComponent<QuestItemCard>(out var card)) { Destroy(go); continue; }
 
-                if (!go.TryGetComponent<QuestItemCard>(out var card))
+                var state = GetCardState(i);
+                card.Configure(questList.Quests[i]);
+                card.SetState(state);
+                if (state == QuestItemState.ReadyToClaim)
                 {
-                    Destroy(go);
-                    continue;
+                    var mode = questList.Quests[i].GameMode;
+                    card.BindClaimAction(() => GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(mode));
                 }
-
-                card.Configure(quest);
-                card.SetState(GetCardState(i));
-                BindClaimIfNeeded(card, i);
                 _cards.Add(card);
             }
 
@@ -123,74 +128,36 @@ namespace CosmicShore.App.UI.Views
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
-        // ── State evaluation ────────────────────────────────────────────────────
-
         QuestItemState GetCardState(int questIndex)
         {
             var quest = questList.Quests[questIndex];
             var service = GameModeProgressionService.Instance;
+            bool isUnlocked = questIndex == 0 || (service != null && service.IsGameModeUnlocked(quest.GameMode));
+            if (!isUnlocked) return QuestItemState.Locked;
 
-            bool isFirstQuest = questIndex == 0;
-            bool isUnlocked = isFirstQuest || (service != null && service.IsGameModeUnlocked(quest.GameMode));
-
-            if (!isUnlocked)
-                return QuestItemState.Locked;
-
-            bool isQuestCompleted = service != null && service.IsQuestCompleted(quest.GameMode);
-
-            bool isNextUnlocked = false;
-            if (questIndex + 1 < questList.Quests.Count && service != null)
-                isNextUnlocked = service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode);
-
-            if (isNextUnlocked)
+            if (questIndex + 1 < questList.Quests.Count && service != null
+                && service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode))
                 return QuestItemState.Claimed;
 
-            if (isQuestCompleted)
+            if (service != null && service.IsQuestCompleted(quest.GameMode))
                 return QuestItemState.ReadyToClaim;
 
             return QuestItemState.Unlocked;
         }
 
-        void BindClaimIfNeeded(QuestItemCard card, int questIndex)
-        {
-            var state = GetCardState(questIndex);
-            if (state != QuestItemState.ReadyToClaim) return;
-
-            var mode = questList.Quests[questIndex].GameMode;
-            card.BindClaimAction(() => OnClaimPressed(mode));
-        }
-
-        void OnClaimPressed(GameModes completedMode)
-        {
-            GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(completedMode);
-        }
-
-        // ── Refresh ─────────────────────────────────────────────────────────────
-
         void RefreshAllCards()
         {
             for (int i = 0; i < _cards.Count && i < questList.Quests.Count; i++)
             {
-                var card = _cards[i];
-                var quest = questList.Quests[i];
                 var state = GetCardState(i);
-
-                card.SetState(state);
-
-                if (state == QuestItemState.Claimed)
-                    card.Configure(quest);
-
-                card.SetState(state);
-
+                _cards[i].SetState(state);
                 if (state == QuestItemState.ReadyToClaim)
                 {
-                    var mode = quest.GameMode;
-                    card.BindClaimAction(() => OnClaimPressed(mode));
+                    var mode = questList.Quests[i].GameMode;
+                    _cards[i].BindClaimAction(() => GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(mode));
                 }
             }
         }
-
-        // ── Progress Bar ────────────────────────────────────────────────────────
 
         void SetProgressBarImmediate()
         {
@@ -201,52 +168,22 @@ namespace CosmicShore.App.UI.Views
         void AnimateProgressBar()
         {
             if (progressBarFill == null) return;
-
             KillTween();
             float target = GetNormalizedProgress();
             _fillTween = DOTween.To(
                     () => progressBarFill.fillAmount,
                     x => progressBarFill.fillAmount = x,
-                    target,
-                    sliderAnimDuration)
-                .SetEase(sliderEase)
-                .SetUpdate(true);
+                    target, sliderAnimDuration)
+                .SetEase(sliderEase).SetUpdate(true);
         }
 
-        /// <summary>
-        /// Returns a 0–1 value representing where the fill bar should reach.
-        /// Uses the target card's center position within the content container
-        /// so the fill aligns directly below the card regardless of spacing or padding.
-        /// </summary>
         float GetNormalizedProgress()
         {
-            if (_cards.Count == 0) return 0f;
-
-            var service = GameModeProgressionService.Instance;
-            int claimed = service != null ? service.GetClaimedQuestCount() : 0;
-
+            if (_cards.Count <= 1) return 0f;
+            int claimed = GameModeProgressionService.Instance?.GetClaimedQuestCount() ?? 0;
             if (claimed <= 0) return 0f;
-
-            int targetIndex = Mathf.Clamp(claimed, 0, _cards.Count - 1);
-
-            var contentRect = questItemContainer as RectTransform;
-            var cardRect = _cards[targetIndex].transform as RectTransform;
-
-            if (contentRect == null || cardRect == null)
-                return (float)(1 + claimed) / _cards.Count;
-
-            float contentWidth = contentRect.rect.width;
-            if (contentWidth <= 0f) return 0f;
-
-            // cardRect.localPosition.x is relative to parent pivot.
-            // contentRect.rect.xMin is the left edge relative to pivot.
-            // Subtracting gives the card center measured from the content's left edge.
-            float cardCenterFromLeft = cardRect.localPosition.x - contentRect.rect.xMin;
-
-            return Mathf.Clamp01(cardCenterFromLeft / contentWidth);
+            return Mathf.Clamp01((float)claimed / (_cards.Count - 1));
         }
-
-        // ── Cleanup ─────────────────────────────────────────────────────────────
 
         void ClearSpawned()
         {
@@ -257,11 +194,8 @@ namespace CosmicShore.App.UI.Views
 
         void KillTween()
         {
-            if (_fillTween != null && _fillTween.IsActive())
-            {
-                _fillTween.Kill();
-                _fillTween = null;
-            }
+            if (_fillTween is { IsActive: true }) _fillTween.Kill();
+            _fillTween = null;
         }
     }
 }
