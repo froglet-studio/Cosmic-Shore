@@ -10,7 +10,7 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "New Vessel", menuName = "CosmicShore/Vessel/Vessel", order = 1)]
+    [CreateAssetMenu(fileName = "New Vessel", menuName = "ScriptableObjects/Vessel/Vessel", order = 1)]
     [System.Serializable]
     public class SO_Ship : ScriptableObject
     {

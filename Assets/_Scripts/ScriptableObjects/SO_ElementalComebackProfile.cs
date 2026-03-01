@@ -11,7 +11,7 @@ namespace CosmicShore.ScriptableObjects
     /// gets buffed per unit of score difference from the leader. Vessel-specific configs allow
     /// different vessels to receive different elemental buffs in the same game.
     /// </summary>
-    [CreateAssetMenu(fileName = "New Elemental Comeback Profile", menuName = "CosmicShore/Game/ElementalComebackProfile")]
+    [CreateAssetMenu(fileName = "New Elemental Comeback Profile", menuName = "ScriptableObjects/Game/ElementalComebackProfile")]
     public class SO_ElementalComebackProfile : ScriptableObject
     {
         [Serializable]

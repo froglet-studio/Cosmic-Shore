@@ -7,7 +7,7 @@ using CosmicShore.Data;
 
 namespace CosmicShore.UI
 {
-    [CreateAssetMenu(fileName = "LeaderboardConfig", menuName = "CosmicShore/Analytics/LeaderboardConfig")]
+    [CreateAssetMenu(fileName = "LeaderboardConfig", menuName = "ScriptableObjects/Analytics/LeaderboardConfig")]
     public class LeaderboardConfigSO : ScriptableObject
     {
         [Serializable]

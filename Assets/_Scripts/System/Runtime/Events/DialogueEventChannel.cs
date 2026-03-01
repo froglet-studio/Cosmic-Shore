@@ -6,7 +6,7 @@ namespace CosmicShore.Core
 {
     [CreateAssetMenu(
         fileName = "DialogueEventChannel",
-        menuName = "CosmicShore/Dialogue/Dialogue Event Channel")]
+        menuName = "ScriptableObjects/Dialogue/Dialogue Event Channel")]
     public class DialogueEventChannel : ScriptableObject
     {
         public event Action<string> OnDialogueRequested;

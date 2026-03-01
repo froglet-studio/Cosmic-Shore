@@ -26,7 +26,7 @@ namespace CosmicShore.ScriptableObjects
         public System.Action OnGrowCompleted;
     }
 
-    [CreateAssetMenu(fileName = "EventChannel_Prism", menuName = "ScriptableObjects/SOAP/Event Channels/PrismEventChannel")]
+    [CreateAssetMenu(fileName = "EventChannel_Prism", menuName = "ScriptableObjects/Event Channels/PrismEventChannel")]
     public class PrismEventChannelWithReturnSO : GenericEventChannelWithReturnSO<PrismEventData, PrismReturnEventData>
     {
     }

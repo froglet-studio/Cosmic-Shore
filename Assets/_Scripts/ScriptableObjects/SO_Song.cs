@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "New Song", menuName = "CosmicShore/Song", order = 20)]
+    [CreateAssetMenu(fileName = "New Song", menuName = "ScriptableObjects/Song", order = 20)]
     public class SO_Song : ScriptableObject
     {
         [SerializeField] AudioClip clip;

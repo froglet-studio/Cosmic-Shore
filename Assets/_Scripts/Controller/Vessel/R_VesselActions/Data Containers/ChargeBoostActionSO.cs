@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    [CreateAssetMenu(fileName = "ChargeBoostAction", menuName = "CosmicShore/Actions/Charge Boost")]
+    [CreateAssetMenu(fileName = "ChargeBoostAction", menuName = "ScriptableObjects/Actions/Charge Boost")]
     public class ChargeBoostActionSO : ShipActionSO
     {
         [Header("Charge Boost Settings")]

@@ -3,7 +3,7 @@ using UnityEngine;
 using CosmicShore.Gameplay;
 namespace CosmicShore.Utility
 {
-    [CreateAssetMenu(fileName = "CellConfigData", menuName = "Cosmic Shore/Cells/Cell Config Data")]
+    [CreateAssetMenu(fileName = "CellConfigData", menuName = "ScriptableObjects/Cells/Cell Config Data")]
     public class CellConfigDataSO : ScriptableObject
     {
         [Header("AppShell Properties")] public string CellName;

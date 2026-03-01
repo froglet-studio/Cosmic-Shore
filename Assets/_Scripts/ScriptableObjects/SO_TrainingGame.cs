@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "New Game", menuName = "CosmicShore/Game/TrainingGame", order = 0)]
+    [CreateAssetMenu(fileName = "New Game", menuName = "ScriptableObjects/Game/TrainingGame", order = 0)]
     [System.Serializable]
     public class SO_TrainingGame : ScriptableObject
     {

@@ -5,7 +5,7 @@ namespace CosmicShore.UI
 {
 
     [CreateAssetMenu(fileName = "Event_InputEventBlock",
-        menuName = "ScriptableObjects/SOAP/Events/InputEventBlock")]
+        menuName = "ScriptableObjects/Events/InputEventBlock")]
     public sealed class ScriptableEventInputEventBlock : ScriptableObject
     {
         public event Action<InputEventBlockPayload> OnRaised;

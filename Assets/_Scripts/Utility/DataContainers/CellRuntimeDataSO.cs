@@ -9,7 +9,7 @@ namespace CosmicShore.Utility
 {
     [CreateAssetMenu(
         fileName = "DataContainer_" + nameof(CellRuntimeDataSO),
-        menuName = "ScriptableObjects/SOAP/Data Containers/" + nameof(CellRuntimeDataSO))]
+        menuName = "ScriptableObjects/Data Containers/" + nameof(CellRuntimeDataSO))]
     public class CellRuntimeDataSO : ScriptableObject
     {
         // ---------------------------------------------------------------------

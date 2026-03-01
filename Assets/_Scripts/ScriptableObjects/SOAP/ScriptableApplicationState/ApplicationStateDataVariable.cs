@@ -5,7 +5,7 @@ namespace CosmicShore.ScriptableObjects
 {
     [CreateAssetMenu(
         fileName = "Variable_" + nameof(ApplicationStateData),
-        menuName = "ScriptableObjects/SOAP/Variables/" + nameof(ApplicationStateData))]
+        menuName = "ScriptableObjects/" + nameof(ApplicationStateData))]
     public class ApplicationStateDataVariable : ScriptableVariable<ApplicationStateData>
     {
     }

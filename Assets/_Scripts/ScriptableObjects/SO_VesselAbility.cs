@@ -4,7 +4,7 @@ using UnityEngine.Video;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "New Ability", menuName = "CosmicShore/Vessel/ShipAbility", order = 4)]
+    [CreateAssetMenu(fileName = "New Ability", menuName = "ScriptableObjects/Vessel/ShipAbility", order = 4)]
     public class SO_ShipAbility : ScriptableObject
     {
         [SerializeField] public string Name;

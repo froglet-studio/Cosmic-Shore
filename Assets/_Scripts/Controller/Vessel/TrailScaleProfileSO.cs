@@ -2,7 +2,7 @@
 
 namespace CosmicShore.Gameplay
 {
-    [CreateAssetMenu(fileName = "TrailScaleProfile", menuName = "CosmicShore/Trail/Scale Profile")]
+    [CreateAssetMenu(fileName = "TrailScaleProfile", menuName = "ScriptableObjects/Trail/Scale Profile")]
     public class TrailScaleProfileSO : ScriptableObject
     {
         // If true → multiply current scalers by vector

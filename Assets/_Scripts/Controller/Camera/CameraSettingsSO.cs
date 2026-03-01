@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
         Orthographic    
     }
 
-    [CreateAssetMenu(fileName = "CameraSettings", menuName = "CosmicShore/Camera/CameraSettingsSO", order = 30)]
+    [CreateAssetMenu(fileName = "CameraSettings", menuName = "ScriptableObjects/Camera/CameraSettingsSO", order = 30)]
     public class CameraSettingsSO : ScriptableObject
     {
         [Tooltip("Set the type of camera. Use Fixed Camera for no smoothening or dampening features, use dynamic if you want them!")]

@@ -13,7 +13,7 @@ namespace CosmicShore.ScriptableObjects
     /// </summary>
     [CreateAssetMenu(
         fileName = "MenuFreestyleEvents",
-        menuName = "ScriptableObjects/SOAP/Data Containers/MenuFreestyleEvents")]
+        menuName = "ScriptableObjects/Data Containers/MenuFreestyleEvents")]
     public class MenuFreestyleEventsContainerSO : ScriptableObject
     {
         [Header("State Transitions")]

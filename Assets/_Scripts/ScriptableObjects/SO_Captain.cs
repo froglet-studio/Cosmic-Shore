@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "Spike Spiegel", menuName = "CosmicShore/Captain/Captain", order = 3)]
+    [CreateAssetMenu(fileName = "Spike Spiegel", menuName = "ScriptableObjects/Captain/Captain", order = 3)]
     [System.Serializable]
     public class SO_Captain : ScriptableObject
     {

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    [CreateAssetMenu(fileName = "WarpFieldData", menuName = "CosmicShore/Warp/WarpfieldSO", order = 30)]
+    [CreateAssetMenu(fileName = "WarpFieldData", menuName = "ScriptableObjects/Warp/WarpfieldSO", order = 30)]
     [System.Serializable] 
     public class WarpFieldSO : ScriptableObject
     { 

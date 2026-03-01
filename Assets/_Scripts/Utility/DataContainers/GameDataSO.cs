@@ -19,7 +19,7 @@ namespace CosmicShore.Utility
     /// </summary>
     [CreateAssetMenu(
         fileName = "DataContainer_" + nameof(GameDataSO),
-        menuName = "ScriptableObjects/SOAP/Data Containers/" + nameof(GameDataSO))]
+        menuName = "ScriptableObjects/Data Containers/" + nameof(GameDataSO))]
     public class GameDataSO : ScriptableObject
     {
         // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP

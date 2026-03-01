@@ -3,7 +3,7 @@ using CosmicShore.Data;
 using System;
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "New Mission", menuName = "CosmicShore/Game/Mission", order = 2)]
+    [CreateAssetMenu(fileName = "New Mission", menuName = "ScriptableObjects/Game/Mission", order = 2)]
     [System.Serializable]
     public class SO_Mission : SO_Game
     {
