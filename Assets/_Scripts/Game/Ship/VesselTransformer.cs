@@ -287,11 +287,16 @@ public class VesselTransformer : MonoBehaviour
         float effectiveMult;
         float effectiveDamp;
 
+        // Damping is inverted: higher value = course follows forward faster = less drift.
+        // At triggerSum 0 we want full damping (no drift feel), ramping down toward the
+        // configured values as triggers are pulled.
+        const float noDriftDamp = 1f;
+
         if (triggerSum <= 1f)
         {
             // 0→1: no drift → full single drift
             effectiveMult = Mathf.Lerp(1f, singleMult, triggerSum);
-            effectiveDamp = Mathf.Lerp(0f, singleDamp, triggerSum);
+            effectiveDamp = Mathf.Lerp(noDriftDamp, singleDamp, triggerSum);
         }
         else
         {
