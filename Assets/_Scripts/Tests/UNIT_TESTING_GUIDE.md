@@ -2,9 +2,9 @@
 
 ## Test Inventory
 
-35 test files, ~450+ individual tests across 6 locations.
+36 test files, ~500+ individual tests across 6 locations.
 
-### Edit-Mode Tests (`Assets/_Scripts/Tests/EditMode/`) — 21 files
+### Edit-Mode Tests (`Assets/_Scripts/Tests/EditMode/`) — 22 files
 
 | File | Subject Under Test | Why It Exists |
 |---|---|---|
@@ -29,6 +29,7 @@
 | `MenuFreestyleToggleTests` | `MenuCrystalClickHandler` + `MainMenuController` freestyle SOAP | Autopilot-to-freestyle toggle API. Missing guards = Time.timeScale freeze in multiplayer. |
 | `PartyInviteControllerTests` | `PartyInviteController` preconditions | Host-to-client transition guards. Missing guard = Netcode crash during invite accept. |
 | `PartyInviteSystemTests` | Full party/invite lifecycle — ParseInvite, collection contracts, slot management, dedup, API | Most comprehensive test file. Entire invite pipeline from parsing to HashSet dedup to slot scenarios. |
+| `FriendSystemTests` | Full friend system — FriendData struct, FriendPresenceActivity, FriendsDataSO, SOAP types, API contracts | Covers the UGS Friends integration end-to-end: struct equality/hashing, IsOnline logic, DataContract compliance, SO reset, computed properties, SOAP list behavior, and API surface contracts for FriendsServiceFacade, FriendsInitializer, and all friend UI components. |
 
 ### Bootstrap Tests (`Assets/_Scripts/System/Bootstrap/Tests/`) — 6 files
 
