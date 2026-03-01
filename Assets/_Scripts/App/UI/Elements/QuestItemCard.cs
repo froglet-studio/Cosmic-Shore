@@ -135,16 +135,9 @@ namespace CosmicShore.App.UI.Elements
             if (cardBackground != null)
                 cardBackground.color = isLocked ? lockedTint : _originalBgColor;
 
-            // Text visibility — show name and description when unlocked
-            if (nameText != null)
-                nameText.gameObject.SetActive(isUnlocked);
-
-            if (descriptionText != null)
-            {
-                descriptionText.gameObject.SetActive(isUnlocked);
-                if (isClaimed)
-                    descriptionText.text = "Completed";
-            }
+            // Text — always visible so players can see quest name/target even when locked
+            if (descriptionText != null && isClaimed)
+                descriptionText.text = "Completed";
         }
 
         /// <summary>

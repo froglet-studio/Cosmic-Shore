@@ -15,7 +15,6 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private SO_GameModeQuestList questList;
         [SerializeField] private GameObject questItemPrefab;
         [SerializeField] private Transform questItemContainer;
-        [SerializeField] private ScrollRect scrollRect;
         [SerializeField] private Image progressBarFill;
         [SerializeField] private float sliderAnimDuration = 1f;
         [SerializeField] private Ease sliderEase = Ease.OutCubic;
@@ -25,7 +24,7 @@ namespace CosmicShore.App.UI.Views
 
         void OnEnable()
         {
-            EnsureScrollSetup();
+            EnsureProgressBarSetup();
             LoadTrack();
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
@@ -44,33 +43,22 @@ namespace CosmicShore.App.UI.Views
             AnimateProgressBar();
         }
 
-        void EnsureScrollSetup()
+        void EnsureProgressBarSetup()
         {
-            if (scrollRect == null && questItemContainer != null)
-                scrollRect = questItemContainer.GetComponentInParent<ScrollRect>();
-            if (scrollRect == null) return;
-
-            scrollRect.horizontal = true;
-            scrollRect.vertical = false;
-
-            if (questItemContainer is RectTransform containerRect)
-                scrollRect.content = containerRect;
-
-            if (questItemContainer != null)
-            {
-                if (!questItemContainer.TryGetComponent<ContentSizeFitter>(out var csf))
-                    csf = questItemContainer.gameObject.AddComponent<ContentSizeFitter>();
-                csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            }
-
             if (progressBarFill == null || questItemContainer == null) return;
+
             var barRoot = FindDirectChild(progressBarFill.transform, questItemContainer);
             if (barRoot == null) return;
 
+            // Keep the progress bar out of the HorizontalLayoutGroup
             if (!barRoot.TryGetComponent<LayoutElement>(out var le))
                 le = barRoot.gameObject.AddComponent<LayoutElement>();
             le.ignoreLayout = true;
 
+            // Render behind all cards
+            barRoot.SetAsFirstSibling();
+
+            // Stretch full width, pin to bottom
             if (barRoot is RectTransform barRect)
             {
                 barRect.anchorMin = new Vector2(0f, 0f);
