@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5714324445451480644}
   - component: {fileID: 2355990961537700146}
   m_Layer: 5
-  m_Name: XPLevelPrefab
+  m_Name: QuestLevelPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
