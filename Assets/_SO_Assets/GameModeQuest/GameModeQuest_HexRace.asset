@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: GameModeQuest_HexRace
   m_EditorClassIdentifier: 
   GameMode: 33
-  DisplayName: 
-  Description: 
+  DisplayName: Hex Race
+  Description: Complete a race under 150 seconds
   Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
   TargetType: 1
   TargetValue: 150
