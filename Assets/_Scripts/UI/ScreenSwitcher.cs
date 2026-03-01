@@ -74,8 +74,8 @@ namespace CosmicShore.UI
         [SerializeField] private MenuFreestyleEventsContainerSO freestyleEvents;
 
         [Header("Arcade Panel (separate)")]
-        [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
-        [SerializeField] private GameObject arcadePanelRoot;
+        [Tooltip("ArcadeScreen component for the Arcade panel. Uses CanvasGroup for visibility.")]
+        [SerializeField] private ArcadeScreen arcadeScreen;
 
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
@@ -486,9 +486,9 @@ namespace CosmicShore.UI
         private void OpenArcadePanel()
         {
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
-            if (arcadePanelRoot)
+            if (arcadeScreen)
             {
-                arcadePanelRoot.SetActive(true);
+                arcadeScreen.Show();
             }
         }
 

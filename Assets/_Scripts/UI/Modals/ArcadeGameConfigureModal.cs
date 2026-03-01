@@ -267,13 +267,38 @@ namespace CosmicShore.UI
 
         #region Screen switching
 
+        CanvasGroup _configurationDetailCG;
+        CanvasGroup _gameDetailCG;
+
+        void EnsureScreenCanvasGroups()
+        {
+            if (_configurationDetailCG == null && configurationDetailView != null)
+            {
+                if (!configurationDetailView.TryGetComponent(out _configurationDetailCG))
+                    _configurationDetailCG = configurationDetailView.AddComponent<CanvasGroup>();
+            }
+
+            if (_gameDetailCG == null && gameDetailView != null)
+            {
+                if (!gameDetailView.TryGetComponent(out _gameDetailCG))
+                    _gameDetailCG = gameDetailView.AddComponent<CanvasGroup>();
+            }
+        }
+
         void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen)
         {
-            if (configurationDetailView)
-                configurationDetailView.SetActive(configurationDetailView == configScreen);
+            EnsureScreenCanvasGroups();
 
-            if (gameDetailView)
-                gameDetailView.SetActive(gameDetailView == gameDetailScreen);
+            SetSubCanvasGroupVisible(_configurationDetailCG, configurationDetailView == configScreen);
+            SetSubCanvasGroupVisible(_gameDetailCG, gameDetailView == gameDetailScreen);
+        }
+
+        static void SetSubCanvasGroupVisible(CanvasGroup cg, bool visible)
+        {
+            if (cg == null) return;
+            cg.alpha = visible ? 1f : 0f;
+            cg.blocksRaycasts = visible;
+            cg.interactable = visible;
         }
 
         void ShowConfigurationScreen()

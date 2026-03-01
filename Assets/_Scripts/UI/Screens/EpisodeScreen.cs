@@ -28,28 +28,32 @@ namespace CosmicShore.UI
 
         private readonly List<GameObject> _spawnedCards = new();
         private bool _loaded;
+        private bool _panelVisible;
+        private CanvasGroup _episodePanelCG;
 
         void Start()
         {
             if (supportUsButton != null)
                 supportUsButton.onClick.AddListener(OnSupportUsClicked);
+
+            EnsureEpisodePanelCanvasGroup();
         }
 
         public void TogglePanel()
         {
             if (episodePanel == null) return;
 
-            bool show = !episodePanel.activeSelf;
-            episodePanel.SetActive(show);
+            _panelVisible = !_panelVisible;
+            SetEpisodePanelVisible(_panelVisible);
 
-            if (show && !_loaded)
+            if (_panelVisible && !_loaded)
                 LoadView();
         }
 
         public void ShowPanel()
         {
-            if (episodePanel != null)
-                episodePanel.SetActive(true);
+            _panelVisible = true;
+            SetEpisodePanelVisible(true);
 
             if (!_loaded)
                 LoadView();
@@ -57,8 +61,30 @@ namespace CosmicShore.UI
 
         public void HidePanel()
         {
-            if (episodePanel != null)
-                episodePanel.SetActive(false);
+            _panelVisible = false;
+            SetEpisodePanelVisible(false);
+        }
+
+        void EnsureEpisodePanelCanvasGroup()
+        {
+            if (_episodePanelCG == null && episodePanel != null)
+            {
+                if (!episodePanel.TryGetComponent(out _episodePanelCG))
+                    _episodePanelCG = episodePanel.AddComponent<CanvasGroup>();
+            }
+        }
+
+        void SetEpisodePanelVisible(bool visible)
+        {
+            if (episodePanel != null && !episodePanel.activeSelf)
+                episodePanel.SetActive(true);
+
+            EnsureEpisodePanelCanvasGroup();
+            if (_episodePanelCG == null) return;
+
+            _episodePanelCG.alpha = visible ? 1f : 0f;
+            _episodePanelCG.blocksRaycasts = visible;
+            _episodePanelCG.interactable = visible;
         }
 
         public void LoadView()
