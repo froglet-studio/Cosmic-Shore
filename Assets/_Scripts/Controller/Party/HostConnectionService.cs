@@ -64,6 +64,13 @@ namespace CosmicShore.Gameplay
         private const string INVITE_TARGET_KEY = "invite_target";
         private const string INVITE_DATA_KEY = "invite_data";
 
+        /// <summary>
+        /// Milliseconds to wait after creating a lobby before re-querying,
+        /// giving a near-simultaneous second instance time to also create.
+        /// If a rival lobby is detected, we merge into it.
+        /// </summary>
+        private const int LOBBY_RACE_SETTLE_MS = 1500;
+
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
@@ -83,6 +90,10 @@ namespace CosmicShore.Gameplay
             SyncLocalIdentity();
             await JoinPresenceLobbyAsync();
             _initialized = true;
+
+            // Immediate first refresh so OnlinePlayers is populated
+            // before the user opens the panel (don't wait 3 seconds).
+            RefreshAsync().Forget();
         }
 
         void Update()
@@ -121,6 +132,9 @@ namespace CosmicShore.Gameplay
             {
                 await JoinPresenceLobbyAsync();
                 _initialized = true;
+
+                // Immediate refresh so OnlinePlayers is populated right away.
+                RefreshAsync().Forget();
             }
             finally { _joining = false; }
         }
@@ -283,30 +297,33 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                var queryOptions = new QuerySessionsOptions();
-                queryOptions.FilterOptions.Add(
-                    new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+                _presenceLobby = await TryQueryAndJoinLobbyAsync();
 
-                var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-
-                if (results.Sessions.Count > 0)
+                if (_presenceLobby == null)
                 {
-                    _presenceLobby = await MultiplayerService.Instance.JoinSessionByIdAsync(
-                        results.Sessions[0].Id,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
-
-                    connectionData.IsHost = false;
-                    Debug.Log($"[HostConnectionService] Joined presence lobby {_presenceLobby.Id}");
-                }
-                else
-                {
+                    // No existing lobby found — create one, then re-query.
+                    // Another instance may have created one at the same time
+                    // (race condition with MPPM or near-simultaneous launches).
                     await CreatePresenceLobbyAsync();
+
+                    // Re-query after a short settle to detect a race.
+                    await Task.Delay(LOBBY_RACE_SETTLE_MS);
+                    var rival = await TryQueryAndJoinLobbyAsync();
+
+                    if (rival != null)
+                    {
+                        // Another lobby appeared — abandon ours and join theirs.
+                        Debug.Log("[HostConnectionService] Race detected — merging into existing lobby.");
+                        await DeleteOwnLobbyQuietly();
+                        _presenceLobby = rival;
+                    }
                 }
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Join failed, creating new lobby: {e.Message}");
-                await CreatePresenceLobbyAsync();
+                if (_presenceLobby == null)
+                    await CreatePresenceLobbyAsync();
             }
 
             if (_presenceLobby != null)
@@ -319,6 +336,66 @@ namespace CosmicShore.Gameplay
                 connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
 
                 connectionData.OnHostConnectionEstablished?.Raise();
+            }
+        }
+
+        /// <summary>
+        /// Queries for an existing PRESENCE_LOBBY session and joins the first one found.
+        /// Returns the joined session, or null if none exist.
+        /// </summary>
+        private async Task<ISession> TryQueryAndJoinLobbyAsync()
+        {
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.Add(
+                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+
+            var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+
+            if (results.Sessions.Count == 0)
+                return null;
+
+            // Try each session — the first one may be our own (skip it).
+            foreach (var session in results.Sessions)
+            {
+                // Skip sessions we already own.
+                if (_presenceLobby != null && session.Id == _presenceLobby.Id)
+                    continue;
+
+                try
+                {
+                    var joined = await MultiplayerService.Instance.JoinSessionByIdAsync(
+                        session.Id,
+                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
+
+                    Debug.Log($"[HostConnectionService] Joined presence lobby {joined.Id}");
+                    return joined;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[HostConnectionService] Join session {session.Id} failed: {e.Message}");
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Deletes the locally-created presence lobby without throwing.
+        /// Used when a race condition is detected and we need to merge into another lobby.
+        /// </summary>
+        private async Task DeleteOwnLobbyQuietly()
+        {
+            if (_presenceLobby == null) return;
+            try
+            {
+                if (_presenceLobby.IsHost)
+                    await _presenceLobby.AsHost().DeleteAsync();
+                else
+                    await _presenceLobby.LeaveAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] DeleteOwnLobby error: {e.Message}");
             }
         }
 
@@ -390,25 +467,12 @@ namespace CosmicShore.Gameplay
             {
                 await _presenceLobby.RefreshAsync();
 
-                // ── Online player list ──────────────────────────────────────
-                connectionData.OnlinePlayers?.Clear();
-
-                foreach (var p in _presenceLobby.Players)
-                {
-                    if (p.Id == connectionData.LocalPlayerId) continue;
-
-                    string displayName = "Unknown Pilot";
-                    int avatarId = 0;
-
-                    if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn))
-                        displayName = dn.Value;
-                    if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
-                        int.TryParse(av.Value, out int parsed))
-                        avatarId = parsed;
-
-                    connectionData.OnlinePlayers?.Add(
-                        new PartyPlayerData(p.Id, displayName, avatarId));
-                }
+                // ── Online player list (diff-based) ─────────────────────────
+                // Build the fresh set, then add/remove only what changed.
+                // This avoids the Clear() + re-Add() pattern that causes
+                // the OnlinePlayersPanel to flicker and rebuild every cycle.
+                if (connectionData.OnlinePlayers != null)
+                    RefreshOnlinePlayersDiff();
 
                 // ── Invite check (scan player properties) ──────────────────
                 // Each player stores invite_target (who they're inviting) and
@@ -442,6 +506,46 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Diff-based update of the OnlinePlayers list.
+        /// Adds new players, removes stale ones, without clearing the whole list.
+        /// This prevents SOAP list events from firing OnCleared → OnItemAdded
+        /// every cycle, which would cause UI to flicker.
+        /// </summary>
+        private void RefreshOnlinePlayersDiff()
+        {
+            // Build the fresh set from the lobby.
+            var freshPlayerIds = new HashSet<string>();
+
+            foreach (var p in _presenceLobby.Players)
+            {
+                if (p.Id == connectionData.LocalPlayerId) continue;
+                freshPlayerIds.Add(p.Id);
+
+                string displayName = "Unknown Pilot";
+                int avatarId = 0;
+
+                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn))
+                    displayName = dn.Value;
+                if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
+                    int.TryParse(av.Value, out int parsed))
+                    avatarId = parsed;
+
+                var playerData = new PartyPlayerData(p.Id, displayName, avatarId);
+
+                // Add if not already present (PartyPlayerData equality is by PlayerId).
+                if (!connectionData.OnlinePlayers.Contains(playerData))
+                    connectionData.OnlinePlayers.Add(playerData);
+            }
+
+            // Remove players no longer in the lobby.
+            for (int i = connectionData.OnlinePlayers.Count - 1; i >= 0; i--)
+            {
+                if (!freshPlayerIds.Contains(connectionData.OnlinePlayers[i].PlayerId))
+                    connectionData.OnlinePlayers.RemoveAt(i);
             }
         }
 
