@@ -192,7 +192,7 @@ Custom SOAP types live in `Assets/_Scripts/ScriptableObjects/SOAP/` organized by
 4. Create the listener class: `EventListener[TypeName] : EventListenerGeneric<[TypeName]>`
 5. Use namespace `CosmicShore.ScriptableObjects` for all custom SOAP types
 
-Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationState` (`ApplicationStateData` + `ApplicationStateDataVariable` + `ScriptableEventApplicationState` — written by `ApplicationStateMachine`), `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `FriendData` (friend relationship data for UGS Friends integration), `GameplaySFX` (gameplay sound effect category events for decoupled audio), `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `SilhouetteData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
+Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationState` (`ApplicationStateData` + `ApplicationStateDataVariable` + `ScriptableEventApplicationState` — written by `ApplicationStateMachine`), `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `FriendData` (`FriendData` struct + `FriendPresenceActivity` `[DataContract]` + `ScriptableEventFriendData` + `ScriptableListFriendData` + `EventListenerFriendData` — relationship & presence data for UGS Friends integration, written by `FriendsServiceFacade`), `GameplaySFX` (gameplay sound effect category events for decoupled audio), `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `SilhouetteData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
 
 #### SOAP Anti-Patterns
 
@@ -852,6 +852,131 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 - **Local-only freestyle toggle**: `MenuCrystalClickHandler` toggles autopilot ↔ freestyle per-client with `IsLocalUser` guard. No network RPC needed — vessel behavior replicates automatically via Netcode.
 - **TimeScale safety**: `MenuCrystalClickHandler.IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) prevents `Time.timeScale` changes in multiplayer, which would freeze all local rendering including other players' vessels.
 
+### Friend System
+
+The friend system uses **Unity Gaming Services (UGS) Friends SDK** for relationship management and presence. It follows the same single-writer / multi-reader SOAP pattern as auth and party systems.
+
+#### Architecture
+
+```
+FriendsServiceFacade (single writer, pure C# DI singleton)
+        │ writes to
+        ▼
+FriendsDataSO (ScriptableObject asset)
+  ├─ Lists:
+  │   ├─ Friends              (ScriptableListFriendData)
+  │   ├─ IncomingRequests      (ScriptableListFriendData)
+  │   ├─ OutgoingRequests      (ScriptableListFriendData)
+  │   └─ BlockedPlayers        (ScriptableListFriendData)
+  │
+  └─ Events:
+      ├─ OnFriendAdded         ──► FriendsPanel refreshes friend list
+      ├─ OnFriendRemoved       ──► FriendsPanel refreshes friend list
+      ├─ OnFriendRequestReceived ──► FriendsPanel shows request tab badge
+      └─ OnFriendsServiceReady ──► (subscribers know the service is usable)
+```
+
+#### Initialization Flow
+
+```
+Auth Sign-In (OnSignedIn SOAP event)
+       │
+       ▼
+FriendsInitializer.HandleSignedInEvent()
+       │
+       └─► FriendsServiceFacade.InitializeAsync()
+            ├─ UGS FriendsService.InitializeAsync()
+            ├─ WireEvents():
+            │   ├─ RelationshipAdded → OnRelationshipAdded()
+            │   ├─ RelationshipDeleted → OnRelationshipDeleted()
+            │   └─ PresenceUpdated → OnPresenceUpdated()
+            ├─ SyncAllRelationships() → populate all 4 SOAP lists
+            ├─ FriendsDataSO.IsInitialized = true
+            ├─ OnFriendsServiceReady.Raise()
+            └─ SetPresence(Online, "In Menu")
+```
+
+#### SOAP Types (FriendData)
+
+Location: `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/`
+
+| Type | Purpose |
+|---|---|
+| `FriendData` | Immutable struct: `PlayerId`, `DisplayName`, `Availability` (int), `ActivityStatus` (string). Identity + presence for a single friend. |
+| `FriendPresenceActivity` | `[DataContract]` class for rich UGS presence payload: `Status`, `Scene`, `VesselClass`, `PartySessionId`. Serialized by the Friends SDK. |
+| `ScriptableEventFriendData` | SOAP event channel for friend added/removed notifications |
+| `ScriptableListFriendData` | SOAP reactive list backing `Friends`, `IncomingRequests`, `OutgoingRequests`, `BlockedPlayers` in `FriendsDataSO` |
+| `EventListenerFriendData` | Inspector-wirable MonoBehaviour listener for `ScriptableEventFriendData` |
+
+#### FriendsServiceFacade API
+
+The facade (`_Scripts/System/FriendsServiceFacade.cs`) exposes these operations. All mutating methods call `SyncAllRelationships()` after the UGS SDK call to update SOAP lists.
+
+| Method | UGS SDK Call | Effect |
+|---|---|---|
+| `InitializeAsync()` | `FriendsService.InitializeAsync()` | Wire events, sync all lists, raise `OnFriendsServiceReady` |
+| `SendFriendRequestByNameAsync(name)` | `AddFriendByNameAsync(name)` | Adds to `OutgoingRequests` list |
+| `SendFriendRequestAsync(playerId)` | `AddFriendAsync(playerId)` | Adds to `OutgoingRequests` list |
+| `AcceptFriendRequestAsync(playerId)` | `AddFriendAsync(playerId)` | Moves from `IncomingRequests` to `Friends`, raises `OnFriendAdded` |
+| `DeclineFriendRequestAsync(playerId)` | `DeleteIncomingFriendRequestAsync(playerId)` | Removes from `IncomingRequests` |
+| `CancelFriendRequestAsync(playerId)` | `DeleteOutgoingFriendRequestAsync(playerId)` | Removes from `OutgoingRequests` |
+| `RemoveFriendAsync(playerId)` | `DeleteFriendAsync(playerId)` | Removes from `Friends`, raises `OnFriendRemoved` |
+| `BlockPlayerAsync(playerId)` | `AddBlockAsync(playerId)` | Removes any relationship, adds to `BlockedPlayers` |
+| `UnblockPlayerAsync(playerId)` | `DeleteBlockAsync(playerId)` | Removes from `BlockedPlayers` |
+| `SetPresenceAsync(availability, activity)` | `SetPresenceAsync(...)` | Updates local player's presence for friends to see |
+| `SetAvailabilityAsync(availability)` | `SetPresenceAvailabilityAsync(...)` | Updates availability only |
+| `RefreshAsync()` | `ForceRelationshipsRefreshAsync()` | Full server refresh of all lists |
+| `IsFriend(playerId)` | (local query) | Checks `FriendsDataSO.Friends` list |
+| `IsBlocked(playerId)` | (local query) | Checks `FriendsDataSO.BlockedPlayers` list |
+
+#### Presence Management
+
+`FriendsInitializer` (`_Scripts/Controller/Party/FriendsInitializer.cs`) manages the local player's presence state across scene transitions:
+
+| Trigger | Availability | Activity Status |
+|---|---|---|
+| Auth sign-in / enter menu | `Online` | `"In Menu"` (scene: `Menu_Main`) |
+| Enter game scene | `Busy` | `"In Game"` (scene name, vessel class, party session ID) |
+| App shutdown / `OnDestroy` | `Offline` | — |
+
+Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsServiceFacade.OnPresenceUpdated()` → `SyncAllRelationships()` → `FriendData.Availability` updated in SOAP lists → `FriendEntryView` updates online status indicator color.
+
+#### Friend UI Components
+
+| Component | File | Purpose |
+|---|---|---|
+| `FriendsPanel` | `_Scripts/UI/Views/FriendsPanel.cs` | Tabbed panel with 3 tabs: Friends List, Requests (incoming + outgoing), Add Friend. Reads `FriendsDataSO` SOAP lists. |
+| `FriendEntryView` | `_Scripts/UI/Views/FriendEntryView.cs` | Single friend row: display name, online status color indicator, [Invite to Party] button (→ `HostConnectionService.SendInviteAsync`), [Remove] button (→ `FriendsServiceFacade.RemoveFriendAsync`). |
+| `FriendRequestEntryView` | `_Scripts/UI/Views/FriendRequestEntryView.cs` | Single request row: incoming shows [Accept]/[Decline], outgoing shows [Cancel]. Delegates to `FriendsServiceFacade`. |
+| `AddFriendPanel` | `_Scripts/UI/Views/AddFriendPanel.cs` | Text input + [Send] button. Uses `[Inject] FriendsServiceFacade` to call `SendFriendRequestByNameAsync`. |
+
+#### Friend System Key Files
+
+| Role | File | Location |
+|---|---|---|
+| Friends facade (single writer) | `FriendsServiceFacade.cs` | `_Scripts/System/` |
+| MonoBehaviour bridge / presence | `FriendsInitializer.cs` | `_Scripts/Controller/Party/` |
+| SOAP data container | `FriendsDataSO.cs` | `_Scripts/Utility/DataContainers/` |
+| Friend identity struct | `FriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
+| Rich presence payload | `FriendPresenceActivity.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
+| SOAP event channel | `ScriptableEventFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
+| SOAP reactive list | `ScriptableListFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
+| SOAP MonoBehaviour listener | `EventListenerFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
+| Tabbed friends panel UI | `FriendsPanel.cs` | `_Scripts/UI/Views/` |
+| Friend row UI | `FriendEntryView.cs` | `_Scripts/UI/Views/` |
+| Friend request row UI | `FriendRequestEntryView.cs` | `_Scripts/UI/Views/` |
+| Add friend input UI | `AddFriendPanel.cs` | `_Scripts/UI/Views/` |
+| SO asset instance | `FriendsData.asset` | `_SO_Assets/Friends Data/` |
+
+#### Friend System Patterns to Follow
+
+- **Single writer**: Only `FriendsServiceFacade` writes to `FriendsDataSO`. UI components read via SOAP lists and events — they never call UGS SDK directly.
+- **Sync after mutate**: Every facade method that changes relationship state calls `SyncAllRelationships()` after the SDK call to keep SOAP lists in sync.
+- **Event-driven UI**: `FriendsPanel` and entry views subscribe to SOAP list events (`OnItemAdded`, `OnItemRemoved`, `OnCleared`) for reactive updates. No polling.
+- **Presence via FriendsInitializer**: Scene transition presence is managed by `FriendsInitializer` — do not set presence from other MonoBehaviours.
+- **DI access**: UI components access `FriendsServiceFacade` via `[Inject]`, not by finding it in the scene.
+- **Bridge between Party and Friends**: `FriendEntryView`'s invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
+
 ### FTUE (First-Time User Experience)
 
 Tutorial system at `Assets/FTUE/` (25 C# files) using adapter pattern with clean interface separation:
@@ -978,7 +1103,8 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | App state machine | `ApplicationStateMachine` (single-writer phase tracker), `ApplicationStateData` / `ApplicationStateDataVariable` (SOAP state), `ApplicationState` enum | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/`, `_Scripts/Data/Enums/` |
 | Scene management | `SceneLoader` (NetworkBehaviour, game launch + restart + return-to-menu), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
-| Friends | `FriendsServiceFacade` (facade/writer for UGS Friends), `FriendsDataSO` (shared data) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
+| Friends | `FriendsServiceFacade` (facade/single-writer for UGS Friends SDK), `FriendsInitializer` (MonoBehaviour bridge + presence), `FriendsDataSO` (SOAP container: 4 lists + 4 events), `FriendData`/`FriendPresenceActivity` (SOAP data types) | `_Scripts/System/`, `_Scripts/Controller/Party/`, `_Scripts/Utility/DataContainers/`, `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
+| Friends UI | `FriendsPanel` (tabbed: list + requests + add), `FriendEntryView` (friend row with invite/remove), `FriendRequestEntryView` (accept/decline/cancel), `AddFriendPanel` (name input) | `_Scripts/UI/Views/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
