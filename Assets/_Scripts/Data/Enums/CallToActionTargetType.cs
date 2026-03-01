@@ -15,7 +15,7 @@ namespace CosmicShore.Data
 
         // Hangar Related - 300s
         HangarMenu = 300,
-        HangarMenuOverviewNavButton = 301,
+        HangarMenuVesselSelectionNavButton = 301,
         HangarMenuCaptainsNavButton = 302,
         HangarMenuTrainingNavButton = 303,
         HangarShipManta = 310,
