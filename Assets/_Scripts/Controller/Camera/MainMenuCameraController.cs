@@ -344,7 +344,10 @@ namespace CosmicShore.Gameplay
             SetVCamPriority(_bridgeVCam, HighPriority + 1);
             SetVCamPriority(_menuVCam, HighPriority);
 
-            // 3. Wait for Brain blend to actually complete (not a fixed timer estimate).
+            // 3. Wait for Brain blend to actually complete.
+            //    Yield one frame first — the Brain hasn't evaluated the priority
+            //    change yet, so IsBlending is false on this frame.
+            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
             while (_brain && _brain.IsBlending)
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
@@ -427,6 +430,8 @@ namespace CosmicShore.Gameplay
             SetVCamPriority(_menuVCam, HighPriority + 1);
 
             // 7. Wait for Brain blend to actually complete.
+            //    Yield one frame first so Brain detects the priority change.
+            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
             while (_brain && _brain.IsBlending)
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
