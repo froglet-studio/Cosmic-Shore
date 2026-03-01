@@ -2,29 +2,37 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
-using UnityEngine;
 
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Prevents SOAP ScriptableVariable/ScriptableList assets and other runtime
-    /// ScriptableObjects from persisting play-mode changes to disk.
+    /// Prevents ScriptableObject assets in _SO_Assets from persisting play-mode
+    /// changes to disk.
     ///
-    /// SOAP's built-in reset relies on a non-serialized _initialValue field that
-    /// is lost during domain reload, so ResetToInitialValue() cannot reliably
-    /// restore the pre-play-mode state. Plain ScriptableObject assets (GameDataSO,
-    /// CellDataSO, etc.) have no reset mechanism at all — Unity persists their
-    /// play-mode mutations by design.
+    /// Two independent problems are solved here:
     ///
-    /// This script captures the raw file contents of all protected SO assets before
-    /// entering play mode (using SessionState, which survives domain reload) and
-    /// writes them back on play mode exit, guaranteeing zero git diff.
+    /// 1. SOAP's built-in ResetToInitialValue() relies on a non-serialized
+    ///    _initialValue field that is lost during domain reload, so it resets
+    ///    to default(T) instead of the pre-play-mode value.
+    ///
+    /// 2. Plain ScriptableObject assets (GameDataSO, CellRuntimeDataSO, etc.)
+    ///    have no reset mechanism at all — Unity persists their play-mode
+    ///    mutations by design.
+    ///
+    /// Approach:
+    ///   ExitingEditMode  → snapshot every .asset file in _SO_Assets/ into
+    ///                      SessionState (survives domain reload).
+    ///   EnteredEditMode  → schedule a deferred restore via delayCall so it
+    ///                      runs AFTER SOAP's own OnPlayModeStateChanged
+    ///                      callbacks (which re-dirty the assets). Then write
+    ///                      the original bytes back and force-reimport.
     /// </summary>
     [InitializeOnLoad]
     static class PlayModeSOProtector
     {
-        private const string KeyPrefix = "PlayModeSOProtector_";
-        private const string GuidListKey = KeyPrefix + "GuidList";
+        private const string KeyPrefix = "PMSOP_";
+        private const string PathListKey = KeyPrefix + "Paths";
+        private const string SOAssetsRoot = "Assets/_SO_Assets";
 
         static PlayModeSOProtector()
         {
@@ -36,95 +44,72 @@ namespace CosmicShore.Editor
             switch (state)
             {
                 case PlayModeStateChange.ExitingEditMode:
-                    CaptureProtectedAssets();
+                    CaptureAssets();
                     break;
                 case PlayModeStateChange.EnteredEditMode:
-                    RestoreProtectedAssets();
+                    // Defer so we run AFTER SOAP's ResetToInitialValue() callbacks,
+                    // which fire during this same EnteredEditMode dispatch and
+                    // re-dirty assets with default(T) + EditorUtility.SetDirty().
+                    EditorApplication.delayCall += RestoreAssets;
                     break;
             }
         }
 
-        private static void CaptureProtectedAssets()
+        private static void CaptureAssets()
         {
-            var guids = CollectProtectedGuids();
-            SessionState.SetString(GuidListKey, string.Join(";", guids));
+            if (!Directory.Exists(SOAssetsRoot))
+                return;
 
-            foreach (var guid in guids)
+            var files = Directory.GetFiles(SOAssetsRoot, "*.asset", SearchOption.AllDirectories);
+            var paths = new List<string>(files.Length);
+
+            foreach (var file in files)
             {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(path) || !File.Exists(path))
-                    continue;
-
-                SessionState.SetString(KeyPrefix + guid, File.ReadAllText(path));
+                var path = file.Replace('\\', '/');
+                paths.Add(path);
+                SessionState.SetString(KeyPrefix + path, File.ReadAllText(path));
             }
+
+            SessionState.SetString(PathListKey, string.Join(";", paths));
         }
 
-        private static void RestoreProtectedAssets()
+        private static void RestoreAssets()
         {
-            var raw = SessionState.GetString(GuidListKey, "");
+            var raw = SessionState.GetString(PathListKey, "");
             if (string.IsNullOrEmpty(raw))
                 return;
 
-            var guids = raw.Split(';');
-            var anyRestored = false;
+            var paths = raw.Split(';');
+            var restoredPaths = new List<string>();
 
-            foreach (var guid in guids)
+            foreach (var path in paths)
             {
-                if (string.IsNullOrEmpty(guid))
+                if (string.IsNullOrEmpty(path))
                     continue;
 
-                var key = KeyPrefix + guid;
+                var key = KeyPrefix + path;
                 var saved = SessionState.GetString(key, null);
                 SessionState.EraseString(key);
 
-                if (string.IsNullOrEmpty(saved))
+                if (string.IsNullOrEmpty(saved) || !File.Exists(path))
                     continue;
 
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(path) || !File.Exists(path))
-                    continue;
-
-                var current = File.ReadAllText(path);
-                if (current == saved)
+                if (File.ReadAllText(path) == saved)
                     continue;
 
                 File.WriteAllText(path, saved);
-                anyRestored = true;
+                restoredPaths.Add(path);
             }
 
-            SessionState.EraseString(GuidListKey);
+            SessionState.EraseString(PathListKey);
 
-            if (anyRestored)
-                AssetDatabase.Refresh();
-        }
+            if (restoredPaths.Count == 0)
+                return;
 
-        // Non-SOAP ScriptableObject types whose serialized fields mutate at runtime.
-        // Add type names here as needed (class name only, no namespace).
-        private static readonly string[] AdditionalProtectedTypes =
-        {
-            "GameDataSO",
-            "CellRuntimeDataSO",
-        };
-
-        private static HashSet<string> CollectProtectedGuids()
-        {
-            var guids = new HashSet<string>();
-
-            // All SOAP ScriptableVariable assets (IntVariable, FloatVariable,
-            // VesselClassTypeVariable, NetworkMonitorDataVariable, AuthenticationDataVariable, etc.)
-            foreach (var g in AssetDatabase.FindAssets("t:ScriptableVariableBase"))
-                guids.Add(g);
-
-            // All SOAP ScriptableList assets (ScriptableListPartyPlayerData, etc.)
-            foreach (var g in AssetDatabase.FindAssets("t:ScriptableListBase"))
-                guids.Add(g);
-
-            // Non-SOAP runtime SOs that also mutate during play mode
-            foreach (var typeName in AdditionalProtectedTypes)
-                foreach (var g in AssetDatabase.FindAssets($"t:{typeName}"))
-                    guids.Add(g);
-
-            return guids;
+            // Force-reimport each restored file so Unity reloads the SO from
+            // disk and clears any dirty flags left by SOAP's reset callbacks.
+            foreach (var path in restoredPaths)
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
         }
     }
 }
