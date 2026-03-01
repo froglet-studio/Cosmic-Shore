@@ -182,12 +182,6 @@ namespace CosmicShore.Gameplay
                 _freestyleFollow.TrackerSettings = tracker;
             }
 
-            // InheritPosition: when this vCam goes live, start from the current Unity
-            // Camera position and let CinemachineFollow damping converge to the correct
-            // position behind the vessel. This avoids the default linear blend path that
-            // cuts through arbitrary space between the orbit camera and the vessel.
-            _freestyleVCam.BlendHint = CinemachineBlendHint.InheritPosition;
-
             SetVCamPriority(_freestyleVCam, LowPriority);
         }
 
