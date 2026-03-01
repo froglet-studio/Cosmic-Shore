@@ -87,8 +87,11 @@ namespace CosmicShore.App.UI.Views
             if (scrollRect == null && questItemContainer != null)
                 scrollRect = questItemContainer.GetComponentInParent<ScrollRect>();
 
-            if (scrollRect != null)
-                scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            if (scrollRect == null) return;
+
+            scrollRect.horizontal = true;
+            scrollRect.vertical = false;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
         }
 
         // ── Spawning ────────────────────────────────────────────────────────────
@@ -221,6 +224,9 @@ namespace CosmicShore.App.UI.Views
 
             var service = GameModeProgressionService.Instance;
             int claimed = service != null ? service.GetClaimedQuestCount() : 0;
+
+            if (claimed <= 0) return 0f;
+
             int targetIndex = Mathf.Clamp(claimed, 0, _cards.Count - 1);
 
             var contentRect = questItemContainer as RectTransform;
