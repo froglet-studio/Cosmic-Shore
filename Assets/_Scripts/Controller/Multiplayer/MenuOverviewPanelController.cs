@@ -15,8 +15,8 @@ namespace CosmicShore.Gameplay
     ///
     /// Reuses <see cref="OverviewPanelUI"/> for presentation and <see cref="ShipCardView"/>
     /// for individual vessel cards. Delegates the actual vessel swap to
-    /// <see cref="MenuVesselSwapController"/> which handles the Netcode despawn/spawn/RPC
-    /// pipeline so the change replicates to all clients.
+    /// <see cref="MenuServerPlayerVesselInitializer"/> which handles the Netcode
+    /// despawn/spawn/RPC pipeline so the change replicates to all clients.
     ///
     /// Opened via a UI button in the freestyle HUD (wired in the scene inspector).
     /// The panel shows while the vessel flies on autopilot. Selecting a card and
@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("References")]
         [SerializeField] OverviewPanelUI ui;
-        [SerializeField] MenuVesselSwapController vesselSwapController;
+        [SerializeField] MenuServerPlayerVesselInitializer serverInitializer;
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
         [Header("SOAP Events")]
@@ -109,9 +109,9 @@ namespace CosmicShore.Gameplay
             var targetClass = _selectedCard.VesselClass;
             var currentClass = CurrentVessel?.VesselStatus.VesselType ?? VesselClassType.Any;
 
-            if (targetClass != currentClass && !vesselSwapController.IsSwapping)
+            if (targetClass != currentClass && !serverInitializer.IsSwapping)
             {
-                vesselSwapController.RequestSwap(targetClass);
+                serverInitializer.RequestSwap(targetClass);
                 ui.Hide();
 
                 // The swap puts the new vessel in autopilot.
@@ -154,10 +154,10 @@ namespace CosmicShore.Gameplay
             // Wait for the swap to complete (server despawn + spawn + client init)
             await UniTask.Delay(restoreFreestyleDelayMs, ignoreTimeScale: true, cancellationToken: ct);
 
-            // Poll until the swap controller reports done
+            // Poll until the swap reports done
             const int maxAttempts = 20;
             const int intervalMs = 100;
-            for (int i = 0; i < maxAttempts && vesselSwapController.IsSwapping; i++)
+            for (int i = 0; i < maxAttempts && serverInitializer.IsSwapping; i++)
                 await UniTask.Delay(intervalMs, ignoreTimeScale: true, cancellationToken: ct);
 
             // If still in freestyle mode, give player control of the new vessel
