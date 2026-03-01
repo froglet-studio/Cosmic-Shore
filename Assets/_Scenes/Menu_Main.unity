@@ -80744,6 +80744,8 @@ MonoBehaviour:
   selectedGameFavoriteIcon: {fileID: 1867600102}
   configurationDetailView: {fileID: 1538374053}
   gameDetailView: {fileID: 4125016653256652703}
+  vesselSelectionView: {fileID: 548556070}
+  squadMateSelectionView: {fileID: 1887496621}
   playerCountButtons:
   - {fileID: 1797843348}
   - {fileID: 1941339136}
