@@ -293,7 +293,7 @@ namespace CosmicShore.Gameplay
             // camera would use.
             if (_freestyleFollow)
             {
-                var customizer = followTarget.GetComponent<VesselCameraCustomizer>();
+                var customizer = player.Vessel.VesselStatus.VesselCameraCustomizer;
                 if (customizer != null && customizer.Settings != null)
                 {
                     var settings = customizer.Settings;
@@ -304,14 +304,12 @@ namespace CosmicShore.Gameplay
                         ? new Vector3(settings.followOffset.x, settings.followOffset.y, settings.dynamicMinDistance)
                         : settings.followOffset;
 
-                    // Match position and rotation damping so both converge together.
-                    // CinemachineFollow uses per-axis seconds, same unit as
-                    // CustomCameraController's followSmoothTime (used with Vector3.SmoothDamp).
-                    var damping = new Vector3(
-                        settings.followSmoothTime,
-                        settings.followSmoothTime,
-                        settings.followSmoothTime
-                    );
+                    // Mirror CustomCameraController.ApplySettings() damping behavior:
+                    // FixedCamera → snap (zero damping, disableRotationLerp = true)
+                    // DynamicCamera → smooth (followSmoothTime for position and rotation)
+                    var damping = settings.mode == CameraMode.DynamicCamera
+                        ? new Vector3(settings.followSmoothTime, settings.followSmoothTime, settings.followSmoothTime)
+                        : Vector3.zero;
                     var tracker = _freestyleFollow.TrackerSettings;
                     tracker.BindingMode = BindingMode.LockToTarget;
                     tracker.PositionDamping = damping;
