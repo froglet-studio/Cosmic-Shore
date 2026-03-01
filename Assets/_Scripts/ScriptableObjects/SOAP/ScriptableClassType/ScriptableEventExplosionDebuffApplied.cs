@@ -18,7 +18,7 @@ namespace CosmicShore.ScriptableObjects
     
     [CreateAssetMenu(
         fileName = "Event_ExplosionDebuffApplied",
-        menuName = "ScriptableObjects/SOAP/Events/ExplosionDebuffApplied")]
+        menuName = "ScriptableObjects/Events/ExplosionDebuffApplied")]
     public class ScriptableEventExplosionDebuffApplied : ScriptableEvent<ExplosionDebuffPayload>
     {
     }

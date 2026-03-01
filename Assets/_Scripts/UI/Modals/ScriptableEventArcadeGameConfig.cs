@@ -5,7 +5,7 @@ namespace CosmicShore.UI
 {
         [CreateAssetMenu(
             fileName = "Event_ArcadeGameConfig",
-            menuName = "ScriptableObjects/SOAP/Events/ArcadeGameConfig")]
+            menuName = "ScriptableObjects/Events/ArcadeGameConfig")]
         public class ScriptableEventArcadeGameConfig : ScriptableEvent<ArcadeGameConfigSO>
         {
         }

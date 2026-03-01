@@ -6,7 +6,7 @@ using CosmicShore.Data;
 namespace CosmicShore.ScriptableObjects
 {
     [System.Serializable]
-    [CreateAssetMenu(fileName = "DataContainer_VesselPrefab", menuName = "ScriptableObjects/SOAP/Data Containers/VesselPrefabContainer")]
+    [CreateAssetMenu(fileName = "DataContainer_VesselPrefab", menuName = "ScriptableObjects/Data Containers/VesselPrefabContainer")]
     public class VesselPrefabContainer : ScriptableObject
     {
         [SerializeField]
