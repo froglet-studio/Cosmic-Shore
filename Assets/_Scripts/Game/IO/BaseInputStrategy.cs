@@ -50,6 +50,8 @@ namespace CosmicShore.Game.IO
             inputStatus.LeftJoystickStart = Vector2.zero;
             inputStatus.RightNormalizedJoystickPosition = Vector2.zero;
             inputStatus.LeftNormalizedJoystickPosition = Vector2.zero;
+            inputStatus.LeftTriggerAnalog = 0f;
+            inputStatus.RightTriggerAnalog = 0f;
             inputStatus.Idle = false;
         }
     }

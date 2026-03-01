@@ -22,7 +22,8 @@ namespace CosmicShore.Game
 
         //–––––––––––––––––––––––––––––––––––––––––
         // Local fallbacks
-        float   _xSumLocal,   _ySumLocal,   _xDiffLocal,   _yDiffLocal,   _throttleLocal;
+        float   _xSumLocal,   _ySumLocal,   _xDiffLocal,   _yDiffLocal,   _throttleLocal,
+                _leftTrigAnalogLocal, _rightTrigAnalogLocal;
         bool    _idleLocal,   _pausedLocal, _gyroLocal,    _invertYLocal, _invertThrotLocal,
                 _oneTouchLocal, _cmdStickLocal;
         InputDeviceType _activeInputDeviceLocal;
@@ -38,6 +39,8 @@ namespace CosmicShore.Game
         readonly NetworkVariable<float>   n_xDiff  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<float>   n_yDiff  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<float>   n_throt  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        readonly NetworkVariable<float>   n_lTrig  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        readonly NetworkVariable<float>   n_rTrig  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         readonly NetworkVariable<bool>    n_idle   = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<bool>    n_paused = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
@@ -90,6 +93,18 @@ namespace CosmicShore.Game
         {
             get => IsSpawned ? n_throt.Value  : _throttleLocal;
             set { if (IsSpawned && IsOwner) n_throt.Value= value; else _throttleLocal = value; }
+        }
+
+        public float LeftTriggerAnalog
+        {
+            get => IsSpawned ? n_lTrig.Value  : _leftTrigAnalogLocal;
+            set { if (IsSpawned && IsOwner) n_lTrig.Value = value; else _leftTrigAnalogLocal = value; }
+        }
+
+        public float RightTriggerAnalog
+        {
+            get => IsSpawned ? n_rTrig.Value  : _rightTrigAnalogLocal;
+            set { if (IsSpawned && IsOwner) n_rTrig.Value = value; else _rightTrigAnalogLocal = value; }
         }
 
         public bool Idle
@@ -245,6 +260,8 @@ namespace CosmicShore.Game
             XDiff = 0f;
             YDiff = 0f;
             Throttle = 0f;
+            LeftTriggerAnalog = 0f;
+            RightTriggerAnalog = 0f;
 
             // Reset booleans
             Idle = true;
