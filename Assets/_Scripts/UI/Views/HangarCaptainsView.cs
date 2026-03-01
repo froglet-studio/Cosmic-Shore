@@ -88,7 +88,7 @@ namespace CosmicShore.UI
             CSDebug.Log($"Populating Captain Details List: {captain.Icon}");
             CSDebug.Log($"Populating Captain Details List: {captain.Image}");
 
-            EncounterButton.gameObject.SetVisible(false);
+            EncounterButton.gameObject.SetActive(false);
             xpRequirementSatisfied = false;
             crystalRequirementSatisfied = false;
 
@@ -104,35 +104,35 @@ namespace CosmicShore.UI
             //
             // Populate Requirements Box
             //
-            UnencounteredCaptainRequirementsContainer.gameObject.SetVisible(false);
-            LockedCaptainRequirementsContainer.gameObject.SetVisible(false);
-            UpgradeCaptainRequirementsContainer.gameObject.SetVisible(false);
+            UnencounteredCaptainRequirementsContainer.gameObject.SetActive(false);
+            LockedCaptainRequirementsContainer.gameObject.SetActive(false);
+            UpgradeCaptainRequirementsContainer.gameObject.SetActive(false);
 
             if (!captain.Encountered)
             {
-                UnencounteredCaptainRequirementsContainer.gameObject.SetVisible(true);
+                UnencounteredCaptainRequirementsContainer.gameObject.SetActive(true);
 
                 SelectedCaptainImage.color = Color.black;
 
                 // TODO: remove once testing is complete
-                EncounterButton.gameObject.SetVisible(true);
+                EncounterButton.gameObject.SetActive(true);
                 EncounterButton.onClick.RemoveAllListeners();
                 EncounterButton.onClick.AddListener(() => _captainManager.EncounterCaptain(captain.Name));
 
-                GoToStoreButton.gameObject.SetVisible(false);
-                UpgradeButton.gameObject.SetVisible(true);
+                GoToStoreButton.gameObject.SetActive(false);
+                UpgradeButton.gameObject.SetActive(true);
                 UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonLockedSprite;
             }
             else if (!captain.Unlocked)
             {
-                LockedCaptainRequirementsContainer.gameObject.SetVisible(true);
+                LockedCaptainRequirementsContainer.gameObject.SetActive(true);
 
-                GoToStoreButton.gameObject.SetVisible(true);
-                UpgradeButton.gameObject.SetVisible(false);
+                GoToStoreButton.gameObject.SetActive(true);
+                UpgradeButton.gameObject.SetActive(false);
             }
             else
             {
-                UpgradeCaptainRequirementsContainer.gameObject.SetVisible(true);
+                UpgradeCaptainRequirementsContainer.gameObject.SetActive(true);
 
                 // Load upgrade from catalog
                 upgrade = CatalogManager.Instance.GetCaptainUpgrade(captain);
@@ -152,9 +152,9 @@ namespace CosmicShore.UI
                     SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Gameplay.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
                 }
 
-                GoToStoreButton.gameObject.SetVisible(false);
+                GoToStoreButton.gameObject.SetActive(false);
                 // Upgrade Button
-                UpgradeButton.gameObject.SetVisible(true);
+                UpgradeButton.gameObject.SetActive(true);
                 if (xpRequirementSatisfied && crystalRequirementSatisfied)
                     UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonUnlockedSprite;
                 else

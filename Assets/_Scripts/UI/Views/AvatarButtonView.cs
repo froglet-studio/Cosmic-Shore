@@ -1,5 +1,4 @@
 ﻿using System;
-using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,7 +33,7 @@ namespace CosmicShore.UI
         public void SetSelected(bool selected)
         {
             if (selectedHighlight)
-                selectedHighlight.SetVisible(selected);
+                selectedHighlight.SetActive(selected);
         }
     }
 }

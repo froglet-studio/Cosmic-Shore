@@ -61,10 +61,10 @@ namespace CosmicShore.UI
                 // Show the + icon background
                 CSDebug.Log($"No loadout for card: {Index}");
                 BackgroundImage.sprite = PlusIconBackground;
-                GameTitle.gameObject.SetVisible(false);
-                ShipImage.gameObject.SetVisible(false);
-                PlayerCountImage.gameObject.SetVisible(false);
-                IntensityImage.gameObject.SetVisible(false);
+                GameTitle.gameObject.SetActive(false);
+                ShipImage.gameObject.SetActive(false);
+                PlayerCountImage.gameObject.SetActive(false);
+                IntensityImage.gameObject.SetActive(false);
                 BackgroundImage.preserveAspect = true;
             }
             else
@@ -79,10 +79,10 @@ namespace CosmicShore.UI
                 PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];
                 IntensityImage.sprite = IntensityImages[loadout.Intensity - 1];
 
-                GameTitle.gameObject.SetVisible(true);
-                ShipImage.gameObject.SetVisible(true);
-                PlayerCountImage.gameObject.SetVisible(true);
-                IntensityImage.gameObject.SetVisible(true);
+                GameTitle.gameObject.SetActive(true);
+                ShipImage.gameObject.SetActive(true);
+                PlayerCountImage.gameObject.SetActive(true);
+                IntensityImage.gameObject.SetActive(true);
 
                 BackgroundImage.preserveAspect = false;
             }

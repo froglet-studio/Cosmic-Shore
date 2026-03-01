@@ -1,6 +1,5 @@
 using System;
 using CosmicShore.ScriptableObjects;
-using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -53,18 +52,18 @@ namespace CosmicShore.UI
             inviteButton?.onClick.RemoveAllListeners();
             inviteButton?.onClick.AddListener(OnInvitePressed);
 
-            inviteSentIndicator?.SetVisible(false);
+            inviteSentIndicator?.SetActive(false);
 
             // Add Friend button setup
             if (addFriendButton != null)
             {
                 addFriendButton.onClick.RemoveAllListeners();
                 addFriendButton.onClick.AddListener(OnAddFriendPressed);
-                addFriendButton.gameObject.SetVisible(onAddFriend != null && !isAlreadyFriend);
+                addFriendButton.gameObject.SetActive(onAddFriend != null && !isAlreadyFriend);
                 addFriendButton.interactable = true;
             }
 
-            friendRequestSentIndicator?.SetVisible(false);
+            friendRequestSentIndicator?.SetActive(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -78,7 +77,7 @@ namespace CosmicShore.UI
             if (inviteButton != null)
                 inviteButton.interactable = false;
 
-            inviteSentIndicator?.SetVisible(true);
+            inviteSentIndicator?.SetActive(true);
         }
 
         private void OnAddFriendPressed()
@@ -88,7 +87,7 @@ namespace CosmicShore.UI
             if (addFriendButton != null)
                 addFriendButton.interactable = false;
 
-            friendRequestSentIndicator?.SetVisible(true);
+            friendRequestSentIndicator?.SetActive(true);
         }
     }
 }

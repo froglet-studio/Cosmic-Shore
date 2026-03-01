@@ -128,7 +128,7 @@ namespace CosmicShore.UI
 
             // if no captains, hide captains section
             if (captains.Count == 0)
-                CaptainPurchaseSection.SetVisible(false);
+                CaptainPurchaseSection.SetActive(false);
 
             var captainIndex = 0;
             var rowIndex = 0;
@@ -150,7 +150,7 @@ namespace CosmicShore.UI
                     if (rowIndex < MaxCaptainRows)
                     {
                         row = CaptainPurchaseRows[rowIndex];
-                        row.gameObject.SetVisible(true);
+                        row.gameObject.SetActive(true);
                     }
                 }
             }
@@ -176,7 +176,7 @@ namespace CosmicShore.UI
 
             // if no games, hide games section
             if (games.Count == 0)
-                GamePurchaseSection.SetVisible(false);
+                GamePurchaseSection.SetActive(false);
 
             var gameIndex = 0;
             var rowIndex = 0;
@@ -198,7 +198,7 @@ namespace CosmicShore.UI
                     if (rowIndex < MaxGameRows && gameIndex != games.Count) // Second check is to prevent an empty row from being displayed
                     {
                         row = GamePurchaseRows[rowIndex];
-                        row.gameObject.SetVisible(true);
+                        row.gameObject.SetActive(true);
                     }
                 }
             }

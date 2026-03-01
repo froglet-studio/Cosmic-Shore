@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -34,7 +33,7 @@ namespace CosmicShore.UI
             foreach (var entry in panelStates)
             {
                 if (entry.panel == null) continue;
-                entry.panel.SetVisible(entry.startActive);
+                entry.panel.SetActive(entry.startActive);
             }
         }
     }

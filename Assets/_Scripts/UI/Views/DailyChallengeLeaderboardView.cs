@@ -62,7 +62,7 @@ namespace CosmicShore.UI
 
 
             for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
-                HighScoresContainer.transform.GetChild(i).gameObject.SetVisible(false);
+                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
 
             for (var i = 0; i < LeaderboardEntries.Count; i++)
             {
@@ -85,7 +85,7 @@ namespace CosmicShore.UI
                     HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().fontSize = 18;
                 }
                 HighScoresContainer.transform.GetChild(i).GetChild(3).GetComponent<TMP_Text>().text = score.Score.ToString();
-                HighScoresContainer.transform.GetChild(i).gameObject.SetVisible(true);
+                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
 
                 // Highlight the player's Score
                 if (score.PlayerId == AuthenticationManager.PlayFabAccount.ID)

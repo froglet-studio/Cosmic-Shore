@@ -66,7 +66,7 @@ namespace CosmicShore.UI
             for (var i = 0; i < ShipSelectionContainer.childCount; i++)
             {
                 var child = ShipSelectionContainer.GetChild(i);
-                child.gameObject.SetVisible(false);
+                child.gameObject.SetActive(false);
                 Destroy(child.gameObject);
             }
 

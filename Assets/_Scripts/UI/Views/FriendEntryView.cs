@@ -1,6 +1,5 @@
 using System;
 using CosmicShore.ScriptableObjects;
-using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -52,12 +51,12 @@ namespace CosmicShore.UI
             removeButton?.onClick.RemoveAllListeners();
             removeButton?.onClick.AddListener(OnRemovePressed);
 
-            inviteSentIndicator?.SetVisible(false);
+            inviteSentIndicator?.SetActive(false);
 
             // Only show invite button for online friends
             if (inviteButton != null)
             {
-                inviteButton.gameObject.SetVisible(data.IsOnline);
+                inviteButton.gameObject.SetActive(data.IsOnline);
                 inviteButton.interactable = true;
             }
         }
@@ -101,7 +100,7 @@ namespace CosmicShore.UI
             if (inviteButton != null)
                 inviteButton.interactable = false;
 
-            inviteSentIndicator?.SetVisible(true);
+            inviteSentIndicator?.SetActive(true);
         }
 
         private void OnRemovePressed()

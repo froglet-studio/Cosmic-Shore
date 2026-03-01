@@ -33,7 +33,7 @@ namespace CosmicShore.UI
             var model = SelectedModel as SO_ShipAbility;
 
             if (ClassName != null) ClassName.text = model.Ship.Name;
-            if (ClassLockedImage != null) ClassLockedImage.gameObject.SetVisible(model.Ship.IsLocked);
+            if (ClassLockedImage != null) ClassLockedImage.gameObject.SetActive(model.Ship.IsLocked);
             if (AbilityName != null) AbilityName.text = model.Name;
             if (AbilityDescription != null) AbilityDescription.text = model.Description;
             if (AbilityPreviewWindow != null)
@@ -43,11 +43,11 @@ namespace CosmicShore.UI
 
                 var preview = Instantiate(model.PreviewClip, AbilityPreviewWindow.transform);
                 preview.GetComponent<RawImage>().rectTransform.sizeDelta = PreviewDimensions;
-                AbilityPreviewWindow.SetVisible(true);
+                AbilityPreviewWindow.SetActive(true);
                 Canvas.ForceUpdateCanvases();
             }
-            if (TrainButton != null) TrainButton.gameObject.SetVisible(!model.Ship.IsLocked);
-            if (GoToStoreButton != null) GoToStoreButton.gameObject.SetVisible(model.Ship.IsLocked);
+            if (TrainButton != null) TrainButton.gameObject.SetActive(!model.Ship.IsLocked);
+            if (GoToStoreButton != null) GoToStoreButton.gameObject.SetActive(model.Ship.IsLocked);
         }
     }
 }

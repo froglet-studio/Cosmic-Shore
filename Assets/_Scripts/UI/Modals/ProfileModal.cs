@@ -175,8 +175,8 @@ namespace CosmicShore.UI
 
             if (displayNameInputField && BusyIndicator)
             {
-                displayNameInputField.placeholder.gameObject.SetVisible(false);
-                BusyIndicator.SetVisible(false);
+                displayNameInputField.placeholder.gameObject.SetActive(false);
+                BusyIndicator.SetActive(false);
             }
 
             var randomName = GenerateRandomName();
@@ -195,7 +195,7 @@ namespace CosmicShore.UI
                 displayNameInputField.text = randomName;
 
             if (displayNameInputField)
-                displayNameInputField.placeholder.gameObject.SetVisible(true);
+                displayNameInputField.placeholder.gameObject.SetActive(true);
 
             FocusDisplayNameInputField();
         }
@@ -214,7 +214,7 @@ namespace CosmicShore.UI
                 return;
 
             if (displayNameResultMessage)
-                displayNameResultMessage.gameObject.SetVisible(false);
+                displayNameResultMessage.gameObject.SetActive(false);
 
             // Save via UGS PlayerDataService (primary path)
             if (playerDataService != null)
@@ -250,23 +250,23 @@ namespace CosmicShore.UI
         private void HideDisplayNameButtons()
         {
             if (setDisplayNameButton)
-                setDisplayNameButton.gameObject.SetVisible(false);
+                setDisplayNameButton.gameObject.SetActive(false);
             if (cancelDisplayNameButton)
-                cancelDisplayNameButton.gameObject.SetVisible(false);
+                cancelDisplayNameButton.gameObject.SetActive(false);
         }
 
         public void ShowDisplayNameChangeButtons()
         {
             if (setDisplayNameButton)
-                setDisplayNameButton.gameObject.SetVisible(true);
+                setDisplayNameButton.gameObject.SetActive(true);
             if (cancelDisplayNameButton)
-                cancelDisplayNameButton.gameObject.SetVisible(true);
+                cancelDisplayNameButton.gameObject.SetActive(true);
         }
 
         public void GenerateRandomNameButton_OnClicked()
         {
             if (BusyIndicator)
-                BusyIndicator.SetVisible(true);
+                BusyIndicator.SetActive(true);
 
             if (_assignRandomNameRunningCoroutine != null)
                 StopCoroutine(_assignRandomNameRunningCoroutine);
@@ -281,7 +281,7 @@ namespace CosmicShore.UI
             if (displayName.Length is <= 25 and >= 3) return true;
             if (!displayNameResultMessage) return false;
             displayNameResultMessage.text = "Display name must be between 3 and 25 characters long";
-            displayNameResultMessage.gameObject.SetVisible(true);
+            displayNameResultMessage.gameObject.SetActive(true);
 
             return false;
 
@@ -296,10 +296,10 @@ namespace CosmicShore.UI
             CSDebug.Log("Successfully Set Player Display Name (local or PlayFab).");
 
             if (BusyIndicator)
-                BusyIndicator.SetVisible(false);
+                BusyIndicator.SetActive(false);
 
             if (displayNameResultMessage)
-                displayNameResultMessage.gameObject.SetVisible(false);
+                displayNameResultMessage.gameObject.SetActive(false);
 
             RefreshProfileVisuals();
         }
@@ -311,7 +311,7 @@ namespace CosmicShore.UI
         void InitializePlayerDisplayNameView()
         {
             if (BusyIndicator)
-                BusyIndicator.SetVisible(false);
+                BusyIndicator.SetActive(false);
 
             var profile = PlayerDataController.PlayerProfile;
 
@@ -330,7 +330,7 @@ namespace CosmicShore.UI
 
             if (displayNameResultMessage)
             {
-                displayNameResultMessage.gameObject.SetVisible(false);
+                displayNameResultMessage.gameObject.SetActive(false);
             }
 
             HideDisplayNameButtons();
