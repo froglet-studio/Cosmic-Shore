@@ -208,6 +208,17 @@ namespace CosmicShore.Core
         // ──────────────────────────────────────────────
 
         /// <summary>
+        /// Derives a UGS auth profile name from MPPM tags so each virtual player
+        /// gets its own identity. Pure logic — no Unity API calls.
+        /// </summary>
+        internal static string GetMppmProfileName(string[] tags)
+        {
+            return tags != null && tags.Length > 0
+                ? $"mppm-{string.Join("-", tags)}"
+                : "mppm-clone";
+        }
+
+        /// <summary>
         /// When running as an MPPM virtual player, switches to a tag-based
         /// auth profile so each editor instance gets its own UGS identity.
         /// Must be called after InitializeAsync() but before SignInAnonymouslyAsync().
@@ -218,11 +229,7 @@ namespace CosmicShore.Core
             if (CurrentPlayer.IsMainEditor)
                 return;
 
-            var tags = CurrentPlayer.ReadOnlyTags();
-            var profileName = tags != null && tags.Length > 0
-                ? $"mppm-{string.Join("-", tags)}"
-                : "mppm-clone";
-
+            var profileName = GetMppmProfileName(CurrentPlayer.ReadOnlyTags());
             AuthenticationService.Instance.SwitchProfile(profileName);
             Log($"MPPM: Switched to auth profile '{profileName}'.");
 #endif

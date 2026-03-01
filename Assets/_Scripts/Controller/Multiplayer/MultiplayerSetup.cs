@@ -137,10 +137,9 @@ namespace CosmicShore.Gameplay
                     if (transport != null)
                     {
                         var tags = CurrentPlayer.ReadOnlyTags();
-                        var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
-                        ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
+                        ushort port = GetMppmPort(tags);
                         transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
-                        CSDebug.Log($"[MultiplayerSetup] MPPM clone '{tagKey}' — local host port {port}.");
+                        CSDebug.Log($"[MultiplayerSetup] MPPM clone — local host port {port}.");
                     }
                 }
 #endif
@@ -411,6 +410,21 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError($"[Net] Transport failure handling error: {e}");
             }
+        }
+
+        // --------------------------
+        // MPPM Port Isolation
+        // --------------------------
+
+        /// <summary>
+        /// Derives a unique local host port from MPPM tags so each virtual player
+        /// can bind without conflicts. Returns a port in the range [7778, 7877].
+        /// Pure logic — no Unity API calls.
+        /// </summary>
+        internal static ushort GetMppmPort(string[] tags)
+        {
+            var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
+            return (ushort)(7778 + Math.Abs(tagKey.GetHashCode()) % 100);
         }
     }
 }
