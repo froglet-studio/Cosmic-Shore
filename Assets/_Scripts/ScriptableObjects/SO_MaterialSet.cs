@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "Material Set", menuName = "CosmicShore/MaterialSet", order = 19)]
+    [CreateAssetMenu(fileName = "Material Set", menuName = "ScriptableObjects/MaterialSet", order = 19)]
     [System.Serializable]
     public class SO_MaterialSet : ScriptableObject
     {

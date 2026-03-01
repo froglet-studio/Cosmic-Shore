@@ -6,7 +6,7 @@ namespace CosmicShore.ScriptableObjects
 {
     [CreateAssetMenu(
         fileName = "Event_" + nameof(ApplicationState),
-        menuName = "ScriptableObjects/SOAP/Events/" + nameof(ApplicationState))]
+        menuName = "ScriptableObjects/Events/" + nameof(ApplicationState))]
     public class ScriptableEventApplicationState : ScriptableEvent<ApplicationState>
     {
     }

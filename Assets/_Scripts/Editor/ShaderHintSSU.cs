@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CosmicShore.Editor
 {
-    [CreateAssetMenu(fileName = "ShaderName", menuName = "Shader/SSU Shader Hint (ignore this)")]
+    [CreateAssetMenu(fileName = "ShaderName", menuName = "ScriptableObjects/Shader/SSU Shader Hint (ignore this)")]
     public class ShaderHintSSU : ScriptableObject
     {
         [Header("Main:")]

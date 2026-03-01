@@ -52,7 +52,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected int postSpawnDelayMs = 200;
 
         NetcodeHooks _netcodeHooks;
-        CancellationTokenSource _cts;
+        protected CancellationTokenSource _cts;
 
         /// <summary>
         /// Tracks players already processed (keyed by NetworkObjectId).
@@ -167,7 +167,7 @@ namespace CosmicShore.Gameplay
             NotifyClients(player);
         }
 
-        void SpawnVesselAndInitialize(ulong clientId, Player player)
+        protected void SpawnVesselAndInitialize(ulong clientId, Player player)
         {
             var vesselNO = SpawnVesselForPlayer(clientId, player);
             if (!vesselNO)
@@ -175,10 +175,10 @@ namespace CosmicShore.Gameplay
 
             if (!vesselNO.TryGetComponent(out IVessel vessel))
             {
-                CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] Spawned vessel missing IVessel component.");
                 return;
             }
-            
+
             clientPlayerVesselInitializer.InitializePlayerAndVessel(player, vessel);
         }
 
@@ -187,7 +187,7 @@ namespace CosmicShore.Gameplay
         ///   - Existing clients: "initialize just this new pair"
         ///   - New client: "initialize ALL player-vessel pairs"
         /// </summary>
-        void NotifyClients(Player newPlayer)
+        protected void NotifyClients(Player newPlayer)
         {
             var newClientId = newPlayer.OwnerClientId;
             var hostClientId = NetworkManager.Singleton.LocalClientId;
@@ -229,10 +229,15 @@ namespace CosmicShore.Gameplay
             // Invoke Client Ready gameData.InvokeClientReady(); after few interval
         }
 
-        NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer)
-        {
-            var vesselType = networkPlayer.NetDefaultVesselType.Value;
+        protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer) =>
+            SpawnVesselForPlayer(clientId, networkPlayer, networkPlayer.NetDefaultVesselType.Value);
 
+        /// <summary>
+        /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
+        /// and updates the player's <see cref="Player.NetVesselId"/>.
+        /// </summary>
+        protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer, VesselClassType vesselType)
+        {
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
             {
                 CSDebug.LogError($"[ServerPlayerVesselInitializer] No prefab for vessel type {vesselType}");
@@ -250,6 +255,18 @@ namespace CosmicShore.Gameplay
             networkVessel.SpawnWithOwnership(clientId, true);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
             return networkVessel;
+        }
+
+        /// <summary>
+        /// Despawns and destroys a vessel's <see cref="NetworkObject"/>.
+        /// Removes it from <see cref="GameDataSO.Vessels"/> tracking.
+        /// </summary>
+        protected void DespawnVessel(IVessel vessel)
+        {
+            gameData.Vessels.Remove(vessel);
+
+            if (vessel is VesselController vc && vc.IsSpawned)
+                vc.NetworkObject.Despawn(true);
         }
 
         /// <summary>

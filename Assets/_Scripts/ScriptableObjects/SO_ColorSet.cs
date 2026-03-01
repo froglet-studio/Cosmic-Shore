@@ -3,7 +3,7 @@ using CosmicShore.Data;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "Color Set", menuName = "CosmicShore/ColorSet")]
+    [CreateAssetMenu(fileName = "Color Set", menuName = "ScriptableObjects/ColorSet")]
     [System.Serializable]
     public class SO_ColorSet : ScriptableObject
     {

@@ -7,7 +7,7 @@ namespace CosmicShore.UI
     /// Uses direct property binding instead of string-based reflection.
     /// Create instances via: Right-click > Create > CosmicShore > Stats > Stat Module
     /// </summary>
-    [CreateAssetMenu(fileName = "NewStatModule", menuName = "CosmicShore/Stats/Stat Module", order = 1)]
+    [CreateAssetMenu(fileName = "NewStatModule", menuName = "ScriptableObjects/Stats/Stat Module", order = 1)]
     public class StatModuleSO : ScriptableObject
     {
         [Header("Display")]

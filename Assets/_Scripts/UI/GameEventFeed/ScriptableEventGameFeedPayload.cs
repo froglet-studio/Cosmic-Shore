@@ -6,6 +6,6 @@ namespace CosmicShore.UI
 {
     [CreateAssetMenu(
         fileName = "Event_GameFeedPayload",
-        menuName = "ScriptableObjects/SOAP/Events/GameFeedPayload")]
+        menuName = "ScriptableObjects/Events/GameFeedPayload")]
     public class ScriptableEventGameFeedPayload : ScriptableEvent<GameFeedPayload> { }
 }

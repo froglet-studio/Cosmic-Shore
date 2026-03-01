@@ -8,7 +8,7 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// Represents an element for the purpose of displaying  in the UI
     /// </summary>
-    [CreateAssetMenu(fileName = "New Element", menuName = "CosmicShore/Element", order = 29)]
+    [CreateAssetMenu(fileName = "New Element", menuName = "ScriptableObjects/Element", order = 29)]
     public class SO_Element : ScriptableObject
     {
         [SerializeField] public Element Element;

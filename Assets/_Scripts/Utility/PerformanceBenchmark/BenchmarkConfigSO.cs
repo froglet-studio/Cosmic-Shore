@@ -4,7 +4,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 {
     [CreateAssetMenu(
         fileName = "BenchmarkConfig",
-        menuName = "CosmicShore/Tools/Benchmark Config",
+        menuName = "ScriptableObjects/Tools/Benchmark Config",
         order = 100)]
     public class BenchmarkConfigSO : ScriptableObject
     {

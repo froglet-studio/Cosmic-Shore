@@ -10,7 +10,7 @@ namespace CosmicShore.ScriptableObjects
     /// </summary>
     [CreateAssetMenu(
         fileName = "ApplicationLifecycleEvents",
-        menuName = "ScriptableObjects/SOAP/Data Containers/ApplicationLifecycleEvents")]
+        menuName = "ScriptableObjects/Data Containers/ApplicationLifecycleEvents")]
     public class ApplicationLifecycleEventsContainerSO : ScriptableObject
     {
         [Header("App State")]

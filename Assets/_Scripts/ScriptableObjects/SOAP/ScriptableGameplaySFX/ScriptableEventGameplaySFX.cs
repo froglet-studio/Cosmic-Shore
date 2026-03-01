@@ -4,7 +4,7 @@ using CosmicShore.Core;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "Event_" + nameof(GameplaySFXCategory), menuName = "ScriptableObjects/SOAP/Events/" + nameof(GameplaySFXCategory))]
+    [CreateAssetMenu(fileName = "Event_" + nameof(GameplaySFXCategory), menuName = "ScriptableObjects/Events/" + nameof(GameplaySFXCategory))]
     public class ScriptableEventGameplaySFX : ScriptableEvent<GameplaySFXCategory>
     {
     }

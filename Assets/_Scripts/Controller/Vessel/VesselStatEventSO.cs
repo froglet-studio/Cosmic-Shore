@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     [CreateAssetMenu(
         fileName = "StatEvent_New",
-        menuName  = "CosmicShore/Stats/Vessel Stat Event",
+        menuName  = "ScriptableObjects/Stats/Vessel Stat Event",
         order     = 1)]
     public class VesselStatEventSO : ScriptableObject
     {

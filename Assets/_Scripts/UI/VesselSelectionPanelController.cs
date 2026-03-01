@@ -10,10 +10,10 @@ using CosmicShore.Data;
 
 namespace CosmicShore.UI
 {
-    public sealed class OverviewPanelController : MonoBehaviour
+    public sealed class VesselSelectionPanelController : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private OverviewPanelUI ui;
+        [SerializeField] private VesselSelectionPanelUI ui;
         [SerializeField] private VesselSpawner vesselSpawner;
         [SerializeField] private ThemeManagerDataContainerSO themeManagerData;
         [Inject] private GameDataSO gameData;
@@ -54,7 +54,7 @@ namespace CosmicShore.UI
             EnsureFallbackSelection();
             ApplySnapshotAndShowUI();
         }
-        
+
         // ---------------------------------------------------------
         // RESUME CLICK
         // ---------------------------------------------------------
@@ -71,7 +71,7 @@ namespace CosmicShore.UI
             var targetClass = _selectedCard.VesselClass;
             var currentClass = CurrentVessel.VesselStatus.VesselType;
 
-            if (IsSameVesselClass(targetClass, currentClass) || 
+            if (IsSameVesselClass(targetClass, currentClass) ||
                 !TrySpawnReplacementVessel(targetClass, out var newVessel))
             {
                 GoBackToGame();
@@ -90,16 +90,16 @@ namespace CosmicShore.UI
 
         private bool IsSameVesselClass(VesselClassType target, VesselClassType current) =>
             target == current;
-        
+
         private bool TrySpawnReplacementVessel(VesselClassType targetClass, out IVessel newVessel)
         {
-            if (vesselSpawner.SpawnShip(targetClass, out newVessel)) 
+            if (vesselSpawner.SpawnShip(targetClass, out newVessel))
                 return true;
-            
+
             CSDebug.LogError($"Failed to spawn {targetClass}");
             return false;
         }
-        
+
         private void ReplacePlayerVessel(IVessel newVessel)
         {
             var oldVessel = CurrentVessel;
@@ -108,14 +108,14 @@ namespace CosmicShore.UI
             ActivateNewPlayerVessel(newVessel);
             oldVessel.DestroyVessel();
         }
-        
+
         private void InitializeNewVessel(IVessel newVessel)
         {
             Player.ChangeVessel(newVessel);
             newVessel.Initialize(Player);
             ShipHelper.SetShipProperties(themeManagerData, newVessel);
         }
-        
+
         private void TransferSnapshotStateToNewVessel(IVessel newVessel)
         {
             newVessel.SetPose(snap.Pose);
@@ -127,11 +127,11 @@ namespace CosmicShore.UI
         {
             if (!snap.WasActive)
                 return;
-            
+
             Player.ResetForPlay();
             Player.StartPlayer();
         }
-        
+
         private void EnsureCardsCollected()
         {
             if (_cards.Count == 0)
@@ -173,7 +173,7 @@ namespace CosmicShore.UI
             ui.Show();
             ActivateAIModeInLocalVessel();
         }
-        
+
         // ---------------------------------------------------------
         // CARD CLICKED
         // ---------------------------------------------------------
@@ -215,7 +215,7 @@ namespace CosmicShore.UI
         {
             if (!snap.WasActive)
                 return;
-            
+
             if (!snap.WasAIPilot)
                 CurrentVessel.ToggleAIPilot(true);
 
@@ -227,17 +227,17 @@ namespace CosmicShore.UI
             ui.Hide();
             ActivatePlayerModeInLocalVesselWithDelay().Forget();
         }
-        
+
         async UniTaskVoid ActivatePlayerModeInLocalVesselWithDelay()
         {
             if (!snap.WasActive)
                 return;
-            
+
             await UniTask.Yield();
             CurrentVessel?.ToggleAIPilot(snap.WasAIPilot);
             Player?.InputController.SetPause(false);
         }
-        
+
         // ---------------------------------------------------------
         // CARD COLLECTION
         // ---------------------------------------------------------

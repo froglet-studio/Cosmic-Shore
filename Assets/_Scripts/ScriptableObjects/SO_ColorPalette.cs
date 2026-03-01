@@ -5,7 +5,7 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "New Color Palette", menuName = "CosmicShore/Color Palette", order = 30)]
+    [CreateAssetMenu(fileName = "New Color Palette", menuName = "ScriptableObjects/Color Palette", order = 30)]
     [System.Serializable]
     public class SO_Color_Palette : ScriptableObject
     {

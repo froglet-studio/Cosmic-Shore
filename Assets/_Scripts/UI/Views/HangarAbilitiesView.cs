@@ -24,8 +24,8 @@ namespace CosmicShore.UI
             if (AbilityPreviewWindow == null) CSDebug.LogWarning("HangarAbilitiesView - AbilityPreviewWindow Serialized Field is not set");
             if (ClassName == null) CSDebug.LogWarning("HangarAbilitiesView - ClassName Serialized Field is not set");
             if (ClassLockedImage == null) CSDebug.LogWarning("HangarAbilitiesView - ClassLockedImage Serialized Field is not set");
-            if (TrainButton == null) CSDebug.LogWarning("HangarOverviewView - TrainButton Serialized Field is not set");
-            if (GoToStoreButton == null) CSDebug.LogWarning("HangarOverviewView - GoToStoreButton Serialized Field is not set");
+            if (TrainButton == null) CSDebug.LogWarning("HangarAbilitiesView - TrainButton Serialized Field is not set");
+            if (GoToStoreButton == null) CSDebug.LogWarning("HangarAbilitiesView - GoToStoreButton Serialized Field is not set");
         }
 
         public override void UpdateView()

@@ -3,7 +3,7 @@ namespace CosmicShore.Gameplay
 {
     ﻿using UnityEngine;
 
-    [CreateAssetMenu(fileName = "ZeroFlowData", menuName = "CosmicShore/Flow/ZeroFlow", order = 30)]
+    [CreateAssetMenu(fileName = "ZeroFlowData", menuName = "ScriptableObjects/Flow/ZeroFlow", order = 30)]
     [System.Serializable] 
     public class ZeroFlow : FlowFieldSO
     {
