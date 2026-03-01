@@ -24,6 +24,8 @@ namespace CosmicShore.Game
         float XDiff { get; set; }
         float YDiff { get; set; }
         float Throttle { get; set; }
+        float LeftTriggerAnalog { get; set; }
+        float RightTriggerAnalog { get; set; }
 
         // Booleans
         bool Idle { get; set; }
