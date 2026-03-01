@@ -6,6 +6,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using Unity.Cinemachine;
+using Unity.Cinemachine.TargetTracking;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -40,7 +41,7 @@ namespace CosmicShore.Core
     {
         [Header("Spawn Origins")]
         [SerializeField] protected Transform[] _playerOrigins;
-        
+
         [Header("Menu Autopilot Configuration")]
         [SerializeField, Tooltip("Vessel class displayed as the autopilot in the menu background.")]
         VesselClassType menuVesselClass = VesselClassType.Squirrel;
@@ -58,9 +59,31 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Cell runtime data used to find the crystal tracking target at runtime.")]
         CellRuntimeDataSO _cellData;
 
+        [Header("Menu Camera Orbit")]
+        [SerializeField, Tooltip("Orbit radius from crystal center.")]
+        float _orbitRadius = 80f;
+
+        [SerializeField, Tooltip("Camera height offset above the crystal.")]
+        float _orbitHeight = 30f;
+
+        [SerializeField, Tooltip("Orbit speed in degrees per second.")]
+        float _orbitSpeed = 5f;
+
+        [Header("Freestyle Camera")]
+        [SerializeField, Tooltip("Follow offset for the freestyle Cinemachine vCam.")]
+        Vector3 _gameplayFollowOffset = new(0, 5, -25);
+
         [Inject] GameDataSO _gameData;
 
         CinemachineCamera _menuVCam;
+        CinemachineFollow _menuFollow;
+        Transform _menuFollowTarget;
+        RotateAroundOrigin _followTargetRotator;
+        Transform _crystalTarget;
+        CinemachineCamera _gameplayVCam;
+
+        const int HighPriority = 20;
+        const int LowPriority = 0;
 
         MainMenuState _state = MainMenuState.None;
 
@@ -106,6 +129,7 @@ namespace CosmicShore.Core
         void Start()
         {
             CacheMenuVCam();
+            CreateGameplayVCam();
             ConfigureMenuGameData();
             SubscribeEvents();
             TransitionTo(MainMenuState.Initializing);
@@ -116,6 +140,21 @@ namespace CosmicShore.Core
         void OnDestroy()
         {
             UnsubscribeEvents();
+
+            // Re-enable RotateAroundOrigin in case the CameraManager object is reused
+            if (_followTargetRotator) _followTargetRotator.enabled = true;
+
+            // Ensure menu vCam doesn't interfere with subsequent scenes
+            if (_menuVCam)
+            {
+                SetVCamPriority(_menuVCam, LowPriority);
+                _menuVCam.gameObject.SetActive(false);
+            }
+        }
+
+        void Update()
+        {
+            UpdateMenuOrbit();
         }
 
         // ── Event Wiring ────────────────────────────────────────────────
@@ -214,21 +253,100 @@ namespace CosmicShore.Core
             player.InputController?.SetPause(true);
         }
 
-        // ── Camera Switching ───────────────────────────────────────
+        // ── Camera Setup ────────────────────────────────────────────
 
         void CacheMenuVCam()
         {
             if (!CameraManager.Instance) return;
+
             var cmTransform = CameraManager.Instance.transform.Find("CM Main Menu");
             if (!cmTransform) return;
 
             _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
+            _menuFollow = cmTransform.GetComponent<CinemachineFollow>();
+
+            var followTransform = CameraManager.Instance.transform.Find("Main Menu Follow Target");
+            if (followTransform)
+            {
+                _menuFollowTarget = followTransform;
+                _followTargetRotator = followTransform.GetComponent<RotateAroundOrigin>();
+            }
         }
+
+        void CreateGameplayVCam()
+        {
+            var go = new GameObject("CM Menu Gameplay");
+            go.transform.SetParent(transform);
+
+            // Add pipeline components before CinemachineCamera so it discovers them on enable
+            var follow = go.AddComponent<CinemachineFollow>();
+            follow.FollowOffset = _gameplayFollowOffset;
+            var tracker = follow.TrackerSettings;
+            tracker.BindingMode = BindingMode.LockToTargetWithWorldUp;
+            tracker.PositionDamping = new Vector3(1, 1, 1);
+            follow.TrackerSettings = tracker;
+
+            go.AddComponent<CinemachineRotationComposer>();
+
+            _gameplayVCam = go.AddComponent<CinemachineCamera>();
+            SetVCamPriority(_gameplayVCam, LowPriority);
+
+            var lens = _gameplayVCam.Lens;
+            lens.FieldOfView = 60;
+            lens.NearClipPlane = 0.3f;
+            lens.FarClipPlane = 12000;
+            _gameplayVCam.Lens = lens;
+        }
+
+        // ── Menu Camera Orbit ───────────────────────────────────────
+
+        void SetMenuVCamTarget()
+        {
+            if (!_menuVCam) return;
+
+            var crystalTransform = _cellData.CrystalTransform;
+            if (!crystalTransform) return;
+
+            _crystalTarget = crystalTransform;
+
+            // Position follow target at orbit radius from crystal
+            if (_menuFollowTarget)
+            {
+                _menuFollowTarget.position = crystalTransform.position + Vector3.back * _orbitRadius;
+
+                // Disable default RotateAroundOrigin — it orbits world origin, not the crystal
+                if (_followTargetRotator) _followTargetRotator.enabled = false;
+            }
+
+            // TrackingTarget = orbiting follow target (for camera positioning)
+            // LookAtTarget = crystal (for camera aiming via CinemachineRotationComposer)
+            var target = _menuVCam.Target;
+            target.TrackingTarget = _menuFollowTarget ? _menuFollowTarget : crystalTransform;
+            target.LookAtTarget = crystalTransform;
+            target.CustomLookAtTarget = true;
+            _menuVCam.Target = target;
+
+            // CinemachineFollow offset provides height above the orbit path
+            if (_menuFollow)
+                _menuFollow.FollowOffset = new Vector3(0, _orbitHeight, 0);
+        }
+
+        void UpdateMenuOrbit()
+        {
+            if (!_crystalTarget || !_menuFollowTarget) return;
+
+            var pivot = _crystalTarget.position;
+            var offset = _menuFollowTarget.position - pivot;
+            offset = Quaternion.Euler(0, _orbitSpeed * Time.deltaTime, 0) * offset;
+            _menuFollowTarget.position = pivot + offset;
+        }
+
+        // ── Camera Switching ────────────────────────────────────────
 
         /// <summary>
         /// Activates the CM Main Menu Cinemachine camera for menu state.
-        /// Deactivates all CameraManager gameplay cameras and points the menu
-        /// camera at the crystal target.
+        /// Deactivates all CameraManager gameplay cameras and raises the menu
+        /// vCam's priority so the CinemachineBrain blends to it smoothly.
         /// </summary>
         void ActivateMenuCamera()
         {
@@ -239,35 +357,45 @@ namespace CosmicShore.Core
             {
                 SetMenuVCamTarget();
                 _menuVCam.gameObject.SetActive(true);
+                SetVCamPriority(_menuVCam, HighPriority);
             }
-        }
 
-        void SetMenuVCamTarget()
-        {
-            if (!_menuVCam) return;
-
-            var crystalTransform = _cellData.CrystalTransform;
-            if (!crystalTransform) return;
-
-            var target = _menuVCam.Target;
-            target.TrackingTarget = crystalTransform;
-            _menuVCam.Target = target;
+            if (_gameplayVCam)
+                SetVCamPriority(_gameplayVCam, LowPriority);
         }
 
         /// <summary>
-        /// Activates CM PlayerCam for freestyle/game state.
-        /// Disables the CM Main Menu Cinemachine camera.
+        /// Activates the gameplay Cinemachine vCam for freestyle mode.
+        /// Raises the gameplay vCam's priority so the CinemachineBrain blends
+        /// from the menu orbit camera to the vessel follow camera smoothly.
         /// </summary>
         void ActivateGameplayCamera()
         {
-            if (!CameraManager.Instance) return;
-            if (_menuVCam) _menuVCam.gameObject.SetActive(false);
-
             var player = _gameData.LocalPlayer;
             if (player?.Vessel == null) return;
 
             var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
-            CameraManager.Instance.SetupGamePlayCameras(followTarget);
+
+            if (_gameplayVCam)
+            {
+                var target = _gameplayVCam.Target;
+                target.TrackingTarget = followTarget;
+                target.CustomLookAtTarget = false;
+                _gameplayVCam.Target = target;
+
+                SetVCamPriority(_gameplayVCam, HighPriority);
+            }
+
+            if (_menuVCam)
+                SetVCamPriority(_menuVCam, LowPriority);
+        }
+
+        static void SetVCamPriority(CinemachineCamera cam, int value)
+        {
+            var p = cam.Priority;
+            p.Enabled = true;
+            p.Value = value;
+            cam.Priority = p;
         }
 
         // ── State Machine ───────────────────────────────────────────────
