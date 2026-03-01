@@ -75,6 +75,9 @@ namespace CosmicShore.Gameplay
         // Cached player camera (CM PlayerCam)
         CustomCameraController _playerCameraController;
 
+        // Cached CinemachineBrain on the scene camera — used to force IgnoreTimeScale
+        CinemachineBrain _brain;
+
         const int HighPriority = 20;
         const int LowPriority = 0;
 
@@ -89,6 +92,7 @@ namespace CosmicShore.Gameplay
             _cts = new CancellationTokenSource();
             CacheMenuVCam();
             CachePlayerCamera();
+            CacheBrain();
             EnsureBridgeVCam();
             SubscribeEvents();
         }
@@ -99,6 +103,9 @@ namespace CosmicShore.Gameplay
             _cts?.Dispose();
 
             UnsubscribeEvents();
+
+            // Restore Brain's IgnoreTimeScale so gameplay scenes use scaled time for blends
+            if (_brain) _brain.IgnoreTimeScale = false;
 
             // Re-enable RotateAroundOrigin in case CameraManager is reused across scenes
             if (_followTargetRotator) _followTargetRotator.enabled = true;
@@ -170,6 +177,16 @@ namespace CosmicShore.Gameplay
 
             var t = CameraManager.Instance.transform.Find("CM PlayerCam");
             if (t) _playerCameraController = t.GetComponent<CustomCameraController>();
+        }
+
+        void CacheBrain()
+        {
+            var mainCam = Camera.main;
+            if (!mainCam) return;
+
+            _brain = mainCam.GetComponent<CinemachineBrain>();
+            if (_brain)
+                _brain.IgnoreTimeScale = true;
         }
 
         /// <summary>
@@ -255,7 +272,7 @@ namespace CosmicShore.Gameplay
 
             var pivot = _crystalTarget.position;
             var offset = _menuFollowTarget.position - pivot;
-            offset = Quaternion.Euler(0, _orbitSpeed * Time.deltaTime, 0) * offset;
+            offset = Quaternion.Euler(0, _orbitSpeed * Time.unscaledDeltaTime, 0) * offset;
             _menuFollowTarget.position = pivot + offset;
         }
 
@@ -362,21 +379,24 @@ namespace CosmicShore.Gameplay
                 _playerCameraController.transform.position,
                 _playerCameraController.transform.rotation);
 
-            // 2. Activate bridge — CinemachineBrain moves Game Scene Main Camera to bridge pos
+            // 2. Invalidate the bridge's cached Cinemachine pipeline state so CM3 treats
+            //    reactivation as a fresh camera, even when the vessel hasn't moved and the
+            //    position is identical to the bridge's previous deactivation state.
+            _bridgeVCam.PreviousStateIsValid = false;
+
+            // Activate bridge — CinemachineBrain moves Game Scene Main Camera to bridge pos
             _bridgeVCam.gameObject.SetActive(true);
             SetVCamPriority(_bridgeVCam, HighPriority);
 
             // Force Cinemachine's internal state to match the snapshot pose.
-            // Without this, when the vessel hasn't moved the bridge's cached pipeline
-            // state from the previous tracking activation is identical to the new
-            // snapshot position, so CM3 skips re-evaluation and the CinemachineBrain
-            // never initiates the blend back to the menu orbit.
             _bridgeVCam.ForceCameraPosition(
                 _playerCameraController.transform.position,
                 _playerCameraController.transform.rotation);
 
-            // Wait one frame for CinemachineBrain to process the new vCam
-            await UniTask.Yield(ct);
+            // Wait for CinemachineBrain to process the new vCam in its LateUpdate pass.
+            // Using PostLateUpdate ensures the Brain has evaluated the bridge before we
+            // proceed to deactivate CM PlayerCam and activate the menu vCam.
+            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
             // 3. Deactivate CM PlayerCam — Game Scene Main Camera is already at the same position
             //    (renders at depth -1, now unobstructed since CM PlayerCam at depth 0 is gone)
