@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    [CreateAssetMenu(fileName="ToastChannel", menuName="CosmicShore/UI/Toast Channel")]
+    [CreateAssetMenu(fileName="ToastChannel", menuName= "ScriptableObjects/UI/Toast Channel")]
     public class ToastChannel : ScriptableObject
     {
         // Unified low-level

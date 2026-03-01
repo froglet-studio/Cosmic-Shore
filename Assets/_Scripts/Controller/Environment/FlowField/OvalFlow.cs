@@ -3,7 +3,7 @@ namespace CosmicShore.Gameplay
 {
     ﻿using UnityEngine;
 
-    [CreateAssetMenu(fileName = "OvalFlowData", menuName = "CosmicShore/Flow/OvalFlow", order = 30)]
+    [CreateAssetMenu(fileName = "OvalFlowData", menuName = "ScriptableObjects/Flow/OvalFlow", order = 30)]
     [System.Serializable] 
     public class OvalFlow : FlowFieldSO
     {

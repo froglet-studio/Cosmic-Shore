@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
-    [CreateAssetMenu(menuName = "CosmicShore/FTUE/Progress Tracker")]
+    [CreateAssetMenu(menuName = "ScriptableObjects/FTUE/Progress Tracker")]
     public class FTUEProgress : ScriptableObject
     {
         public TutorialSequenceSet pendingSet;

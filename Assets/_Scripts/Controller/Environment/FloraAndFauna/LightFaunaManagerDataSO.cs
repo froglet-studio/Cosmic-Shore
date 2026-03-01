@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     [CreateAssetMenu(
         fileName = "LightFaunaManagerDataSO",
-        menuName = "Cosmic Shore/LifeForms/FaunaPrefab/Light FaunaPrefab Manager Data")]
+        menuName = "ScriptableObjects/LifeForms/FaunaPrefab/Light FaunaPrefab Manager Data")]
     public class LightFaunaManagerDataSO : ScriptableObject
     {
         [Header("Spawn Settings")]

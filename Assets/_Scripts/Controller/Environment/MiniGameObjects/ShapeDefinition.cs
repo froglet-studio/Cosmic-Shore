@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     [CreateAssetMenu(
         fileName = "Shape_New",
-        menuName = "CosmicShore/Shape Drawing/Shape Definition")]
+        menuName = "ScriptableObjects/Shape Drawing/Shape Definition")]
     public class ShapeDefinition : ScriptableObject
     {
         [Header("Identity")]

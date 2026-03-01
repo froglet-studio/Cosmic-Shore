@@ -4,7 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
-    [CreateAssetMenu(fileName = "ShardFieldBus", menuName = "CosmicShore/Buses/Shard Field Bus")]
+    [CreateAssetMenu(fileName = "ShardFieldBus", menuName = "ScriptableObjects/Buses/Shard Field Bus")]
     public class ShardFieldBus : ScriptableObject
     {
         // runtime-only, not serialized (scene objects)

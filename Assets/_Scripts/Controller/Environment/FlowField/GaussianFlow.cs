@@ -3,7 +3,7 @@ namespace CosmicShore.Gameplay
 {
     ﻿using UnityEngine;
 
-    [CreateAssetMenu(fileName = "GaussianFlowData", menuName = "CosmicShore/Flow/GaussianFlow", order = 30)]
+    [CreateAssetMenu(fileName = "GaussianFlowData", menuName = "ScriptableObjects/Flow/GaussianFlow", order = 30)]
     [System.Serializable]
     public class GaussianFlow : FlowFieldSO
     {

@@ -4,7 +4,7 @@ using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
-    [CreateAssetMenu(fileName = "DomainColorPalette", menuName = "CosmicShore/UI/Domain Color Palette")]
+    [CreateAssetMenu(fileName = "DomainColorPalette", menuName = "ScriptableObjects/UI/Domain Color Palette")]
     public class DomainColorPaletteSO : ScriptableObject
     {
         [Header("Fallback colors per Domain (used only if Prism tint cannot be read)")]

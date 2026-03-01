@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// Configuration data for ScoutTrailPrismScaler.
     /// Create instances via Assets > Create > Cosmic Shore > Scout Trail Prism Config
     /// </summary>
-    [CreateAssetMenu(fileName = "ScoutTrailPrismConfig", menuName = "Cosmic Shore/Scout Trail Prism Config")]
+    [CreateAssetMenu(fileName = "ScoutTrailPrismConfig", menuName = "ScriptableObjects/Scout Trail Prism Config")]
     public class ScoutTrailPrismScalerConfig : ScriptableObject
     {
         [Header("Scale Settings")]

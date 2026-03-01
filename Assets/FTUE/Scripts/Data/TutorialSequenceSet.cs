@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
-    [CreateAssetMenu(menuName = "CosmicShore/FTUE/Tutorial Sequence Set")]
+    [CreateAssetMenu(menuName = "ScriptableObjects/FTUE/Tutorial Sequence Set")]
     public class TutorialSequenceSet : ScriptableObject
     {
         [Serializable]

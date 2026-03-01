@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    [CreateAssetMenu(fileName = "TardisWarpData", menuName = "CosmicShore/Warp/TardisWarp", order = 30)]
+    [CreateAssetMenu(fileName = "TardisWarpData", menuName = "ScriptableObjects/Warp/TardisWarp", order = 30)]
     [System.Serializable] public class TardisWarp : WarpFieldSO
     {
         [SerializeField] float minRadius = 10;

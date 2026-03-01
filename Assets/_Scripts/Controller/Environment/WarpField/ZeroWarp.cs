@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    [CreateAssetMenu(fileName = "ZeroWarpData", menuName = "CosmicShore/Warp/ZeroWarp", order = 30)]
+    [CreateAssetMenu(fileName = "ZeroWarpData", menuName = "ScriptableObjects/Warp/ZeroWarp", order = 30)]
     [System.Serializable]
     public class ZeroWarp : WarpFieldSO
     {

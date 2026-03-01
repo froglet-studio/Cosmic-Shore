@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "MazeData", menuName = "Maze/MazeData")]
+    [CreateAssetMenu(fileName = "MazeData", menuName = "ScriptableObjects/Maze/MazeData")]
     public class MazeData : ScriptableObject
     {
         [System.Serializable]

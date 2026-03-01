@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
-    [CreateAssetMenu(menuName = "CosmicShore/Dialogue/Dialogue Library")]
+    [CreateAssetMenu(menuName = "ScriptableObjects/Dialogue/Dialogue Library")]
     public class DialogueSetLibrary : ScriptableObject
     {
         public List<DialogueSet> allDialogueSets;

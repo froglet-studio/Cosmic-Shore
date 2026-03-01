@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "New Profile Icon List", menuName = "CosmicShore/ProfileIconList", order = 20)]
+    [CreateAssetMenu(fileName = "New Profile Icon List", menuName = "ScriptableObjects/ProfileIconList", order = 20)]
     public class SO_ProfileIconList : ScriptableObject
     {
         [SerializeField] public List<ProfileIcon> profileIcons;

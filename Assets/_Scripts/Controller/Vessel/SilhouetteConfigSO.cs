@@ -4,7 +4,7 @@ using CosmicShore.Gameplay;
 
 namespace CosmicShore.Gameplay
 {
-    [CreateAssetMenu(fileName = "SilhouetteConfig", menuName = "CosmicShore/UI/Silhouette Config")]
+    [CreateAssetMenu(fileName = "SilhouetteConfig", menuName = "ScriptableObjects/UI/Silhouette Config")]
     public class SilhouetteConfigSO : ScriptableObject
     {
         public enum FlowDirection { HorizontalRTL, VerticalTopDown }

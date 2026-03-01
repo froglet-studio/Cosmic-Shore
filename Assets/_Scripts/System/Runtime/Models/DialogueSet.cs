@@ -17,7 +17,7 @@ namespace CosmicShore.Core
         Right
     }
     
-    [CreateAssetMenu(menuName = "CosmicShore/Dialogue/Dialogue Set")]
+    [CreateAssetMenu(menuName = "ScriptableObjects/Dialogue/Dialogue Set")]
     public class DialogueSet : ScriptableObject
     {
         public string setId;
