@@ -37,6 +37,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Bootstrap settings asset. Create via ScriptableObjects/Core/BootstrapConfig.")]
         BootstrapConfigSO _bootstrapConfig;
 
+        [SerializeField, Tooltip("Registry of prefabs to instantiate at bootstrap. Replaces placing objects directly in the scene.")]
+        BootstrapPrefabRegistrySO _bootstrapPrefabs;
+
         [Header("Scene Names")]
         [SerializeField, Tooltip("Centralized scene name list. Registered in DI for all consumers.")]
         SceneNameListSO _sceneNames;
@@ -124,6 +127,7 @@ namespace CosmicShore.Core
             }
 
             DontDestroyOnLoad(gameObject);
+            InstantiateRegistryPrefabs();
             ConfigurePlatform();
             TryResolveManagersEarly();
         }
@@ -156,6 +160,47 @@ namespace CosmicShore.Core
             StopNetworkMonitor();
             gameData?.ResetAllData();
         }
+
+        #endregion
+
+        #region Registry Prefab Instantiation
+
+        /// <summary>
+        /// Instantiates all prefabs listed in the BootstrapPrefabRegistrySO.
+        /// Called during Awake, before manager resolution and DI binding, so
+        /// the instantiated objects are available for TryResolveManagersEarly().
+        /// </summary>
+        void InstantiateRegistryPrefabs()
+        {
+            if (_bootstrapPrefabs == null) return;
+
+            Log($"Instantiating {_bootstrapPrefabs.Entries.Count} registry prefab(s)...");
+
+            foreach (var entry in _bootstrapPrefabs.Entries)
+            {
+                if (entry.Prefab == null)
+                {
+                    Debug.LogWarning("[AppManager] Null prefab in BootstrapPrefabRegistry — skipping.");
+                    continue;
+                }
+
+                var instance = Instantiate(entry.Prefab);
+                instance.name = entry.Prefab.name; // Strip "(Clone)" suffix
+
+                if (entry.Position != Vector3.zero || entry.Rotation != Vector3.zero)
+                    instance.transform.SetPositionAndRotation(entry.Position, Quaternion.Euler(entry.Rotation));
+
+                if (entry.Persistent)
+                    DontDestroyOnLoad(instance);
+
+                Log($"  Instantiated: {instance.name} (persistent={entry.Persistent})");
+            }
+        }
+
+        /// <summary>
+        /// Returns the registry asset for editor tooling introspection.
+        /// </summary>
+        public BootstrapPrefabRegistrySO BootstrapPrefabs => _bootstrapPrefabs;
 
         #endregion
 
