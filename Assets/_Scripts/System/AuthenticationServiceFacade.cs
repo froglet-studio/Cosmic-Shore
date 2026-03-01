@@ -5,6 +5,9 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
+#if UNITY_EDITOR
+using Unity.Multiplayer.Playmode;
+#endif
 
 namespace CosmicShore.Core
 {
@@ -80,6 +83,7 @@ namespace CosmicShore.Core
             Log("Initializing Unity Services...");
 
             await UnityServices.InitializeAsync();
+            SwitchMppmProfileIfNeeded();
             WireAuthEventsOnce();
 
             authenticationData.State = AuthenticationData.AuthState.Ready;
@@ -198,6 +202,31 @@ namespace CosmicShore.Core
         public Task LinkWithAppleAsync(string identityToken) => Task.CompletedTask;
         public Task LinkWithFacebookAsync(string accessToken) => Task.CompletedTask;
         public Task LinkWithSteamAsync(string steamSessionTicket) => Task.CompletedTask;
+
+        // ──────────────────────────────────────────────
+        //  MPPM Profile Isolation
+        // ──────────────────────────────────────────────
+
+        /// <summary>
+        /// When running as an MPPM virtual player, switches to a tag-based
+        /// auth profile so each editor instance gets its own UGS identity.
+        /// Must be called after InitializeAsync() but before SignInAnonymouslyAsync().
+        /// </summary>
+        void SwitchMppmProfileIfNeeded()
+        {
+#if UNITY_EDITOR
+            if (CurrentPlayer.IsMainEditor)
+                return;
+
+            var tags = CurrentPlayer.ReadOnlyTags();
+            var profileName = tags != null && tags.Length > 0
+                ? $"mppm-{string.Join("-", tags)}"
+                : "mppm-clone";
+
+            AuthenticationService.Instance.SwitchProfile(profileName);
+            Log($"MPPM: Switched to auth profile '{profileName}'.");
+#endif
+        }
 
         // ──────────────────────────────────────────────
         //  UGS Auth Event Wiring

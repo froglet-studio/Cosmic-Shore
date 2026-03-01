@@ -9,6 +9,10 @@ using Unity.Services.Multiplayer;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
+#if UNITY_EDITOR
+using Unity.Multiplayer.Playmode;
+using Unity.Netcode.Transports.UTP;
+#endif
 namespace CosmicShore.Gameplay
 {
     public class MultiplayerSetup : MonoBehaviour
@@ -119,9 +123,27 @@ namespace CosmicShore.Gameplay
 
                 if (nm.IsListening)
                 {
-                    CSDebug.Log("[MultiplayerSetup] Host already running.");
+                    CSDebug.Log("[MultiplayerSetup] Network already running.");
                     return;
                 }
+
+#if UNITY_EDITOR
+                // MPPM clones run as separate editor processes on the same machine.
+                // Each starts its own local host, so they need unique ports to avoid
+                // bind conflicts. Relay transport handles actual multiplayer connections.
+                if (!CurrentPlayer.IsMainEditor)
+                {
+                    var transport = nm.GetComponent<UnityTransport>();
+                    if (transport != null)
+                    {
+                        var tags = CurrentPlayer.ReadOnlyTags();
+                        var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
+                        ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
+                        transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
+                        CSDebug.Log($"[MultiplayerSetup] MPPM clone '{tagKey}' — local host port {port}.");
+                    }
+                }
+#endif
 
                 CSDebug.Log("[MultiplayerSetup] Starting as Host.");
                 nm.StartHost();
