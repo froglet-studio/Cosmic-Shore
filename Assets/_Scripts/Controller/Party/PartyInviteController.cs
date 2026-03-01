@@ -99,6 +99,9 @@ namespace CosmicShore.Gameplay
             {
                 Debug.Log("[PartyInviteController] Starting accept flow...");
 
+                // Pause refresh loop to avoid UGS rate limit conflicts
+                HostConnectionService.Instance?.SetRefreshPaused(true);
+
                 // Step 1: Clean up current game state
                 CleanUpCurrentSession();
 
@@ -148,6 +151,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
+                HostConnectionService.Instance?.SetRefreshPaused(false);
                 _transitioning = false;
             }
         }
@@ -204,6 +208,9 @@ namespace CosmicShore.Gameplay
             {
                 Debug.Log("[PartyInviteController] Starting host transition to Relay...");
 
+                // Pause refresh loop to avoid UGS rate limit conflicts
+                HostConnectionService.Instance.SetRefreshPaused(true);
+
                 // Step 1: Clean up current menu vessels
                 CleanUpCurrentSession();
 
@@ -238,6 +245,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
+                HostConnectionService.Instance?.SetRefreshPaused(false);
                 _transitioning = false;
             }
         }

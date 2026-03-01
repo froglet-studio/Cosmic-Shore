@@ -179,15 +179,31 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // Transition to Relay host before opening the invite panel
-            // so invited clients can actually connect.
             var controller = PartyInviteController.Instance;
-            if (controller != null && connectionData is { IsHost: true })
-            {
-                await controller.TransitionToPartyHostAsync();
-            }
+            if (controller != null && controller.IsTransitioning) return;
 
-            onlinePlayersPanel?.Show();
+            SetAddButtonsInteractable(false);
+            try
+            {
+                // Transition to Relay host before opening the invite panel
+                // so invited clients can actually connect.
+                if (controller != null && connectionData is { IsHost: true })
+                {
+                    await controller.TransitionToPartyHostAsync();
+                }
+
+                onlinePlayersPanel?.Show();
+            }
+            finally
+            {
+                SetAddButtonsInteractable(true);
+            }
+        }
+
+        private void SetAddButtonsInteractable(bool interactable)
+        {
+            foreach (var slot in partySlots)
+                slot.SetAddButtonInteractable(interactable);
         }
 
         /// <summary>

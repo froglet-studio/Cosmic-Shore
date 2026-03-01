@@ -85,6 +85,16 @@ namespace CosmicShore.UI
             SetOccupiedState(false);
         }
 
+        /// <summary>
+        /// Enables or disables the "+" add button.
+        /// Used to prevent duplicate clicks during party transitions.
+        /// </summary>
+        public void SetAddButtonInteractable(bool interactable)
+        {
+            if (addButton != null)
+                addButton.interactable = interactable;
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Private
         // ─────────────────────────────────────────────────────────────────────
