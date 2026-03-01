@@ -99,6 +99,19 @@ namespace CosmicShore.Game
             cs.LifeFormsInCell = spawnedLifeForms.Count;
         }
 
+        /// <summary>
+        /// Toggles visibility of all spawned lifeforms (flora/fauna).
+        /// Used to hide flora during shape drawing mode and restore after.
+        /// </summary>
+        public void SetLifeFormsActive(bool active)
+        {
+            for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
+            {
+                if (spawnedLifeForms[i])
+                    spawnedLifeForms[i].SetActive(active);
+            }
+        }
+
         public void RegisterSpawnedObject(GameObject obj)
         {
             if (!obj) return;

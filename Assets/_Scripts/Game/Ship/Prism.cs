@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Collections;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
@@ -286,6 +287,7 @@ namespace CosmicShore.Core
         protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -302,6 +304,7 @@ namespace CosmicShore.Core
         protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {

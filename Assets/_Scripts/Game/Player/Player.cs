@@ -24,6 +24,15 @@ namespace CosmicShore.Game
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         public Domains Domain { get; private set; }
+
+        /// <summary>
+        /// Changes the player's domain at runtime. Used by shape mode to match
+        /// the player's prism color to the collided shape's domain.
+        /// </summary>
+        public void SetDomain(Domains newDomain)
+        {
+            Domain = newDomain;
+        }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
         public string PlayerUUID => Name;

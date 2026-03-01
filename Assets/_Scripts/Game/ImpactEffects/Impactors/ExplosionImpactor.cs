@@ -41,7 +41,11 @@ namespace CosmicShore.Game
             var registry = PrismAOERegistry.Instance;
             if (registry == null || !registry.IsAvailable) return;
             _useBatchProcessing = true;
-            _batchHitTracker = new HashSet<int>(256);
+            // Reuse cached HashSet to avoid GC allocation per explosion
+            if (_batchHitTracker == null)
+                _batchHitTracker = new HashSet<int>(256);
+            else
+                _batchHitTracker.Clear();
         }
 
         /// <summary>
@@ -71,7 +75,7 @@ namespace CosmicShore.Game
         public void EndBatchProcessing()
         {
             _useBatchProcessing = false;
-            _batchHitTracker = null;
+            // Keep HashSet allocated for reuse — just clear on next BeginBatchProcessing
         }
 
         protected override void OnTriggerEnter(Collider other)

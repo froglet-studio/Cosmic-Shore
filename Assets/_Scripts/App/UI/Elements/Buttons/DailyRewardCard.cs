@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems.Ads;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI.FX;
 using CosmicShore.Integrations.PlayFab.CloudScripts;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -114,6 +115,7 @@ namespace CosmicShore
             switch (Mode)
             {
                 case ButtonMode.Free:
+                    AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
                     PlayerPrefs.SetString(LastFreeClaimedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
                     PlayerPrefs.Save();
                     DailyRewardHandler.Instance.Claim();

@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
+  m_Name: Wave_Shape
+  m_EditorClassIdentifier: 
+  shapeName: Wave
+  description: This is a Star Shape
+  thumbnail: {fileID: 21300000, guid: badec3d57590b2e479701bb3abcbe5b8, type: 3}
+  autoGeneratePreset: 0
+  autoGenerateRadius: 100
+  waypoints:
+  - {x: -125, y: 0, z: 0}
+  - {x: -118.05556, y: 25, z: 0}
+  - {x: -111.111115, y: 43.301273, z: 0}
+  - {x: -104.166664, y: 50, z: 0}
+  - {x: -97.22222, y: 43.30127, z: 0}
+  - {x: -90.27778, y: 24.99999, z: 0}
+  - {x: -83.333336, y: -0.000004371139, z: 0}
+  - {x: -76.388885, y: -25.00001, z: 0}
+  - {x: -69.44444, y: -43.301273, z: 0}
+  - {x: -62.5, y: -50, z: 0}
+  - {x: -55.555553, y: -43.30126, z: 0}
+  - {x: -48.61111, y: -24.999989, z: 0}
+  - {x: -41.666664, y: 0.000008742278, z: 0}
+  - {x: -34.722225, y: 25.000004, z: 0}
+  - {x: -27.777777, y: 43.30128, z: 0}
+  - {x: -20.833336, y: 50, z: 0}
+  - {x: -13.888888, y: 43.30126, z: 0}
+  - {x: -6.9444475, y: 24.999994, z: 0}
+  - {x: 0, y: -0.0000011924881, z: 0}
+  - {x: 6.9444475, y: -25.000038, z: 0}
+  - {x: 13.888895, y: -43.30129, z: 0}
+  - {x: 20.833328, y: -50, z: 0}
+  - {x: 27.777777, y: -43.301258, z: 0}
+  - {x: 34.722225, y: -24.99998, z: 0}
+  - {x: 41.66667, y: 0.000017484555, z: 0}
+  - {x: 48.611103, y: 25.000011, z: 0}
+  - {x: 55.555553, y: 43.301273, z: 0}
+  - {x: 62.5, y: 50, z: 0}
+  - {x: 69.44445, y: 43.301247, z: 0}
+  - {x: 76.38889, y: 24.999966, z: 0}
+  - {x: 83.33333, y: 0.000013907092, z: 0}
+  - {x: 90.27778, y: -24.999983, z: 0}
+  - {x: 97.22222, y: -43.30128, z: 0}
+  - {x: 104.16667, y: -50, z: 0}
+  - {x: 111.11111, y: -43.30126, z: 0}
+  - {x: 118.05555, y: -24.999952, z: 0}
+  - {x: 125, y: 0.0000023849761, z: 0}
+  trailEnabledPerSegment: 01010101010101010101010101010101010101010101010101010101010101010101010101
+  playerStartOffset: {x: 0, y: 0, z: -150}
+  playerStartEuler: {x: 0, y: 0, z: 0}
+  revealCameraEuler: {x: 90, y: 0, z: 0}
+  revealCameraDistance: 400
+  parTime: 360

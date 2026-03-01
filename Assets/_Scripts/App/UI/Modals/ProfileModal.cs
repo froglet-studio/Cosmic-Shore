@@ -1,3 +1,4 @@
+using CosmicShore.App.Profile;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.PlayerData;
@@ -216,26 +217,15 @@ namespace CosmicShore.App.UI.Modals
             if (displayNameResultMessage)
                 displayNameResultMessage.gameObject.SetActive(false);
 
-            if (PlayerDataController.Instance != null)
+            // Save via UGS PlayerDataService (primary path)
+            var dataService = PlayerDataService.Instance;
+            if (dataService != null)
             {
-                PlayerDataController.Instance.SetPlayerDisplayName(
-                    newName,
-                    result =>
-                    {
-                        CacheDisplayNameLocally(newName);
-                        UpdatePlayerDisplayNameView(result);
-                    });
-            }
-            else
-            {
-                CSDebug.LogWarning(
-                    "[ProfileModal] PlayerDataController.Instance is null. Setting display name only locally.");
-                CacheDisplayNameLocally(newName);
-                UpdatePlayerDisplayNameView(null);
+                dataService.SetDisplayName(newName);
             }
 
-            if (BusyIndicator)
-                BusyIndicator.SetActive(true);
+            CacheDisplayNameLocally(newName);
+            UpdatePlayerDisplayNameView(null);
 
             CSDebug.Log($"Current player display name: {newName}");
         }
