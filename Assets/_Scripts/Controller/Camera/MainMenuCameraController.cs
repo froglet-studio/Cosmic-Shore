@@ -58,6 +58,7 @@ namespace CosmicShore.Gameplay
         // Freestyle vCam (created on CameraManager for Cinemachine priority blending)
         CinemachineCamera _freestyleVCam;
         CinemachineFollow _freestyleFollow;
+        CinemachineMatchTargetOrientation _freestyleAim;
 
         const int HighPriority = 20;
         const int LowPriority = 0;
@@ -150,7 +151,8 @@ namespace CosmicShore.Gameplay
         /// Creates or finds the freestyle CinemachineCamera used for smooth priority-based
         /// blending between menu orbit and vessel follow cameras.
         /// If a "CM Freestyle" child already exists on CameraManager it is reused;
-        /// otherwise one is created at runtime with CinemachineFollow + CinemachineRotationComposer.
+        /// otherwise one is created at runtime with CinemachineFollow +
+        /// CinemachineMatchTargetOrientation (camera faces same direction as vessel).
         /// </summary>
         void EnsureFreestyleVCam()
         {
@@ -164,6 +166,14 @@ namespace CosmicShore.Gameplay
             {
                 _freestyleVCam = existing.GetComponent<CinemachineCamera>();
                 _freestyleFollow = existing.GetComponent<CinemachineFollow>();
+
+                // Strip CinemachineRotationComposer — it aims AT the target (look-at)
+                // which doesn't match the vessel's orientation in 6DOF flight.
+                var composer = existing.GetComponent<CinemachineRotationComposer>();
+                if (composer) Destroy(composer);
+
+                _freestyleAim = existing.GetComponent<CinemachineMatchTargetOrientation>();
+                if (!_freestyleAim) _freestyleAim = existing.gameObject.AddComponent<CinemachineMatchTargetOrientation>();
             }
             else
             {
@@ -172,21 +182,14 @@ namespace CosmicShore.Gameplay
 
                 _freestyleVCam = go.AddComponent<CinemachineCamera>();
                 _freestyleFollow = go.AddComponent<CinemachineFollow>();
-                go.AddComponent<CinemachineRotationComposer>();
+                _freestyleAim = go.AddComponent<CinemachineMatchTargetOrientation>();
 
-                // LockToTarget interprets FollowOffset in the target's local space
-                // so the camera stays behind the vessel as it rotates — matching
-                // CustomCameraController's _followTarget.rotation * _followOffset.
+                // LockToTarget: offset is in target's local space so the camera
+                // stays behind the vessel as it rotates.
                 var tracker = _freestyleFollow.TrackerSettings;
                 tracker.BindingMode = BindingMode.LockToTarget;
                 _freestyleFollow.TrackerSettings = tracker;
             }
-
-            // InheritPosition: when this vCam goes live, start from the current Unity
-            // Camera position and let CinemachineFollow damping converge to the correct
-            // position behind the vessel. This avoids the default linear blend path that
-            // cuts through arbitrary space between the orbit camera and the vessel.
-            _freestyleVCam.BlendHint = CinemachineBlendHint.InheritPosition;
 
             SetVCamPriority(_freestyleVCam, LowPriority);
         }
@@ -292,7 +295,7 @@ namespace CosmicShore.Gameplay
             // camera would use.
             if (_freestyleFollow)
             {
-                var customizer = followTarget.GetComponent<VesselCameraCustomizer>();
+                var customizer = player.Vessel.VesselStatus.VesselCameraCustomizer;
                 if (customizer != null && customizer.Settings != null)
                 {
                     var settings = customizer.Settings;
@@ -303,16 +306,22 @@ namespace CosmicShore.Gameplay
                         ? new Vector3(settings.followOffset.x, settings.followOffset.y, settings.dynamicMinDistance)
                         : settings.followOffset;
 
-                    // Position damping — CinemachineFollow uses per-axis seconds, same unit as
-                    // CustomCameraController's followSmoothTime (used with Vector3.SmoothDamp).
+                    // Mirror CustomCameraController.ApplySettings() damping behavior:
+                    // FixedCamera → snap (zero damping, disableRotationLerp = true)
+                    // DynamicCamera → smooth (followSmoothTime for position and rotation)
+                    var smooth = settings.mode == CameraMode.DynamicCamera
+                        ? settings.followSmoothTime : 0f;
+                    var posDamping = new Vector3(smooth, smooth, smooth);
                     var tracker = _freestyleFollow.TrackerSettings;
                     tracker.BindingMode = BindingMode.LockToTarget;
-                    tracker.PositionDamping = new Vector3(
-                        settings.followSmoothTime,
-                        settings.followSmoothTime,
-                        settings.followSmoothTime
-                    );
+                    tracker.PositionDamping = posDamping;
+                    tracker.RotationDamping = posDamping;
                     _freestyleFollow.TrackerSettings = tracker;
+
+                    // Orientation damping must match position damping so both
+                    // converge at the same rate.
+                    if (_freestyleAim)
+                        _freestyleAim.Damping = smooth;
                 }
             }
 
