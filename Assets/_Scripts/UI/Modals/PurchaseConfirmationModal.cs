@@ -42,23 +42,23 @@ namespace CosmicShore.UI
             {
                 case "Captain":
                     var captain = _captainManager.GetCaptainByName(virtualItem.Name);
-                    GameImage.gameObject.SetVisible(false);
-                    TicketImage.gameObject.SetVisible(false);
-                    CaptainImage.gameObject.SetVisible(true);
+                    GameImage.gameObject.SetActive(false);
+                    TicketImage.gameObject.SetActive(false);
+                    CaptainImage.gameObject.SetActive(true);
                     CaptainImage.sprite = captain.Image;
                     break;
                 /*case "Game":
                     var game = Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
-                    CaptainImage.gameObject.SetVisible(false);
-                    TicketImage.gameObject.SetVisible(false);
-                    GameImage.gameObject.SetVisible(true);
+                    CaptainImage.gameObject.SetActive(false);
+                    TicketImage.gameObject.SetActive(false);
+                    GameImage.gameObject.SetActive(true);
                     GameImage.sprite = game.CardBackground;
                     break;*/
                 case "CaptainUpgrade":
                     var upgradeCaptain = _captainManager.GetCaptainFromUpgrade(virtualItem);
-                    GameImage.gameObject.SetVisible(false);
-                    TicketImage.gameObject.SetVisible(false);
-                    CaptainImage.gameObject.SetVisible(true);
+                    GameImage.gameObject.SetActive(false);
+                    TicketImage.gameObject.SetActive(false);
+                    CaptainImage.gameObject.SetActive(true);
                     CaptainImage.sprite = upgradeCaptain.Image;
 
                     // TODO: Adjust price to display correct element to spend
@@ -67,9 +67,9 @@ namespace CosmicShore.UI
 
                     break;
                 case "Ticket":
-                    GameImage.gameObject.SetVisible(false);
-                    CaptainImage.gameObject.SetVisible(false);
-                    TicketImage.gameObject.SetVisible(true);
+                    GameImage.gameObject.SetActive(false);
+                    CaptainImage.gameObject.SetActive(false);
+                    TicketImage.gameObject.SetActive(true);
                     break;
                 default: 
                     break;

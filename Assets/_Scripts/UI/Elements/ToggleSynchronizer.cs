@@ -1,5 +1,4 @@
 using CosmicShore.Gameplay;
-using CosmicShore.Utility;
 using UnityEngine;
 namespace CosmicShore.UI
 {
@@ -12,8 +11,8 @@ namespace CosmicShore.UI
         void Start()
         {
             bool state = PlayerPrefs.HasKey(PlayerPrefKey.ToString()) && PlayerPrefs.GetInt(PlayerPrefKey.ToString()) == 1;
-            On.SetVisible(state);
-            Off.SetVisible(!state);
+            On.SetActive(state);
+            Off.SetActive(!state);
         }
     }
 }

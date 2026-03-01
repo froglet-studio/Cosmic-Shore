@@ -176,9 +176,9 @@ namespace CosmicShore.UI
         private void ShowPanel(bool show)
         {
             if (panelRoot != null)
-                panelRoot.SetVisible(show);
+                panelRoot.SetActive(show);
             else
-                gameObject.SetVisible(show);
+                gameObject.SetActive(show);
         }
 
         private void SetButtonsInteractable(bool interactable)

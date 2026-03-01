@@ -6,11 +6,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
-using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
@@ -488,7 +488,7 @@ namespace CosmicShore.UI
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
             if (arcadePanelRoot)
             {
-                arcadePanelRoot.SetVisible(true);
+                arcadePanelRoot.SetActive(true);
             }
         }
 
@@ -566,8 +566,8 @@ namespace CosmicShore.UI
                     var child = NavBar.GetChild(i);
                     if (child.childCount < 2) continue;
 
-                    child.GetChild(0).gameObject.SetVisible(true);
-                    child.GetChild(1).gameObject.SetVisible(false);
+                    child.GetChild(0).gameObject.SetActive(true);
+                    child.GetChild(1).gameObject.SetActive(false);
                 }
 
                 if (index >= 0 && index < NavBar.childCount)
@@ -575,8 +575,8 @@ namespace CosmicShore.UI
                     var active = NavBar.GetChild(index);
                     if (active.childCount >= 2)
                     {
-                        active.GetChild(0).gameObject.SetVisible(false);
-                        active.GetChild(1).gameObject.SetVisible(true);
+                        active.GetChild(0).gameObject.SetActive(false);
+                        active.GetChild(1).gameObject.SetActive(true);
                     }
                 }
             }
@@ -593,10 +593,10 @@ namespace CosmicShore.UI
                 bool isActive = (i == index);
 
                 if (NavActiveImages[i])
-                    NavActiveImages[i].SetVisible(isActive);
+                    NavActiveImages[i].SetActive(isActive);
 
                 if (i < NavInactiveImages.Count && NavInactiveImages[i])
-                    NavInactiveImages[i].SetVisible(!isActive);
+                    NavInactiveImages[i].SetActive(!isActive);
             }
         }
 
@@ -614,7 +614,7 @@ namespace CosmicShore.UI
 
             // Hide NavBar
             if (NavBar)
-                NavBar.gameObject.SetVisible(false);
+                NavBar.gameObject.SetActive(false);
         }
 
         private void HandleExitFreestyle()
@@ -623,7 +623,7 @@ namespace CosmicShore.UI
 
             // Show NavBar
             if (NavBar)
-                NavBar.gameObject.SetVisible(true);
+                NavBar.gameObject.SetActive(true);
 
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))

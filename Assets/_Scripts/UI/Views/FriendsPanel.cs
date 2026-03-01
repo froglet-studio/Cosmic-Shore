@@ -135,12 +135,12 @@ namespace CosmicShore.UI
 
         public void Show()
         {
-            gameObject.SetVisible(true);
+            gameObject.SetActive(true);
         }
 
         public void Hide()
         {
-            gameObject.SetVisible(false);
+            gameObject.SetActive(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -151,10 +151,10 @@ namespace CosmicShore.UI
         {
             _activeTab = tabIndex;
 
-            friendsListContent?.SetVisible(tabIndex == 0);
-            requestsListContent?.SetVisible(tabIndex == 1);
+            friendsListContent?.SetActive(tabIndex == 0);
+            requestsListContent?.SetActive(tabIndex == 1);
             if (addFriendContent != null)
-                addFriendContent.gameObject.SetVisible(tabIndex == 2);
+                addFriendContent.gameObject.SetActive(tabIndex == 2);
 
             SetTabSelected(friendsTabButton, tabIndex == 0);
             SetTabSelected(requestsTabButton, tabIndex == 1);
@@ -191,11 +191,11 @@ namespace CosmicShore.UI
 
             if (friendsData?.Friends == null || friendsData.Friends.Count == 0)
             {
-                friendsEmptyState?.SetVisible(true);
+                friendsEmptyState?.SetActive(true);
                 return;
             }
 
-            friendsEmptyState?.SetVisible(false);
+            friendsEmptyState?.SetActive(false);
 
             foreach (var friend in friendsData.Friends)
                 SpawnFriendEntry(friend);
@@ -250,7 +250,7 @@ namespace CosmicShore.UI
                 }
             }
 
-            requestsEmptyState?.SetVisible(!hasRequests);
+            requestsEmptyState?.SetActive(!hasRequests);
         }
 
         private void SpawnIncomingRequestEntry(FriendData data)
@@ -394,7 +394,7 @@ namespace CosmicShore.UI
 
             int count = friendsData?.IncomingRequestCount ?? 0;
             requestsBadge.text = count > 0 ? count.ToString() : "";
-            requestsBadge.gameObject.SetVisible(count > 0);
+            requestsBadge.gameObject.SetActive(count > 0);
         }
     }
 }

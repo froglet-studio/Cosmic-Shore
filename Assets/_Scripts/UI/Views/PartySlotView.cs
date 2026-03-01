@@ -1,5 +1,4 @@
 using CosmicShore.ScriptableObjects;
-using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -92,8 +91,8 @@ namespace CosmicShore.UI
 
         private void SetOccupiedState(bool occupied)
         {
-            if (occupiedRoot != null) occupiedRoot.SetVisible(occupied);
-            if (emptyRoot != null) emptyRoot.SetVisible(!occupied);
+            if (occupiedRoot != null) occupiedRoot.SetActive(occupied);
+            if (emptyRoot != null) emptyRoot.SetActive(!occupied);
         }
 
         private void HandleAddPressed()

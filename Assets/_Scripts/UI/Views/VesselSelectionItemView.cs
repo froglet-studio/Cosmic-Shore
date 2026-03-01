@@ -1,5 +1,4 @@
 ﻿using CosmicShore.ScriptableObjects;
-using CosmicShore.Utility;
 using System;
 using TMPro;
 using UnityEngine;
@@ -23,7 +22,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            gameObject.SetVisible(true);
+            gameObject.SetActive(true);
 
             if (iconImage)
                 iconImage.sprite = isSelected ? ship.IconActive : ship.IconInactive;
@@ -42,7 +41,7 @@ namespace CosmicShore.UI
             if (button)
                 button.onClick.RemoveAllListeners();
 
-            gameObject.SetVisible(false);
+            gameObject.SetActive(false);
         }
     }
 }

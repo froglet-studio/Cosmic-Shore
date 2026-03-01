@@ -1,10 +1,11 @@
 using CosmicShore.Core;
 using CosmicShore.Data;
-using CosmicShore.Utility;
+using CosmicShore.UI;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using System.Linq;
 
 namespace CosmicShore.UI
 {
@@ -32,8 +33,8 @@ namespace CosmicShore.UI
                 UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeExploreMenu);
 
             audioSystem.PlayMenuAudio(MenuAudioCategory.SwitchView);
-            LoadoutView.gameObject.SetVisible(loadout);
-            ExploreView.gameObject.SetVisible(!loadout);
+            LoadoutView.gameObject.SetActive(loadout);
+            ExploreView.gameObject.SetActive(!loadout);
         }
     }
 }

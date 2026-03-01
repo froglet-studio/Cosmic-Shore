@@ -119,10 +119,10 @@ namespace CosmicShore.UI
             bool showDisplayName = (tab == ProfileModalTab.DisplayName);
 
             if (avatarPanelRoot)
-                avatarPanelRoot.SetVisible(showAvatar);
+                avatarPanelRoot.SetActive(showAvatar);
 
             if (displayNamePanel)
-                displayNamePanel.SetVisible(showDisplayName);
+                displayNamePanel.SetActive(showDisplayName);
 
             if (showDisplayName)
                 PopulateDisplayNameFromProfile();

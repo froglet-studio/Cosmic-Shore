@@ -181,7 +181,7 @@ namespace CosmicShore.UI
                 button.SetIntensityLevel(level);
 
                 bool active = level >= game.MinIntensity && level <= game.MaxIntensity;
-                button.gameObject.SetVisible(active);
+                button.SetActive(active);
                 button.SetSelected(level == config.Intensity);
             }
 
@@ -195,7 +195,7 @@ namespace CosmicShore.UI
                 button.SetPlayerCount(count);
 
                 bool active = count >= game.MinPlayers && count <= game.MaxPlayers;
-                button.gameObject.SetVisible(active);
+                button.SetActive(active);
                 button.SetSelected(count == config.PlayerCount);
             }
 
@@ -270,10 +270,10 @@ namespace CosmicShore.UI
         void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen)
         {
             if (configurationDetailView)
-                configurationDetailView.SetVisible(configurationDetailView == configScreen);
+                configurationDetailView.SetActive(configurationDetailView == configScreen);
 
             if (gameDetailView)
-                gameDetailView.SetVisible(gameDetailView == gameDetailScreen);
+                gameDetailView.SetActive(gameDetailView == gameDetailScreen);
         }
 
         void ShowConfigurationScreen()

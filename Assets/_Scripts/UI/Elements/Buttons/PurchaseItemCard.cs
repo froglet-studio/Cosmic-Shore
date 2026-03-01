@@ -51,8 +51,8 @@ namespace CosmicShore.UI
                 GetComponent<Button>().enabled = false;
 
                 // Hide the price button and show the unavailable version
-                PriceButton.gameObject.SetVisible(false);
-                UnavailableButton.gameObject.SetVisible(true);
+                PriceButton.gameObject.SetActive(false);
+                UnavailableButton.gameObject.SetActive(true);
 
                 // Update background color
                 BackgroundImage.sprite = UnavailableBackgroundSprite;
@@ -64,8 +64,8 @@ namespace CosmicShore.UI
                 GetComponent<Button>().enabled = true;
 
                 // Hide the price button and show the unavailable version
-                PriceButton.gameObject.SetVisible(true);
-                UnavailableButton.gameObject.SetVisible(false);
+                PriceButton.gameObject.SetActive(true);
+                UnavailableButton.gameObject.SetActive(false);
 
                 // Update background color
                 BackgroundImage.sprite = DefaultBackgroundSprite;
@@ -86,8 +86,8 @@ namespace CosmicShore.UI
                 GetComponent<Button>().enabled = false;
 
                 // Hide the price button and show the purchased button
-                PriceButton.gameObject.SetVisible(false);
-                PurchasedButton.gameObject.SetVisible(true);
+                PriceButton.gameObject.SetActive(false);
+                PurchasedButton.gameObject.SetActive(true);
 
                 // Update background color
                 BackgroundImage.sprite = PurchasedBackgroundSprite;
@@ -99,8 +99,8 @@ namespace CosmicShore.UI
                 GetComponent<Button>().enabled = false;
 
                 // Hide the price button and show the unavailable version
-                PriceButton.gameObject.SetVisible(false);
-                UnavailableButton.gameObject.SetVisible(true);
+                PriceButton.gameObject.SetActive(false);
+                UnavailableButton.gameObject.SetActive(true);
 
                 // Update background color
                 BackgroundImage.sprite = UnavailableBackgroundSprite;
@@ -119,8 +119,8 @@ namespace CosmicShore.UI
         {
             ConfirmationButton.enabled = false;
 
-            PriceButton.gameObject.SetVisible(false);
-            PurchasedButton.gameObject.SetVisible(false);
+            PriceButton.gameObject.SetActive(false);
+            PurchasedButton.gameObject.SetActive(false);
             CatalogManager.Instance.PurchaseItem(virtualItem, virtualItem.Price[0], 1, OnPurchaseComplete, OnPurchaseFailed);
         }
 
@@ -138,8 +138,8 @@ namespace CosmicShore.UI
             // Re-enable the button in the modal in case there is an additional purchase
             ConfirmationButton.enabled = true;
 
-            PriceButton.gameObject.SetVisible(true);
-            PurchasedButton.gameObject.SetVisible(false);
+            PriceButton.gameObject.SetActive(true);
+            PurchasedButton.gameObject.SetActive(false);
         }
 
         protected virtual void PreModalCloseEffects()
@@ -174,8 +174,8 @@ namespace CosmicShore.UI
                 transform.localRotation = Quaternion.Euler(0, 90, 0);
 
                 // Hide the price button and show the purchased button
-                PriceButton.gameObject.SetVisible(false);
-                PurchasedButton.gameObject.SetVisible(true);
+                PriceButton.gameObject.SetActive(false);
+                PurchasedButton.gameObject.SetActive(true);
 
                 // Update background color
                 BackgroundImage.sprite = PurchasedBackgroundSprite;

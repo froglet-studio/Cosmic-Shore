@@ -31,12 +31,12 @@ namespace CosmicShore.UI
         {
             if (NetworkInitialized)
             {
-                ProgressIndicator.gameObject.SetVisible(false);
-                ProgressIndicatorBackground.gameObject.SetVisible(false);
-                NavBar.SetVisible(true);
-                Menu.SetVisible(true);
+                ProgressIndicator.gameObject.SetActive(false);
+                ProgressIndicatorBackground.gameObject.SetActive(false);
+                NavBar.SetActive(true);
+                Menu.SetActive(true);
                 Animator.SetTrigger("ClosePanelTrigger");
-                gameObject.SetVisible(false);
+                gameObject.SetActive(false);
             }
             else
             {
@@ -104,15 +104,15 @@ namespace CosmicShore.UI
             NetworkInitialized = true;
 
             yield return new WaitForSecondsRealtime(.25f);
-            ProgressIndicator.gameObject.SetVisible(false);
-            ProgressIndicatorBackground.gameObject.SetVisible(false);
-            NavBar.SetVisible(true);
-            Menu.SetVisible(true);
+            ProgressIndicator.gameObject.SetActive(false);
+            ProgressIndicatorBackground.gameObject.SetActive(false);
+            NavBar.SetActive(true);
+            Menu.SetActive(true);
             Animator.SetTrigger("ClosePanelTrigger");
             yield return new WaitUntil(() => Animator.GetCurrentAnimatorStateInfo(0).IsName("ZoomClose") && Animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= .8f);
 
             Animator.StopPlayback();
-            gameObject.SetVisible(false);
+            gameObject.SetActive(false);
         }
     }
 }
