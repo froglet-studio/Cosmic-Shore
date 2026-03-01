@@ -32,6 +32,9 @@ namespace CosmicShore.Gameplay
         public delegate void OnChangeHapticsLevelEvent(float level);
         public static event OnChangeHapticsLevelEvent OnChangeHapticsLevel;
 
+        public delegate void OnChangeCameraOffsetMultiplierEvent(float multiplier);
+        public static event OnChangeCameraOffsetMultiplierEvent OnChangeCameraOffsetMultiplier;
+
         public enum PlayerPrefKeys
         {
             IsInitialPlay = 1,
@@ -48,6 +51,7 @@ namespace CosmicShore.Gameplay
             SFXLevel = 12,
             HapticsLevel = 13,
             LastMissionDifficulty = 14,
+            CameraOffsetMultiplier = 15,
     }
 
         #region Settings
@@ -62,6 +66,7 @@ namespace CosmicShore.Gameplay
         float musicLevel = 1.0f;
         float sfxLevel = 1.0f;
         float hapticsLevel = 1.0f;
+        float cameraOffsetMultiplier;
 
         public bool MusicEnabled { get => musicEnabled; }
         public bool SFXEnabled { get => sfxEnabled; }
@@ -72,6 +77,7 @@ namespace CosmicShore.Gameplay
         public float MusicLevel { get => musicLevel; }
         public float SFXLevel { get => sfxLevel; }
         public float HapticsLevel { get => hapticsLevel; }
+        public float CameraOffsetMultiplier { get => cameraOffsetMultiplier; }
         #endregion
 
         void Awake()
@@ -101,6 +107,7 @@ namespace CosmicShore.Gameplay
             musicLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.MusicLevel));
             sfxLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.SFXLevel));
             hapticsLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.HapticsLevel));
+            cameraOffsetMultiplier = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.CameraOffsetMultiplier), 0f);
         }
 
         /// <summary>
@@ -187,6 +194,14 @@ namespace CosmicShore.Gameplay
             PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.HapticsLevel), level);
             PlayerPrefs.Save();
             OnChangeHapticsLevel?.Invoke(hapticsLevel);
+        }
+
+        public void SetCameraOffsetMultiplier(float multiplier)
+        {
+            cameraOffsetMultiplier = Mathf.Clamp(multiplier, -1f, 1f);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.CameraOffsetMultiplier), cameraOffsetMultiplier);
+            PlayerPrefs.Save();
+            OnChangeCameraOffsetMultiplier?.Invoke(cameraOffsetMultiplier);
         }
 
         void SetPlayerPrefDefault(PlayerPrefKeys key, int value)

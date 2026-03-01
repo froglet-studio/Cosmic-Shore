@@ -44,5 +44,9 @@ namespace CosmicShore.UI
         {
             gameSetting.ChangeJoystickVisualsStatus();
         }
+        public void AdjustCameraOffset(float level)
+        {
+            gameSetting.SetCameraOffsetMultiplier(level);
+        }
     }
 }

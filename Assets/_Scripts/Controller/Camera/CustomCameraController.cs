@@ -1,4 +1,3 @@
-using System.Collections;
 using CosmicShore.Utility;
 using UnityEngine;
 using Camera = UnityEngine.Camera;
@@ -9,7 +8,9 @@ namespace CosmicShore.Gameplay
     public class CustomCameraController : MonoBehaviour, ICameraController
     {
         private Transform _followTarget;
-        private Vector3 _followOffset = new(0f, 10f, 0f); 
+        private Vector3 _followOffset = new(0f, 10f, 0f);
+        private Vector3 _baseFollowOffset = new(0f, 10f, 0f);
+        private float _offsetMultiplier;
 
         // --- Smoothing and Update Control ---
         private float _followSmoothTime = 0.2f;
@@ -28,6 +29,18 @@ namespace CosmicShore.Gameplay
         {
             Camera = GetComponent<Camera>();
             Camera.useOcclusionCulling = false;
+            _offsetMultiplier = PlayerPrefs.GetFloat(
+                nameof(GameSetting.PlayerPrefKeys.CameraOffsetMultiplier), 0f);
+        }
+
+        private void OnEnable()
+        {
+            GameSetting.OnChangeCameraOffsetMultiplier += SetOffsetMultiplier;
+        }
+
+        private void OnDisable()
+        {
+            GameSetting.OnChangeCameraOffsetMultiplier -= SetOffsetMultiplier;
         }
 
         private void LateUpdate()
@@ -88,20 +101,22 @@ namespace CosmicShore.Gameplay
 
             if (flags.HasFlag(CameraMode.DynamicCamera))
             {
-                _followOffset.x = settings.followOffset.x;
-                _followOffset.y = settings.followOffset.y;
+                _baseFollowOffset.x = settings.followOffset.x;
+                _baseFollowOffset.y = settings.followOffset.y;
+                _baseFollowOffset.z = settings.dynamicMinDistance;
 
                 _followSmoothTime = settings.followSmoothTime;
                 _rotationSmoothTime = settings.rotationSmoothTime;
                 _disableRotationLerp = settings.disableSmoothing;
 
-                SetCameraDistance(settings.dynamicMinDistance);
+                ApplyOffsetMultiplier();
             }
             else
             {
-                _followOffset = settings.followOffset;
+                _baseFollowOffset = settings.followOffset;
                 _disableRotationLerp = true;
                 adaptiveZoomEnabled = settings.enableAdaptiveZoom;
+                ApplyOffsetMultiplier();
                 _neutralOffsetZ = _followOffset.z;
             }
         }
@@ -172,7 +187,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetFollowOffset(Vector3 offset)
         {
-            _followOffset = offset;
+            _baseFollowOffset = offset;
+            ApplyOffsetMultiplier();
+        }
+
+        public void SetOffsetMultiplier(float multiplier)
+        {
+            _offsetMultiplier = Mathf.Clamp(multiplier, -1f, 1f);
+            ApplyOffsetMultiplier();
+        }
+
+        private void ApplyOffsetMultiplier()
+        {
+            _followOffset = _baseFollowOffset * (1f + _offsetMultiplier);
         }
 
         /// <summary>
