@@ -621,6 +621,11 @@ namespace CosmicShore.UI
         {
             _isInFreestyle = false;
 
+            // Hide ArcadeScreen overlay if it was open — it should only appear
+            // when explicitly opened via the Arcade nav button.
+            if (arcadeScreen)
+                arcadeScreen.Hide();
+
             // Show NavBar
             if (NavBar)
                 NavBar.gameObject.SetActive(true);
