@@ -3,6 +3,7 @@ using CosmicShore.Utility;
 using Obvious.Soap;
 using Reflex.Attributes;
 using Unity.Cinemachine;
+using Unity.Cinemachine.TargetTracking;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -172,6 +173,13 @@ namespace CosmicShore.Gameplay
                 _freestyleVCam = go.AddComponent<CinemachineCamera>();
                 _freestyleFollow = go.AddComponent<CinemachineFollow>();
                 go.AddComponent<CinemachineRotationComposer>();
+
+                // LockToTarget interprets FollowOffset in the target's local space
+                // so the camera stays behind the vessel as it rotates — matching
+                // CustomCameraController's _followTarget.rotation * _followOffset.
+                var tracker = _freestyleFollow.TrackerSettings;
+                tracker.BindingMode = BindingMode.LockToTarget;
+                _freestyleFollow.TrackerSettings = tracker;
             }
 
             SetVCamPriority(_freestyleVCam, LowPriority);
@@ -273,16 +281,32 @@ namespace CosmicShore.Gameplay
             target.TrackingTarget = followTarget;
             _freestyleVCam.Target = target;
 
-            // Apply vessel camera settings for correct follow offset
+            // Apply vessel camera settings — mirrors CustomCameraController.ApplySettings()
+            // so the freestyle vCam lands at the same position/orientation the gameplay
+            // camera would use.
             if (_freestyleFollow)
             {
                 var customizer = followTarget.GetComponent<VesselCameraCustomizer>();
                 if (customizer != null && customizer.Settings != null)
                 {
                     var settings = customizer.Settings;
+
+                    // Offset: DynamicCamera uses X/Y from followOffset + Z from dynamicMinDistance.
+                    // FixedCamera uses the full followOffset vector directly.
                     _freestyleFollow.FollowOffset = settings.mode == CameraMode.DynamicCamera
-                        ? new Vector3(settings.followOffset.x, settings.followOffset.y, -Mathf.Abs(settings.dynamicMinDistance))
+                        ? new Vector3(settings.followOffset.x, settings.followOffset.y, settings.dynamicMinDistance)
                         : settings.followOffset;
+
+                    // Position damping — CinemachineFollow uses per-axis seconds, same unit as
+                    // CustomCameraController's followSmoothTime (used with Vector3.SmoothDamp).
+                    var tracker = _freestyleFollow.TrackerSettings;
+                    tracker.BindingMode = BindingMode.LockToTarget;
+                    tracker.PositionDamping = new Vector3(
+                        settings.followSmoothTime,
+                        settings.followSmoothTime,
+                        settings.followSmoothTime
+                    );
+                    _freestyleFollow.TrackerSettings = tracker;
                 }
             }
 
