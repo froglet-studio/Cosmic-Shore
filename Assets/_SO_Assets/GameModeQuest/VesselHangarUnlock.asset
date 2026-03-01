@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: VesselHangarUnlock
   m_EditorClassIdentifier: 
   GameMode: 35
-  DisplayName: 
+  DisplayName: Vessel Unlock
   Description: 
   Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
   TargetType: 0

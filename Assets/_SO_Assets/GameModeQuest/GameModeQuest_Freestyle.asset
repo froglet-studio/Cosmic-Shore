@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: GameModeQuest_Freestyle
   m_EditorClassIdentifier: 
   GameMode: 7
-  DisplayName: 
-  Description: 
-  Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  DisplayName: FreeStyle
+  Description: Paint 5 object with accuracy 50%
+  Icon: {fileID: 21300000, guid: 88a9b4cf2dc46a74a8f85cba135a5352, type: 3}
   TargetType: 3
   TargetValue: 30000
   Order: 3
