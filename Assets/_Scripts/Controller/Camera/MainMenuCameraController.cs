@@ -150,7 +150,7 @@ namespace CosmicShore.Gameplay
             var follow = go.AddComponent<CinemachineFollow>();
             follow.FollowOffset = _gameplayFollowOffset;
             var tracker = follow.TrackerSettings;
-            tracker.BindingMode = BindingMode.LockToTargetWithWorldUp;
+            tracker.BindingMode = BindingMode.LockToTargetNoRoll;
             tracker.PositionDamping = new Vector3(1, 1, 1);
             follow.TrackerSettings = tracker;
 
