@@ -50,6 +50,7 @@ namespace CosmicShore.UI
         {
             acceptButton?.onClick.AddListener(OnAcceptPressed);
             declineButton?.onClick.AddListener(OnDeclinePressed);
+            ShowPanel(false); // Start visually hidden so OnEnable() can subscribe to SOAP events
         }
 
         void OnEnable()
