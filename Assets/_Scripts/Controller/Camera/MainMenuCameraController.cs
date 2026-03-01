@@ -366,6 +366,15 @@ namespace CosmicShore.Gameplay
             _bridgeVCam.gameObject.SetActive(true);
             SetVCamPriority(_bridgeVCam, HighPriority);
 
+            // Force Cinemachine's internal state to match the snapshot pose.
+            // Without this, when the vessel hasn't moved the bridge's cached pipeline
+            // state from the previous tracking activation is identical to the new
+            // snapshot position, so CM3 skips re-evaluation and the CinemachineBrain
+            // never initiates the blend back to the menu orbit.
+            _bridgeVCam.ForceCameraPosition(
+                _playerCameraController.transform.position,
+                _playerCameraController.transform.rotation);
+
             // Wait one frame for CinemachineBrain to process the new vCam
             await UniTask.Yield(ct);
 
