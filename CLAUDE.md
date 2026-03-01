@@ -1184,16 +1184,20 @@ Lava-lamp mode merges freestyle gameplay directly into Menu_Main. Instead of lau
 
 #### Current "Game UI" Container
 
-The existing "Game UI" in Menu_Main has one child:
+The existing "Game UI" in Menu_Main has two children:
 
 ```
 Game UI [RectTransform, CanvasGroup]                    ← already in freestyleCanvasGroups[]
+├── Freestyle HUD [RectTransform, MenuFreestyleHUD]
+│   └── Vessel Change Button [Image, Button, TMP label "VESSEL"]
+│       └── onClick → MenuFreestyleHUD.OnVesselChangeClicked() → vesselSelectionPanel.Open()
+│
 └── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
     ├── Buttons (Resume, Close)
     └── Menu [GridLayout, 6× ShipCardView]
 ```
 
-The standalone "Vessel Selection Button" has been removed. The panel will be opened from the MiniGameHUD's Volume/Pause button once MiniGameHUD is added under Game UI (Phase 1).
+`MenuFreestyleHUD` (`_Scripts/UI/MenuFreestyleHUD.cs`) is the minimal freestyle mode HUD. It provides the vessel-change button that opens the `MenuVesselSelectionPanelController` panel. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. Phase 2/3 features (shape drawing, scoring) will extend this component or replace it with MiniGameHUD.
 
 #### Phase 1: Core Freestyle HUD (target hierarchy)
 
@@ -1346,6 +1350,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 
 | Role | File | Location |
 |---|---|---|
+| Freestyle HUD (vessel change trigger) | `MenuFreestyleHUD.cs` | `_Scripts/UI/` |
 | Freestyle toggle (autopilot↔control) | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
 | Menu state machine | `MainMenuController.cs` | `_Scripts/System/` |
 | Menu vessel spawner (base) | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
