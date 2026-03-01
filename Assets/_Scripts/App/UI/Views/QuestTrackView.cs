@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
@@ -11,8 +12,15 @@ namespace CosmicShore.App.UI.Views
 {
     /// <summary>
     /// Displays the game-mode quest progression chain.
-    /// Each quest item card shows its own name and description via QuestItemCard.
-    /// The slider sits below the card container and shows overall quest completion.
+    /// Cards sit above a horizontal fill bar that tracks completion progress.
+    ///
+    /// UI Setup:
+    ///   progressBarFill — Image component (Type=Filled, FillMethod=Horizontal).
+    ///     Must span the same width as questItemContainer so fillAmount aligns
+    ///     with card centers. This is the AAA approach: no Unity Slider involved.
+    ///
+    ///   Fallback: if progressBarFill is null but progressSlider is set, the old
+    ///     Slider-based path is used (less reliable alignment).
     /// </summary>
     public class QuestTrackView : MonoBehaviour
     {
@@ -30,7 +38,12 @@ namespace CosmicShore.App.UI.Views
         [Tooltip("Optional — auto-resolved from questItemContainer if null")]
         [SerializeField] private ScrollRect scrollRect;
 
-        [Header("Slider")]
+        [Header("Progress Bar")]
+        [Tooltip("Image with Type=Filled, FillMethod=Horizontal. Must span same width as card container.")]
+        [SerializeField] private Image progressBarFill;
+
+        [Header("Slider (Legacy Fallback)")]
+        [Tooltip("Only used if progressBarFill is not set")]
         [SerializeField] private Slider progressSlider;
 
         [Header("Animation")]
@@ -38,7 +51,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private Ease sliderEase = Ease.OutCubic;
 
         private readonly List<QuestItemCard> _cards = new();
-        private Tween _sliderTween;
+        private Tween _fillTween;
 
         void OnEnable()
         {
@@ -60,13 +73,20 @@ namespace CosmicShore.App.UI.Views
         void OnProgressionChanged(GameModeProgressionData data)
         {
             RefreshAllCards();
-            AnimateSlider();
+            AnimateProgressBar();
         }
 
         public void LoadTrack()
         {
             SpawnCards();
-            SetSliderImmediate();
+            // Defer the initial bar set by one frame so layout is fully resolved.
+            StartCoroutine(SetProgressBarDeferred());
+        }
+
+        IEnumerator SetProgressBarDeferred()
+        {
+            yield return null;
+            SetProgressBarImmediate();
         }
 
         // ── Scroll ───────────────────────────────────────────────────────────
@@ -124,7 +144,6 @@ namespace CosmicShore.App.UI.Views
 
             bool isQuestCompleted = service != null && service.IsQuestCompleted(quest.GameMode);
 
-            // Check if the NEXT mode is already unlocked (meaning this quest was claimed)
             bool isNextUnlocked = false;
             if (questIndex + 1 < questList.Quests.Count && service != null)
                 isNextUnlocked = service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode);
@@ -164,13 +183,11 @@ namespace CosmicShore.App.UI.Views
 
                 card.SetState(state);
 
-                // Re-set description when transitioning to Claimed
                 if (state == QuestItemState.Claimed)
-                    card.Configure(quest); // resets description, then SetState overrides to "Completed"
+                    card.Configure(quest);
 
                 card.SetState(state);
 
-                // Re-bind claim button if the state just became ReadyToClaim
                 if (state == QuestItemState.ReadyToClaim)
                 {
                     var mode = quest.GameMode;
@@ -179,62 +196,75 @@ namespace CosmicShore.App.UI.Views
             }
         }
 
-        // ── Slider ──────────────────────────────────────────────────────────────
+        // ── Progress Bar ────────────────────────────────────────────────────────
 
-        void SetSliderImmediate()
+        void SetProgressBarImmediate()
         {
-            if (progressSlider == null) return;
+            float target = GetNormalizedProgress();
 
-            // Force all canvas layouts so card world positions are accurate
-            Canvas.ForceUpdateCanvases();
-            progressSlider.value = GetNormalizedProgress();
+            if (progressBarFill != null)
+            {
+                progressBarFill.fillAmount = target;
+                return;
+            }
+
+            if (progressSlider != null)
+                progressSlider.value = target;
         }
 
-        void AnimateSlider()
+        void AnimateProgressBar()
         {
-            if (progressSlider == null) return;
-
             KillTween();
             float target = GetNormalizedProgress();
-            _sliderTween = progressSlider.DOValue(target, sliderAnimDuration)
-                .SetEase(sliderEase)
-                .SetUpdate(true);
+
+            if (progressBarFill != null)
+            {
+                _fillTween = DOTween.To(
+                        () => progressBarFill.fillAmount,
+                        x => progressBarFill.fillAmount = x,
+                        target,
+                        sliderAnimDuration)
+                    .SetEase(sliderEase)
+                    .SetUpdate(true);
+                return;
+            }
+
+            if (progressSlider != null)
+            {
+                _fillTween = progressSlider.DOValue(target, sliderAnimDuration)
+                    .SetEase(sliderEase)
+                    .SetUpdate(true);
+            }
         }
 
         /// <summary>
-        /// Calculates the slider value so that the fill aligns with the center
-        /// of the current card (the first unclaimed card) in world space.
+        /// Returns a 0–1 value representing where the progress bar should fill to.
+        /// Uses the target card's center position within the content container so
+        /// the fill aligns directly below the card regardless of spacing or padding.
         /// </summary>
         float GetNormalizedProgress()
         {
-            if (_cards.Count == 0 || progressSlider == null) return 0f;
+            if (_cards.Count == 0) return 0f;
 
             var service = GameModeProgressionService.Instance;
             int claimed = service != null ? service.GetClaimedQuestCount() : 0;
-
-            // Slider points to the center of the current active card.
-            // With 0 claimed → card 0 (first, always unlocked).
-            // With N claimed → card N (next unclaimed).
             int targetIndex = Mathf.Clamp(claimed, 0, _cards.Count - 1);
 
+            var contentRect = questItemContainer as RectTransform;
             var cardRect = _cards[targetIndex].transform as RectTransform;
-            var sliderRect = progressSlider.transform as RectTransform;
-            if (cardRect == null || sliderRect == null) return 0f;
 
-            // Card center in world space
-            Vector3[] cardCorners = new Vector3[4];
-            cardRect.GetWorldCorners(cardCorners);
-            float cardCenterWorldX = (cardCorners[0].x + cardCorners[2].x) * 0.5f;
+            if (contentRect == null || cardRect == null)
+                return _cards.Count > 0 ? (float)(1 + claimed) / _cards.Count : 0f;
 
-            // Slider extent in world space
-            Vector3[] sliderCorners = new Vector3[4];
-            sliderRect.GetWorldCorners(sliderCorners);
-            float sliderLeftX = sliderCorners[0].x;
-            float sliderWidth = sliderCorners[2].x - sliderLeftX;
+            float contentWidth = contentRect.rect.width;
+            if (contentWidth <= 0f) return 0f;
 
-            if (sliderWidth <= 0f) return 0f;
+            // cardRect.localPosition.x is relative to parent pivot.
+            // contentRect.rect.xMin is the left edge relative to pivot.
+            // Subtracting gives the card center measured from the content's left edge.
+            float cardCenterFromLeft = cardRect.localPosition.x - contentRect.rect.xMin;
 
-            return Mathf.Clamp01((cardCenterWorldX - sliderLeftX) / sliderWidth);
+            return Mathf.Clamp01(cardCenterFromLeft / contentWidth);
         }
 
         // ── Cleanup ─────────────────────────────────────────────────────────────
@@ -248,10 +278,10 @@ namespace CosmicShore.App.UI.Views
 
         void KillTween()
         {
-            if (_sliderTween != null && _sliderTween.IsActive())
+            if (_fillTween != null && _fillTween.IsActive())
             {
-                _sliderTween.Kill();
-                _sliderTween = null;
+                _fillTween.Kill();
+                _fillTween = null;
             }
         }
     }
