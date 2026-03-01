@@ -217,6 +217,33 @@ namespace CosmicShore.Gameplay
                 pcc.SnapToTarget();
         }
 
+        /// <summary>
+        /// Sets up gameplay cameras with a smooth transition from the given world-space pose.
+        /// Unlike <see cref="SetupGamePlayCameras"/>, does not snap the camera to the follow
+        /// target — instead starts a SmoothDamp transition that recalculates the vessel's
+        /// position every frame, producing a jerk-free blend even when the vessel is moving.
+        /// </summary>
+        public void SetupGamePlayCamerasWithTransition(
+            Transform followTarget, Vector3 fromPosition, Quaternion fromRotation, float transitionDuration)
+        {
+            if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
+            _playerFollowTarget = followTarget;
+            _playerCamera?.SetFollowTarget(_playerFollowTarget);
+            _deathCamera?.SetFollowTarget(_playerFollowTarget);
+            _themeManagerData.SetBackgroundColor(Camera.main);
+
+            SetCloseCameraActive();
+
+            var shipGO = _playerFollowTarget.gameObject;
+            var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
+            if (shipCustomizer != null)
+                shipCustomizer.Configure(_playerCamera);
+
+            if (_playerCamera is CustomCameraController pcc)
+                pcc.StartTransitionFromPose(fromPosition, fromRotation, transitionDuration);
+        }
+
         public void SetNormalizedCloseCameraDistance(float normalizedDistance)
         {
             if (_playerCamera == null) return;

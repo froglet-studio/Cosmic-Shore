@@ -24,6 +24,12 @@ namespace CosmicShore.Gameplay
         public bool adaptiveZoomEnabled;
         private float _neutralOffsetZ;
 
+        // --- Transition mode ---
+        // When > 0, UpdateCamera forces SmoothDamp (ignoring _disableRotationLerp)
+        // with a longer smooth time for a graceful blend from an arbitrary world pose.
+        private float _transitionTimeRemaining;
+        private float _transitionSmoothTime;
+
         private void Awake()
         {
             Camera = GetComponent<Camera>();
@@ -43,33 +49,46 @@ namespace CosmicShore.Gameplay
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = _followTarget.position;
 
+            // During a transition, force SmoothDamp regardless of _disableRotationLerp
+            // so the camera glides smoothly from an arbitrary pose to the vessel.
+            bool isTransitioning = _transitionTimeRemaining > 0f;
+            if (isTransitioning)
+                _transitionTimeRemaining -= Time.deltaTime;
+
             Vector3 desiredPos = _followTarget.position + _followTarget.rotation * _followOffset;
             Vector3 shipDelta = _followTarget.position - _lastTargetPos;
             float fwd = Vector3.Dot(shipDelta, _followTarget.forward);
             float lat = Vector3.Dot(shipDelta, _followTarget.right);
 
-            if (_disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
+            bool shouldSnap = !isTransitioning
+                              && (_disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd));
+
+            if (shouldSnap)
             {
                 transform.position = desiredPos;
                 _velocity = Vector3.zero;
             }
             else
             {
+                float smoothTime = isTransitioning ? _transitionSmoothTime : _followSmoothTime;
                 transform.position = Vector3.SmoothDamp(
-                    transform.position, desiredPos, ref _velocity, _followSmoothTime
+                    transform.position, desiredPos, ref _velocity, smoothTime
                 );
             }
 
             if (!SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
-            if (_disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
+            if (shouldSnap)
             {
                 transform.rotation = targetRot;
             }
             else
             {
-                float t = 1f - Mathf.Exp(-_rotationSmoothTime * Time.deltaTime);
+                float rotSpeed = isTransitioning
+                    ? 1f / Mathf.Max(_transitionSmoothTime, 0.01f)
+                    : _rotationSmoothTime;
+                float t = 1f - Mathf.Exp(-rotSpeed * Time.deltaTime);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
             }
 
@@ -130,11 +149,30 @@ namespace CosmicShore.Gameplay
             _velocity = Vector3.zero;
         }
 
+        /// <summary>
+        /// Starts a smooth transition from the given world-space pose to the follow target.
+        /// During the transition, SmoothDamp is forced regardless of <see cref="_disableRotationLerp"/>
+        /// so the camera glides from an arbitrary position (e.g. menu orbit) to the vessel
+        /// without any jerk. The target position is recalculated every frame in
+        /// <see cref="UpdateCamera"/>, keeping the transition smooth even when the vessel moves.
+        /// After the transition, normal UpdateCamera behavior resumes.
+        /// </summary>
+        public void StartTransitionFromPose(Vector3 position, Quaternion rotation, float duration)
+        {
+            transform.SetPositionAndRotation(position, rotation);
+            _velocity = Vector3.zero;
+            _transitionTimeRemaining = duration;
+            // SmoothDamp converges ~95% at 3× smoothTime, so use duration/3
+            _transitionSmoothTime = duration * 0.33f;
+            if (_followTarget)
+                _lastTargetPos = _followTarget.position;
+        }
+
         public void Activate()
         {
             gameObject.SetActive(true);
             if (!_currentSettings) return;
-            
+
             Camera.nearClipPlane = _currentSettings.nearClipPlane;
             Camera.farClipPlane = _currentSettings.farClipPlane;
         }
