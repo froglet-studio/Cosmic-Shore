@@ -891,8 +891,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Captures a screenshot excluding UI layers.
-        /// Temporarily disables the UI layer on the active camera, renders to a RenderTexture,
-        /// saves the result as PNG, then restores the camera's original culling mask.
+        /// Temporarily disables all Canvas components, waits one frame for URP to render
+        /// the scene without UI, reads pixels from the screen buffer, then restores canvases.
         /// </summary>
         public void TakeDebugScreenshot()
         {
@@ -901,34 +901,31 @@ namespace CosmicShore.Gameplay
 
         IEnumerator CaptureShapeScreenshot()
         {
-            // Wait for end of frame so current rendering is done
+            if (Screen.width == 0 || Screen.height == 0) yield break;
+
+            // Temporarily hide all UI canvases so the screenshot captures only the 3D scene.
+            // This avoids Camera.Render() which is not reliably supported in URP.
+            var canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            var wasEnabled = new bool[canvases.Length];
+            for (int i = 0; i < canvases.Length; i++)
+            {
+                wasEnabled[i] = canvases[i].enabled;
+                canvases[i].enabled = false;
+            }
+
+            // Wait one frame so URP renders the scene without UI, then capture after render completes
+            yield return null;
             yield return new WaitForEndOfFrame();
 
-            var cam = Camera.main;
-            if (!cam) yield break;
-
-            // Save original culling mask and disable UI layer
-            int originalCullingMask = cam.cullingMask;
-            int uiLayer = LayerMask.NameToLayer("UI");
-            if (uiLayer >= 0)
-                cam.cullingMask &= ~(1 << uiLayer);
-
-            // Create temporary render texture matching screen resolution
-            var rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24);
-            cam.targetTexture = rt;
-            cam.Render();
-            cam.targetTexture = null;
-
-            // Restore camera
-            cam.cullingMask = originalCullingMask;
-
-            // Read pixels from render texture
-            RenderTexture.active = rt;
             var screenshot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
             screenshot.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
             screenshot.Apply();
-            RenderTexture.active = null;
-            RenderTexture.ReleaseTemporary(rt);
+
+            // Restore canvases immediately
+            for (int i = 0; i < canvases.Length; i++)
+            {
+                if (canvases[i]) canvases[i].enabled = wasEnabled[i];
+            }
 
             // Save to disk
             string folder = Path.Combine(Application.persistentDataPath, "Screenshots");
@@ -936,7 +933,7 @@ namespace CosmicShore.Gameplay
             string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string filePath = Path.Combine(folder, $"Shape_{timestamp}.png");
             File.WriteAllBytes(filePath, screenshot.EncodeToPNG());
-            Object.Destroy(screenshot);
+            Destroy(screenshot);
 
             Debug.Log($"[ShapeDrawing] Screenshot saved (UI excluded): {filePath}");
         }
