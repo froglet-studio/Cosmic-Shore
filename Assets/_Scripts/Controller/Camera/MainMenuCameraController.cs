@@ -394,35 +394,48 @@ namespace CosmicShore.Gameplay
             EnsureBridgeVCam();
             if (!_bridgeVCam) { ActivateMenuCameraImmediate(); return; }
 
-            // 1. Position bridge at CM PlayerCam's current location (static snapshot)
-            ConfigureBridgeAsSnapshot(
-                _playerCameraController.transform.position,
-                _playerCameraController.transform.rotation);
+            // Capture CM PlayerCam's current pose — this is the position the user sees.
+            var snapshotPos = _playerCameraController.transform.position;
+            var snapshotRot = _playerCameraController.transform.rotation;
 
-            // 2. Invalidate the bridge's cached Cinemachine pipeline state so CM3 treats
-            //    reactivation as a fresh camera, even when the vessel hasn't moved and the
-            //    position is identical to the bridge's previous deactivation state.
+            // 1. Position bridge at CM PlayerCam's current location (static snapshot)
+            ConfigureBridgeAsSnapshot(snapshotPos, snapshotRot);
             _bridgeVCam.PreviousStateIsValid = false;
 
-            // Activate bridge — CinemachineBrain moves Game Scene Main Camera to bridge pos
+            // 2. Force the Brain to CUT to the bridge (not blend).
+            //    During freestyle no Cinemachine vCams are active, so the Brain's internal
+            //    state is stale (last orbit position). Without a forced cut, the Brain would
+            //    blend from that stale position to the bridge — producing a visible snap to a
+            //    "random" intermediate position when CM PlayerCam deactivates.
+            CinemachineBlendDefinition savedBlend = default;
+            if (_brain)
+            {
+                savedBlend = _brain.DefaultBlend;
+                _brain.DefaultBlend = new CinemachineBlendDefinition(
+                    CinemachineBlendDefinition.Styles.Cut, 0f);
+            }
+
             _bridgeVCam.gameObject.SetActive(true);
             SetVCamPriority(_bridgeVCam, HighPriority);
+            _bridgeVCam.ForceCameraPosition(snapshotPos, snapshotRot);
 
-            // Force Cinemachine's internal state to match the snapshot pose.
-            _bridgeVCam.ForceCameraPosition(
-                _playerCameraController.transform.position,
-                _playerCameraController.transform.rotation);
+            // Also snap the Brain's scene camera directly as a safety net — ensures the
+            // visible camera is at the vessel follow pose even if the Brain hasn't evaluated yet.
+            if (_brain)
+                _brain.transform.SetPositionAndRotation(snapshotPos, snapshotRot);
 
-            // Wait for CinemachineBrain to process the new vCam in its LateUpdate pass.
-            // Using PostLateUpdate ensures the Brain has evaluated the bridge before we
-            // proceed to deactivate CM PlayerCam and activate the menu vCam.
+            // Wait for the Brain to evaluate the bridge with the cut blend.
             await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
-            // 3. Deactivate CM PlayerCam — Game Scene Main Camera is already at the same position
+            // 3. Restore the Brain's blend setting for the bridge → orbit transition.
+            if (_brain)
+                _brain.DefaultBlend = savedBlend;
+
+            // 4. Deactivate CM PlayerCam — Game Scene Main Camera is already at the same position
             //    (renders at depth -1, now unobstructed since CM PlayerCam at depth 0 is gone)
             CameraManager.Instance.DeactivateAllCameras();
 
-            // 4. Activate menu vCam at higher priority → CinemachineBrain blends bridge → orbit
+            // 5. Activate menu vCam at higher priority → CinemachineBrain blends bridge → orbit
             if (_menuVCam)
             {
                 SetMenuVCamTarget();
@@ -430,14 +443,14 @@ namespace CosmicShore.Gameplay
             }
             SetVCamPriority(_menuVCam, HighPriority + 1);
 
-            // 5. Wait for blend to complete
+            // 6. Wait for blend to complete
             //    Bridge must stay active as the "from" side of the CinemachineBrain blend.
             await UniTask.Delay(
                 (int)(_transitionDuration * 1000),
                 ignoreTimeScale: true,
                 cancellationToken: ct);
 
-            // 6. Clean up bridge and normalize menu priority
+            // 7. Clean up bridge and normalize menu priority
             _bridgeVCam.gameObject.SetActive(false);
             SetVCamPriority(_menuVCam, HighPriority);
 
