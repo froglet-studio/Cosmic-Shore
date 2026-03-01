@@ -10,8 +10,8 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// Editor window that displays all <see cref="CanvasGroup"/> GameObjects in the
-    /// active scene as a hierarchy tree. Each node has a toggle to set whether it
-    /// should be visible or hidden at game start. State is stored in an
+    /// active scene as a hierarchy tree. Each node has an active toggle and an alpha
+    /// field to configure initial state at game start. State is stored in an
     /// <see cref="InitialPanelStateApplier"/> component in the scene.
     /// </summary>
     public class CanvasGroupEditorWindow : EditorWindow
@@ -23,10 +23,16 @@ namespace CosmicShore.Editor
         private readonly List<TreeNode> _rootNodes = new();
         private string _searchFilter = "";
         private readonly HashSet<int> _expanded = new();
-        private readonly Dictionary<GameObject, bool> _managedStates = new();
+        private readonly Dictionary<GameObject, PanelState> _managed = new();
         private int _totalCanvasGroups;
         private int _managedCount;
         private bool _dirty = true;
+
+        private struct PanelState
+        {
+            public bool active;
+            public float alpha;
+        }
 
         private class TreeNode
         {
@@ -41,7 +47,7 @@ namespace CosmicShore.Editor
         public static void ShowWindow()
         {
             var window = GetWindow<CanvasGroupEditorWindow>("Canvas Group Editor");
-            window.minSize = new Vector2(400, 300);
+            window.minSize = new Vector2(450, 300);
         }
 
         void OnEnable()
@@ -73,7 +79,7 @@ namespace CosmicShore.Editor
 
         void RebuildManagedCache()
         {
-            _managedStates.Clear();
+            _managed.Clear();
             _managedCount = 0;
             if (_applier == null) return;
 
@@ -85,7 +91,11 @@ namespace CosmicShore.Editor
                 var entry = list.GetArrayElementAtIndex(i);
                 var panel = entry.FindPropertyRelative("panel").objectReferenceValue as GameObject;
                 if (panel == null) continue;
-                _managedStates[panel] = entry.FindPropertyRelative("startActive").boolValue;
+                _managed[panel] = new PanelState
+                {
+                    active = entry.FindPropertyRelative("startActive").boolValue,
+                    alpha = entry.FindPropertyRelative("startAlpha").floatValue
+                };
                 _managedCount++;
             }
         }
@@ -175,7 +185,7 @@ namespace CosmicShore.Editor
             }
 
             DrawActionButtons();
-            EditorGUILayout.Space(2);
+            DrawColumnHeaders();
 
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
             foreach (var root in _rootNodes)
@@ -235,7 +245,7 @@ namespace CosmicShore.Editor
         {
             EditorGUILayout.HelpBox(
                 "No InitialPanelStateApplier found in the scene.\n" +
-                "Create one to define initial panel visibility at game start.",
+                "Create one to define initial panel states at game start.",
                 MessageType.Info);
 
             if (GUILayout.Button("Create InitialPanelStateApplier"))
@@ -253,12 +263,22 @@ namespace CosmicShore.Editor
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Add All (Current State)"))
                 AddAllCanvasGroups();
-            if (GUILayout.Button("Show All"))
-                SetAllState(true);
-            if (GUILayout.Button("Hide All"))
-                SetAllState(false);
+            if (GUILayout.Button("Activate All"))
+                SetAllActive(true);
+            if (GUILayout.Button("Deactivate All"))
+                SetAllActive(false);
             if (GUILayout.Button("Clean Nulls"))
                 CleanNullEntries();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawColumnHeaders()
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(22);
+            GUILayout.Label("On", EditorStyles.centeredGreyMiniLabel, GUILayout.Width(18));
+            GUILayout.Label("Alpha", EditorStyles.centeredGreyMiniLabel, GUILayout.Width(40));
+            GUILayout.Label("Panel", EditorStyles.centeredGreyMiniLabel);
             EditorGUILayout.EndHorizontal();
         }
 
@@ -267,7 +287,7 @@ namespace CosmicShore.Editor
             if (node.go == null) return;
             if (!string.IsNullOrEmpty(_searchFilter) && !MatchesFilter(node)) return;
 
-            bool isManaged = node.hasCanvasGroup && _managedStates.ContainsKey(node.go);
+            bool isManaged = node.hasCanvasGroup && _managed.ContainsKey(node.go);
             bool hasChildren = node.children.Count > 0;
             int id = node.go.GetInstanceID();
             bool isExpanded = _expanded.Contains(id);
@@ -291,24 +311,31 @@ namespace CosmicShore.Editor
                 GUILayout.Space(18);
             }
 
-            // Visibility toggle for CanvasGroup nodes
             var prevColor = GUI.color;
             if (node.hasCanvasGroup)
             {
-                bool current = isManaged
-                    ? _managedStates[node.go]
-                    : DefaultVisibility(node.go);
+                PanelState current = isManaged
+                    ? _managed[node.go]
+                    : DefaultState(node.go);
 
                 if (!isManaged) GUI.color = new Color(1f, 1f, 1f, 0.5f);
-                bool next = EditorGUILayout.Toggle(current, GUILayout.Width(16));
-                GUI.color = prevColor;
 
-                if (next != current)
-                    SetPanelState(node.go, next);
+                // Active toggle (SetActive)
+                bool nextActive = EditorGUILayout.Toggle(current.active, GUILayout.Width(16));
+                if (nextActive != current.active)
+                    SetEntry(node.go, nextActive, current.alpha);
+
+                // Alpha field (CanvasGroup.alpha)
+                float nextAlpha = EditorGUILayout.FloatField(current.alpha, GUILayout.Width(40));
+                nextAlpha = Mathf.Clamp01(nextAlpha);
+                if (!Mathf.Approximately(nextAlpha, current.alpha))
+                    SetEntry(node.go, current.active, nextAlpha);
+
+                GUI.color = prevColor;
             }
             else
             {
-                GUILayout.Space(20);
+                GUILayout.Space(60);
             }
 
             // Name label — click to select in hierarchy
@@ -341,7 +368,7 @@ namespace CosmicShore.Editor
                 if (isManaged)
                 {
                     if (GUILayout.Button("\u00d7", EditorStyles.miniButton, GUILayout.Width(20)))
-                        RemovePanelState(node.go);
+                        RemoveEntry(node.go);
                 }
                 else
                 {
@@ -362,8 +389,11 @@ namespace CosmicShore.Editor
             }
         }
 
-        static bool DefaultVisibility(GameObject go) =>
-            go.TryGetComponent<CanvasGroup>(out var cg) ? cg.alpha > 0f : go.activeSelf;
+        static PanelState DefaultState(GameObject go) => new()
+        {
+            active = go.activeSelf,
+            alpha = go.TryGetComponent<CanvasGroup>(out var cg) ? cg.alpha : 1f
+        };
 
         bool MatchesFilter(TreeNode node)
         {
@@ -382,7 +412,7 @@ namespace CosmicShore.Editor
 
         // ─────────────────────── Mutations ──────────────────────────
 
-        void SetPanelState(GameObject go, bool startActive)
+        void SetEntry(GameObject go, bool active, float alpha)
         {
             if (_applier == null) return;
             _serializedApplier.Update();
@@ -394,9 +424,10 @@ namespace CosmicShore.Editor
                 var entry = list.GetArrayElementAtIndex(i);
                 if (entry.FindPropertyRelative("panel").objectReferenceValue == go)
                 {
-                    entry.FindPropertyRelative("startActive").boolValue = startActive;
+                    entry.FindPropertyRelative("startActive").boolValue = active;
+                    entry.FindPropertyRelative("startAlpha").floatValue = alpha;
                     _serializedApplier.ApplyModifiedProperties();
-                    _managedStates[go] = startActive;
+                    _managed[go] = new PanelState { active = active, alpha = alpha };
                     return;
                 }
             }
@@ -405,13 +436,14 @@ namespace CosmicShore.Editor
             list.InsertArrayElementAtIndex(list.arraySize);
             var newEntry = list.GetArrayElementAtIndex(list.arraySize - 1);
             newEntry.FindPropertyRelative("panel").objectReferenceValue = go;
-            newEntry.FindPropertyRelative("startActive").boolValue = startActive;
+            newEntry.FindPropertyRelative("startActive").boolValue = active;
+            newEntry.FindPropertyRelative("startAlpha").floatValue = alpha;
             _serializedApplier.ApplyModifiedProperties();
-            _managedStates[go] = startActive;
+            _managed[go] = new PanelState { active = active, alpha = alpha };
             _managedCount++;
         }
 
-        void RemovePanelState(GameObject go)
+        void RemoveEntry(GameObject go)
         {
             if (_applier == null) return;
             _serializedApplier.Update();
@@ -424,7 +456,7 @@ namespace CosmicShore.Editor
                 {
                     list.DeleteArrayElementAtIndex(i);
                     _serializedApplier.ApplyModifiedProperties();
-                    _managedStates.Remove(go);
+                    _managed.Remove(go);
                     _managedCount--;
                     return;
                 }
@@ -439,20 +471,21 @@ namespace CosmicShore.Editor
 
             foreach (var node in Flatten(_rootNodes))
             {
-                if (!node.hasCanvasGroup || _managedStates.ContainsKey(node.go)) continue;
-                bool state = DefaultVisibility(node.go);
+                if (!node.hasCanvasGroup || _managed.ContainsKey(node.go)) continue;
+                var state = DefaultState(node.go);
                 list.InsertArrayElementAtIndex(list.arraySize);
                 var entry = list.GetArrayElementAtIndex(list.arraySize - 1);
                 entry.FindPropertyRelative("panel").objectReferenceValue = node.go;
-                entry.FindPropertyRelative("startActive").boolValue = state;
-                _managedStates[node.go] = state;
+                entry.FindPropertyRelative("startActive").boolValue = state.active;
+                entry.FindPropertyRelative("startAlpha").floatValue = state.alpha;
+                _managed[node.go] = state;
                 _managedCount++;
             }
 
             _serializedApplier.ApplyModifiedProperties();
         }
 
-        void SetAllState(bool state)
+        void SetAllActive(bool active)
         {
             if (_applier == null) return;
             _serializedApplier.Update();
@@ -460,11 +493,15 @@ namespace CosmicShore.Editor
 
             for (int i = 0; i < list.arraySize; i++)
                 list.GetArrayElementAtIndex(i)
-                    .FindPropertyRelative("startActive").boolValue = state;
+                    .FindPropertyRelative("startActive").boolValue = active;
 
             _serializedApplier.ApplyModifiedProperties();
-            foreach (var key in _managedStates.Keys.ToList())
-                _managedStates[key] = state;
+            foreach (var key in _managed.Keys.ToList())
+            {
+                var s = _managed[key];
+                s.active = active;
+                _managed[key] = s;
+            }
         }
 
         void CleanNullEntries()
