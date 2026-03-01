@@ -5670,7 +5670,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 7118097780360227049}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Controllers.OverviewPanelController,
+        m_TargetAssemblyTypeName: CosmicShore.UI.VesselSelectionPanelController,
           Assembly-CSharp
         m_MethodName: OnPauseButtonClicked
         m_Mode: 1
@@ -5846,7 +5846,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 7118097780360227049}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Controllers.OverviewPanelController,
+        m_TargetAssemblyTypeName: CosmicShore.UI.VesselSelectionPanelController,
           Assembly-CSharp
         m_MethodName: OnResumeButtonClicked
         m_Mode: 1
