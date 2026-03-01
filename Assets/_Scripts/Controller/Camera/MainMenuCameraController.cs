@@ -58,6 +58,7 @@ namespace CosmicShore.Gameplay
         // Freestyle vCam (created on CameraManager for Cinemachine priority blending)
         CinemachineCamera _freestyleVCam;
         CinemachineFollow _freestyleFollow;
+        CinemachineRotationComposer _freestyleAim;
 
         const int HighPriority = 20;
         const int LowPriority = 0;
@@ -164,11 +165,8 @@ namespace CosmicShore.Gameplay
             {
                 _freestyleVCam = existing.GetComponent<CinemachineCamera>();
                 _freestyleFollow = existing.GetComponent<CinemachineFollow>();
-
-                // Strip CinemachineRotationComposer if present — LockToTarget rotation
-                // tracking is sufficient and keeps position/rotation damping in sync.
-                var composer = existing.GetComponent<CinemachineRotationComposer>();
-                if (composer) Destroy(composer);
+                _freestyleAim = existing.GetComponent<CinemachineRotationComposer>();
+                if (!_freestyleAim) _freestyleAim = existing.gameObject.AddComponent<CinemachineRotationComposer>();
             }
             else
             {
@@ -177,13 +175,12 @@ namespace CosmicShore.Gameplay
 
                 _freestyleVCam = go.AddComponent<CinemachineCamera>();
                 _freestyleFollow = go.AddComponent<CinemachineFollow>();
+                _freestyleAim = go.AddComponent<CinemachineRotationComposer>();
 
-                // LockToTarget interprets FollowOffset in the target's local space
-                // so the camera stays behind the vessel as it rotates — matching
-                // CustomCameraController's _followTarget.rotation * _followOffset.
-                // No CinemachineRotationComposer — LockToTarget already tracks the
-                // vessel's rotation via RotationDamping, keeping camera Up = vessel Up
-                // and camera forward = vessel forward.
+                // LockToTarget: offset is in target's local space (camera stays behind
+                // vessel as it rotates), and the reference up matches the vessel's up.
+                // CinemachineRotationComposer aims at the vessel from behind — with
+                // offset {0,0,-Z} this is effectively the vessel's forward direction.
                 var tracker = _freestyleFollow.TrackerSettings;
                 tracker.BindingMode = BindingMode.LockToTarget;
                 _freestyleFollow.TrackerSettings = tracker;
@@ -307,14 +304,19 @@ namespace CosmicShore.Gameplay
                     // Mirror CustomCameraController.ApplySettings() damping behavior:
                     // FixedCamera → snap (zero damping, disableRotationLerp = true)
                     // DynamicCamera → smooth (followSmoothTime for position and rotation)
-                    var damping = settings.mode == CameraMode.DynamicCamera
-                        ? new Vector3(settings.followSmoothTime, settings.followSmoothTime, settings.followSmoothTime)
-                        : Vector3.zero;
+                    var smooth = settings.mode == CameraMode.DynamicCamera
+                        ? settings.followSmoothTime : 0f;
+                    var posDamping = new Vector3(smooth, smooth, smooth);
                     var tracker = _freestyleFollow.TrackerSettings;
                     tracker.BindingMode = BindingMode.LockToTarget;
-                    tracker.PositionDamping = damping;
-                    tracker.RotationDamping = damping;
+                    tracker.PositionDamping = posDamping;
+                    tracker.RotationDamping = posDamping;
                     _freestyleFollow.TrackerSettings = tracker;
+
+                    // Aim damping (CinemachineRotationComposer) must match so
+                    // position and orientation converge at the same rate.
+                    if (_freestyleAim)
+                        _freestyleAim.Damping = new Vector2(smooth, smooth);
                 }
             }
 
