@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -103,13 +104,13 @@ namespace CosmicShore.UI
         private void SetButtonStates(bool showAcceptDecline, bool showCancel)
         {
             if (acceptButton != null)
-                acceptButton.gameObject.SetActive(showAcceptDecline);
+                acceptButton.gameObject.SetVisible(showAcceptDecline);
 
             if (declineButton != null)
-                declineButton.gameObject.SetActive(showAcceptDecline);
+                declineButton.gameObject.SetVisible(showAcceptDecline);
 
             if (cancelButton != null)
-                cancelButton.gameObject.SetActive(showCancel);
+                cancelButton.gameObject.SetVisible(showCancel);
         }
     }
 }

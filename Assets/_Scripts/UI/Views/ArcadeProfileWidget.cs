@@ -1,10 +1,9 @@
 using CosmicShore.ScriptableObjects;
-using CosmicShore.UI;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Linq;
 
 namespace CosmicShore.UI
 {
@@ -41,7 +40,7 @@ namespace CosmicShore.UI
             if (saveUsernameButton)
             {
                 saveUsernameButton.onClick.AddListener(OnSaveUsernameClicked);
-                saveUsernameButton.gameObject.SetActive(false);
+                saveUsernameButton.gameObject.SetVisible(false);
             }
 
             if (avatarButton)
@@ -49,7 +48,7 @@ namespace CosmicShore.UI
 
             if (usernameInputField)
             {
-                usernameInputField.gameObject.SetActive(false);
+                usernameInputField.gameObject.SetVisible(false);
                 usernameInputField.onEndEdit.AddListener(OnUsernameInputEndEdit);
             }
 
@@ -106,21 +105,21 @@ namespace CosmicShore.UI
             _isEditing = true;
 
             if (usernameText)
-                usernameText.gameObject.SetActive(false);
+                usernameText.gameObject.SetVisible(false);
 
             if (usernameInputField)
             {
-                usernameInputField.gameObject.SetActive(true);
+                usernameInputField.gameObject.SetVisible(true);
                 usernameInputField.text = usernameText ? usernameText.text : string.Empty;
                 usernameInputField.Select();
                 usernameInputField.ActivateInputField();
             }
 
             if (editUsernameButton)
-                editUsernameButton.gameObject.SetActive(false);
+                editUsernameButton.gameObject.SetVisible(false);
 
             if (saveUsernameButton)
-                saveUsernameButton.gameObject.SetActive(true);
+                saveUsernameButton.gameObject.SetVisible(true);
         }
 
         void OnSaveUsernameClicked()
@@ -151,16 +150,16 @@ namespace CosmicShore.UI
 
             // Restore display mode
             if (usernameText)
-                usernameText.gameObject.SetActive(true);
+                usernameText.gameObject.SetVisible(true);
 
             if (usernameInputField)
-                usernameInputField.gameObject.SetActive(false);
+                usernameInputField.gameObject.SetVisible(false);
 
             if (editUsernameButton)
-                editUsernameButton.gameObject.SetActive(true);
+                editUsernameButton.gameObject.SetVisible(true);
 
             if (saveUsernameButton)
-                saveUsernameButton.gameObject.SetActive(false);
+                saveUsernameButton.gameObject.SetVisible(false);
         }
 
         // ----- Avatar Selection -----

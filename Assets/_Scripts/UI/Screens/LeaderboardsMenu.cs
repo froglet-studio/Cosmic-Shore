@@ -122,7 +122,7 @@ namespace CosmicShore.UI
         {
             // Deactivate All
             for (var i = 0; i < GameSelectionContainer.transform.childCount; i++)
-                GameSelectionContainer.GetChild(i).gameObject.SetActive(false);
+                GameSelectionContainer.GetChild(i).gameObject.SetVisible(false);
 
             // Reactivate based on the number of games for the given vessel
             for (var i = 0; i < _displayCount; i++)
@@ -134,7 +134,7 @@ namespace CosmicShore.UI
                 try
                 {
                     var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
-                    gameSelection.SetActive(true);
+                    gameSelection.SetVisible(true);
                     gameSelection.GetComponent<Image>().sprite = game.IconInactive;
                     gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
                     gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
@@ -180,7 +180,7 @@ namespace CosmicShore.UI
 
 
             for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
-                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
+                HighScoresContainer.transform.GetChild(i).gameObject.SetVisible(false);
 
             for (var i = 0; i < LeaderboardEntriesV2.Count; i++)
             {
@@ -201,7 +201,7 @@ namespace CosmicShore.UI
                     HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().fontSize = 18;
                 }
                 HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.Score.ToString();
-                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
+                HighScoresContainer.transform.GetChild(i).gameObject.SetVisible(true);
 
                 // Highlight the player's Score
                 if (score.PlayerId == AuthenticationManager.PlayFabAccount.ID)

@@ -46,12 +46,12 @@ namespace CosmicShore.UI
 
         public void Show()
         {
-            gameObject.SetActive(true);
+            gameObject.SetVisible(true);
         }
 
         public void Hide()
         {
-            gameObject.SetActive(false);
+            gameObject.SetVisible(false);
         }
 
         // ─────────────────────────────────────────────────────────────────────

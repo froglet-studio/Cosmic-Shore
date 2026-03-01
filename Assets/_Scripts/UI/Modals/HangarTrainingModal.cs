@@ -107,7 +107,7 @@ namespace CosmicShore.UI
 
                 var preview = Instantiate(game.PreviewClip);
                 preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
-                SelectedGamePreviewWindow.SetActive(true);
+                SelectedGamePreviewWindow.SetVisible(true);
                 Canvas.ForceUpdateCanvases();
             }
         }

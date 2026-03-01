@@ -87,29 +87,29 @@ namespace CosmicShore.UI
         {
             Mode = ButtonMode.Free;
             BackgroundImage.sprite = FreeButtonBackgroundSprite;
-            FreeButton.gameObject.SetActive(true);
+            FreeButton.gameObject.SetVisible(true);
 
-            AdButton.gameObject.SetActive(false);
-            ClockButton.gameObject.SetActive(false);
+            AdButton.gameObject.SetVisible(false);
+            ClockButton.gameObject.SetVisible(false);
         }
 
         void EnterAdMode()
         {
             Mode = ButtonMode.Ad;
             BackgroundImage.sprite = AdButtonBackgroundSprite;
-            AdButton.gameObject.SetActive(true);
+            AdButton.gameObject.SetVisible(true);
 
-            ClockButton.gameObject.SetActive(false);
-            FreeButton.gameObject.SetActive(false);
+            ClockButton.gameObject.SetVisible(false);
+            FreeButton.gameObject.SetVisible(false);
         }
         void EnterClockMode()
         {
             Mode = ButtonMode.Clock;
             BackgroundImage.sprite = ClockButtonBackgroundSprite;
-            ClockButton.gameObject.SetActive(true);
+            ClockButton.gameObject.SetVisible(true);
 
-            AdButton.gameObject.SetActive(false);
-            FreeButton.gameObject.SetActive(false);
+            AdButton.gameObject.SetVisible(false);
+            FreeButton.gameObject.SetVisible(false);
         }
 
         public override void Purchase()

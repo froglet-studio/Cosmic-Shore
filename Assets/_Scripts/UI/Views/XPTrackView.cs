@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using DG.Tweening;
 using Reflex.Attributes;
 using TMPro;
@@ -132,11 +133,11 @@ namespace CosmicShore.UI
             // Locked / Unlocked state
             var lockedIcon = itemGO.transform.Find("LockedIcon");
             if (lockedIcon != null)
-                lockedIcon.gameObject.SetActive(!isUnlocked);
+                lockedIcon.gameObject.SetVisible(!isUnlocked);
 
             var unlockedObj = itemGO.transform.Find("UnlockedObject");
             if (unlockedObj != null)
-                unlockedObj.gameObject.SetActive(isUnlocked);
+                unlockedObj.gameObject.SetVisible(isUnlocked);
         }
 
         void SetXPImmediate(int xp)
@@ -183,11 +184,11 @@ namespace CosmicShore.UI
                 var itemGO = _spawnedItems[i];
                 var lockedIcon = itemGO.transform.Find("LockedIcon");
                 if (lockedIcon != null)
-                    lockedIcon.gameObject.SetActive(!isUnlocked);
+                    lockedIcon.gameObject.SetVisible(!isUnlocked);
 
                 var unlockedObj = itemGO.transform.Find("UnlockedObject");
                 if (unlockedObj != null)
-                    unlockedObj.gameObject.SetActive(isUnlocked);
+                    unlockedObj.gameObject.SetVisible(isUnlocked);
             }
         }
 

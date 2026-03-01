@@ -1,6 +1,5 @@
-using CosmicShore.UI;
-using UnityEngine;
 using CosmicShore.Utility;
+using UnityEngine;
 
 namespace CosmicShore.UI
 {
@@ -25,8 +24,8 @@ namespace CosmicShore.UI
 
             if (FirstAppLaunchExperience())
             {
-                FirstAppLaunchScreen.SetActive(true);
-                NavBar.SetActive(false);
+                FirstAppLaunchScreen.SetVisible(true);
+                NavBar.SetVisible(false);
             }
         }
 

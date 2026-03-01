@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
@@ -19,7 +20,7 @@ namespace CosmicShore.UI
             base.OnPurchaseComplete();
 
             if (!PurchaseLimitReached())
-                PriceButton.gameObject.SetActive(true);
+                PriceButton.gameObject.SetVisible(true);
         }
 
         protected override void PreModalCloseEffects()

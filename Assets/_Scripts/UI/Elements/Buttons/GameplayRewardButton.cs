@@ -53,17 +53,17 @@ namespace CosmicShore.UI
         public void MakeRewardUnavailable()
         {
             CSDebug.Log("DailyChallengeRewardButton - SetRewardAvailable");
-            CollectedButton.gameObject.SetActive(false);
-            NotEarnedButton.gameObject.SetActive(true);
-            ClaimButton.gameObject.SetActive(false);
+            CollectedButton.gameObject.SetVisible(false);
+            NotEarnedButton.gameObject.SetVisible(true);
+            ClaimButton.gameObject.SetVisible(false);
         }
 
         public void MakeRewardAvailable()
         {
             CSDebug.Log("DailyChallengeRewardButton - SetRewardAvailable");
-            CollectedButton.gameObject.SetActive(false);
-            NotEarnedButton.gameObject.SetActive(false);
-            ClaimButton.gameObject.SetActive(true);
+            CollectedButton.gameObject.SetVisible(false);
+            NotEarnedButton.gameObject.SetVisible(false);
+            ClaimButton.gameObject.SetVisible(true);
         }
 
         public void ClaimReward()
@@ -87,9 +87,9 @@ namespace CosmicShore.UI
         public void MarkClaimed()
         {
             CSDebug.Log($"DailyChallengeRewardButton - MarkClaimed:{RewardTier}");
-            NotEarnedButton.gameObject.SetActive(false);
-            ClaimButton.gameObject.SetActive(false);
-            CollectedButton.gameObject.SetActive(true);
+            NotEarnedButton.gameObject.SetVisible(false);
+            ClaimButton.gameObject.SetVisible(false);
+            CollectedButton.gameObject.SetVisible(true);
         }
 
         protected IEnumerator PurchaseVisualEffectCoroutine()
@@ -120,8 +120,8 @@ namespace CosmicShore.UI
             CollectedButton.transform.localRotation = Quaternion.Euler(90, 0, 0);
 
             // Hide the claim button and show the collected button
-            ClaimButton.gameObject.SetActive(false);
-            CollectedButton.gameObject.SetActive(true);
+            ClaimButton.gameObject.SetVisible(false);
+            CollectedButton.gameObject.SetVisible(true);
 
             // Reset the timer
             elapsedTime = 0f;
