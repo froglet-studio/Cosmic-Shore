@@ -65,7 +65,7 @@ Maneuvering through the HyperSea is usually a thrilling delight. Knowing where a
 - **Ransack Rally** (1-4 players) — Skim past trails on your way to a biome. Whoever steals more along the way wins.
 - **Freestyle Toybox** (1 player) — No rules, time, or score. Do what you want for as long as you like.
 - **Duel for the Cell** (1v1) — Create mass as trail blocks and disrupt your opponent's. Greatest mass volume wins.
-- **HexRace** (multiplayer) — Competitive multiplayer racing mode.
+- **HexRace** (1-4 players) — Crystal-collection racing on procedurally generated tracks. First player to collect all crystals wins. Supports solo with AI opponents, multiplayer with friends, or mixed human+AI lobbies. Intensity scales track complexity (segment count, helix radius). Features elemental comeback mechanics and server-authoritative scoring with golf rules (lower time = better rank).
 - **Wildlife Blitz** (1-4 players) — Co-op and competitive variants.
 - **Joust** (multiplayer) — Head-to-head combat mode.
 

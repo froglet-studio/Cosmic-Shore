@@ -977,6 +977,111 @@ Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsS
 - **DI access**: UI components access `FriendsServiceFacade` via `[Inject]`, not by finding it in the scene.
 - **Bridge between Party and Friends**: `FriendEntryView`'s invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
 
+### HexRace Game Mode
+
+HexRace is a competitive crystal-collection racing mode (1-4 players) using a **single unified scene** (`MinigameHexRace.unity`). There is no separate singleplayer scene — all games run through Netcode regardless of player count. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`. See `Assets/_Scripts/Controller/Arcade/HEXRACE.md` for the full technical reference.
+
+#### Architecture
+
+```
+MiniGameControllerBase (MonoBehaviour + NetworkBehaviour)
+  └── MultiplayerMiniGameControllerBase
+      └── MultiplayerDomainGamesController
+          └── HexRaceController
+```
+
+**SO config**: `SO_ArcadeGame` asset — `Mode=HexRace(33)`, `IsMultiplayer=true`, `MinPlayers=1`, `MaxPlayers=4`, `GolfScoring=true`
+
+#### Execution Flow
+
+```
+ArcadeGameConfigureModal.OnStartGameClicked()
+  ├─ SyncAllGameDataForLaunch():
+  │   ├─ gameData.SceneName = "MinigameHexRace"
+  │   ├─ gameData.GameMode = GameModes.HexRace
+  │   ├─ gameData.IsMultiplayerMode = true
+  │   ├─ gameData.SelectedPlayerCount = humanCount
+  │   └─ gameData.RequestedAIBackfillCount = max(0, config.PlayerCount - humanCount)
+  └─ gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
+      └─ SceneLoader.LaunchGame()
+          ├─ AppState → LoadingGame
+          └─ Network scene load (host always active from Menu_Main)
+```
+
+#### Player Count & AI Backfill
+
+| Humans in Party | Selected Players | AI Backfill | Total |
+|---|---|---|---|
+| 1 (solo) | 1 | 0 | 1 |
+| 1 (solo) | 2 | 1 | 2 |
+| 1 (solo) | 4 | 3 | 4 |
+| 2 (party) | 2 | 0 | 2 |
+| 2 (party) | 4 | 2 | 4 |
+| 3 (party) | 3 | 0 | 3 |
+
+#### Track Spawning
+
+Server generates a random seed → writes to `_netTrackSeed` NetworkVariable → all clients spawn identical track via `SegmentSpawner.Initialize()`.
+
+| Parameter | Formula | Base |
+|---|---|---|
+| Segments | `base * Intensity` | 10 |
+| Straight Line Length | `base / Intensity` | 400 |
+| Helix Radius | `Intensity / 1.3` | — |
+
+#### Race Rules
+
+- **Crystal target**: 39 (default from track waypoints, overridable via `_netCrystalsToFinish` NetworkVariable)
+- **Turn monitor**: `NetworkCrystalCollisionTurnMonitor` checks `gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target)` every frame
+- **Winner**: First player to collect all crystals → `HexRaceScoreTracker.HandleGameEnd()` → `controller.ReportLocalPlayerFinished(raceTime)`
+- **Server-authoritative**: `HexRaceController.ReportPlayerFinished_ServerRpc()` — guards with `_raceEnded` flag, only first finisher wins
+- **Scoring**: Winner score = race time (seconds); Loser score = `10000 + crystalsRemaining`. Golf rules: lower = better
+- **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients
+- **Comeback**: `ElementalComebackSystem` buffs losing players based on crystal deficit (e.g., Space element +4 for 4 crystals behind)
+
+#### End Game
+
+- `HexRaceEndGameController` reads `hexRaceController.WinnerName` and `RaceResultsReady` (set by server ClientRpc)
+- Winner sees "VICTORY" + race time; losers see "DEFEAT" + crystals remaining
+- `HexRaceScoreboard` displays all players ranked by score (golf rules)
+- Replay: `OnResetForReplayCustom()` resets race state, re-generates track with new seed
+
+#### NetworkVariable Inventory
+
+| Variable | Owner | Purpose |
+|---|---|---|
+| `_netTrackSeed` | Server | Deterministic track seed |
+| `_netCrystalsToFinish` | Server | Crystal collection target |
+| `_netCrystalCollisions` | Server | Crystal target (turn monitor) |
+| `WinnerName` | Server (ClientRpc) | Authoritative winner identity |
+| `RaceResultsReady` | Server (ClientRpc) | Final scores synced flag |
+
+#### Key Files — HexRace
+
+| Role | File | Location |
+|---|---|---|
+| Game controller | `HexRaceController.cs` | `_Scripts/Controller/Arcade/` |
+| Domain games base | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
+| Score tracker | `HexRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
+| Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
+| Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Arcade/` |
+| End game controller | `HexRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
+| In-game HUD | `HexRaceHUD.cs` | `_Scripts/UI/` |
+| Scoreboard | `HexRaceScoreboard.cs` | `_Scripts/UI/` |
+| Elemental comeback | `ElementalComebackSystem.cs` | `_Scripts/Controller/Arcade/` |
+| Stats provider | `HexRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
+| Player stats profile | `HexRacePlayerStatsProfile.cs` | `_Scripts/UI/` |
+| Full documentation | `HEXRACE.md` | `_Scripts/Controller/Arcade/` |
+
+#### HexRace Patterns to Follow
+
+- **Server authority**: Only the server declares race end, calculates final scores, and syncs winner. Never trust client-side winner determination.
+- **Deterministic track**: All clients spawn identical tracks from shared seed + intensity. `SegmentSpawner` uses `Random.InitState(seed)`.
+- **Golf scoring**: `UseGolfRules = true` — lower score = better rank. Winner time (seconds) always ranks above loser penalty (10000+).
+- **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all).
+- **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
+- **Crystal target sync**: Server writes target to `_netCrystalsToFinish` NetworkVariable so all clients display correct remaining count.
+
 ### FTUE (First-Time User Experience)
 
 Tutorial system at `Assets/FTUE/` (25 C# files) using adapter pattern with clean interface separation:
