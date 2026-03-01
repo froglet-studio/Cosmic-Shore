@@ -1633,22 +1633,10 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Screens.PauseMenu, Assembly-CSharp
-        m_MethodName: OnClickPauseGameButton
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Controllers.OverviewPanelController,
+      - m_Target: {fileID: 1570757006}
+        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuOverviewPanelController,
           Assembly-CSharp
-        m_MethodName: OnPauseButtonClicked
+        m_MethodName: OnCloseButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -92902,8 +92890,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Controllers.OverviewPanelController,
+      - m_Target: {fileID: 1570757006}
+        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuOverviewPanelController,
           Assembly-CSharp
         m_MethodName: OnResumeButtonClicked
         m_Mode: 1
@@ -92915,9 +92903,9 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
-        m_MethodName: Show
+      - m_Target: {fileID: 2130276009}
+        m_TargetAssemblyTypeName: CosmicShore.UI.MenuAudio, Assembly-CSharp
+        m_MethodName: PlayAudio
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
