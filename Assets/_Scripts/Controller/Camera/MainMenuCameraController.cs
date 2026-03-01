@@ -3,29 +3,26 @@ using CosmicShore.Utility;
 using Obvious.Soap;
 using Reflex.Attributes;
 using Unity.Cinemachine;
-using Unity.Cinemachine.TargetTracking;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Manages cameras for the Menu_Main scene using Cinemachine priority-based blending.
+    /// Manages cameras for the Menu_Main scene.
     ///
-    /// Both menu orbit and freestyle follow cameras are CinemachineCamera instances
-    /// living under <see cref="CameraManager"/>. Transitions happen by swapping their
-    /// priorities — the CinemachineBrain on the main camera smoothly blends between them.
-    ///
-    /// Menu state: "CM Main Menu" vCam orbits the crystal at a configurable radius/height/speed.
-    /// Freestyle state: "CM Freestyle" vCam follows the vessel with offset from <see cref="CameraSettingsSO"/>.
+    /// Menu state: "CM Main Menu" Cinemachine vCam orbits the crystal at a
+    /// configurable radius/height/speed.
+    /// Freestyle state: <see cref="CameraManager.SetupGamePlayCameras"/> activates
+    /// the proven <see cref="CustomCameraController"/> ("CM PlayerCam") to follow
+    /// the vessel — the same pipeline used by all gameplay scenes.
     ///
     /// Listens to SOAP events independently from <see cref="Core.MainMenuController"/>:
     ///   - <c>OnClientReady</c>        → activate menu camera
-    ///   - <c>OnEnterFreestyle</c>     → blend to freestyle camera
-    ///   - <c>OnExitFreestyle</c>      → blend back to menu camera
+    ///   - <c>OnEnterFreestyle</c>     → switch to gameplay camera (CustomCameraController)
+    ///   - <c>OnExitFreestyle</c>      → switch back to menu camera
     ///   - <c>OnCrystalSpawned</c>     → configure menu orbit target
     ///
     /// Place on the same GameObject as MainMenuController (the Game object in Menu_Main).
-    /// Blend duration/curve is controlled by the CinemachineBrain's DefaultBlend setting.
     /// </summary>
     public class MainMenuCameraController : MonoBehaviour
     {
@@ -55,20 +52,11 @@ namespace CosmicShore.Gameplay
         RotateAroundOrigin _followTargetRotator;
         Transform _crystalTarget;
 
-        // Freestyle vCam (created on CameraManager for Cinemachine priority blending)
-        CinemachineCamera _freestyleVCam;
-        CinemachineFollow _freestyleFollow;
-        CinemachineMatchTargetOrientation _freestyleAim;
-
-        const int HighPriority = 20;
-        const int LowPriority = 0;
-
         // ── Unity Lifecycle ─────────────────────────────────────────────
 
         void Start()
         {
             CacheMenuVCam();
-            EnsureFreestyleVCam();
             SubscribeEvents();
         }
 
@@ -79,18 +67,8 @@ namespace CosmicShore.Gameplay
             // Re-enable RotateAroundOrigin in case CameraManager is reused across scenes
             if (_followTargetRotator) _followTargetRotator.enabled = true;
 
-            // Ensure vCams don't bleed into subsequent scenes
             if (_menuVCam)
-            {
-                SetVCamPriority(_menuVCam, LowPriority);
                 _menuVCam.gameObject.SetActive(false);
-            }
-
-            if (_freestyleVCam)
-            {
-                SetVCamPriority(_freestyleVCam, LowPriority);
-                _freestyleVCam.gameObject.SetActive(false);
-            }
         }
 
         void Update()
@@ -147,53 +125,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// Creates or finds the freestyle CinemachineCamera used for smooth priority-based
-        /// blending between menu orbit and vessel follow cameras.
-        /// If a "CM Freestyle" child already exists on CameraManager it is reused;
-        /// otherwise one is created at runtime with CinemachineFollow +
-        /// CinemachineMatchTargetOrientation (camera faces same direction as vessel).
-        /// </summary>
-        void EnsureFreestyleVCam()
-        {
-            if (_freestyleVCam) return;
-            if (!CameraManager.Instance) return;
-
-            var parent = CameraManager.Instance.transform;
-            var existing = parent.Find("CM Freestyle");
-
-            if (existing)
-            {
-                _freestyleVCam = existing.GetComponent<CinemachineCamera>();
-                _freestyleFollow = existing.GetComponent<CinemachineFollow>();
-
-                // Strip CinemachineRotationComposer — it aims AT the target (look-at)
-                // which doesn't match the vessel's orientation in 6DOF flight.
-                var composer = existing.GetComponent<CinemachineRotationComposer>();
-                if (composer) Destroy(composer);
-
-                _freestyleAim = existing.GetComponent<CinemachineMatchTargetOrientation>();
-                if (!_freestyleAim) _freestyleAim = existing.gameObject.AddComponent<CinemachineMatchTargetOrientation>();
-            }
-            else
-            {
-                var go = new GameObject("CM Freestyle");
-                go.transform.SetParent(parent, false);
-
-                _freestyleVCam = go.AddComponent<CinemachineCamera>();
-                _freestyleFollow = go.AddComponent<CinemachineFollow>();
-                _freestyleAim = go.AddComponent<CinemachineMatchTargetOrientation>();
-
-                // LockToTarget: offset is in target's local space so the camera
-                // stays behind the vessel as it rotates.
-                var tracker = _freestyleFollow.TrackerSettings;
-                tracker.BindingMode = BindingMode.LockToTarget;
-                _freestyleFollow.TrackerSettings = tracker;
-            }
-
-            SetVCamPriority(_freestyleVCam, LowPriority);
-        }
-
         // ── Menu Camera Orbit ───────────────────────────────────────────
 
         void SetMenuVCamTarget()
@@ -240,38 +171,30 @@ namespace CosmicShore.Gameplay
         // ── Camera Switching ────────────────────────────────────────────
 
         /// <summary>
-        /// Activates the CM Main Menu Cinemachine camera for menu state.
-        /// Deactivates CameraManager gameplay cameras (CM PlayerCam, etc.) and raises
-        /// the menu vCam's priority so the CinemachineBrain smoothly blends to it
-        /// from whatever vCam was previously active.
+        /// Activates the Cinemachine menu orbit camera and deactivates gameplay cameras.
+        /// Uses <see cref="CameraManager.SetMainMenuCameraActive"/> to deactivate all
+        /// CustomCameraController instances (CM PlayerCam, CM DeathCam, CM EndCam) and
+        /// re-enable the Cinemachine menu vCam.
         /// </summary>
         void ActivateMenuCamera()
         {
             if (!CameraManager.Instance) return;
 
-            // Deactivate non-Cinemachine gameplay cameras (CM PlayerCam, CM DeathCam, CM EndCam)
-            // to prevent their Camera components from rendering alongside the CinemachineBrain.
-            CameraManager.Instance.DeactivateAllCameras();
+            CameraManager.Instance.SetMainMenuCameraActive();
 
             if (_menuVCam)
             {
                 SetMenuVCamTarget();
                 _menuVCam.gameObject.SetActive(true);
-                SetVCamPriority(_menuVCam, HighPriority);
             }
-
-            // Keep freestyle vCam active so the CinemachineBrain can blend FROM it,
-            // but drop its priority so the menu vCam wins.
-            if (_freestyleVCam)
-                SetVCamPriority(_freestyleVCam, LowPriority);
         }
 
         /// <summary>
-        /// Activates a Cinemachine freestyle vCam that follows the vessel, using
-        /// priority-based blending for a smooth transition from the menu orbit camera.
-        /// The freestyle vCam's offset is configured from the vessel's <see cref="CameraSettingsSO"/>
-        /// via <see cref="VesselCameraCustomizer"/>. Does NOT activate the CustomCameraController
-        /// (CM PlayerCam) — the entire transition stays within the Cinemachine pipeline.
+        /// Activates the <see cref="CustomCameraController"/> ("CM PlayerCam") via
+        /// <see cref="CameraManager.SetupGamePlayCameras"/> to follow the vessel.
+        /// This is the same proven camera pipeline used by all gameplay scenes on the
+        /// development branch — it applies the vessel's <see cref="CameraSettingsSO"/>,
+        /// sets the follow target, and snaps the camera to the correct initial position.
         /// </summary>
         void ActivateGameplayCamera()
         {
@@ -282,62 +205,15 @@ namespace CosmicShore.Gameplay
 
             var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
 
-            EnsureFreestyleVCam();
-            if (!_freestyleVCam) return;
+            // Deactivate the Cinemachine menu camera so it doesn't fight
+            // with the CustomCameraController's Camera component.
+            if (_menuVCam)
+                _menuVCam.gameObject.SetActive(false);
 
-            // Configure freestyle vCam to follow the vessel
-            var target = _freestyleVCam.Target;
-            target.TrackingTarget = followTarget;
-            _freestyleVCam.Target = target;
-
-            // Apply vessel camera settings — mirrors CustomCameraController.ApplySettings()
-            // so the freestyle vCam lands at the same position/orientation the gameplay
-            // camera would use.
-            if (_freestyleFollow)
-            {
-                var customizer = player.Vessel.VesselStatus.VesselCameraCustomizer;
-                if (customizer != null && customizer.Settings != null)
-                {
-                    var settings = customizer.Settings;
-
-                    // Offset: DynamicCamera uses X/Y from followOffset + Z from dynamicMinDistance.
-                    // FixedCamera uses the full followOffset vector directly.
-                    _freestyleFollow.FollowOffset = settings.mode == CameraMode.DynamicCamera
-                        ? new Vector3(settings.followOffset.x, settings.followOffset.y, settings.dynamicMinDistance)
-                        : settings.followOffset;
-
-                    // Mirror CustomCameraController.ApplySettings() damping behavior:
-                    // FixedCamera → snap (zero damping, disableRotationLerp = true)
-                    // DynamicCamera → smooth (followSmoothTime for position and rotation)
-                    var smooth = settings.mode == CameraMode.DynamicCamera
-                        ? settings.followSmoothTime : 0f;
-                    var posDamping = new Vector3(smooth, smooth, smooth);
-                    var tracker = _freestyleFollow.TrackerSettings;
-                    tracker.BindingMode = BindingMode.LockToTarget;
-                    tracker.PositionDamping = posDamping;
-                    tracker.RotationDamping = posDamping;
-                    _freestyleFollow.TrackerSettings = tracker;
-
-                    // Orientation damping must match position damping so both
-                    // converge at the same rate.
-                    if (_freestyleAim)
-                        _freestyleAim.Damping = smooth;
-                }
-            }
-
-            _freestyleVCam.gameObject.SetActive(true);
-
-            // Priority switch — CinemachineBrain smoothly blends from menu orbit to vessel follow
-            SetVCamPriority(_freestyleVCam, HighPriority);
-            if (_menuVCam) SetVCamPriority(_menuVCam, LowPriority);
-        }
-
-        static void SetVCamPriority(CinemachineCamera cam, int value)
-        {
-            var p = cam.Priority;
-            p.Enabled = true;
-            p.Value = value;
-            cam.Priority = p;
+            // Use the same camera setup path as gameplay scenes:
+            // sets follow target, applies CameraSettingsSO via VesselCameraCustomizer,
+            // activates CM PlayerCam, and snaps to the correct position.
+            CameraManager.Instance.SetupGamePlayCameras(followTarget);
         }
     }
 }
