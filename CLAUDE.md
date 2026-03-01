@@ -968,6 +968,54 @@ Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsS
 | Add friend input UI | `AddFriendPanel.cs` | `_Scripts/UI/Views/` |
 | SO asset instance | `FriendsData.asset` | `_SO_Assets/Friends Data/` |
 
+#### Add Friend Entry Points
+
+There are **two distinct ways** a player can send a friend request. Both ultimately call `FriendsServiceFacade` — the single writer — but they use different SDK methods depending on whether the caller has a player ID or only a display name.
+
+| Entry Point | Input | Facade Method | UI Location |
+|---|---|---|---|
+| `AddFriendPanel` | Player name (text input) | `SendFriendRequestByNameAsync(name)` | FriendsPanel → "Add Friend" tab |
+| `OnlinePlayerEntry.addFriendButton` | Player ID (from presence lobby) | `SendFriendRequestAsync(playerId)` | OnlinePlayersPanel → per-row "+" button |
+
+**User navigation paths to reach "Add Friend":**
+
+```
+Path A — Friends Panel (by name):
+  PartyArcadeView.friendsButton → FriendsPanel.Show()
+    → Tab 2 ("Add Friend") → AddFriendPanel
+    → User types name → [Send] → FriendsServiceFacade.SendFriendRequestByNameAsync()
+    → Success: green feedback text "Request sent to 'Name'!"
+    → Failure: red feedback text with error message
+
+Path B — Online Players Panel (by ID):
+  PartyArcadeView "+" slot / PartyAreaPanel "+" slot → OnlinePlayersPanel.Show()
+    → Per-row [+] addFriendButton → OnlinePlayersPanel.OnAddFriendClicked()
+    → FriendsServiceFacade.SendFriendRequestAsync(playerId)
+    → Button disabled + friendRequestSentIndicator shown
+    → (addFriendButton hidden if already friends — checked via FriendsServiceFacade.IsFriend())
+```
+
+**`AddFriendPanel` behavior** (`_Scripts/UI/Views/AddFriendPanel.cs`):
+- Send button disabled until input is non-empty (`OnInputChanged` validates)
+- Button disabled during async request (re-enabled in `finally`)
+- Feedback text color: green (0.2, 0.9, 0.3) for success, red (0.9, 0.3, 0.3) for errors
+- Input field cleared on success, preserved on failure
+- Catches `FriendsServiceException` specifically for SDK errors
+
+**`OnlinePlayerEntry.addFriendButton` behavior** (`_Scripts/UI/Views/OnlinePlayerEntry.cs`):
+- Visibility controlled by `OnlinePlayersPanel.SpawnEntry()`: hidden if `friendsService` is null or player is already a friend
+- On press: button disabled + `friendRequestSentIndicator` shown (no undo)
+- Callback (`_onAddFriend`) set by `OnlinePlayersPanel` → calls `FriendsServiceFacade.SendFriendRequestAsync(playerId)`
+
+**Friend request vs. party invite** — these are separate systems:
+
+| Action | System | Persistence | SDK |
+|---|---|---|---|
+| Add Friend | `FriendsServiceFacade` → UGS Friends SDK | Persistent relationship (survives sessions) | `FriendsService.AddFriendAsync` / `AddFriendByNameAsync` |
+| Invite to Party | `HostConnectionService` → UGS Sessions SDK | Ephemeral (session-scoped, lobby player properties) | Session player properties: `invite_target`, `invite_data` |
+
+Both actions can appear on the same UI row: `OnlinePlayerEntry` has both `inviteButton` (party invite) and `addFriendButton` (friend request). `FriendEntryView` has `inviteButton` (party invite) but no add-friend button (they're already friends).
+
 #### Friend System Patterns to Follow
 
 - **Single writer**: Only `FriendsServiceFacade` writes to `FriendsDataSO`. UI components read via SOAP lists and events — they never call UGS SDK directly.
