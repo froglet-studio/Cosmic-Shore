@@ -164,6 +164,11 @@ namespace CosmicShore.Gameplay
             {
                 _freestyleVCam = existing.GetComponent<CinemachineCamera>();
                 _freestyleFollow = existing.GetComponent<CinemachineFollow>();
+
+                // Strip CinemachineRotationComposer if present — LockToTarget rotation
+                // tracking is sufficient and keeps position/rotation damping in sync.
+                var composer = existing.GetComponent<CinemachineRotationComposer>();
+                if (composer) Destroy(composer);
             }
             else
             {
@@ -172,11 +177,13 @@ namespace CosmicShore.Gameplay
 
                 _freestyleVCam = go.AddComponent<CinemachineCamera>();
                 _freestyleFollow = go.AddComponent<CinemachineFollow>();
-                go.AddComponent<CinemachineRotationComposer>();
 
                 // LockToTarget interprets FollowOffset in the target's local space
                 // so the camera stays behind the vessel as it rotates — matching
                 // CustomCameraController's _followTarget.rotation * _followOffset.
+                // No CinemachineRotationComposer — LockToTarget already tracks the
+                // vessel's rotation via RotationDamping, keeping camera Up = vessel Up
+                // and camera forward = vessel forward.
                 var tracker = _freestyleFollow.TrackerSettings;
                 tracker.BindingMode = BindingMode.LockToTarget;
                 _freestyleFollow.TrackerSettings = tracker;
@@ -297,15 +304,18 @@ namespace CosmicShore.Gameplay
                         ? new Vector3(settings.followOffset.x, settings.followOffset.y, settings.dynamicMinDistance)
                         : settings.followOffset;
 
-                    // Position damping — CinemachineFollow uses per-axis seconds, same unit as
+                    // Match position and rotation damping so both converge together.
+                    // CinemachineFollow uses per-axis seconds, same unit as
                     // CustomCameraController's followSmoothTime (used with Vector3.SmoothDamp).
-                    var tracker = _freestyleFollow.TrackerSettings;
-                    tracker.BindingMode = BindingMode.LockToTarget;
-                    tracker.PositionDamping = new Vector3(
+                    var damping = new Vector3(
                         settings.followSmoothTime,
                         settings.followSmoothTime,
                         settings.followSmoothTime
                     );
+                    var tracker = _freestyleFollow.TrackerSettings;
+                    tracker.BindingMode = BindingMode.LockToTarget;
+                    tracker.PositionDamping = damping;
+                    tracker.RotationDamping = damping;
                     _freestyleFollow.TrackerSettings = tracker;
                 }
             }
