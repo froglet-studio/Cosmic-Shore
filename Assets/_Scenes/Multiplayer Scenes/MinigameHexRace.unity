@@ -534,6 +534,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1065094408 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8519919900975884673, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -1421,6 +1433,11 @@ PrefabInstance:
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: CosmicShore.Game.UI.HexRaceHUD, Assembly-CSharp
       objectReference: {fileID: 0}
+    - target: {fileID: 1872280282667471053, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2143510943989971611, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -1431,6 +1448,11 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 144
       objectReference: {fileID: 0}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: questCompletionText
+      value: 
+      objectReference: {fileID: 1065094408}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -2522,9 +2544,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  weightedSegments: []
+  guaranteedSpawnables: []
+  spawnableByIntensity: []
   spawnableSegments:
   - {fileID: 1899528610}
-  spawnableByIntensity: []
   spawnSegmentWeights:
   - 1
   Seed: 0
