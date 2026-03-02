@@ -83,12 +83,21 @@ namespace CosmicShore.Gameplay
             try
             {
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
-                
+
+                // Ensure domain pool is fresh for the new session.
+                // Previously handled by scene-placed MultiplayerSetup.ExecuteMultiplayerSetup().
+                DomainAssigner.Initialize();
+
                 gameData.InitializeGame();
-                
+
                 if (!IsServer)
                     return;
-                
+
+                // Transition app state LoadingGame → InGame.
+                // Previously handled by scene-placed MultiplayerSetup invoking session start.
+                // Safe if already InGame — ApplicationStateMachine validates and ignores.
+                gameData.InvokeSessionStarted();
+
                 SetupNewRound();
             }
             catch (OperationCanceledException)

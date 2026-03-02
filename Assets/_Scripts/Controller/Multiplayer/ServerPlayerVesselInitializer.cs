@@ -99,10 +99,32 @@ namespace CosmicShore.Gameplay
 
         void ProcessPreExistingPlayers()
         {
+            // Check gameData.Players first (catches players that fired OnNetworkSpawn in this scene)
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer && netPlayer.IsSpawned)
                     HandlePlayerNetworkSpawned(netPlayer.OwnerClientId);
+            }
+
+            // Also check NetworkManager's connected clients for persistent Players
+            // that survived a Netcode scene load but were cleared from gameData.Players
+            // by ResetRuntimeData(). Their OnNetworkSpawn() won't re-fire.
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return;
+
+            foreach (var kvp in nm.ConnectedClients)
+            {
+                var playerObj = kvp.Value.PlayerObject;
+                if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
+                    continue;
+                if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
+                    continue;
+
+                // Re-register the persistent Player with gameData
+                if (!gameData.Players.Contains(player))
+                    gameData.Players.Add(player);
+
+                HandlePlayerNetworkSpawned(player.OwnerClientId);
             }
         }
 
