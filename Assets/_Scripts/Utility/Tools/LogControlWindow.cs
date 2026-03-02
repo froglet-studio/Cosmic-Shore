@@ -22,32 +22,33 @@ namespace CosmicShore.Utility.Tools
         bool _loggingFoldout = true;
         bool _questFoldout = true;
 
-        // ── Palette ──────────────────────────────────────────────────────────
-        static readonly Color HeaderPurple   = new(0.24f, 0.12f, 0.43f, 1f);   // #3D1F6E
-        static readonly Color AccentGreen    = new(0f, 0.90f, 0.46f, 1f);      // #00E676
-        static readonly Color SectionBg      = new(0.16f, 0.16f, 0.20f, 1f);
-        static readonly Color DividerColor   = new(0.35f, 0.20f, 0.55f, 0.6f);
-        static readonly Color BtnNormal      = new(0.22f, 0.22f, 0.28f, 1f);
-        static readonly Color BtnHover       = new(0.30f, 0.18f, 0.50f, 1f);
-        static readonly Color BadgeOn        = new(0.15f, 0.68f, 0.38f, 1f);
-        static readonly Color BadgeOff       = new(0.62f, 0.22f, 0.22f, 1f);
-        static readonly Color TextDim        = new(0.65f, 0.65f, 0.70f, 1f);
+        // ── Pastel Palette ───────────────────────────────────────────────────
+        static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
+        static readonly Color AccentLavender = new(0.68f, 0.62f, 0.85f, 1f);
+        static readonly Color AccentMint     = new(0.60f, 0.85f, 0.75f, 1f);
+        static readonly Color SectionHeader  = new(0.20f, 0.19f, 0.26f, 1f);
+        static readonly Color DividerColor   = new(0.38f, 0.34f, 0.48f, 0.4f);
+        static readonly Color BadgeOn        = new(0.45f, 0.72f, 0.58f, 1f);
+        static readonly Color BadgeOff       = new(0.72f, 0.45f, 0.48f, 1f);
+        static readonly Color TextMuted      = new(0.58f, 0.56f, 0.65f, 1f);
+        static readonly Color FooterBg       = new(0.14f, 0.13f, 0.18f, 1f);
 
-        // ── Cached styles (built once) ───────────────────────────────────────
-        GUIStyle _headerStyle;
+        // ── Cached styles ────────────────────────────────────────────────────
+        GUIStyle _bannerStyle;
         GUIStyle _sectionLabelStyle;
-        GUIStyle _styledButton;
-        GUIStyle _smallButton;
+        GUIStyle _btnStyle;
+        GUIStyle _btnSmall;
         GUIStyle _badgeStyle;
-        GUIStyle _infoBoxStyle;
-        GUIStyle _inputFieldStyle;
+        GUIStyle _infoStyle;
+        GUIStyle _inputStyle;
+        GUIStyle _mutedLabel;
         bool _stylesBuilt;
 
         [MenuItem("FrogletTools/Toolbox", false, 0)]
         static void Open()
         {
             var window = GetWindow<LogControlWindow>("Froglet Toolbox");
-            window.minSize = new Vector2(340, 460);
+            window.minSize = new Vector2(340, 480);
         }
 
         void OnEnable() => LoadPrefs();
@@ -57,66 +58,71 @@ namespace CosmicShore.Utility.Tools
         {
             if (_stylesBuilt) return;
 
-            _headerStyle = new GUIStyle(EditorStyles.boldLabel)
+            _bannerStyle = new GUIStyle(EditorStyles.boldLabel)
             {
-                fontSize = 18,
+                fontSize = 16,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = AccentGreen },
-                padding = new RectOffset(0, 0, 8, 8)
+                normal = { textColor = AccentLavender },
+                padding = new RectOffset(0, 0, 6, 6)
             };
 
             _sectionLabelStyle = new GUIStyle(EditorStyles.foldout)
             {
-                fontSize = 13,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Color.white },
-                onNormal = { textColor = Color.white },
-                focused = { textColor = AccentGreen },
-                onFocused = { textColor = AccentGreen },
-                active = { textColor = AccentGreen },
-                onActive = { textColor = AccentGreen }
-            };
-
-            _styledButton = new GUIStyle(GUI.skin.button)
-            {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold,
-                fixedHeight = 28,
-                margin = new RectOffset(4, 4, 2, 2),
-                normal = { textColor = Color.white },
-                hover = { textColor = AccentGreen }
+                normal    = { textColor = new Color(0.82f, 0.80f, 0.88f) },
+                onNormal  = { textColor = new Color(0.82f, 0.80f, 0.88f) },
+                focused   = { textColor = AccentLavender },
+                onFocused = { textColor = AccentLavender },
+                active    = { textColor = AccentLavender },
+                onActive  = { textColor = AccentLavender }
             };
 
-            _smallButton = new GUIStyle(GUI.skin.button)
+            _btnStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 11,
-                fixedHeight = 24,
+                fontStyle = FontStyle.Bold,
+                fixedHeight = 26,
                 margin = new RectOffset(4, 4, 2, 2),
-                normal = { textColor = Color.white }
+                normal = { textColor = new Color(0.85f, 0.83f, 0.90f) }
+            };
+
+            _btnSmall = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 10,
+                fixedHeight = 22,
+                margin = new RectOffset(4, 4, 2, 2),
+                normal = { textColor = new Color(0.80f, 0.78f, 0.86f) }
             };
 
             _badgeStyle = new GUIStyle(EditorStyles.miniLabel)
             {
-                fontSize = 10,
+                fontSize = 9,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = Color.white },
-                padding = new RectOffset(6, 6, 2, 2)
+                padding = new RectOffset(5, 5, 2, 2)
             };
 
-            _infoBoxStyle = new GUIStyle(EditorStyles.helpBox)
+            _infoStyle = new GUIStyle(EditorStyles.helpBox)
             {
                 fontSize = 11,
                 richText = true,
                 padding = new RectOffset(8, 8, 6, 6)
             };
 
-            _inputFieldStyle = new GUIStyle(EditorStyles.textField)
+            _inputStyle = new GUIStyle(EditorStyles.textField)
             {
-                fontSize = 13,
+                fontSize = 12,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
-                fixedHeight = 24
+                fixedHeight = 22
+            };
+
+            _mutedLabel = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
+            {
+                fontSize = 10,
+                normal = { textColor = TextMuted }
             };
 
             _stylesBuilt = true;
@@ -127,19 +133,20 @@ namespace CosmicShore.Utility.Tools
             BuildStyles();
 
             // ── Banner ───────────────────────────────────────────────────────
-            var bannerRect = GUILayoutUtility.GetRect(0, 44, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(bannerRect, HeaderPurple);
-            GUI.Label(bannerRect, "FROGLET TOOLBOX", _headerStyle);
+            var bannerRect = GUILayoutUtility.GetRect(0, 38, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(bannerRect, BannerBg);
+            GUI.Label(bannerRect, "Froglet Toolbox", _bannerStyle);
 
-            // Accent line below banner
-            var lineRect = GUILayoutUtility.GetRect(0, 2, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(lineRect, AccentGreen);
+            var lineRect = GUILayoutUtility.GetRect(0, 1, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(lineRect, AccentLavender * 0.6f);
 
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
             GUILayout.Space(6);
 
-            // ── Scenes ───────────────────────────────────────────────────────
-            DrawSectionHeader("SCENES", ref _sceneFoldout);
+            // ═══════════════════════════════════════════════════════════════
+            //  SCENES
+            // ═══════════════════════════════════════════════════════════════
+            DrawSectionHeader("Scenes", ref _sceneFoldout);
             if (_sceneFoldout)
             {
                 BeginSection();
@@ -150,39 +157,35 @@ namespace CosmicShore.Utility.Tools
                 EndSection();
             }
 
-            GUILayout.Space(4);
+            GUILayout.Space(2);
 
-            // ── Logging ──────────────────────────────────────────────────────
-            DrawSectionHeader("LOGGING", ref _loggingFoldout);
+            // ═══════════════════════════════════════════════════════════════
+            //  LOGGING
+            // ═══════════════════════════════════════════════════════════════
+            DrawSectionHeader("Logging", ref _loggingFoldout);
             if (_loggingFoldout)
             {
                 BeginSection();
 
-                // Unity Logger master
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Label("Unity Logger", EditorStyles.label, GUILayout.Width(100));
-                bool unityLogger = Debug.unityLogger.logEnabled;
-                DrawBadge(unityLogger ? "ON" : "OFF", unityLogger ? BadgeOn : BadgeOff);
-                bool newUnity = EditorGUILayout.Toggle(unityLogger, GUILayout.Width(16));
-                if (newUnity != unityLogger)
+                // Unity Logger master toggle
+                DrawLogToggle("Unity Logger", Debug.unityLogger.logEnabled, v =>
                 {
-                    Debug.unityLogger.logEnabled = newUnity;
-                    EditorPrefs.SetBool(PrefUnityLoggerEnabled, newUnity);
-                }
-                EditorGUILayout.EndHorizontal();
+                    Debug.unityLogger.logEnabled = v;
+                    EditorPrefs.SetBool(PrefUnityLoggerEnabled, v);
+                });
 
                 GUILayout.Space(4);
 
-                // Preset row
+                // Presets
                 EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("All", _smallButton))            { CSDebug.LogLevel = CSLogLevel.All; SavePrefs(); }
-                if (GUILayout.Button("Warn + Err", _smallButton))     { CSDebug.LogLevel = CSLogLevel.WarningsAndErrors; SavePrefs(); }
-                if (GUILayout.Button("Silent", _smallButton))         { CSDebug.LogLevel = CSLogLevel.Off; SavePrefs(); }
+                if (GUILayout.Button("All", _btnSmall))        { CSDebug.LogLevel = CSLogLevel.All; SavePrefs(); }
+                if (GUILayout.Button("Warn + Err", _btnSmall)) { CSDebug.LogLevel = CSLogLevel.WarningsAndErrors; SavePrefs(); }
+                if (GUILayout.Button("Silent", _btnSmall))     { CSDebug.LogLevel = CSLogLevel.Off; SavePrefs(); }
                 EditorGUILayout.EndHorizontal();
 
                 GUILayout.Space(4);
 
-                // Per-type toggles with inline badges
+                // Per-type toggles
                 DrawLogToggle("Logs",     CSDebug.LogEnabled,      v => { CSDebug.LogEnabled = v; SavePrefs(); });
                 DrawLogToggle("Warnings", CSDebug.WarningsEnabled, v => { CSDebug.WarningsEnabled = v; SavePrefs(); });
                 DrawLogToggle("Errors",   CSDebug.ErrorsEnabled,   v => { CSDebug.ErrorsEnabled = v; SavePrefs(); });
@@ -190,10 +193,12 @@ namespace CosmicShore.Utility.Tools
                 EndSection();
             }
 
-            GUILayout.Space(4);
+            GUILayout.Space(2);
 
-            // ── Quest Debug ──────────────────────────────────────────────────
-            DrawSectionHeader("QUEST DEBUG", ref _questFoldout);
+            // ═══════════════════════════════════════════════════════════════
+            //  QUEST DEBUG
+            // ═══════════════════════════════════════════════════════════════
+            DrawSectionHeader("Quest Debug", ref _questFoldout);
             if (_questFoldout)
             {
                 BeginSection();
@@ -202,20 +207,19 @@ namespace CosmicShore.Utility.Tools
 
                 if (!available)
                 {
-                    EditorGUILayout.LabelField("Enter Play Mode to use quest tools.",
-                        new GUIStyle(EditorStyles.centeredGreyMiniLabel) { fontSize = 11, normal = { textColor = TextDim } });
+                    EditorGUILayout.LabelField("Enter Play Mode to use quest tools.", _mutedLabel);
                 }
                 else
                 {
                     var svc = GameModeProgressionService.Instance;
                     int maxQuests = svc.QuestList?.Quests.Count ?? 1;
 
-                    // Index input row
+                    // Index input
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Label("Unlock to index", EditorStyles.label, GUILayout.Width(100));
-                    _questIndexInput = EditorGUILayout.TextField(_questIndexInput, _inputFieldStyle, GUILayout.Width(36));
-                    GUILayout.Label($"/ {maxQuests}", new GUIStyle(EditorStyles.label) { normal = { textColor = TextDim } }, GUILayout.Width(32));
-                    if (GUILayout.Button("Apply", _smallButton, GUILayout.Width(60)))
+                    _questIndexInput = EditorGUILayout.TextField(_questIndexInput, _inputStyle, GUILayout.Width(36));
+                    GUILayout.Label($"/ {maxQuests}", new GUIStyle(EditorStyles.label) { normal = { textColor = TextMuted } }, GUILayout.Width(32));
+                    if (GUILayout.Button("Apply", _btnSmall, GUILayout.Width(56)))
                     {
                         if (int.TryParse(_questIndexInput, out int idx))
                             svc.DebugSetProgressToIndex(idx);
@@ -226,16 +230,15 @@ namespace CosmicShore.Utility.Tools
 
                     GUILayout.Space(4);
 
-                    if (GUILayout.Button("Reset All Quests", _styledButton))
+                    if (GUILayout.Button("Reset All Quests", _btnStyle))
                         svc.ResetAllProgress();
 
                     GUILayout.Space(4);
 
-                    // Status display
                     string info = $"<b>Unlocked:</b> {svc.ProgressionData.UnlockedModes.Count}   " +
                                   $"<b>Completed:</b> {svc.ProgressionData.CompletedQuests.Count}   " +
                                   $"<b>Claimed:</b> {svc.GetClaimedQuestCount()}";
-                    GUILayout.Label(info, _infoBoxStyle);
+                    GUILayout.Label(info, _infoStyle);
                 }
 
                 EndSection();
@@ -245,24 +248,22 @@ namespace CosmicShore.Utility.Tools
             EditorGUILayout.EndScrollView();
 
             // ── Footer ───────────────────────────────────────────────────────
-            var footerRect = GUILayoutUtility.GetRect(0, 20, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(footerRect, new Color(0.10f, 0.10f, 0.13f, 1f));
-            GUI.Label(footerRect, "Froglet Inc. — Cosmic Shore",
-                new GUIStyle(EditorStyles.centeredGreyMiniLabel) { fontSize = 10, normal = { textColor = TextDim } });
+            var footerRect = GUILayoutUtility.GetRect(0, 18, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(footerRect, FooterBg);
+            GUI.Label(footerRect, "Froglet Inc. — Cosmic Shore", _mutedLabel);
         }
 
         // ── Drawing helpers ──────────────────────────────────────────────────
 
         void DrawSectionHeader(string title, ref bool foldout)
         {
-            var rect = GUILayoutUtility.GetRect(0, 26, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(rect, HeaderPurple * 0.7f);
+            var rect = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(rect, SectionHeader);
 
-            // Left accent bar
-            var accentRect = new Rect(rect.x, rect.y, 3, rect.height);
-            EditorGUI.DrawRect(accentRect, AccentGreen);
+            // Subtle left accent
+            var accent = new Rect(rect.x, rect.y, 3, rect.height);
+            EditorGUI.DrawRect(accent, AccentMint * 0.8f);
 
-            // Foldout
             var foldRect = new Rect(rect.x + 10, rect.y, rect.width - 10, rect.height);
             foldout = EditorGUI.Foldout(foldRect, foldout, title, true, _sectionLabelStyle);
         }
@@ -280,14 +281,13 @@ namespace CosmicShore.Utility.Tools
             GUILayout.Space(4);
             EditorGUILayout.EndVertical();
 
-            // Divider
             var div = GUILayoutUtility.GetRect(0, 1, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(div, DividerColor);
         }
 
         void DrawSceneButton(string label, string scenePath)
         {
-            if (GUILayout.Button(label, _styledButton))
+            if (GUILayout.Button(label, _btnStyle))
             {
                 EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
                 CSDebug.Log($"[FrogletToolbox] Opening {label}.");
@@ -297,7 +297,7 @@ namespace CosmicShore.Utility.Tools
         void DrawLogToggle(string label, bool current, System.Action<bool> setter)
         {
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Label(label, EditorStyles.label, GUILayout.Width(80));
+            GUILayout.Label(label, EditorStyles.label, GUILayout.Width(90));
             DrawBadge(current ? "ON" : "OFF", current ? BadgeOn : BadgeOff);
             bool next = EditorGUILayout.Toggle(current, GUILayout.Width(16));
             if (next != current) setter(next);
@@ -308,12 +308,10 @@ namespace CosmicShore.Utility.Tools
         {
             var content = new GUIContent(text);
             var size = _badgeStyle.CalcSize(content);
-            var rect = GUILayoutUtility.GetRect(size.x + 4, 18, GUILayout.Width(size.x + 4));
+            var rect = GUILayoutUtility.GetRect(size.x + 4, 16, GUILayout.Width(size.x + 4));
             EditorGUI.DrawRect(rect, bg);
             GUI.Label(rect, content, _badgeStyle);
         }
-
-        static string OnOff(bool value) => value ? "ON" : "OFF";
 
         // ── Prefs persistence ────────────────────────────────────────────────
 
