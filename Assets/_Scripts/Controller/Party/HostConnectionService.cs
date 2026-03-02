@@ -249,14 +249,16 @@ namespace CosmicShore.Gameplay
                     $"[INVITE-SEND] Setting properties — invite_target: '{targetPlayerId}', " +
                     $"invite_data: '{inviteData}'", Color.cyan);
 
+                // Refresh FIRST so the SDK's cached player list has a valid index
+                // for the local player. Then set properties and save — this order
+                // ensures refresh doesn't overwrite our SetProperty() calls.
+                await _presenceLobby.RefreshAsync();
+
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(inviteData, VisibilityPropertyOptions.Public));
 
-                // Save directly — do NOT refresh before save. RefreshAsync() overwrites
-                // local SetProperty() changes with server state, discarding the invite
-                // properties we just set. Retry on rate-limit (HTTP 429).
                 await SaveWithRetryAsync();
 
                 _currentInviteTargetId = targetPlayerId;
@@ -782,6 +784,7 @@ namespace CosmicShore.Gameplay
 
             try
             {
+                await _presenceLobby.RefreshAsync();
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
@@ -811,10 +814,16 @@ namespace CosmicShore.Gameplay
                     await _presenceLobby.SaveCurrentPlayerDataAsync();
                     return;
                 }
-                catch (Exception e) when (attempt < maxRetries && e.Message.Contains("Too Many Requests"))
+                catch (Exception e) when (attempt < maxRetries &&
+                    (e.Message.Contains("Too Many Requests") ||
+                     e.Message.Contains("Index was out of range")))
                 {
-                    Debug.LogWarning($"[HostConnectionService] SaveCurrentPlayerData rate-limited — retry {attempt + 1}/{maxRetries} in {retryDelayMs}ms");
+                    Debug.LogWarning($"[HostConnectionService] SaveCurrentPlayerData failed ({e.Message}) — retry {attempt + 1}/{maxRetries} in {retryDelayMs}ms");
                     await Task.Delay(retryDelayMs);
+
+                    // Re-sync the SDK's cached player list before retrying.
+                    try { await _presenceLobby.RefreshAsync(); }
+                    catch { /* best-effort refresh */ }
                 }
             }
         }
@@ -832,7 +841,9 @@ namespace CosmicShore.Gameplay
             _lobbyBusy = true;
             try
             {
-                // Any player can clear their own player properties.
+                // Refresh first to sync the SDK's cached player index,
+                // then set properties and save.
+                await _presenceLobby.RefreshAsync();
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
