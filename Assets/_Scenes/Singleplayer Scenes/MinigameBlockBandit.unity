@@ -773,41 +773,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 0}
+  weightedSegments:
+  - spawnable: {fileID: 2091254371}
+    weight: 1
+  guaranteedSpawnables: []
+  spawnableByIntensity: []
   spawnableSegments:
   - {fileID: 2091254371}
-  positioningScheme: 2
   spawnSegmentWeights:
   - 1
   Seed: 0
   parent: {fileID: 0}
-  origin: {x: 0, y: 0, z: 500}
-  Radius: 250
-  StraightLineLength: 400
-  RotationAmount: 10
-  DifficultyAngle: 90
   intensityLevelData: {fileID: 0}
   InitializeOnStart: 1
   NumberOfSegments: 10
-  mazeData: []
-  branchProbability: 0.2
-  minBranchAngle: 20
-  maxBranchAngle: 20
-  minBranches: 1
-  maxBranches: 3
-  minBranchLengthMultiplier: 0.6
-  maxBranchLengthMultiplier: 0.8
-  maxDepth: 3
-  maxTotalSpawnedObjects: 100
-  branchPrefabs: []
-  GridWidth: 10
-  GridHeight: 10
-  GridThickness: 10
-  CellSize: 10
-  Curviness: 0.5
-  BranchProbability: 0.2
-  TowerHeight: 100
-  TowerRadius: 20
-  RotationsPerUnit: 0.1
+  origin: {x: 0, y: 0, z: 500}
+  Radius: 250
+  StraightLineLength: 1000
+  RotationAmount: 10
+  DifficultyAngle: 90
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -881,7 +866,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   golfRules: 0
   scoringConfigs:
-  - Mode: 0
+  - Mode: 5
     Multiplier: 1
 --- !u!114 &1078953711
 MonoBehaviour:
@@ -942,15 +927,10 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   segmentSpawner: {fileID: 1020381236}
-  baseNumberOfSegments: 10
-  baseStraightLineLength: 400
-  resetEnvironmentOnEachTurn: 1
-  scaleCrystalPositionWithIntensity: 1
-  scaleLengthWithIntensity: 1
-  scaleSegmentsWithIntensity: 1
-  helix: {fileID: 2091254371}
-  helixIntensityScaling: 1.3
-  Seed: 0
+  shapeDrawingManager: {fileID: 0}
+  localCrystalManager: {fileID: 0}
+  cellScript: {fileID: 0}
+  miniGameHUD: {fileID: 0}
 --- !u!114 &1078953714
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1599,12 +1579,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c247759787490041a31aca78a76bdd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  seed: 0
   domain: 3
+  children: []
+  leafPrefab: {fileID: 0}
+  intensityLevel: 1
   prism: {fileID: 4563009547826722997, guid: 2a19c011ad2d54641ad144fbe33d3586, type: 3}
   scale: {x: 1, y: 1, z: 5}
   firstOrderRadius: 1
   secondOrderRadius: 1
-  blockCount: 150
+  blockCount: 500
 --- !u!4 &2091254372
 Transform:
   m_ObjectHideFlags: 0
