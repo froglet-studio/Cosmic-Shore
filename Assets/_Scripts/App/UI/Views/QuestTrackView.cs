@@ -132,7 +132,8 @@ namespace CosmicShore.App.UI.Views
         }
 
         /// <summary>
-        /// After one frame (layout built), snap scroll to the active quest card.
+        /// After one frame (layout built), snap scroll to the active quest card
+        /// and clamp the scroll so it can't overscroll.
         /// </summary>
         IEnumerator PostSpawnSetup()
         {
@@ -143,6 +144,10 @@ namespace CosmicShore.App.UI.Views
             int activeIndex = GetActiveQuestIndex();
             if (activeIndex >= 0)
                 SnapToCard(activeIndex, true);
+
+            // Lock scroll bounds now that layout is final
+            if (scrollRect != null)
+                scrollRect.movementType = ScrollRect.MovementType.Clamped;
         }
 
         // ── Card State ────────────────────────────────────────────────────────
@@ -220,8 +225,9 @@ namespace CosmicShore.App.UI.Views
 
         IEnumerator SnapToCardDelayed(int cardIndex)
         {
-            yield return new WaitForSeconds(0.5f);
-            SnapToCard(cardIndex, false);
+            // Wait for slider animation to start, then scroll slowly alongside it
+            yield return new WaitForSeconds(0.3f);
+            SnapToCard(cardIndex, false, sliderAnimDuration);
         }
 
         // ── Slider ────────────────────────────────────────────────────────────
@@ -269,7 +275,7 @@ namespace CosmicShore.App.UI.Views
                 SnapToCard(nearest, false);
         }
 
-        void SnapToCard(int cardIndex, bool immediate)
+        void SnapToCard(int cardIndex, bool immediate, float duration = -1f)
         {
             if (scrollRect == null || _cards.Count == 0 || cardIndex < 0 || cardIndex >= _cards.Count) return;
 
@@ -298,12 +304,13 @@ namespace CosmicShore.App.UI.Views
             }
             else
             {
+                float dur = duration > 0f ? duration : snapDuration;
                 _isSnapping = true;
                 scrollRect.velocity = Vector2.zero;
                 _snapTween = DOTween.To(
                         () => scrollRect.horizontalNormalizedPosition,
                         x => scrollRect.horizontalNormalizedPosition = x,
-                        target, snapDuration)
+                        target, dur)
                     .SetEase(Ease.OutCubic)
                     .SetUpdate(true)
                     .OnComplete(() => { _isSnapping = false; _snapTween = null; });
