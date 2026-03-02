@@ -2,7 +2,8 @@
 using System.Collections;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.Game.Arcade;
-using CosmicShore.Game.XP;
+using CosmicShore.Game.Progression;
+using CosmicShore.Models;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -60,18 +61,6 @@ namespace CosmicShore.Game.Cinematics
             if (isRunning) return;
             isRunning = true;
 
-            // Award XP based on placement
-            if (XPRewardService.Instance != null)
-            {
-                int xp = XPRewardService.Instance.AwardXP();
-                CSDebug.Log($"[EndGameCinematic] XP awarded: {xp}");
-            }
-            else
-            {
-                CSDebug.LogWarning("[EndGameCinematic] XPRewardService.Instance is null - XP not awarded. " +
-                                 "Ensure XPRewardService exists in the game scene.");
-            }
-
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel?.VesselStatus != null)
             {
@@ -100,10 +89,7 @@ namespace CosmicShore.Game.Cinematics
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
-
-            // Show XP earned after score reveal
-            if (view)
-                view.ShowXPEarned();
+            yield return StartCoroutine(ShowQuestCompletionSequence());
 
             if (view)
             {
@@ -120,7 +106,6 @@ namespace CosmicShore.Game.Cinematics
 
             if (view)
             {
-                view.HideXPEarned();
                 view.HideScoreRevealPanel();
             }
 
@@ -283,6 +268,31 @@ namespace CosmicShore.Game.Cinematics
             );
         }
         
+        /// <summary>
+        /// After the score reveal, checks if the current game mode's quest was completed.
+        /// If so, sets the SO runtime flag and shows a completion message in the cinematic view.
+        /// Relies on GameModeProgressionService having already evaluated the quest via HandleGameEnd.
+        /// </summary>
+        protected virtual IEnumerator ShowQuestCompletionSequence()
+        {
+            if (!view || !gameData) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) yield break;
+
+            var mode = gameData.GameMode;
+            var quest = service.GetQuestForMode(mode);
+            if (quest == null || quest.IsPlaceholder) yield break;
+
+            if (service.IsQuestCompleted(mode))
+            {
+                quest.IsCompleted = true;
+                view.ShowQuestCompletion($"Quest Complete!\n{quest.DisplayName}");
+                CSDebug.Log($"[EndGameCinematic] Quest completed for {mode}: {quest.DisplayName}");
+                yield return new WaitForSeconds(2f);
+            }
+        }
+
         #endregion
 
         #region AI Control

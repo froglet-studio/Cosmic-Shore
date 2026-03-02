@@ -1,5 +1,9 @@
 #if UNITY_EDITOR
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Game.Progression;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -8,144 +12,400 @@ namespace CosmicShore.Utility.Tools
 {
     public class LogControlWindow : EditorWindow
     {
+        // ── Prefs keys ───────────────────────────────────────────────────────
         const string PrefLogEnabled = "CSDebug_LogEnabled";
         const string PrefWarningsEnabled = "CSDebug_WarningsEnabled";
         const string PrefErrorsEnabled = "CSDebug_ErrorsEnabled";
         const string PrefUnityLoggerEnabled = "CSDebug_UnityLoggerEnabled";
+        const string PrefBootstrapScene = "Load Main_Menu Scene";
+        const int Pad = 12;
 
-        Vector2 scrollPos;
+        // ── State ────────────────────────────────────────────────────────────
+        Vector2 _scrollPos;
+        string _questIndexInput = "1";
+        bool _sceneFoldout = true;
+        bool _loggingFoldout = true;
+        bool _questFoldout = true;
+        bool _createFoldout;
+        bool _multiplayerFoldout;
+        bool _utilitiesFoldout;
+        bool _nonQuestFoldout;
 
-        [MenuItem("FrogletTools/Log Control", false, 50)]
+        // ── Pastel Palette ───────────────────────────────────────────────────
+        static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
+        static readonly Color AccentLavender = new(0.68f, 0.62f, 0.85f, 1f);
+        static readonly Color AccentMint     = new(0.60f, 0.85f, 0.75f, 1f);
+        static readonly Color SectionHeader  = new(0.20f, 0.19f, 0.26f, 1f);
+        static readonly Color DividerColor   = new(0.38f, 0.34f, 0.48f, 0.4f);
+        static readonly Color BadgeOn        = new(0.45f, 0.72f, 0.58f, 1f);
+        static readonly Color BadgeOff       = new(0.72f, 0.45f, 0.48f, 1f);
+        static readonly Color TextMuted      = new(0.58f, 0.56f, 0.65f, 1f);
+        static readonly Color FooterBg       = new(0.14f, 0.13f, 0.18f, 1f);
+
+        // ── Styles (non-interactive only — buttons/toggles use defaults) ─────
+        [System.NonSerialized] GUIStyle _bannerStyle;
+        [System.NonSerialized] GUIStyle _sectionLabelStyle;
+        [System.NonSerialized] GUIStyle _badgeStyle;
+        [System.NonSerialized] GUIStyle _infoStyle;
+        [System.NonSerialized] GUIStyle _mutedLabel;
+        [System.NonSerialized] bool _stylesBuilt;
+
+        [MenuItem("FrogletTools/Toolbox", false, 0)]
         static void Open()
         {
-            var window = GetWindow<LogControlWindow>("FrogletTools");
-            window.minSize = new Vector2(300, 380);
+            var window = GetWindow<LogControlWindow>("Froglet Toolbox");
+            window.minSize = new Vector2(340, 520);
         }
 
-        void OnEnable()
-        {
-            LoadPrefs();
-        }
+        void OnEnable() => LoadPrefs();
+        void OnFocus() => Repaint();
 
-        void OnFocus()
+        void BuildStyles()
         {
-            // Stay in sync if flags were changed from elsewhere (e.g. menu items).
-            Repaint();
+            if (_stylesBuilt) return;
+
+            _bannerStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 16,
+                alignment = TextAnchor.MiddleCenter,
+                padding = new RectOffset(0, 0, 6, 6)
+            };
+            _bannerStyle.normal.textColor = AccentLavender;
+
+            _sectionLabelStyle = new GUIStyle(EditorStyles.foldout)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold
+            };
+            _sectionLabelStyle.normal.textColor = new Color(0.82f, 0.80f, 0.88f);
+            _sectionLabelStyle.onNormal.textColor = new Color(0.82f, 0.80f, 0.88f);
+            _sectionLabelStyle.focused.textColor = AccentLavender;
+            _sectionLabelStyle.onFocused.textColor = AccentLavender;
+            _sectionLabelStyle.active.textColor = AccentLavender;
+            _sectionLabelStyle.onActive.textColor = AccentLavender;
+
+            _badgeStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 9,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                padding = new RectOffset(5, 5, 2, 2)
+            };
+            _badgeStyle.normal.textColor = Color.white;
+
+            _infoStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                fontSize = 11,
+                richText = true,
+                padding = new RectOffset(8, 8, 6, 6)
+            };
+
+            _mutedLabel = new GUIStyle(EditorStyles.centeredGreyMiniLabel) { fontSize = 10 };
+            _mutedLabel.normal.textColor = TextMuted;
+
+            _stylesBuilt = true;
         }
 
         void OnGUI()
         {
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+            BuildStyles();
 
-            EditorGUILayout.Space(4);
+            // ── Banner ───────────────────────────────────────────────────────
+            var bannerRect = GUILayoutUtility.GetRect(0, 38, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(bannerRect, BannerBg);
+            GUI.Label(bannerRect, "Froglet Toolbox", _bannerStyle);
 
-            // ── Scene Shortcuts ──────────────────────────
-            EditorGUILayout.LabelField("Scene Shortcuts", EditorStyles.boldLabel);
+            var lineRect = GUILayoutUtility.GetRect(0, 1, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(lineRect, AccentLavender * 0.6f);
 
-            if (GUILayout.Button("Main Menu"))
-            {
-                EditorSceneManager.OpenScene("Assets/_Scenes/Menu_Main.unity", OpenSceneMode.Single);
-                CSDebug.LogFormat("{0} - Opening Main Menu scene.", nameof(LogControlWindow));
-            }
-            if (GUILayout.Button("Photo Booth"))
-            {
-                EditorSceneManager.OpenScene("Assets/_Scenes/Tools/PhotoBooth.unity", OpenSceneMode.Single);
-                CSDebug.LogFormat("{0} - Opening Photo Booth.", nameof(LogControlWindow));
-            }
-            if (GUILayout.Button("Recording Studio (WIP)"))
-            {
-                EditorSceneManager.OpenScene("Assets/_Scenes/Tools/Recording Studio.unity", OpenSceneMode.Single);
-                CSDebug.LogFormat("{0} - Opening Recording Studio.", nameof(LogControlWindow));
-            }
-            if (GUILayout.Button("PlayFab Sandbox"))
-            {
-                EditorSceneManager.OpenScene("Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity", OpenSceneMode.Single);
-                CSDebug.LogFormat("{0} - Opening PlayFab Sandbox.", nameof(LogControlWindow));
-            }
+            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
+            GUILayout.Space(6);
 
-            EditorGUILayout.Space(8);
-            DrawHorizontalLine();
-            EditorGUILayout.Space(4);
-
-            // ── Unity Logger master switch ───────────────
-            EditorGUILayout.LabelField("Unity Logger", EditorStyles.boldLabel);
-            bool unityLogger = Debug.unityLogger.logEnabled;
-            bool newUnityLogger = EditorGUILayout.Toggle("Enable Unity Logger", unityLogger);
-            if (newUnityLogger != unityLogger)
+            // ═════════════════════════════════════════════════════════════════
+            //  SCENES
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Scenes", ref _sceneFoldout);
+            if (_sceneFoldout)
             {
-                Debug.unityLogger.logEnabled = newUnityLogger;
-                EditorPrefs.SetBool(PrefUnityLoggerEnabled, newUnityLogger);
+                BeginSection();
+                DrawSceneButton("Main Menu",              "Assets/_Scenes/Menu_Main.unity");
+                DrawSceneButton("Photo Booth",            "Assets/_Scenes/Tools/PhotoBooth.unity");
+                DrawSceneButton("Recording Studio (WIP)", "Assets/_Scenes/Tools/Recording Studio.unity");
+                DrawSceneButton("PlayFab Sandbox",        "Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity");
+                EndSection();
             }
 
-            EditorGUILayout.Space(8);
+            GUILayout.Space(2);
 
-            // ── Presets ──────────────────────────────────
-            EditorGUILayout.LabelField("Presets", EditorStyles.boldLabel);
-            EditorGUILayout.BeginHorizontal();
-
-            if (GUILayout.Button("All"))
+            // ═════════════════════════════════════════════════════════════════
+            //  CREATE
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Create", ref _createFoldout);
+            if (_createFoldout)
             {
-                CSDebug.LogLevel = CSLogLevel.All;
-                SavePrefs();
-            }
-            if (GUILayout.Button("Warnings & Errors"))
-            {
-                CSDebug.LogLevel = CSLogLevel.WarningsAndErrors;
-                SavePrefs();
-            }
-            if (GUILayout.Button("Off"))
-            {
-                CSDebug.LogLevel = CSLogLevel.Off;
-                SavePrefs();
+                BeginSection();
+                DrawMenuItemButton("New MiniGame", "FrogletTools/Legacy/Create/MiniGame");
+                DrawMenuItemButton("New Class",    "FrogletTools/Legacy/Create/Class");
+                EndSection();
             }
 
-            EditorGUILayout.EndHorizontal();
+            GUILayout.Space(2);
 
-            EditorGUILayout.Space(8);
-
-            // ── Per-type toggles ─────────────────────────
-            EditorGUILayout.LabelField("Log Types", EditorStyles.boldLabel);
-
-            bool logEnabled = EditorGUILayout.Toggle("Logs", CSDebug.LogEnabled);
-            if (logEnabled != CSDebug.LogEnabled)
+            // ═════════════════════════════════════════════════════════════════
+            //  TESTING MULTIPLAYER
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Testing Multiplayer", ref _multiplayerFoldout);
+            if (_multiplayerFoldout)
             {
-                CSDebug.LogEnabled = logEnabled;
-                SavePrefs();
+                BeginSection();
+
+                bool bootstrapEnabled = EditorPrefs.GetBool(PrefBootstrapScene, true);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                bool newBootstrap = GUILayout.Toggle(bootstrapEnabled, "Load Bootstrap on Play");
+                if (newBootstrap != bootstrapEnabled)
+                    EditorPrefs.SetBool(PrefBootstrapScene, newBootstrap);
+                GUILayout.FlexibleSpace();
+                DrawBadge(bootstrapEnabled ? "ON" : "OFF", bootstrapEnabled ? BadgeOn : BadgeOff);
+                EditorGUILayout.EndHorizontal();
+
+                EndSection();
             }
 
-            bool warningsEnabled = EditorGUILayout.Toggle("Warnings", CSDebug.WarningsEnabled);
-            if (warningsEnabled != CSDebug.WarningsEnabled)
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  UTILITIES
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Utilities", ref _utilitiesFoldout);
+            if (_utilitiesFoldout)
             {
-                CSDebug.WarningsEnabled = warningsEnabled;
-                SavePrefs();
+                BeginSection();
+                DrawMenuItemButton("Component Copier",           "FrogletTools/Legacy/Component Copier");
+                DrawMenuItemButton("Dialogue Editor",            "FrogletTools/Legacy/Dialogue Editor");
+                DrawMenuItemButton("ElementalFloat Editor",      "FrogletTools/Legacy/ElementalFloat Editor");
+                DrawMenuItemButton("Find Asset by GUID",         "FrogletTools/Legacy/Find Asset by GUID");
+                DrawMenuItemButton("Force Re-Serialize All SOs", "FrogletTools/Legacy/Force Re-Serialize All ScriptableObjects");
+                EndSection();
             }
 
-            bool errorsEnabled = EditorGUILayout.Toggle("Errors", CSDebug.ErrorsEnabled);
-            if (errorsEnabled != CSDebug.ErrorsEnabled)
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  LOGGING
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Logging", ref _loggingFoldout);
+            if (_loggingFoldout)
             {
-                CSDebug.ErrorsEnabled = errorsEnabled;
-                SavePrefs();
+                BeginSection();
+
+                DrawLogToggle("Unity Logger", Debug.unityLogger.logEnabled, v =>
+                {
+                    Debug.unityLogger.logEnabled = v;
+                    EditorPrefs.SetBool(PrefUnityLoggerEnabled, v);
+                });
+
+                GUILayout.Space(4);
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                if (GUILayout.Button("All"))            { CSDebug.LogLevel = CSLogLevel.All; SavePrefs(); }
+                if (GUILayout.Button("Warn + Err"))     { CSDebug.LogLevel = CSLogLevel.WarningsAndErrors; SavePrefs(); }
+                if (GUILayout.Button("Silent"))         { CSDebug.LogLevel = CSLogLevel.Off; SavePrefs(); }
+                EditorGUILayout.EndHorizontal();
+
+                GUILayout.Space(4);
+
+                DrawLogToggle("Logs",     CSDebug.LogEnabled,      v => { CSDebug.LogEnabled = v; SavePrefs(); });
+                DrawLogToggle("Warnings", CSDebug.WarningsEnabled, v => { CSDebug.WarningsEnabled = v; SavePrefs(); });
+                DrawLogToggle("Errors",   CSDebug.ErrorsEnabled,   v => { CSDebug.ErrorsEnabled = v; SavePrefs(); });
+
+                EndSection();
             }
 
-            EditorGUILayout.Space(8);
+            GUILayout.Space(2);
 
-            // ── Current state summary ────────────────────
-            EditorGUILayout.LabelField("Current State", EditorStyles.boldLabel);
-            string status = $"Logs: {OnOff(CSDebug.LogEnabled)}  |  " +
-                            $"Warnings: {OnOff(CSDebug.WarningsEnabled)}  |  " +
-                            $"Errors: {OnOff(CSDebug.ErrorsEnabled)}";
-            EditorGUILayout.HelpBox(status, MessageType.Info);
+            // ═════════════════════════════════════════════════════════════════
+            //  QUEST DEBUG
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Quest Debug", ref _questFoldout);
+            if (_questFoldout)
+            {
+                BeginSection();
 
+                bool available = Application.isPlaying && GameModeProgressionService.Instance != null;
+
+                if (!available)
+                {
+                    GUILayout.Space(Pad);
+                    EditorGUILayout.LabelField("Enter Play Mode to use quest tools.", _mutedLabel);
+                }
+                else
+                {
+                    var svc = GameModeProgressionService.Instance;
+                    int maxQuests = svc.QuestList?.Quests.Count ?? 1;
+
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(Pad);
+                    GUILayout.Label("Unlock to index", GUILayout.Width(100));
+                    _questIndexInput = EditorGUILayout.TextField(_questIndexInput, GUILayout.Width(36));
+                    GUILayout.Label($"/ {maxQuests}", GUILayout.Width(32));
+                    if (GUILayout.Button("Apply", GUILayout.Width(56)))
+                    {
+                        if (int.TryParse(_questIndexInput, out int idx))
+                            svc.DebugSetProgressToIndex(idx);
+                        else
+                            Debug.LogWarning("[FrogletToolbox] Enter a valid number.");
+                    }
+                    EditorGUILayout.EndHorizontal();
+
+                    GUILayout.Space(4);
+
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(Pad);
+                    if (GUILayout.Button("Reset All Quests"))
+                        svc.ResetAllProgress();
+                    EditorGUILayout.EndHorizontal();
+
+                    GUILayout.Space(4);
+
+                    string info = $"<b>Unlocked:</b> {svc.ProgressionData.UnlockedModes.Count}   " +
+                                  $"<b>Completed:</b> {svc.ProgressionData.CompletedQuests.Count}   " +
+                                  $"<b>Claimed:</b> {svc.GetClaimedQuestCount()}";
+                    GUILayout.Label(info, _infoStyle);
+                }
+
+                EndSection();
+            }
+
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  NON-QUEST GAME MODES
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Non-Quest Game Modes", ref _nonQuestFoldout);
+            if (_nonQuestFoldout)
+            {
+                BeginSection();
+
+                bool available = Application.isPlaying && GameModeProgressionService.Instance != null;
+
+                if (!available)
+                {
+                    GUILayout.Space(Pad);
+                    EditorGUILayout.LabelField("Enter Play Mode to toggle game modes.", _mutedLabel);
+                }
+                else
+                {
+                    var svc = GameModeProgressionService.Instance;
+                    var nonQuestModes = GetNonQuestModes(svc);
+
+                    foreach (var mode in nonQuestModes)
+                    {
+                        bool isUnlocked = svc.IsGameModeUnlocked(mode);
+                        DrawLogToggle(mode.ToString(), isUnlocked, v =>
+                        {
+                            svc.DebugSetModeUnlocked(mode, v);
+                        });
+                    }
+                }
+
+                EndSection();
+            }
+
+            GUILayout.Space(8);
             EditorGUILayout.EndScrollView();
+
+            // ── Footer ───────────────────────────────────────────────────────
+            var footerRect = GUILayoutUtility.GetRect(0, 18, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(footerRect, FooterBg);
+            GUI.Label(footerRect, "Froglet Inc. — Cosmic Shore", _mutedLabel);
         }
 
-        static void DrawHorizontalLine()
+        // ── Drawing helpers ──────────────────────────────────────────────────
+
+        void DrawSectionHeader(string title, ref bool foldout)
         {
-            var rect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 1));
+            var rect = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(rect, SectionHeader);
+
+            var accent = new Rect(rect.x, rect.y, 3, rect.height);
+            EditorGUI.DrawRect(accent, AccentMint * 0.8f);
+
+            var foldRect = new Rect(rect.x + 10, rect.y, rect.width - 10, rect.height);
+            foldout = EditorGUI.Foldout(foldRect, foldout, title, true, _sectionLabelStyle);
         }
 
-        static string OnOff(bool value) => value ? "ON" : "OFF";
+        void BeginSection()
+        {
+            EditorGUILayout.BeginVertical();
+            GUILayout.Space(4);
+        }
+
+        void EndSection()
+        {
+            GUILayout.Space(4);
+            EditorGUILayout.EndVertical();
+
+            var div = GUILayoutUtility.GetRect(0, 1, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(div, DividerColor);
+        }
+
+        void DrawSceneButton(string label, string scenePath)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (GUILayout.Button(label))
+            {
+                EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                CSDebug.Log($"[FrogletToolbox] Opening {label}.");
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawMenuItemButton(string label, string menuPath)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (GUILayout.Button(label))
+                EditorApplication.ExecuteMenuItem(menuPath);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawLogToggle(string label, bool current, System.Action<bool> setter)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            bool next = GUILayout.Toggle(current, label);
+            if (next != current)
+            {
+                setter(next);
+                Repaint();
+            }
+            GUILayout.FlexibleSpace();
+            DrawBadge(current ? "ON" : "OFF", current ? BadgeOn : BadgeOff);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawBadge(string text, Color bg)
+        {
+            var content = new GUIContent(text);
+            var size = _badgeStyle.CalcSize(content);
+            var rect = GUILayoutUtility.GetRect(size.x + 4, 16, GUILayout.Width(size.x + 4));
+            EditorGUI.DrawRect(rect, bg);
+            GUI.Label(rect, content, _badgeStyle);
+        }
+
+        static List<GameModes> GetNonQuestModes(GameModeProgressionService svc)
+        {
+            var all = (GameModes[])Enum.GetValues(typeof(GameModes));
+            return all
+                .Where(m => m != GameModes.Random && !svc.IsGameModeInQuestChain(m))
+                .OrderBy(m => m.ToString())
+                .ToList();
+        }
+
+        // ── Prefs persistence ────────────────────────────────────────────────
 
         static void SavePrefs()
         {

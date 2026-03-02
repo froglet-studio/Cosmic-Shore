@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using CosmicShore.Core;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Game.UI;
 using CosmicShore.Soap;
@@ -8,6 +9,7 @@ using UnityEngine;
 using Obvious.Soap;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 namespace CosmicShore.Game.ShapeDrawing
 {
@@ -19,6 +21,7 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] Cell cellScript;
         [SerializeField] GameDataSO gameData;
         [SerializeField] CellRuntimeDataSO cellData;
+        [SerializeField] Button pauseButton;
 
         [Header("SnowChanger")]
         [Tooltip("SnowChanger prefab that spawns directional shards pointing at the current crystal.")]
@@ -45,10 +48,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [Header("Scoring")]
         [Tooltip("How often (in seconds) to sample the player position for accuracy scoring.")]
         [SerializeField] float positionSampleInterval = 0.15f;
-        [Tooltip("Maximum distance (units) from ideal path that still counts as 100% accurate for that sample.")]
-        [SerializeField] float perfectDistanceThreshold = 15f;
-        [Tooltip("Distance at which accuracy drops to 0% for that sample.")]
-        [SerializeField] float zeroAccuracyDistance = 80f;
+        [Tooltip("Fraction of average segment length that counts as 100% accurate. 0.02 = within 2% of segment length.")]
+        [SerializeField] float perfectDistanceFraction = 0.02f;
+        [Tooltip("Fraction of average segment length at which accuracy drops to 0%. 0.15 = 15% of segment length.")]
+        [SerializeField] float zeroAccuracyFraction = 0.15f;
 
         [Header("Preview Cinematic")]
         [Tooltip("Seconds the camera holds on the top-down shape view.")]
@@ -63,6 +66,12 @@ namespace CosmicShore.Game.ShapeDrawing
         [Header("Debug")]
         [Tooltip("Press this key to save a screenshot (PC only).")]
         [SerializeField] Key screenshotKey = Key.F12;
+
+        [Header("Prism Keeping")]
+        [Tooltip("Duration of the shrink+reposition animation when keeping drawn prisms.")]
+        [SerializeField] float prismShrinkDuration = 1.5f;
+        [Tooltip("Final scale multiplier for kept prisms (relative to original). 0.15 = 15% of original size.")]
+        [SerializeField] float prismShrinkScale = 0.15f;
 
         [Header("End Shape HUD")]
         [Tooltip("UI panel shown after completing a shape. Displays stats, screenshot and exit buttons.")]
@@ -95,7 +104,7 @@ namespace CosmicShore.Game.ShapeDrawing
 
         // Scoring state
         float _shapeStartTime;
-        readonly List<Vector3> _playerPathSamples = new();
+        readonly List<(Vector3 position, int segmentIndex)> _playerPathSamples = new();
         float _nextSampleTime;
         bool _trackingPath;
 
@@ -234,6 +243,9 @@ namespace CosmicShore.Game.ShapeDrawing
             if (_vesselStatus != null)
                 _vesselStatus.IsStationary = true;
 
+            // Disable pause during shape drawing
+            if (pauseButton) pauseButton.interactable = false;
+
             // Disable Cell to stop Lifeforms
             if (cellScript) cellScript.enabled = false;
 
@@ -296,8 +308,15 @@ namespace CosmicShore.Game.ShapeDrawing
             _trackingPath = false;
             _waitingForNext = false;
 
-            // Return shape prisms to pool via SO event
+            // Capture player-drawn prisms BEFORE returning anything to pool
+            var capturedPrisms = CapturePlayerPrisms();
+
+            // Return remaining shape prisms to pool via SO event
             if (onReturnShapePrismsEvent) onReturnShapePrismsEvent.Raise();
+
+            // Animate captured prisms into the original shape outline
+            if (capturedPrisms.Count > 0 && _activeShape != null)
+                StartCoroutine(ShrinkPrismsIntoShape(capturedPrisms, _activeShape, _shapeOrigin));
 
             _activeShape = null;
 
@@ -319,10 +338,127 @@ namespace CosmicShore.Game.ShapeDrawing
             shapeCrystalManager.DestroyAllCrystals();
             shapeCrystalManager.enabled = false;
 
-            // Restore vessel HUD
+            // Restore vessel HUD and pause button
             _vesselStatus?.VesselHUDController?.ShowHUD();
+            if (pauseButton) pauseButton.interactable = true;
 
             OnFreestyleResumed?.Invoke();
+        }
+
+        // ── Prism Keeping ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Captures all player-drawn prisms from VesselPrismController trails,
+        /// detaches them from the pool system so they won't be returned.
+        /// </summary>
+        List<Prism> CapturePlayerPrisms()
+        {
+            var result = new List<Prism>();
+            var prismController = _vesselStatus?.VesselPrismController;
+            if (prismController == null) return result;
+
+            // Collect from both trails
+            foreach (var prism in prismController.Trail.TrailList)
+            {
+                if (prism != null && prism.gameObject != null)
+                    result.Add(prism);
+            }
+
+            // Detach each prism from pool system
+            foreach (var prism in result)
+            {
+                // Null out pool callback so ReturnToPool() becomes a no-op
+                prism.OnReturnToPool = null;
+
+                // Disable EventListenerNoParam components so SO events don't return them
+                var listeners = prism.GetComponents<EventListenerNoParam>();
+                foreach (var l in listeners)
+                    l.enabled = false;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Animates captured prisms: shrinks them and repositions to form the original shape outline.
+        /// </summary>
+        IEnumerator ShrinkPrismsIntoShape(List<Prism> prisms, ShapeDefinition shape, Vector3 origin)
+        {
+            if (prisms.Count == 0) yield break;
+
+            // Create a persistent container for the miniature shape
+            var container = new GameObject($"CompletedShape_{shape.shapeName}");
+            container.transform.position = origin;
+
+            // Calculate target positions along the shape outline
+            var shapeRotation = Quaternion.Euler(shapeOrientationEuler);
+            shape.EnsureWaypoints();
+            var waypoints = shape.waypoints;
+            if (waypoints == null || waypoints.Count < 2) yield break;
+
+            // Build world-space shape path segments and total length
+            var worldPoints = new Vector3[waypoints.Count];
+            for (int i = 0; i < waypoints.Count; i++)
+                worldPoints[i] = origin + shapeRotation * (waypoints[i] * shapeScale * prismShrinkScale);
+
+            float totalLength = 0f;
+            var segLengths = new float[worldPoints.Length - 1];
+            for (int i = 0; i < worldPoints.Length - 1; i++)
+            {
+                segLengths[i] = Vector3.Distance(worldPoints[i], worldPoints[i + 1]);
+                totalLength += segLengths[i];
+            }
+
+            // Distribute prisms evenly along the shape path
+            var targetPositions = new Vector3[prisms.Count];
+            for (int i = 0; i < prisms.Count; i++)
+            {
+                float dist = (float)i / prisms.Count * totalLength;
+                float accumulated = 0f;
+                int seg = 0;
+                for (seg = 0; seg < segLengths.Length - 1; seg++)
+                {
+                    if (accumulated + segLengths[seg] > dist) break;
+                    accumulated += segLengths[seg];
+                }
+                float frac = segLengths[seg] > 0f ? (dist - accumulated) / segLengths[seg] : 0f;
+                targetPositions[i] = Vector3.Lerp(worldPoints[seg], worldPoints[Mathf.Min(seg + 1, worldPoints.Length - 1)], frac);
+            }
+
+            // Record starting state
+            var startPositions = new Vector3[prisms.Count];
+            var startScales = new Vector3[prisms.Count];
+            for (int i = 0; i < prisms.Count; i++)
+            {
+                if (!prisms[i]) continue;
+                startPositions[i] = prisms[i].transform.position;
+                startScales[i] = prisms[i].transform.localScale;
+            }
+
+            var targetScale = Vector3.one * prismShrinkScale;
+
+            // Animate over duration
+            float elapsed = 0f;
+            while (elapsed < prismShrinkDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / prismShrinkDuration));
+
+                for (int i = 0; i < prisms.Count; i++)
+                {
+                    if (!prisms[i]) continue;
+                    prisms[i].transform.position = Vector3.Lerp(startPositions[i], targetPositions[i], t);
+                    prisms[i].transform.localScale = Vector3.Lerp(startScales[i], targetScale, t);
+                }
+
+                yield return null;
+            }
+
+            // Reparent to container for clean hierarchy
+            foreach (var prism in prisms)
+            {
+                if (prism) prism.transform.SetParent(container.transform);
+            }
         }
 
         // ── Preview Sequence (Phase 1) ───────────────────────────────────────
@@ -606,7 +742,7 @@ namespace CosmicShore.Game.ShapeDrawing
             if (Time.time < _nextSampleTime) return;
 
             _nextSampleTime = Time.time + positionSampleInterval;
-            _playerPathSamples.Add(_vesselStatus.Vessel.Transform.position);
+            _playerPathSamples.Add((_vesselStatus.Vessel.Transform.position, _currentWaypointIndex));
         }
 
         ShapeScoreData CalculateScore()
@@ -627,34 +763,53 @@ namespace CosmicShore.Game.ShapeDrawing
             if (_playerPathSamples.Count == 0 || _activeShape.waypoints.Count < 2) return 0f;
 
             var worldWaypoints = GetAllWorldWaypoints();
+            int waypointCount = worldWaypoints.Length;
+
+            // Compute average segment length — thresholds scale with the shape's size
+            float totalSegLength = 0f;
+            int segCount = 0;
+            for (int i = 0; i < waypointCount - 1; i++)
+            {
+                totalSegLength += Vector3.Distance(worldWaypoints[i], worldWaypoints[i + 1]);
+                segCount++;
+            }
+            float avgSegLength = segCount > 0 ? totalSegLength / segCount : 100f;
+            float perfectThreshold = avgSegLength * perfectDistanceFraction;
+            float zeroThreshold = avgSegLength * zeroAccuracyFraction;
 
             float totalAccuracy = 0f;
             int validSamples = 0;
 
-            foreach (var sample in _playerPathSamples)
+            foreach (var (samplePos, segIdx) in _playerPathSamples)
             {
                 float minDist = float.MaxValue;
 
-                for (int i = 0; i < worldWaypoints.Length - 1; i++)
+                // Only check the segment the player was on and its immediate neighbors.
+                // segIdx is the NEXT waypoint the player was heading toward.
+                // The relevant segment is [segIdx-1 → segIdx], plus neighbors for tolerance.
+                int segFrom = Mathf.Max(0, segIdx - 2);
+                int segTo = Mathf.Min(waypointCount - 2, segIdx);
+
+                for (int i = segFrom; i <= segTo; i++)
                 {
                     if (!_activeShape.IsTrailEnabledForSegment(i + 1) &&
                         !_activeShape.IsTrailEnabledForSegment(i))
                         continue;
 
-                    float dist = DistanceToSegment(sample, worldWaypoints[i], worldWaypoints[i + 1]);
+                    float dist = DistanceToSegment(samplePos, worldWaypoints[i], worldWaypoints[i + 1]);
                     if (dist < minDist) minDist = dist;
                 }
 
                 if (minDist < float.MaxValue)
                 {
                     float sampleAccuracy;
-                    if (minDist <= perfectDistanceThreshold)
+                    if (minDist <= perfectThreshold)
                         sampleAccuracy = 1f;
-                    else if (minDist >= zeroAccuracyDistance)
+                    else if (minDist >= zeroThreshold)
                         sampleAccuracy = 0f;
                     else
-                        sampleAccuracy = 1f - (minDist - perfectDistanceThreshold) /
-                                         (zeroAccuracyDistance - perfectDistanceThreshold);
+                        sampleAccuracy = 1f - (minDist - perfectThreshold) /
+                                         (zeroThreshold - perfectThreshold);
 
                     totalAccuracy += sampleAccuracy;
                     validSamples++;
@@ -736,17 +891,55 @@ namespace CosmicShore.Game.ShapeDrawing
         // ── Debug Screenshot ─────────────────────────────────────────────
 
         /// <summary>
-        /// Captures a screenshot and saves it to the persistent data path.
-        /// Wire to a UI button or press screenshotKey (default F12).
+        /// Captures a screenshot excluding UI layers.
+        /// Temporarily disables the UI layer on the active camera, renders to a RenderTexture,
+        /// saves the result as PNG, then restores the camera's original culling mask.
         /// </summary>
         public void TakeDebugScreenshot()
         {
+            StartCoroutine(CaptureShapeScreenshot());
+        }
+
+        IEnumerator CaptureShapeScreenshot()
+        {
+            // Wait for end of frame so current rendering is done
+            yield return new WaitForEndOfFrame();
+
+            var cam = Camera.main;
+            if (!cam) yield break;
+
+            // Save original culling mask and disable UI layer
+            int originalCullingMask = cam.cullingMask;
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (uiLayer >= 0)
+                cam.cullingMask &= ~(1 << uiLayer);
+
+            // Create temporary render texture matching screen resolution
+            var rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24);
+            cam.targetTexture = rt;
+            cam.Render();
+            cam.targetTexture = null;
+
+            // Restore camera
+            cam.cullingMask = originalCullingMask;
+
+            // Read pixels from render texture
+            RenderTexture.active = rt;
+            var screenshot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+            screenshot.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+            screenshot.Apply();
+            RenderTexture.active = null;
+            RenderTexture.ReleaseTemporary(rt);
+
+            // Save to disk
             string folder = Path.Combine(Application.persistentDataPath, "Screenshots");
             Directory.CreateDirectory(folder);
             string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string filePath = Path.Combine(folder, $"Shape_{timestamp}.png");
-            ScreenCapture.CaptureScreenshot(filePath);
-            Debug.Log($"[ShapeDrawing] Screenshot saved: {filePath}");
+            File.WriteAllBytes(filePath, screenshot.EncodeToPNG());
+            Object.Destroy(screenshot);
+
+            Debug.Log($"[ShapeDrawing] Screenshot saved (UI excluded): {filePath}");
         }
     }
 }

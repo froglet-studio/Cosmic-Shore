@@ -18,14 +18,20 @@ MonoBehaviour:
   autoGeneratePreset: 0
   autoGenerateRadius: 100
   waypoints:
-  - {x: 30.000002, y: 100, z: 0}
-  - {x: -10, y: 10, z: 0}
+  - {x: 10, y: 100, z: 0}
+  - {x: -20, y: 70, z: 0}
+  - {x: 15.000001, y: 50, z: 0}
+  - {x: -25, y: 25, z: 0}
   - {x: 20, y: 5, z: 0}
-  - {x: -30.000002, y: -100, z: 0}
-  - {x: 10, y: -5, z: 0}
-  - {x: -20, y: -10, z: 0}
-  - {x: 30.000002, y: 100, z: 0}
-  trailEnabledPerSegment: 01010101010101
+  - {x: -15.000001, y: -20, z: 0}
+  - {x: 10, y: -40, z: 0}
+  - {x: -20, y: -65, z: 0}
+  - {x: 5, y: -100, z: 0}
+  - {x: 20, y: 5, z: 0}
+  - {x: 45, y: -15.000001, z: 0}
+  - {x: 35, y: -35, z: 0}
+  - {x: 55, y: -55, z: 0}
+  trailEnabledPerSegment: 01010101010101010001010101
   playerStartOffset: {x: 0, y: 0, z: -150}
   playerStartEuler: {x: 0, y: 0, z: 0}
   revealCameraEuler: {x: 90, y: 0, z: 0}

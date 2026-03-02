@@ -640,6 +640,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1872280282667471053, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1994725692957625995, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_text
@@ -832,9 +837,24 @@ PrefabInstance:
       objectReference: {fileID: 776211957}
     - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
+      propertyPath: questCompletionText
+      value: 
+      objectReference: {fileID: 776211957}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
       propertyPath: xpEarnedCanvasGroup
       value: 
       objectReference: {fileID: 776211958}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: questTextDialogObject
+      value: 
+      objectReference: {fileID: 1916135823}
+    - target: {fileID: 3291860290764373425, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -1.8000183
+      objectReference: {fileID: 0}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -954,6 +974,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4433200535761759613, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1426,6 +1451,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5955435898294338417, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_Alpha
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6236172666098496648, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -1630,6 +1660,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_SizeDelta.y
       value: 680.8903
+      objectReference: {fileID: 0}
+    - target: {fileID: 7071078697595455670, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1931,6 +1966,16 @@ PrefabInstance:
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
       objectReference: {fileID: 0}
+    - target: {fileID: 8519919900975884673, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_text
+      value: 'Quest Unlocked: Party Game Mode'
+      objectReference: {fileID: 0}
+    - target: {fileID: 8519919900975884673, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_fontSize
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 8527493465079914512, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -1975,6 +2020,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 159.06
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 79.53
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 89.08276
       objectReference: {fileID: 0}
     - target: {fileID: 8826477712431598705, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2022,6 +2082,7 @@ PrefabInstance:
     - {fileID: 5497835174634480091, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
     - {fileID: 5770965876004851188, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
     - {fileID: 4080277108912208582, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
+    - {fileID: 8390816771645221088, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
     m_RemovedGameObjects:
     - {fileID: 1829178693134523002, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
     - {fileID: 268125253535976575, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
@@ -2451,13 +2512,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  spawnableSegments:
-  - {fileID: 0}
+  weightedSegments: []
+  guaranteedSpawnables: []
   spawnableByIntensity:
   - {fileID: 7606682149800798904, guid: 218f41c09395b8e49a959f865e943d93, type: 3}
   - {fileID: 8565176333109452482, guid: d8f13f0bb0fb307489536590772e6795, type: 3}
   - {fileID: 934516435980311962, guid: 207a992b551491b4cb209b0779c34323, type: 3}
   - {fileID: 4959367395204161429, guid: 7f105562de1ca3f41832337facd6e3d9, type: 3}
+  spawnableSegments:
+  - {fileID: 0}
   spawnSegmentWeights:
   - 1
   Seed: 0
@@ -3889,6 +3952,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8373d81418838f64c97155119a29e98c, type: 3}
+--- !u!1 &1916135823 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7071078697595455670, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2001299555
 PrefabInstance:
   m_ObjectHideFlags: 0

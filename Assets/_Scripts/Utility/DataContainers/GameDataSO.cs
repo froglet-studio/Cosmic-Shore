@@ -61,7 +61,6 @@ namespace CosmicShore.Soap
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
         public int LocalPlayerAvatarId;
-        public int LocalPlayerXP;
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
@@ -518,10 +517,15 @@ namespace CosmicShore.Soap
         {
             if (_playerSpawnPoseList == null || _playerSpawnPoseList.Count == 0)
             {
+                if (SpawnPoses == null || SpawnPoses.Length == 0)
+                {
+                    CSDebug.LogError("[GameDataSO] SpawnPoses is null or empty — returning default pose at origin.");
+                    return new Pose(Vector3.zero, Quaternion.identity);
+                }
                 _playerSpawnPoseList = new List<Pose>(SpawnPoses.Length);
                 _playerSpawnPoseList = SpawnPoses.ToList();
             }
-            
+
             int index = UnityEngine.Random.Range(0, _playerSpawnPoseList.Count);
             var spawnPoint = _playerSpawnPoseList[index];
             _playerSpawnPoseList.RemoveAt(index);

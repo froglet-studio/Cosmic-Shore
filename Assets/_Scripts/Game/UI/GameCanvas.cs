@@ -1,4 +1,6 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Progression;
+using CosmicShore.Models;
 using CosmicShore.Utilities;
 using System.Collections.Generic;
 using TMPro;
@@ -32,13 +34,28 @@ namespace CosmicShore.Game.UI
         private void OnEnable()
         {
             onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
-        }
 
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnQuestCompleted += HandleQuestCompleted;
+        }
 
         private void OnDisable()
         {
             onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnQuestCompleted -= HandleQuestCompleted;
         }
+
+        void HandleQuestCompleted(SO_GameModeQuestData quest)
+        {
+            if (AwardsContainer != null)
+                AwardsContainer.SetActive(true);
+
+            if (XPEarnedText != null)
+                XPEarnedText.text = $"Quest Complete!\n{quest.DisplayName}";
+        }
+
         private void OnShipHUDInitialized(ShipHUDData data)
         {
             MiniGameHUD.Hide();
