@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GameModeQuest_CrystalCapture
   m_EditorClassIdentifier: 
   GameMode: 35
-  DisplayName: Crystal Capture
+  DisplayName: CRYSTAL CAPTURE
   Description: Collect 30 Crystals to unlock next
   Icon: {fileID: 21300000, guid: b5b9538f2e3a8c24d9a9f5219064fcdc, type: 3}
   TargetType: 0

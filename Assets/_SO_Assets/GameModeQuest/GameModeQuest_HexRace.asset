@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GameModeQuest_HexRace
   m_EditorClassIdentifier: 
   GameMode: 33
-  DisplayName: Hex Race
+  DisplayName: HEX RACE
   Description: Complete a race under 200 seconds
   Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
   TargetType: 1
