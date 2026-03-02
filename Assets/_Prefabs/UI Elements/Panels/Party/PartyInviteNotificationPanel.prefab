@@ -601,6 +601,7 @@ GameObject:
   - component: {fileID: 4689389560851870407}
   - component: {fileID: 686396914652633224}
   - component: {fileID: 1281718034097114422}
+  - component: {fileID: 8323267208482651102}
   m_Layer: 0
   m_Name: PartyInviteNotificationPanel
   m_TagString: Untagged
@@ -689,6 +690,18 @@ MonoBehaviour:
   panelRoot: {fileID: 7040009067698345261}
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   autoDeclineSeconds: 30
+--- !u!225 &8323267208482651102
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7040009067698345261}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &9040024808939148975
 GameObject:
   m_ObjectHideFlags: 0
