@@ -146,8 +146,8 @@ namespace CosmicShore.Utility.Tools
 
             GUI.enabled = Application.isPlaying && GameModeProgressionService.Instance != null;
 
-            if (GUILayout.Button("Complete Current Quest"))
-                GameModeProgressionService.Instance?.DebugCompleteCurrentQuest();
+            if (GUILayout.Button("Complete All Quests"))
+                GameModeProgressionService.Instance?.DebugCompleteAllQuests();
 
             if (GUILayout.Button("Reset All Quests"))
                 GameModeProgressionService.Instance?.ResetAllProgress();

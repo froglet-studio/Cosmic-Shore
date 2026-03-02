@@ -102,9 +102,14 @@ namespace CosmicShore.App.UI.Views
             bool isUnlocked = questIndex == 0 || (service != null && service.IsGameModeUnlocked(quest.GameMode));
             if (!isUnlocked) return QuestItemState.Locked;
 
+            // Already claimed — next mode is unlocked
             if (questIndex + 1 < questList.Quests.Count && service != null
                 && service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode))
                 return QuestItemState.Claimed;
+
+            // Placeholder quests are immediately claimable (skip straight to unlock next)
+            if (quest.IsPlaceholder)
+                return QuestItemState.ReadyToClaim;
 
             if (service != null && service.IsQuestCompleted(quest.GameMode))
                 return QuestItemState.ReadyToClaim;
@@ -121,14 +126,14 @@ namespace CosmicShore.App.UI.Views
         void SetSliderImmediate()
         {
             if (progressBarSlider != null)
-                progressBarSlider.value = GetClaimedCount();
+                progressBarSlider.value = GetSliderValue();
         }
 
         void AnimateSlider()
         {
             if (progressBarSlider == null) return;
             KillTween();
-            float target = GetClaimedCount();
+            float target = GetSliderValue();
             _sliderTween = DOTween.To(
                     () => progressBarSlider.value,
                     x => progressBarSlider.value = x,
@@ -136,9 +141,25 @@ namespace CosmicShore.App.UI.Views
                 .SetEase(sliderEase).SetUpdate(true);
         }
 
-        int GetClaimedCount()
+        /// <summary>
+        /// Returns the 1-indexed frontier position on the slider.
+        /// Counts consecutive unlocked modes from the start of the chain.
+        /// Fresh state = 1 (first quest active). All claimed = questCount.
+        /// </summary>
+        int GetSliderValue()
         {
-            return GameModeProgressionService.Instance?.GetClaimedQuestCount() ?? 0;
+            var service = GameModeProgressionService.Instance;
+            if (service == null || questList == null) return 0;
+
+            int count = 0;
+            for (int i = 0; i < questList.Quests.Count; i++)
+            {
+                if (i == 0 || service.IsGameModeUnlocked(questList.Quests[i].GameMode))
+                    count++;
+                else
+                    break;
+            }
+            return count;
         }
 
         /// <summary>

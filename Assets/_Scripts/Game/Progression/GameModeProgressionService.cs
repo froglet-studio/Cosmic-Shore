@@ -256,16 +256,15 @@ namespace CosmicShore.Game.Progression
 
             EnsureFirstModeUnlocked();
             OnProgressionChanged?.Invoke(ProgressionData);
-            ScheduleDebouncedSave();
+            SaveImmediateAsync();
             CSDebug.Log("[GameModeProgressionService] All quest progress reset.");
         }
 
         /// <summary>
-        /// Advances the first active quest one step:
-        ///   Unlocked → ReadyToClaim (marks quest completed, shows claim button)
-        ///   ReadyToClaim → Claimed (claims quest, unlocks next mode, animates slider)
+        /// Unlocks all game modes and marks all quests as claimed.
+        /// Slider advances to max and every card shows Claimed/Completed.
         /// </summary>
-        public void DebugCompleteCurrentQuest()
+        public void DebugCompleteAllQuests()
         {
             if (questList == null) return;
 
@@ -274,32 +273,19 @@ namespace CosmicShore.Game.Progression
                 var quest = questList.Quests[i];
                 string modeName = quest.GameMode.ToString();
 
-                bool isUnlocked = i == 0 || ProgressionData.IsUnlocked(modeName);
-                if (!isUnlocked) continue;
+                // Unlock every mode
+                ProgressionData.MarkUnlocked(modeName);
 
-                // Already claimed — next mode is unlocked, skip to find active quest
-                bool isClaimed = i + 1 < questList.Quests.Count &&
-                                 ProgressionData.IsUnlocked(questList.Quests[i + 1].GameMode.ToString());
-                if (isClaimed) continue;
+                // Clear from CompletedQuests (they're fully claimed, not pending)
+                ProgressionData.CompletedQuests.Remove(modeName);
 
-                // ReadyToClaim → claim it and unlock next
-                if (ProgressionData.IsQuestCompleted(modeName))
-                {
-                    CSDebug.Log($"[GameModeProgressionService] Debug-claiming quest for {quest.GameMode}.");
-                    ClaimQuestAndUnlockNext(quest.GameMode);
-                    return;
-                }
-
-                // Unlocked → mark as completed (ReadyToClaim)
-                ProgressionData.MarkQuestCompleted(modeName);
-                CSDebug.Log($"[GameModeProgressionService] Debug-completed quest for {quest.GameMode}.");
-                OnQuestCompleted?.Invoke(quest);
-                OnProgressionChanged?.Invoke(ProgressionData);
-                ScheduleDebouncedSave();
-                return;
+                // Clear runtime SO flag
+                quest.IsCompleted = false;
             }
 
-            CSDebug.LogWarning("[GameModeProgressionService] No active quest found to advance.");
+            OnProgressionChanged?.Invoke(ProgressionData);
+            SaveImmediateAsync();
+            CSDebug.Log("[GameModeProgressionService] All quests completed and all modes unlocked.");
         }
 
         // ── Internal ────────────────────────────────────────────────────────────
