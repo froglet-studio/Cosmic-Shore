@@ -80,6 +80,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private const int LOBBY_RACE_SETTLE_MS = 1500;
 
+        /// <summary>
+        /// After this many consecutive RefreshAsync failures, abandon the
+        /// stale lobby reference and attempt to rejoin.
+        /// </summary>
+        private const int MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
+        private int _consecutiveRefreshErrors;
+
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
@@ -242,12 +249,17 @@ namespace CosmicShore.Gameplay
                     $"[INVITE-SEND] Setting properties — invite_target: '{targetPlayerId}', " +
                     $"invite_data: '{inviteData}'", Color.cyan);
 
+                // Refresh FIRST so the SDK's cached player list has a valid index
+                // for the local player. Then set properties and save — this order
+                // ensures refresh doesn't overwrite our SetProperty() calls.
+                await _presenceLobby.RefreshAsync();
+
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(inviteData, VisibilityPropertyOptions.Public));
 
-                await RefreshAndSavePlayerDataAsync();
+                await SaveWithRetryAsync();
 
                 _currentInviteTargetId = targetPlayerId;
 
@@ -548,6 +560,7 @@ namespace CosmicShore.Gameplay
             if (_presenceLobby == null || _lobbyBusy) return;
 
             _lobbyBusy = true;
+            bool shouldReconnect = false;
             try
             {
                 await _presenceLobby.RefreshAsync();
@@ -603,15 +616,29 @@ namespace CosmicShore.Gameplay
                 // ── Party session member tracking ───────────────────────────
                 if (_partySession != null)
                     await RefreshPartyMembersAsync();
+
+                _consecutiveRefreshErrors = 0;
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+                _consecutiveRefreshErrors++;
+                if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
+                {
+                    Debug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors — reconnecting to presence lobby");
+                    _consecutiveRefreshErrors = 0;
+                    _presenceLobby = null;
+                    shouldReconnect = true;
+                }
             }
             finally
             {
                 _lobbyBusy = false;
             }
+
+            // Reconnect outside the try/finally so _lobbyBusy is released first.
+            if (shouldReconnect)
+                await JoinPresenceLobbyAsync();
         }
 
         /// <summary>
@@ -748,50 +775,56 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Clears the SENDER's own invite properties after the invited player
         /// joins the party. This stops receivers from seeing stale invite data.
+        /// Always called from within RefreshAsync() which already holds _lobbyBusy —
+        /// no additional mutex needed here.
         /// </summary>
         private async Task ClearSentInvitePropertiesAsync()
         {
             if (_presenceLobby == null) return;
 
-            while (_lobbyBusy)
-                await Task.Yield();
-            _lobbyBusy = true;
             try
             {
+                await _presenceLobby.RefreshAsync();
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                await RefreshAndSavePlayerDataAsync();
+                await SaveWithRetryAsync();
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] ClearSentInvite error: {e.Message}");
             }
-            finally
-            {
-                _lobbyBusy = false;
-            }
         }
 
         /// <summary>
-        /// Refreshes the lobby then saves current player data. The UGS SDK can
-        /// throw <see cref="ArgumentOutOfRangeException"/> if its internal player
-        /// index is stale (e.g. after another session operation). On failure,
-        /// refreshes again and retries once.
+        /// Saves current player data with retry on UGS rate-limit (HTTP 429).
+        /// The Lobby service rate-limits at ~1 request per 1.5s. If a refresh
+        /// just ran, the save can hit 429. Retries up to 3 times with 2s backoff.
         /// </summary>
-        private async Task RefreshAndSavePlayerDataAsync()
+        private async Task SaveWithRetryAsync()
         {
-            await _presenceLobby.RefreshAsync();
-            try
+            const int maxRetries = 3;
+            const int retryDelayMs = 2000;
+
+            for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                Debug.LogWarning("[HostConnectionService] SaveCurrentPlayerDataAsync index error — refreshing and retrying...");
-                await _presenceLobby.RefreshAsync();
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
+                try
+                {
+                    await _presenceLobby.SaveCurrentPlayerDataAsync();
+                    return;
+                }
+                catch (Exception e) when (attempt < maxRetries &&
+                    (e.Message.Contains("Too Many Requests") ||
+                     e.Message.Contains("Index was out of range")))
+                {
+                    Debug.LogWarning($"[HostConnectionService] SaveCurrentPlayerData failed ({e.Message}) — retry {attempt + 1}/{maxRetries} in {retryDelayMs}ms");
+                    await Task.Delay(retryDelayMs);
+
+                    // Re-sync the SDK's cached player list before retrying.
+                    try { await _presenceLobby.RefreshAsync(); }
+                    catch { /* best-effort refresh */ }
+                }
             }
         }
 
@@ -808,12 +841,14 @@ namespace CosmicShore.Gameplay
             _lobbyBusy = true;
             try
             {
-                // Any player can clear their own player properties.
+                // Refresh first to sync the SDK's cached player index,
+                // then set properties and save.
+                await _presenceLobby.RefreshAsync();
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                await RefreshAndSavePlayerDataAsync();
+                await SaveWithRetryAsync();
 
                 _lastFiredInvite = null;
             }

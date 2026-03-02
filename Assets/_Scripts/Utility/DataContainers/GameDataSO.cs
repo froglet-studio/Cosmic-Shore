@@ -38,6 +38,7 @@ namespace CosmicShore.Utility
         public ScriptableEventNoParam OnSessionEnded;
         public ScriptableEventUlong OnPlayerNetworkSpawnedUlong;
         public ScriptableEventNoParam OnVesselNetworkSpawned;
+        public ScriptableEventUlong OnPlayerPairInitialized;
         public event Action<string, Domains> OnPlayerAdded;
 
         [Header("UI Flow")]
@@ -143,6 +144,7 @@ namespace CosmicShore.Utility
 
         public void InvokePlayerNetworkSpawned(ulong ownerClientId) => OnPlayerNetworkSpawnedUlong.Raise(ownerClientId);
         public void InvokeVesselNetworkSpawned() => OnVesselNetworkSpawned.Raise();
+        public void InvokePlayerPairInitialized(ulong playerNetObjId) => OnPlayerPairInitialized?.Raise(playerNetObjId);
 
         public void ResetForReplay()
         {
