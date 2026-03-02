@@ -254,10 +254,10 @@ namespace CosmicShore.Gameplay
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(inviteData, VisibilityPropertyOptions.Public));
 
-                // Save directly — do NOT call RefreshAndSavePlayerDataAsync() here.
-                // RefreshAsync() before save overwrites the local SetProperty() changes
-                // with server state, discarding the invite properties we just set.
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
+                // Save directly — do NOT refresh before save. RefreshAsync() overwrites
+                // local SetProperty() changes with server state, discarding the invite
+                // properties we just set. Retry on rate-limit (HTTP 429).
+                await SaveWithRetryAsync();
 
                 _currentInviteTargetId = targetPlayerId;
 
@@ -786,12 +786,36 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                // Save directly — RefreshAsync() before save overwrites local SetProperty() changes.
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
+                await SaveWithRetryAsync();
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] ClearSentInvite error: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Saves current player data with retry on UGS rate-limit (HTTP 429).
+        /// The Lobby service rate-limits at ~1 request per 1.5s. If a refresh
+        /// just ran, the save can hit 429. Retries up to 3 times with 2s backoff.
+        /// </summary>
+        private async Task SaveWithRetryAsync()
+        {
+            const int maxRetries = 3;
+            const int retryDelayMs = 2000;
+
+            for (int attempt = 0; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    await _presenceLobby.SaveCurrentPlayerDataAsync();
+                    return;
+                }
+                catch (Exception e) when (attempt < maxRetries && e.Message.Contains("Too Many Requests"))
+                {
+                    Debug.LogWarning($"[HostConnectionService] SaveCurrentPlayerData rate-limited — retry {attempt + 1}/{maxRetries} in {retryDelayMs}ms");
+                    await Task.Delay(retryDelayMs);
+                }
             }
         }
 
@@ -813,8 +837,7 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                // Save directly — RefreshAsync() before save overwrites local SetProperty() changes.
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
+                await SaveWithRetryAsync();
 
                 _lastFiredInvite = null;
             }
