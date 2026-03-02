@@ -558,7 +558,14 @@ namespace CosmicShore.UI
                 : 1;
 
             gameData.SelectedPlayerCount.Value = humanCount;
-            gameData.RequestedAIBackfillCount = Mathf.Max(0, config.PlayerCount - humanCount);
+
+            int aiBackfill = Mathf.Max(0, config.PlayerCount - humanCount);
+
+            // Competitive multiplayer modes always need at least 1 AI opponent when solo
+            if (selectedGame.IsMultiplayer && humanCount <= 1 && aiBackfill < 1)
+                aiBackfill = 1;
+
+            gameData.RequestedAIBackfillCount = aiBackfill;
 
             // Hand off the party session so MultiplayerSetup in the game scene
             // knows to reuse the existing Relay connection instead of tearing it down.
