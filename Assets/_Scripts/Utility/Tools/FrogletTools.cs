@@ -102,8 +102,8 @@ namespace CosmicShore.Utility.Tools
             Debug.Log("[FrogletTools] All quest progress has been reset.");
         }
 
-        [MenuItem("FrogletTools/Quest Debug/Complete Current Quest", false, 201)]
-        private static void CompleteCurrentQuest()
+        [MenuItem("FrogletTools/Quest Debug/Complete All Quests", false, 201)]
+        private static void CompleteAllQuests()
         {
             if (!Application.isPlaying)
             {
@@ -118,7 +118,8 @@ namespace CosmicShore.Utility.Tools
                 return;
             }
 
-            //service.DebugCompleteCurrentQuest();
+            service.DebugCompleteAllQuests();
+            Debug.Log("[FrogletTools] All quests completed.");
         }
     }
 }
