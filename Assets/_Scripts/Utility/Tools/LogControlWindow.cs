@@ -38,15 +38,15 @@ namespace CosmicShore.Utility.Tools
         static readonly Color FooterBg       = new(0.14f, 0.13f, 0.18f, 1f);
 
         // ── Cached styles ────────────────────────────────────────────────────
-        GUIStyle _bannerStyle;
-        GUIStyle _sectionLabelStyle;
-        GUIStyle _btnStyle;
-        GUIStyle _btnSmall;
-        GUIStyle _badgeStyle;
-        GUIStyle _infoStyle;
-        GUIStyle _inputStyle;
-        GUIStyle _mutedLabel;
-        bool _stylesBuilt;
+        [System.NonSerialized] GUIStyle _bannerStyle;
+        [System.NonSerialized] GUIStyle _sectionLabelStyle;
+        [System.NonSerialized] GUIStyle _btnStyle;
+        [System.NonSerialized] GUIStyle _btnSmall;
+        [System.NonSerialized] GUIStyle _badgeStyle;
+        [System.NonSerialized] GUIStyle _infoStyle;
+        [System.NonSerialized] GUIStyle _inputStyle;
+        [System.NonSerialized] GUIStyle _mutedLabel;
+        [System.NonSerialized] bool _stylesBuilt;
 
         [MenuItem("FrogletTools/Toolbox", false, 0)]
         static void Open()
