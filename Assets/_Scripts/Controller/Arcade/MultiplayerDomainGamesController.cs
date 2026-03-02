@@ -23,12 +23,14 @@ namespace CosmicShore.Gameplay
             if (!IsServer)
                 return;
 
+            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) — activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
             OnCountdownTimerEnded_ClientRpc();
         }
 
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
+            Debug.Log("<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc — SetPlayersActive + StartTurn</color>");
             gameData.SetPlayersActive();
             gameData.StartTurn();
         }
@@ -51,14 +53,19 @@ namespace CosmicShore.Gameplay
             readyClientCount++;
 
             // Debug log to help track this state if issues persist
+            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc — {playerName} ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}</color>");
             CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}");
 
             // Broadcast which player is ready to all clients
             NotifyPlayerReady_ClientRpc(playerName);
 
             if (!readyClientCount.Equals(gameData.SelectedPlayerCount))
+            {
+                Debug.Log($"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{gameData.SelectedPlayerCount})</color>");
                 return;
+            }
 
+            Debug.Log("<color=#00CED1>[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...</color>");
             readyClientCount = 0;
             OnReadyClicked_ClientRpc();
         }

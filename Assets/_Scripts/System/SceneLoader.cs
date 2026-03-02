@@ -74,20 +74,29 @@ namespace CosmicShore.Core
         /// </summary>
         void LaunchGame()
         {
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame — Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
+                      $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
+                      $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
+                      $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
+
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
+            Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] AppState → LoadingGame</color>");
 
             // Show splash overlay during scene transition.
             // One-shot listener fades it out once the game scene signals ready.
             _sceneTransitionManager?.SetFadeImmediate(1f);
+            Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] Splash overlay set to black (alpha=1). Subscribed FadeFromSplashOnReady to OnClientReady</color>");
             gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
 
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] useNetworkSceneLoading={useNetworkSceneLoading} (nm exists={nm != null}, IsServer={nm?.IsServer})</color>");
 
             // Sync game config to all clients before loading the scene.
             // The waitBeforeLoading delay in LoadSceneAsync gives time for RPC delivery.
             if (useNetworkSceneLoading)
             {
+                Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] Sending SyncGameConfigToClients_ClientRpc</color>");
                 SyncGameConfigToClients_ClientRpc(
                     gameData.SceneName,
                     (int)gameData.GameMode,
@@ -99,11 +108,13 @@ namespace CosmicShore.Core
                 );
             }
 
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Calling LoadSceneAsync({gameData.SceneName}, network={useNetworkSceneLoading})</color>");
             LoadSceneAsync(gameData.SceneName, useNetworkSceneLoading).Forget();
         }
 
         void FadeFromSplashOnReady()
         {
+            Debug.Log("<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady — OnClientReady fired! Fading splash out now.</b></color>");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
             _sceneTransitionManager?.FadeFromBlack().Forget();
         }
@@ -124,16 +135,21 @@ namespace CosmicShore.Core
 
         async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)
         {
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
             gameData.ResetRuntimeData();
+            Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
 
             await UniTask.Delay(
                 TimeSpan.FromSeconds(waitBeforeLoading),
                 DelayType.UnscaledDeltaTime
             );
 
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Wait complete. Loading scene now: {sceneName}</color>");
+
             if (!useNetworkSceneLoading)
             {
+                Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Using LOCAL scene load for {sceneName}</color>");
                 SceneManager.LoadScene(sceneName);
                 return;
             }
@@ -142,7 +158,7 @@ namespace CosmicShore.Core
 
             if (nm == null)
             {
-                Debug.LogWarning("[SceneLoader] NetworkManager missing. Falling back to local load.");
+                Debug.LogWarning("<color=#FF8C00>[FLOW-3] [SceneLoader] NetworkManager missing. Falling back to local load.</color>");
                 SceneManager.LoadScene(sceneName);
                 return;
             }
@@ -163,11 +179,11 @@ namespace CosmicShore.Core
 
             if (nm?.SceneManager == null)
             {
-                Debug.LogError("[SceneLoader] Network SceneManager missing.");
+                Debug.LogError("<color=#FF0000>[FLOW-3] [SceneLoader] Network SceneManager missing!</color>");
                 return;
             }
 
-            Debug.Log($"[SceneLoader] Server loading network scene: {sceneName}");
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Server loading network scene: {sceneName} via nm.SceneManager.LoadScene</color>");
             nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
         }
 

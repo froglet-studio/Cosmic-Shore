@@ -120,10 +120,13 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
+            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
+
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Players.Add(this);
             gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
+            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] Raised OnPlayerNetworkSpawnedUlong({OwnerClientId}). Players count={gameData.Players.Count}</color>");
 
             VesselNetId = NetVesselId.Value;
 
@@ -160,7 +163,8 @@ namespace CosmicShore.Gameplay
             
             NetIsAI.Value = IsInitializedAsAI;
             NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
-            
+
+            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn DONE — Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}</color>");
             InputController.Initialize();
         }
 
@@ -192,6 +196,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void PrepareForNewScene()
         {
+            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
             // Clear stale references from previous scene.
             // Vessels have destroyWithScene=true and are already destroyed.
             Vessel = null;
