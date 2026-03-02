@@ -1,17 +1,13 @@
+using System;
 using CosmicShore.Core;
 using CosmicShore.Models;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Elements
 {
-    /// <summary>
-    /// Attach to the quest item prefab. Exposes serialized references
-    /// so QuestTrackView can configure each card without Transform.Find.
-    /// Falls back to auto-resolving children by name if fields are unassigned.
-    /// UnlockableIconBG is never controlled — it stays on at all times.
-    /// </summary>
     public class QuestItemCard : MonoBehaviour
     {
         [Header("Text")]
@@ -33,51 +29,59 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] private Image cardBackground;
         [SerializeField] private Color lockedTint = new(0.35f, 0.35f, 0.35f, 1f);
 
+        [Header("Active Quest Glow")]
+        [Tooltip("Child with CanvasGroup that pulses on the frontier quest (auto-resolved from 'GlowBorder')")]
+        [SerializeField] private CanvasGroup glowBorder;
+
         private Color _originalBgColor = Color.white;
         private GameModes _gameMode;
         private SO_GameModeQuestData _questData;
+        private QuestItemState _currentState = QuestItemState.Locked;
+        private bool _initialStateSet;
+        private Tween _pulseTween;
+        private Tween _stateTween;
 
         public GameModes GameMode => _gameMode;
+        public bool IsAnimating { get; private set; }
 
-        void Awake()
+        void Awake() => ResolveReferences();
+
+        void OnDisable()
         {
-            ResolveReferences();
+            _pulseTween?.Kill();
+            _stateTween?.Kill();
+            _pulseTween = null;
+            _stateTween = null;
+            IsAnimating = false;
         }
 
-        /// <summary>
-        /// Auto-resolve child references by name when serialized fields are unassigned.
-        /// One-time setup — not a hot path.
-        /// </summary>
         void ResolveReferences()
         {
             if (lockedOverlay == null)
                 lockedOverlay = FindChild("LockedObject") ?? FindChild("LockedIcon");
-
             if (completedOverlay == null)
                 completedOverlay = FindChild("CompletedObject") ?? FindChild("UnlockedObject");
-
             if (iconImage == null)
             {
                 var iconGo = FindChild("Icon");
-                if (iconGo != null)
-                    iconGo.TryGetComponent(out iconImage);
+                if (iconGo != null) iconGo.TryGetComponent(out iconImage);
             }
-
             if (nameText == null)
                 nameText = FindTMP("GameModeText") ?? FindTMP("UnlockableDetail");
-
             if (descriptionText == null)
                 descriptionText = FindTMP("ObjectiveText");
-
             if (claimButton == null)
             {
                 var btnGo = FindChild("ClaimButton") ?? FindChild("CompleteButton");
-                if (btnGo != null)
-                    btnGo.TryGetComponent(out claimButton);
+                if (btnGo != null) btnGo.TryGetComponent(out claimButton);
             }
-
             if (cardBackground == null)
                 TryGetComponent(out cardBackground);
+            if (glowBorder == null)
+            {
+                var glowGo = FindChild("GlowBorder");
+                if (glowGo != null) glowGo.TryGetComponent(out glowBorder);
+            }
         }
 
         GameObject FindChild(string childName)
@@ -89,64 +93,98 @@ namespace CosmicShore.App.UI.Elements
         TMP_Text FindTMP(string childName)
         {
             var t = transform.Find(childName);
-            if (t != null && t.TryGetComponent<TMP_Text>(out var tmp))
-                return tmp;
-            return null;
+            return t != null && t.TryGetComponent<TMP_Text>(out var tmp) ? tmp : null;
         }
 
-        /// <summary>
-        /// One-time setup called by QuestTrackView after instantiation.
-        /// </summary>
         public void Configure(SO_GameModeQuestData quest)
         {
             _questData = quest;
             _gameMode = quest.GameMode;
-
-            if (nameText != null)
-                nameText.text = quest.DisplayName;
-
-            if (descriptionText != null)
-                descriptionText.text = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
-
-            if (iconImage != null && quest.Icon != null)
-                iconImage.sprite = quest.Icon;
-
-            if (cardBackground != null)
-                _originalBgColor = cardBackground.color;
+            if (nameText != null) nameText.text = quest.DisplayName;
+            if (descriptionText != null) descriptionText.text = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
+            if (iconImage != null && quest.Icon != null) iconImage.sprite = quest.Icon;
+            if (cardBackground != null) _originalBgColor = cardBackground.color;
         }
 
-        /// <summary>
-        /// Refreshes the visual state of the card.
-        /// </summary>
         public void SetState(QuestItemState state)
         {
-            bool isLocked       = state == QuestItemState.Locked;
-            // Also treat as ready-to-claim if the SO's runtime flag is set (from cinematic)
+            var prevState = _currentState;
+            _currentState = state;
+            bool isFirstSet = !_initialStateSet;
+            _initialStateSet = true;
+
+            bool isLocked = state == QuestItemState.Locked;
             bool isReadyToClaim = state == QuestItemState.ReadyToClaim ||
                                   (state == QuestItemState.Unlocked && _questData != null && _questData.IsCompleted);
-            bool isClaimed      = state == QuestItemState.Claimed;
-            bool isUnlocked     = !isLocked;
+            bool isClaimed = state == QuestItemState.Claimed;
 
-            if (lockedOverlay != null)
-                lockedOverlay.SetActive(isLocked);
+            if (lockedOverlay != null) lockedOverlay.SetActive(isLocked);
+            if (completedOverlay != null) completedOverlay.SetActive(isClaimed);
+            if (claimButton != null) claimButton.interactable = isReadyToClaim;
+            if (cardBackground != null) cardBackground.color = isLocked ? lockedTint : _originalBgColor;
+            if (descriptionText != null && isClaimed) descriptionText.text = "Completed";
 
-            if (completedOverlay != null)
-                completedOverlay.SetActive(isClaimed);
-
-            if (claimButton != null)
-                claimButton.interactable = isReadyToClaim;
-
-            if (cardBackground != null)
-                cardBackground.color = isLocked ? lockedTint : _originalBgColor;
-
-            // Text — always visible so players can see quest name/target even when locked
-            if (descriptionText != null && isClaimed)
-                descriptionText.text = "Completed";
+            // Animate unlock transition (Locked → anything visible), skip on initial spawn
+            if (!isFirstSet && prevState == QuestItemState.Locked && !isLocked)
+                PlayUnlockAnimation();
         }
 
         /// <summary>
-        /// Wires the claim button's onClick. Called by QuestTrackView.
+        /// Starts or stops the pulsing glow border on the active frontier card.
         /// </summary>
+        public void SetActiveFrontier(bool isActive)
+        {
+            if (glowBorder == null) return;
+
+            if (isActive)
+            {
+                glowBorder.gameObject.SetActive(true);
+                _pulseTween?.Kill();
+                glowBorder.alpha = 1f;
+                _pulseTween = glowBorder.DOFade(0.4f, 0.8f)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetEase(Ease.InOutSine)
+                    .SetUpdate(true);
+            }
+            else
+            {
+                _pulseTween?.Kill();
+                _pulseTween = null;
+                glowBorder.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// Scale-bounce claim animation. Calls onComplete when done.
+        /// </summary>
+        public void PlayClaimAnimation(Action onComplete)
+        {
+            _stateTween?.Kill();
+            IsAnimating = true;
+            var seq = DOTween.Sequence();
+            seq.Append(transform.DOScale(1.15f, 0.2f).SetEase(Ease.OutBack));
+            seq.Append(transform.DOScale(1f, 0.15f).SetEase(Ease.InOutSine));
+            seq.OnComplete(() => { IsAnimating = false; onComplete?.Invoke(); });
+            seq.SetUpdate(true);
+            _stateTween = seq;
+        }
+
+        void PlayUnlockAnimation()
+        {
+            _stateTween?.Kill();
+            IsAnimating = true;
+            transform.localScale = Vector3.one * 0.8f;
+            _stateTween = transform.DOScale(1f, 0.3f)
+                .SetEase(Ease.OutBack)
+                .SetUpdate(true)
+                .OnComplete(() => IsAnimating = false);
+        }
+
+        public void SetButtonInteractable(bool interactable)
+        {
+            if (claimButton != null) claimButton.interactable = interactable;
+        }
+
         public void BindClaimAction(UnityEngine.Events.UnityAction action)
         {
             if (claimButton == null) return;

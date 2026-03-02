@@ -22,8 +22,26 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private float sliderAnimDuration = 1f;
         [SerializeField] private Ease sliderEase = Ease.OutCubic;
 
+        [Header("Scroll Snap")]
+        [Tooltip("The ScrollRect parent. Snap to nearest card after user finishes scrolling.")]
+        [SerializeField] private ScrollRect scrollRect;
+        [SerializeField] private float snapDuration = 0.3f;
+        [Tooltip("Velocity threshold below which a snap triggers after user scroll")]
+        [SerializeField] private float snapSpeedThreshold = 50f;
+
+        [Header("Parallax Depth")]
+        [Tooltip("Scale of cards at the edge of the viewport (1.0 = no effect)")]
+        [SerializeField] private float minCardScale = 0.85f;
+        [Tooltip("Alpha of cards at the edge of the viewport")]
+        [SerializeField] private float minCardAlpha = 0.7f;
+        [Tooltip("World-space distance from viewport center at which min values are reached")]
+        [SerializeField] private float parallaxFalloff = 400f;
+
         private readonly List<QuestItemCard> _cards = new();
         private Tween _sliderTween;
+        private Tween _snapTween;
+        private bool _wasMoving;
+        private bool _isSnapping;
 
         void OnEnable()
         {
@@ -31,8 +49,9 @@ namespace CosmicShore.App.UI.Views
             SpawnCards();
             ConfigureSlider();
             RefreshAllCards();
+            UpdateActivePulse();
             SetSliderImmediate();
-            StartCoroutine(RebuildLayoutNextFrame());
+            StartCoroutine(PostSpawnSetup());
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
@@ -42,19 +61,36 @@ namespace CosmicShore.App.UI.Views
         {
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
-            KillTween();
+            KillAllTweens();
+        }
+
+        void LateUpdate()
+        {
+            if (scrollRect == null || _cards.Count == 0) return;
+
+            UpdateParallax();
+
+            if (_isSnapping) return;
+
+            float vel = Mathf.Abs(scrollRect.velocity.x);
+            bool isMoving = vel > snapSpeedThreshold;
+
+            // User scroll momentum just settled → snap to nearest card
+            if (_wasMoving && !isMoving)
+                SnapToNearestCard();
+
+            _wasMoving = isMoving;
         }
 
         void OnProgressionChanged(GameModeProgressionData data)
         {
             RefreshAllCards();
+            UpdateActivePulse();
             AnimateSlider();
         }
 
-        /// <summary>
-        /// Ensures the slider is excluded from the HorizontalLayoutGroup.
-        /// Does NOT touch position, anchors, or sibling order — those stay as set in the inspector.
-        /// </summary>
+        // ── Setup ─────────────────────────────────────────────────────────────
+
         void EnsureSliderIgnoresLayout()
         {
             if (progressBarSlider == null) return;
@@ -73,19 +109,19 @@ namespace CosmicShore.App.UI.Views
                 var go = Instantiate(questItemPrefab, questItemContainer);
                 if (!go.TryGetComponent<QuestItemCard>(out var card)) { Destroy(go); continue; }
 
+                // Ensure CanvasGroup exists for parallax alpha
+                if (!go.TryGetComponent<CanvasGroup>(out _))
+                    go.AddComponent<CanvasGroup>();
+
                 card.Configure(questList.Quests[i]);
                 card.SetState(GetCardState(i));
-                var mode = questList.Quests[i].GameMode;
-                card.BindClaimAction(() => GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(mode));
+
+                int cardIndex = i;
+                card.BindClaimAction(() => HandleClaimPressed(cardIndex));
                 _cards.Add(card);
             }
         }
 
-        /// <summary>
-        /// Sets slider range: min=0, max=quest count. Each quest = 1 whole unit.
-        /// Padding of XPItemPanels is set manually in the inspector so cards
-        /// line up with the integer tick marks on the slider.
-        /// </summary>
         void ConfigureSlider()
         {
             if (progressBarSlider == null || questList == null) return;
@@ -95,6 +131,22 @@ namespace CosmicShore.App.UI.Views
             progressBarSlider.maxValue = questList.Quests.Count;
         }
 
+        /// <summary>
+        /// After one frame (layout built), snap scroll to the active quest card.
+        /// </summary>
+        IEnumerator PostSpawnSetup()
+        {
+            yield return null;
+            if (questItemContainer is RectTransform rect)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+
+            int activeIndex = GetActiveQuestIndex();
+            if (activeIndex >= 0)
+                SnapToCard(activeIndex, true);
+        }
+
+        // ── Card State ────────────────────────────────────────────────────────
+
         QuestItemState GetCardState(int questIndex)
         {
             var quest = questList.Quests[questIndex];
@@ -102,12 +154,10 @@ namespace CosmicShore.App.UI.Views
             bool isUnlocked = questIndex == 0 || (service != null && service.IsGameModeUnlocked(quest.GameMode));
             if (!isUnlocked) return QuestItemState.Locked;
 
-            // Already claimed — next mode is unlocked
             if (questIndex + 1 < questList.Quests.Count && service != null
                 && service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode))
                 return QuestItemState.Claimed;
 
-            // Placeholder quests are immediately claimable (skip straight to unlock next)
             if (quest.IsPlaceholder)
                 return QuestItemState.ReadyToClaim;
 
@@ -123,6 +173,59 @@ namespace CosmicShore.App.UI.Views
                 _cards[i].SetState(GetCardState(i));
         }
 
+        /// <summary>
+        /// Returns the index of the first quest that is Unlocked or ReadyToClaim (the frontier).
+        /// Falls back to the last card if all are claimed.
+        /// </summary>
+        int GetActiveQuestIndex()
+        {
+            for (int i = 0; i < questList.Quests.Count; i++)
+            {
+                var state = GetCardState(i);
+                if (state == QuestItemState.Unlocked || state == QuestItemState.ReadyToClaim)
+                    return i;
+            }
+            return _cards.Count > 0 ? _cards.Count - 1 : -1;
+        }
+
+        void UpdateActivePulse()
+        {
+            int activeIndex = GetActiveQuestIndex();
+            for (int i = 0; i < _cards.Count; i++)
+                _cards[i].SetActiveFrontier(i == activeIndex);
+        }
+
+        // ── Claim Fanfare ─────────────────────────────────────────────────────
+
+        void HandleClaimPressed(int cardIndex)
+        {
+            if (cardIndex < 0 || cardIndex >= _cards.Count || cardIndex >= questList.Quests.Count) return;
+
+            var card = _cards[cardIndex];
+            var quest = questList.Quests[cardIndex];
+
+            // Prevent double-click
+            card.SetButtonInteractable(false);
+
+            // Scale-bounce → then process the claim
+            card.PlayClaimAnimation(() =>
+            {
+                GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(quest.GameMode);
+                // OnProgressionChanged fires → RefreshAllCards + AnimateSlider + UpdateActivePulse
+                // After slider animation settles, scroll to the newly unlocked card
+                if (cardIndex + 1 < _cards.Count)
+                    StartCoroutine(SnapToCardDelayed(cardIndex + 1));
+            });
+        }
+
+        IEnumerator SnapToCardDelayed(int cardIndex)
+        {
+            yield return new WaitForSeconds(0.5f);
+            SnapToCard(cardIndex, false);
+        }
+
+        // ── Slider ────────────────────────────────────────────────────────────
+
         void SetSliderImmediate()
         {
             if (progressBarSlider != null)
@@ -132,7 +235,7 @@ namespace CosmicShore.App.UI.Views
         void AnimateSlider()
         {
             if (progressBarSlider == null) return;
-            KillTween();
+            _sliderTween?.Kill();
             float target = GetSliderValue();
             _sliderTween = DOTween.To(
                     () => progressBarSlider.value,
@@ -141,11 +244,6 @@ namespace CosmicShore.App.UI.Views
                 .SetEase(sliderEase).SetUpdate(true);
         }
 
-        /// <summary>
-        /// Returns the 1-indexed frontier position on the slider.
-        /// Counts consecutive unlocked modes from the start of the chain.
-        /// Fresh state = 1 (first quest active). All claimed = questCount.
-        /// </summary>
         int GetSliderValue()
         {
             var service = GameModeProgressionService.Instance;
@@ -162,17 +260,109 @@ namespace CosmicShore.App.UI.Views
             return count;
         }
 
-        /// <summary>
-        /// Wait one frame so the spawned card prefabs have initialized their
-        /// preferred sizes, then rebuild the layout so ContentSizeFitter on
-        /// XPItemPanels calculates the correct content width for scrolling.
-        /// </summary>
-        IEnumerator RebuildLayoutNextFrame()
+        // ── Scroll Snap ──────────────────────────────────────────────────────
+
+        void SnapToNearestCard()
         {
-            yield return null;
-            if (questItemContainer is RectTransform rect)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+            int nearest = FindNearestCardToViewportCenter();
+            if (nearest >= 0)
+                SnapToCard(nearest, false);
         }
+
+        void SnapToCard(int cardIndex, bool immediate)
+        {
+            if (scrollRect == null || _cards.Count == 0 || cardIndex < 0 || cardIndex >= _cards.Count) return;
+
+            var contentRect = questItemContainer as RectTransform;
+            var viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
+            if (contentRect == null || viewportRect == null) return;
+
+            float contentWidth = contentRect.rect.width;
+            float viewportWidth = viewportRect.rect.width;
+            float scrollableRange = contentWidth - viewportWidth;
+
+            if (scrollableRange <= 0f) return;
+
+            // Card center in content-local x, adjusted from pivot to left edge
+            var cardRect = _cards[cardIndex].GetComponent<RectTransform>();
+            float cardCenterX = cardRect.localPosition.x + contentRect.rect.width * contentRect.pivot.x;
+
+            float target = Mathf.Clamp01((cardCenterX - viewportWidth * 0.5f) / scrollableRange);
+
+            _snapTween?.Kill();
+
+            if (immediate)
+            {
+                scrollRect.horizontalNormalizedPosition = target;
+                _isSnapping = false;
+            }
+            else
+            {
+                _isSnapping = true;
+                scrollRect.velocity = Vector2.zero;
+                _snapTween = DOTween.To(
+                        () => scrollRect.horizontalNormalizedPosition,
+                        x => scrollRect.horizontalNormalizedPosition = x,
+                        target, snapDuration)
+                    .SetEase(Ease.OutCubic)
+                    .SetUpdate(true)
+                    .OnComplete(() => { _isSnapping = false; _snapTween = null; });
+            }
+        }
+
+        int FindNearestCardToViewportCenter()
+        {
+            if (scrollRect == null || _cards.Count == 0) return -1;
+
+            var viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
+            Vector3 viewportCenter = viewportRect.TransformPoint(viewportRect.rect.center);
+
+            int nearest = 0;
+            float minDist = float.MaxValue;
+
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                var cardRect = _cards[i].GetComponent<RectTransform>();
+                Vector3 cardCenter = cardRect.TransformPoint(cardRect.rect.center);
+                float dist = Mathf.Abs(cardCenter.x - viewportCenter.x);
+
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = i;
+                }
+            }
+
+            return nearest;
+        }
+
+        // ── Parallax Depth ────────────────────────────────────────────────────
+
+        void UpdateParallax()
+        {
+            if (scrollRect == null || _cards.Count == 0 || parallaxFalloff <= 0f) return;
+
+            var viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
+            Vector3 viewportCenter = viewportRect.TransformPoint(viewportRect.rect.center);
+
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                var card = _cards[i];
+                if (card == null || card.IsAnimating) continue;
+
+                var cardRect = card.GetComponent<RectTransform>();
+                Vector3 cardCenter = cardRect.TransformPoint(cardRect.rect.center);
+                float distance = Mathf.Abs(cardCenter.x - viewportCenter.x);
+                float t = Mathf.Clamp01(distance / parallaxFalloff);
+
+                card.transform.localScale = Vector3.one * Mathf.Lerp(1f, minCardScale, t);
+
+                if (card.TryGetComponent<CanvasGroup>(out var cg))
+                    cg.alpha = Mathf.Lerp(1f, minCardAlpha, t);
+            }
+        }
+
+        // ── Cleanup ───────────────────────────────────────────────────────────
 
         void ClearSpawned()
         {
@@ -181,10 +371,12 @@ namespace CosmicShore.App.UI.Views
             _cards.Clear();
         }
 
-        void KillTween()
+        void KillAllTweens()
         {
-            if (_sliderTween != null && _sliderTween.IsActive()) _sliderTween.Kill();
-            _sliderTween = null;
+            _sliderTween?.Kill(); _sliderTween = null;
+            _snapTween?.Kill(); _snapTween = null;
+            _isSnapping = false;
+            _wasMoving = false;
         }
     }
 }
