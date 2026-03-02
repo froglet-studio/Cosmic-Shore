@@ -37,7 +37,6 @@ namespace CosmicShore.App.UI.Screens
         [Header("Legacy Views (kept for backward compatibility)")]
         [SerializeField] HangarOverviewView OverviewView;
         [SerializeField] HangarAbilitiesView AbilitiesView;
-        [SerializeField] HangarCaptainsView CaptainsView;
         [SerializeField] HangarTrainingModal HangarTrainingModal;
         [SerializeField] NavGroup TopNav;
 

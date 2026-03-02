@@ -153,12 +153,17 @@ namespace CosmicShore.App.UI.Views
             // notify the mini game engine that this is the vessel to play
             // MiniGame.PlayerShipType = selectedShip.Class;
 
-            // if game.captains matches selectedShip.captains, that's the one
-            foreach (var captain in selectedShip.Captains)
+            // Find the captain in the game's list that matches the selected ship
+            if (SelectedGame.Captains != null)
             {
-                if (SelectedGame.Captains.Contains(captain))
-                    //MiniGame.ShipResources = captain.InitialResourceLevels;
-                    MiniGame.ResourceCollection = captain.InitialResourceLevels;
+                foreach (var captain in SelectedGame.Captains)
+                {
+                    if (captain != null && captain.Ship == selectedShip)
+                    {
+                        MiniGame.ResourceCollection = captain.InitialResourceLevels;
+                        break;
+                    }
+                }
             }
         }
 

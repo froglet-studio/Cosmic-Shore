@@ -94,6 +94,26 @@ namespace CosmicShore.App.Systems.VesselUnlock
         }
 
         /// <summary>
+        /// Locks a vessel class. Returns true if the vessel was newly locked.
+        /// Does not refund currency. Intended for debug/testing.
+        /// </summary>
+        public static bool LockVessel(VesselClassType vesselClass)
+        {
+            Initialize();
+
+            if (!_unlockedCache.Contains(vesselClass))
+                return false;
+
+            _unlockedCache.Remove(vesselClass);
+            PlayerPrefs.SetInt(GetKey(vesselClass), 0);
+            PlayerPrefs.Save();
+
+            CSDebug.Log($"VesselUnlockSystem: Locked {vesselClass}");
+            OnUnlockStateChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>
         /// Gets the current currency balance.
         /// </summary>
         public static int GetCurrencyBalance()

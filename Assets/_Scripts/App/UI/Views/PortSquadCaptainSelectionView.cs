@@ -20,13 +20,8 @@ namespace CosmicShore.App.UI.Views
 
         public override void AssignModel(ScriptableObject Model)
         {
-            // cast
-            var ship = Model as SO_Ship;
-
-            // sort
-            sortedCaptains = ship.Captains;
-            sortedCaptains.Sort((x, y) => { return x.PrimaryElement < y.PrimaryElement ? 1 : -1; });
-            
+            // Captain system removed from vessels — Port screen is inactive.
+            sortedCaptains.Clear();
             base.AssignModel(Model);
         }
 

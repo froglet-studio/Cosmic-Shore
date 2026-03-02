@@ -27,14 +27,7 @@ namespace CosmicShore
 
         public void SetShip(SO_Ship ship)
         {
-            foreach (var captain in ship.Captains)
-            {
-                if (CatalogManager.Inventory.ContainsCaptain(captain.Name))
-                {
-                    Captain = captain;
-                    break;
-                }
-            }
+            // Captain system removed from vessels — Port/squad screen is inactive.
         }
 
         /// <summary>

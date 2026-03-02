@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.Game.Progression;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -30,6 +31,7 @@ namespace CosmicShore.Utility.Tools
         bool _multiplayerFoldout;
         bool _utilitiesFoldout;
         bool _nonQuestFoldout;
+        bool _vesselFoldout;
 
         // ── Pastel Palette ───────────────────────────────────────────────────
         static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
@@ -313,6 +315,62 @@ namespace CosmicShore.Utility.Tools
                 EndSection();
             }
 
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  VESSEL UNLOCK DEBUG
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Vessel Unlock", ref _vesselFoldout);
+            if (_vesselFoldout)
+            {
+                BeginSection();
+
+                bool available = Application.isPlaying;
+
+                if (!available)
+                {
+                    GUILayout.Space(Pad);
+                    EditorGUILayout.LabelField("Enter Play Mode to toggle vessel locks.", _mutedLabel);
+                }
+                else
+                {
+                    VesselUnlockSystem.Initialize();
+
+                    foreach (VesselClassType vesselClass in Enum.GetValues(typeof(VesselClassType)))
+                    {
+                        if (vesselClass == VesselClassType.Any || vesselClass == VesselClassType.Random)
+                            continue;
+
+                        bool isUnlocked = VesselUnlockSystem.IsUnlocked(vesselClass);
+                        DrawLogToggle(vesselClass.ToString(), isUnlocked, v =>
+                        {
+                            if (v)
+                                VesselUnlockSystem.UnlockVessel(vesselClass);
+                            else
+                                VesselUnlockSystem.LockVessel(vesselClass);
+                        });
+                    }
+
+                    GUILayout.Space(4);
+
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(Pad);
+                    if (GUILayout.Button("Unlock All"))
+                        UnlockAllVessels();
+                    if (GUILayout.Button("Lock All (except Squirrel)"))
+                        VesselUnlockSystem.ResetAllUnlocks();
+                    EditorGUILayout.EndHorizontal();
+
+                    GUILayout.Space(4);
+
+                    int balance = VesselUnlockSystem.GetCurrencyBalance();
+                    string info = $"<b>Currency Balance:</b> {balance}";
+                    GUILayout.Label(info, _infoStyle);
+                }
+
+                EndSection();
+            }
+
             GUILayout.Space(8);
             EditorGUILayout.EndScrollView();
 
@@ -394,6 +452,16 @@ namespace CosmicShore.Utility.Tools
             var rect = GUILayoutUtility.GetRect(size.x + 4, 16, GUILayout.Width(size.x + 4));
             EditorGUI.DrawRect(rect, bg);
             GUI.Label(rect, content, _badgeStyle);
+        }
+
+        static void UnlockAllVessels()
+        {
+            foreach (VesselClassType vesselClass in Enum.GetValues(typeof(VesselClassType)))
+            {
+                if (vesselClass == VesselClassType.Any || vesselClass == VesselClassType.Random)
+                    continue;
+                VesselUnlockSystem.UnlockVessel(vesselClass);
+            }
         }
 
         static List<GameModes> GetNonQuestModes(GameModeProgressionService svc)
