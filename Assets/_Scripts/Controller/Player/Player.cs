@@ -52,6 +52,8 @@ namespace CosmicShore.Gameplay
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
         public bool IsInitializedAsAI { get; private set; }
 
+        bool _spawnEventRaised;
+
         private InputController _inputController;
         public InputController InputController
         {
@@ -120,36 +122,39 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            // Cache it to game data early, so that later,
-            // ClientInitializer can find the player and vessels with their Ids
+            base.OnNetworkSpawn();
+
+            // Add to game data early so ServerPlayerVesselInitializer can find us.
             gameData.Players.Add(this);
-            gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
 
             VesselNetId = NetVesselId.Value;
 
+            // Subscribe BEFORE writes so deferred spawn-event logic in
+            // OnNetNameValueChanged / OnNetDefaultVesselTypeChanged catches
+            // the first client value replication.
             NetDomain.OnValueChanged += OnNetDomainChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
+            NetDefaultVesselType.OnValueChanged += OnNetDefaultVesselTypeChanged;
             NetVesselId.OnValueChanged += OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
-            
-            if (IsServer)
-                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
 
-            // Resolve display name & avatar ID BEFORE signaling spawn and setting
-            // the vessel type. Setting NetDefaultVesselType triggers the server-side
-            // spawn chain synchronously, so name must already be written to the
-            // NetworkVariable by that point.
-            // 3-tier fallback:
-            // 1. PlayerDataService (live profile from Cloud Save)
-            // 2. GameDataSO cached values (set by PlayerDataService.HandleProfileChanged earlier)
-            // 3. UGS PlayerName with suffix stripped (last resort)
-            // Server can always write to any NetworkVariable; Owner can write
-            // to WritePerm=Owner vars. Non-owner clients must NOT write — that
-            // triggers the "Write permissions (Owner) not allowed" error when a
-            // replicated Player fires OnNetworkSpawn on a non-owner client.
-            if (IsOwner || IsServer)
+            // --- Server writes (server-perm vars) ---
+            if (IsServer)
             {
-                if (playerDataService != null && playerDataService.IsInitialized && playerDataService.CurrentProfile != null)
+                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                NetIsAI.Value = IsInitializedAsAI;
+            }
+
+            // --- Owner writes (owner-perm vars: NetName, NetAvatarId, NetDefaultVesselType) ---
+            // For host's own player: IsOwner=true → writes here.
+            // For client's player on server: IsOwner=false → skipped;
+            //   values arrive later via replication → OnNetNameValueChanged /
+            //   OnNetDefaultVesselTypeChanged raise the deferred spawn event.
+            // For host's player on client: IsOwner=false → skipped (correct).
+            if (IsOwner)
+            {
+                if (playerDataService != null && playerDataService.IsInitialized
+                    && playerDataService.CurrentProfile != null)
                 {
                     NetName.Value = playerDataService.CurrentProfile.displayName;
                     NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
@@ -167,20 +172,36 @@ namespace CosmicShore.Gameplay
                 NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
             }
 
+            // --- Raise spawn event AFTER all local writes ---
+            // Server: only when all required values are populated.
+            //   Host player (IsOwner && IsServer): name written above → raise now.
+            //   Client player (!IsOwner && IsServer): name empty → deferred to
+            //   OnNetNameValueChanged when the client's name replicates.
+            // Non-server: raise immediately for client-side pair resolution.
             if (IsServer)
             {
-                NetIsAI.Value = IsInitializedAsAI;
+                if (!_spawnEventRaised && IsSpawnReady())
+                {
+                    _spawnEventRaised = true;
+                    gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
+                }
             }
-            
+            else
+            {
+                gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
+            }
+
             InputController.Initialize();
         }
 
         public override void OnNetworkDespawn()
         {
+            _spawnEventRaised = false;
             gameData.Players.Remove(this);
 
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
+            NetDefaultVesselType.OnValueChanged -= OnNetDefaultVesselTypeChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
         }
@@ -249,8 +270,30 @@ namespace CosmicShore.Gameplay
         void OnNetDomainChanged(Domains previousValue, Domains newValue) =>
             Domain = newValue;
         
-        void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>
+        void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
+        {
             Name = newValue.ToString();
+            TryRaiseDeferredSpawnEvent();
+        }
+
+        void OnNetDefaultVesselTypeChanged(VesselClassType previousValue, VesselClassType newValue)
+        {
+            TryRaiseDeferredSpawnEvent();
+        }
+
+        /// <summary>
+        /// Server-only: when a remote client's owner-written values (name, vessel type)
+        /// replicate, check if we can now raise the spawn event that was deferred
+        /// in OnNetworkSpawn because the owner block was skipped.
+        /// </summary>
+        void TryRaiseDeferredSpawnEvent()
+        {
+            if (IsServer && !_spawnEventRaised && IsSpawnReady())
+            {
+                _spawnEventRaised = true;
+                gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
+            }
+        }
 
         void OnNetVesselIdChanged(ulong previousValue, ulong newValue) =>
             VesselNetId = newValue;
@@ -258,6 +301,11 @@ namespace CosmicShore.Gameplay
         void OnNetAvatarIdChanged(int previousValue, int newValue) =>
             AvatarId = newValue;
         
+        bool IsSpawnReady() =>
+            NetDefaultVesselType.Value != VesselClassType.Random
+            && NetDefaultVesselType.Value != VesselClassType.Any
+            && !string.IsNullOrEmpty(NetName.Value.ToString());
+
         void SetGameObjectName()
         {
             string playerName;
