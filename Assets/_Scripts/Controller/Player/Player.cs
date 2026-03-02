@@ -52,6 +52,14 @@ namespace CosmicShore.Gameplay
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
         public bool IsInitializedAsAI { get; private set; }
 
+        /// <summary>
+        /// Marks this player as AI before network spawn. Called by
+        /// ServerPlayerVesselInitializerWithAI before Spawn() so that
+        /// OnNetworkSpawn skips the owner identity block (name, avatar,
+        /// vessel type are set by SpawnAIs instead).
+        /// </summary>
+        public void PreSpawnMarkAsAI() => IsInitializedAsAI = true;
+
         bool _spawnEventRaised;
 
         private InputController _inputController;
@@ -142,7 +150,10 @@ namespace CosmicShore.Gameplay
             // --- Server writes (server-perm vars) ---
             if (IsServer)
             {
-                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                // AI players get their domain from SpawnAIs() — skip the pool
+                // draw here to avoid double-consuming from DomainAssigner.
+                if (!IsInitializedAsAI)
+                    NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
                 NetIsAI.Value = IsInitializedAsAI;
             }
 
@@ -152,7 +163,9 @@ namespace CosmicShore.Gameplay
             //   values arrive later via replication → OnNetNameValueChanged /
             //   OnNetDefaultVesselTypeChanged raise the deferred spawn event.
             // For host's player on client: IsOwner=false → skipped (correct).
-            if (IsOwner)
+            // AI players: IsOwner=true (server-owned) but skipped — their identity
+            //   (name, vessel, avatar) is set by SpawnAIs() after Spawn().
+            if (IsOwner && !IsInitializedAsAI)
             {
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)

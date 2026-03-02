@@ -116,18 +116,23 @@ namespace CosmicShore.Gameplay
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
-                var spawnT = GetSpawnPoseForAI(i);
-                aiPlayerNO.transform.SetPositionAndRotation(spawnT.position, spawnT.rotation);
-
-                aiPlayerNO.Spawn(true);
-
+                // Get Player component BEFORE Spawn so we can mark it as AI.
+                // This prevents OnNetworkSpawn from executing the owner identity
+                // block (which would set the host's name/vessel on the AI player).
                 var aiPlayer = aiPlayerNO.GetComponent<Player>();
                 if (!aiPlayer)
                 {
                     CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] AI Player prefab missing Player component.");
-                    aiPlayerNO.Despawn(true);
+                    Destroy(aiPlayerNO.gameObject);
                     continue;
                 }
+
+                aiPlayer.PreSpawnMarkAsAI();
+
+                var spawnT = GetSpawnPoseForAI(i);
+                aiPlayerNO.transform.SetPositionAndRotation(spawnT.position, spawnT.rotation);
+
+                aiPlayerNO.Spawn(true);
 
                 // Use template data if available, otherwise derive values dynamically
                 var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
