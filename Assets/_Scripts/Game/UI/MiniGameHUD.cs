@@ -213,6 +213,10 @@ namespace CosmicShore.Game.UI
             if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null)
                 return;
 
+            // Avoid duplicate — reuse existing card if already created
+            if (_localPlayerCard != null)
+                return;
+
             var localPlayer = gameData.LocalPlayer;
             var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
@@ -235,7 +239,10 @@ namespace CosmicShore.Game.UI
 
         private void SetupAICards()
         {
-            _aiCards.Clear();
+            // Avoid duplicates — skip if cards already exist
+            if (_aiCards.Count > 0)
+                return;
+
             _aiScoreHandlers.Clear();
             AssignAIProfiles();
 

@@ -71,11 +71,11 @@ namespace CosmicShore.Game.ShapeDrawing
     /// </summary>
     public static class ShapeSignEvents
     {
-        public static event System.Action<ShapeDefinition, Vector3> OnShapeSelected;
+        public static event System.Action<ShapeDefinition, Vector3, Domains> OnShapeSelected;
 
-        public static void RaiseShapeSelected(ShapeDefinition def, Vector3 worldPos)
+        public static void RaiseShapeSelected(ShapeDefinition def, Vector3 worldPos, Domains shapeDomain = Domains.Blue)
         {
-            OnShapeSelected?.Invoke(def, worldPos);
+            OnShapeSelected?.Invoke(def, worldPos, shapeDomain);
         }
     }
 }

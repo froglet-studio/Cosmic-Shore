@@ -239,16 +239,21 @@ namespace CosmicShore
 
             deregistered = true;
 
+            // During scene unload, only remove references — don't trigger the death
+            // cascade (CheckForLife/CheckIfDead) which explodes prisms, accesses
+            // disposed NativeArrays, and spawns new GameObjects during teardown.
+            bool sceneUnloading = !gameObject.scene.isLoaded;
+
             if (parentSpindle)
             {
                 parentSpindle.RemoveSpindle(this);
-                parentSpindle.CheckForLife(); // IMPORTANT
+                if (!sceneUnloading) parentSpindle.CheckForLife();
             }
 
             if (LifeForm)
             {
                 LifeForm.RemoveSpindle(this);
-                LifeForm.CheckIfDead();
+                if (!sceneUnloading) LifeForm.CheckIfDead();
             }
         }
 
