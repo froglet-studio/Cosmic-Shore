@@ -41,9 +41,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
+                Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn — NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
+
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn — IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
 
             // Fresh domain pool before any player/AI spawning.
             // Previous session's pool state is stale after scene transition.
@@ -59,20 +62,28 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
+                    Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
                     SpawnAIs();
+                    Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
                 }
                 catch (System.Exception e)
                 {
+                    Debug.LogError($"<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}</color>");
                     CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] SpawnAIs failed: {e.Message}");
                 }
             }
 
             // Mark all AI players as processed so the base skips them
+            int aiMarked = 0;
             foreach (var p in gameData.Players)
             {
                 if (p is Player aiPlayer && aiPlayer.NetIsAI.Value)
+                {
                     _processedPlayers.Add(aiPlayer.NetworkObjectId);
+                    aiMarked++;
+                }
             }
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
 
             // Now subscribe (via base) and handle human players going forward
             base.OnNetworkSpawn();
@@ -82,12 +93,18 @@ namespace CosmicShore.Gameplay
         {
             if (!aiPlayerPrefab)
             {
+                Debug.LogError("<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] aiPlayerPrefab is NOT assigned!</color>");
                 CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
                 return;
             }
 
             int aiCount = gameData.RequestedAIBackfillCount;
-            if (aiCount <= 0) return;
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}</color>");
+            if (aiCount <= 0)
+            {
+                Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
+                return;
+            }
 
             // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
             System.Collections.Generic.List<AIProfile> profiles = null;
