@@ -133,7 +133,6 @@ namespace CosmicShore.App.UI.Views
 
         /// <summary>
         /// After one frame (layout built), snap scroll to the active quest card
-        /// and clamp the scroll so it can't overscroll.
         /// </summary>
         IEnumerator PostSpawnSetup()
         {
@@ -144,10 +143,6 @@ namespace CosmicShore.App.UI.Views
             int activeIndex = GetActiveQuestIndex();
             if (activeIndex >= 0)
                 SnapToCard(activeIndex, true);
-
-            // Lock scroll bounds now that layout is final
-            if (scrollRect != null)
-                scrollRect.movementType = ScrollRect.MovementType.Clamped;
         }
 
         // ── Card State ────────────────────────────────────────────────────────
