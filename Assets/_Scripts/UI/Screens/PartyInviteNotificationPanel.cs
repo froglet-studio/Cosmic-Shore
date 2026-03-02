@@ -16,8 +16,8 @@ namespace CosmicShore.UI
     /// <see cref="PartyInviteController.AcceptInviteAsync"/>, Decline to
     /// <see cref="PartyInviteController.DeclineInviteAsync"/>.
     ///
-    /// Place this on a UI panel that starts inactive. The panel enables itself
-    /// on invite received and disables after the user responds or it times out.
+    /// The GameObject must remain active so OnEnable can subscribe to SOAP events.
+    /// The panel starts visually hidden via CanvasGroup (alpha=0).
     /// </summary>
     public class PartyInviteNotificationPanel : MonoBehaviour
     {
@@ -48,6 +48,10 @@ namespace CosmicShore.UI
 
         void Awake()
         {
+            // Start visually hidden — the GO must stay active so OnEnable
+            // can subscribe to the OnInviteReceived SOAP event.
+            ShowPanel(false);
+
             acceptButton?.onClick.AddListener(OnAcceptPressed);
             declineButton?.onClick.AddListener(OnDeclinePressed);
         }
