@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
@@ -170,16 +171,18 @@ namespace CosmicShore.UI
         // Invite
         // ─────────────────────────────────────────────────────────────────────
 
-        private async void OnInviteClicked(PartyPlayerData target)
+        private void OnInviteClicked(PartyPlayerData target)
         {
-            // Ensure the host has transitioned to a Relay-backed party session
-            // so invited clients can connect via Relay transport.
             var controller = PartyInviteController.Instance;
-            if (controller != null)
-                await controller.TransitionToPartyHostAsync();
+            if (controller == null)
+            {
+                Debug.LogWarning("[OnlinePlayersPanel] PartyInviteController not available.");
+                return;
+            }
 
-            if (HostConnectionService.Instance == null) return;
-            await HostConnectionService.Instance.SendInviteAsync(target.PlayerId);
+            // Delegate entirely to the persistent controller (DontDestroyOnLoad).
+            // Do NOT await — this MonoBehaviour will be destroyed during the scene reload.
+            controller.InvitePlayerAsync(target.PlayerId).Forget();
         }
 
         private async void OnAddFriendClicked(PartyPlayerData target)

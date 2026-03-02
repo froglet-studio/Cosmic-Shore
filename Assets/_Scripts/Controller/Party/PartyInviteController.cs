@@ -162,6 +162,28 @@ namespace CosmicShore.Gameplay
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // Public API: Invite a Player (transition + send, scene-reload-safe)
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Full invite flow: transition to Relay host if needed, then send the invite.
+        /// Called from UI (OnlinePlayersPanel). Safe to call from scene MonoBehaviours
+        /// because this object is DontDestroyOnLoad and survives scene reloads.
+        /// </summary>
+        public async UniTask InvitePlayerAsync(string targetPlayerId)
+        {
+            await TransitionToPartyHostAsync();
+
+            if (HostConnectionService.Instance == null)
+            {
+                Debug.LogError("[PartyInviteController] HostConnectionService not available for invite.");
+                return;
+            }
+
+            await HostConnectionService.Instance.SendInviteAsync(targetPlayerId);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // Public API: Host-side Transition (for sending first invite)
         // ─────────────────────────────────────────────────────────────────────
 
