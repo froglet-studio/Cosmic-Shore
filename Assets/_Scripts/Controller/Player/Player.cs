@@ -143,7 +143,11 @@ namespace CosmicShore.Gameplay
             // 1. PlayerDataService (live profile from Cloud Save)
             // 2. GameDataSO cached values (set by PlayerDataService.HandleProfileChanged earlier)
             // 3. UGS PlayerName with suffix stripped (last resort)
-            if (IsOwner)
+            // Server can always write to any NetworkVariable; Owner can write
+            // to WritePerm=Owner vars. Non-owner clients must NOT write — that
+            // triggers the "Write permissions (Owner) not allowed" error when a
+            // replicated Player fires OnNetworkSpawn on a non-owner client.
+            if (IsOwner || IsServer)
             {
                 if (playerDataService != null && playerDataService.IsInitialized && playerDataService.CurrentProfile != null)
                 {
