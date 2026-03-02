@@ -31,6 +31,13 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public GameplayParameter gameplayParameter2 = new GameplayParameter("Relaxing", "Thrilling", .5f);
     [SerializeField] public GameplayParameter gameplayParameter3 = new GameplayParameter("Solo", "Social", .5f);
 
+    [Header("Unlock Configuration")]
+    [Tooltip("Whether this vessel is unlocked from the start (e.g. Squirrel).")]
+    [SerializeField] public bool UnlockedByDefault;
+
+    [Tooltip("Currency cost to unlock this vessel. 0 = free once currency system is bypassed.")]
+    [SerializeField] public int UnlockCost = 100;
+
     /// <summary>
     /// A flag indicating whether the Vessel Class is locked. Vessel Class is locked if it is not unlocked by the player.
     /// </summary>

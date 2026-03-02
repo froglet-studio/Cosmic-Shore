@@ -1,4 +1,3 @@
-using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.App.UI.Screens;
 using TMPro;
 using UnityEngine;
@@ -9,7 +8,9 @@ namespace CosmicShore.App.UI.Elements.Hangar
     /// <summary>
     /// Grid card for the vessel selection grid in the Hangar.
     /// Displays vessel icon, name, and lock state.
+    /// Requires a CanvasGroup on the same GameObject for fade animations.
     /// </summary>
+    [RequireComponent(typeof(CanvasGroup))]
     public class HangarVesselGridCard : MonoBehaviour
     {
         [Header("UI Components")]
@@ -20,8 +21,14 @@ namespace CosmicShore.App.UI.Elements.Hangar
 
         SO_Ship _ship;
         HangarScreen _hangarScreen;
+        CanvasGroup _canvasGroup;
 
         public SO_Ship Ship => _ship;
+
+        void Awake()
+        {
+            _canvasGroup = GetComponent<CanvasGroup>();
+        }
 
         public void Configure(SO_Ship ship, HangarScreen hangarScreen)
         {
@@ -47,6 +54,17 @@ namespace CosmicShore.App.UI.Elements.Hangar
         {
             if (lockOverlay)
                 lockOverlay.SetActive(_ship != null && _ship.IsLocked);
+        }
+
+        /// <summary>
+        /// Sets the card's visual alpha via CanvasGroup. Used by HangarScreen for fade animations.
+        /// </summary>
+        public void SetAlpha(float alpha)
+        {
+            if (!_canvasGroup)
+                _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup)
+                _canvasGroup.alpha = alpha;
         }
 
         void OnCardClicked()

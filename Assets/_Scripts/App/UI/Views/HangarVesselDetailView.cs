@@ -11,6 +11,7 @@ namespace CosmicShore.App.UI.Views
     /// <summary>
     /// Detail view for a selected vessel in the Hangar.
     /// Shows abilities, overview, gameplay parameters, and unlock button.
+    /// Reads unlock cost from the SO_Ship asset directly.
     /// </summary>
     public class HangarVesselDetailView : MonoBehaviour
     {
@@ -37,10 +38,6 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private Button selectButton;
         [SerializeField] private TMP_Text selectButtonText;
         [SerializeField] private Button backButton;
-
-        [Header("Unlock Cost")]
-        [Tooltip("Cost in currency to unlock each vessel. 0 means free.")]
-        [SerializeField] private int defaultUnlockCost = 100;
 
         SO_Ship _currentShip;
 
@@ -122,6 +119,7 @@ namespace CosmicShore.App.UI.Views
             if (_currentShip == null) return;
 
             bool isLocked = _currentShip.IsLocked;
+            int cost = _currentShip.UnlockCost;
 
             if (lockedOverlay)
                 lockedOverlay.SetActive(isLocked);
@@ -136,19 +134,17 @@ namespace CosmicShore.App.UI.Views
             if (unlockCostText)
             {
                 int balance = VesselUnlockSystem.GetCurrencyBalance();
-                unlockCostText.text = $"{defaultUnlockCost}";
-                unlockCostText.color = balance >= defaultUnlockCost ? Color.white : Color.gray;
+                unlockCostText.text = $"{cost}";
+                unlockCostText.color = balance >= cost ? Color.white : Color.gray;
             }
 
             if (selectButton)
-            {
                 selectButton.gameObject.SetActive(!isLocked);
-            }
 
             if (unlockButtonText)
             {
                 int balance = VesselUnlockSystem.GetCurrencyBalance();
-                unlockButtonText.text = balance >= defaultUnlockCost ? "UNLOCK" : "INSUFFICIENT FUNDS";
+                unlockButtonText.text = balance >= cost ? "UNLOCK" : "INSUFFICIENT FUNDS";
             }
         }
 
@@ -156,7 +152,7 @@ namespace CosmicShore.App.UI.Views
         {
             if (_currentShip == null) return;
 
-            if (VesselUnlockSystem.TryPurchaseVessel(_currentShip.Class, defaultUnlockCost))
+            if (VesselUnlockSystem.TryPurchaseVessel(_currentShip))
             {
                 CSDebug.Log($"Unlocked vessel: {_currentShip.Name}");
                 RefreshLockState();

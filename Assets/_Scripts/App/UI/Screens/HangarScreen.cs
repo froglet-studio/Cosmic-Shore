@@ -1,6 +1,7 @@
 using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.App.UI.Elements.Hangar;
 using CosmicShore.App.UI.Views;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,7 +11,7 @@ namespace CosmicShore.App.UI.Screens
 {
     /// <summary>
     /// Hangar screen with two panels:
-    /// 1. Grid selection panel - shows all vessels in a grid layout
+    /// 1. Grid selection panel - shows all vessels in a grid layout with staggered fade-in
     /// 2. Detail panel - shows vessel details, abilities, and unlock button
     /// </summary>
     public class HangarScreen : MonoBehaviour
@@ -22,6 +23,12 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField] GameObject gridPanel;
         [SerializeField] Transform gridContainer;
         [SerializeField] HangarVesselGridCard gridCardPrefab;
+
+        [Header("Grid Animation")]
+        [Tooltip("Delay in seconds between each card fade-in.")]
+        [SerializeField] float cardStaggerDelay = 0.08f;
+        [Tooltip("Duration of each card's fade-in animation.")]
+        [SerializeField] float cardFadeDuration = 0.25f;
 
         [Header("Detail Panel")]
         [SerializeField] GameObject detailPanel;
@@ -49,6 +56,7 @@ namespace CosmicShore.App.UI.Screens
         List<SO_Ship> Ships;
         SO_Ship SelectedShip;
         readonly List<HangarVesselGridCard> _gridCards = new();
+        Coroutine _gridAnimCoroutine;
 
         void OnEnable()
         {
@@ -62,8 +70,8 @@ namespace CosmicShore.App.UI.Screens
 
         public void LoadView()
         {
-            VesselUnlockSystem.Initialize();
             Ships = ShipList.ShipList;
+            VesselUnlockSystem.Initialize(ShipList);
 
             // New grid-based flow
             if (gridPanel && gridContainer && gridCardPrefab)
@@ -109,6 +117,47 @@ namespace CosmicShore.App.UI.Screens
         {
             if (gridPanel) gridPanel.SetActive(true);
             if (detailPanel) detailPanel.SetActive(false);
+
+            // Animate grid cards in with staggered fade
+            if (_gridAnimCoroutine != null)
+                StopCoroutine(_gridAnimCoroutine);
+            _gridAnimCoroutine = StartCoroutine(AnimateGridCardsIn());
+        }
+
+        IEnumerator AnimateGridCardsIn()
+        {
+            // Hide all cards immediately
+            foreach (var card in _gridCards)
+            {
+                if (!card) continue;
+                card.SetAlpha(0f);
+                card.gameObject.SetActive(true);
+            }
+
+            // Stagger fade-in one by one
+            for (int i = 0; i < _gridCards.Count; i++)
+            {
+                var card = _gridCards[i];
+                if (!card) continue;
+
+                StartCoroutine(FadeCard(card, 0f, 1f, cardFadeDuration));
+                yield return new WaitForSecondsRealtime(cardStaggerDelay);
+            }
+
+            _gridAnimCoroutine = null;
+        }
+
+        IEnumerator FadeCard(HangarVesselGridCard card, float from, float to, float duration)
+        {
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+                card.SetAlpha(Mathf.Lerp(from, to, t));
+                yield return null;
+            }
+            card.SetAlpha(to);
         }
 
         #endregion
@@ -140,6 +189,12 @@ namespace CosmicShore.App.UI.Screens
 
         void ShowDetailPanel()
         {
+            if (_gridAnimCoroutine != null)
+            {
+                StopCoroutine(_gridAnimCoroutine);
+                _gridAnimCoroutine = null;
+            }
+
             if (gridPanel) gridPanel.SetActive(false);
             if (detailPanel) detailPanel.SetActive(true);
         }
@@ -148,9 +203,6 @@ namespace CosmicShore.App.UI.Screens
 
         #region Legacy Support
 
-        /// <summary>
-        /// Legacy load flow for when grid components are not wired up.
-        /// </summary>
         void LoadViewLegacy()
         {
             if (OverviewView)
@@ -190,9 +242,6 @@ namespace CosmicShore.App.UI.Screens
             StartCoroutine(SelectFirstShipCoroutine());
         }
 
-        /// <summary>
-        /// Legacy method: called by HangarShipSelectNavLink when a vessel is selected in the old horizontal list.
-        /// </summary>
         public void SelectShip(int index)
         {
             var selectedShip = Ships[index];
@@ -239,7 +288,7 @@ namespace CosmicShore.App.UI.Screens
             }
         }
 
-        System.Collections.IEnumerator SelectFirstShipCoroutine()
+        IEnumerator SelectFirstShipCoroutine()
         {
             yield return null;
             if (ShipSelectionContainer && ShipSelectionContainer.childCount > 0)

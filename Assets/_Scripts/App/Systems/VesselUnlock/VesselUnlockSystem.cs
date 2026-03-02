@@ -7,11 +7,12 @@ namespace CosmicShore.App.Systems.VesselUnlock
 {
     /// <summary>
     /// Manages vessel unlock state. Persists to PlayerPrefs.
-    /// Only Squirrel is unlocked by default.
+    /// Vessels marked UnlockedByDefault in their SO_Ship are unlocked on first run.
     /// </summary>
     public static class VesselUnlockSystem
     {
         const string UnlockKeyPrefix = "VesselUnlocked_";
+        const string InitializedKey = "VesselUnlockSystem_Initialized";
         const string CurrencyKey = "VesselCurrency";
 
         static readonly HashSet<VesselClassType> _unlockedCache = new();
@@ -20,17 +21,27 @@ namespace CosmicShore.App.Systems.VesselUnlock
         public static event Action OnUnlockStateChanged;
 
         /// <summary>
-        /// Ensures the system is initialized. Safe to call multiple times.
+        /// Initializes the system using the given ship list to seed default unlocks.
+        /// Safe to call multiple times — only runs once per app session.
         /// </summary>
-        public static void Initialize()
+        public static void Initialize(SO_ShipList shipList = null)
         {
             if (_initialized) return;
 
             _unlockedCache.Clear();
 
-            // Always unlock Squirrel by default
-            if (!PlayerPrefs.HasKey(GetKey(VesselClassType.Squirrel)))
-                PlayerPrefs.SetInt(GetKey(VesselClassType.Squirrel), 1);
+            // On first-ever run, seed defaults from SO_Ship.UnlockedByDefault
+            if (!PlayerPrefs.HasKey(InitializedKey) && shipList != null)
+            {
+                foreach (var ship in shipList.ShipList)
+                {
+                    if (ship == null) continue;
+                    if (ship.UnlockedByDefault)
+                        PlayerPrefs.SetInt(GetKey(ship.Class), 1);
+                }
+                PlayerPrefs.SetInt(InitializedKey, 1);
+                PlayerPrefs.Save();
+            }
 
             // Load all vessel unlock states from PlayerPrefs
             foreach (VesselClassType vesselClass in Enum.GetValues(typeof(VesselClassType)))
@@ -42,7 +53,6 @@ namespace CosmicShore.App.Systems.VesselUnlock
                     _unlockedCache.Add(vesselClass);
             }
 
-            PlayerPrefs.Save();
             _initialized = true;
         }
 
@@ -116,6 +126,15 @@ namespace CosmicShore.App.Systems.VesselUnlock
         }
 
         /// <summary>
+        /// Attempts to purchase and unlock a vessel using its configured cost.
+        /// </summary>
+        public static bool TryPurchaseVessel(SO_Ship ship)
+        {
+            if (ship == null) return false;
+            return TryPurchaseVessel(ship.Class, ship.UnlockCost);
+        }
+
+        /// <summary>
         /// Attempts to purchase and unlock a vessel. Returns true if successful.
         /// </summary>
         public static bool TryPurchaseVessel(VesselClassType vesselClass, int cost)
@@ -125,7 +144,7 @@ namespace CosmicShore.App.Systems.VesselUnlock
             if (_unlockedCache.Contains(vesselClass))
                 return false;
 
-            if (!TrySpendCurrency(cost))
+            if (cost > 0 && !TrySpendCurrency(cost))
                 return false;
 
             return UnlockVessel(vesselClass);
@@ -137,10 +156,11 @@ namespace CosmicShore.App.Systems.VesselUnlock
         }
 
         /// <summary>
-        /// Resets unlock state. Only for testing/debug.
+        /// Resets unlock state and re-seeds from the given ship list. Only for testing/debug.
         /// </summary>
-        public static void ResetAllUnlocks()
+        public static void ResetAllUnlocks(SO_ShipList shipList = null)
         {
+            PlayerPrefs.DeleteKey(InitializedKey);
             foreach (VesselClassType vesselClass in Enum.GetValues(typeof(VesselClassType)))
             {
                 if (vesselClass == VesselClassType.Any || vesselClass == VesselClassType.Random)
@@ -152,7 +172,7 @@ namespace CosmicShore.App.Systems.VesselUnlock
             _initialized = false;
             PlayerPrefs.Save();
 
-            Initialize();
+            Initialize(shipList);
             OnUnlockStateChanged?.Invoke();
         }
     }
