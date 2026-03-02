@@ -74,6 +74,10 @@ namespace CosmicShore.Core
         /// </summary>
         void LaunchGame()
         {
+            // ScreenSwitcher pauses the game (timeScale=0) on non-HOME screens.
+            // Unpause before scene transition so spawn delays (DeltaTime-based) are not blocked.
+            PauseSystem.TogglePauseGame(false);
+
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame — Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +

@@ -85,9 +85,6 @@ namespace CosmicShore.Gameplay
                 Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay — waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
 
-                // Ensure domain pool is fresh for the new session.
-                DomainAssigner.Initialize();
-
                 Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
                 gameData.InitializeGame();
 
