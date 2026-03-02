@@ -94,10 +94,19 @@ namespace CosmicShore.Gameplay
             SyncLocalIdentity();
             await JoinPresenceLobbyAsync();
 
-            // Create Relay-backed party session immediately so the NetworkManager
-            // starts as a Relay host. This eliminates the destructive shutdown/restart
-            // cycle that was previously triggered when the user pressed "+" to invite.
-            await CreatePartySessionAsync();
+            // Create Relay-backed party session so the NetworkManager starts as a
+            // Relay host. Wrapped in try-catch so a Relay failure does not block
+            // _initialized — the presence lobby and refresh loop must always work.
+            // SendInviteAsync has a lazy-creation fallback if _partySession is null.
+            try
+            {
+                await CreatePartySessionAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] Party session creation failed (Relay may be unavailable). " +
+                    $"Invite send will retry on demand. Error: {e.Message}");
+            }
 
             _initialized = true;
 
@@ -142,10 +151,18 @@ namespace CosmicShore.Gameplay
             {
                 await JoinPresenceLobbyAsync();
 
-                // Create Relay-backed party session immediately so the NetworkManager
-                // starts as a Relay host. This eliminates the destructive shutdown/restart
-                // cycle that was previously triggered when the user pressed "+" to invite.
-                await CreatePartySessionAsync();
+                // Create Relay-backed party session so the NetworkManager starts as a
+                // Relay host. Failure is non-fatal — the presence lobby and refresh loop
+                // must always work. SendInviteAsync has a lazy-creation fallback.
+                try
+                {
+                    await CreatePartySessionAsync();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[HostConnectionService] Party session creation failed (Relay may be unavailable). " +
+                        $"Invite send will retry on demand. Error: {e.Message}");
+                }
 
                 _initialized = true;
 
