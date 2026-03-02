@@ -80,6 +80,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private const int LOBBY_RACE_SETTLE_MS = 1500;
 
+        /// <summary>
+        /// After this many consecutive RefreshAsync failures, abandon the
+        /// stale lobby reference and attempt to rejoin.
+        /// </summary>
+        private const int MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
+        private int _consecutiveRefreshErrors;
+
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
@@ -548,6 +555,7 @@ namespace CosmicShore.Gameplay
             if (_presenceLobby == null || _lobbyBusy) return;
 
             _lobbyBusy = true;
+            bool shouldReconnect = false;
             try
             {
                 await _presenceLobby.RefreshAsync();
@@ -603,15 +611,29 @@ namespace CosmicShore.Gameplay
                 // ── Party session member tracking ───────────────────────────
                 if (_partySession != null)
                     await RefreshPartyMembersAsync();
+
+                _consecutiveRefreshErrors = 0;
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+                _consecutiveRefreshErrors++;
+                if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
+                {
+                    Debug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors — reconnecting to presence lobby");
+                    _consecutiveRefreshErrors = 0;
+                    _presenceLobby = null;
+                    shouldReconnect = true;
+                }
             }
             finally
             {
                 _lobbyBusy = false;
             }
+
+            // Reconnect outside the try/finally so _lobbyBusy is released first.
+            if (shouldReconnect)
+                await JoinPresenceLobbyAsync();
         }
 
         /// <summary>
@@ -748,14 +770,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Clears the SENDER's own invite properties after the invited player
         /// joins the party. This stops receivers from seeing stale invite data.
+        /// Always called from within RefreshAsync() which already holds _lobbyBusy —
+        /// no additional mutex needed here.
         /// </summary>
         private async Task ClearSentInvitePropertiesAsync()
         {
             if (_presenceLobby == null) return;
 
-            while (_lobbyBusy)
-                await Task.Yield();
-            _lobbyBusy = true;
             try
             {
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
@@ -767,10 +788,6 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] ClearSentInvite error: {e.Message}");
-            }
-            finally
-            {
-                _lobbyBusy = false;
             }
         }
 
