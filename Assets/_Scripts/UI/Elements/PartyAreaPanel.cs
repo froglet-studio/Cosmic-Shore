@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -152,20 +151,12 @@ namespace CosmicShore.UI
         // Slot Actions
         // ─────────────────────────────────────────────────────────────────────
 
-        private async void OnAddSlotPressed()
+        private void OnAddSlotPressed()
         {
             if (!connectionData.HasOpenSlots)
             {
                 Debug.Log("[PartyAreaPanel] No open party slots.");
                 return;
-            }
-
-            // If PartyInviteController is available, ensure we're on a Relay host
-            // so invited clients can actually connect.
-            var controller = PartyInviteController.Instance;
-            if (controller != null && connectionData.IsHost)
-            {
-                await controller.TransitionToPartyHostAsync();
             }
 
             onlinePlayersPanel?.Show();
