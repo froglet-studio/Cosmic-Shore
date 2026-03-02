@@ -26,11 +26,13 @@ namespace CosmicShore.App.UI.Views
         [Header("Ghost Slider")]
         [Tooltip("Second slider that shows one step ahead of the main slider (the next quest to complete).")]
         [SerializeField] private Slider ghostSlider;
-        [Tooltip("Text anchored to the right edge of the ghost slider fill. Shows the next quest description.")]
-        [SerializeField] private TMP_Text ghostDescriptionText;
-        [Tooltip("CanvasGroup on the ghost description text for fade in/out animations.")]
-        [SerializeField] private CanvasGroup ghostTextCanvasGroup;
-        [SerializeField] private float ghostTextFadeDuration = 0.4f;
+
+        [Header("Quest Descriptions")]
+        [Tooltip("Container with HorizontalLayoutGroup inside the ScrollRect content, aligned under the quest cards.")]
+        [SerializeField] private Transform questDescriptionContainer;
+        [Tooltip("Prefab with TMP_Text (+ CanvasGroup). One spawned per quest, aligned 1:1 with cards.")]
+        [SerializeField] private GameObject questDescriptionPrefab;
+        [SerializeField] private float descriptionFadeDuration = 0.4f;
 
         [Header("Scroll Snap")]
         [Tooltip("The ScrollRect parent. Snap to nearest card after user finishes scrolling.")]
@@ -48,24 +50,27 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private float parallaxFalloff = 400f;
 
         private readonly List<QuestItemCard> _cards = new();
+        private readonly List<CanvasGroup> _descriptionLabels = new();
         private Tween _sliderTween;
         private Tween _ghostSliderTween;
-        private Tween _ghostTextFadeTween;
+        private Tween _descFadeTween;
         private Tween _snapTween;
         private bool _wasMoving;
         private bool _isSnapping;
-        private string _currentGhostDescription;
+        private int _lastActiveDescIndex = -1;
 
         void OnEnable()
         {
             EnsureSliderIgnoresLayout();
             SpawnCards();
+            SpawnDescriptionLabels();
             ConfigureSlider();
             ConfigureGhostSlider();
             RefreshAllCards();
             UpdateActivePulse();
             SetSliderImmediate();
             SetGhostSliderImmediate();
+            UpdateActiveDescription(true);
             StartCoroutine(PostSpawnSetup());
 
             if (GameModeProgressionService.Instance != null)
@@ -77,6 +82,7 @@ namespace CosmicShore.App.UI.Views
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
             KillAllTweens();
+            ClearDescriptionLabels();
         }
 
         void LateUpdate()
@@ -103,6 +109,7 @@ namespace CosmicShore.App.UI.Views
             UpdateActivePulse();
             AnimateSlider();
             AnimateGhostSlider();
+            UpdateActiveDescription(false);
         }
 
         // ── Setup ─────────────────────────────────────────────────────────────
@@ -296,18 +303,16 @@ namespace CosmicShore.App.UI.Views
         void SetGhostSliderImmediate()
         {
             int mainVal = GetSliderValue();
-            int ghostVal = GetGhostSliderValue(mainVal);
+            int ghostVal = Mathf.Min(mainVal + 1, questList?.Quests.Count ?? 0);
 
             if (ghostSlider != null)
                 ghostSlider.value = ghostVal;
-
-            UpdateGhostDescription(mainVal, true);
         }
 
         void AnimateGhostSlider()
         {
             int mainVal = GetSliderValue();
-            int ghostVal = GetGhostSliderValue(mainVal);
+            int ghostVal = Mathf.Min(mainVal + 1, questList?.Quests.Count ?? 0);
 
             if (ghostSlider != null)
             {
@@ -318,64 +323,83 @@ namespace CosmicShore.App.UI.Views
                         ghostVal, sliderAnimDuration)
                     .SetEase(sliderEase).SetUpdate(true);
             }
-
-            UpdateGhostDescription(mainVal, false);
         }
 
-        int GetGhostSliderValue(int mainValue)
-        {
-            if (questList == null) return 0;
-            return Mathf.Min(mainValue + 1, questList.Quests.Count);
-        }
+        // ── Quest Description Labels ─────────────────────────────────────────
 
-        void UpdateGhostDescription(int mainSliderValue, bool immediate)
+        void SpawnDescriptionLabels()
         {
-            // The ghost points at the active frontier quest (the one AFTER all claimed quests).
-            // mainSliderValue is the count of unlocked modes, so index = mainSliderValue - 1 is the last unlocked.
-            // The frontier quest is at index mainSliderValue (0-based) if it exists.
-            int frontierIndex = mainSliderValue;
-            string newDescription = "";
+            ClearDescriptionLabels();
+            if (questList == null || questList.Quests == null || questDescriptionPrefab == null || questDescriptionContainer == null) return;
 
-            if (questList != null && frontierIndex >= 0 && frontierIndex < questList.Quests.Count)
+            for (int i = 0; i < questList.Quests.Count; i++)
             {
-                var quest = questList.Quests[frontierIndex];
-                newDescription = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
+                var go = Instantiate(questDescriptionPrefab, questDescriptionContainer);
+                var tmp = go.GetComponentInChildren<TMP_Text>();
+                if (tmp != null)
+                {
+                    var quest = questList.Quests[i];
+                    tmp.text = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
+                }
+
+                if (!go.TryGetComponent<CanvasGroup>(out var cg))
+                    cg = go.AddComponent<CanvasGroup>();
+
+                cg.alpha = 0f;
+                _descriptionLabels.Add(cg);
             }
+        }
 
-            if (ghostDescriptionText == null) return;
+        void ClearDescriptionLabels()
+        {
+            foreach (var cg in _descriptionLabels)
+                if (cg != null) Destroy(cg.gameObject);
+            _descriptionLabels.Clear();
+            _lastActiveDescIndex = -1;
+        }
 
-            // No change needed
-            if (newDescription == _currentGhostDescription && !immediate) return;
+        /// <summary>
+        /// Shows only the current frontier quest's description label. Fades out the old, fades in the new.
+        /// </summary>
+        void UpdateActiveDescription(bool immediate)
+        {
+            if (_descriptionLabels.Count == 0) return;
 
-            _currentGhostDescription = newDescription;
+            int activeIndex = GetActiveQuestIndex();
 
-            if (immediate || ghostTextCanvasGroup == null)
+            if (activeIndex == _lastActiveDescIndex && !immediate) return;
+
+            _descFadeTween?.Kill();
+
+            if (immediate)
             {
-                ghostDescriptionText.text = newDescription;
-                if (ghostTextCanvasGroup != null)
-                    ghostTextCanvasGroup.alpha = string.IsNullOrEmpty(newDescription) ? 0f : 1f;
+                for (int i = 0; i < _descriptionLabels.Count; i++)
+                    _descriptionLabels[i].alpha = (i == activeIndex) ? 1f : 0f;
+                _lastActiveDescIndex = activeIndex;
                 return;
             }
 
-            // Fade out → swap text → fade in
-            _ghostTextFadeTween?.Kill();
-
-            float startAlpha = ghostTextCanvasGroup.alpha;
+            // Animate: fade out old, fade in new
             var seq = DOTween.Sequence();
+            float halfDur = descriptionFadeDuration * 0.5f;
 
-            // Fade out
-            if (startAlpha > 0.01f)
-                seq.Append(DOTween.To(() => ghostTextCanvasGroup.alpha, a => ghostTextCanvasGroup.alpha = a, 0f, ghostTextFadeDuration * 0.5f));
+            // Fade out old label
+            if (_lastActiveDescIndex >= 0 && _lastActiveDescIndex < _descriptionLabels.Count)
+            {
+                var oldCg = _descriptionLabels[_lastActiveDescIndex];
+                seq.Append(DOTween.To(() => oldCg.alpha, a => oldCg.alpha = a, 0f, halfDur));
+            }
 
-            // Swap text at midpoint
-            seq.AppendCallback(() => ghostDescriptionText.text = newDescription);
-
-            // Fade in (only if there's text to show)
-            if (!string.IsNullOrEmpty(newDescription))
-                seq.Append(DOTween.To(() => ghostTextCanvasGroup.alpha, a => ghostTextCanvasGroup.alpha = a, 1f, ghostTextFadeDuration * 0.5f));
+            // Fade in new label
+            if (activeIndex >= 0 && activeIndex < _descriptionLabels.Count)
+            {
+                var newCg = _descriptionLabels[activeIndex];
+                seq.Append(DOTween.To(() => newCg.alpha, a => newCg.alpha = a, 1f, halfDur));
+            }
 
             seq.SetUpdate(true);
-            _ghostTextFadeTween = seq;
+            _descFadeTween = seq;
+            _lastActiveDescIndex = activeIndex;
         }
 
         // ── Scroll Snap ──────────────────────────────────────────────────────
@@ -494,7 +518,7 @@ namespace CosmicShore.App.UI.Views
         {
             _sliderTween?.Kill(); _sliderTween = null;
             _ghostSliderTween?.Kill(); _ghostSliderTween = null;
-            _ghostTextFadeTween?.Kill(); _ghostTextFadeTween = null;
+            _descFadeTween?.Kill(); _descFadeTween = null;
             _snapTween?.Kill(); _snapTween = null;
             _isSnapping = false;
             _wasMoving = false;
