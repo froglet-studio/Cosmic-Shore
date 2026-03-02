@@ -365,6 +365,12 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 454211663}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &462743731 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7071078697595455670, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &696378174
 GameObject:
   m_ObjectHideFlags: 0
@@ -1453,6 +1459,16 @@ PrefabInstance:
       propertyPath: questCompletionText
       value: 
       objectReference: {fileID: 1065094408}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: questTextDialogObject
+      value: 
+      objectReference: {fileID: 462743731}
+    - target: {fileID: 3291860290764373425, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -1.800003
+      objectReference: {fileID: 0}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -1778,6 +1794,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5955435898294338417, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_Alpha
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6479948615669833382, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1884,6 +1905,11 @@ PrefabInstance:
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 6886384615953744799, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7071078697595455670, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -2037,6 +2063,21 @@ PrefabInstance:
         type: 3}
       propertyPath: activationButton
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 159.06
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 79.53
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 89.08276
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
