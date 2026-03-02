@@ -28,6 +28,7 @@ namespace CosmicShore.Core
         [Inject] GameDataSO gameData;
         [Inject] SceneNameListSO _sceneNames;
         [Inject] ApplicationStateMachine _appStateMachine;
+        [Inject] SceneTransitionManager _sceneTransitionManager;
 
         #region Unity Lifecycle
 
@@ -73,6 +74,11 @@ namespace CosmicShore.Core
         void LaunchGame()
         {
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
+
+            // Cover screen with black overlay during scene transition.
+            // MiniGameHUD will fade from black once the game is ready.
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
 

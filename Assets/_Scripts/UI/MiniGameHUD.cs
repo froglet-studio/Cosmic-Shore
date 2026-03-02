@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
@@ -21,6 +22,7 @@ namespace CosmicShore.UI
     {
         [Header("Data")]
         [Inject] protected GameDataSO gameData;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
 
         [Header("View")]
         [SerializeField] protected MiniGameHUDView view;
@@ -34,9 +36,6 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
-
-        [Header("Intro / Connecting")]
-        [SerializeField] private float minConnectingSeconds = 5f;
 
         [Header("Pre-Game Cinematic")]
         [SerializeField] private PreGameCinematicController preGameCinematic;
@@ -56,10 +55,7 @@ namespace CosmicShore.UI
         private PlayerScoreCard _localPlayerCard;
         private Dictionary<string, AIProfile> _assignedAIProfiles = new();
 
-        private CancellationTokenSource _connectingCts;
-        private bool _clientReady;
-
-        protected virtual bool RequireClientReady => false;
+        private CancellationTokenSource _lifecycleCts;
 
         private void OnValidate()
         {
@@ -126,11 +122,9 @@ namespace CosmicShore.UI
 
         protected virtual void OnEnable()
         {
-            _clientReady = false;
-
-            _connectingCts?.Cancel();
-            _connectingCts?.Dispose();
-            _connectingCts = new CancellationTokenSource();
+            _lifecycleCts?.Cancel();
+            _lifecycleCts?.Dispose();
+            _lifecycleCts = new CancellationTokenSource();
 
             CleanupUI();
         }
@@ -141,9 +135,9 @@ namespace CosmicShore.UI
         {
             UnsubscribeFromEvents();
 
-            _connectingCts?.Cancel();
-            _connectingCts?.Dispose();
-            _connectingCts = null;
+            _lifecycleCts?.Cancel();
+            _lifecycleCts?.Dispose();
+            _lifecycleCts = null;
         }
 
         protected virtual void SubscribeToEvents()
@@ -186,8 +180,56 @@ namespace CosmicShore.UI
 
         private void OnClientReady()
         {
-            _clientReady = true;
-            ResetForReplay();
+            HandleClientReady().Forget();
+        }
+
+        private async UniTaskVoid HandleClientReady()
+        {
+            var ct = _lifecycleCts?.Token ?? CancellationToken.None;
+
+            try
+            {
+                Show();
+                CleanupUI();
+                HideLocalVesselHUD();
+                UpdateTurnMonitorDisplay(string.Empty);
+                UpdateLifeformCounterDisplay("0");
+                view.UpdateScoreUI("0");
+                ToggleReadyButton(false);
+
+                // Fade from black (SceneTransitionManager overlay set by SceneLoader)
+                if (_sceneTransitionManager != null)
+                    await _sceneTransitionManager.FadeFromBlack();
+
+                // Play pre-game cinematic if available
+                if (enablePreGameCinematic && preGameCinematic != null)
+                {
+                    Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
+                    if (playerTarget != null)
+                    {
+                        bool cinematicDone = false;
+                        preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
+                        preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
+
+                        while (!cinematicDone)
+                            await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
+                    }
+                }
+
+                ToggleReadyButton(true);
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        private void ResetForReplay()
+        {
+            Show();
+            CleanupUI();
+            HideLocalVesselHUD();
+
+            UpdateTurnMonitorDisplay(string.Empty);
+            UpdateLifeformCounterDisplay("0");
+            view.UpdateScoreUI("0");
         }
 
         protected virtual void OnMiniGameTurnStarted()
@@ -351,62 +393,6 @@ namespace CosmicShore.UI
             return null;
         }
 
-        private void ResetForReplay()
-        {
-            Show();
-            CleanupUI();
-            HideLocalVesselHUD();
-
-            UpdateTurnMonitorDisplay(string.Empty);
-            UpdateLifeformCounterDisplay("0");
-            view.UpdateScoreUI("0");
-
-            view.ToggleConnectingPanel(true);
-            ToggleReadyButton(false);
-
-            RunConnectingMinimum().Forget();
-        }
-
-        private async UniTaskVoid RunConnectingMinimum()
-        {
-            var ct = _connectingCts?.Token ?? CancellationToken.None;
-
-            try
-            {
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(minConnectingSeconds),
-                    DelayType.DeltaTime,
-                    PlayerLoopTiming.PreUpdate,
-                    ct);
-
-                if (RequireClientReady)
-                {
-                    while (!_clientReady)
-                        await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
-                }
-
-                view.ToggleConnectingPanel(false);
-
-                // Play pre-game cinematic if available
-                if (preGameCinematic != null)
-                {
-                    Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
-                    if (playerTarget != null)
-                    {
-                        bool cinematicDone = false;
-                        preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
-                        preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
-
-                        while (!cinematicDone)
-                            await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
-                    }
-                }
-
-                ToggleReadyButton(true);
-            }
-            catch (OperationCanceledException) { }
-        }
-
         private void OnMoundDroneSpawned(int count)
         {
             view.LeftNumberDisplay.transform.parent.parent.gameObject.SetActive(count > 0);
@@ -479,8 +465,8 @@ namespace CosmicShore.UI
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
 
         /// <summary>
-        /// Shows the connecting panel flow (connecting → wait → ready button).
-        /// Called externally when re-entering the game flow after shape drawing.
+        /// Resets UI state for re-entering the game flow after shape drawing.
+        /// Called externally by SinglePlayerFreestyleController.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
