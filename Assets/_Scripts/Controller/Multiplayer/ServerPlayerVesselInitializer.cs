@@ -99,14 +99,14 @@ namespace CosmicShore.Gameplay
 
         void ProcessPreExistingPlayers()
         {
-            // Check gameData.Players first (catches players that fired OnNetworkSpawn in this scene)
+            // Stage 1: Check gameData.Players (catches players spawned in THIS scene)
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer && netPlayer.IsSpawned)
                     HandlePlayerNetworkSpawned(netPlayer.OwnerClientId);
             }
 
-            // Also check NetworkManager's connected clients for persistent Players
+            // Stage 2: Check NetworkManager.ConnectedClients for persistent Players
             // that survived a Netcode scene load but were cleared from gameData.Players
             // by ResetRuntimeData(). Their OnNetworkSpawn() won't re-fire.
             var nm = NetworkManager.Singleton;
@@ -120,7 +120,12 @@ namespace CosmicShore.Gameplay
                 if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
                     continue;
 
-                // Re-register the persistent Player with gameData
+                // Update stale NetworkVariables from Auth/Menu_Main.
+                // NetDefaultVesselType has Owner write permission; on server, host IS the owner.
+                // NetDomain has Server write permission.
+                player.NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+                player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+
                 if (!gameData.Players.Contains(player))
                     gameData.Players.Add(player);
 
