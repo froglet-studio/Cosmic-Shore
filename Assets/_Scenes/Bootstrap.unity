@@ -3475,6 +3475,11 @@ PrefabInstance:
       objectReference: {fileID: 684811275}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
+      propertyPath: multiplayerSetup
+      value: 
+      objectReference: {fileID: 369571798}
+    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
+        type: 3}
       propertyPath: playerDataService
       value: 
       objectReference: {fileID: 483927158}
