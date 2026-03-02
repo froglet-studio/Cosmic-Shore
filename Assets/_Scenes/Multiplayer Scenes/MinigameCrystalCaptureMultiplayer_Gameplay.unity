@@ -643,7 +643,7 @@ PrefabInstance:
     - target: {fileID: 1872280282667471053, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1994725692957625995, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -845,6 +845,16 @@ PrefabInstance:
       propertyPath: xpEarnedCanvasGroup
       value: 
       objectReference: {fileID: 776211958}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: questTextDialogObject
+      value: 
+      objectReference: {fileID: 1916135823}
+    - target: {fileID: 3291860290764373425, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -1.8000183
+      objectReference: {fileID: 0}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -964,6 +974,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4433200535761759613, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1951,6 +1966,16 @@ PrefabInstance:
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
       objectReference: {fileID: 0}
+    - target: {fileID: 8519919900975884673, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_text
+      value: 'Quest Unlocked: Party Game Mode'
+      objectReference: {fileID: 0}
+    - target: {fileID: 8519919900975884673, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_fontSize
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 8527493465079914512, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -1995,6 +2020,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 159.06
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 79.53
+      objectReference: {fileID: 0}
+    - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 89.08276
       objectReference: {fileID: 0}
     - target: {fileID: 8826477712431598705, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -3912,6 +3952,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8373d81418838f64c97155119a29e98c, type: 3}
+--- !u!1 &1916135823 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7071078697595455670, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2001299555
 PrefabInstance:
   m_ObjectHideFlags: 0
