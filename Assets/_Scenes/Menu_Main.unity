@@ -33993,6 +33993,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: PartyInviteNotificationPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 8323267208482651102, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
+        type: 3}
+      propertyPath: m_Alpha
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
