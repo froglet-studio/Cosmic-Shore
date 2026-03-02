@@ -112,23 +112,10 @@ namespace CosmicShore.Game.Progression
         // ── Public API ──────────────────────────────────────────────────────────
 
         /// <summary>
-        /// When true, all game modes are treated as unlocked (debug override).
-        /// </summary>
-        public bool DebugUnlockAll { get; set; }
-
-        /// <summary>
         /// Returns true if the given game mode is unlocked for the player.
-        /// Modes not part of the quest chain are always unlocked.
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
-            if (DebugUnlockAll)
-                return true;
-
-            // Modes not in the quest chain are always accessible
-            if (!IsGameModeInQuestChain(mode))
-                return true;
-
             // First quest mode is always unlocked
             if (questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
@@ -275,6 +262,23 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public void InvokeProgressionChanged()
         {
+            OnProgressionChanged?.Invoke(ProgressionData);
+        }
+
+        /// <summary>
+        /// Debug toggle for a single game mode. Unlocks or locks it and refreshes UI.
+        /// </summary>
+        public void DebugSetModeUnlocked(GameModes mode, bool unlocked)
+        {
+            string modeName = mode.ToString();
+            if (unlocked)
+            {
+                ProgressionData.MarkUnlocked(modeName);
+            }
+            else
+            {
+                ProgressionData.UnlockedModes.Remove(modeName);
+            }
             OnProgressionChanged?.Invoke(ProgressionData);
         }
 

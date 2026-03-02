@@ -101,23 +101,20 @@ namespace CosmicShore.App.UI.Elements
         /// </summary>
         public void SetLocked(bool locked)
         {
-            _isLocked = locked;
-
             if (lockOverlay != null)
                 lockOverlay.SetActive(locked);
 
             if (BackgroundImage != null)
             {
-                if (locked)
-                {
+                // Only save the original color when transitioning from unlocked → locked
+                // to avoid overwriting it with the tinted color on repeated SetLocked(true) calls
+                if (locked && !_isLocked)
                     _originalBgColor = BackgroundImage.color;
-                    BackgroundImage.color = lockedTintColor;
-                }
-                else
-                {
-                    BackgroundImage.color = _originalBgColor;
-                }
+
+                BackgroundImage.color = locked ? lockedTintColor : _originalBgColor;
             }
+
+            _isLocked = locked;
 
             if (TryGetComponent<Button>(out var btn))
                 btn.interactable = !locked;

@@ -1,5 +1,8 @@
 #if UNITY_EDITOR
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Game.Progression;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -26,6 +29,7 @@ namespace CosmicShore.Utility.Tools
         bool _createFoldout;
         bool _multiplayerFoldout;
         bool _utilitiesFoldout;
+        bool _nonQuestFoldout;
 
         // ── Pastel Palette ───────────────────────────────────────────────────
         static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
@@ -241,15 +245,6 @@ namespace CosmicShore.Utility.Tools
                     var svc = GameModeProgressionService.Instance;
                     int maxQuests = svc.QuestList?.Quests.Count ?? 1;
 
-                    // Unlock All toggle
-                    DrawLogToggle("Unlock All Game Modes", svc.DebugUnlockAll, v =>
-                    {
-                        svc.DebugUnlockAll = v;
-                        svc.InvokeProgressionChanged();
-                    });
-
-                    GUILayout.Space(4);
-
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Space(Pad);
                     GUILayout.Label("Unlock to index", GUILayout.Width(100));
@@ -278,6 +273,41 @@ namespace CosmicShore.Utility.Tools
                                   $"<b>Completed:</b> {svc.ProgressionData.CompletedQuests.Count}   " +
                                   $"<b>Claimed:</b> {svc.GetClaimedQuestCount()}";
                     GUILayout.Label(info, _infoStyle);
+                }
+
+                EndSection();
+            }
+
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  NON-QUEST GAME MODES
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Non-Quest Game Modes", ref _nonQuestFoldout);
+            if (_nonQuestFoldout)
+            {
+                BeginSection();
+
+                bool available = Application.isPlaying && GameModeProgressionService.Instance != null;
+
+                if (!available)
+                {
+                    GUILayout.Space(Pad);
+                    EditorGUILayout.LabelField("Enter Play Mode to toggle game modes.", _mutedLabel);
+                }
+                else
+                {
+                    var svc = GameModeProgressionService.Instance;
+                    var nonQuestModes = GetNonQuestModes(svc);
+
+                    foreach (var mode in nonQuestModes)
+                    {
+                        bool isUnlocked = svc.IsGameModeUnlocked(mode);
+                        DrawLogToggle(mode.ToString(), isUnlocked, v =>
+                        {
+                            svc.DebugSetModeUnlocked(mode, v);
+                        });
+                    }
                 }
 
                 EndSection();
@@ -364,6 +394,15 @@ namespace CosmicShore.Utility.Tools
             var rect = GUILayoutUtility.GetRect(size.x + 4, 16, GUILayout.Width(size.x + 4));
             EditorGUI.DrawRect(rect, bg);
             GUI.Label(rect, content, _badgeStyle);
+        }
+
+        static List<GameModes> GetNonQuestModes(GameModeProgressionService svc)
+        {
+            var all = (GameModes[])Enum.GetValues(typeof(GameModes));
+            return all
+                .Where(m => m != GameModes.Random && !svc.IsGameModeInQuestChain(m))
+                .OrderBy(m => m.ToString())
+                .ToList();
         }
 
         // ── Prefs persistence ────────────────────────────────────────────────
