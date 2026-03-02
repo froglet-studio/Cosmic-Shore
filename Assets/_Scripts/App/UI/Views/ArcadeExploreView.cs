@@ -41,11 +41,17 @@ namespace CosmicShore.App.UI.Views
         void OnEnable()
         {
             CatalogManager.OnLoadInventory += PopulateGameSelectionList;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
         }
 
         void OnDisable()
         {
             CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
         }
 
         void Start()
@@ -122,6 +128,11 @@ namespace CosmicShore.App.UI.Views
 
                 gameCard.gameObject.SetActive(true);
             }
+        }
+
+        void OnProgressionChanged(GameModeProgressionData data)
+        {
+            PopulateGameSelectionList();
         }
 
         public void SelectGame(SO_ArcadeGame selectedGame)

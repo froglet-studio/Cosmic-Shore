@@ -32,7 +32,12 @@ namespace CosmicShore.App.UI.Elements
         [Header("Active Quest Glow")]
         [Tooltip("Child with CanvasGroup that pulses on the frontier quest (auto-resolved from 'GlowBorder')")]
         [SerializeField] private CanvasGroup glowBorder;
+        [Tooltip("Glow color when the quest is in progress (active frontier)")]
+        [SerializeField] private Color activeQuestGlowColor = new(0.4f, 0.7f, 1f, 1f);
+        [Tooltip("Glow color when the quest target is met and ready to claim")]
+        [SerializeField] private Color readyToClaimGlowColor = new(0.4f, 1f, 0.55f, 1f);
 
+        private Image _glowImage;
         private Color _originalBgColor = Color.white;
         private GameModes _gameMode;
         private SO_GameModeQuestData _questData;
@@ -79,9 +84,11 @@ namespace CosmicShore.App.UI.Elements
                 TryGetComponent(out cardBackground);
             if (glowBorder == null)
             {
-                var glowGo = FindChild("GlowBorder");
+                var glowGo = FindChild("GlowBorder") ?? FindChild("Glow");
                 if (glowGo != null) glowGo.TryGetComponent(out glowBorder);
             }
+            if (glowBorder != null && _glowImage == null)
+                glowBorder.TryGetComponent(out _glowImage);
         }
 
         GameObject FindChild(string childName)
@@ -131,13 +138,22 @@ namespace CosmicShore.App.UI.Elements
 
         /// <summary>
         /// Starts or stops the pulsing glow border on the active frontier card.
+        /// Glow color changes based on quest state: blue when in progress, green when ready to claim.
         /// </summary>
-        public void SetActiveFrontier(bool isActive)
+        public void SetActiveFrontier(bool isActive, QuestItemState state = QuestItemState.Unlocked)
         {
             if (glowBorder == null) return;
 
             if (isActive)
             {
+                // Set glow color based on state
+                if (_glowImage != null)
+                {
+                    _glowImage.color = state == QuestItemState.ReadyToClaim
+                        ? readyToClaimGlowColor
+                        : activeQuestGlowColor;
+                }
+
                 glowBorder.gameObject.SetActive(true);
                 _pulseTween?.Kill();
                 glowBorder.alpha = 1f;

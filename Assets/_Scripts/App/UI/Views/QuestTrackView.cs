@@ -192,7 +192,12 @@ namespace CosmicShore.App.UI.Views
         {
             int activeIndex = GetActiveQuestIndex();
             for (int i = 0; i < _cards.Count; i++)
-                _cards[i].SetActiveFrontier(i == activeIndex);
+            {
+                if (i == activeIndex)
+                    _cards[i].SetActiveFrontier(true, GetCardState(i));
+                else
+                    _cards[i].SetActiveFrontier(false);
+            }
         }
 
         // ── Claim Fanfare ─────────────────────────────────────────────────────

@@ -241,6 +241,15 @@ namespace CosmicShore.Utility.Tools
                     var svc = GameModeProgressionService.Instance;
                     int maxQuests = svc.QuestList?.Quests.Count ?? 1;
 
+                    // Unlock All toggle
+                    DrawLogToggle("Unlock All Game Modes", svc.DebugUnlockAll, v =>
+                    {
+                        svc.DebugUnlockAll = v;
+                        svc.InvokeProgressionChanged();
+                    });
+
+                    GUILayout.Space(4);
+
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Space(Pad);
                     GUILayout.Label("Unlock to index", GUILayout.Width(100));

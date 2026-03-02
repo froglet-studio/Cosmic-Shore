@@ -112,16 +112,45 @@ namespace CosmicShore.Game.Progression
         // ── Public API ──────────────────────────────────────────────────────────
 
         /// <summary>
+        /// When true, all game modes are treated as unlocked (debug override).
+        /// </summary>
+        public bool DebugUnlockAll { get; set; }
+
+        /// <summary>
         /// Returns true if the given game mode is unlocked for the player.
+        /// Modes not part of the quest chain are always unlocked.
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
+            if (DebugUnlockAll)
+                return true;
+
+            // Modes not in the quest chain are always accessible
+            if (!IsGameModeInQuestChain(mode))
+                return true;
+
             // First quest mode is always unlocked
             if (questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
                 return true;
 
             return ProgressionData.IsUnlocked(mode.ToString());
+        }
+
+        /// <summary>
+        /// Returns true if the given mode is gated behind the quest progression chain.
+        /// </summary>
+        public bool IsGameModeInQuestChain(GameModes mode)
+        {
+            if (questList == null) return false;
+
+            foreach (var quest in questList.Quests)
+            {
+                if (quest.GameMode == mode)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -238,6 +267,15 @@ namespace CosmicShore.Game.Progression
             }
 
             return count;
+        }
+
+        /// <summary>
+        /// Forces the OnProgressionChanged event to fire, refreshing all listeners.
+        /// Used by editor tools when toggling debug overrides.
+        /// </summary>
+        public void InvokeProgressionChanged()
+        {
+            OnProgressionChanged?.Invoke(ProgressionData);
         }
 
         // ── Debug / Editor ────────────────────────────────────────────────────
