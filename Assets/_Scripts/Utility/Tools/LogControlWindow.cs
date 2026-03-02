@@ -170,8 +170,8 @@ namespace CosmicShore.Utility.Tools
             if (_createFoldout)
             {
                 BeginSection();
-                DrawOpenWindowButton<CosmicShore.CreateNewMiniGame>("New MiniGame", "MiniGame Editor Window");
-                DrawOpenWindowButton<CosmicShore.CreateNewClass>("New Class", "MiniGame Editor Window");
+                DrawMenuItemButton("New MiniGame", "FrogletTools/Legacy/Create/MiniGame");
+                DrawMenuItemButton("New Class",    "FrogletTools/Legacy/Create/Class");
                 EndSection();
             }
 
@@ -206,16 +206,11 @@ namespace CosmicShore.Utility.Tools
             if (_utilitiesFoldout)
             {
                 BeginSection();
-                DrawOpenWindowButton<ComponentCopierWindow>("Component Copier", "Component Copier");
-                DrawOpenWindowButton<CosmicShore.DialogueSystem.Editor.DialogueEditorWindow>("Dialogue Editor", "Dialogue Editor");
-                DrawOpenWindowButton<ElementalFloatEditor>("ElementalFloat Editor", "ElementalFloat Editor");
-                DrawOpenWindowButton<FindAssetByGUID>("Find Asset by GUID", "Asset & Object Finder");
-
-                GUILayout.Space(4);
-
-                if (GUILayout.Button("Force Re-Serialize All SOs", _btnStyle))
-                    ForceReserializeScriptableObjects.ReserializeAllScriptableObjects();
-
+                DrawMenuItemButton("Component Copier",        "FrogletTools/Legacy/Component Copier");
+                DrawMenuItemButton("Dialogue Editor",         "FrogletTools/Legacy/Dialogue Editor");
+                DrawMenuItemButton("ElementalFloat Editor",   "FrogletTools/Legacy/ElementalFloat Editor");
+                DrawMenuItemButton("Find Asset by GUID",      "FrogletTools/Legacy/Find Asset by GUID");
+                DrawMenuItemButton("Force Re-Serialize All SOs", "FrogletTools/Legacy/Force Re-Serialize All ScriptableObjects");
                 EndSection();
             }
 
@@ -351,10 +346,10 @@ namespace CosmicShore.Utility.Tools
             }
         }
 
-        void DrawOpenWindowButton<T>(string label, string windowTitle) where T : EditorWindow
+        void DrawMenuItemButton(string label, string menuPath)
         {
             if (GUILayout.Button(label, _btnStyle))
-                GetWindow<T>(windowTitle);
+                EditorApplication.ExecuteMenuItem(menuPath);
         }
 
         void DrawLogToggle(string label, bool current, System.Action<bool> setter)
