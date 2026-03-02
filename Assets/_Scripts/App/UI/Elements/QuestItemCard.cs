@@ -130,7 +130,7 @@ namespace CosmicShore.App.UI.Elements
                 completedOverlay.SetActive(isClaimed);
 
             if (claimButton != null)
-                claimButton.gameObject.SetActive(isReadyToClaim);
+                claimButton.interactable = isReadyToClaim;
 
             if (cardBackground != null)
                 cardBackground.color = isLocked ? lockedTint : _originalBgColor;

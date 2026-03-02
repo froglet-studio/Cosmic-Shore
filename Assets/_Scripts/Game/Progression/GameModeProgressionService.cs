@@ -169,7 +169,7 @@ namespace CosmicShore.Game.Progression
             }
 
             OnProgressionChanged?.Invoke(ProgressionData);
-            ScheduleDebouncedSave();
+            SaveImmediateAsync();
         }
 
         /// <summary>
@@ -193,8 +193,11 @@ namespace CosmicShore.Game.Progression
             if (EvaluateQuestTarget(quest, value))
             {
                 ProgressionData.MarkQuestCompleted(modeName);
-                CSDebug.Log($"[GameModeProgressionService] Quest completed for {mode}!");
+                CSDebug.Log($"[GameModeProgressionService] Quest completed for {mode}! stat={value} target={quest.TargetValue}");
                 OnQuestCompleted?.Invoke(quest);
+                OnProgressionChanged?.Invoke(ProgressionData);
+                SaveImmediateAsync();
+                return;
             }
 
             OnProgressionChanged?.Invoke(ProgressionData);
@@ -295,19 +298,36 @@ namespace CosmicShore.Game.Progression
 
         void HandleGameEnd()
         {
-            if (gameData == null || gameData.LocalPlayer == null) return;
+            if (gameData == null || gameData.LocalPlayer == null)
+            {
+                CSDebug.LogWarning("[GameModeProgressionService] HandleGameEnd skipped — gameData or LocalPlayer is null.");
+                return;
+            }
 
             var mode = gameData.GameMode;
             var quest = GetQuestForMode(mode);
-            if (quest == null || quest.IsPlaceholder) return;
+            if (quest == null || quest.IsPlaceholder)
+            {
+                CSDebug.Log($"[GameModeProgressionService] No quest found for mode {mode}, skipping.");
+                return;
+            }
 
-            // Already completed this quest? Skip
-            if (ProgressionData.IsQuestCompleted(mode.ToString())) return;
+            if (ProgressionData.IsQuestCompleted(mode.ToString()))
+            {
+                CSDebug.Log($"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
+                return;
+            }
 
-            // Extract the relevant stat based on the quest's target type
             float statValue = ExtractStatForQuest(quest);
+            CSDebug.Log($"[GameModeProgressionService] HandleGameEnd — mode:{mode}, targetType:{quest.TargetType}, " +
+                       $"targetValue:{quest.TargetValue}, extractedStat:{statValue}");
+
             if (statValue > 0f)
                 ReportQuestStat(mode, statValue);
+            else
+                CSDebug.LogWarning($"[GameModeProgressionService] Extracted stat is 0 for {mode}. " +
+                                  $"RoundStatsList count: {gameData.RoundStatsList?.Count ?? 0}, " +
+                                  $"LocalPlayer: {gameData.LocalPlayer?.Name ?? "null"}");
         }
 
         float ExtractStatForQuest(SO_GameModeQuestData quest)
@@ -429,6 +449,32 @@ namespace CosmicShore.Game.Progression
                 EnsureFirstModeUnlocked();
                 IsInitialized = true;
                 OnProgressionChanged?.Invoke(ProgressionData);
+            }
+        }
+
+        async void SaveImmediateAsync()
+        {
+            try
+            {
+                bool canSave = UnityServices.State == ServicesInitializationState.Initialized &&
+                               Unity.Services.Authentication.AuthenticationService.Instance != null &&
+                               Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn;
+
+                if (!canSave)
+                {
+                    CSDebug.LogWarning("[GameModeProgressionService] Cannot save immediately — not signed in. Queuing debounced save.");
+                    ScheduleDebouncedSave();
+                    return;
+                }
+
+                var data = new Dictionary<string, object> { { CLOUD_KEY, ProgressionData } };
+                await CloudSaveService.Instance.Data.Player.SaveAsync(data);
+                CSDebug.Log("[GameModeProgressionService] Saved progression data immediately.");
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[GameModeProgressionService] Immediate save failed: {e.Message}. Queuing debounced save.");
+                ScheduleDebouncedSave();
             }
         }
 

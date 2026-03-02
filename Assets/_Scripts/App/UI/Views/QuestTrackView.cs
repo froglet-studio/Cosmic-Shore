@@ -101,14 +101,10 @@ namespace CosmicShore.App.UI.Views
                 var go = Instantiate(questItemPrefab, questItemContainer);
                 if (!go.TryGetComponent<QuestItemCard>(out var card)) { Destroy(go); continue; }
 
-                var state = GetCardState(i);
                 card.Configure(questList.Quests[i]);
-                card.SetState(state);
-                if (state == QuestItemState.ReadyToClaim)
-                {
-                    var mode = questList.Quests[i].GameMode;
-                    card.BindClaimAction(() => GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(mode));
-                }
+                card.SetState(GetCardState(i));
+                var mode = questList.Quests[i].GameMode;
+                card.BindClaimAction(() => GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(mode));
                 _cards.Add(card);
             }
 
@@ -136,15 +132,7 @@ namespace CosmicShore.App.UI.Views
         void RefreshAllCards()
         {
             for (int i = 0; i < _cards.Count && i < questList.Quests.Count; i++)
-            {
-                var state = GetCardState(i);
-                _cards[i].SetState(state);
-                if (state == QuestItemState.ReadyToClaim)
-                {
-                    var mode = questList.Quests[i].GameMode;
-                    _cards[i].BindClaimAction(() => GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(mode));
-                }
-            }
+                _cards[i].SetState(GetCardState(i));
         }
 
         void SetProgressBarImmediate()

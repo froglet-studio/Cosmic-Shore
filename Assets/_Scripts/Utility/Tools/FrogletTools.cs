@@ -8,7 +8,7 @@ using UnityEngine;
 namespace CosmicShore.Utility.Tools
 {
     [InitializeOnLoad]
-    public class FrogletTools : Editor
+    public static class FrogletTools
     {
         const string MenuAll = "FrogletTools/Logging/All Logs";
         const string MenuWarningsErrors = "FrogletTools/Logging/Warnings & Errors Only";

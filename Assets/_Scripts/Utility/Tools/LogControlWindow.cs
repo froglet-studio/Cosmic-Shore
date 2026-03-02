@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 
+using CosmicShore.Game.Progression;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -135,6 +136,36 @@ namespace CosmicShore.Utility.Tools
                             $"Warnings: {OnOff(CSDebug.WarningsEnabled)}  |  " +
                             $"Errors: {OnOff(CSDebug.ErrorsEnabled)}";
             EditorGUILayout.HelpBox(status, MessageType.Info);
+
+            EditorGUILayout.Space(8);
+            DrawHorizontalLine();
+            EditorGUILayout.Space(4);
+
+            // ── Quest Debug ─────────────────────────────
+            EditorGUILayout.LabelField("Quest Debug (Play Mode)", EditorStyles.boldLabel);
+
+            GUI.enabled = Application.isPlaying && GameModeProgressionService.Instance != null;
+
+            if (GUILayout.Button("Complete Current Quest"))
+                GameModeProgressionService.Instance?.DebugCompleteCurrentQuest();
+
+            if (GUILayout.Button("Reset All Quests"))
+                GameModeProgressionService.Instance?.ResetAllProgress();
+
+            if (Application.isPlaying && GameModeProgressionService.Instance != null)
+            {
+                var svc = GameModeProgressionService.Instance;
+                string info = $"Unlocked: {svc.ProgressionData.UnlockedModes.Count}  |  " +
+                              $"Completed: {svc.ProgressionData.CompletedQuests.Count}  |  " +
+                              $"Claimed: {svc.GetClaimedQuestCount()}";
+                EditorGUILayout.HelpBox(info, MessageType.None);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("Enter Play Mode to use quest debug tools.", MessageType.Info);
+            }
+
+            GUI.enabled = true;
 
             EditorGUILayout.EndScrollView();
         }
