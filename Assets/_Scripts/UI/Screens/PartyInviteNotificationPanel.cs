@@ -29,7 +29,7 @@ namespace CosmicShore.UI
         [SerializeField] private Image inviterAvatarImage;
         [SerializeField] private Button acceptButton;
         [SerializeField] private Button declineButton;
-        [SerializeField] private GameObject panelRoot;
+        [SerializeField] private CanvasGroup canvasGroup;
 
         [Header("Data")]
         [SerializeField] private SO_ProfileIconList profileIcons;
@@ -48,6 +48,9 @@ namespace CosmicShore.UI
 
         void Awake()
         {
+            if (canvasGroup == null)
+                canvasGroup = GetComponent<CanvasGroup>();
+
             // Start visually hidden — the GO must stay active so OnEnable
             // can subscribe to the OnInviteReceived SOAP event.
             ShowPanel(false);
@@ -189,25 +192,13 @@ namespace CosmicShore.UI
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
 
-        private CanvasGroup _panelRootCG;
-
         private void ShowPanel(bool show)
         {
-            var target = panelRoot != null ? panelRoot : gameObject;
+            if (canvasGroup == null) return;
 
-            // Activate the GO once if it started disabled.
-            if (!target.activeSelf)
-                target.SetActive(true);
-
-            if (_panelRootCG == null)
-            {
-                if (!target.TryGetComponent(out _panelRootCG))
-                    _panelRootCG = target.AddComponent<CanvasGroup>();
-            }
-
-            _panelRootCG.alpha = show ? 1f : 0f;
-            _panelRootCG.blocksRaycasts = show;
-            _panelRootCG.interactable = show;
+            canvasGroup.alpha = show ? 1f : 0f;
+            canvasGroup.blocksRaycasts = show;
+            canvasGroup.interactable = show;
         }
 
         private void SetButtonsInteractable(bool interactable)
