@@ -59,7 +59,13 @@ namespace CosmicShore.Gameplay
         private bool _leaving;
         private PartyInviteData? _lastFiredInvite;
         private string _currentInviteTargetId;
-        private bool _refreshSuspended;
+        /// <summary>
+        /// Mutex flag preventing concurrent lobby operations.
+        /// RefreshAsync skips if busy; SendInviteAsync waits then claims.
+        /// Prevents the SDK's internal player index from going stale when
+        /// a refresh and a save race each other.
+        /// </summary>
+        private bool _lobbyBusy;
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY = "displayName";
@@ -124,7 +130,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_initialized || _presenceLobby == null || _refreshSuspended) return;
+            if (!_initialized || _presenceLobby == null || _lobbyBusy) return;
 
             _refreshTimer += Time.deltaTime;
             if (_refreshTimer >= refreshIntervalSeconds)
@@ -208,7 +214,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            _refreshSuspended = true;
+            // Wait for any in-flight RefreshAsync to finish so the SDK's
+            // internal player index is stable before we call SaveCurrentPlayerDataAsync.
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
             try
             {
                 SyncLocalIdentity();
@@ -263,7 +273,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _refreshSuspended = false;
+                _lobbyBusy = false;
             }
         }
 
@@ -534,8 +544,9 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid RefreshAsync()
         {
-            if (_presenceLobby == null) return;
+            if (_presenceLobby == null || _lobbyBusy) return;
 
+            _lobbyBusy = true;
             try
             {
                 await _presenceLobby.RefreshAsync();
@@ -595,6 +606,10 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
             }
         }
 
@@ -737,6 +752,9 @@ namespace CosmicShore.Gameplay
         {
             if (_presenceLobby == null) return;
 
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
             try
             {
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
@@ -749,6 +767,10 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning($"[HostConnectionService] ClearSentInvite error: {e.Message}");
             }
+            finally
+            {
+                _lobbyBusy = false;
+            }
         }
 
         /// <summary>
@@ -759,6 +781,9 @@ namespace CosmicShore.Gameplay
         {
             if (_presenceLobby == null) return;
 
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
             try
             {
                 // Any player can clear their own player properties.
@@ -773,6 +798,10 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] ClearInvite error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
             }
         }
 
