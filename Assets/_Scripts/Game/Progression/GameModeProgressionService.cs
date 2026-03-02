@@ -261,31 +261,36 @@ namespace CosmicShore.Game.Progression
         }
 
         /// <summary>
-        /// Unlocks all game modes and marks all quests as claimed.
-        /// Slider advances to max and every card shows Claimed/Completed.
+        /// Sets progression to a specific quest index (1-based).
+        /// Index 1 = only first mode unlocked (fresh state).
+        /// Index N = first N modes unlocked, everything after locked.
+        /// Clamped to [1, questCount].
         /// </summary>
-        public void DebugCompleteAllQuests()
+        public void DebugSetProgressToIndex(int targetIndex)
         {
-            if (questList == null) return;
+            if (questList == null || questList.Quests.Count == 0) return;
 
-            for (int i = 0; i < questList.Quests.Count; i++)
+            int questCount = questList.Quests.Count;
+            targetIndex = Mathf.Clamp(targetIndex, 1, questCount);
+
+            // Reset everything first
+            ProgressionData = new GameModeProgressionData();
+
+            // Unlock modes 0..targetIndex-1
+            for (int i = 0; i < targetIndex; i++)
             {
                 var quest = questList.Quests[i];
-                string modeName = quest.GameMode.ToString();
-
-                // Unlock every mode
-                ProgressionData.MarkUnlocked(modeName);
-
-                // Clear from CompletedQuests (they're fully claimed, not pending)
-                ProgressionData.CompletedQuests.Remove(modeName);
-
-                // Clear runtime SO flag
+                ProgressionData.MarkUnlocked(quest.GameMode.ToString());
                 quest.IsCompleted = false;
             }
 
+            // Make sure remaining quests have flags cleared
+            for (int i = targetIndex; i < questCount; i++)
+                questList.Quests[i].IsCompleted = false;
+
             OnProgressionChanged?.Invoke(ProgressionData);
             SaveImmediateAsync();
-            CSDebug.Log("[GameModeProgressionService] All quests completed and all modes unlocked.");
+            CSDebug.Log($"[GameModeProgressionService] Progress set to index {targetIndex}/{questCount}.");
         }
 
         // ── Internal ────────────────────────────────────────────────────────────

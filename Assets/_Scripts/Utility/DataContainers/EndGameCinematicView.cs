@@ -36,7 +36,9 @@ namespace CosmicShore.Game.Cinematics
         [SerializeField] CanvasGroup scoreRevealToastCanvasGroup;
 
         [Header("Quest Completion")]
-        [Tooltip("Text shown when a quest goal is achieved during this match")]
+        [Tooltip("Dialog object enabled when a quest goal is achieved during this match")]
+        [SerializeField] GameObject questTextDialogObject;
+        [Tooltip("Text inside the quest dialog to display the completion message")]
         [SerializeField] TMP_Text questCompletionText;
 
         [Header("Vessel Podium Display")]
@@ -116,15 +118,16 @@ namespace CosmicShore.Game.Cinematics
 
         public void ShowQuestCompletion(string message)
         {
-            if (!questCompletionText) return;
-            questCompletionText.gameObject.SetActive(true);
-            questCompletionText.text = message;
+            if (questTextDialogObject)
+                questTextDialogObject.SetActive(true);
+            if (questCompletionText)
+                questCompletionText.text = message;
         }
 
         public void HideQuestCompletion()
         {
-            if (questCompletionText)
-                questCompletionText.gameObject.SetActive(false);
+            if (questTextDialogObject)
+                questTextDialogObject.SetActive(false);
         }
         #endregion
 

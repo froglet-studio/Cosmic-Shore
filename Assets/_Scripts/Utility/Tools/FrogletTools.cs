@@ -82,7 +82,15 @@ namespace CosmicShore.Utility.Tools
 
         // ─── Quest Debug ────────────────────────────────
 
-        [MenuItem("FrogletTools/Quest Debug/Reset All Quests", false, 200)]
+        [MenuItem("FrogletTools/Quest Debug/Open Quest Debug Panel", false, 200)]
+        private static void OpenQuestDebugPanel()
+        {
+            // Opens the FrogletTools window which contains the quest debug UI with index input
+            var window = EditorWindow.GetWindow<LogControlWindow>("FrogletTools");
+            window.minSize = new Vector2(300, 380);
+        }
+
+        [MenuItem("FrogletTools/Quest Debug/Reset All Quests", false, 201)]
         private static void ResetAllQuests()
         {
             if (!Application.isPlaying)
@@ -100,26 +108,6 @@ namespace CosmicShore.Utility.Tools
 
             service.ResetAllProgress();
             Debug.Log("[FrogletTools] All quest progress has been reset.");
-        }
-
-        [MenuItem("FrogletTools/Quest Debug/Complete All Quests", false, 201)]
-        private static void CompleteAllQuests()
-        {
-            if (!Application.isPlaying)
-            {
-                Debug.LogWarning("[FrogletTools] Quest Debug only works in Play Mode.");
-                return;
-            }
-
-            var service = GameModeProgressionService.Instance;
-            if (service == null)
-            {
-                Debug.LogWarning("[FrogletTools] GameModeProgressionService not found.");
-                return;
-            }
-
-            service.DebugCompleteAllQuests();
-            Debug.Log("[FrogletTools] All quests completed.");
         }
     }
 }

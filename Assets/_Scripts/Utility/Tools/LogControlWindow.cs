@@ -15,6 +15,7 @@ namespace CosmicShore.Utility.Tools
         const string PrefUnityLoggerEnabled = "CSDebug_UnityLoggerEnabled";
 
         Vector2 scrollPos;
+        string questIndexInput = "1";
 
         [MenuItem("FrogletTools/Log Control", false, 50)]
         static void Open()
@@ -144,15 +145,31 @@ namespace CosmicShore.Utility.Tools
             // ── Quest Debug ─────────────────────────────
             EditorGUILayout.LabelField("Quest Debug (Play Mode)", EditorStyles.boldLabel);
 
-            GUI.enabled = Application.isPlaying && GameModeProgressionService.Instance != null;
+            bool questToolsAvailable = Application.isPlaying && GameModeProgressionService.Instance != null;
+            GUI.enabled = questToolsAvailable;
 
-            if (GUILayout.Button("Complete All Quests"))
-                GameModeProgressionService.Instance?.DebugCompleteAllQuests();
+            int maxQuests = questToolsAvailable
+                ? GameModeProgressionService.Instance.QuestList?.Quests.Count ?? 1
+                : 1;
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Unlock up to index", GUILayout.Width(120));
+            questIndexInput = EditorGUILayout.TextField(questIndexInput, GUILayout.Width(40));
+            EditorGUILayout.LabelField($"/ {maxQuests}", GUILayout.Width(30));
+
+            if (GUILayout.Button("Set Progress", GUILayout.Width(100)))
+            {
+                if (int.TryParse(questIndexInput, out int idx))
+                    GameModeProgressionService.Instance?.DebugSetProgressToIndex(idx);
+                else
+                    Debug.LogWarning("[FrogletTools] Invalid index — enter a number.");
+            }
+            EditorGUILayout.EndHorizontal();
 
             if (GUILayout.Button("Reset All Quests"))
                 GameModeProgressionService.Instance?.ResetAllProgress();
 
-            if (Application.isPlaying && GameModeProgressionService.Instance != null)
+            if (questToolsAvailable)
             {
                 var svc = GameModeProgressionService.Instance;
                 string info = $"Unlocked: {svc.ProgressionData.UnlockedModes.Count}  |  " +
