@@ -59,6 +59,7 @@ namespace CosmicShore.Gameplay
         private bool _leaving;
         private PartyInviteData? _lastFiredInvite;
         private string _currentInviteTargetId;
+        private ILogHandler _originalLogHandler;
         /// <summary>
         /// Mutex flag preventing concurrent lobby operations.
         /// RefreshAsync skips if busy; SendInviteAsync waits then claims.
@@ -96,6 +97,7 @@ namespace CosmicShore.Gameplay
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            InstallLobbyLogFilter();
         }
 
         async void Start()
@@ -149,6 +151,7 @@ namespace CosmicShore.Gameplay
 
         async void OnDestroy()
         {
+            UninstallLobbyLogFilter();
             await LeavePresenceLobbyAsync();
 
             if (Instance == this)
@@ -812,6 +815,15 @@ namespace CosmicShore.Gameplay
                 try
                 {
                     await _presenceLobby.SaveCurrentPlayerDataAsync();
+
+                    // Post-save refresh: sync the SDK's cached lobby state with the
+                    // server immediately after the save. This reduces the window where
+                    // incoming WebSocket lobby-change deltas reference stale player
+                    // indices, which triggers ArgumentOutOfRangeException in the SDK's
+                    // internal LobbyPatcher.
+                    try { await _presenceLobby.RefreshAsync(); }
+                    catch { /* best-effort — polling corrects state on next cycle */ }
+
                     return;
                 }
                 catch (Exception e) when (attempt < maxRetries &&
@@ -905,6 +917,65 @@ namespace CosmicShore.Gameplay
                 AuthData.State == AuthenticationData.AuthState.SignedIn;
 
             return signedIn && !string.IsNullOrEmpty(AuthData.PlayerId);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Lobby SDK Log Filter
+        // ─────────────────────────────────────────────────────────────────────
+
+        private void InstallLobbyLogFilter()
+        {
+            _originalLogHandler = Debug.unityLogger.logHandler;
+            Debug.unityLogger.logHandler = new LobbyPatcherLogFilter(_originalLogHandler);
+        }
+
+        private void UninstallLobbyLogFilter()
+        {
+            if (_originalLogHandler != null && Debug.unityLogger.logHandler is LobbyPatcherLogFilter)
+                Debug.unityLogger.logHandler = _originalLogHandler;
+            _originalLogHandler = null;
+        }
+
+        /// <summary>
+        /// Suppresses the known UGS SDK <see cref="ArgumentOutOfRangeException"/> thrown
+        /// by <c>LobbyPatcher.ApplyPatchesToLobby</c> when a WebSocket lobby-change delta
+        /// references a player index that is stale in the local cache.
+        ///
+        /// This is a race condition in the SDK (com.unity.services.multiplayer): the server
+        /// computes a change delta against the current lobby state, but by the time the
+        /// client receives it, a player may have joined or left, shifting indices. The SDK
+        /// catches this internally at <c>LobbyChannel.HandleLobbyChanges</c> and logs it,
+        /// but the lobby self-corrects on the next <see cref="ISession.RefreshAsync"/> poll.
+        ///
+        /// This filter only suppresses that specific harmless error — all other log messages
+        /// pass through unmodified.
+        /// </summary>
+        private class LobbyPatcherLogFilter : ILogHandler
+        {
+            private readonly ILogHandler _inner;
+
+            public LobbyPatcherLogFilter(ILogHandler inner) => _inner = inner;
+
+            public void LogException(Exception exception, UnityEngine.Object context)
+            {
+                if (exception is ArgumentOutOfRangeException &&
+                    exception.StackTrace?.Contains("LobbyPatcher") == true)
+                    return;
+
+                _inner.LogException(exception, context);
+            }
+
+            public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
+            {
+                if (logType == LogType.Error && args is { Length: > 0 })
+                {
+                    string msg = args[0]?.ToString() ?? string.Empty;
+                    if (msg.Contains("LobbyPatcher") && msg.Contains("Index was out of range"))
+                        return;
+                }
+
+                _inner.LogFormat(logType, context, format, args);
+            }
         }
     }
 }
