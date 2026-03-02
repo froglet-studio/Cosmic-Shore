@@ -146,6 +146,102 @@ All first-party gameplay code compiles in Unity's default assembly (no runtime `
 
 Third-party assemblies: `Obvious.Soap`, `PlayFab`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
 
+### Scene Inventory
+
+See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
+
+#### Core Application Scenes
+
+| Scene | Build Order | Purpose |
+|---|---|---|
+| **Bootstrap** | 0 (must be first) | App entry: DI registration, platform config, auth start, splash |
+| **Authentication** | 1 | Auth UI, cached session check, NetworkManager host start |
+| **Menu_Main** | 2 | Main menu with networked autopilot vessel, screen navigation |
+
+#### Single-Player Game Scenes
+
+| Scene | Game Mode | Controller |
+|---|---|---|
+| `MinigameFreestyle` | `Freestyle (7)` | `SinglePlayerFreestyleController` |
+| `MinigameCellularDuel` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
+| `MinigameWildlifeBlitz` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
+
+All in `Assets/_Scenes/Singleplayer Scenes/`.
+
+#### Multiplayer Game Scenes
+
+| Scene | Game Mode | Controller |
+|---|---|---|
+| `MinigameHexRace` | `HexRace (33)` | `HexRaceController` |
+| `MinigameFreestyleMultiplayer_Gameplay` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
+| `MinigameCrystalCaptureMultiplayer_Gameplay` | `MultiplayerCrystalCapture (35)` | `MultiplayerCrystalCaptureController` |
+| `MinigameDuelForCellMultiplayer_Gameplay` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
+| `MinigameJoust_Gameplay` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
+| `MinigameWildlifeBlitzMultuplayerCoOp` | `MultiplayerWildlifeBlitzGame (32)` | `MultiplayerWildlifeBlitzMiniGame` |
+| `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
+
+All in `Assets/_Scenes/Multiplayer Scenes/`.
+
+#### Tool & Test Scenes
+
+`Recording Studio`, `MattsRecording Studio`, `PhotoBooth` (in `_Scenes/Tools/`), `AudioTestSandbox` (in `_Scenes/Game_TestDesign/`).
+
+### Game Modes & Controllers
+
+#### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
+
+36 game modes with explicit numeric IDs. Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`. Meta: `Random(0)`. Note: ID 31 is skipped.
+
+Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail.
+
+#### Controller Hierarchy
+
+```
+MiniGameControllerBase (abstract, NetworkBehaviour)
+│   Template Method: rounds → turns → countdown → gameplay → end
+│
+├── SinglePlayerMiniGameControllerBase (abstract)
+│   ├── SinglePlayerFreestyleController    — shape drawing + open-ended freestyle
+│   ├── SinglePlayerCellularDuelController — vessel swap on turn end
+│   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
+│   ├── SinglePlayerWildlifeBlitzController — blitz scoring
+│   └── WildlifeBlitzMiniGame             — minimal variant
+│
+└── MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
+    │   Server-authoritative turn/round/game flow via ClientRpc
+    │
+    ├── MultiplayerFreestyleController     — sandbox, per-player activation
+    ├── MultiplayerWildlifeBlitzMiniGame    — co-op, own ready-sync
+    │
+    └── MultiplayerDomainGamesController
+        ├── HexRaceController              — crystal race, deterministic track, golf scoring
+        ├── MultiplayerJoustController      — collision tracking, golf scoring
+        ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
+        └── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
+```
+
+#### Game Launch Pipeline
+
+1. **`SO_ArcadeGame` asset** — static config (mode, scene, captains, player/intensity ranges, scoring)
+2. **`ArcadeGameConfigSO`** — ephemeral UI state (selected game + intensity + players + vessel)
+3. **`GameDataSO`** — shared SOAP runtime state (all game params + SOAP events)
+4. **`SceneLoader.LaunchGame()`** — subscribes to `OnLaunchGame`, syncs config via ClientRpc, loads scene
+5. **Game controller** — scene-placed `MiniGameControllerBase` subclass drives turn/round/game lifecycle
+
+### Documentation Index
+
+| Document | Location | Content |
+|---|---|---|
+| `CLAUDE.md` | Project root | Architecture, patterns, systems reference |
+| `SCENES.md` | `Docs/` | Complete scene inventory, game modes, launch pipeline |
+| `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
+| `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
+| `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
+| `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
+| `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
+| `BENCHMARK_TEST_PROCEDURE.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance benchmarking procedures |
+| `GIT_RULES.md` | Project root | Git commit conventions |
+
 ## Architecture Patterns
 
 Follow these established patterns. Do not introduce alternative architectures without discussion.
@@ -223,7 +319,7 @@ Key classes:
 - `BootstrapConfigSO` — configures: service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
 - `FriendsServiceFacade` (`_Scripts/System/FriendsServiceFacade.cs`) — pure C# class (DI lazy singleton). Single-writer facade for UGS Friends service. Syncs relationship data into `FriendsDataSO`. Supports friend requests, management, presence, and refresh.
 
-See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scene audit: root GameObjects, execution order map, applied fixes, and deferred issues.
+See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scene audit: root GameObjects, execution order map, applied fixes, and deferred issues. See `Docs/SCENES.md` for the complete scene inventory, game mode reference, and game launch pipeline documentation.
 
 ### Authentication & Session Flow
 
