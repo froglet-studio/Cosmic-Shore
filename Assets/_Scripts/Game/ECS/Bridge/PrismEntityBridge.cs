@@ -1,7 +1,9 @@
-using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using CosmicShore.Game;
+
+// Alias to avoid clash with global Entity struct in BoidSimulationController.cs
+using EcsEntity = Unity.Entities.Entity;
 
 namespace CosmicShore.ECS
 {
@@ -28,14 +30,14 @@ namespace CosmicShore.ECS
         /// </summary>
         public static bool UseECS { get; set; }
 
-        public Entity CompanionEntity { get; private set; }
+        public EcsEntity CompanionEntity { get; private set; }
         public bool HasEntity { get; private set; }
 
-        private EntityManager _entityManager;
-        private static EntityArchetype _prismArchetype;
+        private Unity.Entities.EntityManager _entityManager;
+        private static Unity.Entities.EntityArchetype _prismArchetype;
         private static bool _archetypeInitialized;
 
-        private static EntityArchetype GetOrCreateArchetype(EntityManager em)
+        private static Unity.Entities.EntityArchetype GetOrCreateArchetype(Unity.Entities.EntityManager em)
         {
             if (!_archetypeInitialized)
             {
@@ -63,7 +65,7 @@ namespace CosmicShore.ECS
             if (!UseECS) return;
             if (HasEntity) return;
 
-            var world = World.DefaultGameObjectInjectionWorld;
+            var world = Unity.Entities.World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated) return;
 
             _entityManager = world.EntityManager;
@@ -104,7 +106,7 @@ namespace CosmicShore.ECS
                 _entityManager.DestroyEntity(CompanionEntity);
             }
 
-            CompanionEntity = Entity.Null;
+            CompanionEntity = EcsEntity.Null;
             HasEntity = false;
         }
 
