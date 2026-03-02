@@ -122,7 +122,8 @@ public class CameraManager : Singleton<CameraManager>
 
         var shipGO = _playerFollowTarget.gameObject;
         var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
-        shipCustomizer.Configure(_playerCamera);
+        if (shipCustomizer != null)
+            shipCustomizer.Configure(_playerCamera);
 
         // Snap camera to correct initial position to prevent retaining
         // stale end-game or transition state from the previous session.
@@ -175,7 +176,8 @@ public class CameraManager : Singleton<CameraManager>
 
         controller?.Activate();
         _activeController = controller;
-        mainMenuCamera.gameObject.SetActive(false);
+        if (mainMenuCamera != null)
+            mainMenuCamera.gameObject.SetActive(false);
     }
 
     public ICameraController GetActiveController() => _activeController;

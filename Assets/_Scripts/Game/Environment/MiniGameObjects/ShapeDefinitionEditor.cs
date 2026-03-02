@@ -29,6 +29,17 @@ public class ShapeDefinitionEditor : Editor
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Heart")) GeneratePreset(def, ShapePreset.Heart);
         if (GUILayout.Button("Lightning")) GeneratePreset(def, ShapePreset.Lightning);
+        if (GUILayout.Button("Diamond")) GeneratePreset(def, ShapePreset.Diamond);
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Spiral")) GeneratePreset(def, ShapePreset.Spiral);
+        if (GUILayout.Button("Infinity")) GeneratePreset(def, ShapePreset.Infinity);
+        if (GUILayout.Button("Arrow")) GeneratePreset(def, ShapePreset.Arrow);
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Wave")) GeneratePreset(def, ShapePreset.Wave);
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space(4);
