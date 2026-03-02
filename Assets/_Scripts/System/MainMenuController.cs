@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -124,6 +126,9 @@ namespace CosmicShore.Core
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised += HandleLaunchGame;
 
+            if (_gameData?.OnPlayerPairInitialized != null)
+                _gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
+
             _freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
             _freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
         }
@@ -135,6 +140,9 @@ namespace CosmicShore.Core
 
             if (_gameData?.OnLaunchGame != null)
                 _gameData.OnLaunchGame.OnRaised -= HandleLaunchGame;
+
+            if (_gameData?.OnPlayerPairInitialized != null)
+                _gameData.OnPlayerPairInitialized.OnRaised -= HandlePlayerPairInitialized;
 
             _freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
             _freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
@@ -156,13 +164,29 @@ namespace CosmicShore.Core
         {
             TransitionTo(MainMenuState.Ready);
             ActivateLocalPlayerAutopilot();
-
-            // Activate non-owner players so their vessels render on this client.
-            // Ported from MultiplayerFreestyleController.OnClientReady — ensures
-            // joining clients see existing players' vessels as active.
-            _gameData.SetNonOwnerPlayersActiveInNewClient();
-
             _gameData.InitializeGame();
+        }
+
+        /// <summary>
+        /// Activates a non-local player's vessel with autopilot when their
+        /// player-vessel pair finishes initialization on this client.
+        /// Replaces the old batch activation in HandleMenuReady which raced
+        /// against pairs that hadn't resolved yet.
+        /// Host skips this — <see cref="MenuServerPlayerVesselInitializer"/>
+        /// already activates every player via ActivateAutopilot().
+        /// </summary>
+        void HandlePlayerPairInitialized(ulong playerNetObjId)
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                return;
+
+            var player = _gameData.Players.FirstOrDefault(p => p.PlayerNetId == playerNetObjId);
+            if (player == null || player.IsLocalUser || player.Vessel == null)
+                return;
+
+            player.StartPlayer();
+            player.Vessel.ToggleAIPilot(true);
+            player.InputController?.SetPause(true);
         }
 
         void HandleLaunchGame()
