@@ -15,17 +15,25 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private SO_GameModeQuestList questList;
         [SerializeField] private GameObject questItemPrefab;
         [SerializeField] private Transform questItemContainer;
-        [SerializeField] private Image progressBarFill;
+
+        [Header("Slider")]
+        [Tooltip("Unity Slider whose maxValue = quest count. Each claimed quest = 1 whole unit.")]
+        [SerializeField] private Slider progressBarSlider;
         [SerializeField] private float sliderAnimDuration = 1f;
         [SerializeField] private Ease sliderEase = Ease.OutCubic;
 
         private readonly List<QuestItemCard> _cards = new();
-        private Tween _fillTween;
+        private Tween _sliderTween;
 
         void OnEnable()
         {
-            EnsureProgressBarSetup();
-            LoadTrack();
+            EnsureSliderIgnoresLayout();
+            SpawnCards();
+            ConfigureSlider();
+            RefreshAllCards();
+            SetSliderImmediate();
+            StartCoroutine(RebuildLayoutNextFrame());
+
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
         }
@@ -40,55 +48,19 @@ namespace CosmicShore.App.UI.Views
         void OnProgressionChanged(GameModeProgressionData data)
         {
             RefreshAllCards();
-            AnimateProgressBar();
+            AnimateSlider();
         }
 
-        void EnsureProgressBarSetup()
+        /// <summary>
+        /// Ensures the slider is excluded from the HorizontalLayoutGroup.
+        /// Does NOT touch position, anchors, or sibling order — those stay as set in the inspector.
+        /// </summary>
+        void EnsureSliderIgnoresLayout()
         {
-            if (progressBarFill == null || questItemContainer == null) return;
-
-            var barRoot = FindDirectChild(progressBarFill.transform, questItemContainer);
-            if (barRoot == null) return;
-
-            // Keep the progress bar out of the HorizontalLayoutGroup
-            if (!barRoot.TryGetComponent<LayoutElement>(out var le))
-                le = barRoot.gameObject.AddComponent<LayoutElement>();
+            if (progressBarSlider == null) return;
+            if (!progressBarSlider.TryGetComponent<LayoutElement>(out var le))
+                le = progressBarSlider.gameObject.AddComponent<LayoutElement>();
             le.ignoreLayout = true;
-
-            // Render behind all cards
-            barRoot.SetAsFirstSibling();
-
-            // Stretch full width, pin to bottom
-            if (barRoot is RectTransform barRect)
-            {
-                barRect.anchorMin = new Vector2(0f, 0f);
-                barRect.anchorMax = new Vector2(1f, 0f);
-                barRect.offsetMin = new Vector2(0f, 0f);
-                barRect.offsetMax = new Vector2(0f, 20f);
-            }
-        }
-
-        static Transform FindDirectChild(Transform descendant, Transform parent)
-        {
-            var current = descendant;
-            while (current != null && current != parent)
-            {
-                if (current.parent == parent) return current;
-                current = current.parent;
-            }
-            return null;
-        }
-
-        public void LoadTrack()
-        {
-            SpawnCards();
-            StartCoroutine(PostLayoutSetup());
-        }
-
-        IEnumerator PostLayoutSetup()
-        {
-            yield return null;
-            SetProgressBarImmediate();
         }
 
         void SpawnCards()
@@ -107,9 +79,20 @@ namespace CosmicShore.App.UI.Views
                 card.BindClaimAction(() => GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(mode));
                 _cards.Add(card);
             }
+        }
 
-            if (questItemContainer is RectTransform rect)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+        /// <summary>
+        /// Sets slider range: min=0, max=quest count. Each quest = 1 whole unit.
+        /// Padding of XPItemPanels is set manually in the inspector so cards
+        /// line up with the integer tick marks on the slider.
+        /// </summary>
+        void ConfigureSlider()
+        {
+            if (progressBarSlider == null || questList == null) return;
+            progressBarSlider.interactable = false;
+            progressBarSlider.wholeNumbers = true;
+            progressBarSlider.minValue = 0;
+            progressBarSlider.maxValue = questList.Quests.Count;
         }
 
         QuestItemState GetCardState(int questIndex)
@@ -135,30 +118,39 @@ namespace CosmicShore.App.UI.Views
                 _cards[i].SetState(GetCardState(i));
         }
 
-        void SetProgressBarImmediate()
+        void SetSliderImmediate()
         {
-            if (progressBarFill != null)
-                progressBarFill.fillAmount = GetNormalizedProgress();
+            if (progressBarSlider != null)
+                progressBarSlider.value = GetClaimedCount();
         }
 
-        void AnimateProgressBar()
+        void AnimateSlider()
         {
-            if (progressBarFill == null) return;
+            if (progressBarSlider == null) return;
             KillTween();
-            float target = GetNormalizedProgress();
-            _fillTween = DOTween.To(
-                    () => progressBarFill.fillAmount,
-                    x => progressBarFill.fillAmount = x,
+            float target = GetClaimedCount();
+            _sliderTween = DOTween.To(
+                    () => progressBarSlider.value,
+                    x => progressBarSlider.value = x,
                     target, sliderAnimDuration)
                 .SetEase(sliderEase).SetUpdate(true);
         }
 
-        float GetNormalizedProgress()
+        int GetClaimedCount()
         {
-            if (_cards.Count <= 1) return 0f;
-            int claimed = GameModeProgressionService.Instance?.GetClaimedQuestCount() ?? 0;
-            if (claimed <= 0) return 0f;
-            return Mathf.Clamp01((float)claimed / (_cards.Count - 1));
+            return GameModeProgressionService.Instance?.GetClaimedQuestCount() ?? 0;
+        }
+
+        /// <summary>
+        /// Wait one frame so the spawned card prefabs have initialized their
+        /// preferred sizes, then rebuild the layout so ContentSizeFitter on
+        /// XPItemPanels calculates the correct content width for scrolling.
+        /// </summary>
+        IEnumerator RebuildLayoutNextFrame()
+        {
+            yield return null;
+            if (questItemContainer is RectTransform rect)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
         void ClearSpawned()
@@ -170,8 +162,8 @@ namespace CosmicShore.App.UI.Views
 
         void KillTween()
         {
-            if (_fillTween != null && _fillTween.IsActive()) _fillTween.Kill();
-            _fillTween = null;
+            if (_sliderTween != null && _sliderTween.IsActive()) _sliderTween.Kill();
+            _sliderTween = null;
         }
     }
 }
