@@ -16,9 +16,9 @@ namespace CosmicShore.UI
     /// Reads all state from <see cref="HostConnectionDataSO"/> via SOAP events.
     /// Can be placed on any menu screen (Home, Arcade, etc.).
     ///
-    /// When the "+" button is pressed on an empty slot and a
-    /// <see cref="PartyInviteController"/> exists, the host-side Relay transition
-    /// is triggered before opening the invite panel (so clients can actually connect).
+    /// When the "+" button is pressed on an empty slot, the
+    /// <see cref="OnlinePlayersPanel"/> is opened for player selection.
+    /// The Relay transition happens later when an actual invite is sent.
     /// </summary>
     public class PartyAreaPanel : MonoBehaviour
     {
@@ -152,20 +152,12 @@ namespace CosmicShore.UI
         // Slot Actions
         // ─────────────────────────────────────────────────────────────────────
 
-        private async void OnAddSlotPressed()
+        private void OnAddSlotPressed()
         {
             if (!connectionData.HasOpenSlots)
             {
                 Debug.Log("[PartyAreaPanel] No open party slots.");
                 return;
-            }
-
-            // If PartyInviteController is available, ensure we're on a Relay host
-            // so invited clients can actually connect.
-            var controller = PartyInviteController.Instance;
-            if (controller != null && connectionData.IsHost)
-            {
-                await controller.TransitionToPartyHostAsync();
             }
 
             onlinePlayersPanel?.Show();
