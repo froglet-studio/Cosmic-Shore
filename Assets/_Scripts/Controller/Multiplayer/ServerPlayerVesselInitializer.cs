@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
         [Header("Lifecycle")]
         [Tooltip("When true, NetworkManager.Shutdown() is called on despawn (game scenes). " +
                  "Set to false for Menu_Main so the host persists across scene transitions.")]
-        [SerializeField] bool shutdownNetworkOnDespawn = true;
+        [SerializeField] protected bool shutdownNetworkOnDespawn = true;
 
         [Header("Timing")]
         [Tooltip("Delay in ms after OnPlayerNetworkSpawned before reading NetworkVariables.")]
