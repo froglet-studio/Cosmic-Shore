@@ -54,6 +54,7 @@ namespace CosmicShore.Core
             SceneManager.sceneLoaded -= OnSceneLoaded;
             if (!gameData) return;
             gameData.OnLaunchGame.OnRaised -= LaunchGame;
+            gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
         }
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -76,8 +77,9 @@ namespace CosmicShore.Core
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
 
             // Show splash overlay during scene transition.
-            // MiniGameHUD will fade it out once the game is ready.
+            // One-shot listener fades it out once the game scene signals ready.
             _sceneTransitionManager?.SetFadeImmediate(1f);
+            gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
 
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
@@ -98,6 +100,12 @@ namespace CosmicShore.Core
             }
 
             LoadSceneAsync(gameData.SceneName, useNetworkSceneLoading).Forget();
+        }
+
+        void FadeFromSplashOnReady()
+        {
+            gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+            _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 
         /// <summary>

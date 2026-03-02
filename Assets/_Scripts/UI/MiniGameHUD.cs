@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
-using CosmicShore.Core;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
@@ -22,7 +21,6 @@ namespace CosmicShore.UI
     {
         [Header("Data")]
         [Inject] protected GameDataSO gameData;
-        [Inject] private SceneTransitionManager _sceneTransitionManager;
 
         [Header("View")]
         [SerializeField] protected MiniGameHUDView view;
@@ -196,10 +194,6 @@ namespace CosmicShore.UI
                 UpdateLifeformCounterDisplay("0");
                 view.UpdateScoreUI("0");
                 ToggleReadyButton(false);
-
-                // Fade from black (SceneTransitionManager overlay set by SceneLoader)
-                if (_sceneTransitionManager != null)
-                    await _sceneTransitionManager.FadeFromBlack();
 
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)
