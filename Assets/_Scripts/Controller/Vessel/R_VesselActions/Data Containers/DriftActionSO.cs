@@ -9,7 +9,6 @@ namespace CosmicShore.Gameplay
     public class DriftActionSO : ShipActionSO
     {
         [SerializeField] float Mult = 1.5f;
-        Vector3 savedRotations = Vector3.zero;
         [SerializeField] float driftDamping = 0f;
         [SerializeField] bool isSharpDrifting;
 
@@ -21,31 +20,21 @@ namespace CosmicShore.Gameplay
         {
             execs.AudioSystem.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
             var t = vesselStatus.VesselTransformer;
-            savedRotations = new Vector3(t.PitchScaler, t.YawScaler, t.RollScaler);
-            t.PitchScaler *= Mult;
-            t.YawScaler   *= Mult;
-            t.RollScaler  *= Mult;
-            t.DriftDamping = driftDamping;
+            t.BeginDrift(Mult, driftDamping, isSharpDrifting);
             vesselStatus.IsDrifting = true;
 
             if (isSharpDrifting)
-            {
                 OnDoubleDriftingStarted.Raise();
-            }
             else
-            {
                 OnDriftingStarted.Raise();
-            }
         }
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
             execs.AudioSystem.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
             var t = vesselStatus.VesselTransformer;
-            t.PitchScaler = savedRotations.x;
-            t.YawScaler = savedRotations.y;
-            t.RollScaler = savedRotations.z;
-            vesselStatus.IsDrifting = false;
+            t.EndDrift(isSharpDrifting);
+            vesselStatus.IsDrifting = t.IsDriftActive;
             OnDriftEnded.Raise();
         }
     }

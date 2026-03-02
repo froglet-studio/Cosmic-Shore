@@ -22,9 +22,11 @@ namespace CosmicShore.Gameplay
 
         //–––––––––––––––––––––––––––––––––––––––––
         // Local fallbacks
-        float   _xSumLocal,   _ySumLocal,   _xDiffLocal,   _yDiffLocal,   _throttleLocal;
+        float   _xSumLocal,   _ySumLocal,   _xDiffLocal,   _yDiffLocal,   _throttleLocal,
+                _leftTrigAnalogLocal, _rightTrigAnalogLocal;
         bool    _idleLocal,   _pausedLocal, _gyroLocal,    _invertYLocal, _invertThrotLocal,
                 _oneTouchLocal, _cmdStickLocal;
+        InputDeviceType _activeInputDeviceLocal;
         Vector2 _rHomeLocal,  _lHomeLocal,  _rClampLocal,  _lClampLocal,
                 _rStartLocal, _lStartLocal, _rNormLocal,   _lNormLocal,
                 _rEasedLocal, _lEasedLocal, _singleTouchLocal;
@@ -37,6 +39,8 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<float>   n_xDiff  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<float>   n_yDiff  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<float>   n_throt  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        readonly NetworkVariable<float>   n_lTrig  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        readonly NetworkVariable<float>   n_rTrig  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         readonly NetworkVariable<bool>    n_idle   = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<bool>    n_paused = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
@@ -91,6 +95,18 @@ namespace CosmicShore.Gameplay
             set { if (IsSpawned && IsOwner) n_throt.Value= value; else _throttleLocal = value; }
         }
 
+        public float LeftTriggerAnalog
+        {
+            get => IsSpawned ? n_lTrig.Value  : _leftTrigAnalogLocal;
+            set { if (IsSpawned && IsOwner) n_lTrig.Value = value; else _leftTrigAnalogLocal = value; }
+        }
+
+        public float RightTriggerAnalog
+        {
+            get => IsSpawned ? n_rTrig.Value  : _rightTrigAnalogLocal;
+            set { if (IsSpawned && IsOwner) n_rTrig.Value = value; else _rightTrigAnalogLocal = value; }
+        }
+
         public bool Idle
         {
             get => IsSpawned ? n_idle.Value   : _idleLocal;
@@ -140,6 +156,12 @@ namespace CosmicShore.Gameplay
         {
             get => IsSpawned ? n_cmd.Value    : _cmdStickLocal;
             set { if (IsSpawned && IsOwner) n_cmd.Value    = value; else _cmdStickLocal = value; }
+        }
+
+        public InputDeviceType ActiveInputDevice
+        {
+            get => _activeInputDeviceLocal;
+            set => _activeInputDeviceLocal = value;
         }
 
         public Vector2 RightJoystickHome
@@ -238,6 +260,8 @@ namespace CosmicShore.Gameplay
             XDiff = 0f;
             YDiff = 0f;
             Throttle = 0f;
+            LeftTriggerAnalog = 0f;
+            RightTriggerAnalog = 0f;
 
             // Reset booleans
             Idle = true;

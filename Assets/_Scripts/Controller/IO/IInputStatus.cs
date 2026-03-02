@@ -22,6 +22,8 @@ namespace CosmicShore.Gameplay
         float XDiff { get; set; }
         float YDiff { get; set; }
         float Throttle { get; set; }
+        float LeftTriggerAnalog { get; set; }
+        float RightTriggerAnalog { get; set; }
 
         // Booleans
         bool Idle { get; set; }
@@ -31,6 +33,7 @@ namespace CosmicShore.Gameplay
         bool InvertThrottleEnabled { get; set; }
         bool OneTouchLeft { get; set; }
         bool CommandStickControls { get; set; }
+        InputDeviceType ActiveInputDevice { get; set; }
 
         // Vectors
         Vector2 RightJoystickHome { get; set; }

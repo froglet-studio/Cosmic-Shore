@@ -122,6 +122,20 @@ namespace CosmicShore.Gameplay
             float dt = Time.deltaTime;
             if (activeExplosions.Count > 0) ProcessExplosions(dt);
             if (activeImplosions.Count > 0) ProcessImplosions(dt);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // Safety audit: detect explosions with enabled renderers that aren't actively managed.
+            // This catches "zombie" objects that escaped the pool lifecycle.
+            if (Time.frameCount % 60 == 0) // Check once per ~second at 60fps
+            {
+                var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
+                foreach (var exp in allExplosions)
+                {
+                    if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
+                        exp.Renderer.enabled = false;
+                }
+            }
+#endif
         }
 
         #region Explosion Processing
@@ -182,6 +196,11 @@ namespace CosmicShore.Gameplay
                     sharedMPB.SetFloat(ExplosionAmountID, data.explosionAmount);
                     sharedMPB.SetFloat(OpacityID, data.opacity);
                     renderer.SetPropertyBlock(sharedMPB);
+
+                    // Enable renderer on first animated frame — TriggerExplosion disables it
+                    // to prevent a one-frame flash of the unanimated mesh.
+                    if (!renderer.enabled)
+                        renderer.enabled = true;
                 }
 
                 if (data.elapsed >= data.maxDuration)
