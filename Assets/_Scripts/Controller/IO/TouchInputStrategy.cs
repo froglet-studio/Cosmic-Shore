@@ -19,6 +19,12 @@ namespace CosmicShore.Gameplay
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
+        // Drift state: tracks finger-lift transitions for OnlyLeft/OnlyRight events
+        private int prevTouchCount;
+        private bool onlyLeftActive;
+        private bool onlyRightActive;
+        private bool isDrifting;
+
         public override void Initialize(IInputStatus inputStatus)
         {
             base.Initialize(inputStatus);
@@ -28,9 +34,34 @@ namespace CosmicShore.Gameplay
             EnhancedTouchSupport.Enable();
         }
 
+        public override void OnStrategyActivated()
+        {
+            base.OnStrategyActivated();
+            inputStatus.ActiveInputDevice = InputDeviceType.Touch;
+        }
+
+        /// <summary>
+        /// Touch-tuned easing: mostly linear with a subtle cubic dead zone.
+        /// The gamepad cosine curve crushes mid-range to ~15% output — that
+        /// compensates for stick resistance but feels sluggish on glass where
+        /// there is no friction. This blend keeps a gentle noise filter near
+        /// center while staying responsive through mid-range.
+        ///
+        /// Input [-2, 2] → Output [-1, 1] (same domain/range as gamepad Ease).
+        /// </summary>
+        protected override float Ease(float input)
+        {
+            float t = Mathf.Clamp(input * 0.5f, -1f, 1f);
+            float cubic = t * t * t;
+            return cubic * 0.25f + t * 0.75f;
+        }
+
         public override void ProcessInput()
         {
             var touchCount = Touch.activeTouches.Count;
+
+            // Detect transitions that start or stop drift
+            HandleDriftTransitions(touchCount);
 
             if (touchCount >= 3)
             {
@@ -51,21 +82,84 @@ namespace CosmicShore.Gameplay
                 {
                     inputStatus.Idle = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);
-                    // vessel.PerformShipControllerActions(InputEvents.IdleAction);
                 }
             }
 
             if (touchCount > 0)
             {
                 Reparameterize();
+
+                // Maintain full throttle while drifting with one thumb
+                if (isDrifting)
+                    inputStatus.XDiff = 1.0f;
+
                 PerformSpeedAndDirectionalEffects();
                 if (inputStatus.Idle)
                 {
                     inputStatus.Idle = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);
-                    // vessel.StopShipControllerActions(InputEvents.IdleAction);
                 }
             }
+
+            prevTouchCount = touchCount;
+        }
+
+        /// <summary>
+        /// Detects touch-count transitions that map to drift actions.
+        /// 2+ → 1: a finger was lifted → start drift (single or double based on which thumb lifted)
+        /// 1 → 2+ or 1 → 0: drift ends
+        /// </summary>
+        private void HandleDriftTransitions(int touchCount)
+        {
+            // 2+ → 1: finger lifted, start drifting
+            if (prevTouchCount >= 2 && touchCount == 1)
+            {
+                var remainingPosition = Touch.activeTouches[0].screenPosition;
+                bool remainingIsLeft = remainingPosition.x < Screen.width * 0.5f;
+
+                if (remainingIsLeft)
+                {
+                    // Right thumb was lifted, only left remains → OnlyLeftStickAction
+                    onlyLeftActive = true;
+                    isDrifting = true;
+                    inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
+                }
+                else
+                {
+                    // Left thumb was lifted, only right remains → OnlyRightStickAction
+                    onlyRightActive = true;
+                    isDrifting = true;
+                    inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
+                }
+            }
+
+            // Drift ends: 1 → 2+ (finger put back down) or 1 → 0 (remaining finger lifted)
+            if ((prevTouchCount == 1 && touchCount >= 2) ||
+                (prevTouchCount == 1 && touchCount == 0))
+            {
+                StopDrift();
+            }
+
+            // Edge case: 2+ → 0 (both lifted same frame) — no drift, just idle
+            if (prevTouchCount >= 2 && touchCount == 0)
+            {
+                StopDrift();
+            }
+        }
+
+        private void StopDrift()
+        {
+            if (onlyLeftActive)
+            {
+                onlyLeftActive = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
+            }
+            if (onlyRightActive)
+            {
+                onlyRightActive = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
+            }
+            isDrifting = false;
         }
 
         private void ProcessMultiTouch(bool threeFingerFumble)
@@ -102,7 +196,6 @@ namespace CosmicShore.Gameplay
         {
             var position = Touch.activeTouches[0].screenPosition;
 
-            // TODO - CommandStickControls is not needed to be inside VesselStatus
             if (inputStatus.CommandStickControls)
             {
                 ProcessCommandStickControls(position);
@@ -131,20 +224,7 @@ namespace CosmicShore.Gameplay
                 Touch.activeTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
             {
                 inputStatus.OnButtonPressed.Raise(InputEvents.NodeTapAction);
-                // vessel.PerformShipControllerActions(InputEvents.NodeTapAction);
             }
-            
-            // TODO - Can't access IVessel here, things need to be fucking separated.
-            /*else if ((tempThreeDPosition - vessel.Transform.position).sqrMagnitude < 10000 &&
-                     Touch.activeTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
-            {
-                inputStatus.OnButtonPressed.Raise(InputEvents.SelfTapAction);
-                // vessel.PerformShipControllerActions(InputEvents.SelfTapAction);
-            }
-            else
-            {
-                inputStatus.SingleTouchValue = tempThreeDPosition;
-            }*/
         }
 
         private void HandleLeftStick(Vector2 position)
@@ -153,7 +233,6 @@ namespace CosmicShore.Gameplay
             {
                 leftStickEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-                // vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
             }
             leftJoystickValue = position;
             leftTouchIndex = 0;
@@ -168,7 +247,6 @@ namespace CosmicShore.Gameplay
             {
                 rightStickEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-                // vessel.PerformShipControllerActions(InputEvents.RightStickAction);
             }
             rightJoystickValue = position;
             rightTouchIndex = 0;
@@ -197,13 +275,11 @@ namespace CosmicShore.Gameplay
             {
                 leftStickEffectsStarted = false;
                 inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-                // vessel.StopShipControllerActions(InputEvents.LeftStickAction);
             }
             if (rightStickEffectsStarted)
             {
                 rightStickEffectsStarted = false;
                 inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-                // vessel.StopShipControllerActions(InputEvents.RightStickAction);
             }
         }
 
@@ -235,13 +311,11 @@ namespace CosmicShore.Gameplay
             {
                 fullSpeedStraightEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.FullSpeedStraightAction);
-                // vessel.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
             }
             else if (DeviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
             {
                 minimumSpeedStraightEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.MinimumSpeedStraightAction);
-                // vessel.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
             else
             {
@@ -249,13 +323,11 @@ namespace CosmicShore.Gameplay
                 {
                     fullSpeedStraightEffectsStarted = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
-                    // vessel.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
                 }
                 if (minimumSpeedStraightEffectsStarted && DeviationFromMinimumSpeedStraight > threshold)
                 {
                     minimumSpeedStraightEffectsStarted = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
-                    // vessel.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
             }
         }

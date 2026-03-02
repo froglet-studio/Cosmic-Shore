@@ -219,35 +219,64 @@ namespace CosmicShore.Gameplay
 
         protected IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
         {
-            for (int i = 0; i < crystalModels.Count; i++)
+            Renderer renderer = model.GetComponent<Renderer>();
+            if (renderer == null)
+                yield break;
+
+            Material tempMaterial = new Material(renderer.material);
+            renderer.material = tempMaterial;
+
+            // Detect which color property names the source and target shaders use.
+            // Regular crystal shaders use _BrightCrystalColor/_DullCrystalColor,
+            // while InverseDynamicFresnelGraph uses _BrightColor/_DullColor.
+            var srcProps = FindColorPropertyNames(tempMaterial);
+            var dstProps = FindColorPropertyNames(targetMaterial);
+
+            bool canLerp = srcProps.bright != null && dstProps.bright != null
+                           && srcProps.bright == dstProps.bright;
+
+            if (canLerp)
             {
-                Renderer renderer = model.GetComponent<Renderer>();
-                Material tempMaterial = new Material(renderer.material);
-                renderer.material = tempMaterial;
-
-                Color startColor1 = tempMaterial.GetColor("_BrightCrystalColor");
-                Color startColor2 = tempMaterial.GetColor("_DullCrystalColor");
-
-                Color targetColor1 = targetMaterial.GetColor("_BrightCrystalColor");
-                Color targetColor2 = targetMaterial.GetColor("_DullCrystalColor");
+                Color startBright = tempMaterial.GetColor(srcProps.bright);
+                Color startDull = tempMaterial.GetColor(srcProps.dull);
+                Color targetBright = targetMaterial.GetColor(dstProps.bright);
+                Color targetDull = targetMaterial.GetColor(dstProps.dull);
 
                 float elapsedTime = 0.0f;
-
                 while (elapsedTime < lerpDuration)
                 {
                     elapsedTime += Time.deltaTime;
                     float t = Mathf.Clamp01(elapsedTime / lerpDuration);
 
-                    tempMaterial.SetColor("_BrightCrystalColor", Color.Lerp(startColor1, targetColor1, t));
-                    tempMaterial.SetColor("_DullCrystalColor", Color.Lerp(startColor2, targetColor2, t));
+                    tempMaterial.SetColor(srcProps.bright, Color.Lerp(startBright, targetBright, t));
+                    tempMaterial.SetColor(srcProps.dull, Color.Lerp(startDull, targetDull, t));
 
                     yield return null;
                 }
-
-                renderer.material = targetMaterial;
-                crystalModels[i].explodingMaterial = targetMaterial;
-                Destroy(tempMaterial);
             }
+
+            renderer.material = targetMaterial;
+
+            // Update the explodingMaterial for the matching crystal model entry
+            for (int i = 0; i < crystalModels.Count; i++)
+            {
+                if (crystalModels[i].model == model)
+                {
+                    crystalModels[i].explodingMaterial = targetMaterial;
+                    break;
+                }
+            }
+
+            Destroy(tempMaterial);
+        }
+
+        private static (string bright, string dull) FindColorPropertyNames(Material mat)
+        {
+            if (mat.HasProperty("_BrightCrystalColor") && mat.HasProperty("_DullCrystalColor"))
+                return ("_BrightCrystalColor", "_DullCrystalColor");
+            if (mat.HasProperty("_BrightColor") && mat.HasProperty("_DullColor"))
+                return ("_BrightColor", "_DullColor");
+            return (null, null);
         }
         
         /// <summary>

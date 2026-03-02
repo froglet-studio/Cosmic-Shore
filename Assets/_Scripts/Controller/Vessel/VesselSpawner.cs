@@ -19,11 +19,25 @@ namespace CosmicShore.Gameplay
 
         public bool SpawnShip(VesselClassType vesselType, out IVessel vessel)
         {
-            if (vesselType == VesselClassType.Random)
+            if (vesselType is VesselClassType.Random or VesselClassType.Any)
             {
                 var values = Enum.GetValues(typeof(VesselClassType));
-                var random = new System.Random();
-                vesselType = (VesselClassType)values.GetValue(random.Next(1, values.Length));
+                // Build a list excluding Any and Random to avoid infinite loops
+                var validTypes = new System.Collections.Generic.List<VesselClassType>();
+                foreach (VesselClassType v in values)
+                {
+                    if (v is not VesselClassType.Random and not VesselClassType.Any)
+                        validTypes.Add(v);
+                }
+
+                if (validTypes.Count == 0)
+                {
+                    CSDebug.LogError("[VesselSpawner] No valid vessel types available for random selection.");
+                    vessel = null;
+                    return false;
+                }
+
+                vesselType = validTypes[UnityEngine.Random.Range(0, validTypes.Count)];
             }
 
             vessel = null;

@@ -88,37 +88,50 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("Double initialization not allowed!");
                 return;
             }
-            
+
             VesselStatus.Player = player;
             VesselStatus.VesselAnimation.Initialize(VesselStatus);
             VesselStatus.VesselPrismController.Initialize(VesselStatus);
-            
-            if (!VesselStatus.CameraFollowTarget) 
+
+            if (!VesselStatus.CameraFollowTarget)
                 VesselStatus.CameraFollowTarget = transform;
-            
+
             VesselStatus.ActionHandler.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.Initialize(this);
             VesselStatus.AIPilot.Initialize(this);
-            VesselStatus.VesselHUDController.Initialize(VesselStatus);
-            VesselStatus.VesselHUDController.HideHUD();
-            
-            if (VesselStatus.NearFieldSkimmer) 
+
+            var hudController = VesselStatus.VesselHUDController;
+            if (hudController != null)
+            {
+                hudController.Initialize(VesselStatus);
+                hudController.HideHUD();
+            }
+            else
+            {
+                CSDebug.LogWarning($"[VesselController] VesselHUDController is null on {name}. HUD will not function.");
+            }
+
+            if (VesselStatus.NearFieldSkimmer)
                 VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
 
-            if (VesselStatus.FarFieldSkimmer) 
+            if (VesselStatus.FarFieldSkimmer)
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
-            
+
             VesselStatus.Silhouette.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.ToggleActive(true);
-            
+
             if (player.IsLocalUser)
             {
                 VesselStatus.ActionHandler.ToggleSubscription(true);
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
-                VesselStatus.VesselHUDController.SubscribeToEvents();
+                hudController?.SubscribeToEvents();
             }
-            
-            ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
+
+            if (gameData != null)
+                ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
+            else
+                CSDebug.LogError($"[VesselController] GameDataSO is not assigned on {name}. Ship properties will not be set.");
+
             VesselStatus.Customization.Initialize(VesselStatus);
             VesselStatus.ResetForPlay();
             OnInitialized?.Invoke();

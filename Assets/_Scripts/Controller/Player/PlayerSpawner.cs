@@ -1,5 +1,6 @@
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;
@@ -27,7 +28,15 @@ namespace CosmicShore.Gameplay
             IPlayer player = (IPlayer)Instantiate(_playerPrefab);
             if (player is Component comp)
                 GameObjectInjector.InjectRecursive(comp.gameObject, _container);
-            vesselSpawner.SpawnShip(data.vesselClass, out IVessel ship);
+
+            if (!vesselSpawner.SpawnShip(data.vesselClass, out IVessel ship) || ship == null)
+            {
+                CSDebug.LogError($"[PlayerSpawner] Failed to spawn vessel for class {data.vesselClass}. Destroying orphaned player.");
+                if (player is Object obj)
+                    Destroy(obj);
+                return null;
+            }
+
             player.InitializeForSinglePlayerMode(data, ship);
             ship.Initialize(player);
 

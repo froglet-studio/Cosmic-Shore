@@ -37,6 +37,8 @@ namespace CosmicShore.Gameplay
         protected void SpawnCustomPlayerAndAddToGameData(IPlayer.InitializeData data)
         {
             var player = _playerSpawner.SpawnPlayerAndShip(data);
+            if (player == null)
+                return;
             _gameData.AddPlayer(player);
         }
     }

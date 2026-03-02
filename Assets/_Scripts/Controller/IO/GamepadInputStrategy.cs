@@ -8,16 +8,27 @@ namespace CosmicShore.Gameplay
 {
     public class GamepadInputStrategy : BaseInputStrategy
     {
+        private const float TriggerDeadzone = 0.05f;
+
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
         private Vector2 leftStickRaw;
         private Vector2 rightStickRaw;
 
+        private bool prevLeftTriggerActive;
+        private bool prevRightTriggerActive;
+
         public override void Initialize(IInputStatus inputStatus)
         {
             base.Initialize(inputStatus);
             ResetInput();
+        }
+
+        public override void OnStrategyActivated()
+        {
+            base.OnStrategyActivated();
+            inputStatus.ActiveInputDevice = InputDeviceType.Gamepad;
         }
 
         public override void ProcessInput()
@@ -86,17 +97,28 @@ namespace CosmicShore.Gameplay
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
             // vessel.StopShipControllerActions(InputEvents.FlipAction);
 
-            // Triggers for stick actions
-            var leftTrigger = Gamepad.current.leftTrigger;
-            var rightTrigger = Gamepad.current.rightTrigger;
+            // Triggers — read analog values and use custom deadzone for edge detection.
+            // This gives full analog range (0-1) for drift scaling while keeping
+            // binary event compatibility for button-style triggers (which snap 0/1).
+            float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
+            float rightTriggerValue = Gamepad.current.rightTrigger.ReadValue();
 
-            bool leftJustPressed = leftTrigger.wasPressedThisFrame;
-            bool leftJustReleased = leftTrigger.wasReleasedThisFrame;
-            bool leftHeld = leftTrigger.isPressed;
+            inputStatus.LeftTriggerAnalog = leftTriggerValue;
+            inputStatus.RightTriggerAnalog = rightTriggerValue;
 
-            bool rightJustPressed = rightTrigger.wasPressedThisFrame;
-            bool rightJustReleased = rightTrigger.wasReleasedThisFrame;
-            bool rightHeld = rightTrigger.isPressed;
+            bool leftActive = leftTriggerValue > TriggerDeadzone;
+            bool rightActive = rightTriggerValue > TriggerDeadzone;
+
+            bool leftJustPressed = leftActive && !prevLeftTriggerActive;
+            bool leftJustReleased = !leftActive && prevLeftTriggerActive;
+            bool leftHeld = leftActive;
+
+            bool rightJustPressed = rightActive && !prevRightTriggerActive;
+            bool rightJustReleased = !rightActive && prevRightTriggerActive;
+            bool rightHeld = rightActive;
+
+            prevLeftTriggerActive = leftActive;
+            prevRightTriggerActive = rightActive;
 
             // Individual trigger events
             if (leftJustPressed)
@@ -139,12 +161,6 @@ namespace CosmicShore.Gameplay
                 || (leftJustPressed && rightHeld)
                 || (rightJustPressed && leftHeld))
                 inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
-
-
-            // vessel.StopShipControllerActions(InputEvents.OnlyLeftStickAction);
-
-
-            // vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
         }
 
         private void Reparameterize()

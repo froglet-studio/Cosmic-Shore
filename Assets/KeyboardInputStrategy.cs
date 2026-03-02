@@ -136,6 +136,10 @@ namespace CosmicShore.Gameplay
             wasFlipPressed = isFlipPressed;
 
 
+            // Left/Right Trigger analog values (binary for keyboard)
+            inputStatus.LeftTriggerAnalog = keyboard.leftShiftKey.isPressed ? 1f : 0f;
+            inputStatus.RightTriggerAnalog = keyboard.rightShiftKey.isPressed ? 1f : 0f;
+
             // Left Trigger - Left Shift
             bool isLeftTriggerPressed = keyboard.leftShiftKey.isPressed;
             bool leftJustPressed = isLeftTriggerPressed && !wasLeftTriggerPressed;
@@ -259,6 +263,7 @@ namespace CosmicShore.Gameplay
         public override void OnStrategyActivated()
         {
             ResetSmoothingState();
+            inputStatus.ActiveInputDevice = InputDeviceType.Keyboard;
         }
 
         public override void OnStrategyDeactivated()
