@@ -31,6 +31,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Whether a vessel swap is currently in progress.</summary>
         public bool IsSwapping => _isSwapping;
 
+        protected override void Awake()
+        {
+            // Menu_Main must NOT shutdown NetworkManager on despawn —
+            // the host must persist across scene transitions to game scenes.
+            shutdownNetworkOnDespawn = false;
+            base.Awake();
+        }
+
         protected override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
         [Header("Lifecycle")]
         [Tooltip("When true, NetworkManager.Shutdown() is called on despawn (game scenes). " +
                  "Set to false for Menu_Main so the host persists across scene transitions.")]
-        [SerializeField] bool shutdownNetworkOnDespawn = true;
+        [SerializeField] protected bool shutdownNetworkOnDespawn = true;
 
         [Header("Timing")]
         [Tooltip("Delay in ms after OnPlayerNetworkSpawned before reading NetworkVariables.")]
@@ -84,10 +84,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
+                Debug.Log("<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
             _cts = new CancellationTokenSource();
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
 
@@ -156,23 +158,34 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid HandlePlayerNetworkSpawnedAsync(ulong ownerClientId, CancellationToken ct)
         {
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync — ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
             // Wait for NetworkVariables set in Player.OnNetworkSpawn to sync
-            await UniTask.Delay(preSpawnDelayMs, cancellationToken: ct);
+            await UniTask.Delay(preSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
             Player player = FindUnprocessedPlayerByOwnerClientId(ownerClientId);
             if (player == null)
+            {
+                Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
                 return;
+            }
+
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
+            {
+                Debug.Log($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
                 return;
+            }
 
             if (!IsReadyToSpawn(player))
             {
+                Debug.LogError($"<color=#FF0000>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready! VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'</color>");
                 CSDebug.LogError($"[ServerPlayerVesselInitializer] Player {ownerClientId} not ready after delay. " +
                                  $"VesselType={player.NetDefaultVesselType.Value}, Name={player.NetName.Value}");
                 return;
             }
 
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
             await OnPlayerReadyToSpawnAsync(player, ct);
         }
 
@@ -183,11 +196,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync — SpawnVesselAndInitialize for {player.NetName.Value}</color>");
             SpawnVesselAndInitialize(player.OwnerClientId, player);
 
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
             // Wait for the vessel NetworkObject to fully replicate before telling clients
-            await UniTask.Delay(postSpawnDelayMs, cancellationToken: ct);
+            await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
             NotifyClients(player);
         }
 

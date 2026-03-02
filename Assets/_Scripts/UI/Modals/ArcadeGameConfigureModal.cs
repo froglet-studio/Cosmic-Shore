@@ -538,15 +538,21 @@ namespace CosmicShore.UI
         // Start Game button on Screen 2
         public void OnStartGameClicked()
         {
+            Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
 
             SyncAllGameDataForLaunch();
+            Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch()</color>");
             gameData.InvokeGameLaunch();
         }
 
         void SyncAllGameDataForLaunch()
         {
-            if (!gameData || config?.SelectedGame == null) return;
+            if (!gameData || config?.SelectedGame == null)
+            {
+                Debug.LogError("<color=#FF0000>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — gameData or config.SelectedGame is NULL!</color>");
+                return;
+            }
 
             var selectedGame = config.SelectedGame;
             gameData.SceneName = selectedGame.SceneName;
@@ -558,7 +564,19 @@ namespace CosmicShore.UI
                 : 1;
 
             gameData.SelectedPlayerCount.Value = humanCount;
-            gameData.RequestedAIBackfillCount = Mathf.Max(0, config.PlayerCount - humanCount);
+
+            int aiBackfill = Mathf.Max(0, config.PlayerCount - humanCount);
+
+            // Competitive multiplayer modes always need at least 1 AI opponent when solo
+            if (selectedGame.IsMultiplayer && humanCount <= 1 && aiBackfill < 1)
+                aiBackfill = 1;
+
+            gameData.RequestedAIBackfillCount = aiBackfill;
+
+            Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — " +
+                      $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
+                      $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, AIBackfill={aiBackfill}, " +
+                      $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}</color>");
 
             // Hand off the party session so MultiplayerSetup in the game scene
             // knows to reuse the existing Relay connection instead of tearing it down.

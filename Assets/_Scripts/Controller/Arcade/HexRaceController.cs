@@ -44,6 +44,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
+            Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn — IsServer={IsServer}, Intensity={Intensity}</color>");
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
@@ -53,11 +54,13 @@ namespace CosmicShore.Gameplay
 
             if (IsServer)
             {
+                Debug.Log("<color=#00CED1>[FLOW-7HR] [HexRaceController] Server: SpawnTrackEarly() starting...</color>");
                 // Server generates the seed after a short delay for intensity sync
                 SpawnTrackEarly().Forget();
             }
             else if (_netTrackSeed.Value != 0)
             {
+                Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] Client: track seed already set ({_netTrackSeed.Value}), spawning track locally</color>");
                 // Client joined after the server already set the seed — spawn immediately
                 SpawnTrackLocally(_netTrackSeed.Value);
             }
@@ -111,7 +114,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void SpawnTrackLocally(int trackSeed)
         {
-            if (_trackSpawned || !segmentSpawner) return;
+            if (_trackSpawned || !segmentSpawner)
+            {
+                Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally SKIPPED — _trackSpawned={_trackSpawned}, segmentSpawner={segmentSpawner != null}</color>");
+                return;
+            }
+            Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally — seed={trackSeed}, Intensity={Intensity}</color>");
             segmentSpawner.Seed = trackSeed;
             segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity
                 ? baseNumberOfSegments * Intensity

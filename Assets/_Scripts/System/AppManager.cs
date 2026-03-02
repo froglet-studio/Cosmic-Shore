@@ -41,13 +41,6 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Centralized scene name list. Registered in DI for all consumers.")]
         SceneNameListSO _sceneNames;
 
-        [Header("Scene Transition")]
-        [SerializeField, Tooltip("Optional CanvasGroup for a fade-out effect before scene load.")]
-        CanvasGroup _splashCanvasGroup;
-
-        [SerializeField, Tooltip("Duration of the fade-out transition in seconds.")]
-        float _fadeOutDuration = 0.5f;
-
         [Header("Auth")]
         [SerializeField] AuthenticationDataVariable authenticationDataVariable;
         [SerializeField] bool authenticationWithLog;
@@ -212,9 +205,8 @@ namespace CosmicShore.Core
                         cancellationToken: ct);
                 }
 
-                // Fade out splash if present.
-                if (_splashCanvasGroup != null)
-                    await FadeOutSplashAsync(ct);
+                // Splash is now managed by SceneTransitionManager as the persistent
+                // transition overlay. The scene load below will fade it out.
 
                 // Mark complete and transition.
                 _hasBootstrapped = true;
@@ -228,8 +220,9 @@ namespace CosmicShore.Core
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).
+                // Skip fadeOut — the splash overlay is already opaque from bootstrap.
                 if (sceneTransitionManager != null)
-                    await sceneTransitionManager.LoadSceneAsync(targetScene);
+                    await sceneTransitionManager.LoadSceneAsync(targetScene, fadeOut: false);
                 else
                     SceneManager.LoadScene(targetScene);
             }
@@ -242,23 +235,6 @@ namespace CosmicShore.Core
                 Debug.LogError($"[AppManager] Fatal bootstrap error: {ex}");
                 OnBootstrapFailed?.Invoke(ex.Message);
             }
-        }
-
-        async UniTask FadeOutSplashAsync(CancellationToken ct)
-        {
-            if (_splashCanvasGroup == null || _fadeOutDuration <= 0f)
-                return;
-
-            float elapsed = 0f;
-            while (elapsed < _fadeOutDuration)
-            {
-                ct.ThrowIfCancellationRequested();
-                elapsed += Time.unscaledDeltaTime;
-                _splashCanvasGroup.alpha = 1f - Mathf.Clamp01(elapsed / _fadeOutDuration);
-                await UniTask.Yield(ct);
-            }
-
-            _splashCanvasGroup.alpha = 0f;
         }
 
         #endregion
