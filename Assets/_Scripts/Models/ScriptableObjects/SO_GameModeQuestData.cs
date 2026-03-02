@@ -41,6 +41,12 @@ namespace CosmicShore.Models
         [Header("Flags")]
         [Tooltip("If true, this quest is a placeholder for a mode not yet implemented")]
         public bool IsPlaceholder;
+
+        /// <summary>
+        /// Runtime flag set when the quest goal is achieved during gameplay.
+        /// Not serialized — lives only in the current session, synced from ProgressionData on load.
+        /// </summary>
+        [System.NonSerialized] public bool IsCompleted;
     }
 
     /// <summary>

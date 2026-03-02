@@ -35,6 +35,10 @@ namespace CosmicShore.Game.Cinematics
         [SerializeField] TMP_Text scoreRevealToastText;
         [SerializeField] CanvasGroup scoreRevealToastCanvasGroup;
 
+        [Header("Quest Completion")]
+        [Tooltip("Text shown when a quest goal is achieved during this match")]
+        [SerializeField] TMP_Text questCompletionText;
+
         [Header("Vessel Podium Display")]
         [Tooltip("Manager for vessel icon displays")]
         [SerializeField] EndGameVesselDisplayManager vesselDisplayManager;
@@ -49,7 +53,7 @@ namespace CosmicShore.Game.Cinematics
         public void Initialize()
         {
             _cts = new CancellationTokenSource();
-            
+
             if (continueButton)
             {
                 continueButton.onClick.AddListener(HandleContinueButtonClicked);
@@ -57,6 +61,8 @@ namespace CosmicShore.Game.Cinematics
 
             if (scoreRevealPanel)
                 scoreRevealPanel.gameObject.SetActive(false);
+
+            HideQuestCompletion();
         }
 
         public void Cleanup()
@@ -106,6 +112,19 @@ namespace CosmicShore.Game.Cinematics
         {
             if (connectingPanel)
                 connectingPanel.TransitionDoor(true);
+        }
+
+        public void ShowQuestCompletion(string message)
+        {
+            if (!questCompletionText) return;
+            questCompletionText.gameObject.SetActive(true);
+            questCompletionText.text = message;
+        }
+
+        public void HideQuestCompletion()
+        {
+            if (questCompletionText)
+                questCompletionText.gameObject.SetActive(false);
         }
         #endregion
 

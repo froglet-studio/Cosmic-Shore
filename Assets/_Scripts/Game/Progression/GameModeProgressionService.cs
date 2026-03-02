@@ -158,6 +158,7 @@ namespace CosmicShore.Game.Progression
 
             // Mark as claimed (remove from CompletedQuests — it's done)
             ProgressionData.CompletedQuests.Remove(modeName);
+            questList.Quests[questIndex].IsCompleted = false;
 
             // Unlock the next mode in the chain
             int nextIndex = questIndex + 1;
@@ -193,6 +194,7 @@ namespace CosmicShore.Game.Progression
             if (EvaluateQuestTarget(quest, value))
             {
                 ProgressionData.MarkQuestCompleted(modeName);
+                quest.IsCompleted = true;
                 CSDebug.Log($"[GameModeProgressionService] Quest completed for {mode}! stat={value} target={quest.TargetValue}");
                 OnQuestCompleted?.Invoke(quest);
                 OnProgressionChanged?.Invoke(ProgressionData);
@@ -246,6 +248,12 @@ namespace CosmicShore.Game.Progression
         public void ResetAllProgress()
         {
             ProgressionData = new GameModeProgressionData();
+
+            // Reset runtime SO flags
+            if (questList != null)
+                foreach (var quest in questList.Quests)
+                    quest.IsCompleted = false;
+
             EnsureFirstModeUnlocked();
             OnProgressionChanged?.Invoke(ProgressionData);
             ScheduleDebouncedSave();
@@ -414,6 +422,17 @@ namespace CosmicShore.Game.Progression
             ProgressionData.MarkUnlocked(firstMode);
         }
 
+        /// <summary>
+        /// Syncs the runtime IsCompleted flag on each quest SO from ProgressionData.
+        /// Called after loading from cloud or resetting so the SO flags match persisted state.
+        /// </summary>
+        void SyncSOCompletedFlags()
+        {
+            if (questList == null) return;
+            foreach (var quest in questList.Quests)
+                quest.IsCompleted = ProgressionData.IsQuestCompleted(quest.GameMode.ToString());
+        }
+
         // ── Cloud Save ──────────────────────────────────────────────────────────
 
         async Task LoadFromCloudAsync()
@@ -436,6 +455,7 @@ namespace CosmicShore.Game.Progression
                 }
 
                 EnsureFirstModeUnlocked();
+                SyncSOCompletedFlags();
                 IsInitialized = true;
                 OnProgressionChanged?.Invoke(ProgressionData);
 
@@ -447,6 +467,7 @@ namespace CosmicShore.Game.Progression
             {
                 CSDebug.LogWarning($"[GameModeProgressionService] Cloud load failed: {e.Message}. Using local data.");
                 EnsureFirstModeUnlocked();
+                SyncSOCompletedFlags();
                 IsInitialized = true;
                 OnProgressionChanged?.Invoke(ProgressionData);
             }

@@ -35,6 +35,7 @@ namespace CosmicShore.App.UI.Elements
 
         private Color _originalBgColor = Color.white;
         private GameModes _gameMode;
+        private SO_GameModeQuestData _questData;
 
         public GameModes GameMode => _gameMode;
 
@@ -98,6 +99,7 @@ namespace CosmicShore.App.UI.Elements
         /// </summary>
         public void Configure(SO_GameModeQuestData quest)
         {
+            _questData = quest;
             _gameMode = quest.GameMode;
 
             if (nameText != null)
@@ -119,7 +121,9 @@ namespace CosmicShore.App.UI.Elements
         public void SetState(QuestItemState state)
         {
             bool isLocked       = state == QuestItemState.Locked;
-            bool isReadyToClaim = state == QuestItemState.ReadyToClaim;
+            // Also treat as ready-to-claim if the SO's runtime flag is set (from cinematic)
+            bool isReadyToClaim = state == QuestItemState.ReadyToClaim ||
+                                  (state == QuestItemState.Unlocked && _questData != null && _questData.IsCompleted);
             bool isClaimed      = state == QuestItemState.Claimed;
             bool isUnlocked     = !isLocked;
 
