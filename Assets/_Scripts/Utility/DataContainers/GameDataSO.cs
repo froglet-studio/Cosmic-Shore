@@ -309,7 +309,7 @@ namespace CosmicShore.Utility
 
         public void SetNonOwnerPlayersActiveInNewClient()
         {
-            foreach (var player in Players.Where(player => !player.IsMultiplayerOwner))
+            foreach (var player in Players.Where(player => !player.IsMultiplayerOwner && player.Vessel != null))
                 player.StartPlayer();
         }
 
