@@ -54,9 +54,11 @@ namespace CosmicShore.App.UI.Views
         private Tween _sliderTween;
         private Tween _ghostSliderTween;
         private Tween _descFadeTween;
+        private Tween _claimSequence;
         private Tween _snapTween;
         private bool _wasMoving;
         private bool _isSnapping;
+        private bool _isPlayingClaimSequence;
         private int _lastActiveDescIndex = -1;
 
         void OnEnable()
@@ -105,6 +107,9 @@ namespace CosmicShore.App.UI.Views
 
         void OnProgressionChanged(GameModeProgressionData data)
         {
+            // During the claim sequence, visuals are driven by the choreographed timeline
+            if (_isPlayingClaimSequence) return;
+
             RefreshAllCards();
             UpdateActivePulse();
             AnimateSlider();
@@ -224,33 +229,125 @@ namespace CosmicShore.App.UI.Views
         }
 
         // ── Claim Fanfare ─────────────────────────────────────────────────────
+        //
+        //  Choreographed timeline:
+        //  1. Button clicked → claim animation (scale bounce)
+        //  2. Description text fades out
+        //  3. Slider + ghost slider start moving to next position
+        //     + scroll view begins panning to the next card
+        //  4. As slider leaves current card (~35%) → current card → Claimed
+        //  5. As slider reaches next card (~90%) → next card → Unlocked, pulse moves
+        //  6. Description text fades in with new quest goal
+        //
 
         void HandleClaimPressed(int cardIndex)
         {
             if (cardIndex < 0 || cardIndex >= _cards.Count || cardIndex >= questList.Quests.Count) return;
+            if (_isPlayingClaimSequence) return;
 
             var card = _cards[cardIndex];
             var quest = questList.Quests[cardIndex];
 
-            // Prevent double-click
             card.SetButtonInteractable(false);
 
-            // Scale-bounce → then process the claim
-            card.PlayClaimAnimation(() =>
-            {
-                GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(quest.GameMode);
-                // OnProgressionChanged fires → RefreshAllCards + AnimateSlider + UpdateActivePulse
-                // After slider animation settles, scroll to the newly unlocked card
-                if (cardIndex + 1 < _cards.Count)
-                    StartCoroutine(SnapToCardDelayed(cardIndex + 1));
-            });
+            // Scale-bounce → then kick off the full choreographed sequence
+            card.PlayClaimAnimation(() => PlayClaimSequence(cardIndex, quest));
         }
 
-        IEnumerator SnapToCardDelayed(int cardIndex)
+        void PlayClaimSequence(int cardIndex, SO_GameModeQuestData quest)
         {
-            // Wait for slider animation to start, then scroll slowly alongside it
-            yield return new WaitForSeconds(0.3f);
-            SnapToCard(cardIndex, false, sliderAnimDuration);
+            _isPlayingClaimSequence = true;
+            _claimSequence?.Kill();
+
+            // Commit the data change — OnProgressionChanged will be skipped due to the flag
+            GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(quest.GameMode);
+
+            // Pre-compute slider targets from the now-updated data
+            int newSliderVal = GetSliderValue();
+            int newGhostVal = Mathf.Min(newSliderVal + 1, questList?.Quests.Count ?? 0);
+            int nextCardIndex = cardIndex + 1;
+            bool hasNextCard = nextCardIndex < _cards.Count;
+            float fadeDur = descriptionFadeDuration * 0.5f;
+
+            var seq = DOTween.Sequence();
+
+            // ── Step 1: Fade out current description ────────────────────────
+            if (_lastActiveDescIndex >= 0 && _lastActiveDescIndex < _descriptionLabels.Count)
+            {
+                var oldCg = _descriptionLabels[_lastActiveDescIndex];
+                seq.Append(DOTween.To(() => oldCg.alpha, a => oldCg.alpha = a, 0f, fadeDur));
+            }
+
+            // ── Step 2: Slider + ghost slider start moving ──────────────────
+            // Also begin scrolling to the next card alongside the slider
+            float sliderStart = seq.Duration();
+
+            if (progressBarSlider != null)
+            {
+                _sliderTween?.Kill();
+                seq.Insert(sliderStart, DOTween.To(
+                    () => progressBarSlider.value,
+                    x => progressBarSlider.value = x,
+                    newSliderVal, sliderAnimDuration).SetEase(sliderEase));
+            }
+
+            if (ghostSlider != null)
+            {
+                _ghostSliderTween?.Kill();
+                seq.Insert(sliderStart, DOTween.To(
+                    () => ghostSlider.value,
+                    x => ghostSlider.value = x,
+                    newGhostVal, sliderAnimDuration).SetEase(sliderEase));
+            }
+
+            // Scroll to next card in parallel with the sliders
+            if (hasNextCard && scrollRect != null)
+            {
+                float scrollDelay = sliderStart + 0.15f;
+                seq.InsertCallback(scrollDelay, () => SnapToCard(nextCardIndex, false, sliderAnimDuration));
+            }
+
+            // ── Step 3: Slider leaves current card (~35%) → mark Claimed ────
+            float claimedTime = sliderStart + sliderAnimDuration * 0.35f;
+            seq.InsertCallback(claimedTime, () =>
+            {
+                _cards[cardIndex].SetState(QuestItemState.Claimed);
+                _cards[cardIndex].SetActiveFrontier(false);
+            });
+
+            // ── Step 4: Slider reaches next card (~90%) → unlock + pulse ────
+            if (hasNextCard)
+            {
+                float unlockTime = sliderStart + sliderAnimDuration * 0.9f;
+                seq.InsertCallback(unlockTime, () =>
+                {
+                    _cards[nextCardIndex].SetState(GetCardState(nextCardIndex));
+                    UpdateActivePulse();
+                });
+            }
+
+            // ── Step 5: Fade in new description ─────────────────────────────
+            float fadeInTime = sliderStart + sliderAnimDuration;
+            int newActiveIndex = hasNextCard ? nextCardIndex : cardIndex;
+
+            if (newActiveIndex >= 0 && newActiveIndex < _descriptionLabels.Count)
+            {
+                var newCg = _descriptionLabels[newActiveIndex];
+                seq.Insert(fadeInTime, DOTween.To(() => newCg.alpha, a => newCg.alpha = a, 1f, fadeDur));
+            }
+            _lastActiveDescIndex = newActiveIndex;
+
+            // ── Cleanup ─────────────────────────────────────────────────────
+            seq.OnComplete(() =>
+            {
+                _isPlayingClaimSequence = false;
+                // Final sync — ensure all cards reflect the true data state
+                RefreshAllCards();
+                UpdateActivePulse();
+            });
+
+            seq.SetUpdate(true);
+            _claimSequence = seq;
         }
 
         // ── Slider ────────────────────────────────────────────────────────────
@@ -519,7 +616,9 @@ namespace CosmicShore.App.UI.Views
             _sliderTween?.Kill(); _sliderTween = null;
             _ghostSliderTween?.Kill(); _ghostSliderTween = null;
             _descFadeTween?.Kill(); _descFadeTween = null;
+            _claimSequence?.Kill(); _claimSequence = null;
             _snapTween?.Kill(); _snapTween = null;
+            _isPlayingClaimSequence = false;
             _isSnapping = false;
             _wasMoving = false;
         }
