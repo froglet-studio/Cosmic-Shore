@@ -6,13 +6,13 @@ using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.Gameplay
 {
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
-        [Header("Multiplayer")]
-        [SerializeField] protected MultiplayerSetup multiplayerSetup;
+        [Inject] protected MultiplayerSetup multiplayerSetup;
         
         [Header("Rematch")]
         [SerializeField] private Scoreboard localScoreboard;
@@ -83,12 +83,21 @@ namespace CosmicShore.Gameplay
             try
             {
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
-                
+
+                // Ensure domain pool is fresh for the new session.
+                DomainAssigner.Initialize();
+
                 gameData.InitializeGame();
-                
+
                 if (!IsServer)
                     return;
-                
+
+                // Transition ApplicationStateMachine: LoadingGame → InGame.
+                // Without this, the loading screen overlay persists because no
+                // scene-placed MultiplayerSetup fires InvokeSessionStarted().
+                // Safe: ApplicationStateMachine validates transitions and no-ops on invalid ones.
+                gameData.InvokeSessionStarted();
+
                 SetupNewRound();
             }
             catch (OperationCanceledException)

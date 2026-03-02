@@ -99,10 +99,34 @@ namespace CosmicShore.Gameplay
 
         void ProcessPreExistingPlayers()
         {
+            // Stage 1: Check gameData.Players (catches players spawned in THIS scene,
+            // e.g. AI players whose OnNetworkSpawn() already added them).
             foreach (var p in gameData.Players)
             {
                 if (p is Player netPlayer && netPlayer.IsSpawned)
                     HandlePlayerNetworkSpawned(netPlayer.OwnerClientId);
+            }
+
+            // Stage 2: Trigger spawn chain for persistent human Players.
+            // Player NetworkObjects survive Netcode scene loads (DestroyWithScene=false)
+            // but are cleared from gameData.Players by ResetRuntimeData().
+            // Their OnNetworkSpawn() won't re-fire, so we initiate the spawn chain here.
+            // Actual re-initialization (PrepareForNewScene) happens in
+            // FindUnprocessedPlayerByOwnerClientId() after the preSpawnDelay,
+            // which ensures it runs after any Start()-based list clearing
+            // (e.g. scene-placed MultiplayerSetup.DestroyPlayerAndVessel).
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return;
+
+            foreach (var kvp in nm.ConnectedClients)
+            {
+                var playerObj = kvp.Value.PlayerObject;
+                if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
+                    continue;
+                if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
+                    continue;
+
+                HandlePlayerNetworkSpawned(player.OwnerClientId);
             }
         }
 
@@ -271,6 +295,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Finds the first unprocessed Player owned by the given clientId.
+        /// Falls back to NetworkManager.ConnectedClients for persistent Players
+        /// that may have been cleared from gameData.Players during scene transition
+        /// (by ResetRuntimeData or DestroyPlayerAndVessel). If found via fallback,
+        /// calls PrepareForNewScene() to re-initialize for the current game config.
         /// </summary>
         Player FindUnprocessedPlayerByOwnerClientId(ulong ownerClientId)
         {
@@ -284,7 +312,27 @@ namespace CosmicShore.Gameplay
                     return netPlayer;
                 }
             }
-            return null;
+
+            // Fallback: discover persistent Player from ConnectedClients.
+            // Player may have been cleared from gameData.Players after
+            // ProcessPreExistingPlayers() triggered the spawn chain
+            // (e.g. scene-placed MultiplayerSetup.Start() → DestroyPlayerAndVessel).
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return null;
+
+            if (!nm.ConnectedClients.TryGetValue(ownerClientId, out var client))
+                return null;
+
+            var playerObj = client.PlayerObject;
+            if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
+                return null;
+
+            if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
+                return null;
+
+            // Re-initialize the persistent Player for the current game scene.
+            player.PrepareForNewScene();
+            return player;
         }
 
         /// <summary>

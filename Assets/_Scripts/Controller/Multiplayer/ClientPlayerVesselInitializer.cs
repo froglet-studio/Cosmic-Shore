@@ -41,6 +41,12 @@ namespace CosmicShore.Gameplay
             if (NetworkManager.Singleton.IsServer)
                 return;
 
+            // Re-register persistent Players that survived the Netcode scene load
+            // but were cleared from gameData.Players by ResetRuntimeData().
+            // Their OnNetworkSpawn() won't re-fire, so we manually re-add them
+            // so ProcessPendingPairs() can resolve (playerNetId, vesselNetId) pairs.
+            ReRegisterPersistentPlayers();
+
             // Subscribe to SOAP events so we can process pending pairs
             // when objects replicate (event-driven, no polling)
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += OnPlayerNetworkSpawnedForPending;
@@ -56,6 +62,39 @@ namespace CosmicShore.Gameplay
             _pendingPairs.Clear();
             _pendingSwaps.Clear();
             base.OnNetworkDespawn();
+        }
+
+        // ---------------------------------------------------------
+        // PERSISTENT PLAYER RE-REGISTRATION (client-side)
+        // ---------------------------------------------------------
+
+        /// <summary>
+        /// Re-registers persistent Player NetworkObjects with gameData.Players on the client.
+        /// Player objects survive Netcode scene loads (DestroyWithScene=false) but
+        /// gameData.Players was cleared by ResetRuntimeData(). Without re-registration,
+        /// TryGetPlayerByNetworkObjectId() fails and pending pairs never resolve.
+        /// Also updates owner-writable NetworkVariables for the new game config.
+        /// </summary>
+        void ReRegisterPersistentPlayers()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return;
+
+            foreach (var kvp in nm.SpawnManager.SpawnedObjects)
+            {
+                var netObj = kvp.Value;
+                if (netObj == null || !netObj.TryGetComponent<Player>(out var player))
+                    continue;
+                if (!player.IsSpawned) continue;
+
+                if (!gameData.Players.Contains(player))
+                    gameData.Players.Add(player);
+
+                // Owners update their vessel type to match the new game config
+                // (synced via SyncGameConfigToClients_ClientRpc before scene load).
+                if (player.IsOwner)
+                    player.NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+            }
         }
 
         // ---------------------------------------------------------

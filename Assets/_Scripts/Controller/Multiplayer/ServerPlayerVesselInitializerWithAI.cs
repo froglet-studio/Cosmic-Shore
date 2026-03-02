@@ -45,12 +45,27 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Fresh domain pool before any player/AI spawning.
+            // Previous session's pool state is stale after scene transition.
+            DomainAssigner.Initialize();
+
             // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
             // AI players fire the event during Spawn(), but since we haven't
             // subscribed yet (base.OnNetworkSpawn hasn't run), those events
             // are harmlessly ignored by the base.
+            // Wrapped in try-catch to guarantee base.OnNetworkSpawn() always
+            // runs — otherwise no human players would be processed.
             if (spawnAIOnServerReady)
-                SpawnAIs();
+            {
+                try
+                {
+                    SpawnAIs();
+                }
+                catch (System.Exception e)
+                {
+                    CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] SpawnAIs failed: {e.Message}");
+                }
+            }
 
             // Mark all AI players as processed so the base skips them
             foreach (var p in gameData.Players)

@@ -75,6 +75,22 @@ namespace CosmicShore.Core
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
+
+            // Sync game config to all clients before loading the scene.
+            // The waitBeforeLoading delay in LoadSceneAsync gives time for RPC delivery.
+            if (useNetworkSceneLoading)
+            {
+                SyncGameConfigToClients_ClientRpc(
+                    gameData.SceneName,
+                    (int)gameData.GameMode,
+                    gameData.IsMultiplayerMode,
+                    (int)gameData.selectedVesselClass.Value,
+                    gameData.SelectedIntensity.Value,
+                    gameData.SelectedPlayerCount.Value,
+                    gameData.RequestedAIBackfillCount
+                );
+            }
+
             LoadSceneAsync(gameData.SceneName, useNetworkSceneLoading).Forget();
         }
 
@@ -197,6 +213,27 @@ namespace CosmicShore.Core
 
             if (CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
+        }
+
+        /// <summary>
+        /// Syncs the host's game configuration to all clients before a network scene load.
+        /// Clients update their local GameDataSO so that Player.OnNetworkSpawn() reads the
+        /// correct vessel class and HexRaceController generates an identical track.
+        /// </summary>
+        [ClientRpc]
+        void SyncGameConfigToClients_ClientRpc(
+            string sceneName, int gameMode, bool isMultiplayer,
+            int vesselClass, int intensity, int playerCount, int aiBackfillCount)
+        {
+            if (IsServer) return; // Host already has correct values
+
+            gameData.SceneName = sceneName;
+            gameData.GameMode = (GameModes)gameMode;
+            gameData.IsMultiplayerMode = isMultiplayer;
+            gameData.selectedVesselClass.Value = (VesselClassType)vesselClass;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.SelectedPlayerCount.Value = playerCount;
+            gameData.RequestedAIBackfillCount = aiBackfillCount;
         }
 
         #endregion

@@ -86,6 +86,7 @@ namespace CosmicShore.Core
         [SerializeField] PostProcessingManager postProcessingManager;
         [SerializeField] StatsManager statsManager;
         [SerializeField] SceneTransitionManager sceneTransitionManager;
+        [SerializeField] MultiplayerSetup multiplayerSetup;
 
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] FriendsServiceFacade friendsServiceFacade;
@@ -287,6 +288,7 @@ namespace CosmicShore.Core
             TryResolveManager(ref postProcessingManager);
             TryResolveManager(ref statsManager);
             TryResolveManager(ref sceneTransitionManager);
+            TryResolveManager(ref multiplayerSetup);
         }
 
         void TryResolveManager<T>(ref T field) where T : Component
@@ -339,6 +341,7 @@ namespace CosmicShore.Core
             RegisterManagerSingleton<PostProcessingManager>(builder, postProcessingManager);
             RegisterManagerSingleton<StatsManager>(builder, statsManager);
             RegisterManagerSingleton<SceneTransitionManager>(builder, sceneTransitionManager);
+            RegisterManagerSingleton<MultiplayerSetup>(builder, multiplayerSetup);
 
             // ── Pure C# service singletons ───────────────────────────────
             // Created by factory, no scene object needed. Lazy so they are

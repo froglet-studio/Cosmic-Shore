@@ -44,6 +44,8 @@ namespace CosmicShore.UI
         [Header("Screens (right side)")]
         [SerializeField] private GameObject configurationDetailView; // Screen 1
         [SerializeField] private GameObject gameDetailView;          // Screen 2
+        [SerializeField] private GameObject vesselSelectionView;     // Screen 3
+        [SerializeField] private GameObject squadMateSelectionView;  // Screen 4
 
         [Header("Screen 1 – Configuration Controls")]
         [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
@@ -135,10 +137,15 @@ namespace CosmicShore.UI
 
         #region Initialization helpers
 
+        int CurrentPartyHumanCount =>
+            hostConnectionData != null && hostConnectionData.PartyMembers != null
+                ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
+                : 1;
+
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
             config.Intensity   = game.MinIntensity;
-            config.PlayerCount = game.MinPlayers;
+            config.PlayerCount = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
 
             SyncGameDataConfig();
         }
@@ -185,7 +192,9 @@ namespace CosmicShore.UI
                 button.SetSelected(level == config.Intensity);
             }
 
-            // Player count
+            // Player count — enforce minimum = party size so host can't select
+            // fewer total players than there are humans in the lobby.
+            int effectiveMinPlayers = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
             for (int i = 0; i < playerCountButtons.Count; i++)
             {
                 var button = playerCountButtons[i];
@@ -194,7 +203,7 @@ namespace CosmicShore.UI
                 int count = i + 1;
                 button.SetPlayerCount(count);
 
-                bool active = count >= game.MinPlayers && count <= game.MaxPlayers;
+                bool active = count >= effectiveMinPlayers && count <= game.MaxPlayers;
                 button.SetActive(active);
                 button.SetSelected(count == config.PlayerCount);
             }
@@ -267,49 +276,85 @@ namespace CosmicShore.UI
 
         #region Screen switching
 
-        CanvasGroup _configurationDetailCG;
-        CanvasGroup _gameDetailCG;
-
-        void EnsureScreenCanvasGroups()
+        // All screen GameObjects and their cached CanvasGroups.
+        // Screens may start inactive in the scene — we activate them on first use
+        // and rely exclusively on CanvasGroup for visibility after that.
+        readonly struct ScreenSlot
         {
-            if (_configurationDetailCG == null && configurationDetailView != null)
-            {
-                if (!configurationDetailView.TryGetComponent(out _configurationDetailCG))
-                    _configurationDetailCG = configurationDetailView.AddComponent<CanvasGroup>();
-            }
-
-            if (_gameDetailCG == null && gameDetailView != null)
-            {
-                if (!gameDetailView.TryGetComponent(out _gameDetailCG))
-                    _gameDetailCG = gameDetailView.AddComponent<CanvasGroup>();
-            }
+            public readonly GameObject Go;
+            public readonly CanvasGroup Cg;
+            public ScreenSlot(GameObject go, CanvasGroup cg) { Go = go; Cg = cg; }
         }
 
-        void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen)
-        {
-            EnsureScreenCanvasGroups();
+        ScreenSlot[] _screens;
+        bool _screensInitialized;
 
-            SetSubCanvasGroupVisible(_configurationDetailCG, configurationDetailView == configScreen);
-            SetSubCanvasGroupVisible(_gameDetailCG, gameDetailView == gameDetailScreen);
+        void EnsureScreensInitialized()
+        {
+            if (_screensInitialized) return;
+            _screensInitialized = true;
+
+            _screens = new ScreenSlot[]
+            {
+                InitSlot(configurationDetailView),
+                InitSlot(gameDetailView),
+                InitSlot(vesselSelectionView),
+                InitSlot(squadMateSelectionView),
+            };
         }
 
-        static void SetSubCanvasGroupVisible(CanvasGroup cg, bool visible)
+        static ScreenSlot InitSlot(GameObject go)
         {
-            if (cg == null) return;
-            cg.alpha = visible ? 1f : 0f;
-            cg.blocksRaycasts = visible;
-            cg.interactable = visible;
+            if (go == null) return default;
+
+            // Activate the GO so CanvasGroup can control visibility.
+            if (!go.activeSelf) go.SetActive(true);
+
+            if (!go.TryGetComponent(out CanvasGroup cg))
+                cg = go.AddComponent<CanvasGroup>();
+
+            // Start hidden — the caller will show the right screen.
+            cg.alpha = 0f;
+            cg.blocksRaycasts = false;
+            cg.interactable = false;
+
+            return new ScreenSlot(go, cg);
+        }
+
+        void ShowScreen(GameObject target)
+        {
+            EnsureScreensInitialized();
+
+            foreach (var slot in _screens)
+            {
+                if (slot.Cg == null) continue;
+                bool show = slot.Go == target;
+                slot.Cg.alpha = show ? 1f : 0f;
+                slot.Cg.blocksRaycasts = show;
+                slot.Cg.interactable = show;
+            }
         }
 
         void ShowConfigurationScreen()
         {
-            SetScreenActive(configurationDetailView, null);
+            ShowScreen(configurationDetailView);
         }
 
         void ShowGameDetailScreen()
         {
-            SetScreenActive(null, gameDetailView);
+            ShowScreen(gameDetailView);
             RefreshShipSummaryView();
+        }
+
+        void ShowVesselSelectionScreen()
+        {
+            ShowScreen(vesselSelectionView);
+            RefreshShipSummaryView();
+        }
+
+        void ShowSquadMateSelectionScreen()
+        {
+            ShowScreen(squadMateSelectionView);
         }
 
         #endregion
@@ -337,7 +382,8 @@ namespace CosmicShore.UI
         {
             if (_selectedGame == null || config == null) return;
 
-            playerCount        = Mathf.Clamp(playerCount, _selectedGame.MinPlayers, _selectedGame.MaxPlayers);
+            int effectiveMin = Mathf.Max(_selectedGame.MinPlayers, CurrentPartyHumanCount);
+            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayers);
             config.PlayerCount = playerCount;
 
             foreach (var button in playerCountButtons)
@@ -469,6 +515,24 @@ namespace CosmicShore.UI
         public void OnBackFromGameSelectView()
         {
             ShowConfigurationScreen();
+        }
+
+        // Screen 2 → Screen 3 (Vessel Selection)
+        public void OnOpenVesselSelectionClicked()
+        {
+            ShowVesselSelectionScreen();
+        }
+
+        // Screen 3 → Screen 2 (Back from Vessel Selection)
+        public void OnBackFromVesselSelectionClicked()
+        {
+            ShowGameDetailScreen();
+        }
+
+        // Screen 4 → Screen 2 (Back from Squad Mate Selection)
+        public void OnBackFromSquadMateSelectionClicked()
+        {
+            ShowGameDetailScreen();
         }
 
         // Start Game button on Screen 2
