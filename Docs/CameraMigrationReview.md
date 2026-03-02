@@ -1,46 +1,38 @@
 # Camera Migration Review
 
-This document tracks the migration to the Cinemachine-based camera system.
+This document tracks the migration to the Cinemachine-based camera system. Updated March 2026 to reflect current file paths after the `_Scripts/Game/` → `_Scripts/Controller/` reorganization.
 
 ## Architecture
 
-The camera system uses **Cinemachine 3.1.2** with per-vessel `CameraSettingsSO` ScriptableObject assets. Ships apply their settings through `ShipCameraCustomizer` via the `ICameraConfigurator` interface. Runtime cameras implement `ICameraController` to consume settings directly.
+The camera system uses **Cinemachine 3.1.2** with per-vessel `CameraSettingsSO` ScriptableObject assets. Vessels apply their settings through `VesselCameraCustomizer` via the `ICameraConfigurator` interface. Runtime cameras implement `ICameraController` to consume settings directly. `CameraManager` (DI singleton) manages the overall camera lifecycle and provides utility methods like `SnapPlayerCameraToTarget()` and `SetupEndCameraFollow()`.
 
-## Files Added
+## Key Files
 
-- `Assets/_Prefabs/Cameras/NewShipCamera.prefab` – Cinemachine-driven prefab.
-- `Assets/_Scripts/Game/Camera/CustomCameraController.cs` – controller for runtime input and zoom.
-- `Assets/_Scripts/Game/Ship/ShipCameraCustomizer.cs` – exposes per-ship overrides.
+| File | Location | Purpose |
+|---|---|---|
+| `CustomCameraController.cs` | `Assets/_Scripts/Controller/Camera/` | Runtime camera controller: input, zoom, Cinemachine integration |
+| `VesselCameraCustomizer.cs` | `Assets/_Scripts/Controller/Vessel/` | Per-vessel camera setting application (formerly `ShipCameraCustomizer`) |
+| `CameraSettingsSO.cs` | `Assets/_Scripts/Controller/Camera/` | ScriptableObject with per-vessel camera values (follow distance, FOV, damping, etc.) |
+| `ICameraController.cs` | `Assets/_Scripts/Controller/Camera/` | Interface implemented by camera controllers |
+| `ICameraConfigurator.cs` | `Assets/_Scripts/Controller/Camera/` | Interface for applying `CameraSettingsSO` |
+| `CameraManager.cs` | `Assets/_Scripts/Controller/Managers/` | DI singleton — camera lifecycle, snap-to-target, end-camera follow |
 
-## Files Removed
+## Files Removed (Migration Complete)
 
-- `Assets/_Scripts/Game/Camera/LegacyCameraController.cs`
-
-## Classes
-
-| Class | Responsibility |
-|---|---|
-| `CustomCameraController` | Manages camera movement, input, and zoom at runtime |
-| `ShipCameraCustomizer` | Configures follow targets and offsets per vessel class |
-| `CameraRigAnchor` | Helper for look-at and follow transforms |
-| `CameraSettingsSO` | ScriptableObject with per-vessel camera values (follow distance, FOV, damping, etc.) |
-| `ICameraController` | Interface implemented by camera controllers |
-| `ICameraConfigurator` | Interface for applying `CameraSettingsSO` |
+- `Assets/_Scripts/Game/Camera/LegacyCameraController.cs` — replaced by `CustomCameraController`
+- `CameraRigAnchor.cs` — no longer exists; functionality absorbed into `CustomCameraController` and Cinemachine follow targets
 
 ## Per-Vessel Camera Assets
 
-Each vessel class has its own `CameraSettingsSO` asset instance, allowing designers to tune follow distance, FOV, damping, and offsets independently per ship.
+Each vessel class has its own `CameraSettingsSO` asset instance, allowing designers to tune follow distance, FOV, damping, and offsets independently per vessel.
 
-## Testing the Prefab
+## Multiplayer Camera Behavior
 
-1. Open `Assets/_Scenes/TestScenes/CameraTesting.unity`.
-2. Place **NewShipCamera** into the scene.
-3. Play the scene and swap ships to verify the camera follows correctly.
-4. Use the mouse wheel or gamepad triggers to zoom in and out.
-5. Respawn the player to ensure orientation resets.
+In multiplayer (including Menu_Main with party members), each client has its own independent Cinemachine camera following its own vessel. No camera state is synced across the network — each client controls their own camera independently. `MenuCrystalClickHandler` retargets the Cinemachine vCam between the crystal target (menu mode) and the vessel follow target (freestyle mode) using Cinemachine priorities.
 
 ## Integration Notes
 
 - The camera system integrates with the **Input Strategy Pattern** (`IInputStrategy`) for platform-agnostic zoom/orbit controls.
 - `CameraSettingsSO` follows the project's ScriptableObject config separation pattern — tunable values live in the SO asset, not in MonoBehaviours.
+- `CameraManager` is registered as a DI singleton via `AppManager.InstallBindings()` and is accessed via `[Inject]` throughout the codebase.
 - Camera state can be observed by other systems via SOAP `ScriptableVariable` if needed.

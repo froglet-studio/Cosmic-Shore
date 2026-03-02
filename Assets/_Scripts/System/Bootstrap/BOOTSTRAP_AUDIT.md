@@ -2,7 +2,7 @@
 
 ## Summary
 
-Audit of all root GameObjects in `Bootstrap.unity`, mapping every script's execution order (Awake → OnEnable → Start → async) and identifying bugs, anti-patterns, and optimization opportunities.
+Audit of all root GameObjects in `Bootstrap.unity`, mapping every script's execution order (Awake → OnEnable → Start → async) and identifying bugs, anti-patterns, and optimization opportunities. Updated March 2026 to reflect the current DI registration, application state machine, and authentication flow.
 
 **Original branch**: `claude/scan-bootstrap-scripts-CYLk8`
 **Original commit**: `f3b503f2` — `fix(bootstrap): fix bugs and optimize bootstrap scene startup flow`
@@ -88,7 +88,18 @@ These require larger cross-cutting refactors and are documented here for future 
 ### Phase 2: Start()
 
 ```
-AppManager.Start()  → ConfigureGameData, StartNetworkMonitor, StartAuthentication, RunBootstrapAsync().Forget()
+AppManager.Start()
+  ├─ ApplicationStateMachine.TransitionTo(Bootstrapping)
+  ├─ ConfigureGameData()
+  ├─ StartNetworkMonitor()
+  ├─ StartAuthentication()  ← fire-and-forget
+  │   ├─ UnityServices.InitializeAsync()
+  │   ├─ WireAuthEventsOnce()
+  │   ├─ SignInAnonymouslyAsync()
+  │   └─ OnSignInSuccess() → AuthenticationData SOAP events
+  │       └─ OnSignedIn.Raise() ──► PlayerDataService.HandleSignedIn()
+  │                                  └─ CloudSave load/merge → IsInitialized = true
+  └─ RunBootstrapAsync().Forget()
 ```
 
 ### Phase 3: Async Bootstrap
@@ -99,14 +110,78 @@ AppManager.RunBootstrapAsync()
   → Yield frame (let all Start() settle)
   → Enforce minimum splash duration
   → Splash screen fade (CanvasGroup)
+  → ApplicationStateMachine.TransitionTo(Authenticating)
   → Load "Authentication" scene via SceneTransitionManager (or direct SceneManager fallback)
 ```
 
 ### Phase 4: Scene Flow
 
 ```
-Authentication scene → auth flow completes → Menu_Main scene
+Authentication scene
+  ├─ AuthenticationSceneController.Start()
+  │   ├─ Check cached session → skip to Menu_Main if signed in
+  │   ├─ TrySignInCachedAsync() or show auth panel
+  │   ├─ Wait for PlayerDataService.IsInitialized (with timeout)
+  │   ├─ Username setup if needed
+  │   └─ NavigateToMainMenu():
+  │       ├─ ApplicationStateMachine.TransitionTo(MainMenu)
+  │       ├─ Wait for NetworkManager.IsListening (3s timeout)
+  │       ├─ If host ready → nm.SceneManager.LoadScene(Menu_Main)
+  │       └─ Fallback → direct scene load via SceneTransitionManager
+  │
+  └─ Menu_Main scene (loaded as networked scene when host is running)
 ```
+
+---
+
+## DI Registration (AppManager.InstallBindings)
+
+All persistent services and shared assets are registered here for Reflex dependency injection.
+
+### SOAP Asset Registration (RegisterValue)
+
+| Asset | Type |
+|---|---|
+| `SceneNameListSO` | Centralized scene name registry |
+| `GameDataSO` | Shared runtime game state + SOAP events |
+| `AuthenticationDataVariable` | Auth state (single-writer: `AuthenticationServiceFacade`) |
+| `NetworkMonitorDataVariable` | Network connectivity state |
+| `FriendsDataSO` | Friends service data container |
+| `HostConnectionDataSO` | Party/lobby state container |
+| `ApplicationLifecycleEventsContainerSO` | App lifecycle SOAP events |
+| `ApplicationStateDataVariable` | App phase state (single-writer: `ApplicationStateMachine`) |
+
+### MonoBehaviour Singleton Registration (RegisterFactory, Lazy)
+
+`GameSetting`, `AudioSystem`, `PlayerDataService`, `UGSStatsManager`, `CaptainManager`, `IAPManager`, `SceneLoader`, `ThemeManager`, `CameraManager`, `PostProcessingManager`, `StatsManager`, `SceneTransitionManager`, `MultiplayerSetup`
+
+### Pure C# Singleton Registration (RegisterFactory, Lazy)
+
+`AuthenticationServiceFacade`, `NetworkMonitor`, `FriendsServiceFacade`, `ApplicationStateMachine`
+
+---
+
+## Application State Machine
+
+The `ApplicationStateMachine` (pure C# DI singleton, single-writer to `ApplicationStateDataVariable`) tracks top-level application phase with table-driven state validation:
+
+```
+None → Bootstrapping → Authenticating → MainMenu → LoadingGame → InGame → GameOver
+                                           ↑          ↑              ↑        │
+                                           │          └──────────────┘        │
+                                           └──────────────────────────────────┘
+Special states:
+  Paused → (previous state)     — driven by ApplicationLifecycleManager.OnAppPaused
+  Disconnected → MainMenu | Authenticating  — driven by NetworkMonitor.OnNetworkLost
+  ShuttingDown                   — terminal, always allowed
+```
+
+Auto-wired SOAP transitions:
+- `GameDataSO.OnSessionStarted` → `InGame`
+- `GameDataSO.OnMiniGameEnd` → `GameOver`
+- `ApplicationLifecycleManager.OnAppPaused` → `Paused` / restore
+- `ApplicationLifecycleManager.OnAppQuitting` → `ShuttingDown`
+- `NetworkMonitorData.OnNetworkLost` → `Disconnected`
 
 ---
 
@@ -145,18 +220,32 @@ Assets/_Scripts/System/Bootstrap/
 ├── BOOTSTRAP_AUDIT.md              ← this file
 └── Tests/
     ├── BootstrapControllerTests.cs  (renamed class: AppManagerBootstrapTests)
-    ├── ServiceLocatorTests.cs
+    ├── BootstrapConfigSOTests.cs
     ├── SceneTransitionManagerTests.cs
     ├── ApplicationLifecycleManagerTests.cs
+    ├── ApplicationStateMachineTests.cs
     └── SceneFlowIntegrationTests.cs
 ```
 
 Related files outside the Bootstrap directory:
 
 ```
-Assets/_Scripts/System/AppManager.cs         ← top-level orchestrator + DI root
-Assets/_Scripts/System/SceneLoader.cs        ← persistent scene loading (NetworkBehaviour)
-Assets/_Scripts/Utility/DataContainers/SceneNameListSO.cs  ← centralized scene names
+Assets/_Scripts/System/AppManager.cs                        ← top-level orchestrator + DI root
+Assets/_Scripts/System/ApplicationStateMachine.cs           ← app state machine (single-writer)
+Assets/_Scripts/System/AuthenticationServiceFacade.cs       ← auth facade (single-writer)
+Assets/_Scripts/System/AuthenticationSceneController.cs     ← auth scene UI controller
+Assets/_Scripts/System/SplashToAuthFlow.cs                  ← splash → auth routing
+Assets/_Scripts/System/SceneLoader.cs                       ← persistent scene loading (NetworkBehaviour)
+Assets/_Scripts/System/NetworkMonitor.cs                    ← network connectivity monitor
+Assets/_Scripts/System/FriendsServiceFacade.cs              ← friends service facade
+Assets/_Scripts/System/MainMenuController.cs                ← Menu_Main scene controller
+Assets/_Scripts/Utility/DataContainers/SceneNameListSO.cs   ← centralized scene names
+Assets/_Scripts/ScriptableObjects/ApplicationLifecycleEventsContainerSO.cs
+Assets/_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/ApplicationStateData.cs
+Assets/_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/ApplicationStateDataVariable.cs
+Assets/_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/AuthenticationData.cs
+Assets/_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/AuthenticationDataVariable.cs
+Assets/_Scripts/Data/Enums/ApplicationState.cs
 Assets/_Scripts/Controller/Settings/GameSetting.cs
 Assets/_Scripts/Controller/Managers/CameraManager.cs
 Assets/_Scripts/Controller/Managers/CaptainManager.cs
