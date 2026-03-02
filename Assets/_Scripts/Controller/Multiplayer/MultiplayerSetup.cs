@@ -153,10 +153,12 @@ namespace CosmicShore.Gameplay
                 }
 #endif
 
-                Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Calling nm.StartHost() NOW</color>");
-                CSDebug.Log("[MultiplayerSetup] Starting as Host.");
-                nm.StartHost();
-                Debug.Log($"<color=#00FFFF>[FLOW-1] [MultiplayerSetup] StartHost() returned. IsListening={nm.IsListening}, IsHost={nm.IsHost}, LocalClientId={nm.LocalClientId}</color>");
+                // Host startup is delegated to HostConnectionService which creates a
+                // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).
+                // AuthenticationSceneController.EnsureHostStartedAsync provides a local
+                // host fallback if the Relay allocation times out.
+                Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
+                CSDebug.Log("[MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.");
             }
             finally
             {

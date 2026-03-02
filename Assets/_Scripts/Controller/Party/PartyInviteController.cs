@@ -166,80 +166,21 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Transitions the local host from a local-only NetworkManager session
-        /// to a Relay-based party session so remote clients can connect.
-        ///
-        /// Called before the first invite is sent. Flow:
-        ///   1. Clean up current menu vessels
-        ///   2. Shutdown local NetworkManager
-        ///   3. Create party session with Relay (starts host on Relay)
-        ///   4. Reload Menu_Main as network scene
-        ///   5. Re-initialize menu autopilot via existing spawn chain
+        /// Previously transitioned the local host from local-only to Relay-based.
+        /// Now a no-op: the Relay-backed party session is created at startup by
+        /// <see cref="HostConnectionService"/>, so no transition is needed.
+        /// Kept for API compatibility; callers have been updated to not call this.
         /// </summary>
-        public async UniTask TransitionToPartyHostAsync()
+        public UniTask TransitionToPartyHostAsync()
         {
-            if (_transitioning)
+            if (HostConnectionService.Instance?.PartySession != null)
             {
-                Debug.LogWarning("[PartyInviteController] Already transitioning — ignoring host transition.");
-                return;
+                Debug.Log("[PartyInviteController] Party session already active — no transition needed.");
+                return UniTask.CompletedTask;
             }
 
-            if (HostConnectionService.Instance == null)
-            {
-                Debug.LogError("[PartyInviteController] HostConnectionService not available.");
-                return;
-            }
-
-            // If a party session already exists, no transition needed
-            if (HostConnectionService.Instance.PartySession != null)
-                return;
-
-            _transitioning = true;
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
-            var ct = _cts.Token;
-
-            try
-            {
-                Debug.Log("[PartyInviteController] Starting host transition to Relay...");
-
-                // Step 1: Clean up current menu vessels
-                CleanUpCurrentSession();
-
-                // Step 2: Shutdown local NetworkManager
-                await ShutdownNetworkManagerAsync(ct);
-
-                // Step 3: Create party session with Relay (handled by HostConnectionService)
-                // This allocates Relay and starts NetworkManager as host
-                await HostConnectionService.Instance.CreatePartySessionPublicAsync();
-                Debug.Log("[PartyInviteController] Party session created on Relay.");
-
-                // Step 4: Load Menu_Main as network scene
-                var nm = NetworkManager.Singleton;
-                if (nm != null && nm.IsServer && nm.SceneManager != null)
-                {
-                    nm.SceneManager.LoadScene("Menu_Main",
-                        UnityEngine.SceneManagement.LoadSceneMode.Single);
-                }
-
-                // Step 5: Wait for scene to load and spawn chain to complete
-                await WaitForSceneLoadAsync(ct);
-                Debug.Log("[PartyInviteController] Host transition completed.");
-            }
-            catch (OperationCanceledException)
-            {
-                Debug.Log("[PartyInviteController] Host transition cancelled.");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[PartyInviteController] Host transition failed: {e.Message}");
-                await RecoverFromFailedTransitionAsync();
-            }
-            finally
-            {
-                _transitioning = false;
-            }
+            Debug.LogWarning("[PartyInviteController] No party session at invite time — invites may fail.");
+            return UniTask.CompletedTask;
         }
 
         // ─────────────────────────────────────────────────────────────────────

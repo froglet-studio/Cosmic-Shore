@@ -16,8 +16,8 @@ namespace CosmicShore.UI
     /// <see cref="PartyInviteController.AcceptInviteAsync"/>, Decline to
     /// <see cref="PartyInviteController.DeclineInviteAsync"/>.
     ///
-    /// Place this on a UI panel that starts inactive. The panel enables itself
-    /// on invite received and disables after the user responds or it times out.
+    /// The GameObject must remain active so OnEnable can subscribe to SOAP events.
+    /// The panel starts visually hidden via CanvasGroup (alpha=0).
     /// </summary>
     public class PartyInviteNotificationPanel : MonoBehaviour
     {
@@ -29,7 +29,7 @@ namespace CosmicShore.UI
         [SerializeField] private Image inviterAvatarImage;
         [SerializeField] private Button acceptButton;
         [SerializeField] private Button declineButton;
-        [SerializeField] private GameObject panelRoot;
+        [SerializeField] private CanvasGroup canvasGroup;
 
         [Header("Data")]
         [SerializeField] private SO_ProfileIconList profileIcons;
@@ -48,14 +48,28 @@ namespace CosmicShore.UI
 
         void Awake()
         {
+            if (canvasGroup == null)
+                canvasGroup = GetComponent<CanvasGroup>();
+
+            // Start visually hidden — the GO must stay active so OnEnable
+            // can subscribe to the OnInviteReceived SOAP event.
+            ShowPanel(false);
+
             acceptButton?.onClick.AddListener(OnAcceptPressed);
             declineButton?.onClick.AddListener(OnDeclinePressed);
         }
 
         void OnEnable()
         {
+            DebugExtensions.LogColored(
+                "[INVITE-UI] PartyInviteNotificationPanel.OnEnable — subscribing to OnInviteReceived",
+                Color.magenta);
             if (connectionData?.OnInviteReceived != null)
                 connectionData.OnInviteReceived.OnRaised += OnInviteReceived;
+            else
+                DebugExtensions.LogErrorColored(
+                    "[INVITE-UI] connectionData or OnInviteReceived is NULL — cannot subscribe!",
+                    Color.red);
         }
 
         void OnDisable()
@@ -87,6 +101,11 @@ namespace CosmicShore.UI
 
         private void OnInviteReceived(PartyInviteData invite)
         {
+            DebugExtensions.LogColored(
+                $"[INVITE-UI] OnInviteReceived! From: {invite.HostDisplayName}, " +
+                $"SessionId: {invite.PartySessionId}",
+                Color.green);
+
             _pendingInvite = invite;
             _timer = 0f;
             _responding = false;
@@ -173,25 +192,13 @@ namespace CosmicShore.UI
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
 
-        private CanvasGroup _panelRootCG;
-
         private void ShowPanel(bool show)
         {
-            var target = panelRoot != null ? panelRoot : gameObject;
+            if (canvasGroup == null) return;
 
-            // Activate the GO once if it started disabled.
-            if (!target.activeSelf)
-                target.SetActive(true);
-
-            if (_panelRootCG == null)
-            {
-                if (!target.TryGetComponent(out _panelRootCG))
-                    _panelRootCG = target.AddComponent<CanvasGroup>();
-            }
-
-            _panelRootCG.alpha = show ? 1f : 0f;
-            _panelRootCG.blocksRaycasts = show;
-            _panelRootCG.interactable = show;
+            canvasGroup.alpha = show ? 1f : 0f;
+            canvasGroup.blocksRaycasts = show;
+            canvasGroup.interactable = show;
         }
 
         private void SetButtonsInteractable(bool interactable)
