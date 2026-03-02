@@ -166,24 +166,18 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Called when a "+" button is pressed on any empty slot.
-        /// Transitions to Relay host if needed, then opens the online players panel.
+        /// Opens the online players panel for player selection.
+        /// The Relay transition happens later when an actual invite is sent
+        /// (see <see cref="OnlinePlayersPanel"/>).
         /// Wired automatically via <see cref="PartySlotView.Initialize"/> in Awake.
         /// Can also be wired manually via inspector OnClick on each slot's addButton.
         /// </summary>
-        public async void OnAddSlotPressed()
+        public void OnAddSlotPressed()
         {
             if (connectionData != null && !connectionData.HasOpenSlots)
             {
                 Debug.Log("[PartyArcadeView] No open party slots.");
                 return;
-            }
-
-            // Transition to Relay host before opening the invite panel
-            // so invited clients can actually connect.
-            var controller = PartyInviteController.Instance;
-            if (controller != null && connectionData is { IsHost: true })
-            {
-                await controller.TransitionToPartyHostAsync();
             }
 
             onlinePlayersPanel?.Show();
