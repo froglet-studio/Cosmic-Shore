@@ -87,8 +87,17 @@ namespace CosmicShore.Gameplay
             while (!IsAuthSignedInAndHasId())
                 await Task.Delay(300);
 
+            // HandleSignedInEvent may have already completed via SOAP event.
+            if (_initialized) return;
+
             SyncLocalIdentity();
             await JoinPresenceLobbyAsync();
+
+            // Create Relay-backed party session immediately so the NetworkManager
+            // starts as a Relay host. This eliminates the destructive shutdown/restart
+            // cycle that was previously triggered when the user pressed "+" to invite.
+            await CreatePartySessionAsync();
+
             _initialized = true;
 
             // Immediate first refresh so OnlinePlayers is populated
@@ -131,6 +140,12 @@ namespace CosmicShore.Gameplay
             try
             {
                 await JoinPresenceLobbyAsync();
+
+                // Create Relay-backed party session immediately so the NetworkManager
+                // starts as a Relay host. This eliminates the destructive shutdown/restart
+                // cycle that was previously triggered when the user pressed "+" to invite.
+                await CreatePartySessionAsync();
+
                 _initialized = true;
 
                 // Immediate refresh so OnlinePlayers is populated right away.
@@ -602,6 +617,8 @@ namespace CosmicShore.Gameplay
 
         private async Task CreatePartySessionAsync()
         {
+            if (_partySession != null) return;
+
             var opts = new SessionOptions
             {
                 MaxPlayers = connectionData.MaxPartySlots,
