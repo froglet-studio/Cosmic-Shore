@@ -9,10 +9,16 @@ using UnityEngine.UI;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Persistent scene transition service. Creates its own full-screen fade overlay
-    /// programmatically so it requires no prefab or scene setup.
+    /// Persistent scene transition service. Manages a full-screen overlay for
+    /// fade transitions between scenes.
     ///
-    /// Supports:
+    /// Supports two overlay modes:
+    ///   1. External splash overlay — use the Bootstrap scene's branded Canvas
+    ///      (background image + "LOADING" text). Wire to _splashOverlay.
+    ///   2. Programmatic fallback — auto-creates a solid-color overlay if no
+    ///      splash is wired.
+    ///
+    /// Also supports:
     ///   - Local async scene loading with fade in/out
     ///   - Network scene loading (server-authoritative via Netcode)
     ///   - Manual fade control for custom sequences
@@ -22,11 +28,17 @@ namespace CosmicShore.Core
     [DefaultExecutionOrder(-50)]
     public class SceneTransitionManager : MonoBehaviour
     {
+        [Header("Splash Overlay (Optional)")]
+        [SerializeField, Tooltip("External CanvasGroup to use as the scene transition overlay " +
+            "(e.g., the Bootstrap splash screen). If set, the programmatic overlay is not created. " +
+            "The referenced Canvas is made persistent and given highest sort order.")]
+        CanvasGroup _splashOverlay;
+
         [Header("Fade Settings")]
         [SerializeField, Tooltip("Duration of the fade-to-black and fade-from-black transitions.")]
         float _fadeDuration = 0.4f;
 
-        [SerializeField, Tooltip("Color of the full-screen fade overlay.")]
+        [SerializeField, Tooltip("Color of the full-screen fade overlay (only used when no splash overlay is wired).")]
         Color _fadeColor = Color.black;
 
         [Header("Timing")]
@@ -53,7 +65,11 @@ namespace CosmicShore.Core
         void Awake()
         {
             _cts = new CancellationTokenSource();
-            CreateFadeOverlay();
+
+            if (_splashOverlay != null)
+                AdoptSplashOverlay();
+            else
+                CreateFadeOverlay();
         }
 
         void OnDestroy()
@@ -241,6 +257,28 @@ namespace CosmicShore.Core
         #endregion
 
         #region Internal — Overlay Construction
+
+        /// <summary>
+        /// Uses an existing scene Canvas (e.g., the Bootstrap splash screen) as the
+        /// persistent transition overlay. Makes it DontDestroyOnLoad and sets highest
+        /// sort order so it renders on top of all game content.
+        /// </summary>
+        void AdoptSplashOverlay()
+        {
+            _fadeCanvasGroup = _splashOverlay;
+
+            var canvas = _splashOverlay.GetComponentInParent<Canvas>();
+            if (canvas != null)
+            {
+                canvas.sortingOrder = 32767;
+                DontDestroyOnLoad(canvas.gameObject);
+                _fadeCanvas = canvas;
+            }
+
+            _fadeCanvasGroup.alpha = 1f;
+            _fadeCanvasGroup.blocksRaycasts = true;
+            _fadeCanvasGroup.interactable = false;
+        }
 
         void CreateFadeOverlay()
         {

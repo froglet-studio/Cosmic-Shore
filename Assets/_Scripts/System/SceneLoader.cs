@@ -75,8 +75,8 @@ namespace CosmicShore.Core
         {
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
 
-            // Cover screen with black overlay during scene transition.
-            // MiniGameHUD will fade from black once the game is ready.
+            // Show splash overlay during scene transition.
+            // MiniGameHUD will fade it out once the game is ready.
             _sceneTransitionManager?.SetFadeImmediate(1f);
 
             var nm = NetworkManager.Singleton;
