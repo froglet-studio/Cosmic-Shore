@@ -798,7 +798,7 @@ Each client has its own Cinemachine camera following its own vessel. No network 
 | `FriendEntryView` | `_Scripts/UI/Views/` | Friend row with online status, invite, remove buttons |
 | `FriendRequestEntryView` | `_Scripts/UI/Views/` | Request row: incoming (accept/decline) or outgoing (cancel) |
 | `AddFriendPanel` | `_Scripts/UI/Views/` | Text input for friend requests by name |
-| `PartyInviteNotificationPanel` | `_Scripts/UI/Screens/` | Invite popup with accept/decline + auto-decline timeout |
+| `PartyInviteNotificationPanel` | `_Scripts/UI/Screens/` | Overlay invite popup at Canvas root with accept/decline + auto-decline timeout (visible from any screen) |
 
 #### SO Assets
 
@@ -833,7 +833,8 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
    - Assign `HostConnectionData.asset` to `hostConnectionData` field
 3. **Menu_Main scene UI**:
    - `PartyAreaPanel` or `PartyArcadeView` as child of Home/Arcade screen
-   - `OnlinePlayersPanel`, `FriendsPanel`, `PartyInviteNotificationPanel` as children of party area (start inactive)
+   - `OnlinePlayersPanel`, `FriendsPanel` as children of party area (start inactive)
+   - `PartyInviteNotificationPanel` as last child of root Canvas (renders above all UI, visible from any screen)
    - Wire `HostConnectionData.asset` into all party UI components
    - Wire `FriendsData.asset` into `FriendsPanel` and `PartyArcadeView`
    - Wire `OnlinePlayerEntry` prefab into `OnlinePlayersPanel.playerEntryPrefab`

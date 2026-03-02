@@ -15,7 +15,7 @@ namespace CosmicShore.UI
     /// <see cref="HostConnectionDataSO"/>. Slot 0 is always the local player.
     /// Empty slots show a "+" button that opens the <see cref="OnlinePlayersPanel"/>.
     ///
-    /// All sub-panels (OnlinePlayersPanel, FriendsPanel, PartyInviteNotificationPanel)
+    /// All sub-panels (OnlinePlayersPanel, FriendsPanel)
     /// are children of the PartyArea GameObject in the hierarchy.
     ///
     /// Button OnClick wiring (inspector or code):
@@ -37,7 +37,6 @@ namespace CosmicShore.UI
         [Header("Sub-Panels (children of PartyArea)")]
         [SerializeField] private OnlinePlayersPanel onlinePlayersPanel;
         [SerializeField] private FriendsPanel friendsPanel;
-        [SerializeField] private PartyInviteNotificationPanel inviteNotificationPanel;
 
         [Header("Buttons")]
         [SerializeField] private Button friendsButton;

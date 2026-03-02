@@ -598,7 +598,7 @@ namespace CosmicShore.Editor
             if (partyArcadeView != null)
             {
                 wired += WirePartyArcadeViewScene(partyArcadeView, onlinePanelGo, friendsPanelGo,
-                    invitePanelGo, connectionData, friendsData, profileIcons);
+                    connectionData, friendsData, profileIcons);
             }
             else
                 Debug.LogWarning("[PartySceneWiring] PartyArcadeView not found in scene.");
@@ -809,7 +809,6 @@ namespace CosmicShore.Editor
 
         static int WirePartyArcadeViewScene(PartyArcadeView view,
             OnlinePlayersPanel onlinePanel, FriendsPanel friendsPanel,
-            PartyInviteNotificationPanel invitePanel,
             HostConnectionDataSO connectionData, FriendsDataSO friendsData,
             SO_ProfileIconList profileIcons)
         {
@@ -825,7 +824,6 @@ namespace CosmicShore.Editor
             // Wire sub-panel cross-references
             count += WireIfNullCount(so, "onlinePlayersPanel", onlinePanel);
             count += WireIfNullCount(so, "friendsPanel", friendsPanel);
-            count += WireIfNullCount(so, "inviteNotificationPanel", invitePanel);
 
             // Create or find buttons and status text
             count += EnsureChildAndWire(so, root, "friendsButton",
