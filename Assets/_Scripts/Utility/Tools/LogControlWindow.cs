@@ -15,6 +15,7 @@ namespace CosmicShore.Utility.Tools
         const string PrefErrorsEnabled = "CSDebug_ErrorsEnabled";
         const string PrefUnityLoggerEnabled = "CSDebug_UnityLoggerEnabled";
         const string PrefBootstrapScene = "Load Main_Menu Scene";
+        const int Pad = 12;
 
         // ── State ────────────────────────────────────────────────────────────
         Vector2 _scrollPos;
@@ -37,14 +38,11 @@ namespace CosmicShore.Utility.Tools
         static readonly Color TextMuted      = new(0.58f, 0.56f, 0.65f, 1f);
         static readonly Color FooterBg       = new(0.14f, 0.13f, 0.18f, 1f);
 
-        // ── Cached styles ────────────────────────────────────────────────────
+        // ── Styles (non-interactive only — buttons/toggles use defaults) ─────
         [System.NonSerialized] GUIStyle _bannerStyle;
         [System.NonSerialized] GUIStyle _sectionLabelStyle;
-        [System.NonSerialized] GUIStyle _btnStyle;
-        [System.NonSerialized] GUIStyle _btnSmall;
         [System.NonSerialized] GUIStyle _badgeStyle;
         [System.NonSerialized] GUIStyle _infoStyle;
-        [System.NonSerialized] GUIStyle _inputStyle;
         [System.NonSerialized] GUIStyle _mutedLabel;
         [System.NonSerialized] bool _stylesBuilt;
 
@@ -66,47 +64,30 @@ namespace CosmicShore.Utility.Tools
             {
                 fontSize = 16,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = AccentLavender },
                 padding = new RectOffset(0, 0, 6, 6)
             };
+            _bannerStyle.normal.textColor = AccentLavender;
 
             _sectionLabelStyle = new GUIStyle(EditorStyles.foldout)
             {
                 fontSize = 12,
-                fontStyle = FontStyle.Bold,
-                normal    = { textColor = new Color(0.82f, 0.80f, 0.88f) },
-                onNormal  = { textColor = new Color(0.82f, 0.80f, 0.88f) },
-                focused   = { textColor = AccentLavender },
-                onFocused = { textColor = AccentLavender },
-                active    = { textColor = AccentLavender },
-                onActive  = { textColor = AccentLavender }
+                fontStyle = FontStyle.Bold
             };
-
-            _btnStyle = new GUIStyle(GUI.skin.button)
-            {
-                fontSize = 11,
-                fontStyle = FontStyle.Bold,
-                fixedHeight = 26,
-                margin = new RectOffset(4, 4, 2, 2),
-                normal = { textColor = new Color(0.85f, 0.83f, 0.90f) }
-            };
-
-            _btnSmall = new GUIStyle(GUI.skin.button)
-            {
-                fontSize = 10,
-                fixedHeight = 22,
-                margin = new RectOffset(4, 4, 2, 2),
-                normal = { textColor = new Color(0.80f, 0.78f, 0.86f) }
-            };
+            _sectionLabelStyle.normal.textColor = new Color(0.82f, 0.80f, 0.88f);
+            _sectionLabelStyle.onNormal.textColor = new Color(0.82f, 0.80f, 0.88f);
+            _sectionLabelStyle.focused.textColor = AccentLavender;
+            _sectionLabelStyle.onFocused.textColor = AccentLavender;
+            _sectionLabelStyle.active.textColor = AccentLavender;
+            _sectionLabelStyle.onActive.textColor = AccentLavender;
 
             _badgeStyle = new GUIStyle(EditorStyles.miniLabel)
             {
                 fontSize = 9,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = Color.white },
                 padding = new RectOffset(5, 5, 2, 2)
             };
+            _badgeStyle.normal.textColor = Color.white;
 
             _infoStyle = new GUIStyle(EditorStyles.helpBox)
             {
@@ -115,19 +96,8 @@ namespace CosmicShore.Utility.Tools
                 padding = new RectOffset(8, 8, 6, 6)
             };
 
-            _inputStyle = new GUIStyle(EditorStyles.textField)
-            {
-                fontSize = 12,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-                fixedHeight = 22
-            };
-
-            _mutedLabel = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
-            {
-                fontSize = 10,
-                normal = { textColor = TextMuted }
-            };
+            _mutedLabel = new GUIStyle(EditorStyles.centeredGreyMiniLabel) { fontSize = 10 };
+            _mutedLabel.normal.textColor = TextMuted;
 
             _stylesBuilt = true;
         }
@@ -187,11 +157,12 @@ namespace CosmicShore.Utility.Tools
 
                 bool bootstrapEnabled = EditorPrefs.GetBool(PrefBootstrapScene, true);
                 EditorGUILayout.BeginHorizontal();
-                GUILayout.Label("Load Bootstrap on Play", EditorStyles.label, GUILayout.Width(160));
-                DrawBadge(bootstrapEnabled ? "ON" : "OFF", bootstrapEnabled ? BadgeOn : BadgeOff);
-                bool newBootstrap = EditorGUILayout.Toggle(bootstrapEnabled, GUILayout.Width(16));
+                GUILayout.Space(Pad);
+                bool newBootstrap = GUILayout.Toggle(bootstrapEnabled, "Load Bootstrap on Play");
                 if (newBootstrap != bootstrapEnabled)
                     EditorPrefs.SetBool(PrefBootstrapScene, newBootstrap);
+                GUILayout.FlexibleSpace();
+                DrawBadge(bootstrapEnabled ? "ON" : "OFF", bootstrapEnabled ? BadgeOn : BadgeOff);
                 EditorGUILayout.EndHorizontal();
 
                 EndSection();
@@ -206,10 +177,10 @@ namespace CosmicShore.Utility.Tools
             if (_utilitiesFoldout)
             {
                 BeginSection();
-                DrawMenuItemButton("Component Copier",        "FrogletTools/Legacy/Component Copier");
-                DrawMenuItemButton("Dialogue Editor",         "FrogletTools/Legacy/Dialogue Editor");
-                DrawMenuItemButton("ElementalFloat Editor",   "FrogletTools/Legacy/ElementalFloat Editor");
-                DrawMenuItemButton("Find Asset by GUID",      "FrogletTools/Legacy/Find Asset by GUID");
+                DrawMenuItemButton("Component Copier",           "FrogletTools/Legacy/Component Copier");
+                DrawMenuItemButton("Dialogue Editor",            "FrogletTools/Legacy/Dialogue Editor");
+                DrawMenuItemButton("ElementalFloat Editor",      "FrogletTools/Legacy/ElementalFloat Editor");
+                DrawMenuItemButton("Find Asset by GUID",         "FrogletTools/Legacy/Find Asset by GUID");
                 DrawMenuItemButton("Force Re-Serialize All SOs", "FrogletTools/Legacy/Force Re-Serialize All ScriptableObjects");
                 EndSection();
             }
@@ -233,9 +204,10 @@ namespace CosmicShore.Utility.Tools
                 GUILayout.Space(4);
 
                 EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("All", _btnSmall))        { CSDebug.LogLevel = CSLogLevel.All; SavePrefs(); }
-                if (GUILayout.Button("Warn + Err", _btnSmall)) { CSDebug.LogLevel = CSLogLevel.WarningsAndErrors; SavePrefs(); }
-                if (GUILayout.Button("Silent", _btnSmall))     { CSDebug.LogLevel = CSLogLevel.Off; SavePrefs(); }
+                GUILayout.Space(Pad);
+                if (GUILayout.Button("All"))            { CSDebug.LogLevel = CSLogLevel.All; SavePrefs(); }
+                if (GUILayout.Button("Warn + Err"))     { CSDebug.LogLevel = CSLogLevel.WarningsAndErrors; SavePrefs(); }
+                if (GUILayout.Button("Silent"))         { CSDebug.LogLevel = CSLogLevel.Off; SavePrefs(); }
                 EditorGUILayout.EndHorizontal();
 
                 GUILayout.Space(4);
@@ -261,6 +233,7 @@ namespace CosmicShore.Utility.Tools
 
                 if (!available)
                 {
+                    GUILayout.Space(Pad);
                     EditorGUILayout.LabelField("Enter Play Mode to use quest tools.", _mutedLabel);
                 }
                 else
@@ -269,10 +242,11 @@ namespace CosmicShore.Utility.Tools
                     int maxQuests = svc.QuestList?.Quests.Count ?? 1;
 
                     EditorGUILayout.BeginHorizontal();
-                    GUILayout.Label("Unlock to index", EditorStyles.label, GUILayout.Width(100));
-                    _questIndexInput = EditorGUILayout.TextField(_questIndexInput, _inputStyle, GUILayout.Width(36));
-                    GUILayout.Label($"/ {maxQuests}", new GUIStyle(EditorStyles.label) { normal = { textColor = TextMuted } }, GUILayout.Width(32));
-                    if (GUILayout.Button("Apply", _btnSmall, GUILayout.Width(56)))
+                    GUILayout.Space(Pad);
+                    GUILayout.Label("Unlock to index", GUILayout.Width(100));
+                    _questIndexInput = EditorGUILayout.TextField(_questIndexInput, GUILayout.Width(36));
+                    GUILayout.Label($"/ {maxQuests}", GUILayout.Width(32));
+                    if (GUILayout.Button("Apply", GUILayout.Width(56)))
                     {
                         if (int.TryParse(_questIndexInput, out int idx))
                             svc.DebugSetProgressToIndex(idx);
@@ -283,8 +257,11 @@ namespace CosmicShore.Utility.Tools
 
                     GUILayout.Space(4);
 
-                    if (GUILayout.Button("Reset All Quests", _btnStyle))
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(Pad);
+                    if (GUILayout.Button("Reset All Quests"))
                         svc.ResetAllProgress();
+                    EditorGUILayout.EndHorizontal();
 
                     GUILayout.Space(4);
 
@@ -324,12 +301,10 @@ namespace CosmicShore.Utility.Tools
         {
             EditorGUILayout.BeginVertical();
             GUILayout.Space(4);
-            EditorGUI.indentLevel++;
         }
 
         void EndSection()
         {
-            EditorGUI.indentLevel--;
             GUILayout.Space(4);
             EditorGUILayout.EndVertical();
 
@@ -339,26 +314,37 @@ namespace CosmicShore.Utility.Tools
 
         void DrawSceneButton(string label, string scenePath)
         {
-            if (GUILayout.Button(label, _btnStyle))
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (GUILayout.Button(label))
             {
                 EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
                 CSDebug.Log($"[FrogletToolbox] Opening {label}.");
             }
+            EditorGUILayout.EndHorizontal();
         }
 
         void DrawMenuItemButton(string label, string menuPath)
         {
-            if (GUILayout.Button(label, _btnStyle))
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (GUILayout.Button(label))
                 EditorApplication.ExecuteMenuItem(menuPath);
+            EditorGUILayout.EndHorizontal();
         }
 
         void DrawLogToggle(string label, bool current, System.Action<bool> setter)
         {
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Label(label, EditorStyles.label, GUILayout.Width(90));
+            GUILayout.Space(Pad);
+            bool next = GUILayout.Toggle(current, label);
+            if (next != current)
+            {
+                setter(next);
+                Repaint();
+            }
+            GUILayout.FlexibleSpace();
             DrawBadge(current ? "ON" : "OFF", current ? BadgeOn : BadgeOff);
-            bool next = EditorGUILayout.Toggle(current, GUILayout.Width(16));
-            if (next != current) setter(next);
             EditorGUILayout.EndHorizontal();
         }
 
