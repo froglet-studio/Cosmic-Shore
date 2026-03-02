@@ -179,6 +179,49 @@ namespace CosmicShore.Gameplay
         public void ToggleGameObject(bool toggle) => 
             gameObject.SetActive(toggle);
 
+        /// <summary>
+        /// Re-initializes a persistent Player for a new game scene.
+        /// Player NetworkObjects survive Netcode scene loads (DestroyWithScene=false)
+        /// but OnNetworkSpawn() only fires once (initial creation in Auth scene).
+        /// This method handles all subsequent scene transitions:
+        ///   - Clears stale vessel reference (old vessel destroyed with scene)
+        ///   - Updates NetworkVariables to match new game config
+        ///   - Syncs local properties from NetworkVariables
+        ///   - Re-registers with gameData.Players (cleared by ResetRuntimeData)
+        /// Called by ServerPlayerVesselInitializer when discovering persistent Players.
+        /// </summary>
+        public void PrepareForNewScene()
+        {
+            // Clear stale references from previous scene.
+            // Vessels have destroyWithScene=true and are already destroyed.
+            Vessel = null;
+            IsActive = false;
+            VesselNetId = 0;
+
+            // Update owner-writable NetworkVariables to match new game config.
+            if (IsOwner)
+                NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+
+            // Update server-writable NetworkVariables.
+            if (IsServer)
+            {
+                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                NetVesselId.Value = 0;
+            }
+
+            // Force-sync local properties from NetworkVariables.
+            // OnValueChanged callbacks only fire on actual changes;
+            // if a value happens to be the same, the local property
+            // would remain stale without this explicit sync.
+            Domain = NetDomain.Value;
+            Name = NetName.Value.ToString();
+            AvatarId = NetAvatarId.Value;
+
+            // Re-register with gameData (cleared by ResetRuntimeData during scene transition)
+            if (!gameData.Players.Contains(this))
+                gameData.Players.Add(this);
+        }
+
         public void DestroyPlayer()
         {
             if (IsSpawned)
@@ -207,17 +250,18 @@ namespace CosmicShore.Gameplay
 
         public void ResetForPlay()
         {
-            // Always reset the vessel and make it stationary.
-            Vessel.ResetForPlay();
+            // Vessel can be null for persistent Players between scene transitions
+            // (old vessel destroyed with scene, new vessel not yet spawned).
+            Vessel?.ResetForPlay();
             ToggleActive(false);
-            
+
             if (IsNetworkClient)
                 return;
-            
-            if (IsInitializedAsAI)
+
+            if (IsInitializedAsAI && Vessel != null)
                 ToggleAIPilot(false);
-                
-            InputStatus.ResetForReplay();
+
+            InputStatus?.ResetForReplay();
         }
 
         public void ChangeVessel(IVessel vessel) =>
