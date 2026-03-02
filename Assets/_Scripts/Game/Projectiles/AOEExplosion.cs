@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using System.Threading;
 using CosmicShore.Game;
 using CosmicShore.Soap;
+using Unity.Profiling;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -37,14 +38,16 @@ namespace CosmicShore.Game.Projectiles
         private ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
         private MaterialPropertyBlock _mpb;
+        private SphereCollider _sphereCollider;
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
+        private static readonly ProfilerMarker s_explodeFrame = new("AOE.ExplodeAsync.Frame");
 
         protected virtual void Awake()
         {
             if (!meshRenderer) meshRenderer = GetComponent<MeshRenderer>();
             _explosionImpactor = GetComponent<ExplosionImpactor>();
-            var sphereCol = GetComponent<SphereCollider>();
-            if (sphereCol) _colliderRadius = sphereCol.radius;
+            _sphereCollider = GetComponent<SphereCollider>();
+            if (_sphereCollider) _colliderRadius = _sphereCollider.radius;
             _mpb = new MaterialPropertyBlock();
         }
 
@@ -136,6 +139,15 @@ namespace CosmicShore.Game.Projectiles
                 // Start batch AOE processing — skips Physics OnTriggerEnter for prisms
                 impactor?.BeginBatchProcessing();
 
+                // When batch processing is active, disable the SphereCollider entirely.
+                // PhysX won't compute any trigger pairs — the Burst job handles spatial queries.
+                bool colliderDisabledForBatch = false;
+                if (impactor != null && impactor.IsBatchProcessing && _sphereCollider != null)
+                {
+                    _sphereCollider.enabled = false;
+                    colliderDisabledForBatch = true;
+                }
+
                 await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
                 if (!this || ct.IsCancellationRequested)
@@ -159,49 +171,56 @@ namespace CosmicShore.Game.Projectiles
                     if (!this || cachedTransform == null)
                     {
                         impactor?.EndBatchProcessing();
+                        if (colliderDisabledForBatch && _sphereCollider) _sphereCollider.enabled = true;
                         return;
                     }
 
-                    time += Time.deltaTime;
-                    float t = time / ExplosionDuration;
-                    float ease = Mathf.Sin(t * PI_OVER_TWO);
-
-                    cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
-
-                    // Batch AOE damage via Burst job over cache-packed prism data
-                    // Effective radius = collider radius (local) * localScale
-                    float currentRadius = _colliderRadius * MaxScale * ease;
-                    bool shouldContinue = impactor?.ProcessBatchFrame(
-                        cachedTransform.position, currentRadius, speed, Inertia) ?? true;
-
-                    if (!shouldContinue)
+                    using (s_explodeFrame.Auto())
                     {
-                        // Super-shielded enemy hit — mirrors original Destroy(gameObject) in
-                        // ExecuteCommonPrismCommands. Stop explosion immediately.
-                        impactor?.EndBatchProcessing();
-                        if (this) Destroy(gameObject);
-                        return;
-                    }
+                        time += Time.deltaTime;
+                        float t = time / ExplosionDuration;
+                        float ease = Mathf.Sin(t * PI_OVER_TWO);
 
-                    // Use MaterialPropertyBlock for per-instance opacity so multiple
-                    // concurrent explosions sharing the same Material don't fight over
-                    // the shared material's _Opacity value (which caused flickering).
-                    if (meshRenderer)
-                    {
-                        meshRenderer.GetPropertyBlock(_mpb);
-                        _mpb.SetFloat(OpacityID, 1 - ease);
-                        meshRenderer.SetPropertyBlock(_mpb);
+                        cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
+
+                        // Batch AOE damage via Burst job over cache-packed prism data
+                        // Effective radius = collider radius (local) * localScale
+                        float currentRadius = _colliderRadius * MaxScale * ease;
+                        bool shouldContinue = impactor?.ProcessBatchFrame(
+                            cachedTransform.position, currentRadius, speed, Inertia) ?? true;
+
+                        if (!shouldContinue)
+                        {
+                            // Super-shielded enemy hit — mirrors original Destroy(gameObject) in
+                            // ExecuteCommonPrismCommands. Stop explosion immediately.
+                            impactor?.EndBatchProcessing();
+                            if (colliderDisabledForBatch && _sphereCollider) _sphereCollider.enabled = true;
+                            if (this) Destroy(gameObject);
+                            return;
+                        }
+
+                        // Use MaterialPropertyBlock for per-instance opacity so multiple
+                        // concurrent explosions sharing the same Material don't fight over
+                        // the shared material's _Opacity value (which caused flickering).
+                        if (meshRenderer)
+                        {
+                            meshRenderer.GetPropertyBlock(_mpb);
+                            _mpb.SetFloat(OpacityID, 1 - ease);
+                            meshRenderer.SetPropertyBlock(_mpb);
+                        }
                     }
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
                 impactor?.EndBatchProcessing();
+                if (colliderDisabledForBatch && _sphereCollider) _sphereCollider.enabled = true;
                 if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException)
             {
                 impactor?.EndBatchProcessing();
+                if (colliderDisabledForBatch && _sphereCollider) _sphereCollider.enabled = true;
             }
             catch (System.Exception e)
             {
@@ -210,6 +229,7 @@ namespace CosmicShore.Game.Projectiles
                 // stuck at max scale with _useBatchProcessing permanently true.
                 Debug.LogException(e);
                 impactor?.EndBatchProcessing();
+                if (colliderDisabledForBatch && _sphereCollider) _sphereCollider.enabled = true;
                 if (this) Destroy(gameObject);
             }
         }

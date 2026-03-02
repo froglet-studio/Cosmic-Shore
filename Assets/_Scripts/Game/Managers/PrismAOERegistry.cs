@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.ECS;
@@ -150,7 +151,15 @@ namespace CosmicShore.Game
         private EntityQuery _ecsQuery;
         private World _ecsQueryWorld;
 
+        // --- ProfilerMarkers ---
+        private static readonly ProfilerMarker s_processExplosion = new("AOE.ProcessExplosion");
+        private static readonly ProfilerMarker s_burstJobSchedule = new("AOE.BurstJob.Schedule");
+        private static readonly ProfilerMarker s_burstJobScheduleECS = new("AOE.BurstJob.ScheduleECS");
+        private static readonly ProfilerMarker s_resolveDamageLegacy = new("AOE.ResolveDamage.Legacy");
+        private static readonly ProfilerMarker s_resolveDamageECS = new("AOE.ResolveDamage.ECS");
+
         public bool IsAvailable => _spatial.IsCreated;
+        public int HighWaterMark => _highWaterMark;
 
         public static PrismAOERegistry EnsureInstance()
         {
@@ -308,18 +317,21 @@ namespace CosmicShore.Game
             IVessel vessel,
             HashSet<int> alreadyHit)
         {
-            if (PrismEntityBridge.UseECS)
+            using (s_processExplosion.Auto())
             {
-                return ProcessExplosionFrameECS(
+                if (PrismEntityBridge.UseECS)
+                {
+                    return ProcessExplosionFrameECS(
+                        center, radius, speed, inertia,
+                        explosionDomain, affectSelf, destructive, devastating, shielding,
+                        anonymous, vessel, alreadyHit);
+                }
+
+                return ProcessExplosionFrameLegacy(
                     center, radius, speed, inertia,
                     explosionDomain, affectSelf, destructive, devastating, shielding,
                     anonymous, vessel, alreadyHit);
             }
-
-            return ProcessExplosionFrameLegacy(
-                center, radius, speed, inertia,
-                explosionDomain, affectSelf, destructive, devastating, shielding,
-                anonymous, vessel, alreadyHit);
         }
 
         /// <summary>
@@ -347,16 +359,18 @@ namespace CosmicShore.Game
             if (_hitIndices.Capacity < _highWaterMark)
                 _hitIndices.Capacity = _highWaterMark;
 
-            var job = new AOESpatialQueryJob
+            using (s_burstJobSchedule.Auto())
             {
-                Prisms = _spatial,
-                Center = (float3)center,
-                RadiusSq = radius * radius,
-                HitIndices = _hitIndices.AsParallelWriter()
-            };
+                var job = new AOESpatialQueryJob
+                {
+                    Prisms = _spatial,
+                    Center = (float3)center,
+                    RadiusSq = radius * radius,
+                    HitIndices = _hitIndices.AsParallelWriter()
+                };
 
-            var handle = job.Schedule(_highWaterMark, JOB_BATCH_SIZE);
-            handle.Complete();
+                job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete();
+            }
 
             // --- Phase 2: Main thread damage logic over cold data + managed refs ---
             return ResolveDamageLegacy(
@@ -422,16 +436,18 @@ namespace CosmicShore.Game
             if (_hitIndices.Capacity < entityCount)
                 _hitIndices.Capacity = entityCount;
 
-            var job = new AOESpatialQueryJob
+            using (s_burstJobScheduleECS.Auto())
             {
-                Prisms = spatialForJob,
-                Center = (float3)center,
-                RadiusSq = radius * radius,
-                HitIndices = _hitIndices.AsParallelWriter()
-            };
+                var job = new AOESpatialQueryJob
+                {
+                    Prisms = spatialForJob,
+                    Center = (float3)center,
+                    RadiusSq = radius * radius,
+                    HitIndices = _hitIndices.AsParallelWriter()
+                };
 
-            var handle = job.Schedule(entityCount, JOB_BATCH_SIZE);
-            handle.Complete();
+                job.Schedule(entityCount, JOB_BATCH_SIZE).Complete();
+            }
 
             // --- Phase 2: Damage resolution using managed refs to map back to Prism[] ---
             bool shouldContinue = ResolveDamageECS(
@@ -463,6 +479,7 @@ namespace CosmicShore.Game
             IVessel vessel,
             HashSet<int> alreadyHit)
         {
+            using var _ = s_resolveDamageLegacy.Auto();
             bool shouldContinue = true;
             int expDomain = (int)explosionDomain;
 
@@ -556,6 +573,7 @@ namespace CosmicShore.Game
             NativeArray<AOEDamage> ecsDamage,
             NativeArray<AOEManagedRef> ecsManagedRefs)
         {
+            using var _ = s_resolveDamageECS.Auto();
             bool shouldContinue = true;
             int expDomain = (int)explosionDomain;
 

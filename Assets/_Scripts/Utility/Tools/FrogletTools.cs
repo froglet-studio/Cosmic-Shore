@@ -78,6 +78,14 @@ namespace CosmicShore.Utility.Tools
             EditorSceneManager.OpenScene($"Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity", OpenSceneMode.Single);
             CSDebug.LogFormat("{0} - {1} - Opening PlayFab Test Sandbox.", nameof(FrogletTools), nameof(OpenPlayFabSandbox));
         }
+
+        // ─── Performance tools ───────────────────────────
+
+        [MenuItem("FrogletTools/AOE Benchmark Overlay", false, 200)]
+        private static void ToggleAOEBenchmark()
+        {
+            AOEBenchmarkOverlay.ToggleOverlay();
+        }
     }
 }
 
