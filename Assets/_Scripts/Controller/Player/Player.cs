@@ -143,23 +143,30 @@ namespace CosmicShore.Gameplay
             // 1. PlayerDataService (live profile from Cloud Save)
             // 2. GameDataSO cached values (set by PlayerDataService.HandleProfileChanged earlier)
             // 3. UGS PlayerName with suffix stripped (last resort)
-            if (playerDataService != null && playerDataService.IsInitialized && playerDataService.CurrentProfile != null)
+            if (IsOwner)
             {
-                NetName.Value = playerDataService.CurrentProfile.displayName;
-                NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
+                if (playerDataService != null && playerDataService.IsInitialized && playerDataService.CurrentProfile != null)
+                {
+                    NetName.Value = playerDataService.CurrentProfile.displayName;
+                    NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
+                }
+                else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
+                {
+                    NetName.Value = gameData.LocalPlayerDisplayName;
+                    NetAvatarId.Value = gameData.LocalPlayerAvatarId;
+                }
+                else
+                {
+                    NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
+                }
+
+                NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
             }
-            else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
+
+            if (IsServer)
             {
-                NetName.Value = gameData.LocalPlayerDisplayName;
-                NetAvatarId.Value = gameData.LocalPlayerAvatarId;
+                NetIsAI.Value = IsInitializedAsAI;
             }
-            else
-            {
-                NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
-            }
-            
-            NetIsAI.Value = IsInitializedAsAI;
-            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
             
             InputController.Initialize();
         }

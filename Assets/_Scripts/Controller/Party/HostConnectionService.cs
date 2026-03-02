@@ -59,6 +59,7 @@ namespace CosmicShore.Gameplay
         private bool _leaving;
         private PartyInviteData? _lastFiredInvite;
         private string _currentInviteTargetId;
+        private bool _refreshSuspended;
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY = "displayName";
@@ -123,7 +124,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_initialized || _presenceLobby == null) return;
+            if (!_initialized || _presenceLobby == null || _refreshSuspended) return;
 
             _refreshTimer += Time.deltaTime;
             if (_refreshTimer >= refreshIntervalSeconds)
@@ -207,6 +208,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            _refreshSuspended = true;
             try
             {
                 SyncLocalIdentity();
@@ -242,9 +244,6 @@ namespace CosmicShore.Gameplay
                     "[INVITE-SEND] SaveCurrentPlayerDataAsync completed — properties persisted",
                     Color.green);
 
-                // Find the target in online players and raise OnInviteSent.
-                // Snapshot with ToList() to avoid ArgumentOutOfRangeException
-                // when the refresh loop in Update() modifies the list concurrently.
                 foreach (var player in connectionData.OnlinePlayers.ToList())
                 {
                     if (player.PlayerId == targetPlayerId)
@@ -261,6 +260,10 @@ namespace CosmicShore.Gameplay
             {
                 DebugExtensions.LogErrorColored(
                     $"[INVITE-SEND] ERROR: {e.Message}\n{e.StackTrace}", Color.red);
+            }
+            finally
+            {
+                _refreshSuspended = false;
             }
         }
 
