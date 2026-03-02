@@ -31,6 +31,8 @@ MonoBehaviour:
     type: 2}
   OnVesselNetworkSpawned: {fileID: 11400000, guid: c864ae0be6654a12a4120c7192add02c,
     type: 2}
+  OnPlayerPairInitialized: {fileID: 11400000, guid: fdcbfd4c19cb4ab780086bc4eaab2755,
+    type: 2}
   OnMenuReady: {fileID: 11400000, guid: 74b62623b2c53e44ab457670b15723d8, type: 2}
   OnShowGameEndScreen: {fileID: 11400000, guid: 4c4df83a7f0a61f4aa7b643396bc9d45,
     type: 2}

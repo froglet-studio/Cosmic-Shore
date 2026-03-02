@@ -264,10 +264,16 @@ namespace CosmicShore.Gameplay
             gameData.AddPlayer(player);
             Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}</color>");
 
+            // Signal this specific player-vessel pair is fully initialized.
+            // Subscribers (e.g. MainMenuController) activate non-local players
+            // individually when their own pair resolves, avoiding the race
+            // condition of batch-activating players whose vessels haven't
+            // replicated yet.
+            gameData.InvokePlayerPairInitialized(player.PlayerNetId);
+
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
 
-            // Invoke Client Ready after few interval
             if (player.IsLocalUser)
             {
                 Debug.Log("<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");

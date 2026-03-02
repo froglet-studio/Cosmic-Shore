@@ -687,7 +687,7 @@ MonoBehaviour:
   inviterAvatarImage: {fileID: 7678187255017113882}
   acceptButton: {fileID: 2408988589979234396}
   declineButton: {fileID: 9096156806556547311}
-  panelRoot: {fileID: 7040009067698345261}
+  canvasGroup: {fileID: 8323267208482651102}
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   autoDeclineSeconds: 30
 --- !u!225 &8323267208482651102
@@ -698,9 +698,9 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7040009067698345261}
   m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
 --- !u!1 &9040024808939148975
 GameObject:
