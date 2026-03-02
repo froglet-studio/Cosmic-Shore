@@ -109,6 +109,11 @@ namespace CosmicShore.Gameplay
             }
 
             _initialized = true;
+            DebugExtensions.LogColored(
+                $"[HostConnectionService] Initialized (Start) — lobby: {_presenceLobby?.Id ?? "NULL"}, " +
+                $"partySession: {_partySession?.Id ?? "NULL"}, " +
+                $"localId: {connectionData.LocalPlayerId}",
+                Color.green);
 
             // Immediate first refresh so OnlinePlayers is populated
             // before the user opens the panel (don't wait 3 seconds).
@@ -165,6 +170,11 @@ namespace CosmicShore.Gameplay
                 }
 
                 _initialized = true;
+                DebugExtensions.LogColored(
+                    $"[HostConnectionService] Initialized (HandleSignedInEvent) — lobby: {_presenceLobby?.Id ?? "NULL"}, " +
+                    $"partySession: {_partySession?.Id ?? "NULL"}, " +
+                    $"localId: {connectionData.LocalPlayerId}",
+                    Color.green);
 
                 // Immediate refresh so OnlinePlayers is populated right away.
                 RefreshAsync().Forget();
@@ -186,29 +196,48 @@ namespace CosmicShore.Gameplay
 
         public async Task SendInviteAsync(string targetPlayerId)
         {
+            DebugExtensions.LogColored(
+                $"[INVITE-SEND] SendInviteAsync called — target: {targetPlayerId}", Color.cyan);
+
             if (_presenceLobby == null)
             {
-                Debug.LogWarning("[HostConnectionService] Cannot send invite — not in presence lobby.");
+                DebugExtensions.LogErrorColored(
+                    "[INVITE-SEND] ABORT — _presenceLobby is null", Color.red);
                 return;
             }
 
             try
             {
                 SyncLocalIdentity();
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] LocalPlayerId: {connectionData.LocalPlayerId}, " +
+                    $"DisplayName: {connectionData.LocalDisplayName}", Color.cyan);
 
                 if (_partySession == null)
+                {
+                    DebugExtensions.LogWarningColored(
+                        "[INVITE-SEND] _partySession is null — creating on demand...", Color.yellow);
                     await CreatePartySessionAsync();
+                }
 
-                // Use player properties (any player can set these, not just host).
-                // Key: INVITE_TARGET_KEY stores the target player ID.
-                // Key: INVITE_DATA_KEY stores the party session info.
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] PartySession ID: {_partySession?.Id ?? "NULL"}", Color.cyan);
+
                 string inviteData = $"{connectionData.LocalPlayerId}|{_partySession.Id}|{connectionData.LocalDisplayName}|{connectionData.LocalAvatarId}";
+
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] Setting properties — invite_target: '{targetPlayerId}', " +
+                    $"invite_data: '{inviteData}'", Color.cyan);
 
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(inviteData, VisibilityPropertyOptions.Public));
                 await _presenceLobby.SaveCurrentPlayerDataAsync();
+
+                DebugExtensions.LogColored(
+                    "[INVITE-SEND] SaveCurrentPlayerDataAsync completed — properties persisted",
+                    Color.green);
 
                 // Find the target in online players and raise OnInviteSent.
                 // Snapshot with ToList() to avoid ArgumentOutOfRangeException
@@ -218,15 +247,17 @@ namespace CosmicShore.Gameplay
                     if (player.PlayerId == targetPlayerId)
                     {
                         connectionData.OnInviteSent?.Raise(player);
+                        DebugExtensions.LogColored(
+                            $"[INVITE-SEND] OnInviteSent raised for {player.DisplayName}",
+                            Color.green);
                         break;
                     }
                 }
-
-                Debug.Log($"[HostConnectionService] Invite sent to {targetPlayerId}");
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] SendInvite error: {e.Message}");
+                DebugExtensions.LogErrorColored(
+                    $"[INVITE-SEND] ERROR: {e.Message}\n{e.StackTrace}", Color.red);
             }
         }
 
@@ -513,23 +544,60 @@ namespace CosmicShore.Gameplay
                 // Each player stores invite_target (who they're inviting) and
                 // invite_data (party session info) in their own player properties.
                 // Any player whose invite_target matches our ID is inviting us.
+                DebugExtensions.LogColored(
+                    $"[INVITE-RECV] Scanning {_presenceLobby.Players.Count} lobby players " +
+                    $"(myId: {connectionData.LocalPlayerId})", Color.yellow);
+
                 foreach (var p in _presenceLobby.Players)
                 {
                     if (p.Id == connectionData.LocalPlayerId) continue;
 
-                    if (p.Properties.TryGetValue(INVITE_TARGET_KEY, out var targetProp) &&
-                        targetProp.Value == connectionData.LocalPlayerId &&
-                        p.Properties.TryGetValue(INVITE_DATA_KEY, out var dataProp))
+                    bool hasTarget = p.Properties.TryGetValue(INVITE_TARGET_KEY, out var targetProp);
+                    bool hasData = p.Properties.TryGetValue(INVITE_DATA_KEY, out var dataProp);
+
+                    if (hasTarget && !string.IsNullOrEmpty(targetProp.Value))
                     {
+                        DebugExtensions.LogColored(
+                            $"[INVITE-RECV] Player '{p.Id}' has invite_target='{targetProp.Value}' " +
+                            $"(match={targetProp.Value == connectionData.LocalPlayerId})",
+                            targetProp.Value == connectionData.LocalPlayerId ? Color.green : Color.yellow);
+                    }
+
+                    if (hasTarget &&
+                        targetProp.Value == connectionData.LocalPlayerId &&
+                        hasData)
+                    {
+                        DebugExtensions.LogColored(
+                            $"[INVITE-RECV] MATCH! invite_data='{dataProp.Value}'", Color.green);
+
                         var invite = ParseInvite(dataProp.Value);
                         if (invite.HasValue)
                         {
-                            if (!_lastFiredInvite.HasValue ||
-                                _lastFiredInvite.Value.PartySessionId != invite.Value.PartySessionId)
+                            bool isDuplicate = _lastFiredInvite.HasValue &&
+                                _lastFiredInvite.Value.PartySessionId == invite.Value.PartySessionId;
+
+                            DebugExtensions.LogColored(
+                                $"[INVITE-RECV] Parsed OK — sessionId: {invite.Value.PartySessionId}, " +
+                                $"host: {invite.Value.HostDisplayName}, " +
+                                $"isDuplicate: {isDuplicate}, " +
+                                $"lastFired: {_lastFiredInvite?.PartySessionId ?? "none"}",
+                                isDuplicate ? Color.yellow : Color.green);
+
+                            if (!isDuplicate)
                             {
                                 _lastFiredInvite = invite;
+                                DebugExtensions.LogColored(
+                                    $"[INVITE-RECV] RAISING OnInviteReceived " +
+                                    $"(event null? {connectionData.OnInviteReceived == null})",
+                                    Color.green);
                                 connectionData.OnInviteReceived?.Raise(invite.Value);
                             }
+                        }
+                        else
+                        {
+                            DebugExtensions.LogErrorColored(
+                                $"[INVITE-RECV] ParseInvite FAILED for data: '{dataProp.Value}'",
+                                Color.red);
                         }
                     }
                 }

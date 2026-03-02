@@ -54,8 +54,15 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            DebugExtensions.LogColored(
+                "[INVITE-UI] PartyInviteNotificationPanel.OnEnable — subscribing to OnInviteReceived",
+                Color.magenta);
             if (connectionData?.OnInviteReceived != null)
                 connectionData.OnInviteReceived.OnRaised += OnInviteReceived;
+            else
+                DebugExtensions.LogErrorColored(
+                    "[INVITE-UI] connectionData or OnInviteReceived is NULL — cannot subscribe!",
+                    Color.red);
         }
 
         void OnDisable()
@@ -87,6 +94,11 @@ namespace CosmicShore.UI
 
         private void OnInviteReceived(PartyInviteData invite)
         {
+            DebugExtensions.LogColored(
+                $"[INVITE-UI] OnInviteReceived! From: {invite.HostDisplayName}, " +
+                $"SessionId: {invite.PartySessionId}",
+                Color.green);
+
             _pendingInvite = invite;
             _timer = 0f;
             _responding = false;
