@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -57,6 +58,14 @@ namespace CosmicShore.Gameplay
         private bool _joining;
         private bool _leaving;
         private PartyInviteData? _lastFiredInvite;
+        private string _currentInviteTargetId;
+        /// <summary>
+        /// Mutex flag preventing concurrent lobby operations.
+        /// RefreshAsync skips if busy; SendInviteAsync waits then claims.
+        /// Prevents the SDK's internal player index from going stale when
+        /// a refresh and a save race each other.
+        /// </summary>
+        private bool _lobbyBusy;
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY = "displayName";
@@ -87,9 +96,32 @@ namespace CosmicShore.Gameplay
             while (!IsAuthSignedInAndHasId())
                 await Task.Delay(300);
 
+            // HandleSignedInEvent may have already completed via SOAP event.
+            if (_initialized) return;
+
             SyncLocalIdentity();
             await JoinPresenceLobbyAsync();
+
+            // Create Relay-backed party session so the NetworkManager starts as a
+            // Relay host. Wrapped in try-catch so a Relay failure does not block
+            // _initialized — the presence lobby and refresh loop must always work.
+            // SendInviteAsync has a lazy-creation fallback if _partySession is null.
+            try
+            {
+                await CreatePartySessionAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] Party session creation failed (Relay may be unavailable). " +
+                    $"Invite send will retry on demand. Error: {e.Message}");
+            }
+
             _initialized = true;
+            DebugExtensions.LogColored(
+                $"[HostConnectionService] Initialized (Start) — lobby: {_presenceLobby?.Id ?? "NULL"}, " +
+                $"partySession: {_partySession?.Id ?? "NULL"}, " +
+                $"localId: {connectionData.LocalPlayerId}",
+                Color.green);
 
             // Immediate first refresh so OnlinePlayers is populated
             // before the user opens the panel (don't wait 3 seconds).
@@ -98,7 +130,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_initialized || _presenceLobby == null) return;
+            if (!_initialized || _presenceLobby == null || _lobbyBusy) return;
 
             _refreshTimer += Time.deltaTime;
             if (_refreshTimer >= refreshIntervalSeconds)
@@ -131,7 +163,26 @@ namespace CosmicShore.Gameplay
             try
             {
                 await JoinPresenceLobbyAsync();
+
+                // Create Relay-backed party session so the NetworkManager starts as a
+                // Relay host. Failure is non-fatal — the presence lobby and refresh loop
+                // must always work. SendInviteAsync has a lazy-creation fallback.
+                try
+                {
+                    await CreatePartySessionAsync();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[HostConnectionService] Party session creation failed (Relay may be unavailable). " +
+                        $"Invite send will retry on demand. Error: {e.Message}");
+                }
+
                 _initialized = true;
+                DebugExtensions.LogColored(
+                    $"[HostConnectionService] Initialized (HandleSignedInEvent) — lobby: {_presenceLobby?.Id ?? "NULL"}, " +
+                    $"partySession: {_partySession?.Id ?? "NULL"}, " +
+                    $"localId: {connectionData.LocalPlayerId}",
+                    Color.green);
 
                 // Immediate refresh so OnlinePlayers is populated right away.
                 RefreshAsync().Forget();
@@ -153,45 +204,77 @@ namespace CosmicShore.Gameplay
 
         public async Task SendInviteAsync(string targetPlayerId)
         {
+            DebugExtensions.LogColored(
+                $"[INVITE-SEND] SendInviteAsync called — target: {targetPlayerId}", Color.cyan);
+
             if (_presenceLobby == null)
             {
-                Debug.LogWarning("[HostConnectionService] Cannot send invite — not in presence lobby.");
+                DebugExtensions.LogErrorColored(
+                    "[INVITE-SEND] ABORT — _presenceLobby is null", Color.red);
                 return;
             }
 
+            // Wait for any in-flight RefreshAsync to finish so the SDK's
+            // internal player index is stable before we call SaveCurrentPlayerDataAsync.
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
             try
             {
                 SyncLocalIdentity();
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] LocalPlayerId: {connectionData.LocalPlayerId}, " +
+                    $"DisplayName: {connectionData.LocalDisplayName}", Color.cyan);
 
                 if (_partySession == null)
+                {
+                    DebugExtensions.LogWarningColored(
+                        "[INVITE-SEND] _partySession is null — creating on demand...", Color.yellow);
                     await CreatePartySessionAsync();
+                }
 
-                // Use player properties (any player can set these, not just host).
-                // Key: INVITE_TARGET_KEY stores the target player ID.
-                // Key: INVITE_DATA_KEY stores the party session info.
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] PartySession ID: {_partySession?.Id ?? "NULL"}", Color.cyan);
+
                 string inviteData = $"{connectionData.LocalPlayerId}|{_partySession.Id}|{connectionData.LocalDisplayName}|{connectionData.LocalAvatarId}";
+
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] Setting properties — invite_target: '{targetPlayerId}', " +
+                    $"invite_data: '{inviteData}'", Color.cyan);
 
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(inviteData, VisibilityPropertyOptions.Public));
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
 
-                // Find the target in online players and raise OnInviteSent
-                foreach (var player in connectionData.OnlinePlayers)
+                await RefreshAndSavePlayerDataAsync();
+
+                _currentInviteTargetId = targetPlayerId;
+
+                DebugExtensions.LogColored(
+                    "[INVITE-SEND] SaveCurrentPlayerDataAsync completed — properties persisted",
+                    Color.green);
+
+                foreach (var player in connectionData.OnlinePlayers.ToList())
                 {
                     if (player.PlayerId == targetPlayerId)
                     {
                         connectionData.OnInviteSent?.Raise(player);
+                        DebugExtensions.LogColored(
+                            $"[INVITE-SEND] OnInviteSent raised for {player.DisplayName}",
+                            Color.green);
                         break;
                     }
                 }
-
-                Debug.Log($"[HostConnectionService] Invite sent to {targetPlayerId}");
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] SendInvite error: {e.Message}");
+                DebugExtensions.LogErrorColored(
+                    $"[INVITE-SEND] ERROR: {e.Message}\n{e.StackTrace}", Color.red);
+            }
+            finally
+            {
+                _lobbyBusy = false;
             }
         }
 
@@ -214,8 +297,9 @@ namespace CosmicShore.Gameplay
                 connectionData.PartyMembers?.Add(hostData);
                 connectionData.OnPartyMemberJoined?.Raise(hostData);
 
+                // Keep _lastFiredInvite set so the dedup guard prevents
+                // re-triggering if the host is slow to clear their properties.
                 Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
-                await RequestClearInviteAsync();
             }
             catch (Exception e)
             {
@@ -461,8 +545,9 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid RefreshAsync()
         {
-            if (_presenceLobby == null) return;
+            if (_presenceLobby == null || _lobbyBusy) return;
 
+            _lobbyBusy = true;
             try
             {
                 await _presenceLobby.RefreshAsync();
@@ -482,30 +567,50 @@ namespace CosmicShore.Gameplay
                 {
                     if (p.Id == connectionData.LocalPlayerId) continue;
 
-                    if (p.Properties.TryGetValue(INVITE_TARGET_KEY, out var targetProp) &&
+                    bool hasTarget = p.Properties.TryGetValue(INVITE_TARGET_KEY, out var targetProp);
+                    bool hasData = p.Properties.TryGetValue(INVITE_DATA_KEY, out var dataProp);
+
+                    if (hasTarget &&
                         targetProp.Value == connectionData.LocalPlayerId &&
-                        p.Properties.TryGetValue(INVITE_DATA_KEY, out var dataProp))
+                        hasData)
                     {
                         var invite = ParseInvite(dataProp.Value);
                         if (invite.HasValue)
                         {
-                            if (!_lastFiredInvite.HasValue ||
-                                _lastFiredInvite.Value.PartySessionId != invite.Value.PartySessionId)
+                            bool isDuplicate = _lastFiredInvite.HasValue &&
+                                _lastFiredInvite.Value.PartySessionId == invite.Value.PartySessionId;
+
+                            // Only log on first detection — skip dedup repeats to avoid spam
+                            if (!isDuplicate)
                             {
+                                DebugExtensions.LogColored(
+                                    $"[INVITE-RECV] New invite from '{invite.Value.HostDisplayName}' " +
+                                    $"(sessionId: {invite.Value.PartySessionId})",
+                                    Color.green);
                                 _lastFiredInvite = invite;
                                 connectionData.OnInviteReceived?.Raise(invite.Value);
                             }
+                        }
+                        else
+                        {
+                            DebugExtensions.LogErrorColored(
+                                $"[INVITE-RECV] ParseInvite FAILED for data: '{dataProp.Value}'",
+                                Color.red);
                         }
                     }
                 }
 
                 // ── Party session member tracking ───────────────────────────
                 if (_partySession != null)
-                    RefreshPartyMembers();
+                    await RefreshPartyMembersAsync();
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
             }
         }
 
@@ -549,10 +654,18 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private void RefreshPartyMembers()
+        private async Task RefreshPartyMembersAsync()
         {
             if (_partySession == null) return;
             if (connectionData.PartyMembers == null) return;
+
+            // Refresh the party session so Players list is up-to-date.
+            try { await _partySession.RefreshAsync(); }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] Party session refresh error: {e.Message}");
+                return;
+            }
 
             // Build a set of player IDs currently in the session
             var sessionPlayerIds = new HashSet<string>();
@@ -560,6 +673,7 @@ namespace CosmicShore.Gameplay
                 sessionPlayerIds.Add(p.Id);
 
             // Detect and add new members
+            bool inviteTargetJoined = false;
             foreach (var p in _partySession.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
@@ -579,7 +693,21 @@ namespace CosmicShore.Gameplay
                 {
                     connectionData.PartyMembers.Add(memberData);
                     connectionData.OnPartyMemberJoined?.Raise(memberData);
+
+                    if (p.Id == _currentInviteTargetId)
+                        inviteTargetJoined = true;
                 }
+            }
+
+            // Invited player joined — clear sender's invite properties so receivers
+            // stop seeing the stale invite on every refresh cycle.
+            if (inviteTargetJoined)
+            {
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] Invited player '{_currentInviteTargetId}' joined party — clearing invite properties",
+                    Color.green);
+                _currentInviteTargetId = null;
+                await ClearSentInvitePropertiesAsync();
             }
 
             // Detect and remove members who left the session
@@ -602,6 +730,8 @@ namespace CosmicShore.Gameplay
 
         private async Task CreatePartySessionAsync()
         {
+            if (_partySession != null) return;
+
             var opts = new SessionOptions
             {
                 MaxPlayers = connectionData.MaxPartySlots,
@@ -615,10 +745,67 @@ namespace CosmicShore.Gameplay
             Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
         }
 
+        /// <summary>
+        /// Clears the SENDER's own invite properties after the invited player
+        /// joins the party. This stops receivers from seeing stale invite data.
+        /// </summary>
+        private async Task ClearSentInvitePropertiesAsync()
+        {
+            if (_presenceLobby == null) return;
+
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
+            try
+            {
+                _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
+                    new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
+                _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
+                    new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
+                await RefreshAndSavePlayerDataAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] ClearSentInvite error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the lobby then saves current player data. The UGS SDK can
+        /// throw <see cref="ArgumentOutOfRangeException"/> if its internal player
+        /// index is stale (e.g. after another session operation). On failure,
+        /// refreshes again and retries once.
+        /// </summary>
+        private async Task RefreshAndSavePlayerDataAsync()
+        {
+            await _presenceLobby.RefreshAsync();
+            try
+            {
+                await _presenceLobby.SaveCurrentPlayerDataAsync();
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                Debug.LogWarning("[HostConnectionService] SaveCurrentPlayerDataAsync index error — refreshing and retrying...");
+                await _presenceLobby.RefreshAsync();
+                await _presenceLobby.SaveCurrentPlayerDataAsync();
+            }
+        }
+
+        /// <summary>
+        /// Clears this player's own invite properties and resets dedup state.
+        /// Used by the RECIPIENT when declining an invite.
+        /// </summary>
         private async Task RequestClearInviteAsync()
         {
             if (_presenceLobby == null) return;
 
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
             try
             {
                 // Any player can clear their own player properties.
@@ -626,13 +813,17 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
+                await RefreshAndSavePlayerDataAsync();
 
                 _lastFiredInvite = null;
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] ClearInvite error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
             }
         }
 
