@@ -118,7 +118,7 @@ namespace CosmicShore.Utility.Tools
                 return;
             }
 
-            service.DebugCompleteCurrentQuest();
+            //service.DebugCompleteCurrentQuest();
         }
     }
 }
