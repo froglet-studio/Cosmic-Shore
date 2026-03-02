@@ -85,7 +85,7 @@ namespace CosmicShore
         #endregion
 
 
-        [MenuItem("FrogletTools/Create/Class")]
+        [MenuItem("FrogletTools/Legacy/Create/Class")]
         public static void GetWindow()
         {
             // This method is called when the user selects the menu item in the Editor          

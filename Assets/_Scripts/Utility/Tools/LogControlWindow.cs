@@ -14,6 +14,7 @@ namespace CosmicShore.Utility.Tools
         const string PrefWarningsEnabled = "CSDebug_WarningsEnabled";
         const string PrefErrorsEnabled = "CSDebug_ErrorsEnabled";
         const string PrefUnityLoggerEnabled = "CSDebug_UnityLoggerEnabled";
+        const string PrefBootstrapScene = "Load Main_Menu Scene";
 
         // ── State ────────────────────────────────────────────────────────────
         Vector2 _scrollPos;
@@ -21,6 +22,9 @@ namespace CosmicShore.Utility.Tools
         bool _sceneFoldout = true;
         bool _loggingFoldout = true;
         bool _questFoldout = true;
+        bool _createFoldout;
+        bool _multiplayerFoldout;
+        bool _utilitiesFoldout;
 
         // ── Pastel Palette ───────────────────────────────────────────────────
         static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
@@ -48,7 +52,7 @@ namespace CosmicShore.Utility.Tools
         static void Open()
         {
             var window = GetWindow<LogControlWindow>("Froglet Toolbox");
-            window.minSize = new Vector2(340, 480);
+            window.minSize = new Vector2(340, 520);
         }
 
         void OnEnable() => LoadPrefs();
@@ -143,9 +147,9 @@ namespace CosmicShore.Utility.Tools
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
             GUILayout.Space(6);
 
-            // ═══════════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════════
             //  SCENES
-            // ═══════════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════════
             DrawSectionHeader("Scenes", ref _sceneFoldout);
             if (_sceneFoldout)
             {
@@ -159,15 +163,72 @@ namespace CosmicShore.Utility.Tools
 
             GUILayout.Space(2);
 
-            // ═══════════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════════
+            //  CREATE
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Create", ref _createFoldout);
+            if (_createFoldout)
+            {
+                BeginSection();
+                DrawOpenWindowButton<CosmicShore.CreateNewMiniGame>("New MiniGame", "MiniGame Editor Window");
+                DrawOpenWindowButton<CosmicShore.CreateNewClass>("New Class", "MiniGame Editor Window");
+                EndSection();
+            }
+
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  TESTING MULTIPLAYER
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Testing Multiplayer", ref _multiplayerFoldout);
+            if (_multiplayerFoldout)
+            {
+                BeginSection();
+
+                bool bootstrapEnabled = EditorPrefs.GetBool(PrefBootstrapScene, true);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("Load Bootstrap on Play", EditorStyles.label, GUILayout.Width(160));
+                DrawBadge(bootstrapEnabled ? "ON" : "OFF", bootstrapEnabled ? BadgeOn : BadgeOff);
+                bool newBootstrap = EditorGUILayout.Toggle(bootstrapEnabled, GUILayout.Width(16));
+                if (newBootstrap != bootstrapEnabled)
+                    EditorPrefs.SetBool(PrefBootstrapScene, newBootstrap);
+                EditorGUILayout.EndHorizontal();
+
+                EndSection();
+            }
+
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  UTILITIES
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Utilities", ref _utilitiesFoldout);
+            if (_utilitiesFoldout)
+            {
+                BeginSection();
+                DrawOpenWindowButton<ComponentCopierWindow>("Component Copier", "Component Copier");
+                DrawOpenWindowButton<CosmicShore.DialogueSystem.Editor.DialogueEditorWindow>("Dialogue Editor", "Dialogue Editor");
+                DrawOpenWindowButton<ElementalFloatEditor>("ElementalFloat Editor", "ElementalFloat Editor");
+                DrawOpenWindowButton<FindAssetByGUID>("Find Asset by GUID", "Asset & Object Finder");
+
+                GUILayout.Space(4);
+
+                if (GUILayout.Button("Force Re-Serialize All SOs", _btnStyle))
+                    ForceReserializeScriptableObjects.ReserializeAllScriptableObjects();
+
+                EndSection();
+            }
+
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
             //  LOGGING
-            // ═══════════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════════
             DrawSectionHeader("Logging", ref _loggingFoldout);
             if (_loggingFoldout)
             {
                 BeginSection();
 
-                // Unity Logger master toggle
                 DrawLogToggle("Unity Logger", Debug.unityLogger.logEnabled, v =>
                 {
                     Debug.unityLogger.logEnabled = v;
@@ -176,7 +237,6 @@ namespace CosmicShore.Utility.Tools
 
                 GUILayout.Space(4);
 
-                // Presets
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("All", _btnSmall))        { CSDebug.LogLevel = CSLogLevel.All; SavePrefs(); }
                 if (GUILayout.Button("Warn + Err", _btnSmall)) { CSDebug.LogLevel = CSLogLevel.WarningsAndErrors; SavePrefs(); }
@@ -185,7 +245,6 @@ namespace CosmicShore.Utility.Tools
 
                 GUILayout.Space(4);
 
-                // Per-type toggles
                 DrawLogToggle("Logs",     CSDebug.LogEnabled,      v => { CSDebug.LogEnabled = v; SavePrefs(); });
                 DrawLogToggle("Warnings", CSDebug.WarningsEnabled, v => { CSDebug.WarningsEnabled = v; SavePrefs(); });
                 DrawLogToggle("Errors",   CSDebug.ErrorsEnabled,   v => { CSDebug.ErrorsEnabled = v; SavePrefs(); });
@@ -195,9 +254,9 @@ namespace CosmicShore.Utility.Tools
 
             GUILayout.Space(2);
 
-            // ═══════════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════════
             //  QUEST DEBUG
-            // ═══════════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════════
             DrawSectionHeader("Quest Debug", ref _questFoldout);
             if (_questFoldout)
             {
@@ -214,7 +273,6 @@ namespace CosmicShore.Utility.Tools
                     var svc = GameModeProgressionService.Instance;
                     int maxQuests = svc.QuestList?.Quests.Count ?? 1;
 
-                    // Index input
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Label("Unlock to index", EditorStyles.label, GUILayout.Width(100));
                     _questIndexInput = EditorGUILayout.TextField(_questIndexInput, _inputStyle, GUILayout.Width(36));
@@ -260,7 +318,6 @@ namespace CosmicShore.Utility.Tools
             var rect = GUILayoutUtility.GetRect(0, 24, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(rect, SectionHeader);
 
-            // Subtle left accent
             var accent = new Rect(rect.x, rect.y, 3, rect.height);
             EditorGUI.DrawRect(accent, AccentMint * 0.8f);
 
@@ -292,6 +349,12 @@ namespace CosmicShore.Utility.Tools
                 EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
                 CSDebug.Log($"[FrogletToolbox] Opening {label}.");
             }
+        }
+
+        void DrawOpenWindowButton<T>(string label, string windowTitle) where T : EditorWindow
+        {
+            if (GUILayout.Button(label, _btnStyle))
+                GetWindow<T>(windowTitle);
         }
 
         void DrawLogToggle(string label, bool current, System.Action<bool> setter)
