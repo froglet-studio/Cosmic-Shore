@@ -1188,16 +1188,16 @@ The existing "Game UI" in Menu_Main has two children:
 
 ```
 Game UI [RectTransform, CanvasGroup]                    ← already in freestyleCanvasGroups[]
-├── Freestyle HUD [RectTransform, MenuFreestyleHUD]
-│   └── Vessel Change Button [Image, Button, TMP label "VESSEL"]
-│       └── onClick → MenuFreestyleHUD.OnVesselChangeClicked() → vesselSelectionPanel.Open()
+├── MiniGameHUD [RectTransform, CanvasGroup, MenuMiniGameHUD]
+│   └── Volume / Pause Button [Image, Button, MenuAudio]
+│       └── MenuMiniGameHUD.Awake() wires onClick → vesselSelectionPanel.Open() + Hide()
 │
 └── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
-    ├── Buttons (Resume, Close)
+    ├── Buttons (Resume, Close) → onClick includes MenuMiniGameHUD.Show()
     └── Menu [GridLayout, 6× ShipCardView]
 ```
 
-`MenuFreestyleHUD` (`_Scripts/UI/MenuFreestyleHUD.cs`) is the minimal freestyle mode HUD. It provides the vessel-change button that opens the `MenuVesselSelectionPanelController` panel. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. Phase 2/3 features (shape drawing, scoring) will extend this component or replace it with MiniGameHUD.
+`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button (matching the MinigameFreestyle scene pattern) that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 2/3 features (shape drawing, scoring) are needed.
 
 #### Phase 1: Core Freestyle HUD (target hierarchy)
 
@@ -1350,7 +1350,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 
 | Role | File | Location |
 |---|---|---|
-| Freestyle HUD (vessel change trigger) | `MenuFreestyleHUD.cs` | `_Scripts/UI/` |
+| Menu MiniGameHUD (freestyle HUD + vessel change trigger) | `MenuMiniGameHUD.cs` | `_Scripts/UI/` |
 | Freestyle toggle (autopilot↔control) | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
 | Menu state machine | `MainMenuController.cs` | `_Scripts/System/` |
 | Menu vessel spawner (base) | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
