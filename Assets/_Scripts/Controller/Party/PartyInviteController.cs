@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Gameplay
 {
@@ -39,6 +40,7 @@ namespace CosmicShore.Gameplay
 
         private CancellationTokenSource _cts;
         private bool _transitioning;
+        private bool _sceneLoadComplete;
 
         public static PartyInviteController Instance { get; private set; }
 
@@ -127,7 +129,7 @@ namespace CosmicShore.Gameplay
                 Debug.Log("[PartyInviteController] Netcode client connected.");
 
                 // Step 5: Wait for scene sync (host loads Menu_Main for us)
-                await WaitForSceneLoadAsync(ct);
+                await WaitForSceneLoadCallbackAsync("Menu_Main", ct);
                 Debug.Log("[PartyInviteController] Menu scene loaded.");
 
                 // Step 6: Signal completion — SOAP events from the spawn chain
@@ -172,15 +174,26 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public async UniTask InvitePlayerAsync(string targetPlayerId)
         {
-            await TransitionToPartyHostAsync();
-
             if (HostConnectionService.Instance == null)
             {
-                Debug.LogError("[PartyInviteController] HostConnectionService not available for invite.");
+                Debug.LogError("[PartyInviteController] HostConnectionService not available.");
                 return;
             }
 
+            // Fast path: party session already exists (e.g., second+ invite).
+            // No NM restart or scene reload needed — just send the invite.
+            if (HostConnectionService.Instance.PartySession != null)
+            {
+                Debug.Log("[PartyInviteController] Party session exists — sending invite directly.");
+                await HostConnectionService.Instance.SendInviteAsync(targetPlayerId);
+                return;
+            }
+
+            // Slow path: first invite — need to transition from local host to Relay host.
+            await TransitionToPartyHostAsync();
+
             await HostConnectionService.Instance.SendInviteAsync(targetPlayerId);
+            Debug.Log($"[PartyInviteController] Invite sent to {targetPlayerId}.");
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -233,20 +246,34 @@ namespace CosmicShore.Gameplay
                 await ShutdownNetworkManagerAsync(ct);
 
                 // Step 3: Create party session with Relay (handled by HostConnectionService)
-                // This allocates Relay and starts NetworkManager as host
+                // UGS SDK allocates Relay, configures transport, and calls nm.StartHost().
                 await HostConnectionService.Instance.CreatePartySessionPublicAsync();
                 Debug.Log("[PartyInviteController] Party session created on Relay.");
 
-                // Step 4: Load Menu_Main as network scene
+                // Step 4: Verify NetworkManager restarted as server
                 var nm = NetworkManager.Singleton;
-                if (nm != null && nm.IsServer && nm.SceneManager != null)
+                if (nm == null || !nm.IsServer)
+                {
+                    Debug.LogError("[PartyInviteController] NetworkManager not running as server after Relay session creation.");
+                    await RecoverFromFailedTransitionAsync();
+                    return;
+                }
+
+                // Step 5: Register scene load callback BEFORE triggering load
+                // so we catch the actual reload (not the current scene which is already Menu_Main).
+                _sceneLoadComplete = false;
+                SceneManager.sceneLoaded += OnSceneLoaded;
+
+                // Step 6: Load Menu_Main as network scene
+                if (nm.SceneManager != null)
                 {
                     nm.SceneManager.LoadScene("Menu_Main",
                         UnityEngine.SceneManagement.LoadSceneMode.Single);
                 }
 
-                // Step 5: Wait for scene to load and spawn chain to complete
-                await WaitForSceneLoadAsync(ct);
+                // Step 7: Wait for the NEW scene load to actually complete
+                await WaitForSceneLoadCallbackAsync("Menu_Main", ct);
+
                 Debug.Log("[PartyInviteController] Host transition completed.");
             }
             catch (OperationCanceledException)
@@ -261,6 +288,7 @@ namespace CosmicShore.Gameplay
             finally
             {
                 _transitioning = false;
+                SceneManager.sceneLoaded -= OnSceneLoaded;
             }
         }
 
@@ -333,26 +361,42 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private async UniTask WaitForSceneLoadAsync(CancellationToken ct)
+        /// <summary>
+        /// Waits for a scene to finish loading using the <see cref="SceneManager.sceneLoaded"/>
+        /// callback. This is reliable even when the target scene name matches the current
+        /// active scene (e.g., reloading Menu_Main while already on Menu_Main).
+        /// </summary>
+        private async UniTask WaitForSceneLoadCallbackAsync(string sceneName, CancellationToken ct)
         {
+            _sceneLoadComplete = false;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(sceneLoadTimeoutSeconds));
 
             try
             {
-                // Wait for the active scene to be Menu_Main (synced from host)
                 await UniTask.WaitUntil(
-                    () =>
-                    {
-                        var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-                        return activeScene.name == "Menu_Main" && activeScene.isLoaded;
-                    },
+                    () => _sceneLoadComplete,
                     cancellationToken: timeoutCts.Token);
+
+                // Post-load settle: let MainMenuController.Start() and spawn chain execute
+                await UniTask.Delay(500, cancellationToken: ct);
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
-                Debug.LogWarning("[PartyInviteController] Scene load timed out — proceeding anyway.");
+                Debug.LogWarning($"[PartyInviteController] Scene load for '{sceneName}' timed out — proceeding anyway.");
             }
+            finally
+            {
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+            }
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name == "Menu_Main")
+                _sceneLoadComplete = true;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -377,10 +421,10 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Return to Menu_Main if not already there
-                var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+                var activeScene = SceneManager.GetActiveScene();
                 if (activeScene.name != "Menu_Main")
                 {
-                    UnityEngine.SceneManagement.SceneManager.LoadScene("Menu_Main");
+                    SceneManager.LoadScene("Menu_Main");
                 }
             }
             catch (Exception e)
