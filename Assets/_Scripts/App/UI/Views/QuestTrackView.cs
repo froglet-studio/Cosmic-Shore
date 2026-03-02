@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Game.Progression;
 using CosmicShore.Models;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,6 +22,15 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private Slider progressBarSlider;
         [SerializeField] private float sliderAnimDuration = 1f;
         [SerializeField] private Ease sliderEase = Ease.OutCubic;
+
+        [Header("Ghost Slider")]
+        [Tooltip("Second slider that shows one step ahead of the main slider (the next quest to complete).")]
+        [SerializeField] private Slider ghostSlider;
+        [Tooltip("Text anchored to the right edge of the ghost slider fill. Shows the next quest description.")]
+        [SerializeField] private TMP_Text ghostDescriptionText;
+        [Tooltip("CanvasGroup on the ghost description text for fade in/out animations.")]
+        [SerializeField] private CanvasGroup ghostTextCanvasGroup;
+        [SerializeField] private float ghostTextFadeDuration = 0.4f;
 
         [Header("Scroll Snap")]
         [Tooltip("The ScrollRect parent. Snap to nearest card after user finishes scrolling.")]
@@ -39,18 +49,23 @@ namespace CosmicShore.App.UI.Views
 
         private readonly List<QuestItemCard> _cards = new();
         private Tween _sliderTween;
+        private Tween _ghostSliderTween;
+        private Tween _ghostTextFadeTween;
         private Tween _snapTween;
         private bool _wasMoving;
         private bool _isSnapping;
+        private string _currentGhostDescription;
 
         void OnEnable()
         {
             EnsureSliderIgnoresLayout();
             SpawnCards();
             ConfigureSlider();
+            ConfigureGhostSlider();
             RefreshAllCards();
             UpdateActivePulse();
             SetSliderImmediate();
+            SetGhostSliderImmediate();
             StartCoroutine(PostSpawnSetup());
 
             if (GameModeProgressionService.Instance != null)
@@ -87,6 +102,7 @@ namespace CosmicShore.App.UI.Views
             RefreshAllCards();
             UpdateActivePulse();
             AnimateSlider();
+            AnimateGhostSlider();
         }
 
         // ── Setup ─────────────────────────────────────────────────────────────
@@ -266,6 +282,102 @@ namespace CosmicShore.App.UI.Views
             return count;
         }
 
+        // ── Ghost Slider ────────────────────────────────────────────────────
+
+        void ConfigureGhostSlider()
+        {
+            if (ghostSlider == null || questList == null) return;
+            ghostSlider.interactable = false;
+            ghostSlider.wholeNumbers = true;
+            ghostSlider.minValue = 0;
+            ghostSlider.maxValue = questList.Quests.Count;
+        }
+
+        void SetGhostSliderImmediate()
+        {
+            int mainVal = GetSliderValue();
+            int ghostVal = GetGhostSliderValue(mainVal);
+
+            if (ghostSlider != null)
+                ghostSlider.value = ghostVal;
+
+            UpdateGhostDescription(mainVal, true);
+        }
+
+        void AnimateGhostSlider()
+        {
+            int mainVal = GetSliderValue();
+            int ghostVal = GetGhostSliderValue(mainVal);
+
+            if (ghostSlider != null)
+            {
+                _ghostSliderTween?.Kill();
+                _ghostSliderTween = DOTween.To(
+                        () => ghostSlider.value,
+                        x => ghostSlider.value = x,
+                        ghostVal, sliderAnimDuration)
+                    .SetEase(sliderEase).SetUpdate(true);
+            }
+
+            UpdateGhostDescription(mainVal, false);
+        }
+
+        int GetGhostSliderValue(int mainValue)
+        {
+            if (questList == null) return 0;
+            return Mathf.Min(mainValue + 1, questList.Quests.Count);
+        }
+
+        void UpdateGhostDescription(int mainSliderValue, bool immediate)
+        {
+            // The ghost points at the active frontier quest (the one AFTER all claimed quests).
+            // mainSliderValue is the count of unlocked modes, so index = mainSliderValue - 1 is the last unlocked.
+            // The frontier quest is at index mainSliderValue (0-based) if it exists.
+            int frontierIndex = mainSliderValue;
+            string newDescription = "";
+
+            if (questList != null && frontierIndex >= 0 && frontierIndex < questList.Quests.Count)
+            {
+                var quest = questList.Quests[frontierIndex];
+                newDescription = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
+            }
+
+            if (ghostDescriptionText == null) return;
+
+            // No change needed
+            if (newDescription == _currentGhostDescription && !immediate) return;
+
+            _currentGhostDescription = newDescription;
+
+            if (immediate || ghostTextCanvasGroup == null)
+            {
+                ghostDescriptionText.text = newDescription;
+                if (ghostTextCanvasGroup != null)
+                    ghostTextCanvasGroup.alpha = string.IsNullOrEmpty(newDescription) ? 0f : 1f;
+                return;
+            }
+
+            // Fade out → swap text → fade in
+            _ghostTextFadeTween?.Kill();
+
+            float startAlpha = ghostTextCanvasGroup.alpha;
+            var seq = DOTween.Sequence();
+
+            // Fade out
+            if (startAlpha > 0.01f)
+                seq.Append(DOTween.To(() => ghostTextCanvasGroup.alpha, a => ghostTextCanvasGroup.alpha = a, 0f, ghostTextFadeDuration * 0.5f));
+
+            // Swap text at midpoint
+            seq.AppendCallback(() => ghostDescriptionText.text = newDescription);
+
+            // Fade in (only if there's text to show)
+            if (!string.IsNullOrEmpty(newDescription))
+                seq.Append(DOTween.To(() => ghostTextCanvasGroup.alpha, a => ghostTextCanvasGroup.alpha = a, 1f, ghostTextFadeDuration * 0.5f));
+
+            seq.SetUpdate(true);
+            _ghostTextFadeTween = seq;
+        }
+
         // ── Scroll Snap ──────────────────────────────────────────────────────
 
         void SnapToNearestCard()
@@ -381,6 +493,8 @@ namespace CosmicShore.App.UI.Views
         void KillAllTweens()
         {
             _sliderTween?.Kill(); _sliderTween = null;
+            _ghostSliderTween?.Kill(); _ghostSliderTween = null;
+            _ghostTextFadeTween?.Kill(); _ghostTextFadeTween = null;
             _snapTween?.Kill(); _snapTween = null;
             _isSnapping = false;
             _wasMoving = false;
