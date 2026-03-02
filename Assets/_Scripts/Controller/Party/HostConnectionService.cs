@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -192,8 +193,10 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(inviteData, VisibilityPropertyOptions.Public));
                 await _presenceLobby.SaveCurrentPlayerDataAsync();
 
-                // Find the target in online players and raise OnInviteSent
-                foreach (var player in connectionData.OnlinePlayers)
+                // Find the target in online players and raise OnInviteSent.
+                // Snapshot with ToList() to avoid ArgumentOutOfRangeException
+                // when the refresh loop in Update() modifies the list concurrently.
+                foreach (var player in connectionData.OnlinePlayers.ToList())
                 {
                     if (player.PlayerId == targetPlayerId)
                     {
