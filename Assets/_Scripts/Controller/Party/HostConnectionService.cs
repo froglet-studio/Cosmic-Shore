@@ -246,7 +246,8 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(inviteData, VisibilityPropertyOptions.Public));
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
+
+                await RefreshAndSavePlayerDataAsync();
 
                 _currentInviteTargetId = targetPlayerId;
 
@@ -761,7 +762,7 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
+                await RefreshAndSavePlayerDataAsync();
             }
             catch (Exception e)
             {
@@ -770,6 +771,27 @@ namespace CosmicShore.Gameplay
             finally
             {
                 _lobbyBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the lobby then saves current player data. The UGS SDK can
+        /// throw <see cref="ArgumentOutOfRangeException"/> if its internal player
+        /// index is stale (e.g. after another session operation). On failure,
+        /// refreshes again and retries once.
+        /// </summary>
+        private async Task RefreshAndSavePlayerDataAsync()
+        {
+            await _presenceLobby.RefreshAsync();
+            try
+            {
+                await _presenceLobby.SaveCurrentPlayerDataAsync();
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                Debug.LogWarning("[HostConnectionService] SaveCurrentPlayerDataAsync index error — refreshing and retrying...");
+                await _presenceLobby.RefreshAsync();
+                await _presenceLobby.SaveCurrentPlayerDataAsync();
             }
         }
 
@@ -791,7 +813,7 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                await _presenceLobby.SaveCurrentPlayerDataAsync();
+                await RefreshAndSavePlayerDataAsync();
 
                 _lastFiredInvite = null;
             }
