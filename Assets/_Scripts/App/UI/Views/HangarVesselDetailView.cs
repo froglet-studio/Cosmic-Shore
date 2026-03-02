@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.App.Systems.VesselUnlock;
+using CosmicShore.App.UI.Elements.Hangar;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
