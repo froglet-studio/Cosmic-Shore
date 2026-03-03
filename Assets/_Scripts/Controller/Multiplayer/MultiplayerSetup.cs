@@ -30,6 +30,14 @@ namespace CosmicShore.Gameplay
         private NetworkManager networkManager;
         private bool _hostStartInProgress;
 
+        private const int RATE_LIMIT_MAX_RETRIES = 3;
+        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
+
+        private static bool IsRateLimitException(Exception e)
+        {
+            return e.Message != null && e.Message.Contains("Too Many Requests");
+        }
+
         private void Start()
         {
             if (authenticationDataVariable == null)
@@ -220,8 +228,9 @@ namespace CosmicShore.Gameplay
                 }
                 catch (SessionException sx)
                 {
-                    // Known cases to skip and try next: full/locked/deleted/etc.
                     CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
+                    if (IsRateLimitException(sx))
+                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                     continue;
                 }
                 catch (Exception ex)
@@ -263,9 +272,22 @@ namespace CosmicShore.Gameplay
                 SessionProperties = sessionProperties
             }.WithRelayNetwork();
 
-            gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
-            gameData.InvokeSessionStarted();
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
+                    break;
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await UniTask.Delay(delay);
+                }
+            }
 
+            gameData.InvokeSessionStarted();
             CSDebug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
         }
 
@@ -294,9 +316,21 @@ namespace CosmicShore.Gameplay
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
 
-            var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-            CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
-            return results.Sessions;
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+                    CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
+                    return results.Sessions;
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await UniTask.Delay(delay);
+                }
+            }
         }
 
         // --------------------------

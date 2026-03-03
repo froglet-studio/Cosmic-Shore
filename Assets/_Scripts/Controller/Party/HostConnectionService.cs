@@ -88,6 +88,15 @@ namespace CosmicShore.Gameplay
         private const int MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private int _consecutiveRefreshErrors;
 
+        private const int RATE_LIMIT_MAX_RETRIES = 3;
+        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
+        private float _rateLimitBackoffUntil;
+
+        private static bool IsRateLimitException(Exception e)
+        {
+            return e.Message != null && e.Message.Contains("Too Many Requests");
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
@@ -140,6 +149,7 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (!_initialized || _presenceLobby == null || _lobbyBusy) return;
+            if (Time.time < _rateLimitBackoffUntil) return;
 
             _refreshTimer += Time.deltaTime;
             if (_refreshTimer >= refreshIntervalSeconds)
@@ -448,13 +458,28 @@ namespace CosmicShore.Gameplay
             queryOptions.FilterOptions.Add(
                 new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
 
-            var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+            IList<ISessionInfo> sessions = null;
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+                    sessions = results.Sessions;
+                    break;
+                }
+                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[HostConnectionService] Rate limited querying lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await Task.Delay(delay);
+                }
+            }
 
-            if (results.Sessions.Count == 0)
+            if (sessions.Count == 0)
                 return null;
 
             // Try each session — the first one may be our own (skip it).
-            foreach (var session in results.Sessions)
+            foreach (var session in sessions)
             {
                 // Skip sessions we already own.
                 if (_presenceLobby != null && session.Id == _presenceLobby.Id)
@@ -472,6 +497,8 @@ namespace CosmicShore.Gameplay
                 catch (Exception e)
                 {
                     Debug.LogWarning($"[HostConnectionService] Join session {session.Id} failed: {e.Message}");
+                    if (IsRateLimitException(e))
+                        await Task.Delay(RATE_LIMIT_BASE_DELAY_MS);
                 }
             }
 
@@ -522,9 +549,22 @@ namespace CosmicShore.Gameplay
                     }
                 };
 
-                _presenceLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                connectionData.IsHost = true;
-                Debug.Log($"[HostConnectionService] Created presence lobby {_presenceLobby.Id}");
+                for (int attempt = 0; ; attempt++)
+                {
+                    try
+                    {
+                        _presenceLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
+                        connectionData.IsHost = true;
+                        Debug.Log($"[HostConnectionService] Created presence lobby {_presenceLobby.Id}");
+                        return;
+                    }
+                    catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
+                    {
+                        int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                        Debug.LogWarning($"[HostConnectionService] Rate limited creating presence lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                        await Task.Delay(delay);
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -624,14 +664,22 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
-                _consecutiveRefreshErrors++;
-                if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
+                if (IsRateLimitException(e))
                 {
-                    Debug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors — reconnecting to presence lobby");
-                    _consecutiveRefreshErrors = 0;
-                    _presenceLobby = null;
-                    shouldReconnect = true;
+                    _rateLimitBackoffUntil = Time.time + refreshIntervalSeconds * 2;
+                    Debug.LogWarning("[HostConnectionService] Rate limited during refresh — backing off");
+                }
+                else
+                {
+                    Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+                    _consecutiveRefreshErrors++;
+                    if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
+                    {
+                        Debug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors — reconnecting to presence lobby");
+                        _consecutiveRefreshErrors = 0;
+                        _presenceLobby = null;
+                        shouldReconnect = true;
+                    }
                 }
             }
             finally
@@ -770,9 +818,22 @@ namespace CosmicShore.Gameplay
                 PlayerProperties = BuildLocalPlayerProperties()
             }.WithRelayNetwork();
 
-            _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
-            connectionData.IsHost = true;
-            Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
+                    connectionData.IsHost = true;
+                    Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
+                    return;
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[HostConnectionService] Rate limited creating party session — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await Task.Delay(delay);
+                }
+            }
         }
 
         /// <summary>
