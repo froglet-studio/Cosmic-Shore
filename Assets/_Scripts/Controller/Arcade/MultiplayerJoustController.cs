@@ -171,8 +171,9 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[JoustController] Client synced. Winner='{WinnerName}' " +
                       $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F1}"))}]");
 
-            gameData.InvokeWinnerCalculated();
-            gameData.InvokeMiniGameEnd();
+            // Game-end events (InvokeWinnerCalculated + InvokeMiniGameEnd) are NOT raised here.
+            // The base class fires them once via SyncGameEnd_ClientRpc, which arrives after this RPC.
+            // Data (WinnerName, ResultsReady, scores) is already set above for subscribers to read.
         }
 
         protected override void OnResetForReplayCustom()

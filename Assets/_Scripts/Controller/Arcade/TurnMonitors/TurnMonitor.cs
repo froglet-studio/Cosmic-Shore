@@ -39,18 +39,11 @@ namespace CosmicShore.Gameplay
 
         private void Update()
         {
-            if (!isRunning) 
+            if (!isRunning)
                 return;
-            if (!CheckForEndOfTurn()) return; // <-- REMOVE the 'return' on the next line
+            if (!CheckForEndOfTurn()) return;
             OnTurnEnded();
-            StopMonitor(); // Stop the async loop
-            // // End-of-turn check
-            // if (CheckForEndOfTurn())  // <-- REMOVE the 'return' on the next line
-            // {
-            //     OnTurnEnded();
-            //     StopMonitor(); // Stop the async loop
-            // }
-            // Pause(); // exits loop on next iteration
+            StopMonitor();
         }
 
         /// <summary>Stops the monitor loop (safe to call multiple times).</summary>
@@ -121,10 +114,6 @@ namespace CosmicShore.Gameplay
                     // Wait for next tick (game-time)
                     if (_updateInterval > 0f)
                         await UniTask.WaitForSeconds(_updateInterval, cancellationToken: token);
-                        /*await UniTask.Delay(TimeSpan.FromSeconds(_updateInterval),
-                                            DelayType.DeltaTime,
-                                            PlayerLoopTiming.Update,
-                                            token);*/
                     else
                         await UniTask.Yield(PlayerLoopTiming.Update, token);
                 }
