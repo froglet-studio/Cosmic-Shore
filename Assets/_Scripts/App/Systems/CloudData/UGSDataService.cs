@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CosmicShore.App.Profile;
@@ -19,7 +20,7 @@ namespace CosmicShore.App.Systems.CloudData
     /// Dependency Inversion: depends on ICloudSaveProvider and ICloudDataRepository
     ///                       interfaces, not concrete UGS types.
     ///
-    /// Attach to a root-level GameObject that persists across scenes.
+    /// Auto-creates itself at runtime if no scene instance exists.
     /// </summary>
     public class UGSDataService : MonoBehaviour, IUGSDataService
     {
@@ -45,6 +46,14 @@ namespace CosmicShore.App.Systems.CloudData
 
         public bool IsInitialized { get; private set; }
         public event Action OnInitialized;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void AutoCreate()
+        {
+            if (Instance != null) return;
+            var go = new GameObject("[UGSDataService]");
+            go.AddComponent<UGSDataService>();
+        }
 
         // Read-only accessors (for UI / query-only consumers)
         public ICloudDataReader<PlayerProfileData> Profile => _profile;
@@ -74,6 +83,10 @@ namespace CosmicShore.App.Systems.CloudData
             Instance = this;
             transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
+
+            // Resolve vesselList at runtime if not assigned via inspector (e.g. auto-created)
+            if (vesselList == null)
+                vesselList = Resources.FindObjectsOfTypeAll<SO_VesselList>().FirstOrDefault();
 
             _provider = new UGSCloudSaveProvider();
             CreateRepositories();
