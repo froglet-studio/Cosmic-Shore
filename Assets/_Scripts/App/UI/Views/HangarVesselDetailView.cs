@@ -48,8 +48,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private GameObject spendCrystalsPanel;
         [SerializeField] private GameObject notEnoughCrystalsPanel;
         [SerializeField] private Button confirmButton;
-        [SerializeField] private Button cancelButton;
-        [SerializeField] private TMP_Text notEnoughDetailText;
+        [SerializeField] private TMP_Text spendCrystalsDetailText;
 
         SO_Vessel _currentShip;
         int _selectedTabIndex;
@@ -89,12 +88,6 @@ namespace CosmicShore.App.UI.Views
             {
                 confirmButton.onClick.RemoveAllListeners();
                 confirmButton.onClick.AddListener(OnConfirmPurchase);
-            }
-
-            if (cancelButton)
-            {
-                cancelButton.onClick.RemoveAllListeners();
-                cancelButton.onClick.AddListener(CloseUnlockPanel);
             }
         }
 
@@ -220,9 +213,9 @@ namespace CosmicShore.App.UI.Views
             if (spendCrystalsPanel) spendCrystalsPanel.SetActive(canAfford);
             if (notEnoughCrystalsPanel) notEnoughCrystalsPanel.SetActive(!canAfford);
 
-            if (!canAfford && notEnoughDetailText)
+            if (canAfford && spendCrystalsDetailText)
             {
-                notEnoughDetailText.text = $"<b>{cost}</b> to unlock <b>{_currentShip.Name}</b>";
+                spendCrystalsDetailText.text = $"<b>{cost}</b> to unlock <b>{_currentShip.Name}</b>";
             }
         }
 
@@ -238,7 +231,7 @@ namespace CosmicShore.App.UI.Views
             }
         }
 
-        void CloseUnlockPanel()
+        public void CloseUnlockPanel()
         {
             if (unlockPanel) unlockPanel.SetActive(false);
         }
