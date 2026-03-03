@@ -101,7 +101,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   sourceMesh: {fileID: 2179008199606714709, guid: 1e7ae0bba29bbcb458df71b746f73646, type: 3}
   projectToSphere: 1
-  flatShading: 1
+  flatShading: 0
   enableUndulation: 0
   undulationAmplitude: 0.02
   undulationFrequency: 4
