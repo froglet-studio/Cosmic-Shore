@@ -3,6 +3,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Soap;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -81,7 +82,7 @@ namespace CosmicShore.Game
         {
             if (VesselStatus.Player != null)
             {
-                Debug.LogError("Double initialization not allowed!");
+                CSDebug.LogError("Double initialization not allowed!");
                 return;
             }
             
@@ -112,7 +113,6 @@ namespace CosmicShore.Game
                 VesselStatus.ActionHandler.ToggleSubscription(true);
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
                 VesselStatus.VesselHUDController.SubscribeToEvents();
-                VesselStatus.VesselHUDController.ShowHUD();
             }
             
             ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);

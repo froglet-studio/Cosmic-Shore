@@ -1,5 +1,6 @@
 using CosmicShore.Utilities;
 using UnityEngine;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Core
@@ -144,7 +145,7 @@ namespace CosmicShore.Core
             invertYEnabled = !invertYEnabled;
             PlayerPrefs.SetInt(nameof(PlayerPrefKeys.InvertYEnabled), invertYEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            Debug.Log($"Event has been fired, Inverted Y. Status : {invertYEnabled}");
+            CSDebug.Log($"Event has been fired, Inverted Y. Status : {invertYEnabled}");
             OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);  // Event to toggle InputController isGryoEnabled
         }
         
@@ -153,7 +154,7 @@ namespace CosmicShore.Core
             invertThrottleEnabled = !invertThrottleEnabled;
             PlayerPrefs.SetInt(nameof(PlayerPrefKeys.InvertThrottleEnabled), invertThrottleEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            Debug.Log($"Event has been fired, Inverted Throttle. Status : {invertYEnabled}");
+            CSDebug.Log($"Event has been fired, Inverted Throttle. Status : {invertYEnabled}");
             OnChangeInvertThrottleEnabledStatus?.Invoke(invertThrottleEnabled);
         }
 

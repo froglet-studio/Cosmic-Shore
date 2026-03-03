@@ -108,8 +108,10 @@ namespace CosmicShore.Game.Cinematics
         public VictoryLapSettings victoryLapSettings = new();
         
         [Header("Victory Lap Toast Message")]
-        [Tooltip("Toast message to show during victory lap")]
-        public string scoreRevealToastString;
+        [Tooltip("Toast messages shown during victory lap when the local player wins")]
+        public string[] victoryToastStrings = new string[0];
+        [Tooltip("Toast messages shown during victory lap when the local player loses")]
+        public string[] defeatToastStrings = new string[0];
         [Tooltip("Enable the pop-up toast message during victory lap")]
         public bool showVictoryToast = true;
         [Tooltip("Toast animation settings")]
@@ -143,6 +145,26 @@ namespace CosmicShore.Game.Cinematics
         public float cameraTransitionTime = 0.5f;
         [Tooltip("Duration of connecting panel transition")]
         public float connectingPanelDuration = 1f;
+
+        /// <summary>
+        /// Get a random victory toast string, or null if none configured.
+        /// </summary>
+        public string GetRandomVictoryToast()
+        {
+            if (victoryToastStrings == null || victoryToastStrings.Length == 0)
+                return null;
+            return victoryToastStrings[Random.Range(0, victoryToastStrings.Length)];
+        }
+
+        /// <summary>
+        /// Get a random defeat toast string, or null if none configured.
+        /// </summary>
+        public string GetRandomDefeatToast()
+        {
+            if (defeatToastStrings == null || defeatToastStrings.Length == 0)
+                return null;
+            return defeatToastStrings[Random.Range(0, defeatToastStrings.Length)];
+        }
 
         /// <summary>
         /// Get cinematic text based on player score

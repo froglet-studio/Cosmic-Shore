@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Linq;
+using CosmicShore.Utility;
 
 public class GamepadDebugger : MonoBehaviour
 {
@@ -20,7 +21,7 @@ public class GamepadDebugger : MonoBehaviour
         var gamepads = Gamepad.all;
         if (gamepads.Count == 0)
         {
-            Debug.LogWarning("<color=yellow>No gamepads detected.</color>");
+            CSDebug.LogWarning("<color=yellow>No gamepads detected.</color>");
             return;
         }
 
@@ -48,7 +49,7 @@ public class GamepadDebugger : MonoBehaviour
             }
 
             info += "</color>";
-            Debug.Log(info);
+            CSDebug.Log(info);
         }
     }
 
@@ -81,12 +82,12 @@ public class GamepadDebugger : MonoBehaviour
             {
                 case InputDeviceChange.Added:
                 case InputDeviceChange.Reconnected:
-                    Debug.Log("<color=cyan>Gamepad connected/reconnected: " + device.displayName + "</color>");
+                    CSDebug.Log("<color=cyan>Gamepad connected/reconnected: " + device.displayName + "</color>");
                     LogConnectedGamepads();
                     break;
                 case InputDeviceChange.Removed:
                 case InputDeviceChange.Disconnected:
-                    Debug.Log("<color=magenta>Gamepad disconnected: " + device.displayName + "</color>");
+                    CSDebug.Log("<color=magenta>Gamepad disconnected: " + device.displayName + "</color>");
                     LogConnectedGamepads();
                     break;
             }

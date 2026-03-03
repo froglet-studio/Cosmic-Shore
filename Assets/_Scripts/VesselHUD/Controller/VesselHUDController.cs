@@ -22,9 +22,6 @@ namespace CosmicShore.Game
             if (!baseView)
                 baseView = GetComponentInChildren<VesselHUDView>(true);
 
-            if (baseView && !baseView.isActiveAndEnabled)
-                baseView.gameObject.SetActive(true);
-
             baseView?.Initialize();
         }
 

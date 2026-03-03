@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -20,7 +21,7 @@ namespace CosmicShore
 
             if (gameplayParameters.Count != gameplayParameterDisplays.Count)
             {
-                Debug.LogError("HangarGameplayParameterDisplayGroup configuration error: gameplayParameterDisplays.Count is not equal to gameplayParameters.Count.");
+                CSDebug.LogError("HangarGameplayParameterDisplayGroup configuration error: gameplayParameterDisplays.Count is not equal to gameplayParameters.Count.");
             }
         }
     }

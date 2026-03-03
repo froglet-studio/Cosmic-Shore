@@ -31,7 +31,7 @@ namespace CosmicShore.Game.Projectiles
 
             if (!config)
             {
-                Debug.LogError("[AOEDangerHemisphereBlocks] Config is not assigned.");
+                CSDebug.LogError("[AOEDangerHemisphereBlocks] Config is not assigned.");
                 return;
             }
 
@@ -53,7 +53,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!config)
             {
-                Debug.LogError("[AOEDangerHemisphereBlocks] No config; aborting ExplodeAsync.");
+                CSDebug.LogError("[AOEDangerHemisphereBlocks] No config; aborting ExplodeAsync.");
                 return;
             }
 
@@ -183,14 +183,14 @@ namespace CosmicShore.Game.Projectiles
             var ret = prismEvent.RaiseEvent(data);
             if (!ret.SpawnedObject)
             {
-                Debug.LogWarning("[AOEDangerHemisphereBlocks] PrismFactory returned null; spawn aborted.");
+                CSDebug.LogWarning("[AOEDangerHemisphereBlocks] PrismFactory returned null; spawn aborted.");
                 return;
             }
 
             var prism = ret.SpawnedObject.GetComponent<Prism>();
             if (!prism)
             {
-                Debug.LogWarning("[AOEDangerHemisphereBlocks] Spawned object missing Prism component.");
+                CSDebug.LogWarning("[AOEDangerHemisphereBlocks] Spawned object missing Prism component.");
                 return;
             }
 

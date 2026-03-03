@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Game;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Soap
 {
@@ -16,7 +17,7 @@ namespace CosmicShore.Soap
 
             if (_shipPrefabs.Length == 0)
             {
-                Debug.LogError("No Vessel Prefabs found! This should never happen!");
+                CSDebug.LogError("No Vessel Prefabs found! This should never happen!");
                 return false;
             }
 
@@ -24,7 +25,7 @@ namespace CosmicShore.Soap
             {
                 if (!prefab.TryGetComponent(out IVesselStatus shipStatus))
                 {
-                    Debug.LogError($"Vessel prefab {prefab} does not have a VesselStatus component attached!");
+                    CSDebug.LogError($"Vessel prefab {prefab} does not have a VesselStatus component attached!");
                     return false;
                 }
 
@@ -36,7 +37,7 @@ namespace CosmicShore.Soap
 
             if (shipPrefabTransform == null)
             {
-                Debug.LogError("No Vessel Prefabs found matching the needed vessel type!");
+                CSDebug.LogError("No Vessel Prefabs found matching the needed vessel type!");
                 return false;
             }
 

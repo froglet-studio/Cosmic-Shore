@@ -3,6 +3,7 @@ using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -46,7 +47,7 @@ namespace CosmicShore.Game.Arcade
             var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (stats == null)
             {
-                Debug.LogError($"[JoustController] ServerRpc: no stats for '{playerName}'");
+                CSDebug.LogError($"[JoustController] ServerRpc: no stats for '{playerName}'");
                 return;
             }
             if (collisionCount <= stats.JoustCollisions) return;
@@ -76,7 +77,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!joustTurnMonitor)
             {
-                Debug.LogError("[MultiplayerJoustController] JoustTurnMonitor is null!");
+                CSDebug.LogError("[MultiplayerJoustController] JoustTurnMonitor is null!");
                 return;
             }
 
@@ -94,7 +95,7 @@ namespace CosmicShore.Game.Arcade
                 }
             }
 
-            Debug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Time={currentTime:F2}s " +
+            CSDebug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Time={currentTime:F2}s " +
                       $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.JoustCollisions}j"))}]");
 
             foreach (var stats in gameData.RoundStatsList)
@@ -150,7 +151,7 @@ namespace CosmicShore.Game.Arcade
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == n);
                 if (stat == null)
                 {
-                    Debug.LogError($"[JoustController] Client could not match '{n}'. " +
+                    CSDebug.LogError($"[JoustController] Client could not match '{n}'. " +
                                    $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                     continue;
                 }
@@ -166,7 +167,7 @@ namespace CosmicShore.Game.Arcade
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
 
-            Debug.Log($"[JoustController] Client synced. Winner='{WinnerName}' " +
+            CSDebug.Log($"[JoustController] Client synced. Winner='{WinnerName}' " +
                       $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F1}"))}]");
 
             gameData.InvokeWinnerCalculated();

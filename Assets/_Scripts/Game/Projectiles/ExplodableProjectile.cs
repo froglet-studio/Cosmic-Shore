@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -32,7 +33,7 @@ namespace CosmicShore.Game.Projectiles
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        Debug.Log("EndExplode");
+                        CSDebug.Log("EndExplode");
                         // Detonate();
                         break;
                 }
@@ -46,7 +47,7 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        Debug.Log("DeactivateTrailBlock from projectile");
+                        CSDebug.Log("DeactivateTrailBlock from projectile");
                         prismProperties.trailBlock.Damage(Velocity * Inertia, VesselStatus.Team, VesselStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
@@ -65,7 +66,7 @@ namespace CosmicShore.Game.Projectiles
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        Debug.Log("TrailExplode");
+                        CSDebug.Log("TrailExplode");
                         // Detonate();
                         break;
 
@@ -79,7 +80,7 @@ namespace CosmicShore.Game.Projectiles
             {
                 if (VesselStatus.Vessel == null)
                 {
-                    Debug.LogError("VesselStatus.Vessel is null in ExplodableProjectile.Detonate()");
+                    CSDebug.LogError("VesselStatus.Vessel is null in ExplodableProjectile.Detonate()");
                     return;
                 }
 

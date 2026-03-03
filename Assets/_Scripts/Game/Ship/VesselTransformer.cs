@@ -86,7 +86,8 @@ public class VesselTransformer : MonoBehaviour
         boostChanged?.Raise(new BoostChangedPayload
         {
             BoostMultiplier = VesselStatus.BoostMultiplier,
-            MaxMultiplier = MaxBoostMultiplier
+            MaxMultiplier = MaxBoostMultiplier,
+            SourceDomain = Domains.None
         });
     }
 

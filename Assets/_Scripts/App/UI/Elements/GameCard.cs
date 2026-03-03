@@ -7,6 +7,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Elements
 {
@@ -81,8 +82,13 @@ namespace CosmicShore.App.UI.Elements
 
         public void OnCardClicked()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
-            Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+            // Add highlight boarder
+
+            // Set active and show details
+            //LoadoutView.ExpandLoadout(Index);
+
+            CSDebug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+
         }
     }
 }
