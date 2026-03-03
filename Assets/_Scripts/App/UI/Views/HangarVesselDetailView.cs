@@ -9,7 +9,7 @@ namespace CosmicShore.App.UI.Views
     /// <summary>
     /// Detail view for a selected vessel in the Hangar.
     /// Tab system: General shows description + unlock, Ability tabs show ability info.
-    /// Vibe button stays hidden for now.
+    /// Unlock flow: press unlock button → confirmation panel (spend / not enough).
     /// </summary>
     public class HangarVesselDetailView : MonoBehaviour
     {
@@ -42,6 +42,14 @@ namespace CosmicShore.App.UI.Views
         [Header("Abilities Panel")]
         [SerializeField] private TMP_Text abilitiesPreviewTitle;
         [SerializeField] private TMP_Text abilitiesPreviewText;
+
+        [Header("Unlock Confirmation Panel")]
+        [SerializeField] private GameObject unlockPanel;
+        [SerializeField] private GameObject spendCrystalsPanel;
+        [SerializeField] private GameObject notEnoughCrystalsPanel;
+        [SerializeField] private Button confirmButton;
+        [SerializeField] private Button cancelButton;
+        [SerializeField] private TMP_Text notEnoughDetailText;
 
         SO_Vessel _currentShip;
         int _selectedTabIndex;
@@ -76,6 +84,18 @@ namespace CosmicShore.App.UI.Views
                 unlockButton.onClick.RemoveAllListeners();
                 unlockButton.onClick.AddListener(OnUnlockClicked);
             }
+
+            if (confirmButton)
+            {
+                confirmButton.onClick.RemoveAllListeners();
+                confirmButton.onClick.AddListener(OnConfirmPurchase);
+            }
+
+            if (cancelButton)
+            {
+                cancelButton.onClick.RemoveAllListeners();
+                cancelButton.onClick.AddListener(CloseUnlockPanel);
+            }
         }
 
         void OnEnable()
@@ -100,11 +120,9 @@ namespace CosmicShore.App.UI.Views
             if (vesselDescriptionText)
                 vesselDescriptionText.text = ship.Description;
 
-            // Keep preview empty for now
             if (vesselPreviewImage)
                 vesselPreviewImage.gameObject.SetActive(false);
 
-            // Set ability button labels and visibility based on vessel abilities
             int abilityCount = ship.Abilities?.Count ?? 0;
             for (int i = 0; i < abilityButtons.Length; i++)
             {
@@ -123,6 +141,7 @@ namespace CosmicShore.App.UI.Views
             if (vibeButton)
                 vibeButton.gameObject.SetActive(false);
 
+            CloseUnlockPanel();
             RefreshLockState();
             SelectTab(0);
         }
@@ -131,7 +150,6 @@ namespace CosmicShore.App.UI.Views
         {
             _selectedTabIndex = tabIndex;
 
-            // Highlight selected tab BG, dim others
             if (generalButtonBG)
                 generalButtonBG.SetActive(tabIndex == 0);
 
@@ -143,13 +161,11 @@ namespace CosmicShore.App.UI.Views
 
             if (tabIndex == 0)
             {
-                // General tab — show description + unlock
                 if (descriptionPanel) descriptionPanel.SetActive(true);
                 if (abilitiesPanel) abilitiesPanel.SetActive(false);
             }
             else
             {
-                // Ability tab — show ability info
                 if (descriptionPanel) descriptionPanel.SetActive(false);
                 if (abilitiesPanel) abilitiesPanel.SetActive(true);
 
@@ -170,7 +186,6 @@ namespace CosmicShore.App.UI.Views
             if (_currentShip == null) return;
 
             bool isLocked = _currentShip.IsLocked;
-            int cost = _currentShip.UnlockCost;
 
             if (unlockButton)
                 unlockButton.interactable = isLocked;
@@ -179,9 +194,8 @@ namespace CosmicShore.App.UI.Views
             {
                 if (isLocked)
                 {
-                    int balance = VesselUnlockSystem.GetCurrencyBalance();
-                    unlockButtonText.text = balance >= cost ? $"UNLOCK - {cost}" : "INSUFFICIENT FUNDS";
-                    unlockButtonText.color = balance >= cost ? Color.white : Color.gray;
+                    unlockButtonText.text = $"UNLOCK - {_currentShip.UnlockCost}";
+                    unlockButtonText.color = Color.white;
                 }
                 else
                 {
@@ -191,16 +205,45 @@ namespace CosmicShore.App.UI.Views
             }
         }
 
+        #region Unlock Confirmation Panel
+
         void OnUnlockClicked()
         {
             if (_currentShip == null || !_currentShip.IsLocked) return;
 
+            int balance = VesselUnlockSystem.GetCurrencyBalance();
+            int cost = _currentShip.UnlockCost;
+            bool canAfford = balance >= cost;
+
+            if (unlockPanel) unlockPanel.SetActive(true);
+
+            if (spendCrystalsPanel) spendCrystalsPanel.SetActive(canAfford);
+            if (notEnoughCrystalsPanel) notEnoughCrystalsPanel.SetActive(!canAfford);
+
+            if (!canAfford && notEnoughDetailText)
+            {
+                notEnoughDetailText.text = $"<b>{cost}</b> to unlock <b>{_currentShip.Name}</b>";
+            }
+        }
+
+        void OnConfirmPurchase()
+        {
+            if (_currentShip == null) return;
+
             if (VesselUnlockSystem.TryPurchaseVessel(_currentShip))
             {
-                CSDebug.Log($"Unlocked vessel: {_currentShip.Name}");
+                CSDebug.Log($"Purchased vessel: {_currentShip.Name}");
+                CloseUnlockPanel();
                 RefreshLockState();
             }
         }
+
+        void CloseUnlockPanel()
+        {
+            if (unlockPanel) unlockPanel.SetActive(false);
+        }
+
+        #endregion
 
         public void OnBackClicked()
         {

@@ -331,6 +331,40 @@ namespace CosmicShore.App.Profile
             return profileIcons.profileIcons[0].IconSprite;
         }
 
+        // ----------------- Crystal Currency -----------------
+
+        public static event Action<int> OnCrystalBalanceChanged;
+
+        public int GetCrystalBalance()
+        {
+            return CurrentProfile?.crystalBalance ?? 0;
+        }
+
+        public int AddCrystals(int amount)
+        {
+            if (CurrentProfile == null || amount <= 0) return GetCrystalBalance();
+
+            CurrentProfile.crystalBalance += amount;
+            ScheduleDebouncedSave();
+            OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
+            OnProfileChanged?.Invoke(CurrentProfile);
+            CSDebug.Log($"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
+            return CurrentProfile.crystalBalance;
+        }
+
+        public bool TrySpendCrystals(int amount)
+        {
+            if (CurrentProfile == null || amount <= 0) return false;
+            if (CurrentProfile.crystalBalance < amount) return false;
+
+            CurrentProfile.crystalBalance -= amount;
+            ScheduleDebouncedSave();
+            OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
+            OnProfileChanged?.Invoke(CurrentProfile);
+            CSDebug.Log($"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
+            return true;
+        }
+
         /// <summary>
         /// Marks a reward as unlocked in the player's profile.
         /// </summary>
