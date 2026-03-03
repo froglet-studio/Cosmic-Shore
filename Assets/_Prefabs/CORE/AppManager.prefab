@@ -61,6 +61,8 @@ MonoBehaviour:
   friendsData: {fileID: 11400000, guid: e69f5c7256384d1cb59d57e12551c123, type: 2}
   hostConnectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5,
     type: 2}
+  menuFreestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622,
+    type: 2}
   lifecycleEvents: {fileID: 11400000, guid: cec451821b7e4bf6a7cb130e72e09ead,
     type: 2}
   applicationStateDataVariable: {fileID: 11400000, guid: 18ceced7226bbe51dd9542bc4cad3203,
