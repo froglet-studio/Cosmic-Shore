@@ -9,6 +9,7 @@ using CosmicShore.Game.Analytics;
 using CosmicShore.Game.Progression;
 using CosmicShore.Services.Auth;
 using CosmicShore.Utility;
+using Unity.Services.Core;
 using UnityEngine;
 
 namespace CosmicShore.App.Systems.CloudData
@@ -110,7 +111,9 @@ namespace CosmicShore.App.Systems.CloudData
                 if (auth != null)
                     auth.OnSignedIn += HandleSignedIn;
 
-                if (auth != null && auth.IsSignedIn)
+                // Only initialize eagerly if Unity Services are fully ready
+                if (auth != null && auth.IsSignedIn &&
+                    UnityServices.State == ServicesInitializationState.Initialized)
                     await InitializeAsync();
             }
             catch (Exception e)
