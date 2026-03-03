@@ -46,9 +46,6 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
 
-        [Tooltip("If true, will filter out unowned ships from being available to play")]
-        [SerializeField] private bool respectInventoryForShipSelection = false;
-
         [Header("Screen 2 – Selected Vessel Summary")]
         [SerializeField] private Image    shipPlaceholderIcon;
         [SerializeField] private TMP_Text shipNameText;
@@ -205,14 +202,7 @@ namespace CosmicShore.App.UI.Modals
 
             if (!game || game.Vessels == null) return;
 
-            var ships = game.Vessels.Where(s => s != null).ToList();
-
-            if (respectInventoryForShipSelection)
-            {
-                ships = ships.Where(s => !s.IsLocked).ToList();
-            }
-
-            _availableShips.AddRange(ships);
+            _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
         }
         
         void InitializeDefaultShipFromAvailable()

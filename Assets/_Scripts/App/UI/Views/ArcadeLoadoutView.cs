@@ -163,7 +163,7 @@ namespace CosmicShore.App.UI.Views
             {
                 foreach (var vessel in selectedGame.Vessels)
                 {
-                    if (vessel != null)
+                    if (vessel != null && !vessel.IsLocked)
                         availableShips.Add(vessel);
                 }
             }
