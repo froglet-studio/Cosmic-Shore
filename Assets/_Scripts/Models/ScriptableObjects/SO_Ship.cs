@@ -30,6 +30,10 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public GameplayParameter gameplayParameter2 = new GameplayParameter("Relaxing", "Thrilling", .5f);
     [SerializeField] public GameplayParameter gameplayParameter3 = new GameplayParameter("Solo", "Social", .5f);
 
+    [Header("Resource Configuration")]
+    [Tooltip("Default resource levels for this vessel.")]
+    [SerializeField] public ResourceCollection InitialResourceLevels = new(.5f, .5f, .5f, .5f);
+
     [Header("Unlock Configuration")]
     [Tooltip("Whether this vessel is unlocked from the start (e.g. Squirrel).")]
     [SerializeField] public bool UnlockedByDefault;

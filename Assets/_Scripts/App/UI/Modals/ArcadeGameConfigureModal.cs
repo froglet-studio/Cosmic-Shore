@@ -204,12 +204,9 @@ namespace CosmicShore.App.UI.Modals
         {
             _availableShips.Clear();
 
-            if (!game) return;
+            if (!game || game.Vessels == null) return;
 
-            var ships = game.Captains
-                .Where(c => c && c.Ship)
-                .Select(c => c.Ship)
-                .ToList();
+            var ships = game.Vessels.Where(s => s != null).ToList();
 
             if (respectInventoryForShipSelection)
             {

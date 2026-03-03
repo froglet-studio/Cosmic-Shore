@@ -70,6 +70,9 @@ namespace CosmicShore.App.UI.Views
 
         public override void Select(int index)
         {
+            if (sortedCaptains == null || index < 0 || index >= sortedCaptains.Count)
+                return;
+
             CSDebug.Log($"Selected {index}");
             shipClassTypeVariable.Value = index;
             OnSelect?.Invoke(sortedCaptains[index]);

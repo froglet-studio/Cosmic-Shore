@@ -94,7 +94,6 @@ namespace CosmicShore.Game
         public Material AOEConicExplosionMaterial { get; set; }
         public Material ShipMaterial { get; set; }
         public Material SkimmerMaterial { get; set; }
-        public SO_Captain Captain { get; set; }
         public List<GameObject> ShipGeometries { get; set; }
         public Prism AttachedPrism { get; set; }
 

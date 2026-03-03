@@ -51,7 +51,6 @@ namespace CosmicShore.Soap
         public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
-        public SO_Captain PlayerCaptain;
         public ResourceCollection ResourceCollection;
         public ThemeManagerDataContainerSO ThemeManagerData;
         

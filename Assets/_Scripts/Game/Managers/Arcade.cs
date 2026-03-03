@@ -51,10 +51,9 @@ namespace CosmicShore.Core
                 MissionLookup.Add(game.Mode, game);
         }
 
-        public void LaunchMission(GameModes gameMode, SO_Captain captain, int intensity)
+        public void LaunchMission(GameModes gameMode, SO_Ship vessel, int intensity)
         {
-            gameData.PlayerCaptain = captain;
-            gameData.ResourceCollection = CaptainManager.Instance.GetCaptainByName(captain.Name).ResourceLevels;
+            gameData.ResourceCollection = vessel != null ? vessel.InitialResourceLevels : new ResourceCollection(.5f, .5f, .5f, .5f);
             gameData.IsDailyChallenge = false;
             gameData.IsTraining = false;
             gameData.IsMission = true;

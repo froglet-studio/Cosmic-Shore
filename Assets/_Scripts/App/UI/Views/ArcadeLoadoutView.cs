@@ -159,8 +159,14 @@ namespace CosmicShore.App.UI.Views
                 image.sprite = selectedGame.CardBackground;
 
             availableShips = new List<SO_Ship>();
-            foreach (var captain in selectedGame.Captains)
-                availableShips.Add(captain.Ship);
+            if (selectedGame.Vessels != null)
+            {
+                foreach (var ship in selectedGame.Vessels)
+                {
+                    if (ship != null)
+                        availableShips.Add(ship);
+                }
+            }
 
             // If selected vessel is not available, fall back to zero
             if (!availableShips.Contains(AllShips.ShipList.Where(x => x.Class == activeVesselType).FirstOrDefault()))

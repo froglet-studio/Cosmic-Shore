@@ -33,7 +33,8 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
         [FormerlySerializedAs("DefaultPlayerShipType")] [SerializeField] VesselClassType defaultPlayerVesselType = VesselClassType.Dolphin;
-        [SerializeField] SO_Captain DefaultPlayerCaptain;
+        [FormerlySerializedAs("DefaultPlayerCaptain")]
+        [SerializeField] SO_Ship DefaultPlayerShip;
 
         protected Button ReadyButton;
         // protected GameObject EndGameScreen;
@@ -62,7 +63,6 @@ namespace CosmicShore.Game.Arcade
                 playerShipTypeInitialized = true;
             }
         }
-        public static SO_Captain PlayerCaptain;
         public static ResourceCollection ResourceCollection = new(.5f, .5f, .5f, .5f);
 
         // Game State Tracking
@@ -317,40 +317,10 @@ namespace CosmicShore.Game.Arcade
             else if (IsMission)
             {
                 GameCanvas.AwardsContainer.SetActive(true);
-                // Award Crystals
-                CSDebug.Log($"Mission EndGame - Award Mission Crystals -  Score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}");
-                CSDebug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
+                // Mission rewards — captain system removed, awards disabled until refactored
                 int crystalsEarned = 0;
-                switch (PlayerCaptain.PrimaryElement)
-                {
-                    case Element.Charge:
-                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue * 100);
-                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Charge);
-                        break;
-                    case Element.Mass:
-                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100);
-                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Mass);
-                        break;
-                    case Element.Space:
-                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100);
-                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Space);
-                        break;
-                    case Element.Time:
-                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100);
-                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
-                        break;
-                }
-                CSDebug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
-                GameCanvas.CrystalsEarnedImage.sprite = CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name).SO_Element.GetFullIcon(true);
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
-
-                // Award XP
-                CSDebug.Log($"Mission EndGame - Award Mission XP -  Score:{0/*(int)ScoreTracker.GetWinnerScoreData().Score*/}, element:{PlayerCaptain.PrimaryElement}");
-                XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
-                GameCanvas.XPEarnedText.text = "10";
-
-                // Report any encountered captains
-                CSDebug.Log($"Mission EndGame - Unlock Mission Captains");
+                GameCanvas.XPEarnedText.text = "0";
                 
                 // TODO - Get Captains from Data Containers, not Hanger
                 // if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
