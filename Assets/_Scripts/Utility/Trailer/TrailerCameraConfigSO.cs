@@ -108,11 +108,24 @@ namespace CosmicShore.Utility.Trailer
             }
         };
 
-        [Header("Recording Settings")]
+        [Header("Clip Recording")]
         [Tooltip("Duration of each clip in seconds")]
         [Range(1f, 30f)]
         public float clipDurationSeconds = 5f;
 
+        [Tooltip("Number of random clips to capture during the game")]
+        [Range(1, 20)]
+        public int numberOfRandomClips = 3;
+
+        [Tooltip("Minimum seconds between random clip captures")]
+        [Range(5f, 60f)]
+        public float minimumTimeBetweenClips = 15f;
+
+        [Tooltip("Seconds after game starts before first random clip can trigger")]
+        [Range(3f, 30f)]
+        public float initialDelay = 8f;
+
+        [Header("Capture Quality")]
         [Tooltip("Capture resolution width")]
         public int captureWidth = 1920;
 
@@ -128,19 +141,15 @@ namespace CosmicShore.Utility.Trailer
         public int antiAliasing = 4;
 
         [Header("Output")]
-        [Tooltip("Root output folder relative to project root. Clips saved under subfolders per session.")]
+        [Tooltip("Root output folder relative to project root")]
         public string outputFolder = "TrailerCaptures";
 
         [Header("UI Control")]
-        [Tooltip("Hide the game UI layer during recording")]
+        [Tooltip("Hide the game UI layer from trailer cameras")]
         public bool hideUILayer = true;
 
-        [Header("Trigger")]
-        [Tooltip("Automatically start recording when the game ends")]
-        public bool recordOnGameEnd = true;
-
-        [Tooltip("Delay after game end before recording starts (seconds)")]
-        [Range(0f, 5f)]
-        public float recordingStartDelay = 0.5f;
+        [Header("Tool")]
+        [Tooltip("Enable the trailer tool — when off, nothing runs")]
+        public bool toolEnabled = true;
     }
 }

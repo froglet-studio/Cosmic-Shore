@@ -1,14 +1,21 @@
+using System.Collections;
 using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Utility.Trailer
 {
     /// <summary>
-    /// Top-level runtime controller that wires together the camera rig and clip
-    /// recorder. Drop this on a GameObject in any supported game mode scene,
-    /// assign the config SO, and it auto-discovers the local vessel at game start.
+    /// Top-level runtime controller for the trailer camera system.
     ///
-    /// Supports: Hex Race, Crystal Capture, Joust (any scene that uses GameDataSO).
+    /// When the tool is enabled and a game turn starts, it auto-creates a
+    /// <see cref="TrailerCameraRig"/> around the local vessel and schedules
+    /// random clip captures throughout the match. The number of random clips
+    /// is controlled by <see cref="TrailerCameraConfigSO.numberOfRandomClips"/>.
+    ///
+    /// From the editor window users can also trigger a one-off
+    /// "Record Next 5 Seconds" capture at any time.
+    ///
+    /// Supports: Hex Race, Crystal Capture, Joust — any scene using GameDataSO.
     /// </summary>
     public class TrailerCameraController : MonoBehaviour
     {
@@ -16,48 +23,38 @@ namespace CosmicShore.Utility.Trailer
         [SerializeField] private TrailerCameraConfigSO config;
         [SerializeField] private GameDataSO gameData;
 
-        [Header("Runtime State (read-only)")]
+        [Header("Runtime State")]
         [SerializeField] private bool isActive;
-        [SerializeField] private bool recordingEnabled = true;
 
         private TrailerCameraRig _rig;
         private TrailerClipRecorder _recorder;
+        private Coroutine _randomCaptureRoutine;
         private bool _initialized;
+        private int _clipsRecorded;
 
         public TrailerCameraConfigSO Config => config;
         public TrailerCameraRig Rig => _rig;
         public TrailerClipRecorder Recorder => _recorder;
         public bool IsActive => isActive;
-
-        public bool RecordingEnabled
-        {
-            get => recordingEnabled;
-            set => recordingEnabled = value;
-        }
+        public int ClipsRecorded => _clipsRecorded;
 
         private void OnEnable()
         {
             if (gameData != null)
-            {
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-                gameData.OnMiniGameEnd += OnGameEnd;
-            }
         }
 
         private void OnDisable()
         {
             if (gameData != null)
-            {
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
-                gameData.OnMiniGameEnd -= OnGameEnd;
-            }
 
             Cleanup();
         }
 
         private void OnTurnStarted()
         {
-            if (_initialized) return;
+            if (!config.toolEnabled || _initialized) return;
 
             var vessel = gameData.LocalPlayer?.Vessel;
             if (vessel == null)
@@ -67,78 +64,113 @@ namespace CosmicShore.Utility.Trailer
             }
 
             InitializeRig(vessel.Transform);
+
+            // Start random clip scheduling
+            if (config.numberOfRandomClips > 0)
+                _randomCaptureRoutine = StartCoroutine(RandomCaptureScheduler());
         }
 
         /// <summary>
-        /// Manually initialize with a specific vessel transform.
-        /// Useful when called from the editor tool.
+        /// Initialize rig manually (also used by ForceInitialize from editor tool).
         /// </summary>
         public void InitializeRig(Transform vesselTransform)
         {
             if (_initialized) Cleanup();
 
-            // Create rig
+            // Camera rig
             var rigGO = new GameObject("TrailerCameraRig");
             rigGO.transform.SetParent(transform);
             _rig = rigGO.AddComponent<TrailerCameraRig>();
             _rig.Initialize(vesselTransform, config);
 
-            // Create recorder
-            var recorderGO = new GameObject("TrailerClipRecorder");
-            recorderGO.transform.SetParent(transform);
-            _recorder = recorderGO.AddComponent<TrailerClipRecorder>();
-
-            // Wire up recorder via reflection-free serialization workaround:
-            // We set fields via a helper since they're SerializeField.
-            SetupRecorder(_recorder);
+            // Clip recorder
+            var recGO = new GameObject("TrailerClipRecorder");
+            recGO.transform.SetParent(transform);
+            _recorder = recGO.AddComponent<TrailerClipRecorder>();
+            _recorder.Setup(config, _rig);
+            _recorder.OnClipFinished += OnClipFinished;
 
             _initialized = true;
             isActive = true;
+            _clipsRecorded = 0;
 
-            CSDebug.Log($"[TrailerCameraController] Initialized with {_rig.Cameras.Count} cameras on vessel: {vesselTransform.name}");
-        }
-
-        private void SetupRecorder(TrailerClipRecorder recorder)
-        {
-            // Recorder needs config, rig, and gameData references.
-            // Since these are [SerializeField] we use a setup method pattern.
-            recorder.Setup(config, _rig, recordingEnabled ? gameData : null);
-        }
-
-        private void OnGameEnd()
-        {
-            if (!isActive || !recordingEnabled) return;
-
-            CSDebug.Log("[TrailerCameraController] Game ended — recorder will handle capture if configured.");
+            CSDebug.Log($"[TrailerCameraController] Initialized — {_rig.Cameras.Count} cameras on {vesselTransform.name}");
         }
 
         /// <summary>
-        /// Manually trigger recording from the editor tool.
+        /// One-shot: capture the next N seconds (uses config clipDurationSeconds).
+        /// Wired to the "Record Next 5s" button in the editor window.
         /// </summary>
-        public void ManualStartRecording()
+        public void RecordNextClip()
         {
-            if (_recorder == null)
+            if (_recorder == null || !isActive)
             {
-                CSDebug.LogWarning("[TrailerCameraController] Recorder not initialized.");
+                CSDebug.LogWarning("[TrailerCameraController] Not initialized — cannot record.");
                 return;
             }
 
-            _recorder.StartRecording();
+            if (_recorder.IsRecording)
+            {
+                CSDebug.LogWarning("[TrailerCameraController] Already recording a clip.");
+                return;
+            }
+
+            _recorder.StartClip();
+        }
+
+        private void OnClipFinished(string outputPath)
+        {
+            _clipsRecorded++;
+            CSDebug.Log($"[TrailerCameraController] Clip {_clipsRecorded} saved → {outputPath}");
         }
 
         /// <summary>
-        /// Manually stop recording from the editor tool.
+        /// Coroutine that fires random clip captures at random intervals
+        /// throughout the match, up to the configured limit.
         /// </summary>
-        public void ManualStopRecording()
+        private IEnumerator RandomCaptureScheduler()
         {
-            _recorder?.StopRecording();
+            // Wait the initial delay before any random clips
+            yield return new WaitForSeconds(config.initialDelay);
+
+            int clipsCaptured = 0;
+
+            while (clipsCaptured < config.numberOfRandomClips)
+            {
+                // Wait for any in-progress clip to finish
+                while (_recorder != null && _recorder.IsRecording)
+                    yield return null;
+
+                // Random wait between minimumTimeBetweenClips and 2x that
+                float wait = Random.Range(config.minimumTimeBetweenClips, config.minimumTimeBetweenClips * 2f);
+                yield return new WaitForSeconds(wait);
+
+                // Recorder may have been destroyed if game ended
+                if (_recorder == null || !isActive)
+                    yield break;
+
+                _recorder.StartClip();
+                clipsCaptured++;
+
+                // Wait for this clip to finish before scheduling next
+                while (_recorder != null && _recorder.IsRecording)
+                    yield return null;
+            }
+
+            CSDebug.Log($"[TrailerCameraController] All {clipsCaptured} random clips captured.");
         }
 
         private void Cleanup()
         {
+            if (_randomCaptureRoutine != null)
+            {
+                StopCoroutine(_randomCaptureRoutine);
+                _randomCaptureRoutine = null;
+            }
+
             if (_recorder != null)
             {
-                _recorder.StopRecording();
+                _recorder.OnClipFinished -= OnClipFinished;
                 Destroy(_recorder.gameObject);
                 _recorder = null;
             }
