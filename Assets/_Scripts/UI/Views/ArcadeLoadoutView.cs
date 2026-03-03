@@ -112,8 +112,7 @@ namespace CosmicShore.UI
         public void OnClickPlayButton()
         {
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
-            Loadout loadout = LoadoutSystem.GetActiveLoadout();
-            // Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
+            gameData.SyncFromArcadeGame(AllGames.Games[selectedGameIndex]);
             gameData.InvokeGameLaunch();
         }
 
