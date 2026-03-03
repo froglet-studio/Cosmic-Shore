@@ -43,7 +43,10 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         private void SendRoundStats_ClientRpc()
         {
-            SortAndInvokeResults();
+            // Sync sorted stats to all clients. Do not call InvokeWinnerCalculated() —
+            // the base controller already fired it via SyncGameEnd_ClientRpc().
+            gameData.SortRoundStats(golfRules);
+            gameData.CalculateDomainStats(golfRules);
         }
     }
 }

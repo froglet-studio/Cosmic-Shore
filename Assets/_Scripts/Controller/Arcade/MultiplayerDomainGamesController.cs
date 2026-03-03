@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Linq;
 using CosmicShore.UI;
 using Cysharp.Threading.Tasks;
@@ -100,23 +99,6 @@ namespace CosmicShore.Gameplay
         {
             gameData.ResetPlayers();
             base.OnResetForReplay();
-        }
-
-        protected override void EndGame()
-        {
-            if (!ShowEndGameSequence) return;
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.InvokeWinnerCalculated();
-            if (IsServer)
-            {
-                StartCoroutine(EndGameSyncRoutine());
-            }
-        }
-
-        private IEnumerator EndGameSyncRoutine()
-        {
-            yield return new WaitForSeconds(0.25f);
-            gameData.InvokeMiniGameEnd();
         }
 
         protected override void OnPlayerLeavingFromSession(string clientId)

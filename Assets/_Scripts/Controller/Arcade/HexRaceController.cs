@@ -248,8 +248,8 @@ namespace CosmicShore.Gameplay
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
-            gameData.InvokeWinnerCalculated();
-            gameData.InvokeMiniGameEnd();
+            // InvokeWinnerCalculated + InvokeMiniGameEnd are fired by the base class
+            // via SyncGameEnd_ClientRpc() — do not duplicate here.
         }
 
         protected override void OnResetForReplayCustom()
