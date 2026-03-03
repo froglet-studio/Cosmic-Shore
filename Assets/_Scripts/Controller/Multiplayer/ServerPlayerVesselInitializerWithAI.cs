@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -112,8 +114,19 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Collect human team preferences for balanced AI assignment.
+            var humanDomains = CollectHumanPreferredDomains();
+
+            // Co-op modes: all players on Jade (legacy behavior).
+            bool isCoOp = gameData.GameMode is GameModes.Multiplayer2v2CoOpVsAI
+                or GameModes.MultiplayerWildlifeBlitzGame;
+
+            List<Domains> aiDomains = isCoOp
+                ? Enumerable.Repeat(Domains.Jade, aiCount).ToList()
+                : DomainAssigner.GetBalancedAIDomains(humanDomains, aiCount);
+
             // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
-            System.Collections.Generic.List<AIProfile> profiles = null;
+            List<AIProfile> profiles = null;
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
@@ -143,7 +156,7 @@ namespace CosmicShore.Gameplay
                     ? profiles[i].Name
                     : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                var aiDomain = aiDomains[i];
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;
@@ -166,6 +179,32 @@ namespace CosmicShore.Gameplay
                 clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
                 ConfigureAIPilot(aiVesselNO);
             }
+        }
+
+        /// <summary>
+        /// Collects preferred domains from all connected human players.
+        /// Persistent Players survive scene loads, so their NetPreferredDomain
+        /// (set in the lobby) is still available in the game scene.
+        /// </summary>
+        List<Domains> CollectHumanPreferredDomains()
+        {
+            var domains = new List<Domains>();
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return domains;
+
+            foreach (var kvp in nm.ConnectedClients)
+            {
+                var playerObj = kvp.Value.PlayerObject;
+                if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
+                    continue;
+                if (player.NetIsAI.Value)
+                    continue;
+
+                var preferred = player.NetPreferredDomain.Value;
+                domains.Add(DomainAssigner.IsPlayableDomain(preferred) ? preferred : Domains.Jade);
+            }
+
+            return domains;
         }
 
         VesselClassType PickAIVesselType()

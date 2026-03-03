@@ -184,7 +184,12 @@ namespace CosmicShore.Gameplay
             // AI players get their domain in SpawnAIs() and are marked as processed (never reach here).
             // New human players joining mid-game need assignment now.
             if (player.NetDomain.Value is Domains.Unassigned or Domains.None)
-                player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+            {
+                var preferred = player.NetPreferredDomain.Value;
+                player.NetDomain.Value = DomainAssigner.IsPlayableDomain(preferred)
+                    ? preferred
+                    : DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+            }
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
             {

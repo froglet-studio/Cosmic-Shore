@@ -48,8 +48,9 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject squadMateSelectionView;  // Screen 4
 
         [Header("Screen 1 – Configuration Controls")]
-        [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
+        [SerializeField] private PlayerCountStepper playerCountStepper;
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
+        [SerializeField] private TeamSelectionPanel teamSelectionPanel;
         [SerializeField] private TMP_Text teamsValueText;
 
         [Tooltip("If true, will filter out unowned ships from being available to play")]
@@ -89,8 +90,8 @@ namespace CosmicShore.UI
             foreach (var intensityButton in intensityButtons)
                 intensityButton.OnSelect += HandleIntensitySelected;
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect += HandlePlayerCountSelected;
+            if (playerCountStepper)
+                playerCountStepper.OnCountChanged += HandlePlayerCountSelected;
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
@@ -101,8 +102,8 @@ namespace CosmicShore.UI
             foreach (var intensityButton in intensityButtons)
                 intensityButton.OnSelect -= HandleIntensitySelected;
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect -= HandlePlayerCountSelected;
+            if (playerCountStepper)
+                playerCountStepper.OnCountChanged -= HandlePlayerCountSelected;
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -195,21 +196,14 @@ namespace CosmicShore.UI
             // Player count — enforce minimum = party size so host can't select
             // fewer total players than there are humans in the lobby.
             int effectiveMinPlayers = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
-            for (int i = 0; i < playerCountButtons.Count; i++)
+            if (playerCountStepper)
             {
-                var button = playerCountButtons[i];
-                if (!button) continue;
-
-                int count = i + 1;
-                button.SetPlayerCount(count);
-
-                bool active = count >= effectiveMinPlayers && count <= game.MaxPlayers;
-                button.SetActive(active);
-                button.SetSelected(count == config.PlayerCount);
+                playerCountStepper.SetRange(effectiveMinPlayers, game.MaxPlayers);
+                playerCountStepper.SetCount(config.PlayerCount);
             }
 
             if (teamsValueText)
-                teamsValueText.text = "1";
+                teamsValueText.text = "3";
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -385,12 +379,6 @@ namespace CosmicShore.UI
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayers, CurrentPartyHumanCount);
             playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayers);
             config.PlayerCount = playerCount;
-
-            foreach (var button in playerCountButtons)
-            {
-                if (!button) continue;
-                button.SetSelected(button.Count == playerCount);
-            }
 
             SyncGameDataConfig();
             RaiseConfigChanged();

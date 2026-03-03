@@ -25,6 +25,7 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<ulong> NetVesselId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<Domains> NetPreferredDomain = new(Domains.Unassigned, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         public Domains Domain { get; private set; }
 
@@ -177,6 +178,9 @@ namespace CosmicShore.Gameplay
                 }
 
                 NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+
+                if (NetPreferredDomain.Value == Domains.Unassigned)
+                    NetPreferredDomain.Value = Domains.Jade;
             }
 
             // --- Raise spawn event AFTER all local writes ---
@@ -247,7 +251,11 @@ namespace CosmicShore.Gameplay
             // Update server-writable NetworkVariables.
             if (IsServer)
             {
-                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                // Use the player's preferred domain if set; fall back to legacy assignment.
+                var preferred = NetPreferredDomain.Value;
+                NetDomain.Value = preferred is Domains.Jade or Domains.Ruby or Domains.Gold
+                    ? preferred
+                    : DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
                 NetVesselId.Value = 0;
             }
 

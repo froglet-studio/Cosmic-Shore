@@ -9,34 +9,101 @@ namespace CosmicShore.Gameplay
 {
     public static class DomainAssigner
     {
-        private static List<Domains> availableDomains = new ();
+        public static readonly Domains[] PlayableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        private static List<Domains> availableDomains = new();
 
         /// <summary>
-        /// Picks a unique random team from all Domains (excluding None, Unassigned, Blue).
-        /// If all are already assigned, logs an error and returns Domains.Unassigned.
+        /// Assigns domains to AI players to balance teams given human preferences.
+        /// Returns a list of Domains for AI players (length = aiCount).
+        /// AI are assigned to the smallest team first (greedy round-robin).
+        /// </summary>
+        public static List<Domains> GetBalancedAIDomains(List<Domains> humanDomains, int aiCount)
+        {
+            if (aiCount <= 0)
+                return new List<Domains>();
+
+            // Count humans per playable team
+            var teamCounts = new Dictionary<Domains, int>();
+            foreach (var d in PlayableDomains)
+                teamCounts[d] = 0;
+
+            foreach (var d in humanDomains)
+            {
+                if (teamCounts.ContainsKey(d))
+                    teamCounts[d]++;
+            }
+
+            // Assign AI to smallest team first (greedy balance)
+            var aiDomains = new List<Domains>(aiCount);
+            for (int i = 0; i < aiCount; i++)
+            {
+                var smallest = GetSmallestTeam(teamCounts);
+                aiDomains.Add(smallest);
+                teamCounts[smallest]++;
+            }
+
+            return aiDomains;
+        }
+
+        /// <summary>
+        /// Returns the domain with the fewest players. Breaks ties deterministically
+        /// by preferring the earlier domain in PlayableDomains order.
+        /// </summary>
+        static Domains GetSmallestTeam(Dictionary<Domains, int> teamCounts)
+        {
+            var smallest = PlayableDomains[0];
+            int smallestCount = teamCounts[smallest];
+
+            for (int i = 1; i < PlayableDomains.Length; i++)
+            {
+                var d = PlayableDomains[i];
+                if (teamCounts[d] < smallestCount)
+                {
+                    smallest = d;
+                    smallestCount = teamCounts[d];
+                }
+            }
+
+            return smallest;
+        }
+
+        /// <summary>
+        /// Returns whether a domain is a valid playable team (Jade, Ruby, or Gold).
+        /// </summary>
+        public static bool IsPlayableDomain(Domains domain)
+        {
+            return domain is Domains.Jade or Domains.Ruby or Domains.Gold;
+        }
+
+        #region Legacy API (backward compatibility)
+
+        /// <summary>
+        /// Picks a unique random team from the pool (excluding None, Unassigned, Blue).
+        /// If the pool is empty, returns Domains.Unassigned.
+        /// Legacy: used by single-player mode and co-op modes.
         /// </summary>
         static Domains GetAvailableDomain()
         {
+            if (availableDomains.Count == 0)
+            {
+                CSDebug.LogWarning("[DomainAssigner] No domains left in legacy pool.");
+                return Domains.Unassigned;
+            }
+
             int idx = UnityEngine.Random.Range(0, availableDomains.Count);
             var chosen = availableDomains[idx];
-
-            // Mark it as used
             availableDomains.RemoveAt(idx);
             return chosen;
         }
-    
+
         /// <summary>
-        /// TEMP Method to assign domains to players based on game modes,
-        /// later need to transfer this logic to support all game modes and co-op
-        /// with specified player count per domain
+        /// Legacy method to assign domains based on game modes.
+        /// Co-op modes return Jade; competitive modes pick from pool.
+        /// Prefer GetBalancedAIDomains() for team-based modes with AI backfill.
         /// </summary>
         public static Domains GetDomainsByGameModes(GameModes gameMode)
         {
-            // If no teams left, log a warning and return Unassigned instead of
-            // silently re-initializing.  Re-initializing mid-session was the root
-            // cause of duplicate / swapped domains in 3-player games because the
-            // fresh pool could hand out a domain that was already assigned to
-            // another player earlier in the same session.
             if (availableDomains.Count == 0)
             {
                 CSDebug.LogWarning("[DomainAssigner] No domains left in pool. " +
@@ -44,22 +111,24 @@ namespace CosmicShore.Gameplay
                 return Domains.Unassigned;
             }
 
-            // Considering in co-op modes, all local users will be assigned to Jade Domain
-            return gameMode is GameModes.Multiplayer2v2CoOpVsAI or GameModes.MultiplayerWildlifeBlitzGame ? Domains.Jade : GetAvailableDomain();
+            return gameMode is GameModes.Multiplayer2v2CoOpVsAI or GameModes.MultiplayerWildlifeBlitzGame
+                ? Domains.Jade
+                : GetAvailableDomain();
         }
 
         /// <summary>
-        /// Clears all assigned teams (use when restarting or resetting game).
+        /// Resets the legacy unique-domain pool. Call before each session.
         /// </summary>
         public static void Initialize()
         {
             availableDomains.Clear();
-            // Get all valid teams (excluding reserved ones)
             availableDomains = Enum.GetValues(typeof(Domains))
                 .Cast<Domains>()
                 .Where(t => t is not (Domains.None or Domains.Unassigned or Domains.Blue))
                 .ToList();
-            CSDebug.Log("[DomainAssigner] 🔄 Cleared assigned domains cache.");
+            CSDebug.Log("[DomainAssigner] Cleared assigned domains cache.");
         }
+
+        #endregion
     }
 }
