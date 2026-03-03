@@ -133,6 +133,9 @@ namespace CosmicShore.App.Profile
 
             await LoadOrCreateProfileAsync(playerId, canUseCloudSave);
 
+            // Consume any debug crystals queued from editor (edit-mode)
+            ApplyPendingDebugCrystals();
+
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
         }
@@ -402,6 +405,26 @@ namespace CosmicShore.App.Profile
         {
             if (CurrentProfile == null) return;
             OnProfileChanged?.Invoke(CurrentProfile);
+        }
+
+        // ----------------- Debug Crystal Support -----------------
+
+        /// <summary>
+        /// Applies any pending debug crystals that were queued from the Froglet Toolbox
+        /// while in edit mode. Called once during initialization.
+        /// </summary>
+        void ApplyPendingDebugCrystals()
+        {
+#if UNITY_EDITOR
+            int pending = Utility.Tools.LogControlWindow.ConsumePendingDebugCrystals();
+            if (pending > 0 && CurrentProfile != null)
+            {
+                CurrentProfile.crystalBalance += pending;
+                ScheduleDebouncedSave();
+                OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
+                CSDebug.Log($"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.crystalBalance}");
+            }
+#endif
         }
     }
 }

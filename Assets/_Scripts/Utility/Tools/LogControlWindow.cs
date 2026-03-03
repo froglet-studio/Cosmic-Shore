@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.App.Profile;
 using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.Game.Progression;
 using UnityEditor;
@@ -32,7 +33,12 @@ namespace CosmicShore.Utility.Tools
         bool _utilitiesFoldout;
         bool _nonQuestFoldout;
         bool _vesselFoldout;
+        bool _crystalFoldout;
         SO_VesselList _vesselList;
+        string _crystalAmountInput = "100";
+
+        // EditorPrefs key for pending debug crystals (edit-mode awards applied on next play)
+        const string PrefPendingCrystals = "FrogletDebug_PendingCrystals";
 
         // ── Pastel Palette ───────────────────────────────────────────────────
         static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
@@ -380,6 +386,83 @@ namespace CosmicShore.Utility.Tools
                 EndSection();
             }
 
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  CRYSTAL CURRENCY DEBUG
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Crystal Currency", ref _crystalFoldout);
+            if (_crystalFoldout)
+            {
+                BeginSection();
+
+                bool isPlayMode = Application.isPlaying;
+                var service = isPlayMode ? PlayerDataService.Instance : null;
+
+                // Current balance display
+                int currentBalance;
+                if (service != null)
+                    currentBalance = service.GetCrystalBalance();
+                else
+                    currentBalance = EditorPrefs.GetInt(PrefPendingCrystals, 0);
+
+                string balanceLabel = isPlayMode ? "Live Balance" : "Pending (edit-mode)";
+                string balanceInfo = $"<b>{balanceLabel}:</b> {currentBalance}";
+                GUILayout.Label(balanceInfo, _infoStyle);
+
+                GUILayout.Space(4);
+
+                // Custom amount input
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                GUILayout.Label("Amount", GUILayout.Width(52));
+                _crystalAmountInput = EditorGUILayout.TextField(_crystalAmountInput, GUILayout.Width(60));
+                if (GUILayout.Button("Add", GUILayout.Width(50)))
+                {
+                    if (int.TryParse(_crystalAmountInput, out int customAmount) && customAmount > 0)
+                        AwardDebugCrystals(customAmount);
+                    else
+                        Debug.LogWarning("[FrogletToolbox] Enter a valid positive number.");
+                }
+                EditorGUILayout.EndHorizontal();
+
+                GUILayout.Space(4);
+
+                // Preset buttons
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                if (GUILayout.Button("+10"))   AwardDebugCrystals(10);
+                if (GUILayout.Button("+50"))   AwardDebugCrystals(50);
+                if (GUILayout.Button("+100"))  AwardDebugCrystals(100);
+                if (GUILayout.Button("+500"))  AwardDebugCrystals(500);
+                EditorGUILayout.EndHorizontal();
+
+                GUILayout.Space(4);
+
+                // Set exact balance / Reset
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                if (GUILayout.Button("Set Balance"))
+                {
+                    if (int.TryParse(_crystalAmountInput, out int setAmount) && setAmount >= 0)
+                        SetDebugCrystalBalance(setAmount);
+                    else
+                        Debug.LogWarning("[FrogletToolbox] Enter a valid non-negative number.");
+                }
+                if (GUILayout.Button("Reset to 0"))
+                    SetDebugCrystalBalance(0);
+                EditorGUILayout.EndHorizontal();
+
+                if (!isPlayMode)
+                {
+                    GUILayout.Space(4);
+                    GUILayout.Space(Pad);
+                    EditorGUILayout.LabelField("Edit-mode crystals are applied on next Play.", _mutedLabel);
+                }
+
+                EndSection();
+            }
+
             GUILayout.Space(8);
             EditorGUILayout.EndScrollView();
 
@@ -470,6 +553,69 @@ namespace CosmicShore.Utility.Tools
                 .Where(m => m != GameModes.Random && !svc.IsGameModeInQuestChain(m))
                 .OrderBy(m => m.ToString())
                 .ToList();
+        }
+
+        // ── Crystal debug helpers ──────────────────────────────────────────────
+
+        void AwardDebugCrystals(int amount)
+        {
+            if (Application.isPlaying)
+            {
+                var service = PlayerDataService.Instance;
+                if (service != null)
+                {
+                    service.AddCrystals(amount);
+                    CSDebug.Log($"[FrogletToolbox] Awarded {amount} crystals via debug.");
+                }
+                else
+                    Debug.LogWarning("[FrogletToolbox] PlayerDataService not available.");
+            }
+            else
+            {
+                int pending = EditorPrefs.GetInt(PrefPendingCrystals, 0);
+                pending += amount;
+                EditorPrefs.SetInt(PrefPendingCrystals, pending);
+                CSDebug.Log($"[FrogletToolbox] Queued +{amount} crystals (pending: {pending}).");
+            }
+            Repaint();
+        }
+
+        void SetDebugCrystalBalance(int balance)
+        {
+            if (Application.isPlaying)
+            {
+                var service = PlayerDataService.Instance;
+                if (service != null)
+                {
+                    int current = service.GetCrystalBalance();
+                    int diff = balance - current;
+                    if (diff > 0)
+                        service.AddCrystals(diff);
+                    else if (diff < 0)
+                        service.TrySpendCrystals(-diff);
+                    CSDebug.Log($"[FrogletToolbox] Set crystal balance to {balance}.");
+                }
+                else
+                    Debug.LogWarning("[FrogletToolbox] PlayerDataService not available.");
+            }
+            else
+            {
+                EditorPrefs.SetInt(PrefPendingCrystals, balance);
+                CSDebug.Log($"[FrogletToolbox] Set pending crystals to {balance}.");
+            }
+            Repaint();
+        }
+
+        /// <summary>
+        /// Called by PlayerDataService on init to consume any pending debug crystals
+        /// that were queued in edit mode.
+        /// </summary>
+        internal static int ConsumePendingDebugCrystals()
+        {
+            int pending = EditorPrefs.GetInt(PrefPendingCrystals, 0);
+            if (pending > 0)
+                EditorPrefs.SetInt(PrefPendingCrystals, 0);
+            return pending;
         }
 
         // ── Prefs persistence ────────────────────────────────────────────────
