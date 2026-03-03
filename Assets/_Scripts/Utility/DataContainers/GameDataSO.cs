@@ -72,6 +72,20 @@ namespace CosmicShore.Utility
         /// </summary>
         public int RequestedAIBackfillCount;
 
+        /// <summary>
+        /// Applies game-mode-specific minimum AI backfill.
+        /// Called by SceneLoader.LaunchGame() before scene load and ClientRpc sync.
+        /// HexRace always needs at least 1 AI opponent for solo play.
+        /// </summary>
+        public void EnsureMinimumAIBackfill()
+        {
+            if (GameMode == GameModes.HexRace && RequestedAIBackfillCount < 1)
+            {
+                RequestedAIBackfillCount = 1;
+                Debug.Log("<color=#FFD700>[GameDataSO] HexRace: forced RequestedAIBackfillCount=1</color>");
+            }
+        }
+
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();
