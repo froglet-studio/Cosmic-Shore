@@ -1,21 +1,21 @@
 using System;
 using System.IO;
-using System.Threading;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+#if UNITY_EDITOR
+using UnityEditor.Media;
+#endif
 
 namespace CosmicShore.Utility.Trailer
 {
     /// <summary>
-    /// Records a single clip from ONE randomly-selected trailer camera.
+    /// Records a single clip from ONE randomly-selected trailer camera,
+    /// encoding directly to an MP4 file via Unity's MediaEncoder.
     ///
-    /// Performance approach:
-    ///   - Only one camera renders per clip (not all 6)
-    ///   - AsyncGPUReadback avoids ReadPixels GPU stall
-    ///   - PNG encode happens on the main thread (callback), but with only
-    ///     1 camera at 30fps the cost is negligible
-    ///   - File writes go to the thread pool
+    /// Uses AsyncGPUReadback so recording never stalls the GPU or gameplay.
+    /// Readback callbacks fire in request order on the main thread, so
+    /// frames arrive at the encoder sequentially.
     /// </summary>
     public class TrailerClipRecorder : MonoBehaviour
     {
@@ -23,13 +23,19 @@ namespace CosmicShore.Utility.Trailer
         [SerializeField] private TrailerCameraRig cameraRig;
 
         private bool _isRecording;
-        private string _clipFolder;
+        private string _clipFilePath;
         private int _frameIndex;
         private float _captureInterval;
         private float _captureTimer;
         private float _elapsedRecordTime;
         private int _clipNumber;
         private int _activeCameraIndex;
+        private int _pendingReadbacks;
+        private bool _finishing;
+
+#if UNITY_EDITOR
+        private MediaEncoder _encoder;
+#endif
 
         public bool IsRecording => _isRecording;
         public int ClipNumber => _clipNumber;
@@ -63,7 +69,6 @@ namespace CosmicShore.Utility.Trailer
                 return;
             }
 
-            // Pick a random camera for this clip
             _activeCameraIndex = UnityEngine.Random.Range(0, cameraRig.Cameras.Count);
             var chosen = cameraRig.Cameras[_activeCameraIndex];
 
@@ -72,24 +77,55 @@ namespace CosmicShore.Utility.Trailer
             _elapsedRecordTime = 0f;
             _captureInterval = 1f / config.targetFPS;
             _captureTimer = 0f;
+            _pendingReadbacks = 0;
+            _finishing = false;
             _clipNumber++;
+
+            int w = config.captureWidth;
+            int h = config.captureHeight;
 
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string rootPath = Path.Combine(Application.dataPath, "..", config.outputFolder);
-            _clipFolder = Path.Combine(rootPath, $"Clip_{_clipNumber:D2}_{chosen.Setup.label}_{timestamp}");
-            Directory.CreateDirectory(_clipFolder);
+            Directory.CreateDirectory(rootPath);
+            _clipFilePath = Path.Combine(rootPath, $"Clip_{_clipNumber:D2}_{chosen.Setup.label}_{timestamp}.mp4");
 
-            CSDebug.Log($"[TrailerClipRecorder] Clip {_clipNumber} recording — " +
-                        $"camera: {chosen.Setup.label}, {config.clipDurationSeconds}s @ {config.targetFPS}fps");
+#if UNITY_EDITOR
+            var videoAttr = new VideoTrackAttributes
+            {
+                frameRate = new MediaRational(config.targetFPS),
+                width = (uint)w,
+                height = (uint)h,
+                includeAlpha = false,
+                bitRateMode = VideoBitrateMode.High
+            };
+            _encoder = new MediaEncoder(_clipFilePath, videoAttr);
+#endif
+
+            CSDebug.Log($"[TrailerClipRecorder] Clip {_clipNumber} recording → " +
+                        $"camera: {chosen.Setup.label}, {config.clipDurationSeconds}s @ {config.targetFPS}fps → {_clipFilePath}");
         }
 
         private void FinishClip()
         {
             if (!_isRecording) return;
             _isRecording = false;
+            _finishing = true;
 
-            CSDebug.Log($"[TrailerClipRecorder] Clip {_clipNumber} saved — {_frameIndex} frames → {_clipFolder}");
-            OnClipFinished?.Invoke(_clipFolder);
+            // If no readbacks are in flight, finalize immediately
+            if (_pendingReadbacks == 0)
+                FinalizeEncoder();
+        }
+
+        private void FinalizeEncoder()
+        {
+#if UNITY_EDITOR
+            _encoder?.Dispose();
+            _encoder = null;
+#endif
+            _finishing = false;
+
+            CSDebug.Log($"[TrailerClipRecorder] Clip {_clipNumber} saved — {_frameIndex} frames → {_clipFilePath}");
+            OnClipFinished?.Invoke(_clipFilePath);
         }
 
         private void LateUpdate()
@@ -121,33 +157,32 @@ namespace CosmicShore.Utility.Trailer
             // Render just this one camera
             instance.Camera.Render();
 
-            int frameIdx = _frameIndex;
-            string folder = _clipFolder;
             int w = config.captureWidth;
             int h = config.captureHeight;
+            _pendingReadbacks++;
 
-            // Async readback — no GPU stall
-            AsyncGPUReadback.Request(instance.RenderTexture, 0, TextureFormat.RGB24, request =>
+            // Async readback — no GPU stall, no gameplay lag.
+            // Callbacks fire in request order on the main thread.
+            AsyncGPUReadback.Request(instance.RenderTexture, 0, TextureFormat.RGBA32, request =>
             {
-                if (request.hasError) return;
+                _pendingReadbacks--;
 
-                // Callback runs on main thread — safe to use Texture2D
-                NativeArray<byte> data = request.GetData<byte>();
-
-                var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
-                tex.LoadRawTextureData(data);
-                tex.Apply();
-
-                byte[] png = tex.EncodeToPNG();
-                Destroy(tex);
-
-                // File write on background thread
-                string filePath = Path.Combine(folder, $"frame_{frameIdx:D6}.png");
-                ThreadPool.QueueUserWorkItem(_ =>
+                if (!request.hasError)
                 {
-                    try { File.WriteAllBytes(filePath, png); }
-                    catch (Exception e) { Debug.LogError($"[TrailerClipRecorder] Write failed: {e.Message}"); }
-                });
+                    NativeArray<byte> data = request.GetData<byte>();
+                    var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+                    tex.LoadRawTextureData(data);
+                    tex.Apply();
+
+#if UNITY_EDITOR
+                    _encoder?.AddFrame(tex);
+#endif
+                    Destroy(tex);
+                }
+
+                // If clip finished and this was the last pending readback, finalize
+                if (_finishing && _pendingReadbacks == 0)
+                    FinalizeEncoder();
             });
 
             _frameIndex++;

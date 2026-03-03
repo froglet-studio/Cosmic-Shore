@@ -50,13 +50,14 @@ namespace CosmicShore.Utility.Trailer
 
             var cam = cameraGO.AddComponent<Camera>();
             cam.enabled = false; // We render manually via RenderTexture
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Color.black;
+            cam.clearFlags = CameraClearFlags.Skybox;
             cam.nearClipPlane = 0.3f;
-            cam.farClipPlane = 5000f;
+            cam.farClipPlane = 10000f;
             cam.fieldOfView = 60f;
+            cam.useOcclusionCulling = false;
 
-            // Hide UI layer from trailer cameras
+            // Match the player camera: render everything, only strip UI
+            cam.cullingMask = -1; // Everything
             if (config.hideUILayer)
             {
                 int uiLayer = LayerMask.NameToLayer("UI");
