@@ -10,7 +10,7 @@ namespace CosmicShore.App.UI.Views
     /// <summary>
     /// Detail view for a selected vessel in the Hangar.
     /// Tab system: General shows description + unlock, Ability tabs show ability info.
-    /// Unlock flow: press unlock button → confirmation panel (spend / not enough).
+    /// Unlock flow: press unlock button → spend crystals panel (confirm disabled if not enough).
     /// </summary>
     public class HangarVesselDetailView : MonoBehaviour
     {
@@ -47,7 +47,6 @@ namespace CosmicShore.App.UI.Views
         [Header("Unlock Confirmation Panel")]
         [SerializeField] private GameObject unlockPanel;
         [SerializeField] private GameObject spendCrystalsPanel;
-        [SerializeField] private GameObject notEnoughCrystalsPanel;
         [SerializeField] private Button confirmButton;
         [SerializeField] private TMP_Text spendCrystalsDetailText;
         [SerializeField] private TMP_Text crystalAmountText;
@@ -213,16 +212,15 @@ namespace CosmicShore.App.UI.Views
             bool canAfford = balance >= cost;
 
             if (unlockPanel) unlockPanel.SetActive(true);
+            if (spendCrystalsPanel) spendCrystalsPanel.SetActive(true);
 
-            if (spendCrystalsPanel) spendCrystalsPanel.SetActive(canAfford);
-            if (notEnoughCrystalsPanel) notEnoughCrystalsPanel.SetActive(!canAfford);
+            if (confirmButton)
+                confirmButton.interactable = canAfford;
 
             RefreshCrystalAmount(balance);
 
-            if (canAfford && spendCrystalsDetailText)
-            {
+            if (spendCrystalsDetailText)
                 spendCrystalsDetailText.text = $"<b>{cost}</b> to unlock <b>{_currentShip.Name}</b>";
-            }
         }
 
         void OnConfirmPurchase()
