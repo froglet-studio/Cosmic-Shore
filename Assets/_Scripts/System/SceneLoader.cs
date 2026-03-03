@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
