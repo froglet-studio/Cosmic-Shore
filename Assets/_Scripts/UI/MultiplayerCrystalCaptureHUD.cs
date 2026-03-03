@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Data;
 
 namespace CosmicShore.UI
@@ -9,23 +8,9 @@ namespace CosmicShore.UI
     {
         private readonly Dictionary<IRoundStats, Action> _scoreChangeHandlers = new();
 
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-            if (gameData != null)
-            {
-                gameData.OnMiniGameTurnStarted.OnRaised += RefreshAllPlayerCards;
-            }
-        }
-
         protected override void OnDisable()
         {
             base.OnDisable();
-            if (gameData != null)
-            {
-                gameData.OnMiniGameTurnStarted.OnRaised -= RefreshAllPlayerCards;
-            }
-            
             _scoreChangeHandlers.Clear();
         }
 
@@ -52,15 +37,5 @@ namespace CosmicShore.UI
             _scoreChangeHandlers.Remove(stats);
         }
 
-        void RefreshAllPlayerCards()
-        {
-            if (gameData?.RoundStatsList == null) return;
-
-            // [Visual Note] Iterates through active players and snaps their scoreboard card crystal values to the server-verified count.
-            foreach (var stats in gameData.RoundStatsList.Where(stats => stats != null))
-            {
-                UpdatePlayerCard(stats.Name, (int)stats.Score);
-            }
-        }
     }
 }

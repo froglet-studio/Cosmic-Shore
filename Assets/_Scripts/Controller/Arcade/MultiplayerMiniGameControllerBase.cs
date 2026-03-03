@@ -194,19 +194,25 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer)
                 return;
-                
+
             SyncGameEnd_ClientRpc();
         }
-        
+
         [ClientRpc]
         void SyncGameEnd_ClientRpc()
         {
             if (!ShowEndGameSequence) return;
 
             gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules); 
-            
+            gameData.CalculateDomainStats(UseGolfRules);
+
             gameData.InvokeWinnerCalculated();
+            EndGameAfterDelay().Forget();
+        }
+
+        async UniTaskVoid EndGameAfterDelay()
+        {
+            await UniTask.Delay(250, DelayType.UnscaledDeltaTime);
             gameData.InvokeMiniGameEnd();
         }
 
