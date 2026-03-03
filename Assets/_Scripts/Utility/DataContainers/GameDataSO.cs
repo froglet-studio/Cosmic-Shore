@@ -65,6 +65,9 @@ namespace CosmicShore.Utility
         public bool IsMission;
         public bool IsMultiplayerMode;
 
+        [HideInInspector]
+        public bool IsTournamentMode;
+
         /// <summary>
         /// Number of AI players to backfill in multiplayer when not enough
         /// human players are present.
@@ -235,6 +238,7 @@ namespace CosmicShore.Utility
         public void ResetAllData()
         {
             GameMode = GameModes.Random;
+            IsTournamentMode = false;
             selectedVesselClass.Value = VesselClassType.Manta;
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;

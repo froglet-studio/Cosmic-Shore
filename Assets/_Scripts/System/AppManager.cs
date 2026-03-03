@@ -70,6 +70,12 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("SOAP variable holding the current application state. Written by ApplicationStateMachine.")]
         ApplicationStateDataVariable applicationStateDataVariable;
 
+        [Header("Tournament")]
+        [SerializeField, Tooltip("SOAP data container for tournament mode runtime state.")]
+        TournamentDataSO tournamentData;
+        [SerializeField, Tooltip("SOAP event container for tournament lifecycle events.")]
+        TournamentEventsContainerSO tournamentEvents;
+
         [Header("Singleton Persistent Scene References")]
         [SerializeField] GameSetting gameSetting;
         [SerializeField] AudioSystem audioSystem;
@@ -304,6 +310,8 @@ namespace CosmicShore.Core
             RegisterAsset(builder, menuFreestyleEvents, nameof(menuFreestyleEvents));
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
             RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
+            RegisterAsset(builder, tournamentData, nameof(tournamentData));
+            RegisterAsset(builder, tournamentEvents, nameof(tournamentEvents));
 
             // ── MonoBehaviour singletons (lazy factory) ──────────────────
             // Scene-resolved managers may not exist in the Bootstrap scene at
@@ -351,6 +359,16 @@ namespace CosmicShore.Core
                     gameData,
                     networkMonitorDataVariable,
                     _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new TournamentManager(
+                    tournamentData,
+                    tournamentEvents,
+                    gameData,
+                    sceneLoader),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

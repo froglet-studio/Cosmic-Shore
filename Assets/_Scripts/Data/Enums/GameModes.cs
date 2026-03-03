@@ -39,5 +39,6 @@ namespace CosmicShore.Data
         HexRace = 33,
         MultiplayerJoust = 34,
         MultiplayerCrystalCapture = 35,
+        Tournament = 36,
     }
 }

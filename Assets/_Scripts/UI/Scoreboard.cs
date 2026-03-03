@@ -1,6 +1,7 @@
 // Scoreboard.cs — rematch panels auto-dismiss after 2s (except received panel)
 using CosmicShore.Utility;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using Obvious.Soap;
 using Reflex.Attributes;
 using System.Collections;
@@ -66,6 +67,10 @@ namespace CosmicShore.UI
         [Tooltip("Play Again button — hidden while rematch request is pending")]
         [SerializeField] private GameObject playAgainButton;
 
+        [Header("Tournament")]
+        [Tooltip("Tournament data container. When tournament is active, Play Again is hidden.")]
+        [Inject] TournamentDataSO tournamentData;
+
         [Tooltip("Seconds before invited/denied panels auto-dismiss")]
         [SerializeField] private float rematchPanelAutoDismissSeconds = 2f;
 
@@ -125,8 +130,14 @@ namespace CosmicShore.UI
 
             PopulateDynamicStats();
 
+            // In tournament mode, hide Play Again — TournamentStandingsPanel handles progression
+            if (IsTournamentActive && playAgainButton)
+                playAgainButton.SetActive(false);
+
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(true);
         }
+
+        bool IsTournamentActive => tournamentData != null && tournamentData.IsTournamentActive;
 
         void HideScoreboard()
         {
@@ -280,6 +291,9 @@ namespace CosmicShore.UI
 
         public void OnPlayAgainButtonPressed()
         {
+            // Tournament progression is handled by TournamentStandingsPanel, not the scoreboard
+            if (IsTournamentActive) return;
+
             if (ugsStatsManager != null)
                 ugsStatsManager.TrackPlayAgain();
 
