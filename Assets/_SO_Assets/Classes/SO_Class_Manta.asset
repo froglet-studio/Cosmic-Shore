@@ -56,5 +56,5 @@ MonoBehaviour:
     LeftHandLabel: Solo
     RightHandLabel: Social
     Value: 0.15
-  UnlockedByDefault: 0
-  UnlockCost: 100
+  isLocked: 1
+  UnlockCost: 4000
