@@ -2,6 +2,7 @@
 using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
+using DG.Tweening;
 using Obvious.Soap;
 using System.Collections;
 using System.Collections.Generic;
@@ -68,6 +69,9 @@ namespace CosmicShore.Game.UI
         [Tooltip("Seconds before invited/denied panels auto-dismiss")]
         [SerializeField] private float rematchPanelAutoDismissSeconds = 2f;
 
+        [Header("Animation (optional)")]
+        [SerializeField] private HUDAnimationSettingsSO animSettings;
+
         #endregion
 
         #region Private Fields
@@ -75,6 +79,9 @@ namespace CosmicShore.Game.UI
         private ScoreboardStatsProvider statsProvider;
         private Coroutine _invitedAutoDismiss;
         private Coroutine _deniedAutoDismiss;
+        private CanvasGroup _scoreboardCanvasGroup;
+        private RectTransform _scoreboardRect;
+        private Sequence _entranceSeq;
 
         #endregion
 
@@ -124,11 +131,16 @@ namespace CosmicShore.Game.UI
 
             PopulateDynamicStats();
 
-            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(true);
+            if (scoreboardPanel)
+            {
+                scoreboardPanel.gameObject.SetActive(true);
+                PlayEntranceAnimation();
+            }
         }
 
         void HideScoreboard()
         {
+            _entranceSeq?.Kill();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
             if(endGameObject) endGameObject.SetActive(false);
             HideAllRematchPanels();
@@ -157,6 +169,41 @@ namespace CosmicShore.Game.UI
             yield return new WaitForSeconds(delay);
             if (panel) panel.SetActive(false);
             onDismiss?.Invoke();
+        }
+
+        void PlayEntranceAnimation()
+        {
+            if (!scoreboardPanel) return;
+
+            _entranceSeq?.Kill();
+
+            if (!_scoreboardRect)
+                _scoreboardRect = scoreboardPanel.GetComponent<RectTransform>();
+            if (!_scoreboardCanvasGroup)
+            {
+                _scoreboardCanvasGroup = scoreboardPanel.GetComponent<CanvasGroup>();
+                if (!_scoreboardCanvasGroup)
+                    _scoreboardCanvasGroup = scoreboardPanel.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            float duration = animSettings ? animSettings.scoreboardEntranceDuration : 0.35f;
+            float offset = animSettings ? animSettings.scoreboardSlideOffset : 120f;
+            var ease = animSettings ? animSettings.scoreboardEntranceEase : Ease.OutCubic;
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+
+            var targetPos = _scoreboardRect.anchoredPosition;
+            _scoreboardRect.anchoredPosition = new Vector2(targetPos.x, targetPos.y - offset);
+            _scoreboardCanvasGroup.alpha = 0f;
+
+            _entranceSeq = DOTween.Sequence()
+                .Join(_scoreboardRect.DOAnchorPos(targetPos, duration).SetEase(ease))
+                .Join(_scoreboardCanvasGroup.DOFade(1f, duration))
+                .SetUpdate(unscaled);
+        }
+
+        void OnDestroy()
+        {
+            _entranceSeq?.Kill();
         }
 
         #endregion
