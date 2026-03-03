@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Obvious.Soap;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
@@ -18,6 +19,9 @@ namespace CosmicShore.UI
         [Header("Cloud Save")]
         [SerializeField] private string cloudSaveProfileKey = UGSKeys.PlayerProfile;
         [SerializeField] private SO_ProfileIconList profileIcons;
+
+        [Header("SOAP")]
+        [SerializeField] private StringVariable playerDisplayName;
 
         [Header("Game Data")]
         [Inject] private GameDataSO gameData;
@@ -305,6 +309,9 @@ namespace CosmicShore.UI
                 gameData.LocalPlayerAvatarId = data.avatarId;
                 gameData.LocalPlayerXP = data.xp;
             }
+
+            if (playerDisplayName != null)
+                playerDisplayName.Value = data.displayName;
         }
 
         public Sprite GetAvatarSprite(int avatarId)
