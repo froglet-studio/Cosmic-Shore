@@ -3428,6 +3428,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 974600371733867531, guid: 4eee63018bbefa743845cd8125957a2d,
+        type: 3}
+      propertyPath: _splashOverlay
+      value: 
+      objectReference: {fileID: 820208345}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
       propertyPath: iapManager
@@ -3485,6 +3490,12 @@ PrefabInstance:
       objectReference: {fileID: 483927158}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
+      propertyPath: menuFreestyleEvents
+      value: 
+      objectReference: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622,
+        type: 2}
+    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
+        type: 3}
       propertyPath: postProcessingManager
       value: 
       objectReference: {fileID: 1922865233}
@@ -3493,11 +3504,6 @@ PrefabInstance:
       propertyPath: sceneTransitionManager
       value: 
       objectReference: {fileID: 8256122174668503709}
-    - target: {fileID: 974600371733867531, guid: 4eee63018bbefa743845cd8125957a2d,
-        type: 3}
-      propertyPath: _splashOverlay
-      value: 
-      objectReference: {fileID: 820208345}
     - target: {fileID: 6778103901198434919, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
       propertyPath: m_Name
