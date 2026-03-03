@@ -7,8 +7,10 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
+using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
@@ -806,9 +808,19 @@ namespace CosmicShore.Gameplay
         // Party Session
         // ─────────────────────────────────────────────────────────────────────
 
+        private const int HOST_CONFLICT_MAX_RETRIES = 2;
+
+        private static bool IsHostConflictException(Exception e)
+        {
+            return e.Message != null &&
+                   e.Message.Contains("Failed to start NetworkManager component as host");
+        }
+
         private async Task CreatePartySessionAsync()
         {
             if (_partySession != null) return;
+
+            bool hadToShutdown = false;
 
             var opts = new SessionOptions
             {
@@ -820,12 +832,45 @@ namespace CosmicShore.Gameplay
 
             for (int attempt = 0; ; attempt++)
             {
+                // The UGS Multiplayer SDK calls NetworkManager.StartHost()
+                // internally when creating a Relay-backed session. If a local
+                // host is already running (started by AuthenticationSceneController
+                // as a fallback), that call fails. Shut it down before each attempt.
+                var nm = NetworkManager.Singleton;
+                if (nm != null && nm.IsListening)
+                {
+                    Debug.Log("[HostConnectionService] Shutting down local host before Relay party session creation...");
+                    nm.Shutdown();
+                    hadToShutdown = true;
+
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    while (nm != null && nm.IsListening && sw.ElapsedMilliseconds < 5000)
+                        await Task.Delay(100);
+
+                    // Allow transport cleanup to settle.
+                    await Task.Delay(200);
+                }
+
                 try
                 {
                     _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
                     connectionData.IsHost = true;
                     Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
+
+                    // If we shut down a running host, reload Menu_Main as a
+                    // network scene so the new Relay host serves it properly
+                    // for clients that accept the invite.
+                    if (hadToShutdown)
+                        ReloadMenuSceneIfActive();
+
                     return;
+                }
+                catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
+                {
+                    // A local host was started by another system (e.g.
+                    // AuthenticationSceneController) during Relay allocation.
+                    // The next iteration's pre-check will shut it down.
+                    Debug.LogWarning($"[HostConnectionService] Host conflict during Relay session creation — retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
                 }
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
@@ -833,6 +878,23 @@ namespace CosmicShore.Gameplay
                     Debug.LogWarning($"[HostConnectionService] Rate limited creating party session — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await Task.Delay(delay);
                 }
+            }
+        }
+
+        /// <summary>
+        /// After transitioning from local host to Relay host, reloads Menu_Main
+        /// via Netcode scene management so it is properly served to joining clients.
+        /// </summary>
+        private void ReloadMenuSceneIfActive()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening || nm.SceneManager == null) return;
+
+            var activeScene = SceneManager.GetActiveScene();
+            if (activeScene.name == "Menu_Main")
+            {
+                Debug.Log("[HostConnectionService] Reloading Menu_Main as network scene (Relay host)...");
+                nm.SceneManager.LoadScene("Menu_Main", LoadSceneMode.Single);
             }
         }
 
