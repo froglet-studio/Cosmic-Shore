@@ -26,6 +26,7 @@ namespace CosmicShore.Gameplay
 
         void InitializeGame()
         {
+            DomainAssigner.Initialize();
             SpawnCustomPlayerAndAddToGameData(InitializePlayerData());
             SpawnDefaultPlayersAndAddToGameData();
         }
@@ -52,7 +53,6 @@ namespace CosmicShore.Gameplay
             return new IPlayer.InitializeData
             {
                 vesselClass    = _gameData.selectedVesselClass.Value,
-                domain         = Domains.Jade,
                 PlayerName     = displayName,
                 AvatarId       = avatarId,
                 AllowSpawning  = true,
