@@ -122,6 +122,13 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
+            // Players must persist across Netcode scene loads (Menu → Game, Game → Menu).
+            // Move to DontDestroyOnLoad immediately so Unity's scene unload does not
+            // destroy them before the server's despawn messages arrive on clients.
+            // ProcessPreExistingPlayers() in ServerPlayerVesselInitializer rediscovers
+            // persistent Players via nm.ConnectedClients[].PlayerObject after each transition.
+            DontDestroyOnLoad(gameObject);
+
             Debug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
             base.OnNetworkSpawn();
 
