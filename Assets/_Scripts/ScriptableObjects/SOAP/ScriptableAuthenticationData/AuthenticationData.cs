@@ -14,6 +14,8 @@ namespace CosmicShore.ScriptableObjects
         public bool IsSignedIn { get; set; } = false;
         public AuthState State { get; set; } = AuthState.NotInitialized;
 
+        public StringVariable UserName;
+
         public ScriptableEventNoParam OnSignedIn;
         public ScriptableEventNoParam OnSignedOut;
         public ScriptableEventNoParam OnSignInFailed;

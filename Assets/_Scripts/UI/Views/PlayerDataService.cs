@@ -305,6 +305,9 @@ namespace CosmicShore.UI
                 gameData.LocalPlayerAvatarId = data.avatarId;
                 gameData.LocalPlayerXP = data.xp;
             }
+
+            if (authenticationDataVariable != null)
+                authenticationData.UserName.Value = data.displayName;
         }
 
         public Sprite GetAvatarSprite(int avatarId)
