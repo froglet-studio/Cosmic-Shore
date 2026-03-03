@@ -133,7 +133,7 @@ namespace CosmicShore.Gameplay
                 var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
 
                 var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
-                if (aiVesselType == VesselClassType.Any || aiVesselType == VesselClassType.Random)
+                if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
 
                 var aiName = profiles != null && i < profiles.Count
