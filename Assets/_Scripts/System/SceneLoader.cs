@@ -144,15 +144,6 @@ namespace CosmicShore.Core
         {
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
-
-            // Server: explicitly despawn scene-bound vessels before the scene load.
-            // Without this, the client-side scene unload destroys NetworkObjects before
-            // the server's despawn messages arrive, causing "Invalid Destroy" errors.
-            // Must run before ResetRuntimeData() so the waitBeforeLoading delay below
-            // gives time for despawn messages to propagate to clients.
-            if (useNetworkSceneLoading)
-                DespawnSceneVesselsOnServer();
-
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
 
@@ -181,6 +172,17 @@ namespace CosmicShore.Core
 
             if (nm.IsServer)
             {
+                // Despawn all vessels immediately before the scene load.
+                // Uses Despawn(false) to remove objects from Netcode's SpawnedObjects
+                // tracking WITHOUT destroying the GameObjects. The objects remain alive
+                // until Unity's scene unload destroys them, at which point
+                // NetworkObject.OnDestroy() no longer finds them in SpawnedObjects
+                // and skips the "Invalid Destroy" error path.
+                //
+                // Despawning here (not earlier) ensures no vessels are spawned between
+                // the despawn and the scene load. Netcode's reliable channel guarantees
+                // the despawn messages are ordered before the scene load event on clients.
+                DespawnSceneVesselsOnServer();
                 LoadNetworkSceneOnServer(sceneName);
             }
             else
@@ -222,7 +224,7 @@ namespace CosmicShore.Core
             }
 
             foreach (var no in toDespawn)
-                no.Despawn(true);
+                no.Despawn(false);
 
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] DespawnSceneVesselsOnServer — despawned {toDespawn.Count} vessel(s)</color>");
         }
