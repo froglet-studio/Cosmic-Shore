@@ -1,13 +1,19 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
-public class SpawnableWaypointTrack : SpawnableAbstractBase
+public class SpawnableWaypointTrack : SpawnableBase
 {
     [Header("Waypoints")]
     [Tooltip("List of position sets for each intensity level. The track will close from the last point back to the first.")]
     [SerializeField] public List<CrystalPositionSet> waypoints;
+
+    [Header("Spline Settings")]
+    [Tooltip("Enable Catmull-Rom spline per intensity (0=linear, 1=spline). Matches waypoints list by index.")]
+    [SerializeField] List<int> useSplinePerIntensity;
 
     [Header("Block Settings")]
     [SerializeField] Prism prism;
@@ -32,30 +38,63 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
     [Tooltip("Which intensity level to preview in the editor")]
     [SerializeField] int previewIntensityLevel = 0;
 
-    static int TracksSpawned = 0;
-
-    public override GameObject Spawn()
+    protected override int GetParameterHash()
     {
-        return Spawn(intensityLevel: 1);
+        return System.HashCode.Combine(seed, blocksPerSegment, scale, markWaypoints,
+            waypointScaleMultiplier, waypointDomain, trackDomain, intensityLevel);
     }
 
-    public override GameObject Spawn(int intensityLevel)
+    private bool UseSpline(int intensityLevel)
     {
-        this.intenstyLevel = intensityLevel;
+        int index = intensityLevel - 1;
+        return useSplinePerIntensity != null &&
+               index >= 0 &&
+               index < useSplinePerIntensity.Count &&
+               useSplinePerIntensity[index] != 0;
+    }
+
+    private static Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+    {
+        float t2 = t * t;
+        float t3 = t2 * t;
+        return 0.5f * (
+            (2f * p1) +
+            (-p0 + p2) * t +
+            (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 +
+            (-p0 + 3f * p1 - 3f * p2 + p3) * t3
+        );
+    }
+
+    private Vector3 GetSplinePoint(List<Vector3> positions, int segment, float t)
+    {
+        int count = positions.Count;
+        Vector3 p0 = positions[((segment - 1) % count + count) % count];
+        Vector3 p1 = positions[segment];
+        Vector3 p2 = positions[(segment + 1) % count];
+        Vector3 p3 = positions[(segment + 2) % count];
+        return CatmullRom(p0, p1, p2, p3, t);
+    }
+
+    public override GameObject Spawn(int intensity = 1)
+    {
+        intensityLevel = intensity;
+        trails.Clear();
+
         if (!IsValidIntensityLevel(intensityLevel))
         {
-            Debug.LogError($"[WaypointTrack] Need at least 2 waypoints for intensity level {intensityLevel}.");
+            CSDebug.LogError($"[WaypointTrack] Need at least 2 waypoints for intensity level {intensityLevel}.");
             return new GameObject("EmptyTrack");
         }
 
         GameObject container = new GameObject();
-        container.name = $"WaypointTrack_{TracksSpawned++}";
+        container.name = $"WaypointTrack_{name}";
 
         var trail = new Trail();
         int totalBlocks = 0;
 
         var positions = waypoints[intensityLevel - 1].positions;
         int segmentCount = positions.Count;
+        bool spline = UseSpline(intensityLevel);
 
         for (int segment = 0; segment < segmentCount; segment++)
         {
@@ -65,17 +104,35 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
             for (int i = 0; i < blocksPerSegment; i++)
             {
                 float t = (float)i / blocksPerSegment;
-                Vector3 position = Vector3.Lerp(startPos, endPos, t);
 
-                // Calculate look target - interpolate toward next segment for smooth transitions
+                Vector3 position;
                 Vector3 lookTarget;
-                if (i < blocksPerSegment - 1)
+
+                if (spline)
                 {
-                    lookTarget = Vector3.Lerp(startPos, endPos, (float)(i + 1) / blocksPerSegment);
+                    position = GetSplinePoint(positions, segment, t);
+
+                    if (i < blocksPerSegment - 1)
+                    {
+                        lookTarget = GetSplinePoint(positions, segment, (float)(i + 1) / blocksPerSegment);
+                    }
+                    else
+                    {
+                        lookTarget = GetSplinePoint(positions, (segment + 1) % segmentCount, 0f);
+                    }
                 }
                 else
                 {
-                    lookTarget = endPos;
+                    position = Vector3.Lerp(startPos, endPos, t);
+
+                    if (i < blocksPerSegment - 1)
+                    {
+                        lookTarget = Vector3.Lerp(startPos, endPos, (float)(i + 1) / blocksPerSegment);
+                    }
+                    else
+                    {
+                        lookTarget = endPos;
+                    }
                 }
 
                 // Determine if this is a waypoint marker position
@@ -85,8 +142,17 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
                 Prism blockPrism = (isWaypointMarker && waypointPrism != null) ? waypointPrism : prism;
                 Domains blockDomain = isWaypointMarker ? waypointDomain : trackDomain;
 
-                CreateBlock(position, lookTarget, $"{container.name}::BLOCK::{totalBlocks}",
-                           trail, blockScale, blockPrism, container, blockDomain);
+                var rotation = SpawnPoint.LookRotation(position, lookTarget, Vector3.up);
+
+                var block = Instantiate(blockPrism, container.transform);
+                block.ChangeTeam(blockDomain);
+                block.ownerID = $"{container.name}::BLOCK::{totalBlocks}";
+                block.transform.localPosition = position;
+                block.transform.localRotation = rotation;
+                block.TargetScale = blockScale;
+                block.Trail = trail;
+                block.Initialize();
+                trail.Add(block);
 
                 totalBlocks++;
             }
@@ -94,8 +160,8 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
 
         trails.Add(trail);
 
-        Debug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
-           $"{totalBlocks} total blocks, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
+        CSDebug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
+           $"{totalBlocks} total blocks, spline={spline}, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
 
         return container;
     }
@@ -108,14 +174,33 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
         if (!IsValidIntensityLevel(intensityLevel)) return 0f;
 
         var positions = waypoints[intensityLevel - 1].positions;
-        float length = 0f;
 
+        if (UseSpline(intensityLevel))
+        {
+            // Sample spline to estimate arc length
+            float length = 0f;
+            int samplesPerSegment = 20;
+            for (int seg = 0; seg < positions.Count; seg++)
+            {
+                Vector3 prev = GetSplinePoint(positions, seg, 0f);
+                for (int s = 1; s <= samplesPerSegment; s++)
+                {
+                    float t = (float)s / samplesPerSegment;
+                    Vector3 curr = GetSplinePoint(positions, seg, t);
+                    length += Vector3.Distance(prev, curr);
+                    prev = curr;
+                }
+            }
+            return length;
+        }
+
+        float len = 0f;
         for (int i = 0; i < positions.Count; i++)
         {
             int next = (i + 1) % positions.Count;
-            length += Vector3.Distance(positions[i], positions[next]);
+            len += Vector3.Distance(positions[i], positions[next]);
         }
-        return length;
+        return len;
     }
 
     /// <summary>
@@ -131,6 +216,21 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
         if (waypointPositions.Count < 2) return new Vector3[0];
 
         Vector3[] positions = new Vector3[positionCount];
+
+        if (UseSpline(intensityLevel))
+        {
+            // Distribute points evenly in parameter space across all segments
+            int segmentCount = waypointPositions.Count;
+            for (int i = 0; i < positionCount; i++)
+            {
+                float globalT = (float)i / positionCount * segmentCount;
+                int segment = Mathf.Min((int)globalT, segmentCount - 1);
+                float localT = globalT - segment;
+                positions[i] = GetSplinePoint(waypointPositions, segment, localT);
+            }
+            return positions;
+        }
+
         float totalLength = EstimateTrackLength(intensityLevel);
 
         // Calculate segment lengths and cumulative distances
@@ -222,10 +322,37 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
         var positions = waypoints[previewIntensityLevel].positions;
         Gizmos.color = IntensityColors[previewIntensityLevel % IntensityColors.Length];
 
+        // Use 1-based for UseSpline check
+        bool spline = UseSpline(previewIntensityLevel + 1);
+
+        if (spline)
+        {
+            // Draw spline curves
+            int samplesPerSegment = 20;
+            for (int seg = 0; seg < positions.Count; seg++)
+            {
+                Vector3 prev = GetSplinePoint(positions, seg, 0f);
+                for (int s = 1; s <= samplesPerSegment; s++)
+                {
+                    float t = (float)s / samplesPerSegment;
+                    Vector3 curr = GetSplinePoint(positions, seg, t);
+                    Gizmos.DrawLine(prev, curr);
+                    prev = curr;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < positions.Count; i++)
+            {
+                int next = (i + 1) % positions.Count;
+                Gizmos.DrawLine(positions[i], positions[next]);
+            }
+        }
+
+        // Draw waypoint spheres
         for (int i = 0; i < positions.Count; i++)
         {
-            int next = (i + 1) % positions.Count;
-            Gizmos.DrawLine(positions[i], positions[next]);
             Gizmos.DrawWireSphere(positions[i], 5f);
         }
 
@@ -258,10 +385,30 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
             faintColor.a = 0.25f;
             Gizmos.color = faintColor;
 
-            for (int i = 0; i < levelPositions.Count; i++)
+            bool levelSpline = UseSpline(level + 1);
+
+            if (levelSpline)
             {
-                int next = (i + 1) % levelPositions.Count;
-                Gizmos.DrawLine(levelPositions[i], levelPositions[next]);
+                int samplesPerSegment = 20;
+                for (int seg = 0; seg < levelPositions.Count; seg++)
+                {
+                    Vector3 prev = GetSplinePoint(levelPositions, seg, 0f);
+                    for (int s = 1; s <= samplesPerSegment; s++)
+                    {
+                        float t = (float)s / samplesPerSegment;
+                        Vector3 curr = GetSplinePoint(levelPositions, seg, t);
+                        Gizmos.DrawLine(prev, curr);
+                        prev = curr;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < levelPositions.Count; i++)
+                {
+                    int next = (i + 1) % levelPositions.Count;
+                    Gizmos.DrawLine(levelPositions[i], levelPositions[next]);
+                }
             }
         }
     }

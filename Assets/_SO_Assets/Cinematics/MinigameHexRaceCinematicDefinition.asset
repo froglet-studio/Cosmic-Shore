@@ -18,7 +18,14 @@ MonoBehaviour:
     speedMultiplier: 3
     enhanceTrail: 1
     fadeLoserTrail: 1
-  scoreRevealToastString: ALL CRYSTALS COLLECTED
+  victoryToastStrings:
+  - THE REAL RACER
+  - THE TRACK'S ON FIRE
+  - GOT THE RACE DONE
+  defeatToastStrings:
+  - BETTER LUCK NEXT TIME
+  - STEAL MORE TO SPEED MORE
+  - IS THAT ALL YOU GOT?
   showVictoryToast: 1
   toastSettings:
     yOffset: 1
@@ -47,10 +54,10 @@ MonoBehaviour:
     slideEase: 9
     casinoCounterDuration: 2
   cinematicTexts:
-  - scoreRevealDisplayText: Brilliant!
+  - scoreRevealDisplayText: HYPERSPACE DINNER TIME
     scoreThreshold: 0
     selectionWeight: 0.665
-  - scoreRevealDisplayText: Brilliant!
+  - scoreRevealDisplayText: COSMIC
     scoreThreshold: 0
     selectionWeight: 0.813
   delayBeforeEndScreen: 0.1

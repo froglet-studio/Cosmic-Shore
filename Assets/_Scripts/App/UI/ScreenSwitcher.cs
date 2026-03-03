@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI
 {
@@ -22,6 +23,7 @@ namespace CosmicShore.App.UI
             HOME   = 2,
             PORT   = 3,
             HANGAR = 4,
+            PROFILE = 5,
         }
 
         public enum ModalWindows
@@ -38,7 +40,6 @@ namespace CosmicShore.App.UI
             PROFILE                = 3,
             PROFILE_ICON_SELECT    = 4,
             SETTINGS               = 5,
-            XP_TRACK               = 6,
 
             // PORT MODALS
             FACTION_MISSION        = 7,
@@ -72,6 +73,10 @@ namespace CosmicShore.App.UI
         [SerializeField] private HangarScreen HangarMenu;
         [SerializeField] private LeaderboardsMenu LeaderboardMenu;
 
+        [Header("Disabled Screens")]
+        [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
+        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
+
         [Header("Arcade Panel (separate)")]
         [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
         [SerializeField] private GameObject arcadePanelRoot;
@@ -79,12 +84,17 @@ namespace CosmicShore.App.UI
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
 
+        // Cached canvas references for aspect-ratio-safe sliding
+        private Canvas _rootCanvas;
+        private RectTransform _canvasRect;
+
         // Old constants kept for compatibility
-        private const int STORE  = (int)MenuScreens.STORE;
-        private const int ARCADE = (int)MenuScreens.ARK;
-        private const int HOME   = (int)MenuScreens.HOME;
-        private const int PORT   = (int)MenuScreens.PORT;
-        private const int HANGAR = (int)MenuScreens.HANGAR;
+        private const int STORE   = (int)MenuScreens.STORE;
+        private const int ARCADE  = (int)MenuScreens.ARK;
+        private const int HOME    = (int)MenuScreens.HOME;
+        private const int PORT    = (int)MenuScreens.PORT;
+        private const int HANGAR  = (int)MenuScreens.HANGAR;
+        private const int PROFILE = (int)MenuScreens.PROFILE;
 
         [Header("Nav Bar Line")]
         [SerializeField] private Image NavBarLine;
@@ -178,7 +188,7 @@ namespace CosmicShore.App.UI
         {
             if (screens == null || screens.Count == 0)
             {
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     "[ScreenSwitcher] 'screens' list is empty. " +
                     "Falling back to transform children order. " +
                     "You can manually assign screens in the inspector for full control."
@@ -188,12 +198,22 @@ namespace CosmicShore.App.UI
 
         private void Start()
         {
+            _rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
+            _canvasRect = _rootCanvas.GetComponent<RectTransform>();
+
+            LayoutScreensToViewport();
+
             panelLocation = transform.position;
 
             if (PlayerPrefs.HasKey(ReturnToScreenPrefKey))
             {
                 var screenEnumInt = PlayerPrefs.GetInt(ReturnToScreenPrefKey);
                 var screenEnum = (MenuScreens)screenEnumInt;
+
+                // Fall back to HOME if the saved screen is now disabled
+                if (IsScreenDisabled(screenEnum))
+                    screenEnum = MenuScreens.HOME;
+
                 NavigateTo(screenEnum, false);
                 PlayerPrefs.DeleteKey(ReturnToScreenPrefKey);
                 PlayerPrefs.Save();
@@ -257,6 +277,71 @@ namespace CosmicShore.App.UI
 
         #endregion
 
+        #region Viewport Layout
+
+        /// <summary>
+        /// Returns the current viewport width in canvas units.
+        /// This adapts to any aspect ratio and CanvasScaler configuration.
+        /// </summary>
+        private float GetViewportWidthInCanvasUnits()
+        {
+            if (_canvasRect != null)
+                return _canvasRect.rect.width;
+
+            // Fallback: assume 1:1 canvas-to-pixel mapping
+            return Screen.width;
+        }
+
+        /// <summary>
+        /// Returns the world-space (pixel) distance for one screen slide.
+        /// </summary>
+        private float GetSlideDistance()
+        {
+            if (_rootCanvas != null)
+                return GetViewportWidthInCanvasUnits() * _rootCanvas.scaleFactor;
+
+            return Screen.width;
+        }
+
+        /// <summary>
+        /// Resizes and repositions each screen panel to fill the actual viewport width,
+        /// so the layout works correctly at any aspect ratio.
+        /// </summary>
+        private void LayoutScreensToViewport()
+        {
+            float viewportWidth = GetViewportWidthInCanvasUnits();
+            int count = GetScreenCount();
+
+            for (int i = 0; i < count; i++)
+            {
+                RectTransform rt = GetScreenRootRT(i);
+                if (rt == null) continue;
+
+                // Anchor to left edge, stretch vertically
+                rt.anchorMin = new Vector2(0f, 0f);
+                rt.anchorMax = new Vector2(0f, 1f);
+                rt.pivot = new Vector2(0f, 0.5f);
+                rt.sizeDelta = new Vector2(viewportWidth, 0f);
+                rt.anchoredPosition = new Vector2(i * viewportWidth, 0f);
+            }
+        }
+
+        /// <summary>
+        /// Returns the RectTransform for the screen at the given visual index.
+        /// </summary>
+        private RectTransform GetScreenRootRT(int index)
+        {
+            if (screens is { Count: > 0 } && index >= 0 && index < screens.Count)
+                return screens[index]?.root;
+
+            if (index >= 0 && index < transform.childCount)
+                return transform.GetChild(index) as RectTransform;
+
+            return null;
+        }
+
+        #endregion
+
         #region Screen Mapping Helpers
 
         private int GetScreenCount()
@@ -284,10 +369,20 @@ namespace CosmicShore.App.UI
                 int idx = screens.FindIndex(s => s != null && s.id == screen);
                 if (idx >= 0) return idx;
 
-                Debug.LogWarning($"[ScreenSwitcher] Screen '{screen}' not found in screens list. Falling back to enum value index.");
+                CSDebug.LogWarning($"[ScreenSwitcher] Screen '{screen}' not found in screens list. Falling back to enum value index.");
             }
 
             return (int)screen;
+        }
+
+        private bool IsScreenDisabled(MenuScreens screen)
+        {
+            return disabledScreens != null && disabledScreens.Contains(screen);
+        }
+
+        private bool IsIndexDisabled(int index)
+        {
+            return IsScreenDisabled(GetScreenIdForIndex(index));
         }
 
         #endregion
@@ -296,12 +391,8 @@ namespace CosmicShore.App.UI
 
         private void NavigateTo(MenuScreens screen, bool animate = true)
         {
-
-            // if (screen == MenuScreens.ARK)
-            // {
-            //     OpenArcadePanel();
-            //     return;
-            // }
+            if (IsScreenDisabled(screen))
+                return;
 
             int index = GetIndexForScreen(screen);
             NavigateTo(index, animate);
@@ -312,11 +403,14 @@ namespace CosmicShore.App.UI
             int max = GetScreenCount() - 1;
             if (max < 0)
             {
-                Debug.LogError("[ScreenSwitcher] No screens available. Please configure the 'screens' list or add child panels.");
+                CSDebug.LogError("[ScreenSwitcher] No screens available. Please configure the 'screens' list or add child panels.");
                 return;
             }
 
             ScreenIndex = Mathf.Clamp(ScreenIndex, 0, max);
+
+            if (IsIndexDisabled(ScreenIndex))
+                return;
 
             if (ScreenIndex == currentScreen)
                 return;
@@ -345,8 +439,8 @@ namespace CosmicShore.App.UI
             else
                 PauseSystem.TogglePauseGame(true);
 
-            // Slide effect: 1 screen width per index
-            Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
+            // Slide effect: 1 viewport width per index (works at any aspect ratio)
+            Vector3 newLocation = new Vector3(-ScreenIndex * GetSlideDistance(), 0, 0);
             panelLocation = newLocation;
 
             if (animate)
@@ -414,6 +508,11 @@ namespace CosmicShore.App.UI
             NavigateTo(MenuScreens.ARK);
         }
 
+        public void OnClickProfileNav()
+        {
+            NavigateTo(MenuScreens.PROFILE);
+        }
+
         public void OnClickArcadeNav()
         {
             OpenArcadePanel();
@@ -431,18 +530,27 @@ namespace CosmicShore.App.UI
 
         private void NavigateLeft()
         {
-            if (currentScreen <= 0)
+            int target = currentScreen - 1;
+            while (target >= 0 && IsIndexDisabled(target))
+                target--;
+
+            if (target < 0)
                 return;
 
-            NavigateTo(currentScreen - 1);
+            NavigateTo(target);
         }
 
         private void NavigateRight()
         {
-            if (currentScreen >= GetScreenCount() - 1)
+            int max = GetScreenCount() - 1;
+            int target = currentScreen + 1;
+            while (target <= max && IsIndexDisabled(target))
+                target++;
+
+            if (target > max)
                 return;
 
-            NavigateTo(currentScreen + 1);
+            NavigateTo(target);
         }
 
 

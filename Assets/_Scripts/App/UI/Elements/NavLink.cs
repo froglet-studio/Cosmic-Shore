@@ -3,7 +3,9 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI.Views;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI
 {
@@ -36,10 +38,10 @@ namespace CosmicShore.App.UI
         void Awake()
         {
             if (activeImageElements.Count != inactiveImageElements.Count)
-                Debug.LogError($"NavLink Configuration Error: activeImageElements.Count != inactiveImageElements.Count  --- for: {gameObject.name}");
+                CSDebug.LogError($"NavLink Configuration Error: activeImageElements.Count != inactiveImageElements.Count  --- for: {gameObject.name}");
 
             if (activeTextElements.Count != inactiveTextElements.Count)
-                Debug.LogError($"NavLink Configuration Error: activeTextElements.Count != inactiveTextElements.Count  --- for: {gameObject.name}");
+                CSDebug.LogError($"NavLink Configuration Error: activeTextElements.Count != inactiveTextElements.Count  --- for: {gameObject.name}");
 
             // Save off initial text an image colors
             for (int i = 0; i < activeImageElements.Count; i++)
@@ -56,6 +58,7 @@ namespace CosmicShore.App.UI
 
         public void OnClick()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.SwitchView);
             navGroup.ActivateLink(this);
         }
 

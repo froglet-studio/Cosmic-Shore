@@ -13,24 +13,22 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] SquadMemberCard RogueTwoCaptainButton;
 
         // TODO: Need to pull this from inventory
-        [SerializeField] SO_ShipList PlayerShips;
+        [SerializeField] SO_VesselList PlayerShips;
         List<SO_Captain> AllCaptains = new();
 
         public int ActiveSquadMember = 0;
 
         void Start()
         {
-            foreach (var ship in PlayerShips.ShipList)
-                foreach (var captain in ship.Captains)
-                    AllCaptains.Add(captain);
+            // Captain system removed from vessels — squad system is inactive.
+            // Keeping this stub to prevent runtime errors until squad is refactored.
+            if (AllCaptains.Count > 0)
+            {
+                SquadSystem.DefaultLeader = AllCaptains[0];
+                SquadSystem.DefaultRogueOne = AllCaptains[0];
+                SquadSystem.DefaultRogueTwo = AllCaptains[0];
+            }
 
-            // Populate Squad Buttons
-            //SquadSystem.CaptainList = AllCaptains;
-            SquadSystem.DefaultLeader = AllCaptains[0];
-            SquadSystem.DefaultRogueOne = AllCaptains[0];
-            SquadSystem.DefaultRogueTwo = AllCaptains[0];
-
-            // Get player captain and set captain image for button. set player button active
             UpdateView();
         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Views;
@@ -45,9 +46,6 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
 
-        [Tooltip("If true, will filter out unowned ships from being available to play")]
-        [SerializeField] private bool respectInventoryForShipSelection = false;
-
         [Header("Screen 2 – Selected Vessel Summary")]
         [SerializeField] private Image    shipPlaceholderIcon;
         [SerializeField] private TMP_Text shipNameText;
@@ -64,7 +62,7 @@ namespace CosmicShore.App.UI.Modals
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
 
-        readonly List<SO_Ship> _availableShips = new();
+        readonly List<SO_Vessel> _availableShips = new();
         int _currentShipIndex = -1;
 
         #region Unity lifecycle
@@ -202,20 +200,9 @@ namespace CosmicShore.App.UI.Modals
         {
             _availableShips.Clear();
 
-            if (!game) return;
+            if (!game || game.Vessels == null) return;
 
-            var ships = game.Captains
-                .Where(c => c && c.Ship)
-                .Select(c => c.Ship)
-                .ToList();
-
-            if (respectInventoryForShipSelection && CaptainManager.Instance)
-            {
-                var unlocked = CaptainManager.Instance.UnlockedShips;
-                ships = ships.Where(s => unlocked.Contains(s)).ToList();
-            }
-
-            _availableShips.AddRange(ships);
+            _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
         }
         
         void InitializeDefaultShipFromAvailable()
@@ -227,7 +214,7 @@ namespace CosmicShore.App.UI.Modals
                 return;
             }
 
-            SO_Ship chosen = null;
+            SO_Vessel chosen = null;
 
             if (gameData && gameData.selectedVesselClass)
             {
@@ -365,7 +352,7 @@ namespace CosmicShore.App.UI.Modals
             RaiseConfigChanged();
         }
 
-        void SetSelectedShipInternal(SO_Ship ship)
+        void SetSelectedShipInternal(SO_Vessel ship)
         {
             if (config)
                 config.SelectedShip = ship;
@@ -391,7 +378,7 @@ namespace CosmicShore.App.UI.Modals
             RefreshShipSummaryView(config ? config.SelectedShip : null);
         }
 
-        void RefreshShipSummaryView(SO_Ship ship)
+        void RefreshShipSummaryView(SO_Vessel ship)
         {
             // Icons
             Sprite icon = ship && ship.IconActive ? ship.IconActive : null;
@@ -431,6 +418,7 @@ namespace CosmicShore.App.UI.Modals
         // Screen 1 → Screen 2
         public void OnConfirmConfiguration()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
             ShowGameDetailScreen();
         }
 
@@ -443,6 +431,7 @@ namespace CosmicShore.App.UI.Modals
         // Start Game button on Screen 2
         public void OnStartGameClicked()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             startGameRequestedEvent?.Raise();
         }
 
@@ -476,7 +465,7 @@ namespace CosmicShore.App.UI.Modals
                 gameData.SelectedPlayerCount.Value = config.PlayerCount;
         }
 
-        void SyncGameDataShip(SO_Ship ship)
+        void SyncGameDataShip(SO_Vessel ship)
         {
             if (!gameData || !gameData.selectedVesselClass)
                 return;

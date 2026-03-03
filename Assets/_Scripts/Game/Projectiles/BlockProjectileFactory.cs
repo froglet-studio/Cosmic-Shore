@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using CosmicShore.Core;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -27,7 +28,7 @@ namespace CosmicShore.Game.Projectiles
                 if (entry.poolManager == null) continue;
                 if (_pools.ContainsKey(entry.type))
                 {
-                    Debug.LogWarning($"Duplicate pool entry for type {entry.type} ignored.");
+                    CSDebug.LogWarning($"Duplicate pool entry for type {entry.type} ignored.");
                     continue;
                 }
 
@@ -39,7 +40,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!_pools.TryGetValue(type, out var pool))
             {
-                Debug.LogError($"No pool registered for PrismType: {type}");
+                CSDebug.LogError($"No pool registered for PrismType: {type}");
                 return null;
             }
 
@@ -52,7 +53,7 @@ namespace CosmicShore.Game.Projectiles
             //
             // if (!_pools.TryGetValue(prism., out var pool))
             // {
-            //     Debug.LogWarning($"No pool registered for {prism.PrismType}; disabling instead.");
+            //     CSDebug.LogWarning($"No pool registered for {prism.PrismType}; disabling instead.");
             //     prism.gameObject.SetActive(false);
             //     return;
             // }

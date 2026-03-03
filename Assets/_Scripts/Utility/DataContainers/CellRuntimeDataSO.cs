@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Soap
 {
@@ -73,7 +74,7 @@ namespace CosmicShore.Soap
             {
                 if (!TryGetLocalCrystal(out Crystal crystal))
                 {
-                    Debug.LogWarning("[CellRuntimeDataSO] No local crystal found!");
+                    CSDebug.LogWarning("[CellRuntimeDataSO] No local crystal found!");
                     return null;
                 }
                 return crystal.transform;
@@ -154,7 +155,7 @@ namespace CosmicShore.Soap
         /// </summary>
         public void ResetRuntimeData()
         {
-            Debug.Log("<color=yellow>[CellRuntimeDataSO] Resetting runtime data</color>");
+            CSDebug.Log("<color=yellow>[CellRuntimeDataSO] Resetting runtime data</color>");
 
             Cell = null;
 
@@ -164,7 +165,7 @@ namespace CosmicShore.Soap
                 {
                     if (Crystals[i] && Crystals[i].gameObject)
                     {
-                        Debug.Log($"<color=yellow>[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}</color>");
+                        CSDebug.Log($"<color=yellow>[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}</color>");
                         Object.Destroy(Crystals[i].gameObject);
                     }
                 }
@@ -173,7 +174,7 @@ namespace CosmicShore.Soap
 
             CellItems?.Clear();
 
-            Debug.Log("<color=green>[CellRuntimeDataSO] Runtime data reset complete</color>");
+            CSDebug.Log("<color=green>[CellRuntimeDataSO] Runtime data reset complete</color>");
         }
     }
 }

@@ -45,6 +45,11 @@ namespace CosmicShore.Game.UI
             SetDisplay(string.Empty);
         }
 
+        public UniTask PlayIn(CancellationToken ct)
+        {
+            return RunTypeIn(fullText, ct);
+        }
+
         public UniTask PlayIn(string text, CancellationToken ct)
         {
             fullText = text ?? string.Empty;

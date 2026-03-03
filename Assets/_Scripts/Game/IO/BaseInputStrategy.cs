@@ -31,7 +31,7 @@ namespace CosmicShore.Game.IO
             inputStatus.InvertThrottleEnabled = status;
         }
 
-        protected float Ease(float input)
+        protected virtual float Ease(float input)
         {
             return input < 0 ?
                 (Mathf.Cos(input * PI_OVER_FOUR) - 1) :
@@ -50,6 +50,8 @@ namespace CosmicShore.Game.IO
             inputStatus.LeftJoystickStart = Vector2.zero;
             inputStatus.RightNormalizedJoystickPosition = Vector2.zero;
             inputStatus.LeftNormalizedJoystickPosition = Vector2.zero;
+            inputStatus.LeftTriggerAnalog = 0f;
+            inputStatus.RightTriggerAnalog = 0f;
             inputStatus.Idle = false;
         }
     }

@@ -30,10 +30,10 @@ namespace CosmicShore.Core
             }
             
             // Elemental events
-            OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(ChargeLevel * MaxLevel));
-            OnElementLevelChange?.Invoke(Element.Mass,   Mathf.FloorToInt(MassLevel * MaxLevel));
-            OnElementLevelChange?.Invoke(Element.Space,  Mathf.FloorToInt(SpaceLevel * MaxLevel));
-            OnElementLevelChange?.Invoke(Element.Time,   Mathf.FloorToInt(TimeLevel * MaxLevel));
+            OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(ChargeLevel * LevelScale));
+            OnElementLevelChange?.Invoke(Element.Mass,   Mathf.FloorToInt(MassLevel * LevelScale));
+            OnElementLevelChange?.Invoke(Element.Space,  Mathf.FloorToInt(SpaceLevel * LevelScale));
+            OnElementLevelChange?.Invoke(Element.Time,   Mathf.FloorToInt(TimeLevel * LevelScale));
 
             yield return StartCoroutine(GainResourcesCoroutine());
         }
@@ -111,10 +111,10 @@ namespace CosmicShore.Core
         /*  ELEMENTAL LEVELS STUFF HERE */
         /********************************/
         [Header("Elemental Levels")]
-        [SerializeField, Range(0, 1)] float ChargeTestHarness;
-        [SerializeField, Range(0, 1)] float MassTestHarness;
-        [SerializeField, Range(0, 1)] float SpaceTestHarness;
-        [SerializeField, Range(0, 1)] float TimeTestHarness;
+        [SerializeField, Range(-0.5f, 1.5f)] float ChargeTestHarness;
+        [SerializeField, Range(-0.5f, 1.5f)] float MassTestHarness;
+        [SerializeField, Range(-0.5f, 1.5f)] float SpaceTestHarness;
+        [SerializeField, Range(-0.5f, 1.5f)] float TimeTestHarness;
 
         [field: SerializeField] public float ChargeLevel { get; private set; }
         [field: SerializeField] public float MassLevel   { get; private set; }
@@ -124,8 +124,9 @@ namespace CosmicShore.Core
         public delegate void ElementLevelChange(Element element, int level);
         public event ElementLevelChange OnElementLevelChange;
 
-        const float MaxElementalLevel = 1;
-        const int   MaxLevel = 10;
+        const float MinElementalLevel = -0.5f;
+        const float MaxElementalLevel = 1.5f;
+        const int   LevelScale = 10;
         Dictionary<Element, float> ElementalLevels = new();
 
         public void InitializeElementLevels(ResourceCollection resourceGroup)
@@ -137,18 +138,29 @@ namespace CosmicShore.Core
         }
 
         public int GetLevel(Element element)
-            => !ElementalLevels.TryGetValue(element, out var level) ? 0 : Mathf.FloorToInt(level);
+            => !ElementalLevels.TryGetValue(element, out var level) ? 0 : Mathf.FloorToInt(level * LevelScale);
+
+        public float GetNormalizedLevel(Element element)
+            => ElementalLevels.TryGetValue(element, out var level) ? level : 0f;
 
         public void IncrementLevel(Element element) => AdjustLevel(element, .1f);
 
         public bool AdjustLevel(Element element, float amount)
         {
             var previous = ElementalLevels[element];
-            ElementalLevels[element] = Math.Clamp(ElementalLevels[element] + amount, 0, MaxElementalLevel);
+            ElementalLevels[element] = Math.Clamp(ElementalLevels[element] + amount, MinElementalLevel, MaxElementalLevel);
             if (Mathf.Approximately(previous, ElementalLevels[element])) return false;
 
-            OnElementLevelChange?.Invoke(element, Mathf.FloorToInt(ElementalLevels[element] * MaxLevel));
-            return Mathf.FloorToInt(ElementalLevels[element] * MaxLevel) - Mathf.FloorToInt(previous * MaxLevel) >= 1;
+            OnElementLevelChange?.Invoke(element, Mathf.FloorToInt(ElementalLevels[element] * LevelScale));
+            return Mathf.FloorToInt(ElementalLevels[element] * LevelScale) - Mathf.FloorToInt(previous * LevelScale) >= 1;
+        }
+
+        public void SetElementLevel(Element element, float normalizedLevel)
+        {
+            float previous = ElementalLevels.ContainsKey(element) ? ElementalLevels[element] : 0f;
+            ElementalLevels[element] = Math.Clamp(normalizedLevel, MinElementalLevel, MaxElementalLevel);
+            if (!Mathf.Approximately(previous, ElementalLevels[element]))
+                OnElementLevelChange?.Invoke(element, Mathf.FloorToInt(ElementalLevels[element] * LevelScale));
         }
         
         void EmitResourceChanged(int index)

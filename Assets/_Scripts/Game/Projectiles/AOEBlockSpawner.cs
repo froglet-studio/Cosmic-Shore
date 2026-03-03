@@ -2,12 +2,13 @@ using System;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using CosmicShore.Game.Spawning;
 
 namespace CosmicShore.Game.Projectiles
 {
     public class AOEBlockSpawner : AOEBlockCreation
     {
-        [SerializeField] private SpawnableAbstractBase spawnable;
+        [SerializeField] private SpawnableBase spawnable;
         [SerializeField] int repetitions = 1;
         [SerializeField] float delayBetweenSpawns = 0.3f;
 

@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems.Ads;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI.FX;
 using CosmicShore.Integrations.PlayFab.CloudScripts;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -9,6 +10,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Advertisements;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 namespace CosmicShore
 {
     enum ButtonMode
@@ -113,6 +115,7 @@ namespace CosmicShore
             switch (Mode)
             {
                 case ButtonMode.Free:
+                    AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
                     PlayerPrefs.SetString(LastFreeClaimedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
                     PlayerPrefs.Save();
                     DailyRewardHandler.Instance.Claim();
@@ -138,7 +141,7 @@ namespace CosmicShore
 
         void ClaimAdWatchReward(string adUnitId, UnityAdsShowCompletionState showCompletionState)
         {
-            Debug.Log("Claim Daily Reward via ad watch");
+            CSDebug.Log("Claim Daily Reward via ad watch");
             DailyRewardHandler.Instance.Claim();
             IconEmitter?.EmitIcons();
             StartCoroutine(RotateCoroutine(EnterClockMode));

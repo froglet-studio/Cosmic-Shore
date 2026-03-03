@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Soap;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -98,6 +99,19 @@ namespace CosmicShore.Game
             cs.LifeFormsInCell = spawnedLifeForms.Count;
         }
 
+        /// <summary>
+        /// Toggles visibility of all spawned lifeforms (flora/fauna).
+        /// Used to hide flora during shape drawing mode and restore after.
+        /// </summary>
+        public void SetLifeFormsActive(bool active)
+        {
+            for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
+            {
+                if (spawnedLifeForms[i])
+                    spawnedLifeForms[i].SetActive(active);
+            }
+        }
+
         public void RegisterSpawnedObject(GameObject obj)
         {
             if (!obj) return;
@@ -132,7 +146,7 @@ namespace CosmicShore.Game
             postInitilized = true;
             if (!cellConfigData)
             {
-                Debug.LogWarning($"[Cell {ID}] Crystal spawned before Cell Initialized. Attempting lazy init.");
+                CSDebug.LogWarning($"[Cell {ID}] Crystal spawned before Cell Initialized. Attempting lazy init.");
                 Initialize();
                 if (!cellConfigData) return;
             }
@@ -152,7 +166,7 @@ namespace CosmicShore.Game
         {
             if (CellConfigs == null || CellConfigs.Count == 0)
             {
-                Debug.LogError($"{nameof(Cell)}: No CellConfigs found to assign.");
+                CSDebug.LogError($"{nameof(Cell)}: No CellConfigs found to assign.");
                 return;
             }
 
@@ -213,7 +227,7 @@ namespace CosmicShore.Game
 
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 
-            Debug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
+            CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
         }
 
         void StopSpawner()
@@ -221,7 +235,7 @@ namespace CosmicShore.Game
             if (activeSpawner == null) return;
             activeSpawner.Stop(this);
             activeSpawner = null;
-            Debug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
+            CSDebug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
         }
 
         internal Transform GetCrystalTransform()
@@ -229,7 +243,7 @@ namespace CosmicShore.Game
             if (runtime != null && runtime.TryGetLocalCrystal(out var crystal) && crystal)
                 return crystal.transform;
 
-            Debug.LogWarning($"[Cell {ID}] No crystal found!");
+            CSDebug.LogWarning($"[Cell {ID}] No crystal found!");
             return null;
         }
 

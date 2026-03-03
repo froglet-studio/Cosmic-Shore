@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace CosmicShore.Game.Analytics
@@ -6,37 +6,19 @@ namespace CosmicShore.Game.Analytics
     [Serializable]
     public class HexRacePlayerStatsProfile
     {
-        public int TotalCleanCrystalsCollected;
-        public float TotalDriftTime;
-
-        public float LongestSingleDrift;
-        public float MaxTimeAtHighBoost;
-
-        // [Visual Note] Best Times per Level (Key = "LevelName_Intensity")
-        // NOTE: For Race times, LOWER is better.
-        public Dictionary<string, float> BestRaceTimes = new();
+        // Key = "Mode_Intensity", Value = RaceTime (Lower is better)
+        public Dictionary<string, float> BestMultiplayerRaceTimes = new();
 
         public bool TryUpdateBestTime(string levelKey, float newTime)
         {
-            if (BestRaceTimes.TryGetValue(levelKey, out float currentBest))
+            if (BestMultiplayerRaceTimes.TryGetValue(levelKey, out float currentBest))
             {
-                // [Visual Note] Lower time is better for racing
                 if (newTime >= currentBest) return false;
-                
-                BestRaceTimes[levelKey] = newTime;
+                BestMultiplayerRaceTimes[levelKey] = newTime;
                 return true;
             }
-            
-            BestRaceTimes.Add(levelKey, newTime);
+            BestMultiplayerRaceTimes.Add(levelKey, newTime);
             return true;
-        }
-
-        public void UpdateSkillStats(float driftTime, float boostTime)
-        {
-            if (driftTime > LongestSingleDrift) LongestSingleDrift = driftTime;
-            if (boostTime > MaxTimeAtHighBoost) MaxTimeAtHighBoost = boostTime;
-            
-            TotalDriftTime += driftTime;
         }
     }
 }

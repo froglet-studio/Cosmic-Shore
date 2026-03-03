@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
@@ -5,6 +6,7 @@ using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Progression;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections.Generic;
@@ -13,6 +15,7 @@ using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -38,11 +41,17 @@ namespace CosmicShore.App.UI.Views
         void OnEnable()
         {
             CatalogManager.OnLoadInventory += PopulateGameSelectionList;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
         }
 
         void OnDisable()
         {
             CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
         }
 
         void Start()
@@ -84,31 +93,46 @@ namespace CosmicShore.App.UI.Views
                 return flagComparison;
             });
 
+            var progressionService = GameModeProgressionService.Instance;
+
             for (var i = 0; i < GameCards.Count && i < GameList.Games.Count && i < sortedGames.Count; i++)
             {
                 var game = sortedGames[i];
 
-                Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
+                CSDebug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
 
                 var gameCard = GameCards[i];
                 gameCard.GameMode = game.Mode;
                 gameCard.Favorited = FavoriteSystem.IsFavorited(game.Mode);
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
-                gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
                 gameCard.ExploreView = this;
-                
+
+                // Check if this game mode is unlocked via the quest progression system
+                bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
+                gameCard.SetLocked(isLocked);
+
+                if (!isLocked)
+                {
+                    gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
+                }
+
                 if (gameCard.TryGetComponent(out CallToActionTarget target))
                 {
                     target.TargetID = game.CallToActionTargetType;
                 }
                 else
                 {
-                    Debug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.", 
+                    CSDebug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.",
                         nameof(ArcadeExploreView), game.CallToActionTargetType.ToString());
                 }
-                
+
                 gameCard.gameObject.SetActive(true);
             }
+        }
+
+        void OnProgressionChanged(GameModeProgressionData data)
+        {
+            PopulateGameSelectionList();
         }
 
         public void SelectGame(SO_ArcadeGame selectedGame)
@@ -120,26 +144,22 @@ namespace CosmicShore.App.UI.Views
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
 
-        public void SelectShip(SO_Ship selectedShip)
+        public void SelectShip(SO_Vessel selectedShip)
         {
-            Debug.Log($"SelectShip: {selectedShip.Name}");
+            CSDebug.Log($"SelectShip: {selectedShip.Name}");
 
             selectedVesselClassType.Value = selectedShip.Class;
             // TODO - Remove statics from MiniGame, use SOAP Data Container
             // notify the mini game engine that this is the vessel to play
             // MiniGame.PlayerShipType = selectedShip.Class;
 
-            // if game.captains matches selectedShip.captains, that's the one
-            foreach (var captain in selectedShip.Captains)
-            {
-                if (SelectedGame.Captains.Contains(captain))
-                    //MiniGame.ShipResources = captain.InitialResourceLevels;
-                    MiniGame.ResourceCollection = captain.InitialResourceLevels;
-            }
+            // Set resource levels from the vessel's config
+            MiniGame.ResourceCollection = selectedShip.InitialResourceLevels;
         }
 
         public void PlaySelectedGame()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
             Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
         }

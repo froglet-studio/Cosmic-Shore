@@ -1,9 +1,16 @@
 ﻿using System;
 using System.Collections;
+using CosmicShore.App.Profile;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Progression;
+using CosmicShore.Models;
 using CosmicShore.Soap;
+using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -17,7 +24,18 @@ namespace CosmicShore.Game.Cinematics
         [Header("View")]
         [SerializeField] protected EndGameCinematicView view;
 
+        [Header("Crystal Reward")]
+        [Tooltip("Amount of crystals awarded per game.")]
+        [SerializeField] private int crystalsPerGame = 5;
+        [Tooltip("Root GameObject to enable/disable for the crystal reward display.")]
+        [SerializeField] private GameObject crystalRewardRoot;
+        [Tooltip("Text showing how many crystals were earned.")]
+        [SerializeField] private TMP_Text crystalRewardText;
+        [Tooltip("Duration of the fade-in animation.")]
+        [SerializeField] private float crystalFadeDuration = 0.5f;
+
         protected bool isRunning;
+        protected bool localPlayerWon;
         protected Coroutine runningRoutine;
         protected float cachedBoostMultiplier;
         
@@ -25,6 +43,9 @@ namespace CosmicShore.Game.Cinematics
         {
             if (!gameData) return;
             gameData.OnWinnerCalculated += OnWinnerCalculated;
+
+            if (crystalRewardRoot)
+                crystalRewardRoot.SetActive(false);
 
             if (!view) return;
             view.Initialize();
@@ -68,6 +89,8 @@ namespace CosmicShore.Game.Cinematics
 
         protected virtual IEnumerator RunCompleteEndGameSequence(CinematicDefinitionSO cinematic)
         {
+            localPlayerWon = DetermineLocalPlayerWon();
+
             if (cinematic && cinematic.enableVictoryLap)
                 yield return StartCoroutine(RunVictoryLap(cinematic));
 
@@ -82,6 +105,9 @@ namespace CosmicShore.Game.Cinematics
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
+            yield return StartCoroutine(AwardCrystalReward());
+            yield return StartCoroutine(ShowQuestCompletionSequence());
+
             if (view)
             {
                 view.ShowContinueButton();
@@ -96,7 +122,9 @@ namespace CosmicShore.Game.Cinematics
             }
 
             if (view)
+            {
                 view.HideScoreRevealPanel();
+            }
 
             gameData.InvokeShowGameEndScreen();
 
@@ -111,7 +139,7 @@ namespace CosmicShore.Game.Cinematics
         /// </summary>
         protected virtual void ResetGameForNewRound()
         {
-            Debug.Log("[EndGameCinematic] Resetting Game State...");
+            CSDebug.Log("[EndGameCinematic] Resetting Game State...");
 
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer == null && gameData.Players.Count > 0)
@@ -142,9 +170,14 @@ namespace CosmicShore.Game.Cinematics
             }
 
             gameData.ResetPlayers();
-            
+
             if (cinematicCameraController)
                 cinematicCameraController.StopCameraSetup();
+
+            // Snap player camera back to follow target after cinematic
+            // moved it to a cinematic position.
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
         
         protected virtual void HandleContinuePressed()
@@ -170,9 +203,14 @@ namespace CosmicShore.Game.Cinematics
                     EnhanceTrailRenderer(localPlayer.Vessel);
                 }
                 
-                if (cinematic.showVictoryToast && !string.IsNullOrEmpty(cinematic.scoreRevealToastString))
+                if (cinematic.showVictoryToast)
                 {
-                    view?.ShowVictoryToast(cinematic.scoreRevealToastString, cinematic.toastSettings);
+                    var toastMessage = localPlayerWon
+                        ? cinematic.GetRandomVictoryToast()
+                        : cinematic.GetRandomDefeatToast();
+
+                    if (!string.IsNullOrEmpty(toastMessage))
+                        view?.ShowVictoryToast(toastMessage, cinematic.toastSettings);
                 }
                 
                 yield return new WaitForSeconds(settings.duration);
@@ -233,6 +271,7 @@ namespace CosmicShore.Game.Cinematics
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 
@@ -246,6 +285,60 @@ namespace CosmicShore.Game.Cinematics
             );
         }
         
+        protected virtual IEnumerator AwardCrystalReward()
+        {
+            if (crystalsPerGame <= 0) yield break;
+
+            var service = PlayerDataService.Instance;
+            if (service != null)
+            {
+                int newBalance = service.AddCrystals(crystalsPerGame);
+                CSDebug.Log($"[EndGameCinematic] Awarded {crystalsPerGame} crystals. New balance: {newBalance}");
+            }
+
+            if (crystalRewardRoot && crystalRewardText)
+            {
+                crystalRewardText.text = $"+{crystalsPerGame}";
+                crystalRewardRoot.SetActive(true);
+
+                var cg = crystalRewardRoot.GetComponent<CanvasGroup>();
+                if (cg)
+                {
+                    cg.alpha = 0f;
+                    yield return cg.DOFade(1f, crystalFadeDuration)
+                        .SetEase(Ease.OutQuad)
+                        .WaitForCompletion();
+                }
+
+                yield return new WaitForSeconds(1.5f);
+            }
+        }
+
+        /// <summary>
+        /// After the score reveal, checks if the current game mode's quest was completed.
+        /// If so, sets the SO runtime flag and shows a completion message in the cinematic view.
+        /// Relies on GameModeProgressionService having already evaluated the quest via HandleGameEnd.
+        /// </summary>
+        protected virtual IEnumerator ShowQuestCompletionSequence()
+        {
+            if (!view || !gameData) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) yield break;
+
+            var mode = gameData.GameMode;
+            var quest = service.GetQuestForMode(mode);
+            if (quest == null || quest.IsPlaceholder) yield break;
+
+            if (service.IsQuestCompleted(mode))
+            {
+                quest.IsCompleted = true;
+                view.ShowQuestCompletion($"Quest Complete!\n{quest.DisplayName}");
+                CSDebug.Log($"[EndGameCinematic] Quest completed for {mode}: {quest.DisplayName}");
+                yield return new WaitForSeconds(2f);
+            }
+        }
+
         #endregion
 
         #region AI Control
@@ -278,18 +371,27 @@ namespace CosmicShore.Game.Cinematics
         #endregion
 
         #region Helpers
-        
+
+        /// <summary>
+        /// Override in game-specific controllers to provide win/loss detection.
+        /// Called at the start of the end-game sequence to determine which toast strings to use.
+        /// </summary>
+        protected virtual bool DetermineLocalPlayerWon()
+        {
+            return gameData != null && gameData.IsLocalDomainWinner(out _);
+        }
+
         protected virtual CinematicDefinitionSO ResolveCinematicForThisScene()
         {
             var sceneName = SceneManager.GetActiveScene().name;
 
             if (sceneCinematicLibrary && sceneCinematicLibrary.TryGet(sceneName, out var fromLibrary))
             {
-                Debug.Log($"Found cinematic definition for scene: {sceneName}");
+                CSDebug.Log($"Found cinematic definition for scene: {sceneName}");
                 return fromLibrary;
             }
             
-            Debug.LogWarning($"No cinematic definition found for scene: {sceneName}");
+            CSDebug.LogWarning($"No cinematic definition found for scene: {sceneName}");
             return null;
         }
         

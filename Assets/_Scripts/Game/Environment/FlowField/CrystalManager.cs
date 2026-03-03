@@ -6,6 +6,7 @@ using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -97,15 +98,15 @@ namespace CosmicShore.Game
             crystal.InjectDependencies(this);
 
             var domain = Domains.None;
-            if (spawnCrystalWithPlayerDomain)
-                domain = gameData.Players[crystalId - 1].Domain; 
+            if (spawnCrystalWithPlayerDomain && crystalId - 1 < gameData.Players.Count)
+                domain = gameData.Players[crystalId - 1].Domain;
                 
             // Keep a list of crystals in the cell data (you already changed this).
             crystal.ChangeDomain(domain);
             
             if (crystal.Id != 0)
             {
-                Debug.LogError("To initialize a cell item, its default Id must be 0");
+                CSDebug.LogError("To initialize a cell item, its default Id must be 0");
                 return crystal;
             }
 
@@ -168,7 +169,8 @@ namespace CosmicShore.Game
             if (!TryGetCrystalPositionListByIntensity(out Vector3[] anchors) || anchors == null || anchors.Length == 0)
             {
                 var crystalRadius = cellData.TryGetLocalCrystal(out Crystal crystal) ? crystal.SphereRadius : 10f;
-                Vector3 fallback = Random.insideUnitSphere * crystalRadius + cellData.CellTransform.position;
+                var centerPos = cellData.CellTransform != null ? cellData.CellTransform.position : transform.position;
+                Vector3 fallback = Random.insideUnitSphere * crystalRadius + centerPos;
                 lastSpawnPosById[crystalId] = fallback;
                 return fallback;
             }

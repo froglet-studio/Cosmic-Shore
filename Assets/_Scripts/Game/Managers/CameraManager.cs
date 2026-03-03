@@ -8,6 +8,7 @@ using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Utility;
 
 
 public class CameraManager : Singleton<CameraManager>
@@ -96,7 +97,7 @@ public class CameraManager : Singleton<CameraManager>
             }
             return ctrl;
         }
-        Debug.LogWarning($"[CameraManager] Could not find camera controller: {name}");
+        CSDebug.LogWarning($"[CameraManager] Could not find camera controller: {name}");
         return null;
     }
 
@@ -111,17 +112,23 @@ public class CameraManager : Singleton<CameraManager>
     public void SetupGamePlayCameras(Transform followTarget)
     {
         if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
-        
+
         _playerFollowTarget = followTarget;
         _playerCamera?.SetFollowTarget(_playerFollowTarget);
         _deathCamera?.SetFollowTarget(_playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
-        
+
         SetCloseCameraActive();
 
         var shipGO = _playerFollowTarget.gameObject;
         var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
-        shipCustomizer.Configure(_playerCamera);
+        if (shipCustomizer != null)
+            shipCustomizer.Configure(_playerCamera);
+
+        // Snap camera to correct initial position to prevent retaining
+        // stale end-game or transition state from the previous session.
+        if (_playerCamera is CustomCameraController pcc)
+            pcc.SnapToTarget();
     }
 
     public void SetMainMenuCameraActive()
@@ -133,7 +140,7 @@ public class CameraManager : Singleton<CameraManager>
         }
         else
         {
-            Debug.LogWarning("[CameraManager] Main menu camera is not assigned!");
+            CSDebug.LogWarning("[CameraManager] Main menu camera is not assigned!");
         }
         
         if (_playerCamera is CustomCameraController pcc)
@@ -169,10 +176,21 @@ public class CameraManager : Singleton<CameraManager>
 
         controller?.Activate();
         _activeController = controller;
-        mainMenuCamera.gameObject.SetActive(false);
+        if (mainMenuCamera != null)
+            mainMenuCamera.gameObject.SetActive(false);
     }
 
     public ICameraController GetActiveController() => _activeController;
+
+    /// <summary>
+    /// Snaps the player camera to its follow target's current position.
+    /// Call after vessel teleport or end-game cinematic to reset the camera.
+    /// </summary>
+    public void SnapPlayerCameraToTarget()
+    {
+        if (_playerCamera is CustomCameraController pcc)
+            pcc.SnapToTarget();
+    }
 
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {

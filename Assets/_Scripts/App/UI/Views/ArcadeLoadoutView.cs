@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
@@ -7,13 +8,14 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
     public class ArcadeLoadoutView : MonoBehaviour
     {
         [SerializeField] SO_GameList AllGames;
-        [SerializeField] SO_ShipList AllShips;
+        [SerializeField] SO_VesselList AllShips;
         [SerializeField] List<LoadoutCard> CardList = new(4);
         [SerializeField] Image[] GameModeImages = new Image[4];
         [SerializeField] Image ShipClassImage;
@@ -26,7 +28,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Color SelectedColor;
         [SerializeField] Color DisabledColor;
 
-        List<SO_Ship> availableShips = new List<SO_Ship>();
+        List<SO_Vessel> availableShips = new List<SO_Vessel>();
 
         int selectedShipIndex;
         int selectedGameIndex;
@@ -62,7 +64,7 @@ namespace CosmicShore.App.UI.Views
 
             var loadout = CardList[index].GetLoadout();
 
-            Debug.Log($"LoadoutMenu - SelectLoadout - loadout:{loadout}");
+            CSDebug.Log($"LoadoutMenu - SelectLoadout - loadout:{loadout}");
 
             // Default load out for building a new one
             if (!loadout.Initialized)
@@ -92,17 +94,18 @@ namespace CosmicShore.App.UI.Views
             // 
             selectedGameIndex = AllGames.Games.IndexOf(AllGames.Games.Where(x => x.Mode == activeGameMode).FirstOrDefault());
             UpdateGameMode();
-            selectedShipIndex = availableShips.IndexOf(AllShips.ShipList.Where(x => x.Class == activeVesselType).FirstOrDefault());
+            selectedShipIndex = availableShips.IndexOf(AllShips.VesselList.Where(x => x.Class == activeVesselType).FirstOrDefault());
             UpdateShipClass();
 
-            Debug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
+            CSDebug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
 
             LoadoutSystem.SetActiveLoadoutIndex(index);
         }
 
         //  Play Button press gets loadout and sends to game
-        public void OnClickPlayButton() 
+        public void OnClickPlayButton()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             Loadout loadout = LoadoutSystem.GetActiveLoadout();
             Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
         }
@@ -122,7 +125,7 @@ namespace CosmicShore.App.UI.Views
 
         void UpdateShipClass()
         {
-            Debug.Log("SelectedShipIndex is " + selectedShipIndex);
+            CSDebug.Log("SelectedShipIndex is " + selectedShipIndex);
 
             if (selectedShipIndex < 0) selectedShipIndex = availableShips.Count() - 1;
             if (selectedShipIndex >= availableShips.Count()) selectedShipIndex = 0;
@@ -131,7 +134,7 @@ namespace CosmicShore.App.UI.Views
             ShipTitle.text = availableShips[selectedShipIndex].Name;
             ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutteInactive;
 
-            Debug.Log("Active Vessel Type is " + activeVesselType);
+            CSDebug.Log("Active Vessel Type is " + activeVesselType);
         }
 
         // Sets MiniGames
@@ -155,12 +158,18 @@ namespace CosmicShore.App.UI.Views
             foreach (var image in GameModeImages)
                 image.sprite = selectedGame.CardBackground;
 
-            availableShips = new List<SO_Ship>();
-            foreach (var captain in selectedGame.Captains)
-                availableShips.Add(captain.Ship);
+            availableShips = new List<SO_Vessel>();
+            if (selectedGame.Vessels != null)
+            {
+                foreach (var vessel in selectedGame.Vessels)
+                {
+                    if (vessel != null && !vessel.IsLocked)
+                        availableShips.Add(vessel);
+                }
+            }
 
             // If selected vessel is not available, fall back to zero
-            if (!availableShips.Contains(AllShips.ShipList.Where(x => x.Class == activeVesselType).FirstOrDefault()))
+            if (!availableShips.Contains(AllShips.VesselList.Where(x => x.Class == activeVesselType).FirstOrDefault()))
             {
                 selectedShipIndex = 0;
                 UpdateShipClass();
@@ -168,13 +177,13 @@ namespace CosmicShore.App.UI.Views
 
             UpdatePlayerCountColors();
 
-            Debug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
+            CSDebug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
         }
 
         // Sets Intensity
         public void OnClickedChangeActiveIntensity(int newIntensity)
         {
-            Debug.Log("LoadoutMenu - OnClickedChangeActiveIntensity - Intensity changed to " + newIntensity);
+            CSDebug.Log("LoadoutMenu - OnClickedChangeActiveIntensity - Intensity changed to " + newIntensity);
 
             activeIntensity = newIntensity;
 
@@ -198,7 +207,7 @@ namespace CosmicShore.App.UI.Views
         // Sets Player Count
         public void OnClickChangeActivePlayerCount(int newPlayerCount)
         {
-            Debug.Log("LoadoutMenu - OnClickChangeActivePlayerCount - PlayerCount changed to " + newPlayerCount);
+            CSDebug.Log("LoadoutMenu - OnClickChangeActivePlayerCount - PlayerCount changed to " + newPlayerCount);
 
             activePlayerCount = newPlayerCount;
 

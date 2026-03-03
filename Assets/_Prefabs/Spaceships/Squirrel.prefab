@@ -951,7 +951,7 @@ MonoBehaviour:
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 1
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -1253,6 +1253,7 @@ GameObject:
   - component: {fileID: 7965853245772039612}
   - component: {fileID: 5649393235309590662}
   - component: {fileID: 8755860699239805343}
+  - component: {fileID: 6248787816825736170}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -1438,6 +1439,7 @@ MonoBehaviour:
   _shipInstance: {fileID: 3202054749536864766}
   vesselHUDController: {fileID: 5649393235309590662}
   boostMultiplier: 1
+  inertia: 1
   _name: Squirrel
   vesselType: 6
   _nearFieldSkimmer: {fileID: 708149374973573223}
@@ -1505,6 +1507,8 @@ MonoBehaviour:
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
   startDelay: 2
+  Trail:
+    TrailRenderer: {fileID: 0}
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -1562,6 +1566,9 @@ MonoBehaviour:
   raycastWidth: 2
   ram: 0
   drift: 0
+  seekPlayers: 0
+  gameData: {fileID: 0}
+  playerSeekUpdateInterval: 0.5
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 9105512684531825410}
@@ -1660,6 +1667,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
     - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
   _resourceEventClassActions: []
+  _touchActionOverrides:
+  - InputEvent: 12
+    ShipActions:
+    - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
+    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
+  _gamepadActionOverrides: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -1759,6 +1772,7 @@ MonoBehaviour:
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}
   boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}
+  domainColors: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
 --- !u!114 &8755860699239805343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1774,6 +1788,28 @@ MonoBehaviour:
   forwardSpeed: 20
   loopRadius: 15
   loopSpeed: 2
+--- !u!114 &6248787816825736170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b0d487de1554acfad93a158ddac3874, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  longestDriftStat: {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
+  maxBoostTimeStat: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
+  prismsDamagedStat: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
+  maxCleanStreakStat: {fileID: 11400000, guid: 5bc14503bfdc4c04ca04d6ba9074e7ff, type: 2}
+  joustsWonStat: {fileID: 11400000, guid: a832d934d63484344adce8281a893989, type: 2}
+  prismsStolen: {fileID: 11400000, guid: 985c79fbc42333942977329e077af6d6, type: 2}
+  onCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c, type: 2}
+  onJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
+    type: 2}
 --- !u!1 &6744437363404699704
 GameObject:
   m_ObjectHideFlags: 0
@@ -2809,8 +2845,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   highlights: []
   boostFill: {fileID: 300298224612433471}
-  boostNormalColor: {r: 1, g: 1, b: 1, a: 1}
-  boostFullColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  colorLerpSpeed: 4
+  crystalFlashDuration: 0.5
+  fullBoostWhiteMix: 0.3
   driftButtonIcon: {fileID: 4781807749356232023}
   normalSprite: {fileID: 21300000, guid: 15d4c0157372e564882ed7a7ea6b0f2b, type: 3}
   driftingSprite: {fileID: 21300000, guid: 41c9f6e2ec44f0c458351500f1bfacdc, type: 3}
