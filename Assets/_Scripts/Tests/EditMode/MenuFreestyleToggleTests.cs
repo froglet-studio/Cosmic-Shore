@@ -127,23 +127,43 @@ namespace CosmicShore.Tests
         #region MenuFreestyleEventsContainerSO Structure
 
         [Test]
-        public void MenuFreestyleEventsContainerSO_HasOnEnterFreestyle()
+        public void MenuFreestyleEventsContainerSO_HasOnGameStateTransitionStart()
         {
             var field = typeof(ScriptableObjects.MenuFreestyleEventsContainerSO)
-                .GetField("OnEnterFreestyle", BindingFlags.Instance | BindingFlags.Public);
+                .GetField("OnGameStateTransitionStart", BindingFlags.Instance | BindingFlags.Public);
 
             Assert.IsNotNull(field,
-                "MenuFreestyleEventsContainerSO must have OnEnterFreestyle SOAP event.");
+                "MenuFreestyleEventsContainerSO must have OnGameStateTransitionStart SOAP event.");
         }
 
         [Test]
-        public void MenuFreestyleEventsContainerSO_HasOnExitFreestyle()
+        public void MenuFreestyleEventsContainerSO_HasOnGameStateTransitionEnd()
         {
             var field = typeof(ScriptableObjects.MenuFreestyleEventsContainerSO)
-                .GetField("OnExitFreestyle", BindingFlags.Instance | BindingFlags.Public);
+                .GetField("OnGameStateTransitionEnd", BindingFlags.Instance | BindingFlags.Public);
 
             Assert.IsNotNull(field,
-                "MenuFreestyleEventsContainerSO must have OnExitFreestyle SOAP event.");
+                "MenuFreestyleEventsContainerSO must have OnGameStateTransitionEnd SOAP event.");
+        }
+
+        [Test]
+        public void MenuFreestyleEventsContainerSO_HasOnMenuStateTransitionStart()
+        {
+            var field = typeof(ScriptableObjects.MenuFreestyleEventsContainerSO)
+                .GetField("OnMenuStateTransitionStart", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.IsNotNull(field,
+                "MenuFreestyleEventsContainerSO must have OnMenuStateTransitionStart SOAP event.");
+        }
+
+        [Test]
+        public void MenuFreestyleEventsContainerSO_HasOnMenuStateTransitionEnd()
+        {
+            var field = typeof(ScriptableObjects.MenuFreestyleEventsContainerSO)
+                .GetField("OnMenuStateTransitionEnd", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.IsNotNull(field,
+                "MenuFreestyleEventsContainerSO must have OnMenuStateTransitionEnd SOAP event.");
         }
 
         #endregion

@@ -58,6 +58,10 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("SOAP data container for host connection, party members, and invites.")]
         HostConnectionDataSO hostConnectionData;
 
+        [Header("Menu Freestyle Events")]
+        [SerializeField, Tooltip("SOAP event container for menu/freestyle state transition bracket events.")]
+        MenuFreestyleEventsContainerSO menuFreestyleEvents;
+
         [Header("Lifecycle Events")]
         [SerializeField, Tooltip("SOAP event container for application lifecycle events (pause, focus, quit, scene load/unload).")]
         ApplicationLifecycleEventsContainerSO lifecycleEvents;
@@ -297,6 +301,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
             RegisterAsset(builder, friendsData, nameof(friendsData));
             RegisterAsset(builder, hostConnectionData, nameof(hostConnectionData));
+            RegisterAsset(builder, menuFreestyleEvents, nameof(menuFreestyleEvents));
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
             RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
 

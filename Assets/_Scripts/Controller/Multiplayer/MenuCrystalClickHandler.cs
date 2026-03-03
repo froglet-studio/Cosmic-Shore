@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using System.Threading;
 using Unity.Netcode;
 using UnityEngine;
@@ -16,9 +17,9 @@ namespace CosmicShore.Gameplay
     /// each client has its own instance controlling only the locally-owned vessel.
     /// Other clients' vessels are unaffected by this toggle.
     ///
-    /// Raises SOAP events via <see cref="MenuFreestyleEventsContainerSO"/> so decoupled
-    /// systems (<see cref="Core.MainMenuController"/> for camera switching + state tracking,
-    /// ScreenSwitcher, NavBar, HUD) can react without direct references.
+    /// Raises SOAP transition bracket events via <see cref="MenuFreestyleEventsContainerSO"/>
+    /// so decoupled systems (<see cref="Core.MainMenuController"/>, ScreenSwitcher,
+    /// MainMenuCameraController, MenuMiniGameHUD) can react without direct references.
     ///
     /// Transition is triggered externally via <see cref="ToggleTransition"/> (e.g. from a UI button).
     /// </summary>
@@ -27,9 +28,7 @@ namespace CosmicShore.Gameplay
         [Header("References")]
         [SerializeField] GameDataSO gameData;
 
-        [Header("SOAP Events")]
-        [Tooltip("Container holding OnEnterFreestyle / OnExitFreestyle SOAP events.")]
-        [SerializeField] MenuFreestyleEventsContainerSO freestyleEvents;
+        [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
         [Header("Menu UI")]
         [Tooltip("CanvasGroups to fade OUT when entering freestyle (menu chrome, nav bar, etc).")]
@@ -122,9 +121,9 @@ namespace CosmicShore.Gameplay
             // This preserves hidden panels (e.g. ArcadeScreen at alpha 0).
             _savedMenuAlphas = CaptureAlphas(menuCanvasGroups);
 
-            // Raise SOAP event early so the camera blend starts immediately.
+            // Raise SOAP event early so the camera blend and HUD setup start immediately.
             // The UI fade and camera blend then run in parallel.
-            freestyleEvents.OnEnterFreestyle.Raise();
+            freestyleEvents.OnGameStateTransitionStart.Raise();
 
             // Run UI fade and camera transition duration in parallel.
             // _isTransitioning stays true until both complete — prevents click spam.
@@ -133,6 +132,7 @@ namespace CosmicShore.Gameplay
                 UniTask.Delay((int)(cameraTransitionDuration * 1000),
                               ignoreTimeScale: true, cancellationToken: ct));
 
+            freestyleEvents.OnGameStateTransitionEnd.Raise();
             _isTransitioning = false;
         }
 
@@ -148,7 +148,7 @@ namespace CosmicShore.Gameplay
             // Raise SOAP event early so the camera blend starts immediately.
             // Camera controller captures CM PlayerCam position as a static snapshot,
             // then blends back to orbit — runs in parallel with the UI fade.
-            freestyleEvents.OnExitFreestyle.Raise();
+            freestyleEvents.OnMenuStateTransitionStart.Raise();
 
             // Run UI fade and camera transition duration in parallel.
             // FadeToSavedMenuAlphas restores each menu canvas group to its pre-freestyle
@@ -159,6 +159,7 @@ namespace CosmicShore.Gameplay
                 UniTask.Delay((int)(cameraTransitionDuration * 1000),
                               ignoreTimeScale: true, cancellationToken: ct));
 
+            freestyleEvents.OnMenuStateTransitionEnd.Raise();
             _isInFreestyle = false;
             _isTransitioning = false;
         }

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -69,9 +70,7 @@ namespace CosmicShore.UI
         [Header("Scene References")]
         [SerializeField] private Transform NavBar;
 
-        [Header("Freestyle State")]
-        [Tooltip("SOAP events raised by MenuCrystalClickHandler when toggling freestyle/menu.")]
-        [SerializeField] private MenuFreestyleEventsContainerSO freestyleEvents;
+        [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
 
         [Header("Arcade Panel (separate)")]
         [Tooltip("ArcadeScreen component for the Arcade panel. Uses CanvasGroup for visibility.")]
@@ -200,8 +199,8 @@ namespace CosmicShore.UI
         {
             if (freestyleEvents)
             {
-                freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
-                freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
+                freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
+                freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
             }
         }
 
@@ -209,8 +208,8 @@ namespace CosmicShore.UI
         {
             if (freestyleEvents)
             {
-                freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
-                freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
+                freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
+                freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
             }
         }
 

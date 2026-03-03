@@ -31,8 +31,8 @@ namespace CosmicShore.Gameplay
     ///
     /// Listens to SOAP events independently from <see cref="Core.MainMenuController"/>:
     ///   - <c>OnClientReady</c>        → activate menu camera (immediate, no transition)
-    ///   - <c>OnEnterFreestyle</c>     → blend A→B, then hand off to CustomCameraController
-    ///   - <c>OnExitFreestyle</c>      → match Bridge to PlayerCam, blend B→A
+    ///   - <c>OnGameStateTransitionStart</c> → blend A→B, then hand off to CustomCameraController
+    ///   - <c>OnMenuStateTransitionStart</c> → match Bridge to PlayerCam, blend B→A
     ///   - <c>OnCrystalSpawned</c>     → configure menu orbit target
     ///
     /// Place on the same GameObject as MainMenuController (the Game object in Menu_Main).
@@ -51,9 +51,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Orbit speed in degrees per second.")]
         float _orbitSpeed = 5f;
 
-        [Header("SOAP Events")]
-        [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
-        MenuFreestyleEventsContainerSO _freestyleEvents;
+        [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
 
         [SerializeField, Tooltip("Cell runtime data — provides crystal transform and spawn event.")]
         CellRuntimeDataSO _cellData;
@@ -131,8 +129,8 @@ namespace CosmicShore.Gameplay
             if (_gameData?.OnClientReady != null)
                 _gameData.OnClientReady.OnRaised += HandleMenuReady;
 
-            _freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
-            _freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
+            _freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
+            _freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
             _cellData.OnCrystalSpawned.OnRaised += HandleCrystalSpawned;
         }
 
@@ -141,8 +139,8 @@ namespace CosmicShore.Gameplay
             if (_gameData?.OnClientReady != null)
                 _gameData.OnClientReady.OnRaised -= HandleMenuReady;
 
-            _freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
-            _freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
+            _freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
+            _freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
             _cellData.OnCrystalSpawned.OnRaised -= HandleCrystalSpawned;
         }
 
