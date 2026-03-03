@@ -52,6 +52,12 @@ namespace CosmicShore.Gameplay
             // Previous session's pool state is stale after scene transition.
             DomainAssigner.Initialize();
 
+            // Set scene-specific spawn positions before AI spawning.
+            // base.OnNetworkSpawn() also sets them, but AI spawns happen first
+            // (before base runs), so positions must be configured here.
+            if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
+                gameData.SetSpawnPositions(playerSpawnPoints);
+
             // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
             // AI players fire the event during Spawn(), but since we haven't
             // subscribed yet (base.OnNetworkSpawn hasn't run), those events
