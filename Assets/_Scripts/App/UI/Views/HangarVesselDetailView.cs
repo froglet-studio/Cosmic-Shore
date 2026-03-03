@@ -215,7 +215,7 @@ namespace CosmicShore.App.UI.Views
             if (spendCrystalsPanel) spendCrystalsPanel.SetActive(true);
 
             if (confirmButton)
-                confirmButton.interactable = canAfford;
+                confirmButton.gameObject.SetActive(canAfford);
 
             RefreshCrystalAmount(balance);
 
