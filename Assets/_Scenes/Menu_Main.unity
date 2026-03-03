@@ -115235,6 +115235,7 @@ MonoBehaviour:
   DebugFirstAppLaunch: 1
   FirstAppLaunchScreen: {fileID: 0}
   NavBar: {fileID: 1658454449}
+  userNameText: {fileID: 1314398021}
 --- !u!222 &8986689966932541172
 CanvasRenderer:
   m_ObjectHideFlags: 0
