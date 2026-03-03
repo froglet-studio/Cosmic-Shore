@@ -125,6 +125,11 @@ namespace CosmicShore.Utility.Trailer
         [Range(3f, 30f)]
         public float initialDelay = 8f;
 
+        [Header("Custom Clip")]
+        [Tooltip("Seconds to wait before recording starts after pressing Record Next button")]
+        [Range(0f, 10f)]
+        public float delayBeforeCustomClip = 3f;
+
         [Header("Capture Quality")]
         [Tooltip("Capture resolution width")]
         public int captureWidth = 1920;
@@ -134,7 +139,7 @@ namespace CosmicShore.Utility.Trailer
 
         [Tooltip("Target frames per second for capture")]
         [Range(24, 120)]
-        public int targetFPS = 60;
+        public int targetFPS = 30;
 
         [Tooltip("Anti-aliasing samples for render textures (1, 2, 4, 8)")]
         [Range(1, 8)]

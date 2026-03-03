@@ -1,19 +1,21 @@
 using System;
-using System.Collections;
 using System.IO;
 using System.Threading;
+using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CosmicShore.Utility.Trailer
 {
     /// <summary>
-    /// Captures high-quality PNG frame sequences from every trailer camera.
-    /// Each capture records for <see cref="TrailerCameraConfigSO.clipDurationSeconds"/>
-    /// seconds. File writes happen on a background thread to avoid stalling gameplay.
+    /// Records a single clip from ONE randomly-selected trailer camera.
     ///
-    /// UI is hidden from trailer cameras via culling mask on the cameras themselves
-    /// (set up by TrailerCameraRig), so no Canvas objects are touched and game
-    /// systems remain unaffected.
+    /// Performance approach:
+    ///   - Only one camera renders per clip (not all 6)
+    ///   - AsyncGPUReadback avoids ReadPixels GPU stall
+    ///   - PNG encode happens on the main thread (callback), but with only
+    ///     1 camera at 30fps the cost is negligible
+    ///   - File writes go to the thread pool
     /// </summary>
     public class TrailerClipRecorder : MonoBehaviour
     {
@@ -21,13 +23,13 @@ namespace CosmicShore.Utility.Trailer
         [SerializeField] private TrailerCameraRig cameraRig;
 
         private bool _isRecording;
-        private string _sessionFolder;
+        private string _clipFolder;
         private int _frameIndex;
         private float _captureInterval;
         private float _captureTimer;
         private float _elapsedRecordTime;
         private int _clipNumber;
-        private int _pendingWrites;
+        private int _activeCameraIndex;
 
         public bool IsRecording => _isRecording;
         public int ClipNumber => _clipNumber;
@@ -46,21 +48,24 @@ namespace CosmicShore.Utility.Trailer
 
         private void OnDisable()
         {
-            if (_isRecording)
-                FinishClip();
+            if (_isRecording) FinishClip();
         }
 
         /// <summary>
-        /// Begin capturing a single clip from all active trailer cameras.
+        /// Begin recording a clip from one randomly-selected camera.
         /// </summary>
         public void StartClip()
         {
             if (_isRecording) return;
-            if (cameraRig == null || !cameraRig.IsInitialized)
+            if (cameraRig == null || !cameraRig.IsInitialized || cameraRig.Cameras.Count == 0)
             {
-                CSDebug.LogWarning("[TrailerClipRecorder] Camera rig not initialized. Cannot record.");
+                CSDebug.LogWarning("[TrailerClipRecorder] Camera rig not ready.");
                 return;
             }
+
+            // Pick a random camera for this clip
+            _activeCameraIndex = UnityEngine.Random.Range(0, cameraRig.Cameras.Count);
+            var chosen = cameraRig.Cameras[_activeCameraIndex];
 
             _isRecording = true;
             _frameIndex = 0;
@@ -69,20 +74,13 @@ namespace CosmicShore.Utility.Trailer
             _captureTimer = 0f;
             _clipNumber++;
 
-            // Create per-clip output folders
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string rootPath = Path.Combine(Application.dataPath, "..", config.outputFolder);
-            _sessionFolder = Path.Combine(rootPath, $"Clip_{_clipNumber:D2}_{timestamp}");
+            _clipFolder = Path.Combine(rootPath, $"Clip_{_clipNumber:D2}_{chosen.Setup.label}_{timestamp}");
+            Directory.CreateDirectory(_clipFolder);
 
-            foreach (var cam in cameraRig.Cameras)
-            {
-                string camFolder = Path.Combine(_sessionFolder, cam.Setup.label);
-                Directory.CreateDirectory(camFolder);
-            }
-
-            CSDebug.Log($"[TrailerClipRecorder] Clip {_clipNumber} started — " +
-                        $"{cameraRig.Cameras.Count} cameras, {config.clipDurationSeconds}s @ " +
-                        $"{config.captureWidth}x{config.captureHeight}");
+            CSDebug.Log($"[TrailerClipRecorder] Clip {_clipNumber} recording — " +
+                        $"camera: {chosen.Setup.label}, {config.clipDurationSeconds}s @ {config.targetFPS}fps");
         }
 
         private void FinishClip()
@@ -90,8 +88,8 @@ namespace CosmicShore.Utility.Trailer
             if (!_isRecording) return;
             _isRecording = false;
 
-            CSDebug.Log($"[TrailerClipRecorder] Clip {_clipNumber} done — {_frameIndex} frames/camera → {_sessionFolder}");
-            OnClipFinished?.Invoke(_sessionFolder);
+            CSDebug.Log($"[TrailerClipRecorder] Clip {_clipNumber} saved — {_frameIndex} frames → {_clipFolder}");
+            OnClipFinished?.Invoke(_clipFolder);
         }
 
         private void LateUpdate()
@@ -116,51 +114,43 @@ namespace CosmicShore.Utility.Trailer
 
         private void CaptureFrame()
         {
+            if (_activeCameraIndex < 0 || _activeCameraIndex >= cameraRig.Cameras.Count) return;
+
+            var instance = cameraRig.Cameras[_activeCameraIndex];
+
+            // Render just this one camera
+            instance.Camera.Render();
+
             int frameIdx = _frameIndex;
-            _frameIndex++;
+            string folder = _clipFolder;
+            int w = config.captureWidth;
+            int h = config.captureHeight;
 
-            for (int i = 0; i < cameraRig.Cameras.Count; i++)
+            // Async readback — no GPU stall
+            AsyncGPUReadback.Request(instance.RenderTexture, 0, TextureFormat.RGB24, request =>
             {
-                var instance = cameraRig.Cameras[i];
+                if (request.hasError) return;
 
-                instance.Camera.Render();
+                // Callback runs on main thread — safe to use Texture2D
+                NativeArray<byte> data = request.GetData<byte>();
 
-                RenderTexture prev = RenderTexture.active;
-                RenderTexture.active = instance.RenderTexture;
-
-                var tex = new Texture2D(config.captureWidth, config.captureHeight, TextureFormat.RGB24, false);
-                tex.ReadPixels(new Rect(0, 0, config.captureWidth, config.captureHeight), 0, 0);
+                var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+                tex.LoadRawTextureData(data);
                 tex.Apply();
 
-                RenderTexture.active = prev;
-
-                // Encode on main thread (required), but write on background thread
-                byte[] pngData = tex.EncodeToPNG();
+                byte[] png = tex.EncodeToPNG();
                 Destroy(tex);
 
-                string filePath = Path.Combine(
-                    _sessionFolder,
-                    instance.Setup.label,
-                    $"frame_{frameIdx:D6}.png"
-                );
-
-                Interlocked.Increment(ref _pendingWrites);
+                // File write on background thread
+                string filePath = Path.Combine(folder, $"frame_{frameIdx:D6}.png");
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
-                    try
-                    {
-                        File.WriteAllBytes(filePath, pngData);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError($"[TrailerClipRecorder] Failed to write {filePath}: {e.Message}");
-                    }
-                    finally
-                    {
-                        Interlocked.Decrement(ref _pendingWrites);
-                    }
+                    try { File.WriteAllBytes(filePath, png); }
+                    catch (Exception e) { Debug.LogError($"[TrailerClipRecorder] Write failed: {e.Message}"); }
                 });
-            }
+            });
+
+            _frameIndex++;
         }
     }
 }

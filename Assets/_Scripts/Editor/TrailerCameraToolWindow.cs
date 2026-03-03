@@ -1,7 +1,7 @@
 #if UNITY_EDITOR
 using System.IO;
 using System.Linq;
-using CosmicShore.Game;
+using CosmicShore.Soap;
 using CosmicShore.Utility.Trailer;
 using UnityEditor;
 using UnityEngine;
@@ -11,16 +11,9 @@ namespace CosmicShore.Editor
     /// <summary>
     /// Editor window at <b>Tools > Cosmic Shore > Trailer Camera Tool</b>.
     ///
-    /// When the tool is enabled and a supported game mode starts (Hex Race,
-    /// Crystal Capture, Joust), the system auto-creates a multi-camera rig
-    /// around the vessel and captures random 5-second clips throughout the match.
-    ///
-    /// The window lets you configure:
-    ///   - Enable/disable the tool
-    ///   - Number of random clips per match
-    ///   - Camera setups and UI visibility
-    ///   - Resolution and quality presets
-    ///   - A one-shot "Record Next 5s" button for custom captures
+    /// When enabled, auto-injects a TrailerCameraController into the scene on
+    /// play mode entry. The controller auto-discovers the vessel and begins
+    /// recording random clips. No manual setup required.
     /// </summary>
     public class TrailerCameraToolWindow : EditorWindow
     {
@@ -34,7 +27,7 @@ namespace CosmicShore.Editor
         public static void ShowWindow()
         {
             var window = GetWindow<TrailerCameraToolWindow>("Trailer Camera");
-            window.minSize = new Vector2(360, 420);
+            window.minSize = new Vector2(360, 400);
         }
 
         private void OnEnable()
@@ -49,8 +42,15 @@ namespace CosmicShore.Editor
 
         private void OnPlayModeChanged(PlayModeStateChange change)
         {
-            if (change == PlayModeStateChange.ExitingPlayMode)
-                _runtimeController = null;
+            switch (change)
+            {
+                case PlayModeStateChange.EnteredPlayMode:
+                    InjectControllerIfNeeded();
+                    break;
+                case PlayModeStateChange.ExitingPlayMode:
+                    _runtimeController = null;
+                    break;
+            }
             Repaint();
         }
 
@@ -59,6 +59,46 @@ namespace CosmicShore.Editor
             if (Application.isPlaying) Repaint();
         }
 
+        /// <summary>
+        /// Auto-inject the TrailerCameraController into the scene when
+        /// entering play mode, if the tool is enabled and config is assigned.
+        /// </summary>
+        private void InjectControllerIfNeeded()
+        {
+            if (_config == null || !_config.toolEnabled) return;
+
+            // Check if one already exists
+            _runtimeController = FindAnyObjectByType<TrailerCameraController>();
+            if (_runtimeController != null) return;
+
+            var go = new GameObject("TrailerCameraController");
+            _runtimeController = go.AddComponent<TrailerCameraController>();
+
+            // Wire up serialized references
+            var so = new SerializedObject(_runtimeController);
+
+            var configProp = so.FindProperty("config");
+            if (configProp != null)
+                configProp.objectReferenceValue = _config;
+
+            var gameDataProp = so.FindProperty("gameData");
+            if (gameDataProp != null)
+            {
+                var guids = AssetDatabase.FindAssets("t:GameDataSO");
+                if (guids.Length > 0)
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    gameDataProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameDataSO>(path);
+                }
+            }
+
+            so.ApplyModifiedProperties();
+
+            Debug.Log("[TrailerTool] Controller auto-injected into scene.");
+        }
+
+        // ────────────────────────────────────────────────────────────────
+
         private void OnGUI()
         {
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
@@ -66,7 +106,6 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Trailer Camera Tool", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
 
-            // ── Config asset ──
             DrawConfigSection();
 
             if (_config != null)
@@ -89,15 +128,14 @@ namespace CosmicShore.Editor
                 DrawRuntimeControls();
             else
                 EditorGUILayout.HelpBox(
-                    "Enter Play Mode in Hex Race, Crystal Capture, or Joust to see runtime controls.",
+                    "Enter Play Mode in Hex Race, Crystal Capture, or Joust.\n" +
+                    "The tool auto-creates cameras and records clips.",
                     MessageType.Info);
 
             EditorGUILayout.EndScrollView();
         }
 
-        // ────────────────────────────────────────────────────────────────
-        //  Config
-        // ────────────────────────────────────────────────────────────────
+        // ── Config ──────────────────────────────────────────────────────
 
         private void DrawConfigSection()
         {
@@ -115,9 +153,7 @@ namespace CosmicShore.Editor
             }
         }
 
-        // ────────────────────────────────────────────────────────────────
-        //  Tool toggle
-        // ────────────────────────────────────────────────────────────────
+        // ── Tool toggle ─────────────────────────────────────────────────
 
         private void DrawToolToggle()
         {
@@ -126,12 +162,10 @@ namespace CosmicShore.Editor
             if (EditorGUI.EndChangeCheck()) EditorUtility.SetDirty(_config);
 
             if (!_config.toolEnabled)
-                EditorGUILayout.HelpBox("Tool is disabled. Nothing will run in play mode.", MessageType.Info);
+                EditorGUILayout.HelpBox("Tool is disabled. Nothing will run.", MessageType.Info);
         }
 
-        // ────────────────────────────────────────────────────────────────
-        //  Clip settings
-        // ────────────────────────────────────────────────────────────────
+        // ── Clip settings ───────────────────────────────────────────────
 
         private void DrawClipSettings()
         {
@@ -142,12 +176,11 @@ namespace CosmicShore.Editor
             _config.numberOfRandomClips = EditorGUILayout.IntSlider("Random Clips Per Match", _config.numberOfRandomClips, 0, 20);
             _config.minimumTimeBetweenClips = EditorGUILayout.Slider("Min Time Between Clips (s)", _config.minimumTimeBetweenClips, 5f, 60f);
             _config.initialDelay = EditorGUILayout.Slider("Initial Delay (s)", _config.initialDelay, 3f, 30f);
+            _config.delayBeforeCustomClip = EditorGUILayout.Slider("Custom Clip Delay (s)", _config.delayBeforeCustomClip, 0f, 10f);
             if (EditorGUI.EndChangeCheck()) EditorUtility.SetDirty(_config);
         }
 
-        // ────────────────────────────────────────────────────────────────
-        //  Camera setups
-        // ────────────────────────────────────────────────────────────────
+        // ── Cameras ─────────────────────────────────────────────────────
 
         private void DrawCameraSection()
         {
@@ -155,13 +188,12 @@ namespace CosmicShore.Editor
             if (!_showCameraFoldout) return;
 
             EditorGUI.indentLevel++;
-            int enabledCount = _config.cameraSetups.Count(c => c.enabled);
-            EditorGUILayout.LabelField($"{enabledCount} / {_config.cameraSetups.Count} cameras enabled");
+            int enabled = _config.cameraSetups.Count(c => c.enabled);
+            EditorGUILayout.LabelField($"{enabled} / {_config.cameraSetups.Count} enabled");
 
             EditorGUI.BeginChangeCheck();
-            for (int i = 0; i < _config.cameraSetups.Count; i++)
+            foreach (var s in _config.cameraSetups)
             {
-                var s = _config.cameraSetups[i];
                 EditorGUILayout.BeginHorizontal();
                 s.enabled = EditorGUILayout.Toggle(s.enabled, GUILayout.Width(20));
                 EditorGUILayout.LabelField($"{s.label} ({s.cameraType})", EditorStyles.miniLabel);
@@ -174,9 +206,7 @@ namespace CosmicShore.Editor
             EditorGUI.indentLevel--;
         }
 
-        // ────────────────────────────────────────────────────────────────
-        //  Capture quality
-        // ────────────────────────────────────────────────────────────────
+        // ── Quality ─────────────────────────────────────────────────────
 
         private void DrawQualitySection()
         {
@@ -185,7 +215,6 @@ namespace CosmicShore.Editor
 
             EditorGUI.indentLevel++;
             EditorGUI.BeginChangeCheck();
-
             _config.captureWidth = EditorGUILayout.IntField("Width", _config.captureWidth);
             _config.captureHeight = EditorGUILayout.IntField("Height", _config.captureHeight);
             _config.targetFPS = EditorGUILayout.IntSlider("FPS", _config.targetFPS, 24, 120);
@@ -198,14 +227,11 @@ namespace CosmicShore.Editor
             if (GUILayout.Button("1440p", EditorStyles.miniButton)) { _config.captureWidth = 2560; _config.captureHeight = 1440; }
             if (GUILayout.Button("4K", EditorStyles.miniButton)) { _config.captureWidth = 3840; _config.captureHeight = 2160; }
             EditorGUILayout.EndHorizontal();
-
             if (EditorGUI.EndChangeCheck()) EditorUtility.SetDirty(_config);
             EditorGUI.indentLevel--;
         }
 
-        // ────────────────────────────────────────────────────────────────
-        //  Output
-        // ────────────────────────────────────────────────────────────────
+        // ── Output ──────────────────────────────────────────────────────
 
         private void DrawOutputSection()
         {
@@ -225,38 +251,33 @@ namespace CosmicShore.Editor
             }
         }
 
-        // ────────────────────────────────────────────────────────────────
-        //  Runtime controls (play mode only)
-        // ────────────────────────────────────────────────────────────────
+        // ── Runtime (play mode only) ────────────────────────────────────
 
         private void DrawRuntimeControls()
         {
-            FindRuntimeController();
+            // Find the controller (may have been injected automatically)
+            if (_runtimeController == null)
+                _runtimeController = FindAnyObjectByType<TrailerCameraController>();
 
             EditorGUILayout.LabelField("Runtime", EditorStyles.boldLabel);
 
             if (_runtimeController == null)
             {
-                EditorGUILayout.HelpBox(
-                    "No TrailerCameraController in scene. Create one to use at runtime.",
-                    MessageType.Info);
-
-                if (GUILayout.Button("Create Controller in Scene"))
-                    CreateRuntimeController();
+                EditorGUILayout.HelpBox("Controller not found. Is the tool enabled?", MessageType.Warning);
                 return;
             }
 
-            // Status box
+            // ── Status box ──
             EditorGUILayout.BeginVertical("box");
 
-            EditorGUILayout.LabelField("Status", _runtimeController.IsActive ? "Active" : "Waiting for game start");
+            EditorGUILayout.LabelField("Status",
+                _runtimeController.IsActive ? "Active — tracking vessel" : "Waiting for vessel...");
 
             if (_runtimeController.Rig != null)
                 EditorGUILayout.LabelField("Cameras", $"{_runtimeController.Rig.Cameras.Count}");
 
             EditorGUILayout.LabelField("Clips Recorded", _runtimeController.ClipsRecorded.ToString());
 
-            // Progress bar during recording
             if (_runtimeController.Recorder != null && _runtimeController.Recorder.IsRecording)
             {
                 float p = _runtimeController.Recorder.RecordingProgress;
@@ -267,27 +288,23 @@ namespace CosmicShore.Editor
 
             EditorGUILayout.EndVertical();
 
-            // ── Record Next 5s button ──
+            // ── Record Next Clip button ──
             EditorGUILayout.Space(4);
-
             bool canRecord = _runtimeController.IsActive &&
                              (_runtimeController.Recorder == null || !_runtimeController.Recorder.IsRecording);
 
             GUI.enabled = canRecord;
-            string btnLabel = $"Record Next {(_config != null ? _config.clipDurationSeconds : 5f):F0}s";
-            if (GUILayout.Button(btnLabel, GUILayout.Height(30)))
-                _runtimeController.RecordNextClip();
+            float dur = _config != null ? _config.clipDurationSeconds : 5f;
+            float delay = _config != null ? _config.delayBeforeCustomClip : 3f;
+            string label = delay > 0
+                ? $"Record Next {dur:F0}s (starts in {delay:F0}s)"
+                : $"Record Next {dur:F0}s";
+
+            if (GUILayout.Button(label, GUILayout.Height(28)))
+                _runtimeController.RecordNextClipWithDelay();
             GUI.enabled = true;
 
-            // Force init button when not yet active
-            if (!_runtimeController.IsActive)
-            {
-                EditorGUILayout.Space(4);
-                if (GUILayout.Button("Force Initialize (find vessel)"))
-                    ForceInitialize();
-            }
-
-            // Camera previews
+            // ── Camera previews ──
             if (_runtimeController.Rig != null && _runtimeController.Rig.Cameras.Count > 0)
             {
                 EditorGUILayout.Space(4);
@@ -303,74 +320,7 @@ namespace CosmicShore.Editor
             }
         }
 
-        // ────────────────────────────────────────────────────────────────
-        //  Helpers
-        // ────────────────────────────────────────────────────────────────
-
-        private void FindRuntimeController()
-        {
-            if (_runtimeController != null) return;
-            _runtimeController = FindAnyObjectByType<TrailerCameraController>();
-        }
-
-        private void CreateRuntimeController()
-        {
-            var go = new GameObject("TrailerCameraController");
-            _runtimeController = go.AddComponent<TrailerCameraController>();
-
-            var so = new SerializedObject(_runtimeController);
-            var configProp = so.FindProperty("config");
-            var gameDataProp = so.FindProperty("gameData");
-
-            if (configProp != null && _config != null)
-                configProp.objectReferenceValue = _config;
-
-            if (gameDataProp != null)
-            {
-                var guids = AssetDatabase.FindAssets("t:GameDataSO");
-                if (guids.Length > 0)
-                {
-                    var path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                    gameDataProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
-                }
-            }
-
-            so.ApplyModifiedProperties();
-            Selection.activeGameObject = go;
-        }
-
-        private void ForceInitialize()
-        {
-            if (_runtimeController == null) return;
-
-            // Try GameDataSO first
-            var guids = AssetDatabase.FindAssets("t:GameDataSO");
-            if (guids.Length > 0)
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                var gd = AssetDatabase.LoadAssetAtPath<CosmicShore.Soap.GameDataSO>(path);
-                if (gd?.LocalPlayer?.Vessel != null)
-                {
-                    _runtimeController.InitializeRig(gd.LocalPlayer.Vessel.Transform);
-                    return;
-                }
-            }
-
-            // Fallback: any IVessel MonoBehaviour in scene
-            var vessels = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None)
-                .Where(mb => mb is IVessel)
-                .ToArray();
-
-            if (vessels.Length > 0)
-            {
-                _runtimeController.InitializeRig(vessels[0].transform);
-                Debug.Log($"[TrailerTool] Initialized with vessel: {vessels[0].name}");
-            }
-            else
-            {
-                Debug.LogWarning("[TrailerTool] No vessel found in scene.");
-            }
-        }
+        // ── Helpers ─────────────────────────────────────────────────────
 
         private void CreateDefaultConfig()
         {
