@@ -32,8 +32,8 @@ namespace CosmicShore.Core
     /// Flow:
     ///   None → Initializing   : Start() — configures game data, fires InitializeGame
     ///   Initializing → Ready  : OnClientReady SOAP event (autopilot vessel spawned and active)
-    ///   Ready → Freestyle     : OnEnterFreestyle SOAP event (local player takes vessel control)
-    ///   Freestyle → Ready     : OnExitFreestyle SOAP event (local player returns to autopilot)
+    ///   Ready → Freestyle     : OnGameStateTransitionStart SOAP event (local player takes vessel control)
+    ///   Freestyle → Ready     : OnMenuStateTransitionStart SOAP event (local player returns to autopilot)
     ///   Ready → LaunchingGame : OnLaunchGame SOAP event (player selected a game mode)
     ///   Freestyle → LaunchingGame : can launch directly from freestyle
     ///
@@ -55,10 +55,7 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Game intensity for the menu background scene.")]
         int menuIntensity = 1;
 
-        [Header("SOAP Events")]
-        [SerializeField, Tooltip("SOAP events for entering/exiting freestyle mode.")]
-        MenuFreestyleEventsContainerSO _freestyleEvents;
-
+        [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
         [Inject] GameDataSO _gameData;
 
         MainMenuState _state = MainMenuState.None;
@@ -129,8 +126,8 @@ namespace CosmicShore.Core
             if (_gameData?.OnPlayerPairInitialized != null)
                 _gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
 
-            _freestyleEvents.OnEnterFreestyle.OnRaised += HandleEnterFreestyle;
-            _freestyleEvents.OnExitFreestyle.OnRaised += HandleExitFreestyle;
+            _freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
+            _freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
         }
 
         void UnsubscribeEvents()
@@ -144,8 +141,8 @@ namespace CosmicShore.Core
             if (_gameData?.OnPlayerPairInitialized != null)
                 _gameData.OnPlayerPairInitialized.OnRaised -= HandlePlayerPairInitialized;
 
-            _freestyleEvents.OnEnterFreestyle.OnRaised -= HandleEnterFreestyle;
-            _freestyleEvents.OnExitFreestyle.OnRaised -= HandleExitFreestyle;
+            _freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
+            _freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
         }
 
         // ── Game Data Configuration ─────────────────────────────────────

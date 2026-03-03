@@ -30,8 +30,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] MenuServerPlayerVesselInitializer serverInitializer;
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
-        [Header("SOAP Events")]
-        [SerializeField] MenuFreestyleEventsContainerSO freestyleEvents;
+        [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
         [Header("Timing")]
         [Tooltip("Delay in ms after requesting a swap before restoring freestyle control. " +
@@ -59,14 +58,14 @@ namespace CosmicShore.Gameplay
         void OnEnable()
         {
             _cts = new CancellationTokenSource();
-            if (freestyleEvents?.OnExitFreestyle)
-                freestyleEvents.OnExitFreestyle.OnRaised += OnExitFreestyle;
+            if (freestyleEvents?.OnMenuStateTransitionStart)
+                freestyleEvents.OnMenuStateTransitionStart.OnRaised += OnMenuStateTransitionStart;
         }
 
         void OnDisable()
         {
-            if (freestyleEvents?.OnExitFreestyle)
-                freestyleEvents.OnExitFreestyle.OnRaised -= OnExitFreestyle;
+            if (freestyleEvents?.OnMenuStateTransitionStart)
+                freestyleEvents.OnMenuStateTransitionStart.OnRaised -= OnMenuStateTransitionStart;
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
@@ -129,9 +128,9 @@ namespace CosmicShore.Gameplay
         public void OnCloseButtonClicked() => CloseAndRestoreFreestyle();
 
         // ---------------------------------------------------------
-        // Auto-close when exiting freestyle
+        // Auto-close when returning to menu state
         // ---------------------------------------------------------
-        void OnExitFreestyle() => ui.Hide();
+        void OnMenuStateTransitionStart() => ui.Hide();
 
         // ---------------------------------------------------------
         // FREESTYLE RESTORE

@@ -1,5 +1,7 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;
@@ -14,10 +16,11 @@ namespace CosmicShore.UI
     /// (matching the MinigameFreestyle scene pattern), vessel HUD reparenting
     /// via the onShipHUDInitialized SOAP event, and PauseMenu instantiation.
     ///
-    /// This is a slim alternative to the full <see cref="MiniGameHUD"/> which
-    /// has gameplay behavior (connecting panel, cinematic, score tracking)
-    /// unsuitable for the menu context. The full MiniGameHUD can replace this
-    /// when Phase 2/3 lava-lamp features are needed.
+    /// Subscribes to <see cref="MenuFreestyleEventsContainerSO"/> transition
+    /// bracket events to show/hide the local player's per-vessel HUD when
+    /// entering/exiting freestyle mode. Also handles the vessel-swap edge case:
+    /// when a new vessel spawns mid-freestyle, <see cref="OnShipHUDInitialized"/>
+    /// checks <see cref="_isInFreestyle"/> to auto-show the replacement HUD.
     /// </summary>
     public class MenuMiniGameHUD : MonoBehaviour
     {
@@ -37,6 +40,10 @@ namespace CosmicShore.UI
         [SerializeField] GameObject pauseMenuPrefab;
 
         [Inject] Container _container;
+        [Inject] GameDataSO gameData;
+        [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
+
+        bool _isInFreestyle;
 
         void Awake()
         {
@@ -47,6 +54,10 @@ namespace CosmicShore.UI
         {
             if (onShipHUDInitialized)
                 onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
+            if (freestyleEvents?.OnGameStateTransitionStart)
+                freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleGameStateTransitionStart;
+            if (freestyleEvents?.OnMenuStateTransitionStart)
+                freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleMenuStateTransitionStart;
         }
 
         void Start()
@@ -58,12 +69,42 @@ namespace CosmicShore.UI
         {
             if (onShipHUDInitialized)
                 onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
+            if (freestyleEvents?.OnGameStateTransitionStart)
+                freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleGameStateTransitionStart;
+            if (freestyleEvents?.OnMenuStateTransitionStart)
+                freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleMenuStateTransitionStart;
         }
 
         void OnDestroy()
         {
             volumePauseButton?.onClick.RemoveListener(OnVolumePauseClicked);
         }
+
+        // ---------------------------------------------------------
+        // Freestyle transition handlers
+        // ---------------------------------------------------------
+
+        void HandleGameStateTransitionStart()
+        {
+            _isInFreestyle = true;
+            ShowLocalVesselHUD();
+        }
+
+        void HandleMenuStateTransitionStart()
+        {
+            _isInFreestyle = false;
+            HideLocalVesselHUD();
+        }
+
+        void ShowLocalVesselHUD() =>
+            gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselHUDController?.ShowHUD();
+
+        void HideLocalVesselHUD() =>
+            gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselHUDController?.HideHUD();
+
+        // ---------------------------------------------------------
+        // UI
+        // ---------------------------------------------------------
 
         void OnVolumePauseClicked()
         {
@@ -90,6 +131,9 @@ namespace CosmicShore.UI
         /// When a vessel spawns, ShipHUD.Start() raises this SOAP event with the
         /// vessel's MiniGameHUD children. We reparent them under our parent
         /// (Game UI canvas) so they render as siblings.
+        ///
+        /// If the player is already in freestyle when a new vessel spawns (e.g.
+        /// after a vessel swap), the replacement HUD is auto-shown.
         /// </summary>
         void OnShipHUDInitialized(ShipHUDData data)
         {
@@ -105,6 +149,9 @@ namespace CosmicShore.UI
             }
 
             data.ShipHUD.gameObject.SetActive(true);
+
+            if (_isInFreestyle)
+                ShowLocalVesselHUD();
         }
 
         void InstantiatePauseMenu()
