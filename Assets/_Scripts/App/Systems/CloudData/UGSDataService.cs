@@ -25,15 +25,16 @@ namespace CosmicShore.App.Systems.CloudData
     {
         public static UGSDataService Instance { get; private set; }
 
-        // ── Repositories (all created in Awake via the provider) ──
+        [Header("Hangar Sync")]
+        [Tooltip("Vessel list to sync unlock state with cloud on initialization.")]
+        [SerializeField] SO_VesselList vesselList;
+
+        // ── Repositories ──
         PlayerProfileRepository _profile;
         PlayerStatsRepository _stats;
         VesselStatsRepository _vesselStats;
         GameProgressionRepository _progression;
         HangarRepository _hangar;
-        CaptainProgressRepository _captains;
-        TrainingProgressRepository _training;
-        DailyChallengeRepository _dailyChallenge;
         EpisodeProgressRepository _episodes;
         PlayerSettingsRepository _settings;
 
@@ -45,30 +46,21 @@ namespace CosmicShore.App.Systems.CloudData
         public bool IsInitialized { get; private set; }
         public event Action OnInitialized;
 
-        // Existing domains
+        // Read-only accessors (for UI / query-only consumers)
         public ICloudDataReader<PlayerProfileData> Profile => _profile;
         public ICloudDataReader<PlayerStatsProfile> Stats => _stats;
         public ICloudDataReader<VesselStatsCloudData> VesselStats => _vesselStats;
         public ICloudDataReader<GameModeProgressionData> Progression => _progression;
-
-        // New domains
         public ICloudDataReader<HangarCloudData> Hangar => _hangar;
-        public ICloudDataReader<CaptainProgressCloudData> Captains => _captains;
-        public ICloudDataReader<TrainingProgressCloudData> Training => _training;
-        public ICloudDataReader<DailyChallengeCloudData> DailyChallenge => _dailyChallenge;
         public ICloudDataReader<EpisodeProgressCloudData> Episodes => _episodes;
         public ICloudDataReader<PlayerSettingsCloudData> Settings => _settings;
 
-        // ── Typed write access (for game systems that need to mutate + mark dirty) ──
-
+        // Typed write access (for game systems that mutate + mark dirty)
         public PlayerProfileRepository ProfileRepo => _profile;
         public PlayerStatsRepository StatsRepo => _stats;
         public VesselStatsRepository VesselStatsRepo => _vesselStats;
         public GameProgressionRepository ProgressionRepo => _progression;
         public HangarRepository HangarRepo => _hangar;
-        public CaptainProgressRepository CaptainsRepo => _captains;
-        public TrainingProgressRepository TrainingRepo => _training;
-        public DailyChallengeRepository DailyChallengeRepo => _dailyChallenge;
         public EpisodeProgressRepository EpisodesRepo => _episodes;
         public PlayerSettingsRepository SettingsRepo => _settings;
 
@@ -134,17 +126,13 @@ namespace CosmicShore.App.Systems.CloudData
             _vesselStats = new VesselStatsRepository(_provider);
             _progression = new GameProgressionRepository(_provider);
             _hangar = new HangarRepository(_provider);
-            _captains = new CaptainProgressRepository(_provider);
-            _training = new TrainingProgressRepository(_provider);
-            _dailyChallenge = new DailyChallengeRepository(_provider);
             _episodes = new EpisodeProgressRepository(_provider);
             _settings = new PlayerSettingsRepository(_provider);
 
             _allRepos = new List<ICloudDataWriter>
             {
                 _profile, _stats, _vesselStats, _progression,
-                _hangar, _captains, _training, _dailyChallenge,
-                _episodes, _settings
+                _hangar, _episodes, _settings
             };
         }
 
@@ -154,22 +142,18 @@ namespace CosmicShore.App.Systems.CloudData
 
             CSDebug.Log("[UGSDataService] Loading all repositories from cloud...");
 
-            // Load all repositories in parallel
-            var tasks = new List<Task>
-            {
+            await Task.WhenAll(
                 _profile.LoadAsync(ct),
                 _stats.LoadAsync(ct),
                 _vesselStats.LoadAsync(ct),
                 _progression.LoadAsync(ct),
                 _hangar.LoadAsync(ct),
-                _captains.LoadAsync(ct),
-                _training.LoadAsync(ct),
-                _dailyChallenge.LoadAsync(ct),
                 _episodes.LoadAsync(ct),
                 _settings.LoadAsync(ct)
-            };
+            );
 
-            await Task.WhenAll(tasks);
+            // Restore vessel unlock state from cloud → SO_Vessel assets
+            SyncHangarToVessels();
 
             IsInitialized = true;
             OnInitialized?.Invoke();
@@ -198,9 +182,6 @@ namespace CosmicShore.App.Systems.CloudData
                     _vesselStats.ResetAsync(ct),
                     _progression.ResetAsync(ct),
                     _hangar.ResetAsync(ct),
-                    _captains.ResetAsync(ct),
-                    _training.ResetAsync(ct),
-                    _dailyChallenge.ResetAsync(ct),
                     _episodes.ResetAsync(ct),
                     _settings.ResetAsync(ct)
                 );
@@ -213,6 +194,25 @@ namespace CosmicShore.App.Systems.CloudData
                 CSDebug.LogError($"[UGSDataService] Reset failed: {e.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Restores vessel SO_Vessel.isLocked states from cloud data.
+        /// Called automatically after initialization and available publicly for re-sync.
+        /// </summary>
+        public void SyncHangarToVessels()
+        {
+            if (vesselList == null || _hangar?.Data == null) return;
+
+            foreach (var vessel in vesselList.VesselList)
+            {
+                if (vessel == null) continue;
+
+                if (_hangar.Data.IsVesselUnlocked(vessel.Name))
+                    vessel.Unlock();
+            }
+
+            CSDebug.Log($"[UGSDataService] Synced hangar unlock state for {vesselList.VesselList.Count} vessels.");
         }
     }
 }

@@ -25,9 +25,6 @@ namespace CosmicShore.App.Systems.CloudData
 
         // ── New Data Domains ──
         ICloudDataReader<HangarCloudData> Hangar { get; }
-        ICloudDataReader<CaptainProgressCloudData> Captains { get; }
-        ICloudDataReader<TrainingProgressCloudData> Training { get; }
-        ICloudDataReader<DailyChallengeCloudData> DailyChallenge { get; }
         ICloudDataReader<EpisodeProgressCloudData> Episodes { get; }
         ICloudDataReader<PlayerSettingsCloudData> Settings { get; }
 

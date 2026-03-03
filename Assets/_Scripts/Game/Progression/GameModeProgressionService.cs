@@ -1,13 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using CosmicShore.App.Systems;
+using CosmicShore.App.Systems.CloudData;
 using CosmicShore.Core;
 using CosmicShore.Models;
-using CosmicShore.Services.Auth;
 using CosmicShore.Soap;
-using Unity.Services.CloudSave;
-using Unity.Services.Core;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -15,7 +10,7 @@ namespace CosmicShore.Game.Progression
 {
     /// <summary>
     /// Manages the game-mode quest progression chain.
-    /// Loads/saves GameModeProgressionData to UGS Cloud Save.
+    /// Delegates cloud persistence to UGSDataService.ProgressionRepo.
     /// Evaluates quest completion after each game and exposes
     /// unlock state for the Arcade screen and Quest track UI.
     /// </summary>
@@ -39,11 +34,6 @@ namespace CosmicShore.Game.Progression
         /// <summary>Fired when a quest is newly completed during gameplay.</summary>
         public event Action<SO_GameModeQuestData> OnQuestCompleted;
 
-        private const string CLOUD_KEY = UGSKeys.GameModeProgression;
-        private const float SAVE_DEBOUNCE_SECONDS = 1.5f;
-        private bool _saveDirty;
-        private bool _saveInFlight;
-
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -56,7 +46,6 @@ namespace CosmicShore.Game.Progression
             transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
 
-            // Ensure the first quest's mode is always unlocked
             EnsureFirstModeUnlocked();
         }
 
@@ -68,45 +57,44 @@ namespace CosmicShore.Game.Progression
             if (gameData != null)
                 gameData.OnMiniGameEnd -= HandleGameEnd;
 
-            var auth = AuthenticationController.Instance;
-            if (auth != null)
-                auth.OnSignedIn -= HandleSignedIn;
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+                ds.OnInitialized -= HandleDataServiceReady;
         }
 
-        async void Start()
+        void Start()
         {
-            try
-            {
-                if (gameData != null)
-                    gameData.OnMiniGameEnd += HandleGameEnd;
+            if (gameData != null)
+                gameData.OnMiniGameEnd += HandleGameEnd;
 
-                var auth = AuthenticationController.Instance;
-                if (auth != null)
-                    auth.OnSignedIn += HandleSignedIn;
-
-                if (UnityServices.State == ServicesInitializationState.Initialized &&
-                    auth != null && auth.IsSignedIn)
-                {
-                    await LoadFromCloudAsync();
-                }
-            }
-            catch (Exception e)
+            var ds = UGSDataService.Instance;
+            if (ds != null)
             {
-                CSDebug.LogError($"[GameModeProgressionService] Start failed: {e.Message}");
+                if (ds.IsInitialized)
+                    HandleDataServiceReady();
+                else
+                    ds.OnInitialized += HandleDataServiceReady;
             }
         }
 
-        async void HandleSignedIn(string playerId)
+        void HandleDataServiceReady()
         {
-            try
-            {
-                if (!IsInitialized)
-                    await LoadFromCloudAsync();
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogError($"[GameModeProgressionService] HandleSignedIn failed: {e.Message}");
-            }
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+                ds.OnInitialized -= HandleDataServiceReady;
+
+            // Use the repo's data directly
+            if (ds?.ProgressionRepo != null)
+                ProgressionData = ds.ProgressionRepo.Data;
+
+            EnsureFirstModeUnlocked();
+            SyncSOCompletedFlags();
+            IsInitialized = true;
+            OnProgressionChanged?.Invoke(ProgressionData);
+
+            CSDebug.Log($"[GameModeProgressionService] Initialized from UGSDataService. " +
+                       $"Unlocked: {ProgressionData.UnlockedModes.Count}, " +
+                       $"Completed: {ProgressionData.CompletedQuests.Count}");
         }
 
         // ── Public API ──────────────────────────────────────────────────────────
@@ -466,63 +454,20 @@ namespace CosmicShore.Game.Progression
                 quest.IsCompleted = ProgressionData.IsQuestCompleted(quest.GameMode.ToString());
         }
 
-        // ── Cloud Save ──────────────────────────────────────────────────────────
-
-        async Task LoadFromCloudAsync()
-        {
-            try
-            {
-                var keys = new HashSet<string> { CLOUD_KEY };
-                var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
-
-                if (result.TryGetValue(CLOUD_KEY, out var item))
-                {
-                    var cloudData = item.Value.GetAs<GameModeProgressionData>();
-                    if (cloudData != null)
-                    {
-                        ProgressionData = cloudData;
-                        ProgressionData.UnlockedModes ??= new List<string>();
-                        ProgressionData.CompletedQuests ??= new List<string>();
-                        ProgressionData.BestStats ??= new Dictionary<string, float>();
-                    }
-                }
-
-                EnsureFirstModeUnlocked();
-                SyncSOCompletedFlags();
-                IsInitialized = true;
-                OnProgressionChanged?.Invoke(ProgressionData);
-
-                CSDebug.Log($"[GameModeProgressionService] Loaded from cloud. " +
-                          $"Unlocked: {ProgressionData.UnlockedModes.Count}, " +
-                          $"Completed: {ProgressionData.CompletedQuests.Count}");
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogWarning($"[GameModeProgressionService] Cloud load failed: {e.Message}. Using local data.");
-                EnsureFirstModeUnlocked();
-                SyncSOCompletedFlags();
-                IsInitialized = true;
-                OnProgressionChanged?.Invoke(ProgressionData);
-            }
-        }
+        // ── Cloud Save (delegated to UGSDataService.ProgressionRepo) ──
 
         async void SaveImmediateAsync()
         {
+            var repo = UGSDataService.Instance?.ProgressionRepo;
+            if (repo == null)
+            {
+                CSDebug.LogWarning("[GameModeProgressionService] ProgressionRepo not available, cannot save.");
+                return;
+            }
+
             try
             {
-                bool canSave = UnityServices.State == ServicesInitializationState.Initialized &&
-                               Unity.Services.Authentication.AuthenticationService.Instance != null &&
-                               Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn;
-
-                if (!canSave)
-                {
-                    CSDebug.LogWarning("[GameModeProgressionService] Cannot save immediately — not signed in. Queuing debounced save.");
-                    ScheduleDebouncedSave();
-                    return;
-                }
-
-                var data = new Dictionary<string, object> { { CLOUD_KEY, ProgressionData } };
-                await CloudSaveService.Instance.Data.Player.SaveAsync(data);
+                await repo.SaveAsync();
                 CSDebug.Log("[GameModeProgressionService] Saved progression data immediately.");
             }
             catch (Exception e)
@@ -534,44 +479,7 @@ namespace CosmicShore.Game.Progression
 
         void ScheduleDebouncedSave()
         {
-            _saveDirty = true;
-            if (!_saveInFlight)
-                RunDebouncedSave();
-        }
-
-        async void RunDebouncedSave()
-        {
-            if (_saveInFlight) return;
-            _saveInFlight = true;
-
-            try
-            {
-                await Task.Delay((int)(SAVE_DEBOUNCE_SECONDS * 1000));
-
-                while (_saveDirty)
-                {
-                    _saveDirty = false;
-
-                    bool canSave = UnityServices.State == ServicesInitializationState.Initialized &&
-                                   Unity.Services.Authentication.AuthenticationService.Instance != null &&
-                                   Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn;
-
-                    if (!canSave) break;
-
-                    var data = new Dictionary<string, object> { { CLOUD_KEY, ProgressionData } };
-                    await CloudSaveService.Instance.Data.Player.SaveAsync(data);
-                }
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogWarning($"[GameModeProgressionService] Save failed: {e.Message}");
-            }
-            finally
-            {
-                _saveInFlight = false;
-                if (_saveDirty)
-                    RunDebouncedSave();
-            }
+            UGSDataService.Instance?.ProgressionRepo?.MarkDirty();
         }
     }
 }
