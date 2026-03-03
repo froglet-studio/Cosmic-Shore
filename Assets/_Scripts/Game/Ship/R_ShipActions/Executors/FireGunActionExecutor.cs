@@ -10,6 +10,7 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 {
     public event Action OnGunFired;
     public event Action<float> OnAmmoChanged;
+    public event Action<float, float> OnMissileFired; // (ammoBeforeFire, ammoCost)
 
     [Header("Scene Refs")]
     [SerializeField] Gun gun;
@@ -100,10 +101,12 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
     public void Fire(FireGunActionSO so, IVesselStatus status)
     {
-        if (_resources.Resources[so.AmmoIndex].CurrentAmount < so.AmmoCost)
+        var currentAmmo = _resources.Resources[so.AmmoIndex].CurrentAmount;
+        if (currentAmmo < so.AmmoCost)
             return;
 
         _soRef = so;
+        OnMissileFired?.Invoke(currentAmmo, so.AmmoCost);
         _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
 
         OnAmmoChanged?.Invoke(Ammo01);
