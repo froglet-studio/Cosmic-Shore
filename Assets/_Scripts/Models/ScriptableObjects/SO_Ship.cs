@@ -1,5 +1,6 @@
 using CosmicShore;
 using CosmicShore.App.Systems.VesselUnlock;
+using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
