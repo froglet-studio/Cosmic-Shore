@@ -74,7 +74,6 @@ namespace CosmicShore.Gameplay
         public class InitializeData
         {
             public VesselClassType vesselClass;
-            public Domains domain;
             public string PlayerName;
             public int AvatarId;
 

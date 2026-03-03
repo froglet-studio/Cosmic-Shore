@@ -143,9 +143,7 @@ namespace CosmicShore.Gameplay
                     ? profiles[i].Name
                     : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                var aiDomain = hasTemplate
-                    ? aiInitializeDatas[i].domain
-                    : DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;

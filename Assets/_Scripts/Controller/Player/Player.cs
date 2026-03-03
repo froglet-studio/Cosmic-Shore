@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
         {
             InitializeData = data;
             IsInitializedAsAI = InitializeData.IsAI;
-            Domain = InitializeData.domain;
+            Domain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
             Name = InitializeData.PlayerName;
             AvatarId = InitializeData.AvatarId;
             InputController.Initialize();
