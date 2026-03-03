@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using CosmicShore.App.Systems.VesselUnlock;
-using CosmicShore.App.UI.Elements.Hangar;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,40 +8,75 @@ namespace CosmicShore.App.UI.Views
 {
     /// <summary>
     /// Detail view for a selected vessel in the Hangar.
-    /// Shows abilities, overview, gameplay parameters, and unlock button.
-    /// Reads unlock cost from the SO_Vessel asset directly.
+    /// Tab system: General shows description + unlock, Ability tabs show ability info.
+    /// Vibe button stays hidden for now.
     /// </summary>
     public class HangarVesselDetailView : MonoBehaviour
     {
         [Header("Vessel Info")]
         [SerializeField] private TMP_Text vesselNameText;
-        [SerializeField] private TMP_Text vesselDescriptionText;
         [SerializeField] private Image vesselPreviewImage;
-        [SerializeField] private Image vesselIconImage;
 
-        [Header("Lock State")]
-        [SerializeField] private GameObject lockedOverlay;
-        [SerializeField] private Button unlockButton;
-        [SerializeField] private TMP_Text unlockButtonText;
-        [SerializeField] private TMP_Text unlockCostText;
-
-        [Header("Abilities")]
-        [SerializeField] private Transform abilitiesContainer;
-        [SerializeField] private HangarAbilityCard abilityCardPrefab;
-
-        [Header("Gameplay Parameters")]
-        [SerializeField] private HangarGameplayParameterDisplayGroup gameplayParameterDisplayGroup;
-
-        [Header("Actions")]
-        [SerializeField] private Button selectButton;
-        [SerializeField] private TMP_Text selectButtonText;
+        [Header("Navigation")]
         [SerializeField] private Button backButton;
 
+        [Header("Tab Buttons")]
+        [SerializeField] private Button generalButton;
+        [SerializeField] private Button[] abilityButtons = new Button[4];
+        [SerializeField] private Button vibeButton;
+
+        [Header("Tab Button Backgrounds")]
+        [Tooltip("Child BG GameObject on each tab button — enabled when selected.")]
+        [SerializeField] private GameObject generalButtonBG;
+        [SerializeField] private GameObject[] abilityButtonBGs = new GameObject[4];
+
+        [Header("Content Panels (inside AbilitiesBG)")]
+        [SerializeField] private GameObject descriptionPanel;
+        [SerializeField] private GameObject abilitiesPanel;
+
+        [Header("Description Panel (General Tab)")]
+        [SerializeField] private TMP_Text vesselDescriptionText;
+        [SerializeField] private Button unlockButton;
+        [SerializeField] private TMP_Text unlockButtonText;
+
+        [Header("Abilities Panel")]
+        [SerializeField] private TMP_Text abilitiesPreviewTitle;
+        [SerializeField] private TMP_Text abilitiesPreviewText;
+
         SO_Vessel _currentShip;
+        int _selectedTabIndex;
 
         public SO_Vessel CurrentShip => _currentShip;
-
         public System.Action OnBackPressed;
+
+        void Awake()
+        {
+            if (generalButton)
+            {
+                generalButton.onClick.RemoveAllListeners();
+                generalButton.onClick.AddListener(() => SelectTab(0));
+            }
+
+            for (int i = 0; i < abilityButtons.Length; i++)
+            {
+                if (!abilityButtons[i]) continue;
+                int index = i + 1;
+                abilityButtons[i].onClick.RemoveAllListeners();
+                abilityButtons[i].onClick.AddListener(() => SelectTab(index));
+            }
+
+            if (backButton)
+            {
+                backButton.onClick.RemoveAllListeners();
+                backButton.onClick.AddListener(OnBackClicked);
+            }
+
+            if (unlockButton)
+            {
+                unlockButton.onClick.RemoveAllListeners();
+                unlockButton.onClick.AddListener(OnUnlockClicked);
+            }
+        }
 
         void OnEnable()
         {
@@ -67,51 +100,69 @@ namespace CosmicShore.App.UI.Views
             if (vesselDescriptionText)
                 vesselDescriptionText.text = ship.Description;
 
-            if (vesselPreviewImage && ship.PreviewImage)
-                vesselPreviewImage.sprite = ship.PreviewImage;
+            // Keep preview empty for now
+            if (vesselPreviewImage)
+                vesselPreviewImage.gameObject.SetActive(false);
 
-            if (vesselIconImage && ship.IconActive)
-                vesselIconImage.sprite = ship.IconActive;
-
-            PopulateAbilities(ship);
-            PopulateGameplayParameters(ship);
-            RefreshLockState();
-        }
-
-        void PopulateAbilities(SO_Vessel ship)
-        {
-            if (!abilitiesContainer) return;
-
-            // Clear existing
-            for (int i = abilitiesContainer.childCount - 1; i >= 0; i--)
-                Destroy(abilitiesContainer.GetChild(i).gameObject);
-
-            if (ship.Abilities == null) return;
-
-            foreach (var ability in ship.Abilities)
+            // Set ability button labels and visibility based on vessel abilities
+            int abilityCount = ship.Abilities?.Count ?? 0;
+            for (int i = 0; i < abilityButtons.Length; i++)
             {
-                if (ability == null) continue;
-                ability.Vessel = ship;
+                if (!abilityButtons[i]) continue;
+                bool hasAbility = i < abilityCount;
+                abilityButtons[i].gameObject.SetActive(hasAbility);
 
-                if (abilityCardPrefab)
+                if (hasAbility)
                 {
-                    var card = Instantiate(abilityCardPrefab, abilitiesContainer);
-                    card.Configure(ability);
+                    var label = abilityButtons[i].GetComponentInChildren<TMP_Text>();
+                    if (label)
+                        label.text = ship.Abilities[i].Name;
                 }
             }
+
+            if (vibeButton)
+                vibeButton.gameObject.SetActive(false);
+
+            RefreshLockState();
+            SelectTab(0);
         }
 
-        void PopulateGameplayParameters(SO_Vessel ship)
+        void SelectTab(int tabIndex)
         {
-            if (!gameplayParameterDisplayGroup) return;
+            _selectedTabIndex = tabIndex;
 
-            gameplayParameterDisplayGroup.AssignGameplayParameters(
-                new List<GameplayParameter>
+            // Highlight selected tab BG, dim others
+            if (generalButtonBG)
+                generalButtonBG.SetActive(tabIndex == 0);
+
+            for (int i = 0; i < abilityButtonBGs.Length; i++)
+            {
+                if (abilityButtonBGs[i])
+                    abilityButtonBGs[i].SetActive(tabIndex == i + 1);
+            }
+
+            if (tabIndex == 0)
+            {
+                // General tab — show description + unlock
+                if (descriptionPanel) descriptionPanel.SetActive(true);
+                if (abilitiesPanel) abilitiesPanel.SetActive(false);
+            }
+            else
+            {
+                // Ability tab — show ability info
+                if (descriptionPanel) descriptionPanel.SetActive(false);
+                if (abilitiesPanel) abilitiesPanel.SetActive(true);
+
+                int abilityIndex = tabIndex - 1;
+                if (_currentShip?.Abilities != null && abilityIndex < _currentShip.Abilities.Count)
                 {
-                    ship.gameplayParameter1,
-                    ship.gameplayParameter2,
-                    ship.gameplayParameter3
-                });
+                    var ability = _currentShip.Abilities[abilityIndex];
+                    if (abilitiesPreviewTitle)
+                        abilitiesPreviewTitle.text = ability.Name;
+                    if (abilitiesPreviewText)
+                        abilitiesPreviewText.text = ability.Description;
+                }
+            }
         }
 
         void RefreshLockState()
@@ -121,45 +172,33 @@ namespace CosmicShore.App.UI.Views
             bool isLocked = _currentShip.IsLocked;
             int cost = _currentShip.UnlockCost;
 
-            if (lockedOverlay)
-                lockedOverlay.SetActive(isLocked);
-
             if (unlockButton)
-            {
-                unlockButton.gameObject.SetActive(isLocked);
-                unlockButton.onClick.RemoveAllListeners();
-                unlockButton.onClick.AddListener(OnUnlockClicked);
-            }
-
-            if (unlockCostText)
-            {
-                int balance = VesselUnlockSystem.GetCurrencyBalance();
-                unlockCostText.text = $"{cost}";
-                unlockCostText.color = balance >= cost ? Color.white : Color.gray;
-            }
-
-            if (selectButton)
-                selectButton.gameObject.SetActive(!isLocked);
+                unlockButton.interactable = isLocked;
 
             if (unlockButtonText)
             {
-                int balance = VesselUnlockSystem.GetCurrencyBalance();
-                unlockButtonText.text = balance >= cost ? "UNLOCK" : "INSUFFICIENT FUNDS";
+                if (isLocked)
+                {
+                    int balance = VesselUnlockSystem.GetCurrencyBalance();
+                    unlockButtonText.text = balance >= cost ? $"UNLOCK - {cost}" : "INSUFFICIENT FUNDS";
+                    unlockButtonText.color = balance >= cost ? Color.white : Color.gray;
+                }
+                else
+                {
+                    unlockButtonText.text = "UNLOCKED";
+                    unlockButtonText.color = Color.white;
+                }
             }
         }
 
         void OnUnlockClicked()
         {
-            if (_currentShip == null) return;
+            if (_currentShip == null || !_currentShip.IsLocked) return;
 
             if (VesselUnlockSystem.TryPurchaseVessel(_currentShip))
             {
                 CSDebug.Log($"Unlocked vessel: {_currentShip.Name}");
                 RefreshLockState();
-            }
-            else
-            {
-                CSDebug.Log($"Cannot unlock vessel: {_currentShip.Name} - insufficient currency");
             }
         }
 

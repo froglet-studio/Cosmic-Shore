@@ -4,62 +4,66 @@ using CosmicShore.App.UI.Views;
 using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Screens
 {
-    /// <summary>
-    /// Hangar screen with two panels:
-    /// 1. Grid selection panel - shows all vessels in a grid layout with staggered fade-in
-    /// 2. Detail panel - shows vessel details, abilities, and unlock button
-    /// </summary>
     public class HangarScreen : MonoBehaviour
     {
         [Header("Data")]
-        [SerializeField] SO_VesselList ShipList;
+        [SerializeField] private SO_VesselList ShipList;
 
         [Header("Grid Selection Panel")]
-        [SerializeField] GameObject gridPanel;
-        [SerializeField] Transform gridContainer;
-        [SerializeField] HangarVesselGridCard gridCardPrefab;
+        [SerializeField] private GameObject gridPanel;
+        [SerializeField] private Transform gridContainer;
+        [SerializeField] private HangarVesselGridCard gridCardPrefab;
+        [SerializeField] private Button eyeButton;
 
         [Header("Grid Animation")]
         [Tooltip("Delay in seconds between each card fade-in.")]
-        [SerializeField] float cardStaggerDelay = 0.08f;
+        [SerializeField] private float cardStaggerDelay = 0.08f;
         [Tooltip("Duration of each card's fade-in animation.")]
-        [SerializeField] float cardFadeDuration = 0.25f;
+        [SerializeField] private float cardFadeDuration = 0.25f;
 
         [Header("Detail Panel")]
-        [SerializeField] GameObject detailPanel;
-        [SerializeField] HangarVesselDetailView detailView;
+        [SerializeField] private GameObject detailPanel;
+        [SerializeField] private HangarVesselDetailView detailView;
 
         [Header("Legacy Views (kept for backward compatibility)")]
-        [SerializeField] HangarOverviewView OverviewView;
-        [SerializeField] HangarAbilitiesView AbilitiesView;
-        [SerializeField] HangarTrainingModal HangarTrainingModal;
-        [SerializeField] NavGroup TopNav;
+        [SerializeField] private HangarOverviewView OverviewView;
+        [SerializeField] private HangarAbilitiesView AbilitiesView;
+        [SerializeField] private HangarTrainingModal HangarTrainingModal;
+        [SerializeField] private NavGroup TopNav;
 
         [Header("Legacy Ship Selection (deprecated)")]
-        [SerializeField] Transform ShipSelectionContainer;
-        [SerializeField] InfiniteScroll ShipSelectionScrollView;
-        [SerializeField] HangarShipSelectNavLink ShipSelectCardPrefab;
+        [SerializeField] private Transform ShipSelectionContainer;
+        [SerializeField] private InfiniteScroll ShipSelectionScrollView;
+        [SerializeField] private HangarShipSelectNavLink ShipSelectCardPrefab;
 
         [Header("Legacy Training UI")]
-        [SerializeField] Transform GameSelectionContainer;
-        [SerializeField] Image ShipModelImage;
-        [SerializeField] TMPro.TMP_Text SelectedGameName;
-        [SerializeField] TMPro.TMP_Text SelectedGameDescription;
-        [SerializeField] GameObject SelectedGamePreviewWindow;
+        [SerializeField] private Transform GameSelectionContainer;
+        [SerializeField] private Image ShipModelImage;
+        [SerializeField] private TMPro.TMP_Text SelectedGameName;
+        [SerializeField] private TMPro.TMP_Text SelectedGameDescription;
+        [SerializeField] private GameObject SelectedGamePreviewWindow;
 
         List<SO_Vessel> Ships;
         SO_Vessel SelectedShip;
         readonly List<HangarVesselGridCard> _gridCards = new();
         Coroutine _gridAnimCoroutine;
+        bool _namesVisible = true;
 
         void OnEnable()
         {
             VesselUnlockSystem.OnUnlockStateChanged += RefreshGridCards;
+
+            if (eyeButton)
+            {
+                eyeButton.onClick.RemoveAllListeners();
+                eyeButton.onClick.AddListener(ToggleVesselNames);
+            }
         }
 
         void OnDisable()
@@ -88,16 +92,19 @@ namespace CosmicShore.App.UI.Screens
 
         void PopulateGrid()
         {
-            // Clear existing cards
             _gridCards.Clear();
             for (int i = gridContainer.childCount - 1; i >= 0; i--)
                 Destroy(gridContainer.GetChild(i).gameObject);
 
-            foreach (var ship in Ships)
+            // Sort: unlocked vessels first, then locked
+            var sorted = Ships.OrderBy(s => s.IsLocked ? 1 : 0).ToList();
+
+            foreach (var ship in sorted)
             {
                 var card = Instantiate(gridCardPrefab, gridContainer);
                 card.name = $"GridCard_{ship.Name}";
                 card.Configure(ship, this);
+                card.SetNameVisible(_namesVisible);
                 _gridCards.Add(card);
             }
         }
@@ -111,12 +118,21 @@ namespace CosmicShore.App.UI.Screens
             }
         }
 
+        void ToggleVesselNames()
+        {
+            _namesVisible = !_namesVisible;
+            foreach (var card in _gridCards)
+            {
+                if (card)
+                    card.SetNameVisible(_namesVisible);
+            }
+        }
+
         void ShowGridPanel()
         {
             if (gridPanel) gridPanel.SetActive(true);
             if (detailPanel) detailPanel.SetActive(false);
 
-            // Animate grid cards in with staggered fade
             if (_gridAnimCoroutine != null)
                 StopCoroutine(_gridAnimCoroutine);
             _gridAnimCoroutine = StartCoroutine(AnimateGridCardsIn());
@@ -124,7 +140,6 @@ namespace CosmicShore.App.UI.Screens
 
         IEnumerator AnimateGridCardsIn()
         {
-            // Hide all cards immediately
             foreach (var card in _gridCards)
             {
                 if (!card) continue;
@@ -132,7 +147,6 @@ namespace CosmicShore.App.UI.Screens
                 card.gameObject.SetActive(true);
             }
 
-            // Stagger fade-in one by one
             for (int i = 0; i < _gridCards.Count; i++)
             {
                 var card = _gridCards[i];
@@ -162,10 +176,6 @@ namespace CosmicShore.App.UI.Screens
 
         #region Detail Panel
 
-        /// <summary>
-        /// Called by HangarVesselGridCard when a vessel is tapped in the grid.
-        /// Transitions to the detail panel for the selected vessel.
-        /// </summary>
         public void SelectVesselForDetail(SO_Vessel ship)
         {
             if (ship == null) return;
@@ -180,8 +190,6 @@ namespace CosmicShore.App.UI.Screens
             }
 
             ShowDetailPanel();
-
-            // Also update legacy views if wired
             UpdateLegacyViews(ship);
         }
 

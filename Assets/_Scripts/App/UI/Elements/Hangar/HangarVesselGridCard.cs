@@ -1,17 +1,14 @@
 using CosmicShore.App.UI.Screens;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Elements.Hangar
 {
-    /// <summary>
-    /// Grid card for the vessel selection grid in the Hangar.
-    /// Displays vessel icon, name, and lock state.
-    /// Requires a CanvasGroup on the same GameObject for fade animations.
-    /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
-    public class HangarVesselGridCard : MonoBehaviour
+    public class HangarVesselGridCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         [Header("UI Components")]
         [SerializeField] private Image vesselIcon;
@@ -19,15 +16,26 @@ namespace CosmicShore.App.UI.Elements.Hangar
         [SerializeField] private GameObject lockOverlay;
         [SerializeField] private Button cardButton;
 
+        [Header("Hover Animation")]
+        [SerializeField] private float hoverScale = 1.15f;
+        [SerializeField] private float hoverDuration = 0.2f;
+
         SO_Vessel _ship;
         HangarScreen _hangarScreen;
         CanvasGroup _canvasGroup;
+        Tween _hoverTween;
 
         public SO_Vessel Ship => _ship;
 
         void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        void OnDisable()
+        {
+            _hoverTween?.Kill();
+            transform.localScale = Vector3.one;
         }
 
         public void Configure(SO_Vessel ship, HangarScreen hangarScreen)
@@ -56,15 +64,34 @@ namespace CosmicShore.App.UI.Elements.Hangar
                 lockOverlay.SetActive(_ship != null && _ship.IsLocked);
         }
 
-        /// <summary>
-        /// Sets the card's visual alpha via CanvasGroup. Used by HangarScreen for fade animations.
-        /// </summary>
+        public void SetNameVisible(bool visible)
+        {
+            if (vesselName)
+                vesselName.gameObject.SetActive(visible);
+        }
+
         public void SetAlpha(float alpha)
         {
             if (!_canvasGroup)
                 _canvasGroup = GetComponent<CanvasGroup>();
             if (_canvasGroup)
                 _canvasGroup.alpha = alpha;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            _hoverTween?.Kill();
+            _hoverTween = transform.DOScale(hoverScale, hoverDuration)
+                .SetEase(Ease.OutBack)
+                .SetUpdate(true);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            _hoverTween?.Kill();
+            _hoverTween = transform.DOScale(1f, hoverDuration)
+                .SetEase(Ease.InOutQuad)
+                .SetUpdate(true);
         }
 
         void OnCardClicked()
