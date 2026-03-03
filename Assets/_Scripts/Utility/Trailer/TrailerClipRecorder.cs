@@ -13,6 +13,10 @@ namespace CosmicShore.Utility.Trailer
     /// Records a single clip from ONE randomly-selected trailer camera,
     /// encoding directly to an MP4 file via Unity's MediaEncoder.
     ///
+    /// Uses Time.captureFramerate for deterministic frame timing — the game
+    /// clock advances by exactly 1/targetFPS per frame regardless of wall-clock
+    /// time, guaranteeing the output video plays back at real-time speed.
+    ///
     /// Uses AsyncGPUReadback so recording never stalls the GPU or gameplay.
     /// Readback callbacks fire in request order on the main thread, so
     /// frames arrive at the encoder sequentially.
@@ -25,13 +29,12 @@ namespace CosmicShore.Utility.Trailer
         private bool _isRecording;
         private string _clipFilePath;
         private int _frameIndex;
-        private float _captureInterval;
-        private float _captureTimer;
         private float _elapsedRecordTime;
         private int _clipNumber;
         private int _activeCameraIndex;
         private int _pendingReadbacks;
         private bool _finishing;
+        private int _previousCaptureFramerate;
 
 #if UNITY_EDITOR
         private MediaEncoder _encoder;
@@ -75,11 +78,15 @@ namespace CosmicShore.Utility.Trailer
             _isRecording = true;
             _frameIndex = 0;
             _elapsedRecordTime = 0f;
-            _captureInterval = 1f / config.targetFPS;
-            _captureTimer = 0f;
             _pendingReadbacks = 0;
             _finishing = false;
             _clipNumber++;
+
+            // Lock the game clock so every frame = exactly 1/targetFPS.
+            // This makes the recorded video play back at real-time speed
+            // regardless of actual GPU/CPU performance.
+            _previousCaptureFramerate = Time.captureFramerate;
+            Time.captureFramerate = config.targetFPS;
 
             int w = config.captureWidth;
             int h = config.captureHeight;
@@ -110,6 +117,9 @@ namespace CosmicShore.Utility.Trailer
             _isRecording = false;
             _finishing = true;
 
+            // Restore previous frame rate mode
+            Time.captureFramerate = _previousCaptureFramerate;
+
             // If no readbacks are in flight, finalize immediately
             if (_pendingReadbacks == 0)
                 FinalizeEncoder();
@@ -139,12 +149,9 @@ namespace CosmicShore.Utility.Trailer
                 return;
             }
 
-            _captureTimer += Time.deltaTime;
-            if (_captureTimer >= _captureInterval)
-            {
-                _captureTimer -= _captureInterval;
-                CaptureFrame();
-            }
+            // With Time.captureFramerate set, every frame is exactly 1/targetFPS.
+            // Capture every frame — no timer needed.
+            CaptureFrame();
         }
 
         private void CaptureFrame()
@@ -169,9 +176,20 @@ namespace CosmicShore.Utility.Trailer
                 if (!request.hasError)
                 {
                     NativeArray<byte> data = request.GetData<byte>();
+
+                    // GPU readback from RenderTextures is vertically flipped
+                    // (bottom-to-top). Flip rows so the encoded video is right-side up.
+                    int rowBytes = w * 4; // RGBA32 = 4 bytes per pixel
+                    var flipped = new NativeArray<byte>(data.Length, Allocator.Temp);
+                    for (int y = 0; y < h; y++)
+                    {
+                        NativeArray<byte>.Copy(data, y * rowBytes, flipped, (h - 1 - y) * rowBytes, rowBytes);
+                    }
+
                     var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-                    tex.LoadRawTextureData(data);
+                    tex.LoadRawTextureData(flipped);
                     tex.Apply();
+                    flipped.Dispose();
 
 #if UNITY_EDITOR
                     _encoder?.AddFrame(tex);
