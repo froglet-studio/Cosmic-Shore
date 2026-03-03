@@ -41165,7 +41165,6 @@ MonoBehaviour:
   - id: 0
     root: {fileID: 534436443}
   NavBar: {fileID: 1658454450}
-  freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
   arcadeScreen: {fileID: 4125016652594217559}
   NavBarLine: {fileID: 1892901532}
   NavBarLineSprites:
@@ -62352,6 +62351,11 @@ MonoBehaviour:
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
   shutdownNetworkOnDespawn: 1
+  playerSpawnPoints:
+  - {fileID: 1564324325}
+  - {fileID: 673228694}
+  - {fileID: 1419570605}
+  - {fileID: 1867942830}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
 --- !u!114 &1486013850
@@ -62367,7 +62371,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
   menuCanvasGroups:
   - {fileID: 921072170}
   - {fileID: 934141876}
@@ -62397,7 +62400,6 @@ MonoBehaviour:
   menuVesselClass: 6
   menuPlayerCount: 3
   menuIntensity: 1
-  _freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
 --- !u!114 &1486013852
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -62435,7 +62437,6 @@ MonoBehaviour:
   _orbitRadius: 150
   _orbitHeight: 30
   _orbitSpeed: 5
-  _freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
   _cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
 --- !u!1 &1486054860
 GameObject:
@@ -67705,7 +67706,6 @@ MonoBehaviour:
   ui: {fileID: 1570757002}
   serverInitializer: {fileID: 1486013843}
   crystalClickHandler: {fileID: 1486013850}
-  freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
   restoreFreestyleDelayMs: 600
 --- !u!1 &1570925039
 GameObject:
