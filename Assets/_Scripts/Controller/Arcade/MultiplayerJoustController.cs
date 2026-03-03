@@ -170,9 +170,6 @@ namespace CosmicShore.Gameplay
 
             CSDebug.Log($"[JoustController] Client synced. Winner='{WinnerName}' " +
                       $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F1}"))}]");
-
-            gameData.InvokeWinnerCalculated();
-            gameData.InvokeMiniGameEnd();
         }
 
         protected override void OnResetForReplayCustom()
