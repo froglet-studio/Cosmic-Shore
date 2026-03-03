@@ -116,9 +116,6 @@ namespace CosmicShore.Gameplay
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
-                var spawnT = GetSpawnPoseForAI(i);
-                aiPlayerNO.transform.SetPositionAndRotation(spawnT.position, spawnT.rotation);
-
                 aiPlayerNO.Spawn(true);
 
                 var aiPlayer = aiPlayerNO.GetComponent<Player>();
@@ -211,7 +208,6 @@ namespace CosmicShore.Gameplay
 
             vesselNO = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
-            vesselNO.transform.SetPositionAndRotation(aiPlayer.transform.position, aiPlayer.transform.rotation);
             vesselNO.Spawn(true);
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
             return true;
@@ -225,19 +221,6 @@ namespace CosmicShore.Gameplay
             bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
-        }
-
-        Pose GetSpawnPoseForAI(int aiIndex)
-        {
-            var _playerOrigins = gameData.SpawnPoses;
-
-            if (_playerOrigins == null || _playerOrigins.Length == 0)
-                return default;
-
-            int idx = 2 + aiIndex;
-            if (idx >= _playerOrigins.Length)
-                idx %= _playerOrigins.Length;
-            return _playerOrigins[idx];
         }
     }
 }
