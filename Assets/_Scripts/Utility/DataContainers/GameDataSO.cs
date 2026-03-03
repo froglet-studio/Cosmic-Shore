@@ -72,6 +72,40 @@ namespace CosmicShore.Utility
         /// </summary>
         public int RequestedAIBackfillCount;
 
+        /// <summary>
+        /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
+        /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader,
+        /// ServerPlayerVesselInitializerWithAI, and EnsureMinimumAIBackfill all see
+        /// correct values.
+        /// </summary>
+        public void SyncFromArcadeGame(SO_ArcadeGame game)
+        {
+            if (game == null)
+            {
+                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame — game is NULL!</color>");
+                return;
+            }
+
+            SceneName = game.SceneName;
+            GameMode = game.Mode;
+            IsMultiplayerMode = game.IsMultiplayer;
+        }
+
+        /// <summary>
+        /// Applies game-mode-specific minimum AI backfill.
+        /// Called by SceneLoader.LaunchGame() before scene load and ClientRpc sync.
+        /// HexRace always needs at least 1 AI opponent for solo play.
+        /// </summary>
+        public int EnsureMinimumAIBackfill()
+        {
+            if (GameMode == GameModes.HexRace && RequestedAIBackfillCount < 1)
+            {
+                RequestedAIBackfillCount = 1;
+                Debug.Log("<color=#FFD700>[GameDataSO] HexRace: forced RequestedAIBackfillCount=1</color>");
+            }
+            return RequestedAIBackfillCount;
+        }
+
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();

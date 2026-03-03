@@ -83,6 +83,8 @@ namespace CosmicShore.Core
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
 
+            gameData.EnsureMinimumAIBackfill();
+
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] AppState → LoadingGame</color>");
 

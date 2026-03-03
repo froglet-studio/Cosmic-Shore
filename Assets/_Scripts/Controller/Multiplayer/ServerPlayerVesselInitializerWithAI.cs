@@ -98,7 +98,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            int aiCount = gameData.RequestedAIBackfillCount;
+            int aiCount = gameData.EnsureMinimumAIBackfill();
             Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}</color>");
             if (aiCount <= 0)
             {

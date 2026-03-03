@@ -555,9 +555,7 @@ namespace CosmicShore.UI
             }
 
             var selectedGame = config.SelectedGame;
-            gameData.SceneName = selectedGame.SceneName;
-            gameData.GameMode = selectedGame.Mode;
-            gameData.IsMultiplayerMode = selectedGame.IsMultiplayer;
+            gameData.SyncFromArcadeGame(selectedGame);
 
             int humanCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)

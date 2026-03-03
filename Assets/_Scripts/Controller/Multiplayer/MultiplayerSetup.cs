@@ -77,7 +77,11 @@ namespace CosmicShore.Gameplay
 
             if (gameData.IsMultiplayerMode)
             {
-                gameData.DestroyPlayerAndVessel();
+                // DestroyPlayerAndVessel() was removed here because it races with
+                // ServerPlayerVesselInitializerWithAI.SpawnAIs(). Both run during
+                // scene Start(): SpawnAIs() adds AI to gameData.Players, then this
+                // method destroys them. Scene-transition cleanup already happens via
+                // SceneLoader.LoadSceneAsync() → ResetRuntimeData() + destroyWithScene.
                 ExecuteMultiplayerSetup().Forget();
             }
         }
