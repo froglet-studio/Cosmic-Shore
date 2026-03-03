@@ -50,7 +50,6 @@ namespace CosmicShore.UI
                     authenticationData.OnSignedIn.OnRaised += HandleSignedIn;
 
                 CreateLocalDefaultProfile(null);
-                OnProfileChanged?.Invoke(CurrentProfile);
 
                 // If already signed in, initialize immediately
                 if (authenticationDataVariable != null && authenticationData.IsSignedIn)
