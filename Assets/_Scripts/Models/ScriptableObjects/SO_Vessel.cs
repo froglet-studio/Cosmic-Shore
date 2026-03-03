@@ -1,5 +1,4 @@
 using CosmicShore;
-using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using UnityEngine;
@@ -45,19 +44,27 @@ public class SO_Vessel : ScriptableObject
     [SerializeField] public GameplayParameter gameplayParameter3 = new GameplayParameter("Solo", "Social", .5f);
 
     [Header("Unlock Configuration")]
-    [Tooltip("Whether this vessel is unlocked from the start (e.g. Squirrel).")]
-    [SerializeField] public bool UnlockedByDefault;
+    [Tooltip("Whether this vessel is locked. Set to true for vessels that must be purchased.")]
+    [SerializeField] bool isLocked;
 
     [Tooltip("Currency cost to unlock this vessel. 0 = free once currency system is bypassed.")]
     [SerializeField] public int UnlockCost = 100;
 
     /// <summary>
-    /// A flag indicating whether the Vessel Class is locked. Vessel Class is locked if it is not unlocked by the player.
+    /// Whether this vessel is currently locked. In builds, resets to the serialized default on launch.
+    /// Will be synced with UGS once backend integration is complete.
     /// </summary>
-    public bool IsLocked
-    {
-        get => !VesselUnlockSystem.IsUnlocked(this);
-    }
+    public bool IsLocked => isLocked;
+
+    /// <summary>
+    /// Unlocks this vessel at runtime. In builds the change is lost on restart (by design until UGS sync).
+    /// </summary>
+    public void Unlock() => isLocked = false;
+
+    /// <summary>
+    /// Locks this vessel at runtime. Intended for debug/testing.
+    /// </summary>
+    public void Lock() => isLocked = true;
 }
 
 [System.Serializable]

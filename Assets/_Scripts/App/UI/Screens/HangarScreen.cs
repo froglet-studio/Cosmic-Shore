@@ -1,11 +1,11 @@
 using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.App.UI.Elements.Hangar;
 using CosmicShore.App.UI.Views;
+using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Screens
 {
@@ -70,7 +70,6 @@ namespace CosmicShore.App.UI.Screens
         public void LoadView()
         {
             Ships = ShipList.VesselList;
-            VesselUnlockSystem.Initialize(ShipList);
 
             // New grid-based flow
             if (gridPanel && gridContainer && gridCardPrefab)

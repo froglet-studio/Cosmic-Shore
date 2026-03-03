@@ -1,116 +1,61 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
 
 namespace CosmicShore.App.Systems.VesselUnlock
 {
     /// <summary>
-    /// Manages vessel unlock state. Persists to PlayerPrefs.
-    /// Vessels marked UnlockedByDefault in their SO_Vessel are unlocked on first run.
+    /// Thin wrapper around SO_Vessel.IsLocked for event broadcasting and currency management.
+    /// Unlock state lives directly on the SO_Vessel asset (isLocked field).
+    /// In builds, runtime unlocks reset on restart — by design until UGS sync is implemented.
     /// </summary>
     public static class VesselUnlockSystem
     {
-        const string UnlockKeyPrefix = "VesselUnlocked_";
-        const string InitializedKey = "VesselUnlockSystem_Initialized";
         const string CurrencyKey = "VesselCurrency";
-
-        static readonly HashSet<VesselClassType> _unlockedCache = new();
-        static bool _initialized;
 
         public static event Action OnUnlockStateChanged;
 
         /// <summary>
-        /// Initializes the system using the given ship list to seed default unlocks.
-        /// Safe to call multiple times — only runs once per app session.
+        /// Unlocks a vessel. Fires OnUnlockStateChanged if the vessel was locked.
         /// </summary>
-        public static void Initialize(SO_VesselList shipList = null)
+        public static bool UnlockVessel(SO_Vessel vessel)
         {
-            if (_initialized) return;
-
-            _unlockedCache.Clear();
-
-            // On first-ever run, seed defaults from SO_Vessel.UnlockedByDefault
-            if (!PlayerPrefs.HasKey(InitializedKey) && shipList != null)
-            {
-                foreach (var ship in shipList.VesselList)
-                {
-                    if (ship == null) continue;
-                    if (ship.UnlockedByDefault)
-                        PlayerPrefs.SetInt(GetKey(ship.Class), 1);
-                }
-                PlayerPrefs.SetInt(InitializedKey, 1);
-                PlayerPrefs.Save();
-            }
-
-            // Load all vessel unlock states from PlayerPrefs
-            foreach (VesselClassType vesselClass in Enum.GetValues(typeof(VesselClassType)))
-            {
-                if (vesselClass == VesselClassType.Any || vesselClass == VesselClassType.Random)
-                    continue;
-
-                if (PlayerPrefs.GetInt(GetKey(vesselClass), 0) == 1)
-                    _unlockedCache.Add(vesselClass);
-            }
-
-            _initialized = true;
-        }
-
-        /// <summary>
-        /// Returns true if the given vessel class is unlocked.
-        /// </summary>
-        public static bool IsUnlocked(VesselClassType vesselClass)
-        {
-            Initialize();
-            return _unlockedCache.Contains(vesselClass);
-        }
-
-        /// <summary>
-        /// Returns true if the given SO_Vessel is unlocked.
-        /// </summary>
-        public static bool IsUnlocked(SO_Vessel ship)
-        {
-            if (ship == null) return false;
-            return IsUnlocked(ship.Class);
-        }
-
-        /// <summary>
-        /// Unlocks a vessel class. Returns true if the vessel was newly unlocked.
-        /// </summary>
-        public static bool UnlockVessel(VesselClassType vesselClass)
-        {
-            Initialize();
-
-            if (_unlockedCache.Contains(vesselClass))
+            if (vessel == null || !vessel.IsLocked)
                 return false;
 
-            _unlockedCache.Add(vesselClass);
-            PlayerPrefs.SetInt(GetKey(vesselClass), 1);
-            PlayerPrefs.Save();
-
-            CSDebug.Log($"VesselUnlockSystem: Unlocked {vesselClass}");
+            vessel.Unlock();
+            CSDebug.Log($"VesselUnlockSystem: Unlocked {vessel.Name}");
             OnUnlockStateChanged?.Invoke();
             return true;
         }
 
         /// <summary>
-        /// Locks a vessel class. Returns true if the vessel was newly locked.
-        /// Does not refund currency. Intended for debug/testing.
+        /// Locks a vessel. Fires OnUnlockStateChanged if the vessel was unlocked.
+        /// Intended for debug/testing.
         /// </summary>
-        public static bool LockVessel(VesselClassType vesselClass)
+        public static bool LockVessel(SO_Vessel vessel)
         {
-            Initialize();
-
-            if (!_unlockedCache.Contains(vesselClass))
+            if (vessel == null || vessel.IsLocked)
                 return false;
 
-            _unlockedCache.Remove(vesselClass);
-            PlayerPrefs.SetInt(GetKey(vesselClass), 0);
-            PlayerPrefs.Save();
-
-            CSDebug.Log($"VesselUnlockSystem: Locked {vesselClass}");
+            vessel.Lock();
+            CSDebug.Log($"VesselUnlockSystem: Locked {vessel.Name}");
             OnUnlockStateChanged?.Invoke();
             return true;
+        }
+
+        /// <summary>
+        /// Attempts to purchase and unlock a vessel using its configured UnlockCost.
+        /// </summary>
+        public static bool TryPurchaseVessel(SO_Vessel vessel)
+        {
+            if (vessel == null || !vessel.IsLocked)
+                return false;
+
+            if (vessel.UnlockCost > 0 && !TrySpendCurrency(vessel.UnlockCost))
+                return false;
+
+            return UnlockVessel(vessel);
         }
 
         /// <summary>
@@ -146,53 +91,21 @@ namespace CosmicShore.App.Systems.VesselUnlock
         }
 
         /// <summary>
-        /// Attempts to purchase and unlock a vessel using its configured cost.
+        /// Locks all vessels in the list, then unlocks those not marked as locked in their SO.
+        /// Intended for debug/testing — resets runtime state to match serialized defaults.
         /// </summary>
-        public static bool TryPurchaseVessel(SO_Vessel ship)
+        public static void ResetAllUnlocks(SO_VesselList vesselList)
         {
-            if (ship == null) return false;
-            return TryPurchaseVessel(ship.Class, ship.UnlockCost);
-        }
+            if (vesselList == null) return;
 
-        /// <summary>
-        /// Attempts to purchase and unlock a vessel. Returns true if successful.
-        /// </summary>
-        public static bool TryPurchaseVessel(VesselClassType vesselClass, int cost)
-        {
-            Initialize();
-
-            if (_unlockedCache.Contains(vesselClass))
-                return false;
-
-            if (cost > 0 && !TrySpendCurrency(cost))
-                return false;
-
-            return UnlockVessel(vesselClass);
-        }
-
-        static string GetKey(VesselClassType vesselClass)
-        {
-            return $"{UnlockKeyPrefix}{(int)vesselClass}";
-        }
-
-        /// <summary>
-        /// Resets unlock state and re-seeds from the given ship list. Only for testing/debug.
-        /// </summary>
-        public static void ResetAllUnlocks(SO_VesselList shipList = null)
-        {
-            PlayerPrefs.DeleteKey(InitializedKey);
-            foreach (VesselClassType vesselClass in Enum.GetValues(typeof(VesselClassType)))
+            foreach (var vessel in vesselList.VesselList)
             {
-                if (vesselClass == VesselClassType.Any || vesselClass == VesselClassType.Random)
-                    continue;
-                PlayerPrefs.DeleteKey(GetKey(vesselClass));
+                if (vessel == null) continue;
+                // Force lock, then let the serialized isLocked value be re-read on next access.
+                // Since we can't reload serialized defaults at runtime, just lock everything.
+                vessel.Lock();
             }
 
-            _unlockedCache.Clear();
-            _initialized = false;
-            PlayerPrefs.Save();
-
-            Initialize(shipList);
             OnUnlockStateChanged?.Invoke();
         }
     }
