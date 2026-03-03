@@ -1,16 +1,17 @@
 using System.Collections;
 using CosmicShore.Soap;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Utility.Trailer
 {
     /// <summary>
     /// Top-level runtime controller for the trailer camera system.
     ///
-    /// Auto-discovers the local vessel (polls until found), creates the
-    /// camera rig, and schedules random clip captures throughout the match.
-    /// No manual setup required — the editor window injects this on play
-    /// mode entry when the tool is enabled.
+    /// Persists across scene loads via DontDestroyOnLoad. Only activates
+    /// in game mode scenes (scene names starting with "Minigame").
+    /// Automatically tears down when returning to the main menu or any
+    /// non-game scene, and re-initializes when entering a new game scene.
     /// </summary>
     public class TrailerCameraController : MonoBehaviour
     {
@@ -24,6 +25,7 @@ namespace CosmicShore.Utility.Trailer
         private Coroutine _customClipRoutine;
         private bool _initialized;
         private int _clipsRecorded;
+        private bool _inGameScene;
 
         public TrailerCameraConfigSO Config => config;
         public TrailerCameraRig Rig => _rig;
@@ -31,10 +33,47 @@ namespace CosmicShore.Utility.Trailer
         public bool IsActive => _initialized;
         public int ClipsRecorded => _clipsRecorded;
 
+        private void Awake()
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+
+        private void OnEnable()
+        {
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            Cleanup();
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // Tear down any existing rig from the previous scene
+            Cleanup();
+
+            _inGameScene = IsGameScene(scene.name);
+
+            if (_inGameScene)
+                CSDebug.Log($"[TrailerCamera] Entered game scene: {scene.name}");
+        }
+
+        /// <summary>
+        /// Game mode scenes start with "Minigame". Everything else
+        /// (Menu_Main, Authentication, SplashScreen, tools) is ignored.
+        /// </summary>
+        private static bool IsGameScene(string sceneName)
+        {
+            return sceneName.StartsWith("Minigame", System.StringComparison.OrdinalIgnoreCase);
+        }
+
         private void Update()
         {
-            // Poll for vessel until we find it and initialize
-            if (_initialized || config == null || !config.toolEnabled || gameData == null) return;
+            // Only poll for vessel in game scenes
+            if (_initialized || !_inGameScene) return;
+            if (config == null || !config.toolEnabled || gameData == null) return;
 
             var vessel = gameData.LocalPlayer?.Vessel;
             if (vessel?.Transform == null) return;
@@ -43,11 +82,6 @@ namespace CosmicShore.Utility.Trailer
 
             if (config.numberOfRandomClips > 0)
                 _randomCaptureRoutine = StartCoroutine(RandomCaptureScheduler());
-        }
-
-        private void OnDisable()
-        {
-            Cleanup();
         }
 
         /// <summary>

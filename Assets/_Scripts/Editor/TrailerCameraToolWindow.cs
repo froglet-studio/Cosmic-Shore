@@ -60,21 +60,21 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>
-        /// Auto-inject the TrailerCameraController into the scene when
-        /// entering play mode, if the tool is enabled and config is assigned.
+        /// Auto-inject the TrailerCameraController on play mode entry.
+        /// The controller uses DontDestroyOnLoad and listens for scene
+        /// changes itself — it only activates in game scenes (Minigame*).
         /// </summary>
         private void InjectControllerIfNeeded()
         {
             if (_config == null || !_config.toolEnabled) return;
 
-            // Check if one already exists
+            // Controller persists via DontDestroyOnLoad, don't duplicate
             _runtimeController = FindAnyObjectByType<TrailerCameraController>();
             if (_runtimeController != null) return;
 
             var go = new GameObject("TrailerCameraController");
             _runtimeController = go.AddComponent<TrailerCameraController>();
 
-            // Wire up serialized references
             var so = new SerializedObject(_runtimeController);
 
             var configProp = so.FindProperty("config");
@@ -94,7 +94,7 @@ namespace CosmicShore.Editor
 
             so.ApplyModifiedProperties();
 
-            Debug.Log("[TrailerTool] Controller auto-injected into scene.");
+            Debug.Log("[TrailerTool] Controller injected (persists across scenes, active only in game modes).");
         }
 
         // ────────────────────────────────────────────────────────────────
@@ -270,8 +270,12 @@ namespace CosmicShore.Editor
             // ── Status box ──
             EditorGUILayout.BeginVertical("box");
 
-            EditorGUILayout.LabelField("Status",
-                _runtimeController.IsActive ? "Active — tracking vessel" : "Waiting for vessel...");
+            string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            bool isGameScene = sceneName.StartsWith("Minigame", System.StringComparison.OrdinalIgnoreCase);
+            string status = _runtimeController.IsActive
+                ? "Active — tracking vessel"
+                : isGameScene ? "In game scene — waiting for vessel..." : $"Non-game scene ({sceneName}) — idle";
+            EditorGUILayout.LabelField("Status", status);
 
             if (_runtimeController.Rig != null)
                 EditorGUILayout.LabelField("Cameras", $"{_runtimeController.Rig.Cameras.Count}");
