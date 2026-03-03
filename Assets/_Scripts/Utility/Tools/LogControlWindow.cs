@@ -75,8 +75,66 @@ namespace CosmicShore.Utility.Tools
             window.minSize = new Vector2(340, 520);
         }
 
-        void OnEnable() => LoadPrefs();
+        bool _subscribedToUGS;
+
+        void OnEnable()
+        {
+            LoadPrefs();
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        }
+
+        void OnDisable()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            UnsubscribeFromUGS();
+        }
+
         void OnFocus() => Repaint();
+
+        void OnPlayModeChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.EnteredPlayMode)
+                EditorApplication.update += TrySubscribeToUGS;
+            else if (state == PlayModeStateChange.ExitingPlayMode)
+                UnsubscribeFromUGS();
+
+            Repaint();
+        }
+
+        void TrySubscribeToUGS()
+        {
+            var ds = UGSDataService.Instance;
+            if (ds == null) return;
+
+            EditorApplication.update -= TrySubscribeToUGS;
+
+            if (ds.IsInitialized)
+            {
+                Repaint();
+                return;
+            }
+
+            ds.OnInitialized += HandleUGSInitialized;
+            _subscribedToUGS = true;
+        }
+
+        void HandleUGSInitialized()
+        {
+            _subscribedToUGS = false;
+            Repaint();
+        }
+
+        void UnsubscribeFromUGS()
+        {
+            EditorApplication.update -= TrySubscribeToUGS;
+            if (_subscribedToUGS)
+            {
+                var ds = UGSDataService.Instance;
+                if (ds != null)
+                    ds.OnInitialized -= HandleUGSInitialized;
+                _subscribedToUGS = false;
+            }
+        }
 
         void BuildStyles()
         {
