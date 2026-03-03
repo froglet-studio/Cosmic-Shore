@@ -1,3 +1,4 @@
+using CosmicShore.App.Profile;
 using CosmicShore.App.Systems.VesselUnlock;
 using TMPro;
 using UnityEngine;
@@ -49,6 +50,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private GameObject notEnoughCrystalsPanel;
         [SerializeField] private Button confirmButton;
         [SerializeField] private TMP_Text spendCrystalsDetailText;
+        [SerializeField] private TMP_Text crystalAmountText;
 
         SO_Vessel _currentShip;
         int _selectedTabIndex;
@@ -94,11 +96,13 @@ namespace CosmicShore.App.UI.Views
         void OnEnable()
         {
             VesselUnlockSystem.OnUnlockStateChanged += RefreshLockState;
+            PlayerDataService.OnCrystalBalanceChanged += RefreshCrystalAmount;
         }
 
         void OnDisable()
         {
             VesselUnlockSystem.OnUnlockStateChanged -= RefreshLockState;
+            PlayerDataService.OnCrystalBalanceChanged -= RefreshCrystalAmount;
         }
 
         public void SetVessel(SO_Vessel ship)
@@ -213,6 +217,8 @@ namespace CosmicShore.App.UI.Views
             if (spendCrystalsPanel) spendCrystalsPanel.SetActive(canAfford);
             if (notEnoughCrystalsPanel) notEnoughCrystalsPanel.SetActive(!canAfford);
 
+            RefreshCrystalAmount(balance);
+
             if (canAfford && spendCrystalsDetailText)
             {
                 spendCrystalsDetailText.text = $"<b>{cost}</b> to unlock <b>{_currentShip.Name}</b>";
@@ -229,6 +235,12 @@ namespace CosmicShore.App.UI.Views
                 CloseUnlockPanel();
                 RefreshLockState();
             }
+        }
+
+        void RefreshCrystalAmount(int balance)
+        {
+            if (crystalAmountText)
+                crystalAmountText.text = balance.ToString();
         }
 
         public void CloseUnlockPanel()
