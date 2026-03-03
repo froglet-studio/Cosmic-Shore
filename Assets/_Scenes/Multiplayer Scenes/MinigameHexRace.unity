@@ -766,7 +766,7 @@ MonoBehaviour:
   aiPlayerPrefab: {fileID: -3803897320145675891, guid: 0a8653be5d331c5449d3130cef596493,
     type: 3}
   aiInitializeDatas:
-  - vesselClass: 1
+  - vesselClass: 6
     domain: 1
     PlayerName: AI_JadeManta1
     AvatarId: 0
