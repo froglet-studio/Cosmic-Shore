@@ -50,28 +50,34 @@ namespace CosmicShore.Game
 
             float innerR = nucleusRadius;
             float outerR = membraneRadius;
-
-            // Compute shard count from shell volume and desired spacing
-            float shellVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR - innerR * innerR * innerR);
             float cellVolume = shardDistance * shardDistance * shardDistance;
-            int shardCount = Mathf.Max(1, Mathf.RoundToInt(shellVolume / cellVolume));
 
-            // Pre-compute cubed radii for volume-uniform spherical shell sampling
+            // Outer shell (nucleus → membrane): full density
+            float outerShellVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR - innerR * innerR * innerR);
+            int outerCount = Mathf.Max(1, Mathf.RoundToInt(outerShellVolume / cellVolume));
+
+            // Inner sphere (0 → nucleus): 1/4 density
+            float innerSphereVolume = (4f / 3f) * Mathf.PI * (innerR * innerR * innerR);
+            int innerCount = Mathf.Max(0, Mathf.RoundToInt(0.25f * innerSphereVolume / cellVolume));
+
+            int shardCount = outerCount + innerCount;
             float innerR3 = innerR * innerR * innerR;
             float outerR3 = outerR * outerR * outerR;
 
             shards = new GameObject[shardCount];
             for (int i = 0; i < shardCount; i++)
             {
-                GameObject tempSnow = Instantiate(snow, transform, true);
-                tempSnow.transform.localScale = Vector3.one * nodeScaler;
+                // First outerCount shards go in the shell, the rest inside the nucleus
+                float r = i < outerCount
+                    ? Mathf.Pow(Random.Range(innerR3, outerR3), 1f / 3f)
+                    : Mathf.Pow(Random.Range(0f, innerR3), 1f / 3f);
 
-                // Volume-uniform random point in spherical shell
-                float r = Mathf.Pow(Random.Range(innerR3, outerR3), 1f / 3f);
                 float cosTheta = Random.Range(-1f, 1f);
                 float sinTheta = Mathf.Sqrt(1f - cosTheta * cosTheta);
                 float phi = Random.Range(0f, 2f * Mathf.PI);
 
+                GameObject tempSnow = Instantiate(snow, transform, true);
+                tempSnow.transform.localScale = Vector3.one * nodeScaler;
                 tempSnow.transform.position = origin + new Vector3(
                     r * sinTheta * Mathf.Cos(phi),
                     r * sinTheta * Mathf.Sin(phi),
