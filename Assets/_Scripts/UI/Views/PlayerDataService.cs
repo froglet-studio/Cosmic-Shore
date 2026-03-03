@@ -306,7 +306,7 @@ namespace CosmicShore.UI
                 gameData.LocalPlayerXP = data.xp;
             }
 
-            if (authenticationData?.UserName != null)
+            if (authenticationDataVariable != null)
                 authenticationData.UserName.Value = data.displayName;
         }
 

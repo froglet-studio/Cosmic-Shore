@@ -1,6 +1,9 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using TMPro;
 using UnityEngine;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.UI
 {
@@ -13,6 +16,9 @@ namespace CosmicShore.UI
         [SerializeField] bool DebugFirstAppLaunch = false;
         [SerializeField] GameObject FirstAppLaunchScreen;
         [SerializeField] GameObject NavBar;
+        [SerializeField] TMP_Text userNameText;
+
+        [Inject] AuthenticationDataVariable authenticationDataVariable;
 
         enum PlayerPrefKeys
         {
@@ -22,6 +28,13 @@ namespace CosmicShore.UI
         public void Start()
         {
             CSDebug.Log("MainMenu.cs start");
+
+            if (authenticationDataVariable != null)
+            {
+                var userName = authenticationDataVariable.Value.UserName;
+                userName.OnValueChanged += OnUserNameChanged;
+                OnUserNameChanged(userName.Value);
+            }
 
             if (FirstAppLaunchExperience())
             {
@@ -66,6 +79,18 @@ namespace CosmicShore.UI
             */
 
             return false;
+        }
+
+        void OnUserNameChanged(string newName)
+        {
+            if (userNameText != null)
+                userNameText.text = newName;
+        }
+
+        void OnDestroy()
+        {
+            if (authenticationDataVariable != null)
+                authenticationDataVariable.Value.UserName.OnValueChanged -= OnUserNameChanged;
         }
     }
 }
