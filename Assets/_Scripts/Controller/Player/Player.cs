@@ -236,7 +236,7 @@ namespace CosmicShore.Gameplay
         {
             Debug.Log($"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
             // Clear stale references from previous scene.
-            // Vessels have destroyWithScene=true and are already destroyed.
+            // Old vessels are despawned by DespawnStaleVessels() in the new scene's spawner.
             Vessel = null;
             IsActive = false;
             VesselNetId = 0;

@@ -122,7 +122,7 @@ namespace CosmicShore.Gameplay
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
-                aiPlayerNO.Spawn(true);
+                aiPlayerNO.Spawn(false);
 
                 var aiPlayer = aiPlayerNO.GetComponent<Player>();
                 if (!aiPlayer)
@@ -214,7 +214,7 @@ namespace CosmicShore.Gameplay
 
             vesselNO = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
-            vesselNO.Spawn(true);
+            vesselNO.Spawn(false);
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
             return true;
         }

@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
@@ -172,17 +170,6 @@ namespace CosmicShore.Core
 
             if (nm.IsServer)
             {
-                // Despawn all vessels immediately before the scene load.
-                // Uses Despawn(false) to remove objects from Netcode's SpawnedObjects
-                // tracking WITHOUT destroying the GameObjects. The objects remain alive
-                // until Unity's scene unload destroys them, at which point
-                // NetworkObject.OnDestroy() no longer finds them in SpawnedObjects
-                // and skips the "Invalid Destroy" error path.
-                //
-                // Despawning here (not earlier) ensures no vessels are spawned between
-                // the despawn and the scene load. Netcode's reliable channel guarantees
-                // the despawn messages are ordered before the scene load event on clients.
-                DespawnSceneVesselsOnServer();
                 LoadNetworkSceneOnServer(sceneName);
             }
             else
@@ -203,30 +190,6 @@ namespace CosmicShore.Core
 
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Server loading network scene: {sceneName} via nm.SceneManager.LoadScene</color>");
             nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-        }
-
-        /// <summary>
-        /// Server-only: despawns all spawned vessel NetworkObjects so that despawn
-        /// messages reach clients before the network scene load event. Without this,
-        /// clients hit "[Invalid Destroy] Destroy a spawned NetworkObject on a
-        /// non-host client is not valid" during the scene unload.
-        /// </summary>
-        void DespawnSceneVesselsOnServer()
-        {
-            var nm = NetworkManager.Singleton;
-            if (nm == null || !nm.IsServer) return;
-
-            var toDespawn = new List<NetworkObject>();
-            foreach (var no in nm.SpawnManager.SpawnedObjectsList)
-            {
-                if (no != null && no.IsSpawned && no.TryGetComponent<VesselController>(out _))
-                    toDespawn.Add(no);
-            }
-
-            foreach (var no in toDespawn)
-                no.Despawn(false);
-
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] DespawnSceneVesselsOnServer — despawned {toDespawn.Count} vessel(s)</color>");
         }
 
         #endregion

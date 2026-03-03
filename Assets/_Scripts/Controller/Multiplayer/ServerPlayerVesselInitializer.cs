@@ -93,6 +93,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Clean up vessels that persisted from the previous scene.
+            // With destroyWithScene=false, Netcode migrates vessels to DDOL during
+            // scene transitions. Despawn them here before spawning new ones.
+            DespawnStaleVessels();
+
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
 
             if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
@@ -300,9 +305,33 @@ namespace CosmicShore.Gameplay
 
             var networkVessel = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
-            networkVessel.SpawnWithOwnership(clientId, true);
+            networkVessel.SpawnWithOwnership(clientId, false);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
             return networkVessel;
+        }
+
+        /// <summary>
+        /// Despawns vessels that persisted from a previous scene via DontDestroyOnLoad.
+        /// With destroyWithScene=false, Netcode migrates vessels to DDOL during scene
+        /// transitions. This method cleans them up before new vessels are spawned.
+        /// </summary>
+        void DespawnStaleVessels()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return;
+
+            var staleVessels = new List<NetworkObject>();
+            foreach (var no in nm.SpawnManager.SpawnedObjectsList)
+            {
+                if (no != null && no.IsSpawned && no.TryGetComponent<VesselController>(out _))
+                    staleVessels.Add(no);
+            }
+
+            foreach (var no in staleVessels)
+                no.Despawn(true);
+
+            if (staleVessels.Count > 0)
+                Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] DespawnStaleVessels — despawned {staleVessels.Count} vessel(s) from previous scene</color>");
         }
 
         /// <summary>
