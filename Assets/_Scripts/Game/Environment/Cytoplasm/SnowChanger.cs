@@ -11,11 +11,8 @@ namespace CosmicShore.Game
 
         [SerializeField] GameObject snow;
 
-        [Header("Spherical Shell Boundaries")]
-        [Tooltip("Inner radius — shards spawn outside this (the nucleus boundary)")]
-        [SerializeField] float nucleusRadius = 30f;
-        [Tooltip("Outer radius — shards spawn inside this (the membrane boundary)")]
-        [SerializeField] float membraneRadius = 200f;
+        float nucleusRadius;
+        float membraneRadius;
 
         [Header("Shard Density")]
         [Tooltip("Approximate spacing between shards — lower values produce more shards")]
@@ -44,6 +41,12 @@ namespace CosmicShore.Game
         {
             if (!cellData.TryGetLocalCrystal(out Crystal crystal))
                 return;
+
+            if (cellData.Cell != null)
+            {
+                nucleusRadius = cellData.Cell.NucleusRadius;
+                membraneRadius = cellData.Cell.MembraneRadius;
+            }
 
             float innerR = nucleusRadius;
             float outerR = membraneRadius;
