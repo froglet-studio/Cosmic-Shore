@@ -82,22 +82,22 @@ namespace CosmicShore.Game.Analytics
                 float cloudBest = 0f;
 
                 if (mode == GameModes.HexRace)
-                    cloudBest = _cachedProfile.MultiHexStats.BestMultiplayerRaceTimes.GetValueOrDefault(key, 0f);
+                    _cachedProfile.MultiHexStats.BestMultiplayerRaceTimes.TryGetValue(key, out cloudBest);
                 else if (mode == GameModes.MultiplayerJoust)
-                    cloudBest = _cachedProfile.JoustStats.BestRaceTimes.GetValueOrDefault(key, 0f);
+                    _cachedProfile.JoustStats.BestRaceTimes.TryGetValue(key, out cloudBest);
                 
                 if (cloudBest <= 0.001f) return currentSessionScore;
                 return currentSessionScore >= 10000f ? cloudBest : Mathf.Min(cloudBest, currentSessionScore);
             }
             else if (mode == GameModes.WildlifeBlitz)
             {
-                int cloudBest = _cachedProfile.BlitzStats.HighScores.GetValueOrDefault(key, 0);
-                return Mathf.Max(cloudBest, currentSessionScore);
+                _cachedProfile.BlitzStats.HighScores.TryGetValue(key, out int blitzBest);
+                return Mathf.Max(blitzBest, currentSessionScore);
             }
             else if (mode == GameModes.MultiplayerCrystalCapture)
             {
-                int cloudBest = _cachedProfile.CrystalCaptureStats.HighScores.GetValueOrDefault(key, 0);
-                return Mathf.Max(cloudBest, currentSessionScore);
+                _cachedProfile.CrystalCaptureStats.HighScores.TryGetValue(key, out int ccBest);
+                return Mathf.Max(ccBest, currentSessionScore);
             }
 
             return currentSessionScore;
@@ -200,7 +200,8 @@ namespace CosmicShore.Game.Analytics
                         $"stolen={squirrel.PrismsStolen}, cleanStreak={squirrel.MaxCleanStreak}");
                     stats.IncrementCounter("JoustsWon", squirrel.JoustsWon);
                     stats.IncrementCounter("PrismsStolen", squirrel.PrismsStolen);
-                    if (squirrel.MaxCleanStreak > stats.Counters.GetValueOrDefault("BestCleanStreak", 0))
+                    stats.Counters.TryGetValue("BestCleanStreak", out int prevStreak);
+                    if (squirrel.MaxCleanStreak > prevStreak)
                         stats.Counters["BestCleanStreak"] = squirrel.MaxCleanStreak;
                     break;
                 default:
