@@ -44,6 +44,10 @@ namespace CosmicShore.Gameplay
                  "Set to false for Menu_Main so the host persists across scene transitions.")]
         [SerializeField] protected bool shutdownNetworkOnDespawn = true;
 
+        [Header("Spawn Points")]
+        [Tooltip("Scene-placed spawn transforms. If set, overrides GameDataSO.SpawnPoses on network spawn.")]
+        [SerializeField] protected Transform[] playerSpawnPoints;
+
         [Header("Timing")]
         [Tooltip("Delay in ms after OnPlayerNetworkSpawned before reading NetworkVariables.")]
         [SerializeField] protected int preSpawnDelayMs = 200;
@@ -90,6 +94,10 @@ namespace CosmicShore.Gameplay
             }
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
+
+            if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
+                gameData.SetSpawnPositions(playerSpawnPoints);
+
             _cts = new CancellationTokenSource();
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
 
