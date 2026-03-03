@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Views;
+using CosmicShore.Game.Progression;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Soap;
 using Obvious.Soap;
@@ -58,6 +60,9 @@ namespace CosmicShore.App.UI.Modals
         [Tooltip("Optional icon in the game-detail view.")]
         [SerializeField] private Image iconInGameDetailView;
 
+        /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
+        public event Action<int> OnLockedIntensityClicked;
+
         // Runtime state
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
@@ -78,7 +83,10 @@ namespace CosmicShore.App.UI.Modals
         void OnEnable()
         {
             foreach (var intensityButton in intensityButtons)
+            {
                 intensityButton.OnSelect += HandleIntensitySelected;
+                intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
+            }
 
             foreach (var playerCountButton in playerCountButtons)
                 playerCountButton.OnSelect += HandlePlayerCountSelected;
@@ -90,7 +98,10 @@ namespace CosmicShore.App.UI.Modals
         void OnDisable()
         {
             foreach (var intensityButton in intensityButtons)
+            {
                 intensityButton.OnSelect -= HandleIntensitySelected;
+                intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
+            }
 
             foreach (var playerCountButton in playerCountButtons)
                 playerCountButton.OnSelect -= HandlePlayerCountSelected;
@@ -130,7 +141,13 @@ namespace CosmicShore.App.UI.Modals
 
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
-            config.Intensity   = game.MinIntensity;
+            // Clamp default intensity to what the player has actually unlocked
+            var progressionService = GameModeProgressionService.Instance;
+            int maxUnlocked = progressionService != null
+                ? progressionService.GetMaxUnlockedIntensity(game.Mode)
+                : game.MaxIntensity;
+
+            config.Intensity   = Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
             config.PlayerCount = game.MinPlayers;
 
             SyncGameDataConfig();
@@ -165,6 +182,8 @@ namespace CosmicShore.App.UI.Modals
 
         void InitializeScreen1Controls(SO_ArcadeGame game)
         {
+            var progressionService = GameModeProgressionService.Instance;
+
             for (int i = 0; i < intensityButtons.Count; i++)
             {
                 var button = intensityButtons[i];
@@ -175,7 +194,15 @@ namespace CosmicShore.App.UI.Modals
 
                 bool active = level >= game.MinIntensity && level <= game.MaxIntensity;
                 button.SetActive(active);
-                button.SetSelected(level == config.Intensity);
+
+                // Lock intensity 3 and 4 if the player hasn't unlocked them yet
+                if (active && progressionService != null)
+                {
+                    bool unlocked = progressionService.IsIntensityUnlocked(game.Mode, level);
+                    button.SetLocked(!unlocked);
+                }
+
+                button.SetSelected(active && level == config.Intensity);
             }
 
             // Player count
@@ -305,6 +332,11 @@ namespace CosmicShore.App.UI.Modals
 
             SyncGameDataConfig();
             RaiseConfigChanged();
+        }
+
+        void HandleLockedIntensitySelected(int intensity)
+        {
+            OnLockedIntensityClicked?.Invoke(intensity);
         }
 
         void HandleConfigChangedExternal()

@@ -32,6 +32,19 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public Dictionary<string, float> BestStats = new();
 
+        /// <summary>
+        /// Per-mode highest unlocked intensity level.
+        /// Key = GameModes enum name, Value = max intensity the player can play (2, 3, or 4).
+        /// Defaults to 2 when a mode is first unlocked (intensity 1 and 2 available).
+        /// </summary>
+        public Dictionary<string, int> MaxUnlockedIntensity = new();
+
+        /// <summary>
+        /// Play counts per mode and intensity level for intensity unlock progression.
+        /// Key = "{ModeName}:{intensity}", Value = number of games completed at that intensity.
+        /// </summary>
+        public Dictionary<string, int> IntensityPlayCounts = new();
+
         public bool IsUnlocked(string modeName)
         {
             return UnlockedModes.Contains(modeName);
@@ -66,6 +79,52 @@ namespace CosmicShore.Game.Progression
 
             BestStats[modeName] = value;
             return true;
+        }
+
+        // ── Intensity Progression ────────────────────────────────────────────
+
+        static string PlayCountKey(string modeName, int intensity) => $"{modeName}:{intensity}";
+
+        /// <summary>
+        /// Returns the highest intensity level the player can play for this mode.
+        /// Defaults to 2 (intensity 1 and 2 available when a mode is first unlocked).
+        /// </summary>
+        public int GetMaxUnlockedIntensity(string modeName)
+        {
+            return MaxUnlockedIntensity.TryGetValue(modeName, out var val) ? val : 2;
+        }
+
+        public void SetMaxUnlockedIntensity(string modeName, int value)
+        {
+            MaxUnlockedIntensity[modeName] = value;
+        }
+
+        /// <summary>
+        /// Returns how many games the player has completed at the given intensity for this mode.
+        /// </summary>
+        public int GetIntensityPlayCount(string modeName, int intensity)
+        {
+            return IntensityPlayCounts.TryGetValue(PlayCountKey(modeName, intensity), out var val) ? val : 0;
+        }
+
+        /// <summary>
+        /// Increments the play count for the given mode and intensity. Returns the new count.
+        /// </summary>
+        public int IncrementIntensityPlayCount(string modeName, int intensity)
+        {
+            var key = PlayCountKey(modeName, intensity);
+            IntensityPlayCounts.TryGetValue(key, out var count);
+            IntensityPlayCounts[key] = count + 1;
+            return count + 1;
+        }
+
+        /// <summary>
+        /// Ensures the intensity tracking is initialized for a mode (sets default max to 2 if missing).
+        /// </summary>
+        public void EnsureIntensityInitialized(string modeName)
+        {
+            if (!MaxUnlockedIntensity.ContainsKey(modeName))
+                MaxUnlockedIntensity[modeName] = 2;
         }
     }
 }

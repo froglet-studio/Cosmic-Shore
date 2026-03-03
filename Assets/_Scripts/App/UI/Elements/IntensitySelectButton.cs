@@ -25,19 +25,28 @@ namespace CosmicShore
         [SerializeField] Color32 IntensityColorUnselected;
         [SerializeField] Color32 IntensityColorActive;
         [SerializeField] Color32 IntensityColorInactive;
+        [SerializeField] Color32 IntensityColorLocked;
 
         [SerializeField] private IntVariable selectedIntensityCount;
-        
+
         Sprite IntensitySpriteActive;
         Sprite IntensitySpriteInactive;
         public int Intensity { get; private set; }
         bool Selected;
+        bool _isLocked;
 
         public delegate void SelectDelegate(int intensity);
         public event SelectDelegate OnSelect;
+        public event SelectDelegate OnLockedSelect;
 
         public void Select()
         {
+            if (_isLocked)
+            {
+                OnLockedSelect?.Invoke(Intensity);
+                return;
+            }
+
             OnSelect?.Invoke(Intensity);
         }
 
@@ -71,6 +80,8 @@ namespace CosmicShore
 
         public void SetSelected(bool selected)
         {
+            if (_isLocked) return;
+
             Selected = selected;
             if (selected)
             {
@@ -90,6 +101,7 @@ namespace CosmicShore
         public void SetActive(bool active)
         {
             GetComponent<Button>().enabled = active;
+            _isLocked = false;
             if (active)
             {
                 BorderImage.color = IntensityColorActive;
@@ -102,6 +114,27 @@ namespace CosmicShore
                 IntensityImage.color = IntensityColorInactive;
                 IntensityText.color = IntensityColorInactive;
             }
+        }
+
+        /// <summary>
+        /// Sets the button to a locked state. The button remains clickable
+        /// but fires OnLockedSelect instead of OnSelect and uses locked visuals.
+        /// </summary>
+        public void SetLocked(bool locked)
+        {
+            _isLocked = locked;
+            if (!locked) return;
+
+            // Keep the button enabled so clicks fire OnLockedSelect
+            GetComponent<Button>().enabled = true;
+            Selected = false;
+
+            Color32 lockColor = IntensityColorLocked.a > 0 ? IntensityColorLocked : IntensityColorInactive;
+            BorderImage.sprite = BorderSpriteUnselected;
+            BorderImage.color = lockColor;
+            IntensityImage.sprite = IntensitySpriteInactive;
+            IntensityImage.color = lockColor;
+            IntensityText.color = lockColor;
         }
     }
 }

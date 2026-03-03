@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   GameMode: 7
   DisplayName: FREESTYLE
-  Description: Paint 5 object with accuracy 50%
+  Description: Unlock Intensity 4 to unlock next game mode
   Icon: {fileID: 21300000, guid: 88a9b4cf2dc46a74a8f85cba135a5352, type: 3}
-  TargetType: 3
-  TargetValue: 30000
+  TargetType: 6
+  TargetValue: 4
+  PlaysToUnlockIntensity3: 3
+  PlaysToUnlockIntensity4: 3
   Order: 3
   IsPlaceholder: 0

@@ -31,8 +31,17 @@ namespace CosmicShore.Models
         [Tooltip("What type of stat must be met to complete this quest")]
         public QuestTargetType TargetType;
 
-        [Tooltip("The threshold value the player must reach (e.g. 30 crystals)")]
+        [Tooltip("The threshold value the player must reach (e.g. 30 crystals, or 4 for IntensityUnlocked)")]
         public float TargetValue;
+
+        [Header("Intensity Unlock (when TargetType = IntensityUnlocked)")]
+        [Tooltip("Number of games at intensity 2 required to unlock intensity 3")]
+        [Min(1)]
+        public int PlaysToUnlockIntensity3 = 3;
+
+        [Tooltip("Number of games at intensity 3 required to unlock intensity 4")]
+        [Min(1)]
+        public int PlaysToUnlockIntensity4 = 3;
 
         [Header("Order")]
         [Tooltip("Position in the quest chain (0 = first, already unlocked)")]
@@ -72,6 +81,9 @@ namespace CosmicShore.Models
 
         /// <summary>Win a match (placement = 1st)</summary>
         WinMatch = 5,
+
+        /// <summary>Unlock intensity 4 by playing enough games at each intensity tier</summary>
+        IntensityUnlocked = 6,
 
         /// <summary>Placeholder — quest auto-completes or uses custom logic</summary>
         Placeholder = 99,
