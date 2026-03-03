@@ -181,8 +181,9 @@ namespace CosmicShore.Game
 
         #endregion
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             _boostFillTween?.Kill();
             foreach (var tween in _blockTweens.Values)
                 tween?.Kill();

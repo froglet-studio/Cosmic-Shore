@@ -17,31 +17,25 @@ namespace CosmicShore.Game.UI
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
         private CanvasGroup _canvasGroup;
-        private RectTransform _rect;
         private Tween _punchTween;
         private Tween _rollTween;
-        private Tween _entranceTween;
+        private Sequence _entranceSeq;
+        private Tween _colorFlashTween;
         private int _displayedScore;
-
-        // Fallback defaults when no SO is assigned
-        private const float DefaultEntranceDuration = 0.3f;
-        private const float DefaultEntranceSlideOffset = 80f;
-        private const float DefaultPunchScale = 1.15f;
-        private const float DefaultPunchDuration = 0.2f;
-        private const float DefaultRollDuration = 0.35f;
+        private Color _baseTextColor;
 
         private void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
             if (!_canvasGroup) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
-            _rect = GetComponent<RectTransform>();
         }
 
-        public void Setup(string playerName, int initialCrystals, Color domainColor, bool isLocalPlayer)
+        public void Setup(string playerName, int initialCrystals, Color domainColor, bool isLocalPlayer, int staggerIndex = 0)
         {
             playerNameText.text = playerName;
             _displayedScore = initialCrystals;
             playerScoreText.text = $"{initialCrystals}";
+            _baseTextColor = playerScoreText.color;
 
             if (domainIndicatorImage)
             {
@@ -49,7 +43,7 @@ namespace CosmicShore.Game.UI
                 domainIndicatorImage.color = domainColor;
             }
 
-            PlayEntrance();
+            PlayEntrance(staggerIndex);
         }
 
         public void SetAvatar(Sprite avatarSprite)
@@ -79,23 +73,26 @@ namespace CosmicShore.Game.UI
 
             PlayCounterRoll(from, crystalCount);
             PlayScorePunch();
+            PlayColorFlash(crystalCount > from);
         }
 
-        private void PlayEntrance()
+        private void PlayEntrance(int staggerIndex)
         {
-            _entranceTween?.Kill();
+            _entranceSeq?.Kill();
 
-            float duration = animSettings ? animSettings.cardEntranceDuration : DefaultEntranceDuration;
-            float offset = animSettings ? animSettings.cardEntranceSlideOffset : DefaultEntranceSlideOffset;
-            var ease = animSettings ? animSettings.cardEntranceEase : Ease.OutCubic;
+            float duration = animSettings ? animSettings.cardEntranceDuration : 0.3f;
+            float startScale = animSettings ? animSettings.cardEntranceStartScale : 0.6f;
+            var ease = animSettings ? animSettings.cardEntranceEase : Ease.OutBack;
+            float stagger = animSettings ? animSettings.cardEntranceStagger : 0.08f;
             bool unscaled = animSettings == null || animSettings.useUnscaledTime;
 
+            // Scale+fade entrance — does NOT touch anchoredPosition, so LayoutGroups work
             _canvasGroup.alpha = 0f;
-            var startPos = _rect.anchoredPosition;
-            _rect.anchoredPosition = new Vector2(startPos.x + offset, startPos.y);
+            transform.localScale = Vector3.one * startScale;
 
-            _entranceTween = DOTween.Sequence()
-                .Join(_rect.DOAnchorPos(startPos, duration).SetEase(ease))
+            _entranceSeq = DOTween.Sequence()
+                .AppendInterval(stagger * staggerIndex)
+                .Append(transform.DOScale(1f, duration).SetEase(ease))
                 .Join(_canvasGroup.DOFade(1f, duration))
                 .SetUpdate(unscaled);
         }
@@ -104,8 +101,8 @@ namespace CosmicShore.Game.UI
         {
             _punchTween?.Kill();
 
-            float scale = animSettings ? animSettings.scorePunchScale : DefaultPunchScale;
-            float duration = animSettings ? animSettings.scorePunchDuration : DefaultPunchDuration;
+            float scale = animSettings ? animSettings.scorePunchScale : 1.15f;
+            float duration = animSettings ? animSettings.scorePunchDuration : 0.2f;
             var ease = animSettings ? animSettings.scorePunchEase : Ease.OutBack;
             bool unscaled = animSettings == null || animSettings.useUnscaledTime;
 
@@ -127,7 +124,7 @@ namespace CosmicShore.Game.UI
         {
             _rollTween?.Kill();
 
-            float duration = animSettings ? animSettings.counterRollDuration : DefaultRollDuration;
+            float duration = animSettings ? animSettings.counterRollDuration : 0.35f;
             var ease = animSettings ? animSettings.counterRollEase : Ease.OutQuad;
             bool unscaled = animSettings == null || animSettings.useUnscaledTime;
 
@@ -138,11 +135,32 @@ namespace CosmicShore.Game.UI
                 .SetUpdate(unscaled);
         }
 
+        private void PlayColorFlash(bool isGain)
+        {
+            _colorFlashTween?.Kill();
+
+            var flashColor = isGain
+                ? (animSettings ? animSettings.scoreGainColor : new Color(0.2f, 1f, 0.4f, 1f))
+                : (animSettings ? animSettings.scoreLossColor : new Color(1f, 0.3f, 0.2f, 1f));
+            float duration = animSettings ? animSettings.scoreColorFlashDuration : 0.4f;
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+
+            playerScoreText.color = flashColor;
+            _colorFlashTween = DOTween.To(
+                    () => playerScoreText.color,
+                    c => playerScoreText.color = c,
+                    _baseTextColor,
+                    duration)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(unscaled);
+        }
+
         private void OnDestroy()
         {
             _punchTween?.Kill();
             _rollTween?.Kill();
-            _entranceTween?.Kill();
+            _entranceSeq?.Kill();
+            _colorFlashTween?.Kill();
         }
     }
 }
