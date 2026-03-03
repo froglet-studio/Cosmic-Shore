@@ -17,12 +17,14 @@ MonoBehaviour:
   _guid: 875bcedfcf3335047b416297732cba15
   _saveGuid: 0
   _value:
+    UserName: {fileID: 11400000, guid: a077fabf02c81cb4cb6f612c403ee280, type: 2}
     OnSignedIn: {fileID: 11400000, guid: ff56ac9aa94c57841911b9d3efbd2d96, type: 2}
     OnSignedOut: {fileID: 11400000, guid: 726b778a8f95fa9499d9e44e3b09d120, type: 2}
     OnSignInFailed: {fileID: 11400000, guid: 24b835d6e5be94a41bfefc2e35dd7939, type: 2}
   _debugLogEnabled: 0
   _saved: 0
   _defaultValue:
+    UserName: {fileID: 0}
     OnSignedIn: {fileID: 0}
     OnSignedOut: {fileID: 0}
     OnSignInFailed: {fileID: 0}
