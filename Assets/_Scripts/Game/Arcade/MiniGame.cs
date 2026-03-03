@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] bool EnableTrails = true;
         [FormerlySerializedAs("DefaultPlayerShipType")] [SerializeField] VesselClassType defaultPlayerVesselType = VesselClassType.Dolphin;
         [FormerlySerializedAs("DefaultPlayerCaptain")]
-        [SerializeField] SO_Ship DefaultPlayerShip;
+        [SerializeField] SO_Vessel DefaultPlayerShip;
 
         protected Button ReadyButton;
         // protected GameObject EndGameScreen;

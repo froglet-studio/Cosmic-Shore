@@ -25,7 +25,7 @@ namespace CosmicShore
             }
         }
 
-        public void SetShip(SO_Ship ship)
+        public void SetShip(SO_Vessel ship)
         {
             // Captain system removed from vessels — Port/squad screen is inactive.
         }
@@ -45,9 +45,9 @@ namespace CosmicShore
             CSDebug.Log($"UpdateView:{captain.Name}");
             if (CaptainName != null) CaptainName.text = captain.Name;
             CaptainImage.sprite = captain.Image;
-            ShipImage.sprite = captain.Ship.SquadImage;
+            ShipImage.sprite = captain.Vessel.SquadImage;
 
-            if (ShowShipName) ShipName.text = captain.Ship.Name;
+            if (ShowShipName) ShipName.text = captain.Vessel.Name;
         }
     }
 }

@@ -8,11 +8,19 @@ using UnityEngine.Video;
 
 [CreateAssetMenu(fileName = "New Vessel", menuName = "CosmicShore/Vessel/Vessel", order = 1)]
 [System.Serializable]
-public class SO_Ship : ScriptableObject
+public class SO_Vessel : ScriptableObject
 {
+    [Header("Vessel Identity")]
     [SerializeField] public VesselClassType Class;
     [SerializeField] public string Name;
     [SerializeField] public string Description;
+
+    [Header("Element Configuration")]
+    [SerializeField] public Element PrimaryElement;
+    [SerializeField] public SO_Element Element;
+    [SerializeField] public ResourceCollection InitialResourceLevels;
+
+    [Header("Visuals")]
     [FormerlySerializedAs("SelectedIcon")]
     [SerializeField] public Sprite IconActive;
     [FormerlySerializedAs("Icon")]
@@ -23,10 +31,15 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public Sprite CardSilohoutteActive;
     [FormerlySerializedAs("CardSilohoutte")]
     [SerializeField] public Sprite CardSilohoutteInactive;
-    [SerializeField] public List<SO_ShipAbility> Abilities;
+
+    [Header("Abilities & Games")]
+    [FormerlySerializedAs("Abilities")]
+    [SerializeField] public List<SO_VesselAbility> Abilities;
     [FormerlySerializedAs("TrainingGames")]
     [SerializeField] public List<SO_ArcadeGame> Games;
     [SerializeField] public List<SO_TrainingGame> TrainingGames;
+
+    [Header("Gameplay Parameters")]
     [SerializeField] public GameplayParameter gameplayParameter1 = new GameplayParameter("Casual", "Challenging", .5f);
     [SerializeField] public GameplayParameter gameplayParameter2 = new GameplayParameter("Relaxing", "Thrilling", .5f);
     [SerializeField] public GameplayParameter gameplayParameter3 = new GameplayParameter("Solo", "Social", .5f);

@@ -19,18 +19,18 @@ namespace CosmicShore.App.UI.Elements.Hangar
         [SerializeField] private GameObject lockOverlay;
         [SerializeField] private Button cardButton;
 
-        SO_Ship _ship;
+        SO_Vessel _ship;
         HangarScreen _hangarScreen;
         CanvasGroup _canvasGroup;
 
-        public SO_Ship Ship => _ship;
+        public SO_Vessel Ship => _ship;
 
         void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
         }
 
-        public void Configure(SO_Ship ship, HangarScreen hangarScreen)
+        public void Configure(SO_Vessel ship, HangarScreen hangarScreen)
         {
             _ship = ship;
             _hangarScreen = hangarScreen;

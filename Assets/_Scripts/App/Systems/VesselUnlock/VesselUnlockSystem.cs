@@ -7,7 +7,7 @@ namespace CosmicShore.App.Systems.VesselUnlock
 {
     /// <summary>
     /// Manages vessel unlock state. Persists to PlayerPrefs.
-    /// Vessels marked UnlockedByDefault in their SO_Ship are unlocked on first run.
+    /// Vessels marked UnlockedByDefault in their SO_Vessel are unlocked on first run.
     /// </summary>
     public static class VesselUnlockSystem
     {
@@ -24,16 +24,16 @@ namespace CosmicShore.App.Systems.VesselUnlock
         /// Initializes the system using the given ship list to seed default unlocks.
         /// Safe to call multiple times — only runs once per app session.
         /// </summary>
-        public static void Initialize(SO_ShipList shipList = null)
+        public static void Initialize(SO_VesselList shipList = null)
         {
             if (_initialized) return;
 
             _unlockedCache.Clear();
 
-            // On first-ever run, seed defaults from SO_Ship.UnlockedByDefault
+            // On first-ever run, seed defaults from SO_Vessel.UnlockedByDefault
             if (!PlayerPrefs.HasKey(InitializedKey) && shipList != null)
             {
-                foreach (var ship in shipList.ShipList)
+                foreach (var ship in shipList.VesselList)
                 {
                     if (ship == null) continue;
                     if (ship.UnlockedByDefault)
@@ -66,9 +66,9 @@ namespace CosmicShore.App.Systems.VesselUnlock
         }
 
         /// <summary>
-        /// Returns true if the given SO_Ship is unlocked.
+        /// Returns true if the given SO_Vessel is unlocked.
         /// </summary>
-        public static bool IsUnlocked(SO_Ship ship)
+        public static bool IsUnlocked(SO_Vessel ship)
         {
             if (ship == null) return false;
             return IsUnlocked(ship.Class);
@@ -148,7 +148,7 @@ namespace CosmicShore.App.Systems.VesselUnlock
         /// <summary>
         /// Attempts to purchase and unlock a vessel using its configured cost.
         /// </summary>
-        public static bool TryPurchaseVessel(SO_Ship ship)
+        public static bool TryPurchaseVessel(SO_Vessel ship)
         {
             if (ship == null) return false;
             return TryPurchaseVessel(ship.Class, ship.UnlockCost);
@@ -178,7 +178,7 @@ namespace CosmicShore.App.Systems.VesselUnlock
         /// <summary>
         /// Resets unlock state and re-seeds from the given ship list. Only for testing/debug.
         /// </summary>
-        public static void ResetAllUnlocks(SO_ShipList shipList = null)
+        public static void ResetAllUnlocks(SO_VesselList shipList = null)
         {
             PlayerPrefs.DeleteKey(InitializedKey);
             foreach (VesselClassType vesselClass in Enum.GetValues(typeof(VesselClassType)))

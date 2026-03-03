@@ -144,7 +144,7 @@ namespace CosmicShore.App.UI.Views
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
 
-        public void SelectShip(SO_Ship selectedShip)
+        public void SelectShip(SO_Vessel selectedShip)
         {
             CSDebug.Log($"SelectShip: {selectedShip.Name}");
 

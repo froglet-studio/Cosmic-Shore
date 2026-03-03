@@ -17,7 +17,7 @@ namespace CosmicShore.App.UI.Screens
     public class HangarScreen : MonoBehaviour
     {
         [Header("Data")]
-        [SerializeField] SO_ShipList ShipList;
+        [SerializeField] SO_VesselList ShipList;
 
         [Header("Grid Selection Panel")]
         [SerializeField] GameObject gridPanel;
@@ -52,8 +52,8 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField] TMPro.TMP_Text SelectedGameDescription;
         [SerializeField] GameObject SelectedGamePreviewWindow;
 
-        List<SO_Ship> Ships;
-        SO_Ship SelectedShip;
+        List<SO_Vessel> Ships;
+        SO_Vessel SelectedShip;
         readonly List<HangarVesselGridCard> _gridCards = new();
         Coroutine _gridAnimCoroutine;
 
@@ -69,7 +69,7 @@ namespace CosmicShore.App.UI.Screens
 
         public void LoadView()
         {
-            Ships = ShipList.ShipList;
+            Ships = ShipList.VesselList;
             VesselUnlockSystem.Initialize(ShipList);
 
             // New grid-based flow
@@ -167,7 +167,7 @@ namespace CosmicShore.App.UI.Screens
         /// Called by HangarVesselGridCard when a vessel is tapped in the grid.
         /// Transitions to the detail panel for the selected vessel.
         /// </summary>
-        public void SelectVesselForDetail(SO_Ship ship)
+        public void SelectVesselForDetail(SO_Vessel ship)
         {
             if (ship == null) return;
 
@@ -259,7 +259,7 @@ namespace CosmicShore.App.UI.Screens
             UpdateLegacyViews(selectedShip);
         }
 
-        void UpdateLegacyViews(SO_Ship ship)
+        void UpdateLegacyViews(SO_Vessel ship)
         {
             if (!ship) return;
 
@@ -271,7 +271,7 @@ namespace CosmicShore.App.UI.Screens
             if (AbilitiesView && ship.Abilities != null)
             {
                 foreach (var ability in ship.Abilities)
-                    ability.Ship = ship;
+                    ability.Vessel = ship;
                 AbilitiesView.AssignModels(ship.Abilities.ConvertAll(x => (ScriptableObject)x));
             }
         }

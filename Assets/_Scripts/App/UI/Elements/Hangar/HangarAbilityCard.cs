@@ -13,7 +13,7 @@ namespace CosmicShore.App.UI.Elements.Hangar
         [SerializeField] private TMP_Text abilityName;
         [SerializeField] private TMP_Text abilityDescription;
 
-        public void Configure(SO_ShipAbility ability)
+        public void Configure(SO_VesselAbility ability)
         {
             if (ability == null) return;
 

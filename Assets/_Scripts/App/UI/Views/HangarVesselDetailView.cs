@@ -11,7 +11,7 @@ namespace CosmicShore.App.UI.Views
     /// <summary>
     /// Detail view for a selected vessel in the Hangar.
     /// Shows abilities, overview, gameplay parameters, and unlock button.
-    /// Reads unlock cost from the SO_Ship asset directly.
+    /// Reads unlock cost from the SO_Vessel asset directly.
     /// </summary>
     public class HangarVesselDetailView : MonoBehaviour
     {
@@ -39,9 +39,9 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private TMP_Text selectButtonText;
         [SerializeField] private Button backButton;
 
-        SO_Ship _currentShip;
+        SO_Vessel _currentShip;
 
-        public SO_Ship CurrentShip => _currentShip;
+        public SO_Vessel CurrentShip => _currentShip;
 
         public System.Action OnBackPressed;
 
@@ -55,7 +55,7 @@ namespace CosmicShore.App.UI.Views
             VesselUnlockSystem.OnUnlockStateChanged -= RefreshLockState;
         }
 
-        public void SetVessel(SO_Ship ship)
+        public void SetVessel(SO_Vessel ship)
         {
             if (ship == null) return;
 
@@ -78,7 +78,7 @@ namespace CosmicShore.App.UI.Views
             RefreshLockState();
         }
 
-        void PopulateAbilities(SO_Ship ship)
+        void PopulateAbilities(SO_Vessel ship)
         {
             if (!abilitiesContainer) return;
 
@@ -91,7 +91,7 @@ namespace CosmicShore.App.UI.Views
             foreach (var ability in ship.Abilities)
             {
                 if (ability == null) continue;
-                ability.Ship = ship;
+                ability.Vessel = ship;
 
                 if (abilityCardPrefab)
                 {
@@ -101,7 +101,7 @@ namespace CosmicShore.App.UI.Views
             }
         }
 
-        void PopulateGameplayParameters(SO_Ship ship)
+        void PopulateGameplayParameters(SO_Vessel ship)
         {
             if (!gameplayParameterDisplayGroup) return;
 
