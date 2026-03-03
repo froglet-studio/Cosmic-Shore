@@ -181,7 +181,7 @@ namespace CosmicShore.Gameplay
 
             // Assign domain if not already set.
             // Persistent players get their domain in PrepareForNewScene() (called by FindUnprocessedPlayerByOwnerClientId).
-            // AI players get their domain in SpawnAIs() and are marked as processed (never reach here).
+            // AI players get their domain in SpawnAIPlayerObjects() (already set before reaching here).
             // New human players joining mid-game need assignment now.
             if (player.NetDomain.Value is Domains.Unassigned or Domains.None)
                 player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);

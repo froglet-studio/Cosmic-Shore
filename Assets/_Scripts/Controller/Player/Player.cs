@@ -141,12 +141,12 @@ namespace CosmicShore.Gameplay
 
             // --- Server writes (server-perm vars) ---
             // Domain is NOT assigned here — it is the spawner's responsibility:
-            //   AI players:        SpawnAIs() in ServerPlayerVesselInitializerWithAI
+            //   AI players:        SpawnAIPlayerObjects() in ServerPlayerVesselInitializerWithAI
             //   Persistent humans: PrepareForNewScene() via FindUnprocessedPlayerByOwnerClientId
             //   New humans:        HandlePlayerNetworkSpawnedAsync() fallback in ServerPlayerVesselInitializer
             // Assigning here caused double-consumption of the DomainAssigner pool for AI players,
-            // because Player.OnNetworkSpawn fires synchronously during Spawn() inside SpawnAIs(),
-            // wasting a pool slot that SpawnAIs then overwrites.
+            // because Player.OnNetworkSpawn fires synchronously during Spawn() inside SpawnAIPlayerObjects(),
+            // wasting a pool slot that SpawnAIPlayerObjects then overwrites.
             if (IsServer)
             {
                 NetIsAI.Value = IsInitializedAsAI;
