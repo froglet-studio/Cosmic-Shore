@@ -95,8 +95,7 @@ namespace CosmicShore.Utility.Trailer
                 frameRate = new MediaRational(config.targetFPS),
                 width = (uint)w,
                 height = (uint)h,
-                includeAlpha = false,
-                bitRateMode = VideoBitrateMode.High
+                includeAlpha = false
             };
             _encoder = new MediaEncoder(_clipFilePath, videoAttr);
 #endif
