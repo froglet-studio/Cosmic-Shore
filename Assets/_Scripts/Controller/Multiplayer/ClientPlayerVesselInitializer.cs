@@ -87,6 +87,15 @@ namespace CosmicShore.Gameplay
                     continue;
                 if (!player.IsSpawned) continue;
 
+                // Clear stale vessel reference from the previous scene.
+                // Vessels have destroyWithScene=true and are already destroyed,
+                // but the IVessel interface reference persists (Unity's null
+                // override doesn't apply to interfaces). Without clearing,
+                // ProcessPendingPairs() skips the pair thinking it's already
+                // initialized.
+                if (player.Vessel is UnityEngine.Object obj && !obj)
+                    player.ChangeVessel(null);
+
                 if (!gameData.Players.Contains(player))
                     gameData.Players.Add(player);
 
@@ -213,8 +222,13 @@ namespace CosmicShore.Gameplay
                 if (!gameData.TryGetVesselByNetworkObjectId(vId, out var vessel))
                     continue;
 
-                // Already initialized (e.g., duplicate event)
-                if (player.Vessel != null)
+                // Already initialized (e.g., duplicate event).
+                // Use Unity-aware null check: IVessel may reference a destroyed
+                // MonoBehaviour whose C# reference is non-null but Unity considers dead.
+                bool hasLiveVessel = player.Vessel is UnityEngine.Object vo
+                    ? (bool)vo
+                    : player.Vessel != null;
+                if (hasLiveVessel)
                 {
                     _pendingPairs.RemoveAt(i);
                     continue;

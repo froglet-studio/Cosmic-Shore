@@ -21,7 +21,6 @@ namespace CosmicShore.Gameplay
 
             Assert.AreNotEqual(Domains.None, domain);
             Assert.AreNotEqual(Domains.Unassigned, domain);
-            Assert.AreNotEqual(Domains.Blue, domain);
         }
 
         [Test]
@@ -29,8 +28,8 @@ namespace CosmicShore.Gameplay
         {
             var assigned = new HashSet<Domains>();
 
-            // There are 3 valid domains (Jade, Ruby, Gold) after excluding None, Unassigned, Blue.
-            for (int i = 0; i < 3; i++)
+            // There are 4 valid domains (Jade, Ruby, Blue, Gold) after excluding None and Unassigned.
+            for (int i = 0; i < 4; i++)
             {
                 var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
                 Assert.IsTrue(assigned.Add(domain),
@@ -82,16 +81,21 @@ namespace CosmicShore.Gameplay
         }
 
         [Test]
-        public void GetDomainsByGameModes_NeverReturnsBlue()
+        public void GetDomainsByGameModes_FourPlayers_AllGetUniqueDomains()
         {
             DomainAssigner.Initialize();
 
-            for (int i = 0; i < 3; i++)
+            var assigned = new HashSet<Domains>();
+            for (int i = 0; i < 4; i++)
             {
-                var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
-                Assert.AreNotEqual(Domains.Blue, domain,
-                    "Blue domain should be excluded from the assignment pool.");
+                var domain = DomainAssigner.GetDomainsByGameModes(GameModes.HexRace);
+                Assert.AreNotEqual(Domains.Unassigned, domain,
+                    $"Player {i + 1} of 4 got Unassigned — pool exhausted too early.");
+                Assert.IsTrue(assigned.Add(domain),
+                    $"Player {i + 1} got duplicate domain {domain}.");
             }
+
+            Assert.AreEqual(4, assigned.Count, "4-player game should use all 4 domains.");
         }
 
         [Test]

@@ -1,5 +1,4 @@
 using System.Linq;
-using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -54,9 +53,11 @@ namespace CosmicShore.Gameplay
 
             if (IsServer)
             {
-                Debug.Log("<color=#00CED1>[FLOW-7HR] [HexRaceController] Server: SpawnTrackEarly() starting...</color>");
-                // Server generates the seed after a short delay for intensity sync
-                SpawnTrackEarly().Forget();
+                // Spawn track immediately — intensity was synced via
+                // SyncGameConfigToClients_ClientRpc before scene load.
+                int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+                Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] Server: setting track seed={generatedSeed}</color>");
+                _netTrackSeed.Value = generatedSeed;
             }
             else if (_netTrackSeed.Value != 0)
             {
@@ -79,20 +80,6 @@ namespace CosmicShore.Gameplay
         {
             if (newValue != 0)
                 SpawnTrackLocally(newValue);
-        }
-
-        /// <summary>
-        /// Generates and stores the track seed shortly after network spawn,
-        /// so the track is visible before players click ready.
-        /// </summary>
-        private async UniTaskVoid SpawnTrackEarly()
-        {
-            // Small delay to ensure all clients have joined and intensity is synced
-            await UniTask.Delay(1500, DelayType.UnscaledDeltaTime);
-            if (!IsServer || _trackSpawned) return;
-
-            int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
-            _netTrackSeed.Value = generatedSeed;
         }
 
         protected override void OnCountdownTimerEnded()
@@ -272,7 +259,8 @@ namespace CosmicShore.Gameplay
                 _netTrackSeed.Value = 0;
 
                 // Re-generate the track for the replay
-                SpawnTrackEarly().Forget();
+                int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+                _netTrackSeed.Value = generatedSeed;
             }
 
             RaiseToggleReadyButtonEvent(true);

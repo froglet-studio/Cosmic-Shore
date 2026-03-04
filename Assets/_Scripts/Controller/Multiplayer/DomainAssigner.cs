@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
         private static List<Domains> availableDomains = new ();
 
         /// <summary>
-        /// Picks a unique random team from all Domains (excluding None, Unassigned, Blue).
+        /// Picks a unique random team from all Domains (excluding None and Unassigned).
         /// If all are already assigned, logs an error and returns Domains.Unassigned.
         /// </summary>
         static Domains GetAvailableDomain()
@@ -57,7 +57,7 @@ namespace CosmicShore.Gameplay
             // Get all valid teams (excluding reserved ones)
             availableDomains = Enum.GetValues(typeof(Domains))
                 .Cast<Domains>()
-                .Where(t => t is not (Domains.None or Domains.Unassigned or Domains.Blue))
+                .Where(t => t is not (Domains.None or Domains.Unassigned))
                 .ToList();
             CSDebug.Log("[DomainAssigner] 🔄 Cleared assigned domains cache.");
         }

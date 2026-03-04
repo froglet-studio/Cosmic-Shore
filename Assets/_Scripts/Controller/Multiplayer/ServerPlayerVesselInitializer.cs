@@ -55,6 +55,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Delay in ms after vessel spawn before notifying clients.")]
         [SerializeField] protected int postSpawnDelayMs = 200;
 
+        [Tooltip("Max retries when IsReadyToSpawn fails after initial delay.")]
+        [SerializeField] protected int maxSpawnRetries = 5;
+
+        [Tooltip("Base delay in ms between spawn readiness retries (doubles each attempt).")]
+        [SerializeField] protected int retryBaseDelayMs = 200;
+
         NetcodeHooks _netcodeHooks;
         protected CancellationTokenSource _cts;
 
@@ -111,9 +117,12 @@ namespace CosmicShore.Gameplay
         {
             // Stage 1: Check gameData.Players (catches players spawned in THIS scene,
             // e.g. AI players whose OnNetworkSpawn() already added them).
+            // Skip already-processed players to avoid redundant async tasks
+            // (AI players share the host's OwnerClientId=0).
             foreach (var p in gameData.Players)
             {
-                if (p is Player netPlayer && netPlayer.IsSpawned)
+                if (p is Player netPlayer && netPlayer.IsSpawned
+                    && !_processedPlayers.Contains(netPlayer.NetworkObjectId))
                     HandlePlayerNetworkSpawned(netPlayer.OwnerClientId);
             }
 
@@ -192,12 +201,28 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Retry with exponential backoff if NetworkVariables haven't synced yet.
+            // On slow connections, 200ms may be insufficient for name/vesselType replication.
             if (!IsReadyToSpawn(player))
             {
-                Debug.LogError($"<color=#FF0000>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready! VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'</color>");
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player {ownerClientId} not ready after delay. " +
-                                 $"VesselType={player.NetDefaultVesselType.Value}, Name={player.NetName.Value}");
-                return;
+                int delayMs = retryBaseDelayMs;
+                for (int attempt = 1; attempt <= maxSpawnRetries; attempt++)
+                {
+                    Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready (attempt {attempt}/{maxSpawnRetries}), retrying in {delayMs}ms. VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'</color>");
+                    await UniTask.Delay(delayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+
+                    if (IsReadyToSpawn(player))
+                        break;
+
+                    delayMs = Mathf.Min(delayMs * 2, 2000);
+                }
+
+                if (!IsReadyToSpawn(player))
+                {
+                    Debug.LogError($"<color=#FF0000>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready after {maxSpawnRetries} retries! VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'</color>");
+                    _processedPlayers.Remove(player.NetworkObjectId);
+                    return;
+                }
             }
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");

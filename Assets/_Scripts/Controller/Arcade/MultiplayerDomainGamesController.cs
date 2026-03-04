@@ -43,6 +43,12 @@ namespace CosmicShore.Gameplay
 
         protected override void OnReadyClicked_()
         {
+            if (gameData.LocalPlayer == null)
+            {
+                Debug.LogWarning("<color=#FFA500>[DomainGamesCtrl] LocalPlayer null, ignoring ready click</color>");
+                return;
+            }
+
             RaiseToggleReadyButtonEvent(false);
             OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
         }
