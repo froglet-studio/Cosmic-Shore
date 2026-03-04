@@ -343,21 +343,19 @@ namespace CosmicShore.Game.Arcade
             var rs = GetResourceSystem(target);
             if (rs == null) return;
 
-            if (debugLogging)
-                CSDebug.Log($"[ElementalComebackSystem] OVERTAKE PENALTY applied to {playerName}! " +
-                          $"All elements slammed to {overtakePenaltyLevel * 10f:F0}");
-
-            // Fire events BEFORE slamming levels so subscribers (e.g. BeginOvertake)
-            // can prepare before the negative level changes arrive via OnElementLevelChange
-            OnPlayerOvertaken?.Invoke(playerName);
-            OnOvertakePenaltyApplied?.Invoke(playerName);
-
             // Slam all elements to penalty level (-5)
             for (int i = 0; i < AllElements.Length; i++)
                 rs.SetElementLevel(AllElements[i], overtakePenaltyLevel);
 
             // Start recovery timer
             _overtakePenaltyTimers[playerName] = 0f;
+
+            if (debugLogging)
+                CSDebug.Log($"[ElementalComebackSystem] OVERTAKE PENALTY applied to {playerName}! " +
+                          $"All elements slammed to {overtakePenaltyLevel * 10f:F0}");
+
+            OnPlayerOvertaken?.Invoke(playerName);
+            OnOvertakePenaltyApplied?.Invoke(playerName);
         }
 
         void TickOvertakeRecovery()
