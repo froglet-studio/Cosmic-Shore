@@ -42,8 +42,8 @@ namespace CosmicShore.Editor
             var shapes = new[]
             {
                 MakeTriangle(),
+                MakeKite(),
                 MakePentagon(),
-                MakeHexagon(),
                 MakeDiamond(),
             };
 
@@ -94,34 +94,32 @@ namespace CosmicShore.Editor
             },
         };
 
-        // Space = Kite/shield (5-sided, sharp top point, wide shoulders, narrower base)
-        static ShapeDef MakePentagon() => new()
+        // Space = Kite (4-sided, sharp top point, wide shoulders, long bottom point)
+        static ShapeDef MakeKite() => new()
         {
-            name = "space_pentagon",
+            name = "space_kite",
             element = Element.Space,
             vertices = new[]
             {
                 new Vector2(0.50f, 0.92f), // top point
-                new Vector2(0.92f, 0.62f), // right shoulder
-                new Vector2(0.72f, 0.08f), // bottom right
-                new Vector2(0.28f, 0.08f), // bottom left
-                new Vector2(0.08f, 0.62f), // left shoulder
+                new Vector2(0.92f, 0.58f), // right shoulder
+                new Vector2(0.50f, 0.08f), // bottom point
+                new Vector2(0.08f, 0.58f), // left shoulder
             },
         };
 
-        // Charge = Tall hexagon (short flat top/bottom, widest at middle)
-        static ShapeDef MakeHexagon() => new()
+        // Charge = Irregular pentagon (flat top, widens at middle, converges to bottom point)
+        static ShapeDef MakePentagon() => new()
         {
-            name = "charge_hexagon",
+            name = "charge_pentagon",
             element = Element.Charge,
             vertices = new[]
             {
                 new Vector2(0.30f, 0.92f), // top left
                 new Vector2(0.70f, 0.92f), // top right
-                new Vector2(0.92f, 0.50f), // right middle
-                new Vector2(0.70f, 0.08f), // bottom right
-                new Vector2(0.30f, 0.08f), // bottom left
-                new Vector2(0.08f, 0.50f), // left middle
+                new Vector2(0.92f, 0.55f), // right middle
+                new Vector2(0.50f, 0.08f), // bottom point
+                new Vector2(0.08f, 0.55f), // left middle
             },
         };
 
