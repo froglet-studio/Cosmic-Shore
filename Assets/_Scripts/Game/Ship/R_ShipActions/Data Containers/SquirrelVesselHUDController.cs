@@ -1,6 +1,6 @@
+using DG.Tweening;
 using Obvious.Soap;
 using UnityEngine;
-using System.Collections;
 
 namespace CosmicShore.Game
 {
@@ -24,8 +24,14 @@ namespace CosmicShore.Game
         [Header("Colors")]
         [SerializeField] private DomainColorPaletteSO domainColors;
 
+        [Header("Flash Durations")]
+        [SerializeField] private float joustFlashDuration = 1f;
+        [SerializeField] private float shieldFlashDuration = 1f;
+
         private IVesselStatus _vesselStatus;
         private Domains _lastSourceDomain = Domains.None;
+        private Tween _joustFlashTween;
+        private Tween _shieldFlashTween;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -74,6 +80,9 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
+            _joustFlashTween?.Kill();
+            _shieldFlashTween?.Kill();
+
             if (boostChanged != null)
                 boostChanged.OnRaised -= HandleBoostChanged;
             if (isDrifting != null)
@@ -87,7 +96,6 @@ namespace CosmicShore.Game
             if (driftEnded != null)
                 driftEnded.OnRaised -= OnDriftEnded;
         }
-
 
         private void HandleBoostChanged(BoostChangedPayload payload)
         {
@@ -136,14 +144,15 @@ namespace CosmicShore.Game
         private void HandleJoustCollision(string playerName)
         {
             if (!view) return;
-            StartCoroutine(JoustFlash());
-        }
-        private IEnumerator JoustFlash()
-        {
+
+            _joustFlashTween?.Kill();
             view.UpdateDangerIcon(true);
-            yield return new WaitForSeconds(1f);
-            view.UpdateDangerIcon(false);
+            _joustFlashTween = DOVirtual.DelayedCall(joustFlashDuration, () =>
+            {
+                if (view) view.UpdateDangerIcon(false);
+            });
         }
+
         private void PaintFromStatusFallback()
         {
             if (!view || _vesselStatus == null) return;
@@ -169,12 +178,13 @@ namespace CosmicShore.Game
             if (!view) return;
             view.UpdateDriftIcon(true, false);
         }
+
         private void UpdateDoubleDrift()
         {
             if (!view || _vesselStatus == null) return;
-
             view.UpdateDriftIcon(true, true);
         }
+
         private void OnDriftEnded()
         {
             if (!view) return;
@@ -187,13 +197,13 @@ namespace CosmicShore.Game
                 return;
 
             view.FlashCrystalSurge();
-            StartCoroutine(ShieldFlash());
-        }
-        private IEnumerator ShieldFlash()
-        {
+
+            _shieldFlashTween?.Kill();
             view.UpdateShieldColor(true);
-            yield return new WaitForSeconds(1f);
-            view.UpdateShieldColor(false);
+            _shieldFlashTween = DOVirtual.DelayedCall(shieldFlashDuration, () =>
+            {
+                if (view) view.UpdateShieldColor(false);
+            });
         }
     }
 }

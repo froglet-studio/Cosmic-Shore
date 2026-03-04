@@ -11,6 +11,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utility;
+using CosmicShore.App.UI.ToastNotification;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -106,6 +107,7 @@ namespace CosmicShore.Game.Cinematics
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
             yield return StartCoroutine(AwardCrystalReward());
+            yield return StartCoroutine(ShowIntensityUnlockSequence());
             yield return StartCoroutine(ShowQuestCompletionSequence());
 
             if (view)
@@ -311,6 +313,34 @@ namespace CosmicShore.Game.Cinematics
                 }
 
                 yield return new WaitForSeconds(1.5f);
+            }
+        }
+
+        /// <summary>
+        /// Checks whether the just-finished game unlocked a new intensity level (3 or 4).
+        /// If so, shows a brief message via the quest-completion text panel before moving on.
+        /// Must run after RecordIntensityPlay has already updated the progression data.
+        /// </summary>
+        protected virtual IEnumerator ShowIntensityUnlockSequence()
+        {
+            if (!gameData) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) yield break;
+
+            var mode = gameData.GameMode;
+            int maxUnlocked = service.GetMaxUnlockedIntensity(mode);
+
+            if (maxUnlocked >= 3 && service.GetPlaysRemainingForIntensity(mode, 3) == 0 &&
+                maxUnlocked < 4 && service.GetPlaysRemainingForIntensity(mode, 4) > 0)
+            {
+                ToastNotificationAPI.Show("Intensity 3 Unlocked!");
+                yield return new WaitForSeconds(1f);
+            }
+            else if (maxUnlocked >= 4 && !service.IsQuestCompleted(mode))
+            {
+                ToastNotificationAPI.Show("Intensity 4 Unlocked!");
+                yield return new WaitForSeconds(1f);
             }
         }
 

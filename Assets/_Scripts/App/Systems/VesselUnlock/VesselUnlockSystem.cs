@@ -1,14 +1,15 @@
 using System;
-using UnityEngine;
 using CosmicShore.App.Profile;
+using CosmicShore.App.Systems.CloudData;
 using CosmicShore.Utility;
 
 namespace CosmicShore.App.Systems.VesselUnlock
 {
     /// <summary>
-    /// Thin wrapper around SO_Vessel.IsLocked for event broadcasting and currency management.
-    /// Unlock state lives directly on the SO_Vessel asset (isLocked field).
-    /// Crystal currency is persisted via PlayerDataService (UGS cloud save).
+    /// Manages vessel lock/unlock state with cloud persistence via HangarRepository.
+    /// Unlock state is applied to SO_Vessel assets at runtime and persisted to UGS Cloud Save
+    /// so unlocks survive app restarts and roam across devices.
+    /// Crystal currency is managed via PlayerDataService.
     /// </summary>
     public static class VesselUnlockSystem
     {
@@ -20,6 +21,7 @@ namespace CosmicShore.App.Systems.VesselUnlock
                 return false;
 
             vessel.Unlock();
+            PersistUnlockToCloud(vessel.Name, unlocked: true);
             CSDebug.Log($"VesselUnlockSystem: Unlocked {vessel.Name}");
             OnUnlockStateChanged?.Invoke();
             return true;
@@ -31,6 +33,7 @@ namespace CosmicShore.App.Systems.VesselUnlock
                 return false;
 
             vessel.Lock();
+            PersistUnlockToCloud(vessel.Name, unlocked: false);
             CSDebug.Log($"VesselUnlockSystem: Locked {vessel.Name}");
             OnUnlockStateChanged?.Invoke();
             return true;
@@ -73,7 +76,29 @@ namespace CosmicShore.App.Systems.VesselUnlock
                 vessel.Lock();
             }
 
+            // Clear cloud data
+            var ds = UGSDataService.Instance;
+            if (ds?.HangarRepo != null)
+            {
+                ds.HangarRepo.Data.UnlockedVessels.Clear();
+                ds.HangarRepo.Data.VesselPreferences.Clear();
+                ds.HangarRepo.MarkDirty();
+            }
+
             OnUnlockStateChanged?.Invoke();
+        }
+
+        static void PersistUnlockToCloud(string vesselName, bool unlocked)
+        {
+            var ds = UGSDataService.Instance;
+            if (ds?.HangarRepo == null) return;
+
+            if (unlocked)
+                ds.HangarRepo.Data.UnlockVessel(vesselName);
+            else
+                ds.HangarRepo.Data.LockVessel(vesselName);
+
+            ds.HangarRepo.MarkDirty();
         }
     }
 }
