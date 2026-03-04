@@ -97,6 +97,13 @@ namespace CosmicShore
 
         public bool IsBuilt => _built;
 
+        void Start()
+        {
+            // Self-initialize so the baseline pips show even if the controller
+            // chain hasn't called Build() yet (e.g. elementBars not wired on SilhouetteController).
+            Build();
+        }
+
         public void Build()
         {
             if (_built) return;
