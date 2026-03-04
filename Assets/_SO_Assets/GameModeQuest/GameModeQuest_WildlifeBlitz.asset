@@ -20,5 +20,7 @@ MonoBehaviour:
   TargetValue: 4
   PlaysToUnlockIntensity3: 3
   PlaysToUnlockIntensity4: 3
+  Intensity3GoalDescription: Play Intensity 2 to unlock
+  Intensity4GoalDescription: Play Intensity 3 to unlock
   Order: 4
   IsPlaceholder: 0
