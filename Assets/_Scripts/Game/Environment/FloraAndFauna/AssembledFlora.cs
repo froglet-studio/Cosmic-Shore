@@ -55,22 +55,22 @@ namespace CosmicShore
         {
             public static Assembler ProgramAssembler(GameObject gameObject, GrowthInfo growthInfo)
             {
-                if (growthInfo is GyroidGrowthInfo)
+                if (growthInfo is GyroidGrowthInfo gyroidInfo)
                 {
-                    var newAssembler = gameObject.GetComponent<GyroidAssembler>();
-                    // Copy properties from growthInfo.assembler to newAssembler
-                    newAssembler.BlockType = ((GyroidGrowthInfo)growthInfo).BlockType;
+                    if (!gameObject.TryGetComponent<GyroidAssembler>(out var newAssembler))
+                        newAssembler = gameObject.AddComponent<GyroidAssembler>();
+                    newAssembler.BlockType = gyroidInfo.BlockType;
                     newAssembler.Depth = growthInfo.Depth;
-                    // Copy other properties as needed
                     return newAssembler;
                 }
-                // Add other assembler types here as needed
                 else
                 {
-                    var newAssembler = gameObject.GetComponent<Assembler>();
-                    // Copy properties from growthInfo.assembler to newAssembler
+                    if (!gameObject.TryGetComponent<Assembler>(out var newAssembler))
+                    {
+                        // Fallback: add WallAssembler as default concrete type
+                        newAssembler = gameObject.AddComponent<WallAssembler>();
+                    }
                     newAssembler.Depth = growthInfo.Depth;
-                    // Copy other properties as needed
                     return newAssembler;
                 }
             }
@@ -175,6 +175,23 @@ namespace CosmicShore
             transform.position = cellData.CrystalTransform.position + 200 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius
         }
 
+        /// <summary>
+        /// Pooled HealthPrisms don't carry Assembler components — the original prefab did.
+        /// Copy the Assembler type from the healthPrism prefab template onto the pooled instance.
+        /// </summary>
+        void EnsureAssemblerComponent(GameObject go)
+        {
+            if (go.GetComponent<Assembler>()) return;
+
+            // Use the healthPrism prefab (still on LifeForm) as the template for which Assembler type to add
+            if (healthPrism && healthPrism.TryGetComponent<GyroidAssembler>(out _))
+                go.AddComponent<GyroidAssembler>();
+            else if (healthPrism && healthPrism.TryGetComponent<WallAssembler>(out _))
+                go.AddComponent<WallAssembler>();
+            else
+                go.AddComponent<WallAssembler>(); // default concrete type
+        }
+
         public Assembler CreateNewAssembler()
         {
             CSDebug.Log("New Assembler");
@@ -182,12 +199,19 @@ namespace CosmicShore
 
             HealthPrism newHealthPrism = GetHealthPrism(transform.position, transform.rotation);
             if (!newHealthPrism) return null;
+            EnsureAssemblerComponent(newHealthPrism.gameObject);
             AddHealthBlock(newHealthPrism);
             newHealthPrism.transform.SetParent(newSpindle.transform, false);
             newHealthPrism.LifeForm = this;
             newHealthPrism.Initialize();
 
             Assembler newAssembler = newHealthPrism.GetComponent<Assembler>();
+            if (!newAssembler)
+            {
+                CSDebug.LogError($"[AssembledFlora] Failed to add Assembler to pooled HealthPrism. " +
+                    $"Check that the healthPrism prefab on '{name}' has an Assembler component.", this);
+                return null;
+            }
             newAssembler.Prism = newHealthPrism;
             newAssembler.Spindle = newSpindle;
             newAssembler.Depth = depth;

@@ -18,6 +18,7 @@ public abstract class Flora : LifeForm
 
     public override void AddHealthBlock(HealthPrism healthPrism)
     {
+        if (!healthPrism) return;
         base.AddHealthBlock(healthPrism);
         healthPrism.TargetScale = leafSize;
     }
