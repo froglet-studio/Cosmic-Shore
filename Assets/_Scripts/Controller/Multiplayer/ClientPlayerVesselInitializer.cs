@@ -87,13 +87,16 @@ namespace CosmicShore.Gameplay
                     continue;
                 if (!player.IsSpawned) continue;
 
+                // Clear stale vessel reference from previous scene and update config.
+                // Mirrors what the server does via PrepareForNewScene() in
+                // ServerPlayerVesselInitializer.FindUnprocessedPlayerByOwnerClientId().
+                // Without this, player.Vessel holds a destroyed IVessel reference that
+                // passes C# null checks (IVessel is an interface, not UnityEngine.Object),
+                // causing ProcessPendingPairs() to skip InitializePair().
+                player.PrepareForNewScene();
+
                 if (!gameData.Players.Contains(player))
                     gameData.Players.Add(player);
-
-                // Owners update their vessel type to match the new game config
-                // (synced via SyncGameConfigToClients_ClientRpc before scene load).
-                if (player.IsOwner)
-                    player.NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
             }
         }
 
