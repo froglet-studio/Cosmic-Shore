@@ -38,17 +38,19 @@ public abstract class Flora : LifeForm
 
     IEnumerator GrowCoroutine()
     {
+        var growWait = new WaitForSeconds(growPeriod);
+        var stunWait = new WaitForSeconds(stunDuration);
         while (true)
         {
             if (isGrowing)
             {
                 Grow();
-                yield return new WaitForSeconds(growPeriod);
+                yield return growWait;
             }
             else
             {
                 isGrowing = true;
-                yield return new WaitForSeconds(stunDuration);
+                yield return stunWait;
             }
         }
     }

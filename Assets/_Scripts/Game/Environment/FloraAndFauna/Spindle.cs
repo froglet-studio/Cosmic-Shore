@@ -27,10 +27,13 @@ namespace CosmicShore
         [SerializeField] bool permanentWither = true;
         bool isPermanentlyWithered = false;
 
+        static readonly System.Predicate<HealthPrism> s_deadHealthPrism = h => !h;
+        static readonly System.Predicate<Spindle> s_deadSpindle = s => !s;
+
         void CleanupDeadRefs()
         {
-            healthBlocks.RemoveWhere(h => !h);
-            spindles.RemoveWhere(s => !s);
+            healthBlocks.RemoveWhere(s_deadHealthPrism);
+            spindles.RemoveWhere(s_deadSpindle);
         }
 
         void OnEnable()

@@ -1,6 +1,5 @@
 
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Game;
 using CosmicShore.Soap;
 using UnityEngine;
@@ -46,7 +45,9 @@ namespace CosmicShore
         [SerializeField] int randomItems = 2;
         [SerializeField] float crystalGrowth = 1.01f;
 
-        HashSet<Branch> activeBranches = new HashSet<Branch>();
+        List<Branch> activeBranches = new List<Branch>();
+        static readonly List<Branch> s_newBranches = new List<Branch>(16);
+        static readonly List<int> s_removeIndices = new List<int>(16);
 
         int spawnedItemCount = 0;
         Assembler assembler;
@@ -80,14 +81,14 @@ namespace CosmicShore
         {
             if (spawnedItemCount >= maxTotalSpawnedObjects) return;
 
-            List<Branch> newBranches = new List<Branch>();
-            List<Branch> branchesToRemove = new List<Branch>();
+            s_newBranches.Clear();
+            s_removeIndices.Clear();
 
             float itemsSpawned = 0;
             int skippedItems = 0;
             for (int i = 0; i < activeBranches.Count && itemsSpawned < itemsPerGrow; i++)
             {
-                Branch branch = activeBranches.ElementAt(i);
+                Branch branch = activeBranches[i];
 
                 if (!branch.assembler || branch.depth >= maxDepth)
                 {
@@ -97,7 +98,7 @@ namespace CosmicShore
                 var growthInfo = branch.assembler.GetGrowthInfo();
                 if (!growthInfo.CanGrow)
                 {
-                    branchesToRemove.Add(branch);
+                    s_removeIndices.Add(i);
                     continue;
                 }
 
@@ -130,26 +131,27 @@ namespace CosmicShore
                 newHealthPrism.transform.localRotation = Quaternion.identity;
                 if (growthInfo.IsDangerous) newHealthPrism.MakeDangerous();
                 newHealthPrism.Initialize();
-                
+
                 newBranch.gameObject = newSpindle.gameObject;
                 newBranch.assembler = newAssembler;
                 newBranch.depth = branch.depth + 1;
 
-                newBranches.Add(newBranch);
+                s_newBranches.Add(newBranch);
                 itemsSpawned++;
 
                 if (branch.depth >= maxDepth - 1 || branch.assembler.IsFullyBonded())
                 {
-                    branchesToRemove.Add(branch);
+                    s_removeIndices.Add(i);
                 }
             }
 
-            foreach (Branch branch in branchesToRemove)
-            {
-                activeBranches.Remove(branch);               
-            }
+            // Remove in reverse order to preserve indices
+            for (int i = s_removeIndices.Count - 1; i >= 0; i--)
+                activeBranches.RemoveAt(s_removeIndices[i]);
 
-            activeBranches.UnionWith(newBranches);
+            activeBranches.AddRange(s_newBranches);
+            s_newBranches.Clear();
+            s_removeIndices.Clear();
             GrowCrystal();
         }
 
@@ -164,8 +166,14 @@ namespace CosmicShore
         public override void RemoveSpindle(Spindle spindle)
         {
             base.RemoveSpindle(spindle);
-            Branch result = activeBranches.FirstOrDefault(item => item.gameObject == spindle.gameObject);
-            activeBranches.Remove(result);
+            for (int i = activeBranches.Count - 1; i >= 0; i--)
+            {
+                if (activeBranches[i].gameObject == spindle.gameObject)
+                {
+                    activeBranches.RemoveAt(i);
+                    break;
+                }
+            }
         }
 
         public override void Plant()

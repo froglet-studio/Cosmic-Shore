@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using CosmicShore.Game;
@@ -35,8 +34,12 @@ namespace CosmicShore
         bool mature = false;
         bool dying = false;
         bool isCleaningUp = false;
-        
+
         HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
+
+        // Scratch lists to avoid per-frame allocations in Die/HandleTurnEnded
+        static readonly List<HealthPrism> s_healthScratch = new List<HealthPrism>(64);
+        static readonly List<Spindle> s_spindleScratch = new List<Spindle>(32);
 
         [SerializeField] ScriptableEventInt onLifeFormCreated;
         [SerializeField] ScriptableEventInt onLifeFormDestroyed;
@@ -167,10 +170,13 @@ namespace CosmicShore
             CheckIfDead(killerName);
         }
         
+        static readonly System.Predicate<Spindle> s_deadSpindle = s => !s;
+        static readonly System.Predicate<HealthPrism> s_deadHealthPrism = h => !h;
+
         void CleanupDeadRefs()
         {
-            spindles.RemoveWhere(s => !s);
-            healthBlocks.RemoveWhere(h => !h);
+            spindles.RemoveWhere(s_deadSpindle);
+            healthBlocks.RemoveWhere(s_deadHealthPrism);
         }
 
         public void CheckIfDead(string killerName = "")
@@ -212,17 +218,21 @@ namespace CosmicShore
             if (!string.IsNullOrEmpty(killerName))
                 OnLifeFormDeath?.Invoke(killerName, cellId);
 
-            foreach (var healthBlock in healthBlocks.ToArray())
+            s_healthScratch.Clear();
+            foreach (var hp in healthBlocks) s_healthScratch.Add(hp);
+            for (int i = 0; i < s_healthScratch.Count; i++)
             {
-                if (!healthBlock) continue;
-                healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
+                if (!s_healthScratch[i]) continue;
+                s_healthScratch[i].Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
             }
+            s_healthScratch.Clear();
 
-            var allSpindles = GetComponentsInChildren<Spindle>(true);
-            foreach (var sp in allSpindles)
+            GetComponentsInChildren(true, s_spindleScratch);
+            for (int i = 0; i < s_spindleScratch.Count; i++)
             {
-                if (sp) sp.ForceWither();
+                if (s_spindleScratch[i]) s_spindleScratch[i].ForceWither();
             }
+            s_spindleScratch.Clear();
             if (cell)
             {
                 cell.UnregisterSpawnedObject(gameObject);
@@ -263,21 +273,24 @@ namespace CosmicShore
 
         IEnumerator ShieldRegen()
         {
+            var wait = new WaitForSeconds(shieldPeriod);
+            var scratch = new List<HealthPrism>(16);
             while (shieldPeriod > 0)
             {
-                List<HealthPrism> currentBlocks = new List<HealthPrism>(healthBlocks);
-                if (currentBlocks.Count > 0)
+                scratch.Clear();
+                foreach (var hp in healthBlocks) scratch.Add(hp);
+                if (scratch.Count > 0)
                 {
-                    foreach (HealthPrism healthBlock in currentBlocks)
+                    for (int i = 0; i < scratch.Count; i++)
                     {
-                        if (healthBlocks.Contains(healthBlock) && healthBlock)
-                            healthBlock.ActivateShield();
-                        yield return new WaitForSeconds(shieldPeriod);
+                        if (healthBlocks.Contains(scratch[i]) && scratch[i])
+                            scratch[i].ActivateShield();
+                        yield return wait;
                     }
                 }
                 else
                 {
-                    yield return new WaitForSeconds(shieldPeriod);
+                    yield return wait;
                 }
             }
         }
@@ -288,11 +301,14 @@ namespace CosmicShore
             StopAllCoroutines();
 
             // Return pooled health prisms before destroying the hierarchy
-            foreach (var hp in healthBlocks.ToArray())
+            s_healthScratch.Clear();
+            foreach (var hp in healthBlocks) s_healthScratch.Add(hp);
+            for (int i = 0; i < s_healthScratch.Count; i++)
             {
-                if (!hp) continue;
-                ReturnHealthPrism(hp);
+                if (!s_healthScratch[i]) continue;
+                ReturnHealthPrism(s_healthScratch[i]);
             }
+            s_healthScratch.Clear();
             healthBlocks.Clear();
 
             if(gameObject) Destroy(gameObject);
