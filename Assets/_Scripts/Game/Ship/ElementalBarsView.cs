@@ -8,9 +8,14 @@ namespace CosmicShore
 {
     /// <summary>
     /// Displays 4 vertical fill bars with element label icons, covering levels -5 to +15.
-    /// All UI references are pre-placed in the prefab — you control layout, scale, and
-    /// anchoring directly in the editor. No runtime GameObject creation.
-    /// Provides juice methods for crystal collection, jousting, drifting, and overtake penalty.
+    ///
+    /// Two modes:
+    /// 1. Pre-placed: assign bars[] in the prefab for full editor control of layout/scale.
+    /// 2. Auto-populate: assign a pipsConfig (ElementPipsConfigSO) and a container RectTransform.
+    ///    Build() creates fill bars + label icons from the config sprites. You control overall
+    ///    scale/position by adjusting the container's RectTransform in the editor.
+    ///
+    /// If bars[] has valid entries, pre-placed mode wins. Otherwise auto-populate kicks in.
     /// </summary>
     public class ElementalBarsView : MonoBehaviour
     {
@@ -30,8 +35,24 @@ namespace CosmicShore
             public Sprite normalLabelSprite;
         }
 
-        [Header("Bar Bindings (assign in prefab)")]
-        [SerializeField] private ElementBarBinding[] bars = new ElementBarBinding[4];
+        [Header("Pre-placed Bindings (optional — takes priority)")]
+        [SerializeField] private ElementBarBinding[] bars = new ElementBarBinding[0];
+
+        [Header("Auto-populate from Pips Config")]
+        [Tooltip("Assign the existing ElementPipsConfigSO to auto-create bars at runtime")]
+        [SerializeField] private ElementPipsConfigSO pipsConfig;
+
+        [Tooltip("Parent RectTransform for auto-generated bars. Scale this to control overall size.")]
+        [SerializeField] private RectTransform container;
+
+        [Header("Auto-populate Layout")]
+        [SerializeField] private float columnSpacing = 32f;
+        [SerializeField] private Vector2 barSize = new(18f, 120f);
+        [SerializeField] private Vector2 labelIconSize = new(28f, 28f);
+        [SerializeField] private float labelGap = 6f;
+        [SerializeField] private Color barBackgroundColor = new(1f, 1f, 1f, 0.08f);
+        [SerializeField] private Color zeroLineColor = new(1f, 1f, 1f, 0.5f);
+        [SerializeField] private float zeroLineHeight = 2f;
 
         [Header("Range")]
         [SerializeField] private int minLevel = -5;
@@ -42,25 +63,19 @@ namespace CosmicShore
         [SerializeField] private Color negativeFillColor = new(1f, 0.3f, 0.3f, 0.8f);
 
         [Header("Juice — General")]
-        [Tooltip("Duration for icon scale punch on events")]
         [SerializeField] private float iconPunchDuration = 0.25f;
-        [Tooltip("Scale multiplier for icon punch")]
         [SerializeField] private float iconPunchScale = 1.4f;
-        [Tooltip("Duration for color tween back to original")]
         [SerializeField] private float colorTweenDuration = 0.35f;
 
         [Header("Juice — Joust")]
         [SerializeField] private Color joustFlashColor = Color.red;
 
         [Header("Juice — Drift")]
-        [Tooltip("Rotation angle for drift icon (degrees)")]
         [SerializeField] private float driftRotationAngle = 15f;
-        [Tooltip("Duration of drift rotation tween")]
         [SerializeField] private float driftRotationDuration = 0.2f;
-        [Tooltip("Optional sprite override for double-drift state")]
         [SerializeField] private Sprite doubleDriftSprite;
 
-        // Per-bar runtime state
+        // Runtime state
         private int[] _currentLevels;
         private Color[] _originalLabelColors;
         private Vector3[] _originalLabelScales;
@@ -70,13 +85,18 @@ namespace CosmicShore
         private Tween[] _fillColorTweens;
         private bool _built;
 
-        /// <summary>
-        /// Initialize runtime state from the pre-placed bindings.
-        /// Call once after the component is active (e.g. from SilhouetteController).
-        /// </summary>
+        static readonly Element[] DefaultOrder = { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
         public void Build()
         {
             if (_built) return;
+
+            // Decide mode: pre-placed bindings or auto-populate
+            bool hasPrePlaced = bars is { Length: > 0 } && bars[0].fillImage != null;
+
+            if (!hasPrePlaced && pipsConfig && container)
+                AutoPopulateFromPipsConfig();
+
             if (bars == null || bars.Length == 0) return;
 
             int count = bars.Length;
@@ -115,6 +135,102 @@ namespace CosmicShore
             RefreshAllBars();
         }
 
+        // ---------------------------------------------------------------
+        // Auto-populate: creates bars from ElementPipsConfigSO sprites
+        // Scale/position by adjusting the container RectTransform in editor
+        // ---------------------------------------------------------------
+        void AutoPopulateFromPipsConfig()
+        {
+            int cols = DefaultOrder.Length;
+            bars = new ElementBarBinding[cols];
+
+            float totalWidth = (cols - 1) * columnSpacing;
+            float startX = -totalWidth * 0.5f;
+            float zeroFraction = (float)(-minLevel) / (maxLevel - minLevel);
+
+            for (int c = 0; c < cols; c++)
+            {
+                var element = DefaultOrder[c];
+                float xPos = startX + c * columnSpacing;
+
+                // Column parent
+                var colGO = new GameObject($"ElementBar_{element}", typeof(RectTransform));
+                var colRT = (RectTransform)colGO.transform;
+                colRT.SetParent(container, false);
+                colRT.anchorMin = colRT.anchorMax = new Vector2(0.5f, 0f);
+                colRT.pivot = new Vector2(0.5f, 0f);
+                colRT.anchoredPosition = new Vector2(xPos, 0f);
+                colRT.sizeDelta = new Vector2(barSize.x, 0f);
+
+                // Label icon
+                var labelGO = new GameObject($"Label_{element}", typeof(RectTransform), typeof(Image));
+                var labelRT = (RectTransform)labelGO.transform;
+                labelRT.SetParent(colRT, false);
+                labelRT.anchorMin = labelRT.anchorMax = new Vector2(0.5f, 0f);
+                labelRT.pivot = new Vector2(0.5f, 0f);
+                labelRT.anchoredPosition = Vector2.zero;
+                labelRT.sizeDelta = labelIconSize;
+
+                var labelImg = labelGO.GetComponent<Image>();
+                labelImg.sprite = pipsConfig.GetLabelSprite(element);
+                labelImg.color = positiveFillColor;
+                labelImg.preserveAspect = true;
+                labelImg.raycastTarget = false;
+
+                float barBaseY = labelIconSize.y + labelGap;
+
+                // Bar background
+                var bgGO = new GameObject($"BarBG_{element}", typeof(RectTransform), typeof(Image));
+                var bgRT = (RectTransform)bgGO.transform;
+                bgRT.SetParent(colRT, false);
+                bgRT.anchorMin = bgRT.anchorMax = new Vector2(0.5f, 0f);
+                bgRT.pivot = new Vector2(0.5f, 0f);
+                bgRT.anchoredPosition = new Vector2(0f, barBaseY);
+                bgRT.sizeDelta = barSize;
+                var bgImg = bgGO.GetComponent<Image>();
+                bgImg.color = barBackgroundColor;
+                bgImg.raycastTarget = false;
+
+                // Fill image
+                var fillGO = new GameObject($"Fill_{element}", typeof(RectTransform), typeof(Image));
+                var fillRT = (RectTransform)fillGO.transform;
+                fillRT.SetParent(colRT, false);
+                fillRT.anchorMin = fillRT.anchorMax = new Vector2(0.5f, 0f);
+                fillRT.pivot = new Vector2(0.5f, 0f);
+                fillRT.anchoredPosition = new Vector2(0f, barBaseY);
+                fillRT.sizeDelta = barSize;
+
+                var fillImg = fillGO.GetComponent<Image>();
+                fillImg.sprite = pipsConfig.GetPipSprite(element);
+                fillImg.color = positiveFillColor;
+                fillImg.raycastTarget = false;
+
+                // Zero-line marker
+                var zeroGO = new GameObject($"ZeroLine_{element}", typeof(RectTransform), typeof(Image));
+                var zeroRT = (RectTransform)zeroGO.transform;
+                zeroRT.SetParent(colRT, false);
+                zeroRT.anchorMin = zeroRT.anchorMax = new Vector2(0.5f, 0f);
+                zeroRT.pivot = new Vector2(0.5f, 0.5f);
+                float zeroY = barBaseY + zeroFraction * barSize.y;
+                zeroRT.anchoredPosition = new Vector2(0f, zeroY);
+                zeroRT.sizeDelta = new Vector2(barSize.x + 6f, zeroLineHeight);
+                var zeroImg = zeroGO.GetComponent<Image>();
+                zeroImg.color = zeroLineColor;
+                zeroImg.raycastTarget = false;
+
+                bars[c] = new ElementBarBinding
+                {
+                    element = element,
+                    fillImage = fillImg,
+                    labelIcon = labelImg,
+                    normalLabelSprite = labelImg.sprite,
+                };
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Level updates
+        // ---------------------------------------------------------------
         public void SetLevel(Element element, int level)
         {
             int idx = GetBarIndex(element);
@@ -145,7 +261,7 @@ namespace CosmicShore
         }
 
         // ---------------------------------------------------------------
-        // Juice: Crystal Collection — scale up icons + tween to domain color
+        // Juice: Crystal Collection
         // ---------------------------------------------------------------
         public void JuiceCrystalCollected(Color domainColor)
         {
@@ -155,7 +271,7 @@ namespace CosmicShore
         }
 
         // ---------------------------------------------------------------
-        // Juice: Joust — scale up icons + tween to red
+        // Juice: Joust
         // ---------------------------------------------------------------
         public void JuiceJoust()
         {
@@ -165,7 +281,7 @@ namespace CosmicShore
         }
 
         // ---------------------------------------------------------------
-        // Juice: Drift — rotate icons left/right, color change
+        // Juice: Drift
         // ---------------------------------------------------------------
         public void JuiceDriftStart(bool isLeft, bool isDoubleDrift)
         {
@@ -218,7 +334,7 @@ namespace CosmicShore
         }
 
         // ---------------------------------------------------------------
-        // Juice: Overtake penalty — flash red across all bars + shake icons
+        // Juice: Overtake penalty
         // ---------------------------------------------------------------
         public void JuiceOvertakePenalty()
         {
