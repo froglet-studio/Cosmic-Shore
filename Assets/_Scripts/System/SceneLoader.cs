@@ -143,13 +143,20 @@ namespace CosmicShore.Core
         {
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
 
-            // Despawn all vessels on the server BEFORE the scene transition.
-            // Without this, clients destroy them via Unity's scene unload (PreDestroyRecursive),
-            // causing "Invalid Destroy" Netcode errors — only the server should despawn
-            // spawned NetworkObjects. The waitBeforeLoading delay below gives clients time
-            // to process the despawn RPCs before the scene load event arrives.
+            // Prepare for network scene transition:
+            // 1. Move Player objects to DontDestroyOnLoad on all clients (ClientRpc)
+            //    and on the server. Prevents "Invalid Destroy" for Player objects
+            //    whose Netcode scene migration races with Unity's PreDestroyRecursive.
+            // 2. Despawn all vessels (without destroying) so clients mark them as
+            //    IsSpawned=false before the scene load event arrives.
+            // Messages are ordered (TCP/Relay), so the client processes these in order:
+            //    ClientRpc → despawn RPCs → [500ms later] scene load event.
             if (useNetworkSceneLoading)
+            {
+                MovePlayersToDontDestroyOnLoad_ClientRpc();
+                MovePlayersToDontDestroyOnLoad();
                 DespawnAllSpawnedVessels();
+            }
 
             gameData.InvokeSceneTransition(false);
             gameData.ResetRuntimeData();
@@ -190,8 +197,13 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Server-side despawn of all tracked vessels before a network scene transition.
-        /// Sends despawn RPCs to clients so they cleanly remove vessel NetworkObjects
-        /// before Unity's scene unload destroys them.
+        /// Uses Despawn(false) — despawn without destroying. The GameObjects remain alive
+        /// but are no longer spawned NetworkObjects (IsSpawned=false). Unity's scene unload
+        /// then destroys them cleanly without triggering "Invalid Destroy" notifications,
+        /// because NetworkObject.OnDestroy() sees IsSpawned=false.
+        /// Using Despawn(true) would schedule a deferred Destroy(), creating a window where
+        /// PreDestroyRecursive fires OnDestroy() before the deferred Destroy resolves,
+        /// causing the client to send "Invalid Destroy" to the server.
         /// </summary>
         void DespawnAllSpawnedVessels()
         {
@@ -203,7 +215,7 @@ namespace CosmicShore.Core
                 if (vessel is VesselController vc && vc != null && vc.IsSpawned)
                 {
                     Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Despawning vessel: {vc.name} (NetworkObjectId={vc.NetworkObjectId})</color>");
-                    vc.NetworkObject.Despawn(true);
+                    vc.NetworkObject.Despawn(false);
                 }
             }
             gameData.Vessels.Clear();
@@ -279,6 +291,41 @@ namespace CosmicShore.Core
 
             if (CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
+        }
+
+        /// <summary>
+        /// Moves all Player NetworkObjects to DontDestroyOnLoad on every client.
+        /// Prevents "Invalid Destroy" during scene transitions: the client's Player
+        /// (spawned in Menu_Main via connection approval) would otherwise be destroyed
+        /// by Unity's PreDestroyRecursive before Netcode's scene migration can move it.
+        /// The host's Player is typically already in DontDestroyOnLoad (from the
+        /// Auth→Menu_Main transition), so the scene.name check makes it a no-op.
+        /// </summary>
+        [ClientRpc]
+        void MovePlayersToDontDestroyOnLoad_ClientRpc()
+        {
+            MovePlayersToDontDestroyOnLoad();
+        }
+
+        /// <summary>
+        /// Moves all connected Player NetworkObjects to DontDestroyOnLoad.
+        /// Called on the server directly and on clients via ClientRpc.
+        /// </summary>
+        void MovePlayersToDontDestroyOnLoad()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return;
+
+            foreach (var kvp in nm.ConnectedClients)
+            {
+                var playerObj = kvp.Value.PlayerObject;
+                if (playerObj != null && playerObj.IsSpawned &&
+                    playerObj.gameObject.scene.name != "DontDestroyOnLoad")
+                {
+                    Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Moving Player to DontDestroyOnLoad: {playerObj.name} (NetworkObjectId={playerObj.NetworkObjectId})</color>");
+                    DontDestroyOnLoad(playerObj.gameObject);
+                }
+            }
         }
 
         /// <summary>
