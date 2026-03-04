@@ -43,6 +43,14 @@ namespace CosmicShore.Models
         [Min(1)]
         public int PlaysToUnlockIntensity4 = 3;
 
+        [Tooltip("Goal description shown in the info panel for unlocking intensity 3")]
+        [TextArea(1, 3)]
+        public string Intensity3GoalDescription = "Play {0} games at Intensity 2";
+
+        [Tooltip("Goal description shown in the info panel for unlocking intensity 4")]
+        [TextArea(1, 3)]
+        public string Intensity4GoalDescription = "Play {0} games at Intensity 3";
+
         [Header("Order")]
         [Tooltip("Position in the quest chain (0 = first, already unlocked)")]
         public int Order;
