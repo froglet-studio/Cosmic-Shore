@@ -7,8 +7,9 @@ using CosmicShore.Core;
 namespace CosmicShore
 {
     /// <summary>
-    /// Displays 4 vertical fill bars with element label icons, covering levels -5 to +15.
-    /// Assign bars[] in the prefab/scene for full editor control of layout, scale, and positioning.
+    /// Displays 4 element columns, each with 15 discrete pip images.
+    /// Bar_BG pips are always visible (dim background). Fill_BG pips light up based on level.
+    /// Level range maps to pip count via zeroLineIndex: level 0 → zeroLineIndex pips lit.
     /// </summary>
     public class ElementalBarsView : MonoBehaviour
     {
@@ -18,8 +19,11 @@ namespace CosmicShore
             [Tooltip("The element this bar represents")]
             public Element element;
 
-            [Tooltip("Fill image (Image.Type = Filled, Vertical, Bottom origin)")]
-            public Image fillImage;
+            [Tooltip("Background pip images (bottom to top, 15 total)")]
+            public Image[] bgPips;
+
+            [Tooltip("Fill pip images (bottom to top, 15 total)")]
+            public Image[] fillPips;
 
             [Tooltip("Label/icon image below the bar")]
             public Image labelIcon;
@@ -32,12 +36,12 @@ namespace CosmicShore
         [SerializeField] private ElementBarBinding[] bars = new ElementBarBinding[0];
 
         [Header("Range")]
-        [SerializeField] private int minLevel = -5;
-        [SerializeField] private int maxLevel = 15;
+        [Tooltip("Pip index that represents level 0 (e.g. 5 means first 5 pips are negative territory)")]
+        [SerializeField] private int zeroLineIndex = 5;
 
         [Header("Colors")]
-        [Tooltip("Fill color when an element is debuffed (level decreasing)")]
-        [SerializeField] private Color debuffFillColor = Color.white;
+        [SerializeField] private Color filledColor = Color.white;
+        [SerializeField] private Color emptyColor = new(1f, 1f, 1f, 0.15f);
         [Tooltip("Fill color when level is below zero")]
         [SerializeField] private Color negativeFillColor = new(1f, 0.3f, 0.3f, 0.8f);
 
@@ -58,13 +62,13 @@ namespace CosmicShore
         private RectTransform _rootRT;
         private Tween _scaleTween;
         private int[] _currentLevels;
-        private Color[] _barFillColors;
+        private Color[] _barDomainColors;
         private Color[] _originalLabelColors;
         private Vector3[] _originalLabelScales;
         private Tween[] _driftRotationTweens;
         private Tween[] _labelScaleTweens;
         private Tween[] _labelColorTweens;
-        private Tween[] _fillColorTweens;
+        private Tween[][] _pipColorTweens; // [barIndex][pipIndex]
         private bool _built;
 
         public void Build()
@@ -76,13 +80,13 @@ namespace CosmicShore
 
             int count = bars.Length;
             _currentLevels = new int[count];
-            _barFillColors = new Color[count];
+            _barDomainColors = new Color[count];
             _originalLabelColors = new Color[count];
             _originalLabelScales = new Vector3[count];
             _driftRotationTweens = new Tween[count];
             _labelScaleTweens = new Tween[count];
             _labelColorTweens = new Tween[count];
-            _fillColorTweens = new Tween[count];
+            _pipColorTweens = new Tween[count][];
 
             for (int i = 0; i < count; i++)
             {
@@ -97,15 +101,21 @@ namespace CosmicShore
                         bar.normalLabelSprite = bar.labelIcon.sprite;
                 }
 
-                if (bar.fillImage)
-                {
-                    bar.fillImage.type = Image.Type.Filled;
-                    bar.fillImage.fillMethod = Image.FillMethod.Vertical;
-                    bar.fillImage.fillOrigin = (int)Image.OriginVertical.Bottom;
-                }
+                int pipCount = bar.fillPips != null ? bar.fillPips.Length : 0;
+                _pipColorTweens[i] = new Tween[pipCount];
+
+                // Init bg pips to dim
+                if (bar.bgPips != null)
+                    foreach (var pip in bar.bgPips)
+                        if (pip) pip.color = emptyColor;
+
+                // Init fill pips to transparent (off)
+                if (bar.fillPips != null)
+                    foreach (var pip in bar.fillPips)
+                        if (pip) pip.color = new Color(filledColor.r, filledColor.g, filledColor.b, 0f);
 
                 _currentLevels[i] = 0;
-                _barFillColors[i] = debuffFillColor;
+                _barDomainColors[i] = filledColor;
             }
 
             _built = true;
@@ -116,21 +126,18 @@ namespace CosmicShore
         // Runtime scale control
         // ---------------------------------------------------------------
 
-        /// <summary>Snap to uniform scale.</summary>
         public void SetScale(float uniformScale)
         {
             _scaleTween?.Kill();
             if (_rootRT) _rootRT.localScale = Vector3.one * uniformScale;
         }
 
-        /// <summary>Snap to non-uniform scale.</summary>
         public void SetScale(Vector3 scale)
         {
             _scaleTween?.Kill();
             if (_rootRT) _rootRT.localScale = scale;
         }
 
-        /// <summary>Animate to uniform scale over duration.</summary>
         public void AnimateScale(float targetScale, float duration = 0.3f, Ease ease = Ease.OutBack)
         {
             if (!_rootRT) return;
@@ -140,7 +147,6 @@ namespace CosmicShore
                 .SetEase(ease);
         }
 
-        /// <summary>Animate to non-uniform scale over duration.</summary>
         public void AnimateScale(Vector3 targetScale, float duration = 0.3f, Ease ease = Ease.OutBack)
         {
             if (!_rootRT) return;
@@ -150,7 +156,6 @@ namespace CosmicShore
                 .SetEase(ease);
         }
 
-        /// <summary>Current local scale of the bars root.</summary>
         public Vector3 Scale => _rootRT ? _rootRT.localScale : Vector3.one;
 
         // ---------------------------------------------------------------
@@ -158,48 +163,92 @@ namespace CosmicShore
         // ---------------------------------------------------------------
 
         /// <summary>
-        /// Set the level for an element. Pass a domainColor so the fill
-        /// shows the domain color when buffing (increasing) and white when debuffing (decreasing).
+        /// Set the level for an element. Level 0 = zeroLineIndex pips lit.
+        /// Negative levels light pips below the zero line in negativeFillColor.
         /// </summary>
         public void SetLevel(Element element, int level, Color domainColor)
         {
             int idx = GetBarIndex(element);
             if (idx < 0 || !_built) return;
 
-            int clamped = Mathf.Clamp(level, minLevel, maxLevel);
+            _barDomainColors[idx] = domainColor;
             int prev = _currentLevels[idx];
-            _currentLevels[idx] = clamped;
+            _currentLevels[idx] = level;
 
-            // Buff = increasing, debuff = decreasing
-            _barFillColors[idx] = clamped > prev ? domainColor : debuffFillColor;
-
-            RefreshBar(idx);
+            RefreshBar(idx, prev);
         }
 
-        /// <summary>Overload without domain color — uses white for both directions.</summary>
         public void SetLevel(Element element, int level)
         {
-            SetLevel(element, level, debuffFillColor);
+            SetLevel(element, level, filledColor);
         }
 
         public void RefreshAllBars()
         {
             if (!_built) return;
             for (int i = 0; i < bars.Length; i++)
-                RefreshBar(i);
+                RefreshBar(i, _currentLevels[i]);
         }
 
-        void RefreshBar(int idx)
+        void RefreshBar(int idx, int previousLevel)
         {
             int level = _currentLevels[idx];
-            int range = maxLevel - minLevel;
-            float fillFraction = (float)(level - minLevel) / range;
+            ref var bar = ref bars[idx];
+            if (bar.fillPips == null) return;
 
-            var img = bars[idx].fillImage;
-            if (!img) return;
+            int pipCount = bar.fillPips.Length;
+            // Number of pips to light: level + zeroLineIndex
+            int litCount = Mathf.Clamp(level + zeroLineIndex, 0, pipCount);
+            bool isNegative = level < 0;
+            bool isDecreasing = level < previousLevel;
 
-            img.fillAmount = Mathf.Clamp01(fillFraction);
-            img.color = level < 0 ? negativeFillColor : _barFillColors[idx];
+            for (int p = 0; p < pipCount; p++)
+            {
+                var pip = bar.fillPips[p];
+                if (!pip) continue;
+
+                bool lit = p < litCount;
+
+                // Kill any running tween on this pip
+                _pipColorTweens[idx][p]?.Kill();
+
+                if (lit)
+                {
+                    // Negative territory pips get negativeFillColor, positive get domain color
+                    Color targetColor = (p < zeroLineIndex && isNegative)
+                        ? negativeFillColor
+                        : _barDomainColors[idx];
+
+                    // If this pip just turned on, pop it
+                    if (!isDecreasing && p >= Mathf.Clamp(previousLevel + zeroLineIndex, 0, pipCount))
+                    {
+                        pip.color = targetColor;
+                        var rt = pip.rectTransform;
+                        rt.localScale = Vector3.one * 1.3f;
+                        _pipColorTweens[idx][p] = rt
+                            .DOScale(Vector3.one, 0.15f)
+                            .SetEase(Ease.OutBack);
+                    }
+                    else
+                    {
+                        pip.color = targetColor;
+                    }
+                }
+                else
+                {
+                    // Turn off: fade out
+                    if (isDecreasing && p >= litCount && p < Mathf.Clamp(previousLevel + zeroLineIndex, 0, pipCount))
+                    {
+                        _pipColorTweens[idx][p] = pip
+                            .DOColor(new Color(pip.color.r, pip.color.g, pip.color.b, 0f), 0.2f)
+                            .SetEase(Ease.OutQuad);
+                    }
+                    else
+                    {
+                        pip.color = new Color(filledColor.r, filledColor.g, filledColor.b, 0f);
+                    }
+                }
+            }
         }
 
         // ---------------------------------------------------------------
@@ -284,14 +333,22 @@ namespace CosmicShore
 
             for (int i = 0; i < bars.Length; i++)
             {
-                var fillImg = bars[i].fillImage;
-                if (fillImg)
+                // Flash all lit pips red then back
+                ref var bar = ref bars[i];
+                if (bar.fillPips != null)
                 {
-                    _fillColorTweens[i]?.Kill();
-                    fillImg.color = Color.red;
-                    _fillColorTweens[i] = fillImg
-                        .DOColor(negativeFillColor, 0.5f)
-                        .SetEase(Ease.OutQuad);
+                    int litCount = Mathf.Clamp(_currentLevels[i] + zeroLineIndex, 0, bar.fillPips.Length);
+                    for (int p = 0; p < litCount; p++)
+                    {
+                        var pip = bar.fillPips[p];
+                        if (!pip) continue;
+                        _pipColorTweens[i][p]?.Kill();
+                        pip.color = Color.red;
+                        var origColor = _barDomainColors[i];
+                        _pipColorTweens[i][p] = pip
+                            .DOColor(origColor, 0.5f)
+                            .SetEase(Ease.OutQuad);
+                    }
                 }
 
                 var label = bars[i].labelIcon;
@@ -353,8 +410,10 @@ namespace CosmicShore
                 foreach (var t in _labelScaleTweens) t?.Kill();
             if (_labelColorTweens != null)
                 foreach (var t in _labelColorTweens) t?.Kill();
-            if (_fillColorTweens != null)
-                foreach (var t in _fillColorTweens) t?.Kill();
+            if (_pipColorTweens != null)
+                foreach (var row in _pipColorTweens)
+                    if (row != null)
+                        foreach (var t in row) t?.Kill();
         }
     }
 }
