@@ -29,6 +29,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] VesselSelectionPanelUI ui;
         [SerializeField] MenuServerPlayerVesselInitializer serverInitializer;
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
+        [SerializeField] TeamSelectionPanel teamSelectionPanel;
 
         [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
@@ -60,12 +61,16 @@ namespace CosmicShore.Gameplay
             _cts = new CancellationTokenSource();
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised += OnMenuStateTransitionStart;
+            if (teamSelectionPanel)
+                teamSelectionPanel.OnTeamSelected += OnTeamSelected;
         }
 
         void OnDisable()
         {
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised -= OnMenuStateTransitionStart;
+            if (teamSelectionPanel)
+                teamSelectionPanel.OnTeamSelected -= OnTeamSelected;
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
@@ -91,6 +96,11 @@ namespace CosmicShore.Gameplay
             EnsureCardsCollected();
             DetermineCurrentSelection();
             EnsureFallbackSelection();
+
+            // Sync team panel to player's current domain
+            if (teamSelectionPanel && Player is Player player)
+                teamSelectionPanel.SetSelection(player.NetDomain.Value);
+
             ui.Show();
         }
 
@@ -126,6 +136,16 @@ namespace CosmicShore.Gameplay
         // CLOSE PANEL (no changes)
         // ---------------------------------------------------------
         public void OnCloseButtonClicked() => CloseAndRestoreFreestyle();
+
+        // ---------------------------------------------------------
+        // TEAM SELECTION
+        // ---------------------------------------------------------
+        void OnTeamSelected(Domains domain)
+        {
+            if (Player is not Player player) return;
+            if (!player.IsOwner) return;
+            player.NetDomain.Value = domain;
+        }
 
         // ---------------------------------------------------------
         // Auto-close when returning to menu state

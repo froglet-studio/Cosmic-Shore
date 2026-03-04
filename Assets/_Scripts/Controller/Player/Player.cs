@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
         [Inject] private PlayerDataService playerDataService;
 
         public NetworkVariable<VesselClassType> NetDefaultVesselType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        public NetworkVariable<Domains> NetDomain = new();
+        public NetworkVariable<Domains> NetDomain = new(Domains.Jade, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<ulong> NetVesselId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -252,12 +252,9 @@ namespace CosmicShore.Gameplay
             if (IsOwner)
                 NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
-            // Update server-writable NetworkVariables.
+            // Reset server-writable NetworkVariables.
             if (IsServer)
-            {
-                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
                 NetVesselId.Value = 0;
-            }
 
             // Force-sync local properties from NetworkVariables.
             // OnValueChanged callbacks only fire on actual changes;

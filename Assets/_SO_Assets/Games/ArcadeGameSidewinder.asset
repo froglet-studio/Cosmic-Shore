@@ -24,8 +24,8 @@ MonoBehaviour:
   SceneName: MinigamePumpNDump
   Captains:
   - {fileID: 11400000, guid: fce40017721d3834cb5ecb3ed0a0e1db, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 3
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 417

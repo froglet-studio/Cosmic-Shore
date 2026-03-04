@@ -49,6 +49,7 @@ namespace CosmicShore.UI
 
         [Header("Screen 1 – Configuration Controls")]
         [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
+        [SerializeField] private PlayerCountStepper          playerCountStepper;
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
 
@@ -92,6 +93,9 @@ namespace CosmicShore.UI
             foreach (var playerCountButton in playerCountButtons)
                 playerCountButton.OnSelect += HandlePlayerCountSelected;
 
+            if (playerCountStepper)
+                playerCountStepper.OnValueChanged += HandlePlayerCountSelected;
+
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
         }
@@ -103,6 +107,9 @@ namespace CosmicShore.UI
 
             foreach (var playerCountButton in playerCountButtons)
                 playerCountButton.OnSelect -= HandlePlayerCountSelected;
+
+            if (playerCountStepper)
+                playerCountStepper.OnValueChanged -= HandlePlayerCountSelected;
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -145,7 +152,7 @@ namespace CosmicShore.UI
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
             config.Intensity   = game.MinIntensity;
-            config.PlayerCount = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
+            config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
             SyncGameDataConfig();
         }
@@ -194,7 +201,13 @@ namespace CosmicShore.UI
 
             // Player count — enforce minimum = party size so host can't select
             // fewer total players than there are humans in the lobby.
-            int effectiveMinPlayers = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
+            int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
+
+            // Stepper UI (preferred — supports 1-12 range)
+            if (playerCountStepper)
+                playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount);
+
+            // Legacy button UI (fallback for scenes still using 4 buttons)
             for (int i = 0; i < playerCountButtons.Count; i++)
             {
                 var button = playerCountButtons[i];
@@ -203,13 +216,13 @@ namespace CosmicShore.UI
                 int count = i + 1;
                 button.SetPlayerCount(count);
 
-                bool active = count >= effectiveMinPlayers && count <= game.MaxPlayers;
+                bool active = count >= effectiveMin && count <= game.MaxPlayersAllowed;
                 button.SetActive(active);
                 button.SetSelected(count == config.PlayerCount);
             }
 
             if (teamsValueText)
-                teamsValueText.text = "1";
+                teamsValueText.text = "3";
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -382,9 +395,12 @@ namespace CosmicShore.UI
         {
             if (_selectedGame == null || config == null) return;
 
-            int effectiveMin = Mathf.Max(_selectedGame.MinPlayers, CurrentPartyHumanCount);
-            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayers);
+            int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
+            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayersAllowed);
             config.PlayerCount = playerCount;
+
+            if (playerCountStepper)
+                playerCountStepper.SetValue(playerCount);
 
             foreach (var button in playerCountButtons)
             {
@@ -538,6 +554,12 @@ namespace CosmicShore.UI
         // Start Game button on Screen 2
         public void OnStartGameClicked()
         {
+            if (hostConnectionData != null && !hostConnectionData.IsHost)
+            {
+                Debug.LogWarning("[ArcadeConfigModal] Only the host can start a game.");
+                return;
+            }
+
             Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
 

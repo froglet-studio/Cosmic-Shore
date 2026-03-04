@@ -93,7 +93,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Single source of truth for player count configuration at game launch.
         /// Computes and stores both SelectedPlayerCount and RequestedAIBackfillCount atomically.
-        /// Minimum player counts are enforced upstream by SO_ArcadeGame.MinPlayers via the UI.
+        /// Minimum player counts are enforced upstream by SO_ArcadeGame.MinPlayersAllowed via the UI.
         /// </summary>
         /// <param name="totalDesired">Total players the user selected (human + AI)</param>
         /// <param name="humanCount">Number of human players in the party</param>

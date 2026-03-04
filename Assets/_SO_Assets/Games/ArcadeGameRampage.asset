@@ -26,8 +26,8 @@ MonoBehaviour:
   Captains:
   - {fileID: 11400000, guid: df141abf4cae3d44ab94be005b338f07, type: 2}
   - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 1
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 1
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 404

@@ -71,6 +71,7 @@ namespace CosmicShore.UI
         [SerializeField] private Transform NavBar;
 
         [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
+        [Inject] private HostConnectionDataSO hostConnectionData;
 
         [Header("Arcade Panel (separate)")]
         [Tooltip("ArcadeScreen component for the Arcade panel. Uses CanvasGroup for visibility.")]
@@ -411,15 +412,19 @@ namespace CosmicShore.UI
 
         private void NavigateTo(MenuScreens screen, bool animate = true)
         {
-
-            // if (screen == MenuScreens.ARK)
-            // {
-            //     OpenArcadePanel();
-            //     return;
-            // }
+            // Arcade is host-only in multiplayer sessions
+            if (screen == MenuScreens.ARK && !IsHostOrSolo())
+                return;
 
             int index = GetIndexForScreen(screen);
             NavigateTo(index, animate);
+        }
+
+        bool IsHostOrSolo()
+        {
+            if (hostConnectionData == null) return true;
+            if (hostConnectionData.PartyMembers == null || hostConnectionData.PartyMembers.Count <= 1) return true;
+            return hostConnectionData.IsHost;
         }
 
         private void NavigateTo(int ScreenIndex, bool animate = true)

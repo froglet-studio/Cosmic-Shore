@@ -10,8 +10,8 @@ namespace CosmicShore.ScriptableObjects
     {
         public List<SO_Captain> Captains;
 
-        [Min(1)] public int MinPlayers = 1;
-        [Range(1, 3)] public int MaxPlayers = 2;
+        public int MinPlayersAllowed = 1;
+        public int MaxPlayersAllowed = 2;
         [Min(1)] public int MinIntensity = 1;
         [Range(1, 4)] public int MaxIntensity = 4;
         public CallToActionTargetType CallToActionTargetType;
