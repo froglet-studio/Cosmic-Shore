@@ -23,7 +23,13 @@ namespace CosmicShore.Game
         public override void OnNetworkSpawn()
         {
             if (spawnOnClientReady)
+            {
                 gameData.OnClientReady += OnClientReadySpawn;
+                // In multiplayer, OnClientReady fires per-client as each connects.
+                // The host fires first when only 1 player exists, so we also listen
+                // for new players joining to spawn their crystals on the server.
+                gameData.OnPlayerAdded += OnPlayerAddedSpawn;
+            }
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
 
@@ -34,7 +40,10 @@ namespace CosmicShore.Game
         public override void OnNetworkDespawn()
         {
             if (spawnOnClientReady)
+            {
                 gameData.OnClientReady -= OnClientReadySpawn;
+                gameData.OnPlayerAdded -= OnPlayerAddedSpawn;
+            }
             else
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
 
@@ -45,6 +54,13 @@ namespace CosmicShore.Game
         }
 
         private void OnClientReadySpawn() => OnTurnStarted();
+
+        private void OnPlayerAddedSpawn(string playerName, Domains domain)
+        {
+            if (!IsServer) return;
+            // Only spawn missing crystals — don't relocate existing ones.
+            SpawnMissingCrystals();
+        }
 
         // ---------------- Replay Reset ----------------
 
@@ -82,6 +98,25 @@ namespace CosmicShore.Game
                 n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
 
             AdvanceBatchAnchor_ForNetworkTurnStart();
+        }
+
+        /// <summary>
+        /// Spawns crystals for newly joined players without relocating existing ones.
+        /// Called when OnPlayerAdded fires after the initial OnClientReady spawn.
+        /// </summary>
+        private void SpawnMissingCrystals()
+        {
+            int expected = GetCrystalCountToSpawn();
+            if (n_Positions.Count >= expected) return;
+
+            EnsureListSizedToSelectedPlayerCount();
+
+            Vector3 batchAnchor = GetBatchAnchor_ForNetworkTurnStart();
+            for (int i = 0; i < n_Positions.Count; i++)
+            {
+                if (n_Positions[i] == Vector3.zero)
+                    n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
+            }
         }
 
         // ---------------- Anchor Helpers ----------------
