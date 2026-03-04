@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -143,6 +144,13 @@ namespace CosmicShore.Core
         {
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
+
+            // Server: explicitly despawn and destroy all vessels before the scene transition.
+            // This sends despawn messages to clients so they cleanly remove the objects
+            // before the old scene unloads, preventing "Invalid Destroy" errors on non-host clients.
+            if (useNetworkSceneLoading)
+                DespawnTrackedVesselsOnServer();
+
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
 
@@ -191,6 +199,25 @@ namespace CosmicShore.Core
 
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Server loading network scene: {sceneName} via nm.SceneManager.LoadScene</color>");
             nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        }
+
+        /// <summary>
+        /// Despawns all tracked vessels on the server before a scene transition.
+        /// Vessels are spawned with <c>destroyWithScene=true</c> and would otherwise be
+        /// destroyed by Unity's scene unload on non-host clients, triggering
+        /// "Invalid Destroy" errors. Explicit server despawn sends proper despawn
+        /// messages so clients remove the objects cleanly.
+        /// </summary>
+        void DespawnTrackedVesselsOnServer()
+        {
+            if (!IsServer) return;
+
+            var vessels = new List<IVessel>(gameData.Vessels);
+            foreach (var vessel in vessels)
+            {
+                if (vessel is VesselController vc && vc.IsSpawned)
+                    vc.NetworkObject.Despawn(true);
+            }
         }
 
         #endregion

@@ -120,6 +120,11 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
+            // Players persist across Netcode scene transitions.
+            // Connection approval spawns with destroyWithScene=false internally,
+            // but we reinforce it so all clients consistently preserve Player objects.
+            NetworkObject.DestroyWithScene = false;
+
             // Add to game data early so ServerPlayerVesselInitializer can find us.
             gameData.Players.Add(this);
 
