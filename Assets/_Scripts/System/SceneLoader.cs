@@ -59,6 +59,7 @@ namespace CosmicShore.Core
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            CleanUpStaleVesselsInDDOL();
             if (gameData)
                 gameData.InvokeSceneTransition(true);
         }
@@ -144,17 +145,18 @@ namespace CosmicShore.Core
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
 
             // Prepare for network scene transition:
-            // 1. Move Player objects to DontDestroyOnLoad on all clients (ClientRpc)
-            //    and on the server. Prevents "Invalid Destroy" for Player objects
-            //    whose Netcode scene migration races with Unity's PreDestroyRecursive.
+            // 1. Tell all clients to move Players + Vessels to DontDestroyOnLoad.
+            //    This prevents "Invalid Destroy" regardless of despawn message timing.
+            //    ConnectedClients is server-only, so clients use LocalClient instead.
             // 2. Despawn all vessels (without destroying) so clients mark them as
             //    IsSpawned=false before the scene load event arrives.
             // Messages are ordered (TCP/Relay), so the client processes these in order:
             //    ClientRpc → despawn RPCs → [500ms later] scene load event.
             if (useNetworkSceneLoading)
             {
-                MovePlayersToDontDestroyOnLoad_ClientRpc();
+                PrepareForSceneTransition_ClientRpc();
                 MovePlayersToDontDestroyOnLoad();
+                MoveVesselsToDontDestroyOnLoad();
                 DespawnAllSpawnedVessels();
             }
 
@@ -294,36 +296,88 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Moves all Player NetworkObjects to DontDestroyOnLoad on every client.
-        /// Prevents "Invalid Destroy" during scene transitions: the client's Player
-        /// (spawned in Menu_Main via connection approval) would otherwise be destroyed
-        /// by Unity's PreDestroyRecursive before Netcode's scene migration can move it.
-        /// The host's Player is typically already in DontDestroyOnLoad (from the
-        /// Auth→Menu_Main transition), so the scene.name check makes it a no-op.
+        /// Prepares all clients for a network scene transition by moving Players
+        /// and Vessels to DontDestroyOnLoad. This prevents "Invalid Destroy" errors
+        /// caused by Unity's PreDestroyRecursive racing with Netcode's scene migration.
         /// </summary>
         [ClientRpc]
-        void MovePlayersToDontDestroyOnLoad_ClientRpc()
+        void PrepareForSceneTransition_ClientRpc()
         {
             MovePlayersToDontDestroyOnLoad();
+            MoveVesselsToDontDestroyOnLoad();
         }
 
         /// <summary>
-        /// Moves all connected Player NetworkObjects to DontDestroyOnLoad.
-        /// Called on the server directly and on clients via ClientRpc.
+        /// Moves Player NetworkObjects to DontDestroyOnLoad.
+        /// Server path: iterates ConnectedClients (populated only on server/host).
+        /// Client path: uses LocalClient.PlayerObject (ConnectedClients is empty on clients).
+        /// The host's Player is typically already in DontDestroyOnLoad (from the
+        /// Auth→Menu_Main transition), so the scene.name check makes it a no-op.
         /// </summary>
         void MovePlayersToDontDestroyOnLoad()
         {
             var nm = NetworkManager.Singleton;
             if (nm == null) return;
 
-            foreach (var kvp in nm.ConnectedClients)
+            if (nm.IsServer)
             {
-                var playerObj = kvp.Value.PlayerObject;
-                if (playerObj != null && playerObj.IsSpawned &&
-                    playerObj.gameObject.scene.name != "DontDestroyOnLoad")
+                foreach (var kvp in nm.ConnectedClients)
                 {
-                    Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Moving Player to DontDestroyOnLoad: {playerObj.name} (NetworkObjectId={playerObj.NetworkObjectId})</color>");
-                    DontDestroyOnLoad(playerObj.gameObject);
+                    MoveNetworkObjectToDontDestroyOnLoad(kvp.Value.PlayerObject);
+                }
+            }
+            else
+            {
+                MoveNetworkObjectToDontDestroyOnLoad(nm.LocalClient?.PlayerObject);
+            }
+        }
+
+        /// <summary>
+        /// Moves all tracked Vessel GameObjects to DontDestroyOnLoad on this peer.
+        /// Belt-and-suspenders: even if the server's Despawn(false) message hasn't
+        /// arrived yet, the vessel survives scene unload without triggering "Invalid Destroy".
+        /// Stale vessels in DontDestroyOnLoad are cleaned up by CleanUpStaleVesselsInDDOL()
+        /// after the new scene loads.
+        /// </summary>
+        void MoveVesselsToDontDestroyOnLoad()
+        {
+            if (gameData == null) return;
+
+            foreach (var vessel in gameData.Vessels)
+            {
+                if (vessel is VesselController vc && vc != null &&
+                    vc.gameObject.scene.name != "DontDestroyOnLoad")
+                {
+                    Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Moving vessel to DontDestroyOnLoad: {vc.name} (NetworkObjectId={vc.NetworkObjectId})</color>");
+                    DontDestroyOnLoad(vc.gameObject);
+                }
+            }
+        }
+
+        static void MoveNetworkObjectToDontDestroyOnLoad(NetworkObject netObj)
+        {
+            if (netObj != null && netObj.IsSpawned &&
+                netObj.gameObject.scene.name != "DontDestroyOnLoad")
+            {
+                Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Moving to DontDestroyOnLoad: {netObj.name} (NetworkObjectId={netObj.NetworkObjectId})</color>");
+                DontDestroyOnLoad(netObj.gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Destroys stale vessel GameObjects that survived a scene transition
+        /// by being moved to DontDestroyOnLoad but are no longer spawned NetworkObjects.
+        /// Called from OnSceneLoaded after the new scene finishes loading.
+        /// </summary>
+        void CleanUpStaleVesselsInDDOL()
+        {
+            var staleVessels = FindObjectsByType<VesselController>(FindObjectsSortMode.None);
+            foreach (var vc in staleVessels)
+            {
+                if (vc != null && !vc.IsSpawned && vc.gameObject.scene.name == "DontDestroyOnLoad")
+                {
+                    Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Destroying stale vessel in DDOL: {vc.name}</color>");
+                    Destroy(vc.gameObject);
                 }
             }
         }
