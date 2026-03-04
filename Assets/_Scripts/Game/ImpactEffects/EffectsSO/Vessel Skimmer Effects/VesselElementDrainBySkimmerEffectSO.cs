@@ -21,8 +21,10 @@ namespace CosmicShore.Game
         [SerializeField, Tooltip("Minimum seconds between drains on the same vessel.")]
         private float cooldownSeconds = 0.5f;
 
-        private static readonly Dictionary<VesselImpactor, float> _lastDrainTimeByImpactor = new();
-        private static readonly Dictionary<ResourceSystem, Coroutine> _restoreByTarget = new();
+        // Instance dicts (not static) — avoids stale state across editor play sessions.
+        // Keyed by ResourceSystem so coroutine host always matches the cancel target.
+        private readonly Dictionary<ResourceSystem, float> _lastDrainTimeByTarget = new();
+        private readonly Dictionary<ResourceSystem, Coroutine> _restoreByTarget = new();
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
@@ -38,16 +40,19 @@ namespace CosmicShore.Game
             if (skimmerVessel.VesselStatus.Speed <= impactorVessel.VesselStatus.Speed)
                 return;
 
-            // Anti-spam cooldown per impactor
+            // Drain elements on the slower (impactor) vessel
+            var resourceSystem = impactorVessel.VesselStatus.ResourceSystem;
+            if (resourceSystem == null)
+                return;
+
+            // Anti-spam cooldown keyed by target ResourceSystem
             var now = Time.time;
-            if (_lastDrainTimeByImpactor.TryGetValue(impactor, out var lastTime)
+            if (_lastDrainTimeByTarget.TryGetValue(resourceSystem, out var lastTime)
                 && now - lastTime < cooldownSeconds)
                 return;
 
-            _lastDrainTimeByImpactor[impactor] = now;
+            _lastDrainTimeByTarget[resourceSystem] = now;
 
-            // Drain elements on the slower (impactor) vessel
-            var resourceSystem = impactorVessel.VesselStatus.ResourceSystem;
             float drainAmount = drainTicks * -0.1f;
 
             // Snapshot current levels so we can restore exactly what was drained
@@ -66,11 +71,12 @@ namespace CosmicShore.Game
             float spaceActualDrain = spaceBefore - resourceSystem.GetNormalizedLevel(Element.Space);
             float timeActualDrain = timeBefore - resourceSystem.GetNormalizedLevel(Element.Time);
 
-            // Cancel any pending restore on this target before scheduling a new one
+            // Cancel any pending restore on this target before scheduling a new one.
+            // Coroutine runs on resourceSystem itself so StopCoroutine always matches.
             if (_restoreByTarget.TryGetValue(resourceSystem, out var running) && running != null)
-                impactee.Skimmer.StopCoroutine(running);
+                resourceSystem.StopCoroutine(running);
 
-            _restoreByTarget[resourceSystem] = impactee.Skimmer.StartCoroutine(
+            _restoreByTarget[resourceSystem] = resourceSystem.StartCoroutine(
                 RestoreAfterDelay(resourceSystem, chargeActualDrain, massActualDrain, spaceActualDrain, timeActualDrain));
         }
 
