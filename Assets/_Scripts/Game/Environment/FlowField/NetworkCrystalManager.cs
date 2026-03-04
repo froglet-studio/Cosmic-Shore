@@ -14,6 +14,11 @@ namespace CosmicShore.Game
 
         private NetworkList<Vector3> n_Positions;
 
+        // Anchor used for the current initial batch so late-joining players
+        // spawn around the same position as the first crystal.
+        private Vector3 _initialBatchAnchor;
+        private bool _initialBatchStarted;
+
         protected override void Awake()
         {
             base.Awake();
@@ -25,9 +30,9 @@ namespace CosmicShore.Game
             if (spawnOnClientReady)
             {
                 gameData.OnClientReady += OnClientReadySpawn;
-                // In multiplayer, OnClientReady fires per-client before all
-                // players have connected.  Subscribe to turn start as a
-                // fallback so crystals spawn once everyone is present.
+                // Spawn each player's crystal as they join, and catch up
+                // on turn start in case OnPlayerAdded was missed.
+                gameData.OnPlayerAdded += OnPlayerAddedSpawn;
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStartedCatchUp;
             }
             else
@@ -42,6 +47,7 @@ namespace CosmicShore.Game
             if (spawnOnClientReady)
             {
                 gameData.OnClientReady -= OnClientReadySpawn;
+                gameData.OnPlayerAdded -= OnPlayerAddedSpawn;
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStartedCatchUp;
             }
             else
@@ -53,31 +59,22 @@ namespace CosmicShore.Game
                 n_Positions.OnListChanged -= OnPositionsChanged;
         }
 
-        private void OnClientReadySpawn()
-        {
-            // In multiplayer, OnClientReady fires per-client before all players
-            // have connected.  Defer to OnMiniGameTurnStarted so every crystal
-            // shares the same batch anchor — identical to offline behaviour.
-            if (gameData.IsMultiplayerMode)
-                return;
+        private void OnClientReadySpawn() => OnTurnStarted();
 
-            OnTurnStarted();
+        private void OnPlayerAddedSpawn(string playerName, Domains domain)
+        {
+            if (!IsServer) return;
+            SpawnMissingCrystals();
         }
 
         /// <summary>
-        /// Fallback for the spawnOnClientReady path: if crystals were not yet
-        /// spawned (multiplayer) or new players arrived since the early spawn,
-        /// run the full OnTurnStarted now — all players are guaranteed present.
+        /// Final fallback: if any crystals are still missing when the turn
+        /// starts (all players guaranteed present), spawn them now.
         /// </summary>
         private void OnTurnStartedCatchUp()
         {
             if (!IsServer) return;
-
-            int expected = GetCrystalCountToSpawn();
-            if (n_Positions.Count >= expected && n_Positions.Count > 0)
-                return; // Already fully spawned (offline early-spawn path).
-
-            OnTurnStarted();
+            SpawnMissingCrystals();
         }
 
         // ---------------- Replay Reset ----------------
@@ -86,7 +83,8 @@ namespace CosmicShore.Game
         {
             if (!IsServer) return;
             serverBatchAnchorIndex = 0;
-            
+            _initialBatchStarted = false;
+
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = Vector3.zero;
             CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index and positions cleared.");
@@ -112,10 +110,35 @@ namespace CosmicShore.Game
             EnsureListSizedToSelectedPlayerCount();
 
             Vector3 batchAnchor = GetBatchAnchor_ForNetworkTurnStart();
+
+            // Remember this anchor so late-joining players spawn at the
+            // same position cluster (see SpawnMissingCrystals).
+            _initialBatchAnchor = batchAnchor;
+            _initialBatchStarted = true;
+
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
 
             AdvanceBatchAnchor_ForNetworkTurnStart();
+        }
+
+        /// <summary>
+        /// Adds crystals for players who joined after the initial batch,
+        /// reusing the same batch anchor so all crystals cluster together.
+        /// </summary>
+        private void SpawnMissingCrystals()
+        {
+            int expected = GetCrystalCountToSpawn();
+            if (n_Positions.Count >= expected) return;
+            if (!_initialBatchStarted) return;
+
+            EnsureListSizedToSelectedPlayerCount();
+
+            for (int i = 0; i < n_Positions.Count; i++)
+            {
+                if (n_Positions[i] == Vector3.zero)
+                    n_Positions[i] = GetSpawnPointAroundAnchor(_initialBatchAnchor);
+            }
         }
 
         // ---------------- Anchor Helpers ----------------
