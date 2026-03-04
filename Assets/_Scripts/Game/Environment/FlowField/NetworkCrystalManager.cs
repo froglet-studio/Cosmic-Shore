@@ -59,7 +59,16 @@ namespace CosmicShore.Game
                 n_Positions.OnListChanged -= OnPositionsChanged;
         }
 
-        private void OnClientReadySpawn() => OnTurnStarted();
+        private void OnClientReadySpawn()
+        {
+            // Server: spawn crystals for the current player count.
+            OnTurnStarted();
+
+            // Client: catch up on crystals already in the NetworkList.
+            // OnListChanged does NOT fire for entries that existed before
+            // this client subscribed, so we must read them manually.
+            SyncExistingCrystals();
+        }
 
         private void OnPlayerAddedSpawn(string playerName, Domains domain)
         {
@@ -73,8 +82,32 @@ namespace CosmicShore.Game
         /// </summary>
         private void OnTurnStartedCatchUp()
         {
-            if (!IsServer) return;
-            SpawnMissingCrystals();
+            if (IsServer)
+                SpawnMissingCrystals();
+
+            // All clients (including host) sync any crystals they missed.
+            SyncExistingCrystals();
+        }
+
+        /// <summary>
+        /// Reads all existing non-zero positions from the NetworkList and
+        /// spawns crystals that this client hasn't created yet. Handles the
+        /// case where a client joins after the server already set positions.
+        /// </summary>
+        private void SyncExistingCrystals()
+        {
+            for (int i = 0; i < n_Positions.Count; i++)
+            {
+                Vector3 pos = n_Positions[i];
+                if (pos == Vector3.zero) continue;
+
+                int crystalId = i + 1;
+                if (!cellData.TryGetCrystalById(crystalId, out _))
+                {
+                    var crystal = Spawn(crystalId, pos);
+                    cellData.AddCrystalToList(crystal);
+                }
+            }
         }
 
         // ---------------- Replay Reset ----------------
