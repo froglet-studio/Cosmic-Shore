@@ -525,10 +525,30 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 1114053771776663271, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 140.93005
+      objectReference: {fileID: 0}
+    - target: {fileID: 1114053771776663271, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 31.29663
+      objectReference: {fileID: 0}
     - target: {fileID: 1171819396819455383, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1252966920727418040, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 140.93005
+      objectReference: {fileID: 0}
+    - target: {fileID: 1252966920727418040, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 31.29663
       objectReference: {fileID: 0}
     - target: {fileID: 1309544587842810198, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -564,6 +584,16 @@ PrefabInstance:
         type: 3}
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
+      objectReference: {fileID: 0}
+    - target: {fileID: 2513591523398348092, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 140.93005
+      objectReference: {fileID: 0}
+    - target: {fileID: 2513591523398348092, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 31.29663
       objectReference: {fileID: 0}
     - target: {fileID: 2833300470156687357, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1521,6 +1551,7 @@ MonoBehaviour:
     Color: {r: 0, g: 0.15447235, b: 1, a: 1}
   - Domain: 4
     Color: {r: 1, g: 0.62498116, b: 0, a: 1}
+  animSettings: {fileID: 0}
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
@@ -1702,8 +1733,8 @@ MonoBehaviour:
   guaranteedSpawnables: []
   spawnableByIntensity:
   - {fileID: 6514606624884080306, guid: 46b326171d45253459e6b8f75d1cdb25, type: 3}
-  - {fileID: 1670082815129230080, guid: e8174c106727c824199fdd482cdf093d, type: 3}
   - {fileID: 938910552520234231, guid: 22d055e789298e64598f72534d73c9c2, type: 3}
+  - {fileID: 1670082815129230080, guid: e8174c106727c824199fdd482cdf093d, type: 3}
   - {fileID: 4959367395204161429, guid: 7f105562de1ca3f41832337facd6e3d9, type: 3}
   spawnableSegments:
   - {fileID: 0}
@@ -2888,6 +2919,7 @@ MonoBehaviour:
   rematchDeniedText: {fileID: 2118304768}
   playAgainButton: {fileID: 1315164671}
   rematchPanelAutoDismissSeconds: 3
+  animSettings: {fileID: 0}
   joustController: {fileID: 1628508346}
 --- !u!114 &1604234836
 MonoBehaviour:
