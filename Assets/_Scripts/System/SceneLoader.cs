@@ -142,6 +142,15 @@ namespace CosmicShore.Core
         async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)
         {
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
+
+            // Despawn all vessels on the server BEFORE the scene transition.
+            // Without this, clients destroy them via Unity's scene unload (PreDestroyRecursive),
+            // causing "Invalid Destroy" Netcode errors — only the server should despawn
+            // spawned NetworkObjects. The waitBeforeLoading delay below gives clients time
+            // to process the despawn RPCs before the scene load event arrives.
+            if (useNetworkSceneLoading)
+                DespawnAllSpawnedVessels();
+
             gameData.InvokeSceneTransition(false);
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
@@ -177,6 +186,27 @@ namespace CosmicShore.Core
             {
                 RequestSceneLoadServerRpc(sceneName);
             }
+        }
+
+        /// <summary>
+        /// Server-side despawn of all tracked vessels before a network scene transition.
+        /// Sends despawn RPCs to clients so they cleanly remove vessel NetworkObjects
+        /// before Unity's scene unload destroys them.
+        /// </summary>
+        void DespawnAllSpawnedVessels()
+        {
+            if (!IsServer) return;
+
+            for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
+            {
+                var vessel = gameData.Vessels[i];
+                if (vessel is VesselController vc && vc != null && vc.IsSpawned)
+                {
+                    Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Despawning vessel: {vc.name} (NetworkObjectId={vc.NetworkObjectId})</color>");
+                    vc.NetworkObject.Despawn(true);
+                }
+            }
+            gameData.Vessels.Clear();
         }
 
         void LoadNetworkSceneOnServer(string sceneName)
