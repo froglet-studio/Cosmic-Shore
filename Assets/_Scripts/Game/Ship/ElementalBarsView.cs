@@ -94,6 +94,7 @@ namespace CosmicShore
         private Tween[] _labelColorTweens;
         private Tween[][] _pipTweens; // [barIndex][pipIndex]
         private bool _built;
+        private bool _overtakeActive;
 
         public bool IsBuilt => _built;
 
@@ -199,17 +200,20 @@ namespace CosmicShore
         // ---------------------------------------------------------------
 
         /// <summary>
-        /// Set the level for an element. Level 0 = zeroLineIndex pips enabled.
-        /// Positive levels enable more pips with pop-in. Negative levels disable with shake + haptics.
+        /// Set the level for an element. Level is floored at 0 (baseline 5 pips always stay on).
+        /// Only overtake penalty can push below zero.
         /// </summary>
         public void SetLevel(Element element, int level, Color domainColor)
         {
             int idx = GetBarIndex(element);
             if (idx < 0 || !_built) return;
 
+            // Floor at 0 unless overtake is active — baseline pips never decrease from normal gameplay
+            int clamped = _overtakeActive ? level : Mathf.Max(0, level);
+
             _barDomainColors[idx] = domainColor;
             int prev = _currentLevels[idx];
-            _currentLevels[idx] = level;
+            _currentLevels[idx] = clamped;
 
             RefreshBar(idx, prev);
         }
@@ -217,6 +221,23 @@ namespace CosmicShore
         public void SetLevel(Element element, int level)
         {
             SetLevel(element, level, filledColor);
+        }
+
+        /// <summary>
+        /// Enter overtake mode — allows levels to go negative (below baseline 5 pips).
+        /// Call EndOvertake() when recovery is complete.
+        /// </summary>
+        public void BeginOvertake()
+        {
+            _overtakeActive = true;
+        }
+
+        /// <summary>
+        /// Exit overtake mode — levels are floored at 0 again.
+        /// </summary>
+        public void EndOvertake()
+        {
+            _overtakeActive = false;
         }
 
         public void RefreshAllBars()

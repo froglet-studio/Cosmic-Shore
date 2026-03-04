@@ -59,6 +59,11 @@ namespace CosmicShore.Game.Arcade
         /// HUD systems can subscribe to trigger visual juice.
         /// </summary>
         public event Action<string> OnPlayerOvertaken;
+        public event Action<string> OnPlayerOvertakeRecovered;
+
+        /// <summary>Static events for systems without a direct reference (e.g. SilhouetteController).</summary>
+        public static event Action<string> OnOvertakePenaltyApplied;
+        public static event Action<string> OnOvertakePenaltyRecovered;
 
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
@@ -350,6 +355,7 @@ namespace CosmicShore.Game.Arcade
                           $"All elements slammed to {overtakePenaltyLevel * 10f:F0}");
 
             OnPlayerOvertaken?.Invoke(playerName);
+            OnOvertakePenaltyApplied?.Invoke(playerName);
         }
 
         void TickOvertakeRecovery()
@@ -393,6 +399,9 @@ namespace CosmicShore.Game.Arcade
                 {
                     completed ??= new List<string>();
                     completed.Add(playerName);
+
+                    OnPlayerOvertakeRecovered?.Invoke(playerName);
+                    OnOvertakePenaltyRecovered?.Invoke(playerName);
 
                     if (debugLogging)
                         CSDebug.Log($"[ElementalComebackSystem] {playerName} recovered from overtake penalty.");

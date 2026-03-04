@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using CosmicShore.Game;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Core;
 
 namespace CosmicShore
@@ -50,6 +50,9 @@ namespace CosmicShore
 
             TrySubscribeResources();
 
+            ElementalComebackSystem.OnOvertakePenaltyApplied += HandleOvertakePenaltyApplied;
+            ElementalComebackSystem.OnOvertakePenaltyRecovered += HandleOvertakePenaltyRecovered;
+
             //flower explosion
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion += HandleMantaFlowerExplosion;
         }
@@ -70,6 +73,9 @@ namespace CosmicShore
 
             TryUnsubscribeResources();
             TryUnsubscribeElementBars();
+
+            ElementalComebackSystem.OnOvertakePenaltyApplied -= HandleOvertakePenaltyApplied;
+            ElementalComebackSystem.OnOvertakePenaltyRecovered -= HandleOvertakePenaltyRecovered;
 
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
         }
@@ -233,6 +239,20 @@ namespace CosmicShore
         void HandleElementLevelChanged(Element element, int level)
         {
             elementBars?.SetLevel(element, level);
+        }
+
+        // --- Overtake ---
+        void HandleOvertakePenaltyApplied(string playerName)
+        {
+            if (_status == null || _status.PlayerName != playerName) return;
+            elementBars?.BeginOvertake();
+            elementBars?.JuiceOvertakePenalty();
+        }
+
+        void HandleOvertakePenaltyRecovered(string playerName)
+        {
+            if (_status == null || _status.PlayerName != playerName) return;
+            elementBars?.EndOvertake();
         }
 
         /// <summary>
