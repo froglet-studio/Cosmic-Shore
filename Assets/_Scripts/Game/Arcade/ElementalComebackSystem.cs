@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Soap;
+using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -13,8 +14,9 @@ namespace CosmicShore.Game.Arcade
     /// Attach to minigame scene alongside the minigame controller. Assign a comeback profile
     /// to configure per-vessel, per-element weights.
     ///
-    /// Also detects overtake events: when a player who was leading gets overtaken,
-    /// all their elemental values slam to -5 and gradually recover to 0.
+    /// Overtake penalty is driven by the joust event (SOAP ScriptableEventString): when a
+    /// faster vessel physically passes a slower one, the overtaken player's elements slam
+    /// to -5 and gradually recover to 0.
     /// </summary>
     public class ElementalComebackSystem : MonoBehaviour
     {
@@ -46,6 +48,9 @@ namespace CosmicShore.Game.Arcade
         [Header("Overtake Penalty")]
         [Tooltip("Enable the overtake penalty system")]
         [SerializeField] bool enableOvertakePenalty = true;
+        [Tooltip("SOAP event channel that fires when a vessel is jousted (overtaken). " +
+                 "Assign the same EventOnJoustCollision asset used by VesselExplosionBySkimmerEffectSO.")]
+        [SerializeField] ScriptableEventString onJoustCollisionEvent;
         [Tooltip("Normalized level to slam elements to on overtake (-0.5 = level -5)")]
         [SerializeField] float overtakePenaltyLevel = -0.5f;
         [Tooltip("Seconds to recover from penalty back to baseline (0)")]
@@ -73,7 +78,6 @@ namespace CosmicShore.Game.Arcade
         bool _isActive;
 
         // Overtake tracking
-        string _currentLeaderName;
         readonly Dictionary<string, float> _overtakePenaltyTimers = new();
 
         void OnEnable()
@@ -90,6 +94,9 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd += OnGameEnded;
 
+            if (enableOvertakePenalty && onJoustCollisionEvent != null)
+                onJoustCollisionEvent.OnRaised += HandleJoustCollision;
+
             if (debugLogging)
                 CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
         }
@@ -100,6 +107,9 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd -= OnGameEnded;
+
+            if (onJoustCollisionEvent != null)
+                onJoustCollisionEvent.OnRaised -= HandleJoustCollision;
         }
 
         void OnTurnStarted()
@@ -115,7 +125,6 @@ namespace CosmicShore.Game.Arcade
             _isActive = true;
             _baselines.Clear();
             _overtakePenaltyTimers.Clear();
-            _currentLeaderName = null;
 
             foreach (var player in gameData.Players)
             {
@@ -165,32 +174,24 @@ namespace CosmicShore.Game.Arcade
             if (enableOvertakePenalty)
                 TickOvertakeRecovery();
 
-            // Check for overtake every frame so it registers instantly
-            if (enableOvertakePenalty)
-                CheckForOvertake();
-
             if (Time.time - _lastUpdateTime < updateInterval) return;
 
             _lastUpdateTime = Time.time;
             ApplyComebackBuffs();
         }
 
-        void CheckForOvertake()
+        /// <summary>
+        /// Called by the SOAP joust event channel when a vessel is physically overtaken.
+        /// The player name is the overtaken (slower) vessel's player.
+        /// </summary>
+        void HandleJoustCollision(string overtakenPlayerName)
         {
-            var players = gameData.Players;
-            if (players == null || players.Count < 2) return;
+            if (!_isActive) return;
 
-            float leaderValue = GetLeaderValue();
-            string newLeaderName = FindLeaderName(leaderValue);
+            if (debugLogging)
+                CSDebug.Log($"[ElementalComebackSystem] Joust event received for {overtakenPlayerName}");
 
-            if (_currentLeaderName != null
-                && newLeaderName != null
-                && _currentLeaderName != newLeaderName)
-            {
-                ApplyOvertakePenalty(_currentLeaderName);
-            }
-
-            _currentLeaderName = newLeaderName;
+            ApplyOvertakePenalty(overtakenPlayerName);
         }
 
         void ApplyComebackBuffs()
@@ -199,8 +200,6 @@ namespace CosmicShore.Game.Arcade
             if (players == null || players.Count < 2) return;
 
             float leaderValue = GetLeaderValue();
-
-            // Leader tracking now handled by CheckForOvertake() every frame
 
             for (int p = 0; p < players.Count; p++)
             {
@@ -308,20 +307,6 @@ namespace CosmicShore.Game.Arcade
         // ---------------------------------------------------------------
         // Overtake penalty — slam elements to -5, recover to 0
         // ---------------------------------------------------------------
-
-        string FindLeaderName(float leaderValue)
-        {
-            var players = gameData.Players;
-            if (players == null) return null;
-
-            for (int i = 0; i < players.Count; i++)
-            {
-                float v = GetPlayerValue(players[i]);
-                if (Mathf.Approximately(v, leaderValue))
-                    return players[i].Name;
-            }
-            return null;
-        }
 
         void ApplyOvertakePenalty(string playerName)
         {
