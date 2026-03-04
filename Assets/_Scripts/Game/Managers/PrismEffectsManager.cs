@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using System.Collections.Generic;
 using CosmicShore.Utilities;
 
@@ -77,7 +78,11 @@ namespace CosmicShore.Game
 
         public void UnregisterExplosion(PrismExplosion explosion)
         {
-            activeExplosions.Remove(explosion);
+            int idx = activeExplosions.IndexOf(explosion);
+            if (idx < 0) return;
+            int last = activeExplosions.Count - 1;
+            activeExplosions[idx] = activeExplosions[last];
+            activeExplosions.RemoveAt(last);
         }
 
         public void RegisterImplosion(PrismImplosion implosion)
@@ -89,7 +94,11 @@ namespace CosmicShore.Game
 
         public void UnregisterImplosion(PrismImplosion implosion)
         {
-            activeImplosions.Remove(implosion);
+            int idx = activeImplosions.IndexOf(implosion);
+            if (idx < 0) return;
+            int last = activeImplosions.Count - 1;
+            activeImplosions[idx] = activeImplosions[last];
+            activeImplosions.RemoveAt(last);
         }
 
         #endregion
@@ -116,25 +125,22 @@ namespace CosmicShore.Game
 
         #endregion
 
+        static readonly ProfilerMarker s_explosionMarker = new("PrismEffects.Explosions");
+        static readonly ProfilerMarker s_implosionMarker = new("PrismEffects.Implosions");
+
         private void Update()
         {
             float dt = Time.deltaTime;
-            if (activeExplosions.Count > 0) ProcessExplosions(dt);
-            if (activeImplosions.Count > 0) ProcessImplosions(dt);
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            // Safety audit: detect explosions with enabled renderers that aren't actively managed.
-            // This catches "zombie" objects that escaped the pool lifecycle.
-            if (Time.frameCount % 60 == 0) // Check once per ~second at 60fps
+            if (activeExplosions.Count > 0)
             {
-                var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
-                foreach (var exp in allExplosions)
-                {
-                    if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
-                        exp.Renderer.enabled = false;
-                }
+                using (s_explosionMarker.Auto())
+                    ProcessExplosions(dt);
             }
-#endif
+            if (activeImplosions.Count > 0)
+            {
+                using (s_implosionMarker.Auto())
+                    ProcessImplosions(dt);
+            }
         }
 
         #region Explosion Processing
@@ -208,11 +214,17 @@ namespace CosmicShore.Game
                 }
             }
 
-            // Process completions after iteration to avoid list mutation during traversal
+            // Process completions after iteration — swap-and-pop to avoid O(n²) list removal
             for (int i = 0; i < explosionCompletionQueue.Count; i++)
             {
                 var exp = explosionCompletionQueue[i];
-                activeExplosions.Remove(exp);
+                int idx = activeExplosions.IndexOf(exp);
+                if (idx >= 0)
+                {
+                    int last = activeExplosions.Count - 1;
+                    activeExplosions[idx] = activeExplosions[last];
+                    activeExplosions.RemoveAt(last);
+                }
                 exp.OnEffectComplete();
             }
         }
@@ -284,11 +296,17 @@ namespace CosmicShore.Game
                 }
             }
 
-            // Process completions after iteration
+            // Process completions after iteration — swap-and-pop to avoid O(n²) list removal
             for (int i = 0; i < implosionCompletionQueue.Count; i++)
             {
                 var imp = implosionCompletionQueue[i];
-                activeImplosions.Remove(imp);
+                int idx = activeImplosions.IndexOf(imp);
+                if (idx >= 0)
+                {
+                    int last = activeImplosions.Count - 1;
+                    activeImplosions[idx] = activeImplosions[last];
+                    activeImplosions.RemoveAt(last);
+                }
                 imp.OnEffectComplete();
             }
         }
