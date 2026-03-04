@@ -52,34 +52,15 @@ namespace CosmicShore.Game
             float outerR = membraneRadius;
             float cellVolume = shardDistance * shardDistance * shardDistance;
 
-            // Outer shell (nucleus → membrane): uniform full density
-            float outerShellVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR - innerR * innerR * innerR);
-            int outerCount = Mathf.Max(1, Mathf.RoundToInt(outerShellVolume / cellVolume));
-
-            // Inner sphere (0 → nucleus): density grades linearly from full at nucleusRadius to zero at center
-            // Integrating ρ(r) = (r/innerR) * (1/cellVolume) over the sphere gives π * innerR³ / cellVolume
-            float innerCount_f = Mathf.PI * innerR * innerR * innerR / cellVolume;
-            int innerCount = Mathf.Max(0, Mathf.RoundToInt(innerCount_f));
-
-            int shardCount = outerCount + innerCount;
-            float innerR3 = innerR * innerR * innerR;
+            // Uniform density throughout the full sphere (0 → membrane)
+            float sphereVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR);
+            int shardCount = Mathf.Max(1, Mathf.RoundToInt(sphereVolume / cellVolume));
             float outerR3 = outerR * outerR * outerR;
 
             shards = new GameObject[shardCount];
             for (int i = 0; i < shardCount; i++)
             {
-                float r;
-                if (i < outerCount)
-                {
-                    // Uniform in outer shell
-                    r = Mathf.Pow(Random.Range(innerR3, outerR3), 1f / 3f);
-                }
-                else
-                {
-                    // Linear density gradient: ρ ∝ r → radial PDF ∝ r³ → CDF ∝ r⁴ → r = R * u^(1/4)
-                    r = innerR * Mathf.Pow(Random.value, 0.25f);
-                }
-
+                float r = Mathf.Pow(Random.Range(0f, outerR3), 1f / 3f);
                 float cosTheta = Random.Range(-1f, 1f);
                 float sinTheta = Mathf.Sqrt(1f - cosTheta * cosTheta);
                 float phi = Random.Range(0f, 2f * Mathf.PI);
