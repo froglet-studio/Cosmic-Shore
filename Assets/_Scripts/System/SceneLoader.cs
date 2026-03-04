@@ -126,6 +126,26 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Server-only: despawns all tracked vessels before a network scene load.
+        /// Players stay persistent (DestroyWithScene=false) — only vessels are
+        /// cleaned up. This prevents "Invalid Destroy on non-host client" errors
+        /// that occur when client-side scene unload triggers Destroy() on vessels
+        /// before Netcode's despawn messages arrive.
+        /// </summary>
+        void PreDespawnVessels()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return;
+
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] PreDespawnVessels — Vessels.Count={gameData.Vessels.Count}</color>");
+            for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
+            {
+                if (gameData.Vessels[i] is VesselController vc && vc.IsSpawned)
+                    vc.NetworkObject.Despawn(true);
+            }
+        }
+
+        /// <summary>
         /// Load the main menu scene.
         /// Called by SOAP EventListener (EventOnClickToMainMenuButton).
         /// Uses network scene loading when a Netcode host is active.
@@ -143,6 +163,13 @@ namespace CosmicShore.Core
         {
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
+
+            // Pre-despawn vessels to prevent "Invalid Destroy" errors on non-host
+            // clients. Players stay persistent — only vessels are cleaned up.
+            // The waitBeforeLoading delay gives clients time to process despawn messages.
+            if (useNetworkSceneLoading)
+                PreDespawnVessels();
+
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -9,14 +10,17 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Extension of ServerPlayerVesselInitializer:
-    /// spawns server-owned AI players and their vessels, then delegates
-    /// human player handling to the base class via OnPlayerNetworkSpawnedUlong.
+    /// ensures AI players exist (persistent across scene transitions) and spawns
+    /// their vessels, then delegates human player handling to the base class.
     ///
     /// OnNetworkSpawn flow:
-    ///   1. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawnedUlong
-    ///      for each, but we haven't subscribed yet so the base ignores them)
+    ///   1. EnsureAIPlayersAndVessels() — finds persistent AI or creates new ones,
+    ///      spawns vessels, initializes pairs
     ///   2. Mark AI players in _processedPlayers so the base never processes them
     ///   3. base.OnNetworkSpawn() — subscribes to event + handles human players going forward
+    ///
+    /// AI players are spawned with DestroyWithScene=false so they persist across
+    /// scene transitions. Only vessels are destroyed with the scene and respawned.
     /// </summary>
     public class ServerPlayerVesselInitializerWithAI : ServerPlayerVesselInitializer
     {
@@ -58,8 +62,8 @@ namespace CosmicShore.Gameplay
             if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
 
-            // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
-            // AI players fire the event during Spawn(), but since we haven't
+            // Ensure AI players + vessels BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
+            // New AI players fire the event during Spawn(), but since we haven't
             // subscribed yet (base.OnNetworkSpawn hasn't run), those events
             // are harmlessly ignored by the base.
             // Wrapped in try-catch to guarantee base.OnNetworkSpawn() always
@@ -68,14 +72,14 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
-                    SpawnAIs();
-                    Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
+                    Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling EnsureAIPlayersAndVessels()</color>");
+                    EnsureAIPlayersAndVessels();
+                    Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] EnsureAIPlayersAndVessels() complete. gameData.Players.Count={gameData.Players.Count}</color>");
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogError($"<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}</color>");
-                    CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] SpawnAIs failed: {e.Message}");
+                    Debug.LogError($"<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] EnsureAIPlayersAndVessels FAILED: {e.Message}\n{e.StackTrace}</color>");
+                    CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] EnsureAIPlayersAndVessels failed: {e.Message}");
                 }
             }
 
@@ -95,7 +99,13 @@ namespace CosmicShore.Gameplay
             base.OnNetworkSpawn();
         }
 
-        void SpawnAIs()
+        /// <summary>
+        /// Finds persistent AI players from previous scene transitions or creates
+        /// new ones. Spawns vessels for all AI players and initializes pairs.
+        /// AI players are persistent (DestroyWithScene=false); only vessels are
+        /// scene-bound (DestroyWithScene=true).
+        /// </summary>
+        void EnsureAIPlayersAndVessels()
         {
             if (!aiPlayerPrefab)
             {
@@ -105,67 +115,145 @@ namespace CosmicShore.Gameplay
             }
 
             int aiCount = gameData.EnsureMinimumAIBackfill();
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}</color>");
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] EnsureAIPlayersAndVessels — aiCount={aiCount}</color>");
             if (aiCount <= 0)
             {
-                Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
+                Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI needed (aiCount <= 0)</color>");
                 return;
             }
 
             // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
-            System.Collections.Generic.List<AIProfile> profiles = null;
+            List<AIProfile> profiles = null;
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
-            for (int i = 0; i < aiCount; i++)
+            // Find persistent AI players from previous scene (survive because Spawn(false))
+            var existingAI = FindPersistentAIPlayers();
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Found {existingAI.Count} persistent AI players</color>");
+
+            // Despawn excess AI if fewer needed now
+            while (existingAI.Count > aiCount)
             {
-                var aiPlayerNO = Instantiate(aiPlayerPrefab);
-                GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
+                var excess = existingAI[existingAI.Count - 1];
+                existingAI.RemoveAt(existingAI.Count - 1);
+                Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Despawning excess AI: {excess.NetName.Value}</color>");
+                excess.NetworkObject.Despawn(true);
+            }
 
-                aiPlayerNO.Spawn(true);
+            // Reconfigure existing persistent AI — prepare for new scene, spawn vessels
+            for (int i = 0; i < existingAI.Count; i++)
+            {
+                var aiPlayer = existingAI[i];
+                Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Reconfiguring persistent AI[{i}]: {aiPlayer.NetName.Value}</color>");
 
-                var aiPlayer = aiPlayerNO.GetComponent<Player>();
-                if (!aiPlayer)
-                {
-                    CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] AI Player prefab missing Player component.");
-                    aiPlayerNO.Despawn(true);
+                aiPlayer.PrepareForNewScene();
+
+                // Overwrite PrepareForNewScene's defaults with AI-specific values
+                ConfigureAIPlayerData(aiPlayer, i, profiles);
+
+                if (!TrySpawnVesselForAI(aiPlayer, out var vesselNO))
                     continue;
-                }
 
-                // Use template data if available, otherwise derive values dynamically
-                var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
-
-                var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
-                if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
-                    aiVesselType = PickAIVesselType();
-
-                var aiName = profiles != null && i < profiles.Count
-                    ? profiles[i].Name
-                    : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
-
-                var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
-
-                aiPlayer.NetDefaultVesselType.Value = aiVesselType;
-                aiPlayer.NetName.Value = aiName;
-                aiPlayer.NetDomain.Value = aiDomain;
-                aiPlayer.NetIsAI.Value = true;
-
-                if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
+                if (!vesselNO.TryGetComponent(out IVessel vessel))
                 {
-                    aiPlayerNO.Despawn(true);
+                    CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] Spawned vessel missing IVessel component.");
                     continue;
-                }
-
-                // Server-side initialization of the AI player-vessel pair
-                if (!aiVesselNO.TryGetComponent(out IVessel vessel))
-                {
-                    CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
-                    return;
                 }
 
                 clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
-                ConfigureAIPilot(aiVesselNO);
+                ConfigureAIPilot(vesselNO);
             }
+
+            // Create new AI players if more needed
+            for (int i = existingAI.Count; i < aiCount; i++)
+            {
+                Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Creating new AI[{i}]</color>");
+                CreateNewAIPlayerAndVessel(i, profiles);
+            }
+        }
+
+        /// <summary>
+        /// Discovers persistent AI Player NetworkObjects from the SpawnManager.
+        /// These survived scene transitions because they were spawned with
+        /// DestroyWithScene=false.
+        /// </summary>
+        List<Player> FindPersistentAIPlayers()
+        {
+            var result = new List<Player>();
+            var nm = NetworkManager.Singleton;
+            if (nm?.SpawnManager == null) return result;
+
+            foreach (var kvp in nm.SpawnManager.SpawnedObjects)
+            {
+                if (kvp.Value != null
+                    && kvp.Value.TryGetComponent<Player>(out var p)
+                    && p.IsSpawned && p.NetIsAI.Value)
+                    result.Add(p);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a brand-new AI player (persistent) and its vessel.
+        /// Called on first game launch when no persistent AI exists yet.
+        /// </summary>
+        void CreateNewAIPlayerAndVessel(int index, List<AIProfile> profiles)
+        {
+            var aiPlayerNO = Instantiate(aiPlayerPrefab);
+            GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
+
+            var aiPlayer = aiPlayerNO.GetComponent<Player>();
+            if (!aiPlayer)
+            {
+                CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] AI Player prefab missing Player component.");
+                Destroy(aiPlayerNO.gameObject);
+                return;
+            }
+
+            // Mark as AI BEFORE Spawn() so OnNetworkSpawn() skips Owner writes
+            aiPlayer.PreInitializeAsAI();
+            aiPlayerNO.Spawn(false); // Persistent — survives scene transitions
+
+            ConfigureAIPlayerData(aiPlayer, index, profiles);
+
+            if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
+            {
+                aiPlayerNO.Despawn(true);
+                return;
+            }
+
+            if (!aiVesselNO.TryGetComponent(out IVessel vessel))
+            {
+                CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] Spawned vessel missing IVessel component.");
+                return;
+            }
+
+            clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
+            ConfigureAIPilot(aiVesselNO);
+        }
+
+        /// <summary>
+        /// Sets AI-specific NetworkVariable values: vessel type, name, domain, AI flag.
+        /// Used for both new and persistent (reconfigured) AI players.
+        /// </summary>
+        void ConfigureAIPlayerData(Player aiPlayer, int index, List<AIProfile> profiles)
+        {
+            var hasTemplate = aiInitializeDatas != null && index < aiInitializeDatas.Length;
+
+            var aiVesselType = hasTemplate ? aiInitializeDatas[index].vesselClass : VesselClassType.Random;
+            if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
+                aiVesselType = PickAIVesselType();
+
+            var aiName = profiles != null && index < profiles.Count
+                ? profiles[index].Name
+                : hasTemplate ? aiInitializeDatas[index].PlayerName : $"AI {index + 1}";
+
+            var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+
+            aiPlayer.NetDefaultVesselType.Value = aiVesselType;
+            aiPlayer.NetName.Value = aiName;
+            aiPlayer.NetDomain.Value = aiDomain;
+            aiPlayer.NetIsAI.Value = true;
         }
 
         VesselClassType PickAIVesselType()

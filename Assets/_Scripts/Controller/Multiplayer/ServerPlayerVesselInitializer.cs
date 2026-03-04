@@ -111,9 +111,16 @@ namespace CosmicShore.Gameplay
         {
             // Stage 1: Check gameData.Players (catches players spawned in THIS scene,
             // e.g. AI players whose OnNetworkSpawn() already added them).
+            // Skip AI players — they are handled exclusively by
+            // ServerPlayerVesselInitializerWithAI. AI shares the host's
+            // OwnerClientId, so processing them here would cause
+            // FindUnprocessedPlayerByOwnerClientId to return an AI player
+            // instead of the human player.
             foreach (var p in gameData.Players)
             {
-                if (p is Player netPlayer && netPlayer.IsSpawned)
+                if (p is Player netPlayer && netPlayer.IsSpawned
+                    && !_processedPlayers.Contains(netPlayer.NetworkObjectId)
+                    && !netPlayer.NetIsAI.Value)
                     HandlePlayerNetworkSpawned(netPlayer.OwnerClientId);
             }
 
@@ -338,7 +345,8 @@ namespace CosmicShore.Gameplay
                 if (p is Player netPlayer
                     && netPlayer.IsSpawned
                     && netPlayer.OwnerClientId == ownerClientId
-                    && !_processedPlayers.Contains(netPlayer.NetworkObjectId))
+                    && !_processedPlayers.Contains(netPlayer.NetworkObjectId)
+                    && !netPlayer.NetIsAI.Value)
                 {
                     return netPlayer;
                 }

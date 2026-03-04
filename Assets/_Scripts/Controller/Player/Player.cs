@@ -52,6 +52,17 @@ namespace CosmicShore.Gameplay
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
         public bool IsInitializedAsAI { get; private set; }
 
+        /// <summary>
+        /// Marks this player as AI before Spawn() so that OnNetworkSpawn()
+        /// skips the Owner writes block (which would write the human player's
+        /// identity to AI NetworkVariables).
+        /// Must be called BEFORE NetworkObject.Spawn().
+        /// </summary>
+        public void PreInitializeAsAI()
+        {
+            IsInitializedAsAI = true;
+        }
+
         bool _spawnEventRaised;
 
         private InputController _inputController;
@@ -158,7 +169,10 @@ namespace CosmicShore.Gameplay
             //   values arrive later via replication → OnNetNameValueChanged /
             //   OnNetDefaultVesselTypeChanged raise the deferred spawn event.
             // For host's player on client: IsOwner=false → skipped (correct).
-            if (IsOwner)
+            // AI players: IsOwner=true (server-owned) but PreInitializeAsAI() was
+            //   called before Spawn(), so IsInitializedAsAI=true → skip to prevent
+            //   writing the human player's identity to AI NetworkVariables.
+            if (IsOwner && !IsInitializedAsAI)
             {
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)
