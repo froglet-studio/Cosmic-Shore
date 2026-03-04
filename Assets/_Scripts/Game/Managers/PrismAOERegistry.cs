@@ -294,6 +294,52 @@ namespace CosmicShore.Game
 
         #endregion
 
+        #region Benchmark Support
+
+        /// <summary>
+        /// Registers synthetic prism data for benchmarking without requiring a Prism MonoBehaviour.
+        /// The managed _prisms[index] slot is null — ResolveDamage will skip it after the
+        /// spatial query, so this isolates Burst job cost from damage application cost.
+        /// </summary>
+        internal int RegisterSynthetic(float3 position, byte flags, float volume, int domain)
+        {
+            if (!_spatial.IsCreated) return -1;
+            int index;
+            if (_freeList.Count > 0)
+                index = _freeList.Pop();
+            else
+            {
+                index = _highWaterMark++;
+                EnsureCapacity(index);
+            }
+
+            _prisms[index] = null;
+            _bridges[index] = null;
+            _spatial[index] = new PrismSpatialData { Position = position, Flags = flags };
+            _damage[index] = new PrismDamageData { Volume = volume, Domain = domain };
+            return index;
+        }
+
+        /// <summary>
+        /// Clears all registered prisms. Used by benchmark to reset between runs.
+        /// </summary>
+        internal void ClearAll()
+        {
+            if (!_spatial.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                _prisms[i] = null;
+                _bridges[i] = null;
+                var s = _spatial[i];
+                s.Flags = 0;
+                _spatial[i] = s;
+            }
+            _freeList.Clear();
+            _highWaterMark = 0;
+        }
+
+        #endregion
+
         #region AOE Processing
 
         /// <summary>
