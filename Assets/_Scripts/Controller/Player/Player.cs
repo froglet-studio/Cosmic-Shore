@@ -351,9 +351,11 @@ namespace CosmicShore.Gameplay
 
         void OnNetVesselIdChanged(ulong previousValue, ulong newValue)
         {
+            Debug.Log($"<color=#FF00FF>[PLAYER] OnNetVesselIdChanged '{Name}' — prev={previousValue}, new={newValue}, IsServer={IsServer}, IsOwner={IsOwner}</color>");
             VesselNetId = newValue;
             if (newValue == 0)
             {
+                Debug.Log($"<color=#FF00FF>[PLAYER] Clearing Vessel+IsActive on '{Name}' (was VesselId={previousValue})</color>");
                 Vessel = null;
                 IsActive = false;
             }

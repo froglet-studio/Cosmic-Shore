@@ -191,11 +191,16 @@ namespace CosmicShore.Core
 
         void ClearPlayerVesselReferences()
         {
+            Debug.Log($"<color=#00FFFF>[DESPAWN] ClearPlayerVesselReferences — Players={gameData.Players.Count}, Vessels={gameData.Vessels.Count}</color>");
+
             // 1. Clear vessel references on persistent Players.
             foreach (var player in gameData.Players)
             {
                 if (player is Player netPlayer && netPlayer.IsSpawned)
+                {
+                    Debug.Log($"<color=#00FFFF>[DESPAWN] Setting NetVesselId=0 on Player '{netPlayer.Name}' (NetObjId={netPlayer.NetworkObjectId}, VesselId={netPlayer.NetVesselId.Value})</color>");
                     netPlayer.NetVesselId.Value = 0;
+                }
             }
 
             // 2. Despawn all tracked vessels so clients receive despawn RPCs
@@ -206,9 +211,18 @@ namespace CosmicShore.Core
             {
                 var vessel = gameData.Vessels[i];
                 if (vessel is VesselController vc && vc.IsSpawned)
+                {
+                    Debug.Log($"<color=#00FFFF>[DESPAWN] Despawn(false) vessel '{vc.gameObject.name}' NetObjId={vc.NetworkObjectId}, IsServer={vc.IsServer}, IsOwner={vc.IsOwner}</color>");
                     vc.NetworkObject.Despawn(false);
+                    Debug.Log($"<color=#00FF00>[DESPAWN] Despawn(false) DONE for '{vc.gameObject.name}'</color>");
+                }
+                else
+                {
+                    Debug.Log($"<color=#FFFF00>[DESPAWN] Skipped vessel[{i}]: null={vessel == null}, IsVC={vessel is VesselController}, IsSpawned={vessel is VesselController v && v.IsSpawned}</color>");
+                }
             }
             gameData.Vessels.Clear();
+            Debug.Log($"<color=#00FF00>[DESPAWN] ClearPlayerVesselReferences COMPLETE — Vessels cleared</color>");
         }
 
         void LoadNetworkSceneOnServer(string sceneName)

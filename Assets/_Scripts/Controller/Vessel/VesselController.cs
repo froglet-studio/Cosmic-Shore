@@ -47,11 +47,13 @@ namespace CosmicShore.Gameplay
         
         public override void OnDestroy()
         {
+            Debug.Log($"<color=#FFFF00>[VESSEL] OnDestroy '{gameObject.name}' — IsSpawned={IsSpawned}, IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
             OnBeforeDestroyed?.Invoke();
         }
 
         public override void OnNetworkSpawn()
         {
+            Debug.Log($"<color=#FFFF00>[VESSEL] OnNetworkSpawn '{gameObject.name}' — IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Vessels.Add(this);
@@ -65,9 +67,10 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
-            if (IsOwner) 
+            Debug.Log($"<color=#FFFF00>[VESSEL] OnNetworkDespawn '{gameObject.name}' — IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+            if (IsOwner)
                 return;
-            
+
             UnsubscribeFromNetworkVariables();
         }
 
