@@ -562,7 +562,7 @@ namespace CosmicShore.UI
                 : 1;
 
             // Single source of truth — GameDataSO owns the player count computation
-            gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount, selectedGame.IsMultiplayer);
+            gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
             Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
