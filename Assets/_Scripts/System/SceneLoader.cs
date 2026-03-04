@@ -145,11 +145,21 @@ namespace CosmicShore.Core
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
 
-            // Server: explicitly despawn and destroy all vessels before the scene transition.
-            // This sends despawn messages to clients so they cleanly remove the objects
-            // before the old scene unloads, preventing "Invalid Destroy" errors on non-host clients.
+            // Server: clear stale vessel references on persistent Players, then despawn
+            // all vessels before the scene transition. PrepareForNewScene() nulls Player.Vessel
+            // so no code path can traverse into destroyed HUD components (prevents
+            // MissingReferenceException). Despawn sends messages to clients so they cleanly
+            // remove objects before the old scene unloads (prevents "Invalid Destroy" errors).
             if (useNetworkSceneLoading)
+            {
+                foreach (var player in gameData.Players)
+                {
+                    if (player is Player p)
+                        p.PrepareForNewScene();
+                }
+
                 DespawnTrackedVesselsOnServer();
+            }
 
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
@@ -210,7 +220,8 @@ namespace CosmicShore.Core
         /// </summary>
         void DespawnTrackedVesselsOnServer()
         {
-            if (!IsServer) return;
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return;
 
             var vessels = new List<IVessel>(gameData.Vessels);
             foreach (var vessel in vessels)
