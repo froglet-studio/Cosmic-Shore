@@ -81,19 +81,26 @@ namespace CosmicShore.App.UI.Views
                 }
             }
 
-            // Sort favorited first, then alphabetically
+            var progressionService = GameModeProgressionService.Instance;
+
+            // Sort unlocked first, then favorited, then alphabetically
             var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games;
             var sortedGames = filteredGames;
             sortedGames.Sort((x, y) =>
             {
+                // Unlocked games before locked games
+                bool xLocked = progressionService != null && !progressionService.IsGameModeUnlocked(x.Mode);
+                bool yLocked = progressionService != null && !progressionService.IsGameModeUnlocked(y.Mode);
+                int lockComparison = xLocked.CompareTo(yLocked);
+                if (lockComparison != 0)
+                    return lockComparison;
+
                 int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
                 if (flagComparison == 0)
-                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal); // Sort alphabetically by Name if they're tied
+                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal);
 
                 return flagComparison;
             });
-
-            var progressionService = GameModeProgressionService.Instance;
 
             for (var i = 0; i < GameCards.Count && i < GameList.Games.Count && i < sortedGames.Count; i++)
             {
