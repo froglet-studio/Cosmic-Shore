@@ -173,10 +173,9 @@ namespace CosmicShore.Gameplay
         /// Transitions from the local host (started by <see cref="MultiplayerSetup"/>)
         /// to a Relay-backed party session so remote players can join via invite.
         ///
-        /// Flow: fade to black → despawn vessels → shutdown local host →
-        /// create Relay party session → reload Menu_Main via Netcode.
-        /// The fade screen covers the entire transition so the user never sees
-        /// Menu_Main loading twice.
+        /// Flow: show splash → despawn vessels → shutdown local host →
+        /// create Relay party session → reload Menu_Main via Netcode →
+        /// splash fades out on <c>OnClientReady</c> (vessel spawned).
         /// </summary>
         public async UniTask TransitionToPartyHostAsync()
         {
@@ -197,9 +196,12 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                // Fade to black so the user doesn't see the scene reload
-                if (_sceneTransitionManager != null)
-                    await _sceneTransitionManager.FadeToBlack();
+                // Show splash screen immediately (same pattern as SceneLoader.LaunchGame)
+                _sceneTransitionManager?.SetFadeImmediate(1f);
+
+                // Fade out splash when menu vessel is spawned and ready
+                if (gameData != null)
+                    gameData.OnClientReady.OnRaised += OnRelayMenuReady;
 
                 // 1. Despawn menu vessels and reset game data
                 CleanUpCurrentSession();
@@ -228,6 +230,8 @@ namespace CosmicShore.Gameplay
                 {
                     Debug.LogError("[PartyInviteController] Relay host not running after transition. Falling back to direct load.");
                     SceneManager.LoadScene(menuScene);
+                    // No OnClientReady in non-networked mode — fade out manually
+                    _sceneTransitionManager?.FadeFromBlack().Forget();
                 }
             }
             catch (Exception e)
@@ -239,6 +243,18 @@ namespace CosmicShore.Gameplay
             {
                 _transitioning = false;
             }
+        }
+
+        /// <summary>
+        /// One-shot listener: fades the splash screen away once the menu vessel
+        /// is spawned on the new Relay host. Mirrors <c>SceneLoader.FadeFromSplashOnReady</c>.
+        /// </summary>
+        private void OnRelayMenuReady()
+        {
+            if (gameData != null)
+                gameData.OnClientReady.OnRaised -= OnRelayMenuReady;
+
+            _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -344,6 +360,10 @@ namespace CosmicShore.Gameplay
         {
             Debug.Log("[PartyInviteController] Attempting recovery — restarting local host...");
 
+            // Unsubscribe the one-shot listener in case it was registered
+            if (gameData != null)
+                gameData.OnClientReady.OnRaised -= OnRelayMenuReady;
+
             try
             {
                 var nm = NetworkManager.Singleton;
@@ -372,9 +392,8 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                // Fade from black so the menu is visible again
-                if (_sceneTransitionManager != null)
-                    await _sceneTransitionManager.FadeFromBlack();
+                // Dismiss the splash screen so the menu is visible
+                _sceneTransitionManager?.FadeFromBlack().Forget();
             }
             catch (Exception e)
             {
