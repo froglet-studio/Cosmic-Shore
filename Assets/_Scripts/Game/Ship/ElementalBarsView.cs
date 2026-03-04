@@ -41,7 +41,6 @@ namespace CosmicShore
 
         [Header("Colors")]
         [SerializeField] private Color filledColor = Color.white;
-        [SerializeField] private Color emptyColor = new(1f, 1f, 1f, 0.15f);
         [Tooltip("Fill color when level is below zero")]
         [SerializeField] private Color negativeFillColor = new(1f, 0.3f, 0.3f, 0.8f);
 
@@ -68,7 +67,7 @@ namespace CosmicShore
         private Tween[] _driftRotationTweens;
         private Tween[] _labelScaleTweens;
         private Tween[] _labelColorTweens;
-        private Tween[][] _pipColorTweens; // [barIndex][pipIndex]
+        private Tween[][] _pipScaleTweens; // [barIndex][pipIndex]
         private bool _built;
 
         public void Build()
@@ -102,17 +101,19 @@ namespace CosmicShore
                 }
 
                 int pipCount = bar.fillPips != null ? bar.fillPips.Length : 0;
-                _pipColorTweens[i] = new Tween[pipCount];
+                _pipScaleTweens[i] = new Tween[pipCount];
 
-                // Init bg pips to dim
-                if (bar.bgPips != null)
-                    foreach (var pip in bar.bgPips)
-                        if (pip) pip.color = emptyColor;
-
-                // Init fill pips to transparent (off)
+                // Fill pips: first zeroLineIndex enabled (level 0 baseline), rest disabled
                 if (bar.fillPips != null)
-                    foreach (var pip in bar.fillPips)
-                        if (pip) pip.color = new Color(filledColor.r, filledColor.g, filledColor.b, 0f);
+                {
+                    for (int p = 0; p < bar.fillPips.Length; p++)
+                    {
+                        var pip = bar.fillPips[p];
+                        if (!pip) continue;
+                        pip.gameObject.SetActive(p < zeroLineIndex);
+                        pip.color = filledColor;
+                    }
+                }
 
                 _currentLevels[i] = 0;
                 _barDomainColors[i] = filledColor;
@@ -197,9 +198,14 @@ namespace CosmicShore
             if (bar.fillPips == null) return;
 
             int pipCount = bar.fillPips.Length;
-            // Number of pips to light: level + zeroLineIndex
-            int litCount = Mathf.Clamp(level + zeroLineIndex, 0, pipCount);
+            // Number of pips to enable: level + zeroLineIndex
+            // Level 0 → zeroLineIndex pips (the baseline 5)
+            // Level +10 → 15 pips (all on)
+            // Level -5 → 0 pips (all off)
+            int enabledCount = Mathf.Clamp(level + zeroLineIndex, 0, pipCount);
+            int prevEnabledCount = Mathf.Clamp(previousLevel + zeroLineIndex, 0, pipCount);
             bool isNegative = level < 0;
+            bool isIncreasing = level > previousLevel;
             bool isDecreasing = level < previousLevel;
 
             for (int p = 0; p < pipCount; p++)
@@ -207,45 +213,44 @@ namespace CosmicShore
                 var pip = bar.fillPips[p];
                 if (!pip) continue;
 
-                bool lit = p < litCount;
+                bool shouldBeOn = p < enabledCount;
+                bool wasOn = p < prevEnabledCount;
 
-                // Kill any running tween on this pip
-                _pipColorTweens[idx][p]?.Kill();
+                _pipScaleTweens[idx][p]?.Kill();
 
-                if (lit)
+                if (shouldBeOn)
                 {
-                    // Negative territory pips get negativeFillColor, positive get domain color
-                    Color targetColor = (p < zeroLineIndex && isNegative)
+                    pip.gameObject.SetActive(true);
+
+                    // Color: negative territory pips get negativeFillColor
+                    pip.color = (p < zeroLineIndex && isNegative)
                         ? negativeFillColor
                         : _barDomainColors[idx];
 
-                    // If this pip just turned on, pop it
-                    if (!isDecreasing && p >= Mathf.Clamp(previousLevel + zeroLineIndex, 0, pipCount))
+                    // Pop-in juice for newly enabled pips
+                    if (isIncreasing && !wasOn)
                     {
-                        pip.color = targetColor;
                         var rt = pip.rectTransform;
-                        rt.localScale = Vector3.one * 1.3f;
-                        _pipColorTweens[idx][p] = rt
+                        rt.localScale = Vector3.one * 1.4f;
+                        _pipScaleTweens[idx][p] = rt
                             .DOScale(Vector3.one, 0.15f)
                             .SetEase(Ease.OutBack);
-                    }
-                    else
-                    {
-                        pip.color = targetColor;
                     }
                 }
                 else
                 {
-                    // Turn off: fade out
-                    if (isDecreasing && p >= litCount && p < Mathf.Clamp(previousLevel + zeroLineIndex, 0, pipCount))
+                    // Shrink-out juice for newly disabled pips, then deactivate
+                    if (isDecreasing && wasOn)
                     {
-                        _pipColorTweens[idx][p] = pip
-                            .DOColor(new Color(pip.color.r, pip.color.g, pip.color.b, 0f), 0.2f)
-                            .SetEase(Ease.OutQuad);
+                        var rt = pip.rectTransform;
+                        _pipScaleTweens[idx][p] = rt
+                            .DOScale(Vector3.zero, 0.12f)
+                            .SetEase(Ease.InBack)
+                            .OnComplete(() => pip.gameObject.SetActive(false));
                     }
                     else
                     {
-                        pip.color = new Color(filledColor.r, filledColor.g, filledColor.b, 0f);
+                        pip.gameObject.SetActive(false);
                     }
                 }
             }
@@ -333,19 +338,20 @@ namespace CosmicShore
 
             for (int i = 0; i < bars.Length; i++)
             {
-                // Flash all lit pips red then back
+                // Flash all active fill pips red then back
                 ref var bar = ref bars[i];
                 if (bar.fillPips != null)
                 {
-                    int litCount = Mathf.Clamp(_currentLevels[i] + zeroLineIndex, 0, bar.fillPips.Length);
-                    for (int p = 0; p < litCount; p++)
+                    int enabledCount = Mathf.Clamp(_currentLevels[i] + zeroLineIndex, 0, bar.fillPips.Length);
+                    for (int p = 0; p < enabledCount; p++)
                     {
                         var pip = bar.fillPips[p];
-                        if (!pip) continue;
-                        _pipColorTweens[i][p]?.Kill();
+                        if (!pip || !pip.gameObject.activeSelf) continue;
+
+                        _pipScaleTweens[i][p]?.Kill();
                         pip.color = Color.red;
                         var origColor = _barDomainColors[i];
-                        _pipColorTweens[i][p] = pip
+                        _pipScaleTweens[i][p] = pip
                             .DOColor(origColor, 0.5f)
                             .SetEase(Ease.OutQuad);
                     }
@@ -410,8 +416,8 @@ namespace CosmicShore
                 foreach (var t in _labelScaleTweens) t?.Kill();
             if (_labelColorTweens != null)
                 foreach (var t in _labelColorTweens) t?.Kill();
-            if (_pipColorTweens != null)
-                foreach (var row in _pipColorTweens)
+            if (_pipScaleTweens != null)
+                foreach (var row in _pipScaleTweens)
                     if (row != null)
                         foreach (var t in row) t?.Kill();
         }
