@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.App.Profile;
+using CosmicShore.App.Systems.CloudData;
 using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.Game.Progression;
 using UnityEditor;
@@ -35,6 +36,14 @@ namespace CosmicShore.Utility.Tools
         bool _intensityFoldout;
         bool _vesselFoldout;
         bool _crystalFoldout;
+        bool _ugsDataFoldout;
+        bool _ugsProfileFoldout;
+        bool _ugsStatsFoldout;
+        bool _ugsVesselStatsFoldout;
+        bool _ugsProgressionFoldout;
+        bool _ugsHangarFoldout;
+        bool _ugsEpisodesFoldout;
+        bool _ugsSettingsFoldout;
         SO_VesselList _vesselList;
         string _crystalAmountInput = "100";
 
@@ -67,8 +76,66 @@ namespace CosmicShore.Utility.Tools
             window.minSize = new Vector2(340, 520);
         }
 
-        void OnEnable() => LoadPrefs();
+        bool _subscribedToUGS;
+
+        void OnEnable()
+        {
+            LoadPrefs();
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        }
+
+        void OnDisable()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            UnsubscribeFromUGS();
+        }
+
         void OnFocus() => Repaint();
+
+        void OnPlayModeChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.EnteredPlayMode)
+                EditorApplication.update += TrySubscribeToUGS;
+            else if (state == PlayModeStateChange.ExitingPlayMode)
+                UnsubscribeFromUGS();
+
+            Repaint();
+        }
+
+        void TrySubscribeToUGS()
+        {
+            var ds = UGSDataService.Instance;
+            if (ds == null) return;
+
+            EditorApplication.update -= TrySubscribeToUGS;
+
+            if (ds.IsInitialized)
+            {
+                Repaint();
+                return;
+            }
+
+            ds.OnInitialized += HandleUGSInitialized;
+            _subscribedToUGS = true;
+        }
+
+        void HandleUGSInitialized()
+        {
+            _subscribedToUGS = false;
+            Repaint();
+        }
+
+        void UnsubscribeFromUGS()
+        {
+            EditorApplication.update -= TrySubscribeToUGS;
+            if (_subscribedToUGS)
+            {
+                var ds = UGSDataService.Instance;
+                if (ds != null)
+                    ds.OnInitialized -= HandleUGSInitialized;
+                _subscribedToUGS = false;
+            }
+        }
 
         void BuildStyles()
         {
@@ -520,6 +587,172 @@ namespace CosmicShore.Utility.Tools
                 EndSection();
             }
 
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  UGS DATA VIEW (read-only)
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("UGS Data View", ref _ugsDataFoldout);
+            if (_ugsDataFoldout)
+            {
+                BeginSection();
+
+                bool available = Application.isPlaying && UGSDataService.Instance != null && UGSDataService.Instance.IsInitialized;
+
+                if (!available)
+                {
+                    GUILayout.Space(Pad);
+                    EditorGUILayout.LabelField("Enter Play Mode and sign in to view cloud data.", _mutedLabel);
+                }
+                else
+                {
+                    var ds = UGSDataService.Instance;
+
+                    // ── Player Profile ──
+                    DrawUGSSubSection("Player Profile", ref _ugsProfileFoldout, () =>
+                    {
+                        var d = ds.Profile?.Data;
+                        if (d == null) { DrawNoData(); return; }
+                        DrawField("User ID", d.userId);
+                        DrawField("Display Name", d.displayName);
+                        DrawField("Avatar ID", d.avatarId.ToString());
+                        DrawField("Crystal Balance", d.crystalBalance.ToString());
+                        DrawField("Unlocked Rewards", d.unlockedRewardIds != null && d.unlockedRewardIds.Count > 0
+                            ? string.Join(", ", d.unlockedRewardIds)
+                            : "(none)");
+                    });
+
+                    // ── Player Stats ──
+                    DrawUGSSubSection("Player Stats", ref _ugsStatsFoldout, () =>
+                    {
+                        var d = ds.Stats?.Data;
+                        if (d == null) { DrawNoData(); return; }
+                        DrawField("Last Login", d.LastLoginTick > 0
+                            ? new DateTime(d.LastLoginTick, DateTimeKind.Utc).ToString("yyyy-MM-dd HH:mm:ss UTC")
+                            : "(never)");
+
+                        if (d.BlitzStats?.HighScores != null && d.BlitzStats.HighScores.Count > 0)
+                        {
+                            DrawFieldHeader("Blitz High Scores");
+                            foreach (var kv in d.BlitzStats.HighScores)
+                                DrawSubField(kv.Key, kv.Value.ToString());
+                        }
+                        if (d.MultiHexStats?.BestMultiplayerRaceTimes != null && d.MultiHexStats.BestMultiplayerRaceTimes.Count > 0)
+                        {
+                            DrawFieldHeader("HexRace Best Times");
+                            foreach (var kv in d.MultiHexStats.BestMultiplayerRaceTimes)
+                                DrawSubField(kv.Key, $"{kv.Value:F2}s");
+                        }
+                        if (d.JoustStats?.BestRaceTimes != null && d.JoustStats.BestRaceTimes.Count > 0)
+                        {
+                            DrawFieldHeader("Joust Best Times");
+                            foreach (var kv in d.JoustStats.BestRaceTimes)
+                                DrawSubField(kv.Key, $"{kv.Value:F2}s");
+                        }
+                        if (d.CrystalCaptureStats?.HighScores != null && d.CrystalCaptureStats.HighScores.Count > 0)
+                        {
+                            DrawFieldHeader("Crystal Capture High Scores");
+                            foreach (var kv in d.CrystalCaptureStats.HighScores)
+                                DrawSubField(kv.Key, kv.Value.ToString());
+                        }
+                    });
+
+                    // ── Vessel Stats ──
+                    DrawUGSSubSection("Vessel Stats", ref _ugsVesselStatsFoldout, () =>
+                    {
+                        var d = ds.VesselStats?.Data;
+                        if (d == null || d.Vessels == null || d.Vessels.Count == 0) { DrawNoData(); return; }
+
+                        foreach (var kv in d.Vessels)
+                        {
+                            DrawFieldHeader(kv.Key);
+                            var v = kv.Value;
+                            DrawSubField("Games Played", v.GamesPlayed.ToString());
+                            DrawSubField("Best Drift", $"{v.BestDriftTime:F2}s");
+                            DrawSubField("Best Boost", $"{v.BestBoostTime:F2}s");
+                            DrawSubField("Prisms Damaged", v.TotalPrismsDamaged.ToString());
+                            if (v.Counters != null && v.Counters.Count > 0)
+                                foreach (var c in v.Counters)
+                                    DrawSubField(c.Key, c.Value.ToString());
+                        }
+                    });
+
+                    // ── Game Mode Progression ──
+                    DrawUGSSubSection("Game Mode Progression", ref _ugsProgressionFoldout, () =>
+                    {
+                        var d = ds.Progression?.Data;
+                        if (d == null) { DrawNoData(); return; }
+                        DrawField("Unlocked Modes", d.UnlockedModes != null && d.UnlockedModes.Count > 0
+                            ? string.Join(", ", d.UnlockedModes) : "(none)");
+                        DrawField("Completed Quests", d.CompletedQuests != null && d.CompletedQuests.Count > 0
+                            ? string.Join(", ", d.CompletedQuests) : "(none)");
+                        if (d.BestStats != null && d.BestStats.Count > 0)
+                        {
+                            DrawFieldHeader("Best Stats");
+                            foreach (var kv in d.BestStats)
+                                DrawSubField(kv.Key, $"{kv.Value:F2}");
+                        }
+                    });
+
+                    // ── Hangar ──
+                    DrawUGSSubSection("Hangar", ref _ugsHangarFoldout, () =>
+                    {
+                        var d = ds.Hangar?.Data;
+                        if (d == null) { DrawNoData(); return; }
+                        DrawField("Selected Vessel", string.IsNullOrEmpty(d.SelectedVessel) ? "(none)" : d.SelectedVessel);
+                        DrawField("Unlocked Vessels", d.UnlockedVessels != null && d.UnlockedVessels.Count > 0
+                            ? string.Join(", ", d.UnlockedVessels) : "(none)");
+                        if (d.VesselPreferences != null && d.VesselPreferences.Count > 0)
+                        {
+                            DrawFieldHeader("Vessel Preferences");
+                            foreach (var kv in d.VesselPreferences)
+                            {
+                                var p = kv.Value;
+                                string lastUsed = p.LastUsedTicks > 0
+                                    ? new DateTime(p.LastUsedTicks, DateTimeKind.Utc).ToString("yyyy-MM-dd HH:mm")
+                                    : "never";
+                                DrawSubField(kv.Key, $"fav={p.Favorited}, last={lastUsed}");
+                            }
+                        }
+                    });
+
+                    // ── Episodes ──
+                    DrawUGSSubSection("Episode Progress", ref _ugsEpisodesFoldout, () =>
+                    {
+                        var d = ds.Episodes?.Data;
+                        if (d == null) { DrawNoData(); return; }
+                        DrawField("Unlocked Episodes", d.UnlockedEpisodes != null && d.UnlockedEpisodes.Count > 0
+                            ? string.Join(", ", d.UnlockedEpisodes) : "(none)");
+                        DrawField("Completed Episodes", d.CompletedEpisodes != null && d.CompletedEpisodes.Count > 0
+                            ? string.Join(", ", d.CompletedEpisodes) : "(none)");
+                        if (d.EpisodeProgress != null && d.EpisodeProgress.Count > 0)
+                        {
+                            DrawFieldHeader("Per-Episode State");
+                            foreach (var kv in d.EpisodeProgress)
+                            {
+                                var s = kv.Value;
+                                DrawSubField(kv.Key, $"missions={s.MissionsCompleted}/{s.TotalMissions}, best={s.BestScore}, stars={s.StarsEarned}");
+                            }
+                        }
+                    });
+
+                    // ── Settings ──
+                    DrawUGSSubSection("Player Settings", ref _ugsSettingsFoldout, () =>
+                    {
+                        var d = ds.Settings?.Data;
+                        if (d == null) { DrawNoData(); return; }
+                        DrawField("Music", $"{(d.MusicEnabled ? "ON" : "OFF")} (level: {d.MusicLevel:F2})");
+                        DrawField("SFX", $"{(d.SFXEnabled ? "ON" : "OFF")} (level: {d.SFXLevel:F2})");
+                        DrawField("Haptics", $"{(d.HapticsEnabled ? "ON" : "OFF")} (level: {d.HapticsLevel:F2})");
+                        DrawField("Invert Y", d.InvertYEnabled ? "ON" : "OFF");
+                        DrawField("Invert Throttle", d.InvertThrottleEnabled ? "ON" : "OFF");
+                        DrawField("Joystick Visuals", d.JoystickVisualsEnabled ? "ON" : "OFF");
+                    });
+                }
+
+                EndSection();
+            }
+
             GUILayout.Space(8);
             EditorGUILayout.EndScrollView();
 
@@ -610,6 +843,56 @@ namespace CosmicShore.Utility.Tools
                 .Where(m => m != GameModes.Random && !svc.IsGameModeInQuestChain(m))
                 .OrderBy(m => m.ToString())
                 .ToList();
+        }
+
+        // ── UGS Data View helpers ─────────────────────────────────────────────
+
+        void DrawUGSSubSection(string title, ref bool foldout, Action drawContent)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            foldout = EditorGUILayout.Foldout(foldout, title, true, EditorStyles.foldoutHeader);
+            EditorGUILayout.EndHorizontal();
+
+            if (!foldout) return;
+
+            EditorGUILayout.BeginVertical();
+            GUILayout.Space(2);
+            drawContent();
+            GUILayout.Space(4);
+            EditorGUILayout.EndVertical();
+        }
+
+        void DrawField(string label, string value)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad + 8);
+            EditorGUILayout.LabelField(label, value);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawFieldHeader(string label)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad + 8);
+            EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawSubField(string label, string value)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad + 20);
+            EditorGUILayout.LabelField(label, value);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawNoData()
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad + 8);
+            EditorGUILayout.LabelField("(no data)", _mutedLabel);
+            EditorGUILayout.EndHorizontal();
         }
 
         // ── Crystal debug helpers ──────────────────────────────────────────────
