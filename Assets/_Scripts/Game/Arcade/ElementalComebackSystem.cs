@@ -160,10 +160,32 @@ namespace CosmicShore.Game.Arcade
             if (enableOvertakePenalty)
                 TickOvertakeRecovery();
 
+            // Check for overtake every frame so it registers instantly
+            if (enableOvertakePenalty)
+                CheckForOvertake();
+
             if (Time.time - _lastUpdateTime < updateInterval) return;
 
             _lastUpdateTime = Time.time;
             ApplyComebackBuffs();
+        }
+
+        void CheckForOvertake()
+        {
+            var players = gameData.Players;
+            if (players == null || players.Count < 2) return;
+
+            float leaderValue = GetLeaderValue();
+            string newLeaderName = FindLeaderName(leaderValue);
+
+            if (_currentLeaderName != null
+                && newLeaderName != null
+                && _currentLeaderName != newLeaderName)
+            {
+                ApplyOvertakePenalty(_currentLeaderName);
+            }
+
+            _currentLeaderName = newLeaderName;
         }
 
         void ApplyComebackBuffs()
@@ -172,17 +194,8 @@ namespace CosmicShore.Game.Arcade
             if (players == null || players.Count < 2) return;
 
             float leaderValue = GetLeaderValue();
-            string newLeaderName = FindLeaderName(leaderValue);
 
-            // Detect overtake: leader changed and old leader exists
-            if (enableOvertakePenalty
-                && _currentLeaderName != null
-                && newLeaderName != null
-                && _currentLeaderName != newLeaderName)
-            {
-                ApplyOvertakePenalty(_currentLeaderName);
-            }
-            _currentLeaderName = newLeaderName;
+            // Leader tracking now handled by CheckForOvertake() every frame
 
             for (int p = 0; p < players.Count; p++)
             {

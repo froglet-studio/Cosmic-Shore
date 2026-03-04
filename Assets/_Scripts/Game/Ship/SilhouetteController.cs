@@ -20,10 +20,7 @@ namespace CosmicShore
         [Header("View")]
         [SerializeField] private SilhouetteView view; // view
 
-        [Header("Element Pips")]
-        [SerializeField] private ElementPipsView elementPips;
-
-        [Header("Element Bars (fill-bar alternative)")]
+        [Header("Element Bars")]
         [SerializeField] private ElementalBarsView elementBars;
 
         private IVessel _vessel;
@@ -72,7 +69,6 @@ namespace CosmicShore
             }
 
             TryUnsubscribeResources();
-            TryUnsubscribeElementPips();
             TryUnsubscribeElementBars();
 
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
@@ -92,7 +88,6 @@ namespace CosmicShore
                 view?.UpdateEnergyUI(r.CurrentAmount, r.MaxAmount);
             }
 
-            InitializeElementPips();
             InitializeElementBars();
         }
 
@@ -212,65 +207,32 @@ namespace CosmicShore
             view?.ShowMantaFlowerOverlay();
         }
 
-        // --- Element Pips ---
-        void TryUnsubscribeElementPips()
+        // --- Element Bars ---
+        void TryUnsubscribeElementBars()
         {
             if (_resources != null)
                 _resources.OnElementLevelChange -= HandleElementLevelChanged;
         }
 
-        void InitializeElementPips()
+        void InitializeElementBars()
         {
-            if (elementPips) elementPips.Build();
-            if (elementBars) elementBars.Build();
+            if (!elementBars) return;
+            elementBars.Build();
 
             if (_resources != null)
             {
                 _resources.OnElementLevelChange += HandleElementLevelChanged;
 
-                // Sync current levels
-                SyncAllElementLevels();
+                elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
+                elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
+                elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
+                elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
             }
         }
 
         void HandleElementLevelChanged(Element element, int level)
         {
-            elementPips?.SetLevel(element, level);
             elementBars?.SetLevel(element, level);
-        }
-
-        // --- Element Bars ---
-        void TryUnsubscribeElementBars() { }
-
-        void InitializeElementBars()
-        {
-            // Build + subscription now handled in InitializeElementPips
-            // This just ensures sync if called independently
-            if (!elementBars) return;
-            if (!elementBars.IsBuilt) elementBars.Build();
-
-            if (_resources != null)
-                SyncAllElementLevels();
-        }
-
-        void SyncAllElementLevels()
-        {
-            if (_resources == null) return;
-
-            var charge = _resources.GetLevel(Element.Charge);
-            var mass = _resources.GetLevel(Element.Mass);
-            var space = _resources.GetLevel(Element.Space);
-            var time = _resources.GetLevel(Element.Time);
-
-            elementPips?.SetLevel(Element.Charge, charge);
-            elementPips?.SetLevel(Element.Mass, mass);
-            elementPips?.SetLevel(Element.Space, space);
-            elementPips?.SetLevel(Element.Time, time);
-
-            elementBars?.SetLevel(Element.Charge, charge);
-            elementBars?.SetLevel(Element.Mass, mass);
-            elementBars?.SetLevel(Element.Space, space);
-            elementBars?.SetLevel(Element.Time, time);
         }
 
         /// <summary>
