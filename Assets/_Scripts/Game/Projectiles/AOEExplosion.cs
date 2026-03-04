@@ -134,6 +134,8 @@ namespace CosmicShore.Game.Projectiles
         {
             // Cache impactor ref — _explosionImpactor may be null after Destroy
             var impactor = _explosionImpactor;
+            // Track collider state outside try/catch so catch blocks can restore it
+            bool colliderDisabledForBatch = false;
             try
             {
                 // Start batch AOE processing — skips Physics OnTriggerEnter for prisms
@@ -141,7 +143,6 @@ namespace CosmicShore.Game.Projectiles
 
                 // When batch processing is active, disable the SphereCollider entirely.
                 // PhysX won't compute any trigger pairs — the Burst job handles spatial queries.
-                bool colliderDisabledForBatch = false;
                 if (impactor != null && impactor.IsBatchProcessing && _sphereCollider != null)
                 {
                     _sphereCollider.enabled = false;
