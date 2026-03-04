@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using TMPro;
 using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI
@@ -75,7 +76,11 @@ namespace CosmicShore.App.UI
 
         [Header("Disabled Screens")]
         [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
-        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
+        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.STORE, MenuScreens.HANGAR, MenuScreens.PROFILE };
+
+        [Header("Locked Nav Appearance")]
+        [Tooltip("Color tint applied to navbar icons for locked/disabled screens.")]
+        [SerializeField] private Color lockedNavColor = new Color(1f, 1f, 1f, 0.3f);
 
         [Header("Arcade Panel (separate)")]
         [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
@@ -567,8 +572,13 @@ namespace CosmicShore.App.UI
                     var child = NavBar.GetChild(i);
                     if (child.childCount < 2) continue;
 
+                    bool locked = IsIndexDisabled(i);
+
                     child.GetChild(0).gameObject.SetActive(true);
                     child.GetChild(1).gameObject.SetActive(false);
+
+                    // Dim locked/disabled navbar icons
+                    ApplyLockedTint(child, locked);
                 }
 
                 if (index >= 0 && index < NavBar.childCount)
@@ -599,6 +609,17 @@ namespace CosmicShore.App.UI
                 if (i < NavInactiveImages.Count && NavInactiveImages[i])
                     NavInactiveImages[i].SetActive(!isActive);
             }
+        }
+
+        private void ApplyLockedTint(Transform navItem, bool locked)
+        {
+            Color tint = locked ? lockedNavColor : Color.white;
+
+            foreach (var image in navItem.GetComponentsInChildren<Image>(true))
+                image.color = tint;
+
+            foreach (var text in navItem.GetComponentsInChildren<TMP_Text>(true))
+                text.color = tint;
         }
 
         #endregion

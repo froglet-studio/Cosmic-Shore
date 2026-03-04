@@ -40650,7 +40650,8 @@ MonoBehaviour:
   NavBar: {fileID: 1658454450}
   HangarMenu: {fileID: 5840560526924786829}
   LeaderboardMenu: {fileID: 772964168}
-  disabledScreens: 0300000001000000
+  disabledScreens: 000000000400000005000000
+  lockedNavColor: {r: 1, g: 1, b: 1, a: 0.3}
   arcadePanelRoot: {fileID: 4125016652594217642}
   NavBarLine: {fileID: 1892901532}
   NavBarLineSprites:
