@@ -95,6 +95,8 @@ namespace CosmicShore
         private Tween[][] _pipTweens; // [barIndex][pipIndex]
         private bool _built;
 
+        public bool IsBuilt => _built;
+
         public void Build()
         {
             if (_built) return;

@@ -221,19 +221,15 @@ namespace CosmicShore
 
         void InitializeElementPips()
         {
-            if (!elementPips) return;
-
-            elementPips.Build();
+            if (elementPips) elementPips.Build();
+            if (elementBars) elementBars.Build();
 
             if (_resources != null)
             {
                 _resources.OnElementLevelChange += HandleElementLevelChanged;
 
                 // Sync current levels
-                elementPips.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
-                elementPips.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
-                elementPips.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
-                elementPips.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
+                SyncAllElementLevels();
             }
         }
 
@@ -248,18 +244,33 @@ namespace CosmicShore
 
         void InitializeElementBars()
         {
+            // Build + subscription now handled in InitializeElementPips
+            // This just ensures sync if called independently
             if (!elementBars) return;
+            if (!elementBars.IsBuilt) elementBars.Build();
 
-            elementBars.Build();
-
-            // Sync current levels (ongoing updates come via HandleElementLevelChanged)
             if (_resources != null)
-            {
-                elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
-                elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
-                elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
-                elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
-            }
+                SyncAllElementLevels();
+        }
+
+        void SyncAllElementLevels()
+        {
+            if (_resources == null) return;
+
+            var charge = _resources.GetLevel(Element.Charge);
+            var mass = _resources.GetLevel(Element.Mass);
+            var space = _resources.GetLevel(Element.Space);
+            var time = _resources.GetLevel(Element.Time);
+
+            elementPips?.SetLevel(Element.Charge, charge);
+            elementPips?.SetLevel(Element.Mass, mass);
+            elementPips?.SetLevel(Element.Space, space);
+            elementPips?.SetLevel(Element.Time, time);
+
+            elementBars?.SetLevel(Element.Charge, charge);
+            elementBars?.SetLevel(Element.Mass, mass);
+            elementBars?.SetLevel(Element.Space, space);
+            elementBars?.SetLevel(Element.Time, time);
         }
 
         /// <summary>
