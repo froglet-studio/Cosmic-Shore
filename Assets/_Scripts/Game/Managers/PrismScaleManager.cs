@@ -26,9 +26,7 @@ namespace CosmicShore.Core
 
         protected override void ProcessAnimationFrame(float deltaTime)
         {
-            // Refresh stable list
-            activeAnimatorsList.Clear();
-            activeAnimatorsList.AddRange(activeAnimators);
+            RefreshActiveListIfDirty();
 
             scalingAnimators.Clear();
             completionQueue.Clear();
@@ -46,7 +44,6 @@ namespace CosmicShore.Core
                     block.MaxScale
                 );
 
-                // Make sure our NativeArray is large enough (AdaptiveAnimationManager usually allocs it)
                 animationData[scalingCount] = new ScaleAnimationData
                 {
                     currentScale = block.transform.localScale,
@@ -71,7 +68,7 @@ namespace CosmicShore.Core
             var handle = job.Schedule(scalingCount, BATCH_SIZE);
             handle.Complete();
 
-            // Apply results to the correct block using scalingAnimators[i]
+            // Apply results + collect completions in one pass
             for (int i = 0; i < scalingCount; i++)
             {
                 var data = animationData[i];
@@ -98,23 +95,11 @@ namespace CosmicShore.Core
                 var (block, targetScale) = completionQueue[i];
                 if (block == null || !block.enabled) continue;
 
-                // Hit target exactly
                 block.transform.localScale = targetScale;
-
-                // Stop scaling (may call back into manager depending on your base class)
                 block.IsScaling = false;
-
-                // Ensure this animator is not left in the active set
                 activeAnimators.Remove(block);
-
+                activeListDirty = true;
                 block.ExecuteOnScaleComplete();
-            }
-
-            // Cleanup: remove any animators that are no longer scaling
-            foreach (var animator in activeAnimatorsList)
-            {
-                if (animator == null || !animator.IsScaling)
-                    activeAnimators.Remove(animator);
             }
         }
 

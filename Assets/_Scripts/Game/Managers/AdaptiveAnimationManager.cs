@@ -25,6 +25,7 @@ namespace CosmicShore.Core
         protected readonly HashSet<TAnimator> registeredAnimators = new HashSet<TAnimator>();
         protected readonly HashSet<TAnimator> activeAnimators = new HashSet<TAnimator>();
         protected readonly List<TAnimator> activeAnimatorsList = new List<TAnimator>();
+        protected bool activeListDirty = true;
         protected NativeArray<TAnimationData> animationData;
 
         // Performance monitoring
@@ -51,7 +52,8 @@ namespace CosmicShore.Core
 
             if (IsAnimatorActive(animator))
             {
-                activeAnimators.Add(animator);
+                if (activeAnimators.Add(animator))
+                    activeListDirty = true;
                 EnsureCapacity();
             }
         }
@@ -60,20 +62,23 @@ namespace CosmicShore.Core
         {
             if (animator == null) return;
             registeredAnimators.Remove(animator);
-            activeAnimators.Remove(animator);
+            if (activeAnimators.Remove(animator))
+                activeListDirty = true;
         }
 
         protected virtual void OnAnimatorStart(TAnimator animator)
         {
             if (animator == null || !IsAnimatorValid(animator) || !registeredAnimators.Contains(animator)) return;
-            activeAnimators.Add(animator);
+            if (activeAnimators.Add(animator))
+                activeListDirty = true;
             EnsureCapacity();
         }
 
         protected virtual void OnAnimatorStop(TAnimator animator)
         {
             if (animator == null) return;
-            activeAnimators.Remove(animator);
+            if (activeAnimators.Remove(animator))
+                activeListDirty = true;
 
             // If this was the last active animator, reset our monitoring state
             if (activeAnimators.Count == 0)
@@ -187,6 +192,14 @@ namespace CosmicShore.Core
             // Perform update and consume accumulated time
             ProcessAnimationFrame(effectiveDeltaTime);
             accumulatedTime -= updateInterval * updateSteps;
+        }
+
+        protected void RefreshActiveListIfDirty()
+        {
+            if (!activeListDirty) return;
+            activeAnimatorsList.Clear();
+            activeAnimatorsList.AddRange(activeAnimators);
+            activeListDirty = false;
         }
 
         protected abstract void ProcessAnimationFrame(float deltaTime);

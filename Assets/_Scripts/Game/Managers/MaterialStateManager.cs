@@ -39,9 +39,7 @@ namespace CosmicShore.Core
 
         protected override void ProcessAnimationFrame(float deltaTime)
         {
-            // Update our stable index list
-            activeAnimatorsList.Clear();
-            activeAnimatorsList.AddRange(activeAnimators);
+            RefreshActiveListIfDirty();
 
             int animatingCount = 0;
             foreach (var animator in activeAnimatorsList)
@@ -95,13 +93,8 @@ namespace CosmicShore.Core
                     if (data.progress >= 0.99f)
                     {
                         animator.IsAnimating = false;
-                        bool wasRemoved = activeAnimators.Remove(animator);
-
-                        // Validate removal
-                        if (!wasRemoved)
-                        {
-                            bool contains = activeAnimators.Contains(animator);
-                        }
+                        if (activeAnimators.Remove(animator))
+                            activeListDirty = true;
 
                         if (animator.OnAnimationComplete != null)
                         {
@@ -122,12 +115,18 @@ namespace CosmicShore.Core
 
 
             // Validate all remaining active animators are actually animating
-            foreach (var animator in activeAnimators.ToArray())
+            // Reuse activeAnimatorsList as scratch — will be rebuilt on next dirty
+            activeAnimatorsList.Clear();
+            foreach (var animator in activeAnimators)
             {
                 if (!animator.IsAnimating)
-                {
-                    activeAnimators.Remove(animator);
-                }
+                    activeAnimatorsList.Add(animator);
+            }
+            if (activeAnimatorsList.Count > 0)
+            {
+                for (int i = 0; i < activeAnimatorsList.Count; i++)
+                    activeAnimators.Remove(activeAnimatorsList[i]);
+                activeListDirty = true;
             }
 
             // Batch apply property updates
