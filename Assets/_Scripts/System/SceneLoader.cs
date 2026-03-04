@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
@@ -143,10 +145,16 @@ namespace CosmicShore.Core
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
 
-            // Do NOT manually despawn vessels here — Netcode's NetworkSceneManager
-            // handles destroyWithScene=true objects automatically during scene transitions.
+            // Despawn vessels on the server BEFORE the delay so clients receive and process
+            // the despawn messages during the waitBeforeLoading window. Without this, NGO's
+            // NetworkSceneManager despawns vessels and sends the scene event in the same
+            // network tick — clients may process the scene event first, causing Unity's
+            // synchronous scene unload to destroy still-spawned NetworkObjects ("Invalid Destroy").
             // Players (DestroyWithScene=false) persist and get re-initialized by
             // ServerPlayerVesselInitializer.ProcessPreExistingPlayers() in the new scene.
+            if (useNetworkSceneLoading)
+                DespawnAllVesselsOnServer();
+
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
 
@@ -195,6 +203,27 @@ namespace CosmicShore.Core
 
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Server loading network scene: {sceneName} via nm.SceneManager.LoadScene</color>");
             nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        }
+
+        /// <summary>
+        /// Despawns all vessel NetworkObjects on the server before a scene transition.
+        /// Iterates <see cref="NetworkSpawnManager.SpawnedObjectsList"/> directly (not
+        /// <c>gameData.Vessels</c>) to catch every spawned vessel regardless of tracking state.
+        /// Despawn messages are sent to clients immediately; the <see cref="waitBeforeLoading"/>
+        /// delay gives clients time to process them before <c>nm.SceneManager.LoadScene()</c>
+        /// triggers the scene unload.
+        /// </summary>
+        void DespawnAllVesselsOnServer()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return;
+
+            var spawnedObjects = new List<NetworkObject>(nm.SpawnManager.SpawnedObjectsList);
+            foreach (var netObj in spawnedObjects)
+            {
+                if (netObj != null && netObj.TryGetComponent<VesselController>(out _) && netObj.IsSpawned)
+                    netObj.Despawn(true);
+            }
         }
 
         #endregion
