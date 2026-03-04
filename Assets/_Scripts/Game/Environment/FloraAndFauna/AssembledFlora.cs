@@ -109,6 +109,7 @@ namespace CosmicShore
                 }
 
                 HealthPrism newHealthPrism = GetHealthPrism(growthInfo.Position, growthInfo.Rotation);
+                if (!newHealthPrism) continue;
                 AddHealthBlock(newHealthPrism);
                 Branch newBranch = new Branch(newHealthPrism);
 
@@ -170,7 +171,8 @@ namespace CosmicShore
         public override void Plant()
         {
             assembler = CreateNewAssembler();
-            transform.position = cellData.CrystalTransform.position + 200 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius 
+            if (!assembler) return;
+            transform.position = cellData.CrystalTransform.position + 200 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius
         }
 
         public Assembler CreateNewAssembler()
@@ -179,6 +181,7 @@ namespace CosmicShore
             var newSpindle = AddSpindle();
 
             HealthPrism newHealthPrism = GetHealthPrism(transform.position, transform.rotation);
+            if (!newHealthPrism) return null;
             AddHealthBlock(newHealthPrism);
             newHealthPrism.transform.SetParent(newSpindle.transform, false);
             newHealthPrism.LifeForm = this;
