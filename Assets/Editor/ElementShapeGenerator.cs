@@ -6,58 +6,44 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Generates premium UI sprites for the Element Pips HUD system.
+    /// Generates element shape sprites for the Element Pips HUD.
     /// Run via menu: CosmicShore > Generate Element Shape Sprites
     ///
-    /// Produces:
-    ///   - 1 uniform tick sprite (used for all element pip indicators)
-    ///   - 4 premium label outlines (one per element shape)
+    /// Tuned for small-scale display (pipSize 14x5, labelIconSize 20x20).
+    /// Uses 4x oversampling — enough for clean AA without downscale artifacts.
     ///
-    /// Shapes (geometry from design spec — unchanged):
-    ///   Mass   = Equilateral triangle, point up
-    ///   Space  = Kite (4-sided, sharp top, wide shoulders, bottom point)
-    ///   Charge = Irregular pentagon (flat top, wide middle, bottom point)
-    ///   Time   = Tall diamond/rhombus (~1.4:1 aspect)
+    /// Produces:
+    ///   - 1 uniform tick sprite (shared by all pip indicators)
+    ///   - 4 label outlines (one per element shape)
     /// </summary>
     public static class ElementShapeGenerator
     {
-        const int LabelSize = 256;
-        const int TickSize = 128;
+        // 4x oversample of display sizes for clean bilinear downsampling.
+        const int LabelSize = 80;       // 4x of labelIconSize 20x20
+        const int TickWidth = 56;       // 4x of pipSize 14x5
+        const int TickHeight = 20;
         const string OutputFolder = "Assets/_Graphics/ElementShapes";
-
-        // --- Premium Rendering Parameters ---
-
-        // Label outline stroke
-        const float LabelStrokePx = 5f;
-        const float FeatherPx = 1.5f;
-
-        // Label outer glow (soft halo outside the stroke)
-        const float LabelOuterGlowPx = 14f;
-        const float LabelOuterGlowIntensity = 0.28f;
-
-        // Label inner edge glow (luminous falloff just inside the stroke)
-        const float LabelInnerEdgePx = 10f;
-        const float LabelInnerEdgeIntensity = 0.12f;
-
-        // Label subtle inner fill
-        const float LabelInnerFillAlpha = 0.04f;
-
-        // Tick outer glow
-        const float TickGlowPx = 10f;
-        const float TickGlowIntensity = 0.32f;
 
         struct ShapeDef
         {
             public string name;
             public Element element;
-            public Vector2[] vertices; // normalized 0..1 coords, center at 0.5,0.5
+            public Vector2[] vertices;
         }
 
         [MenuItem("CosmicShore/Generate Element Shape Sprites")]
         static void Generate()
         {
-            if (!Directory.Exists(OutputFolder))
+            // Clean previous output to remove stale sprites
+            if (Directory.Exists(OutputFolder))
+            {
+                foreach (var file in Directory.GetFiles(OutputFolder, "*.png"))
+                    File.Delete(file);
+            }
+            else
+            {
                 Directory.CreateDirectory(OutputFolder);
+            }
 
             var shapes = new[]
             {
@@ -70,8 +56,8 @@ namespace CosmicShore.Editor
             var pipPaths = new Dictionary<Element, string>();
             var labelPaths = new Dictionary<Element, string>();
 
-            // --- Generate premium tick (single sprite, all elements share it) ---
-            var tickTex = CreatePremiumTick(TickSize);
+            // --- Uniform tick (single sprite, all elements share it) ---
+            var tickTex = CreateTick(TickWidth, TickHeight);
             string tickPath = $"{OutputFolder}/pip_tick.png";
             SaveTexture(tickTex, tickPath);
 
@@ -79,8 +65,8 @@ namespace CosmicShore.Editor
             {
                 pipPaths[shape.element] = tickPath;
 
-                // --- Generate premium label outline (unique shape per element) ---
-                var labelTex = CreatePremiumLabel(shape.vertices, LabelSize);
+                // --- Per-element label outline ---
+                var labelTex = CreateLabel(shape.vertices, LabelSize);
                 string labelPath = $"{OutputFolder}/{shape.name}_label.png";
                 SaveTexture(labelTex, labelPath);
                 labelPaths[shape.element] = labelPath;
@@ -88,18 +74,18 @@ namespace CosmicShore.Editor
 
             AssetDatabase.Refresh();
 
-            // Configure sprite imports
             ConfigureSpriteImport(tickPath);
             foreach (var path in labelPaths.Values)
                 ConfigureSpriteImport(path);
 
-            // Auto-assign to config SO
             TryAssignToConfig(pipPaths, labelPaths);
 
-            Debug.Log($"[ElementShapeGenerator] Generated {1 + shapes.Length} premium sprites in {OutputFolder}");
+            Debug.Log($"[ElementShapeGenerator] Generated {1 + shapes.Length} sprites in {OutputFolder}");
         }
 
-        // --- Shape Definitions (geometry unchanged from design spec) ---
+        // =====================================================================
+        // Shape Definitions (geometry unchanged from design spec)
+        // =====================================================================
 
         static ShapeDef MakeTriangle() => new()
         {
@@ -107,9 +93,9 @@ namespace CosmicShore.Editor
             element = Element.Mass,
             vertices = new[]
             {
-                new Vector2(0.50f, 0.92f), // top center
-                new Vector2(0.92f, 0.08f), // bottom right
-                new Vector2(0.08f, 0.08f), // bottom left
+                new Vector2(0.50f, 0.92f),
+                new Vector2(0.92f, 0.08f),
+                new Vector2(0.08f, 0.08f),
             },
         };
 
@@ -119,10 +105,10 @@ namespace CosmicShore.Editor
             element = Element.Space,
             vertices = new[]
             {
-                new Vector2(0.50f, 0.92f), // top point
-                new Vector2(0.92f, 0.58f), // right shoulder
-                new Vector2(0.50f, 0.08f), // bottom point
-                new Vector2(0.08f, 0.58f), // left shoulder
+                new Vector2(0.50f, 0.92f),
+                new Vector2(0.92f, 0.58f),
+                new Vector2(0.50f, 0.08f),
+                new Vector2(0.08f, 0.58f),
             },
         };
 
@@ -132,11 +118,11 @@ namespace CosmicShore.Editor
             element = Element.Charge,
             vertices = new[]
             {
-                new Vector2(0.30f, 0.92f), // top left
-                new Vector2(0.70f, 0.92f), // top right
-                new Vector2(0.92f, 0.55f), // right middle
-                new Vector2(0.50f, 0.08f), // bottom point
-                new Vector2(0.08f, 0.55f), // left middle
+                new Vector2(0.30f, 0.92f),
+                new Vector2(0.70f, 0.92f),
+                new Vector2(0.92f, 0.55f),
+                new Vector2(0.50f, 0.08f),
+                new Vector2(0.08f, 0.55f),
             },
         };
 
@@ -146,48 +132,43 @@ namespace CosmicShore.Editor
             element = Element.Time,
             vertices = new[]
             {
-                new Vector2(0.50f, 0.92f), // top
-                new Vector2(0.80f, 0.50f), // right
-                new Vector2(0.50f, 0.08f), // bottom
-                new Vector2(0.20f, 0.50f), // left
+                new Vector2(0.50f, 0.92f),
+                new Vector2(0.80f, 0.50f),
+                new Vector2(0.50f, 0.08f),
+                new Vector2(0.20f, 0.50f),
             },
         };
 
-        // --- Premium Tick Pip ---
+        // =====================================================================
+        // Tick Pip — solid filled pill, aspect-matched to pipSize (14x5)
+        // =====================================================================
 
-        static Texture2D CreatePremiumTick(int size)
+        static Texture2D CreateTick(int width, int height)
         {
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            var pixels = new Color32[size * size];
+            var tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            var pixels = new Color32[width * height];
 
-            // Rounded rectangle (pill shape): wide, short
-            var halfExtent = new Vector2(0.34f, 0.09f);
-            float cornerRadius = 0.07f;
+            // Pill shape in pixel-space (centered at origin)
+            float padPx = 3f;
+            float halfW = width * 0.5f - padPx;
+            float halfH = height * 0.5f - padPx;
+            float radius = halfH; // full pill — completely rounded short ends
 
-            float feather = FeatherPx / size;
-            float glowR = TickGlowPx / size;
-
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < width; x++)
                 {
-                    // Center origin
-                    var p = new Vector2((x + 0.5f) / size - 0.5f, (y + 0.5f) / size - 0.5f);
-                    float dist = SdfRoundedRect(p, halfExtent, cornerRadius);
+                    var p = new Vector2(x + 0.5f - width * 0.5f, y + 0.5f - height * 0.5f);
+                    float dist = SdfRoundedRectPx(p, halfW, halfH, radius);
 
-                    // Core fill — solid white, anti-aliased
-                    float core = Mathf.Clamp01(-dist / feather);
+                    // Solid fill, 1.2px AA feather
+                    float alpha = Mathf.Clamp01(-dist / 1.2f);
 
-                    // Outer glow — soft quadratic falloff halo
-                    float glow = 0f;
-                    if (dist > 0f)
-                    {
-                        glow = Mathf.Clamp01(1f - dist / glowR);
-                        glow *= glow * TickGlowIntensity;
-                    }
+                    // Subtle top-lit gradient (bottom 92% → top 100%)
+                    float vt = (y + 0.5f) / height;
+                    alpha *= Mathf.Lerp(0.92f, 1f, vt);
 
-                    float alpha = Mathf.Max(core, glow);
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                    pixels[y * width + x] = new Color(1f, 1f, 1f, alpha);
                 }
             }
 
@@ -197,29 +178,30 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>
-        /// SDF for an axis-aligned rounded rectangle centered at origin.
+        /// SDF for a rounded rectangle in pixel-space, centered at origin.
         /// </summary>
-        static float SdfRoundedRect(Vector2 p, Vector2 halfExtent, float radius)
+        static float SdfRoundedRectPx(Vector2 p, float halfW, float halfH, float radius)
         {
             var d = new Vector2(
-                Mathf.Abs(p.x) - halfExtent.x + radius,
-                Mathf.Abs(p.y) - halfExtent.y + radius);
+                Mathf.Abs(p.x) - halfW + radius,
+                Mathf.Abs(p.y) - halfH + radius);
             float outside = new Vector2(Mathf.Max(d.x, 0f), Mathf.Max(d.y, 0f)).magnitude;
             float inside = Mathf.Min(Mathf.Max(d.x, d.y), 0f);
             return outside + inside - radius;
         }
 
-        // --- Premium Label Outline ---
+        // =====================================================================
+        // Label Outline — thick stroke + subtle inner fill, sized for 20x20
+        // =====================================================================
 
-        static Texture2D CreatePremiumLabel(Vector2[] verts, int size)
+        static Texture2D CreateLabel(Vector2[] verts, int size)
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             var pixels = new Color32[size * size];
 
-            float strokeHalf = LabelStrokePx * 0.5f / size;
-            float feather = FeatherPx / size;
-            float outerGlowR = LabelOuterGlowPx / size;
-            float innerEdgeR = LabelInnerEdgePx / size;
+            // 8px total stroke at 80px texture → 2px at 20px display (clean and readable)
+            float strokeHalf = 4f / size;
+            float feather = 1.2f / size;
 
             for (int y = 0; y < size; y++)
             {
@@ -229,34 +211,13 @@ namespace CosmicShore.Editor
                     float dist = SignedDistanceToPolygon(uv, verts);
                     float absDist = Mathf.Abs(dist);
 
-                    // 1. Crisp anti-aliased stroke
+                    // Thick anti-aliased stroke
                     float stroke = Mathf.Clamp01((strokeHalf - absDist) / feather);
 
-                    // 2. Outer glow — soft halo bleeding outward from the stroke
-                    float outerGlow = 0f;
-                    if (dist > strokeHalf)
-                    {
-                        float d = dist - strokeHalf;
-                        outerGlow = Mathf.Clamp01(1f - d / outerGlowR);
-                        outerGlow *= outerGlow * LabelOuterGlowIntensity; // quadratic falloff
-                    }
+                    // Subtle inner fill (6% alpha) — gives the shape body
+                    float fill = dist < 0f ? 0.06f : 0f;
 
-                    // 3. Inner edge glow — luminous rim just inside the stroke
-                    float innerEdge = 0f;
-                    if (dist < -strokeHalf)
-                    {
-                        float d = -dist - strokeHalf;
-                        innerEdge = Mathf.Clamp01(1f - d / innerEdgeR);
-                        innerEdge *= innerEdge * LabelInnerEdgeIntensity;
-                    }
-
-                    // 4. Subtle inner fill — gives the shape body
-                    float fill = dist < 0f ? LabelInnerFillAlpha : 0f;
-
-                    float alpha = Mathf.Max(
-                        Mathf.Max(stroke, outerGlow),
-                        Mathf.Max(innerEdge, fill));
-
+                    float alpha = Mathf.Max(stroke, fill);
                     pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
                 }
             }
@@ -283,12 +244,10 @@ namespace CosmicShore.Editor
                 var edge = b - a;
                 var toP = p - a;
 
-                // Closest point on edge segment
                 float t = Mathf.Clamp01(Vector2.Dot(toP, edge) / edge.sqrMagnitude);
                 float dist = (toP - edge * t).magnitude;
                 minDist = Mathf.Min(minDist, dist);
 
-                // Winding test (cross product)
                 float cross = edge.x * toP.y - edge.y * toP.x;
                 if (a.y <= p.y && b.y > p.y && cross > 0f) sign = -sign;
                 else if (a.y > p.y && b.y <= p.y && cross < 0f) sign = -sign;
@@ -297,7 +256,9 @@ namespace CosmicShore.Editor
             return sign * minDist;
         }
 
-        // --- File I/O ---
+        // =====================================================================
+        // File I/O & Import
+        // =====================================================================
 
         static void SaveTexture(Texture2D tex, string path)
         {
@@ -320,7 +281,9 @@ namespace CosmicShore.Editor
             importer.SaveAndReimport();
         }
 
-        // --- Config Assignment ---
+        // =====================================================================
+        // Config Assignment
+        // =====================================================================
 
         static void TryAssignToConfig(
             Dictionary<Element, string> pipPaths,
@@ -353,7 +316,7 @@ namespace CosmicShore.Editor
                 so.ApplyModifiedProperties();
                 EditorUtility.SetDirty(config);
 
-                Debug.Log($"[ElementShapeGenerator] Assigned premium sprites to {assetPath}");
+                Debug.Log($"[ElementShapeGenerator] Assigned sprites to {assetPath}");
             }
 
             AssetDatabase.SaveAssets();
