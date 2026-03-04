@@ -4,7 +4,7 @@ using System.Linq;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
-using CosmicShore.App.UI.Elements;
+using CosmicShore.App.UI.ToastNotification;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Game.Progression;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -48,12 +48,6 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
-
-        [Header("Intensity Info Panels")]
-        [Tooltip("Info panel shown when the player taps the locked Intensity 3 button")]
-        [SerializeField] private IntensityInfoPanel intensityInfoPanel3;
-        [Tooltip("Info panel shown when the player taps the locked Intensity 4 button")]
-        [SerializeField] private IntensityInfoPanel intensityInfoPanel4;
 
         [Header("Screen 2 – Selected Vessel Summary")]
         [SerializeField] private Image    shipPlaceholderIcon;
@@ -347,10 +341,17 @@ namespace CosmicShore.App.UI.Modals
 
             if (_selectedGame == null) return;
 
-            if (intensity == 3 && intensityInfoPanel3)
-                intensityInfoPanel3.Show(_selectedGame.Mode);
-            else if (intensity == 4 && intensityInfoPanel4)
-                intensityInfoPanel4.Show(_selectedGame.Mode);
+            var service = GameModeProgressionService.Instance;
+            if (service == null) return;
+
+            var quest = service.GetQuestForMode(_selectedGame.Mode);
+            if (quest == null) return;
+
+            string goalDescription = intensity == 3
+                ? quest.Intensity3GoalDescription
+                : quest.Intensity4GoalDescription;
+
+            ToastNotificationAPI.Show(goalDescription);
         }
 
         void HandleConfigChangedExternal()

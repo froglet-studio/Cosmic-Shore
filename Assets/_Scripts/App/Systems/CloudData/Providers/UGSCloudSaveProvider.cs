@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
+using CosmicShore.App.UI.ToastNotification;
 using UnityEngine;
 
 namespace CosmicShore.App.Systems.CloudData
@@ -86,6 +87,7 @@ namespace CosmicShore.App.Systems.CloudData
             catch (Exception e)
             {
                 Debug.LogWarning($"[UGSCloudSaveProvider] Save '{key}' failed: {e.Message}");
+                ToastNotificationAPI.Show($"Failed to save data: {e.Message}");
             }
         }
     }

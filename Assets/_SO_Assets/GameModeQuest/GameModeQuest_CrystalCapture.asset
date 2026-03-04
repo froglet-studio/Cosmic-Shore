@@ -20,5 +20,7 @@ MonoBehaviour:
   TargetValue: 4
   PlaysToUnlockIntensity3: 3
   PlaysToUnlockIntensity4: 3
+  Intensity3GoalDescription: Collect 30 crystals in Intensity 2
+  Intensity4GoalDescription: Collect 25 crystals in Intensity 3
   Order: 0
   IsPlaceholder: 0

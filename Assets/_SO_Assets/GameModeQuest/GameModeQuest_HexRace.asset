@@ -20,5 +20,7 @@ MonoBehaviour:
   TargetValue: 4
   PlaysToUnlockIntensity3: 3
   PlaysToUnlockIntensity4: 3
+  Intensity3GoalDescription: Complete Hex Race Intensity 2 under 215 seconds
+  Intensity4GoalDescription: Complete Hex Race Intensity 3 under 270 seconds
   Order: 1
   IsPlaceholder: 0

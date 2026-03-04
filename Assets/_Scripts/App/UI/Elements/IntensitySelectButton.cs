@@ -25,7 +25,7 @@ namespace CosmicShore
         [SerializeField] Color32 IntensityColorUnselected;
         [SerializeField] Color32 IntensityColorActive;
         [SerializeField] Color32 IntensityColorInactive;
-        [SerializeField] Color32 IntensityColorLocked;
+        [SerializeField] Color32 IntensityColorLocked = new(120, 60, 60, 255);
 
         [SerializeField] private IntVariable selectedIntensityCount;
 

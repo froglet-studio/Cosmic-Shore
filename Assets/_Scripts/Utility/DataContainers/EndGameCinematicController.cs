@@ -11,6 +11,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utility;
+using CosmicShore.App.UI.ToastNotification;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -322,7 +323,7 @@ namespace CosmicShore.Game.Cinematics
         /// </summary>
         protected virtual IEnumerator ShowIntensityUnlockSequence()
         {
-            if (!view || !gameData) yield break;
+            if (!gameData) yield break;
 
             var service = GameModeProgressionService.Instance;
             if (service == null) yield break;
@@ -330,23 +331,16 @@ namespace CosmicShore.Game.Cinematics
             var mode = gameData.GameMode;
             int maxUnlocked = service.GetMaxUnlockedIntensity(mode);
 
-            // Only show if intensity 3 or 4 was just unlocked this game
-            // We detect this by comparing remaining plays — 0 remaining means it was just unlocked
-            // (the quest completion sequence handles the full-quest-complete case separately)
             if (maxUnlocked >= 3 && service.GetPlaysRemainingForIntensity(mode, 3) == 0 &&
                 maxUnlocked < 4 && service.GetPlaysRemainingForIntensity(mode, 4) > 0)
             {
-                // Intensity 3 was recently unlocked, intensity 4 still locked
-                view.ShowQuestCompletion("Intensity 3 Unlocked!");
-                yield return new WaitForSeconds(2f);
-                view.HideQuestCompletion();
+                ToastNotificationAPI.Show("Intensity 3 Unlocked!");
+                yield return new WaitForSeconds(1f);
             }
             else if (maxUnlocked >= 4 && !service.IsQuestCompleted(mode))
             {
-                // Intensity 4 unlocked but quest not yet flagged as complete
-                view.ShowQuestCompletion("Intensity 4 Unlocked!");
-                yield return new WaitForSeconds(2f);
-                view.HideQuestCompletion();
+                ToastNotificationAPI.Show("Intensity 4 Unlocked!");
+                yield return new WaitForSeconds(1f);
             }
         }
 

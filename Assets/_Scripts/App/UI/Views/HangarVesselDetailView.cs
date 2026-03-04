@@ -1,5 +1,7 @@
 using CosmicShore.App.Profile;
 using CosmicShore.App.Systems.VesselUnlock;
+using CosmicShore.App.UI.ToastNotification;
+using CosmicShore.Game.Progression;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -206,6 +208,13 @@ namespace CosmicShore.App.UI.Views
         void OnUnlockClicked()
         {
             if (_currentShip == null || !_currentShip.IsLocked) return;
+
+            var progression = GameModeProgressionService.Instance;
+            if (progression != null && !progression.IsVesselHangarUnlocked())
+            {
+                ToastNotificationAPI.Show("Vessels can only be unlocked after completing the Vessel Hangar quest.");
+                return;
+            }
 
             int balance = VesselUnlockSystem.GetCurrencyBalance();
             int cost = _currentShip.UnlockCost;

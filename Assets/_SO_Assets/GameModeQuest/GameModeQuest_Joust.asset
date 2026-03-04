@@ -20,5 +20,7 @@ MonoBehaviour:
   TargetValue: 4
   PlaysToUnlockIntensity3: 3
   PlaysToUnlockIntensity4: 3
+  Intensity3GoalDescription: Get 3 jousts under 200 seconds in Intensity 2
+  Intensity4GoalDescription: Get 3 jousts under 100 seconds in Intensity 3
   Order: 2
   IsPlaceholder: 0
