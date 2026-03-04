@@ -78,7 +78,7 @@ public class SpawnableDartBoard : SpawnableBase
                 }
 
                 var point = td.Points[block];
-                var blockObj = Instantiate(prism, container.transform);
+                var blockObj = GetPrismFromPool(prism, point.Position, point.Rotation, container.transform);
                 blockObj.ChangeTeam(blockDomain);
                 blockObj.ownerID = $"{container.name}::{ring}::{block}";
                 blockObj.transform.localPosition = point.Position;

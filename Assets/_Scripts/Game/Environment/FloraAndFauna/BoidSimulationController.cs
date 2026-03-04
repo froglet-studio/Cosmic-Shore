@@ -34,6 +34,7 @@ public class BoidSImulationController : MonoBehaviour
     
     public ComputeShader boidSimulationShader;
     public Prism boidPrefab;
+    [SerializeField] InteractivePrismPoolManager boidPrismPool;
     public int numberOfBoids = 100;
     public float spawnRadius = 50.0f;
     public Transform globalGoal;
@@ -94,8 +95,12 @@ public class BoidSImulationController : MonoBehaviour
         {
             Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
             CSDebug.Log("Instantiating boid number: " + i);
-            Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
-            newBoid.transform.SetParent(transform);
+            Prism newBoid;
+            if (boidPrismPool)
+                newBoid = boidPrismPool.Get(spawnPosition, Quaternion.identity, transform);
+            else
+                newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
+            if (!boidPrismPool) newBoid.transform.SetParent(transform);
             newBoid.Initialize();
             
             boids[i] = newBoid; // Store the boid game object reference
@@ -235,8 +240,12 @@ public class BoidSImulationController : MonoBehaviour
     public void CreateBoid(Vector3 position, Vector3 direction)
     {
         SafeLookRotation.TryGet(direction, out var initialRotation, boidPrefab);
-        Prism newBoid = Instantiate(boidPrefab, position, initialRotation);
-        newBoid.transform.SetParent(transform);
+        Prism newBoid;
+        if (boidPrismPool)
+            newBoid = boidPrismPool.Get(position, initialRotation, transform);
+        else
+            newBoid = Instantiate(boidPrefab, position, initialRotation);
+        if (!boidPrismPool) newBoid.transform.SetParent(transform);
         newBoid.Initialize();
 
         Entity newEntity = new Entity

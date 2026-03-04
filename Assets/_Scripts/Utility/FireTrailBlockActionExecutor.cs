@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
@@ -8,9 +8,9 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
 {
     [FormerlySerializedAs("trailBlockPrefab")]
     [Header("Scene Refs")]
-    [SerializeField] private Prism prismPrefab; 
-    [SerializeField] private Transform muzzle;           
-    // [SerializeField] private PoolManager pool;     
+    [SerializeField] private Prism prismPrefab;
+    [SerializeField] private Transform muzzle;
+    [SerializeField] private InteractivePrismPoolManager prismPool;
 
     IVesselStatus _status;
     Coroutine _loop;
@@ -48,33 +48,23 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
     {
         if (prismPrefab == null || muzzle == null) return;
 
-        Prism blockInstance = null;
-        /*if (pool != null)
-        {
-            var go = pool.SpawnFromPool(prismPrefab.tag, muzzle.position, muzzle.rotation);
-            blockInstance = go?.GetComponent<Prism>();
-        }
+        Prism blockInstance;
+        if (prismPool)
+            blockInstance = prismPool.Get(muzzle.position, muzzle.rotation);
         else
-        {
             blockInstance = Instantiate(prismPrefab, muzzle.position, muzzle.rotation);
-        }*/
 
-        // ADDED TO REMOVE POOL
-        blockInstance = Instantiate(prismPrefab, muzzle.position, muzzle.rotation);
-        
         if (blockInstance == null) return;
 
         blockInstance.TargetScale *= so.ProjectileScale;
         blockInstance.prismProperties.IsShielded = so.Shielded;
-        blockInstance.prismProperties.IsDangerous = so.FriendlyFire; 
-        blockInstance.Domain = _status.Domain; 
+        blockInstance.prismProperties.IsDangerous = so.FriendlyFire;
+        blockInstance.Domain = _status.Domain;
         blockInstance.Initialize(_status.PlayerName);
-        
-        StartCoroutine(MoveBlockForward(blockInstance, so));
 
-        Destroy(blockInstance.gameObject, so.ProjectileTime);
+        StartCoroutine(MoveBlockForward(blockInstance, so));
     }
-    
+
     IEnumerator MoveBlockForward(Prism block, FireTrailBlockActionSO so)
     {
         float t = 0f;
@@ -88,7 +78,7 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
         }
 
         if (block)
-            Destroy(block.gameObject);
+            block.ReturnToPool();
     }
 
 }

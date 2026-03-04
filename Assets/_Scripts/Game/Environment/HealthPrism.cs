@@ -15,12 +15,14 @@ namespace CosmicShore
 
         public override void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
+            // Clear stale reference from previous pool use
+            spindle = null;
+
             base.Initialize(playerName);
             if (LifeForm)
                 LifeForm.AddHealthBlock(this);
 
-            // Spindle logic disabled for now
-            spindle ??= transform.parent.GetComponent<Spindle>(); // Every healthPrism requires a spindle parent
+            spindle ??= transform.parent.GetComponent<Spindle>();
             if (spindle) spindle.AddHealthBlock(this);
         }
 
@@ -48,8 +50,13 @@ namespace CosmicShore
                 LifeForm.RemoveHealthBlock(this, playerName);
 
             if (spindle) spindle.CheckForLife();
+
+            // Clear references and return to pool (no-op if not pooled)
+            LifeForm = null;
+            spindle = null;
+            ReturnToPool();
         }
-        
+
         protected override void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
             spindle ??= transform.parent.GetComponent<Spindle>();
@@ -61,6 +68,11 @@ namespace CosmicShore
                 LifeForm.RemoveHealthBlock(this);
 
             if (spindle) spindle.CheckForLife();
+
+            // Clear references and return to pool (no-op if not pooled)
+            LifeForm = null;
+            spindle = null;
+            ReturnToPool();
         }
     }
 }

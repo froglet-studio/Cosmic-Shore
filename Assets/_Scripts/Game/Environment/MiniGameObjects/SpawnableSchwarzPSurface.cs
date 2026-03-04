@@ -145,7 +145,7 @@ namespace CosmicShore
             {
                 var node = nodes[i];
 
-                var block = Instantiate(prism);
+                var block = GetPrismFromPool(prism, node.Position, node.Rotation);
                 block.ChangeTeam(node.BlockDomain);
                 block.ownerID = $"{container.name}::SURFACE::{i}";
                 block.transform.SetPositionAndRotation(node.Position, node.Rotation);

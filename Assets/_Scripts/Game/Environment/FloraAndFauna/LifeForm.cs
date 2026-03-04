@@ -6,6 +6,7 @@ using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Soap;
+using CosmicShore.Utility;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -20,6 +21,7 @@ namespace CosmicShore
         [FormerlySerializedAs("healthBlock")]
         [SerializeField] protected HealthPrism healthPrism;
         [SerializeField] protected Spindle spindle;
+        [SerializeField] protected HealthPrismPoolManager healthPrismPool;
         [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
@@ -97,6 +99,20 @@ namespace CosmicShore
                 hp.Initialize("FaunaPrefab");
                 AddHealthBlock(hp); // [Visual Note] Ensure we explicitly add it to tracking
             }
+        }
+
+        protected HealthPrism GetHealthPrism(Vector3 position, Quaternion rotation, Transform parent = null)
+        {
+            if (healthPrismPool)
+                return healthPrismPool.Get(position, rotation, parent);
+            return Instantiate(healthPrism, position, rotation, parent);
+        }
+
+        protected void ReturnHealthPrism(HealthPrism hp)
+        {
+            if (!hp) return;
+            hp.LifeForm = null;
+            hp.ReturnToPool();
         }
 
         public virtual void AddHealthBlock(HealthPrism healthPrism)
@@ -259,7 +275,15 @@ namespace CosmicShore
         {
             isCleaningUp = true;
             StopAllCoroutines();
-            // [Visual Note] Don't trigger death logic, just vanish
+
+            // Return pooled health prisms before destroying the hierarchy
+            foreach (var hp in healthBlocks.ToArray())
+            {
+                if (!hp) continue;
+                ReturnHealthPrism(hp);
+            }
+            healthBlocks.Clear();
+
             if(gameObject) Destroy(gameObject);
         }
     }

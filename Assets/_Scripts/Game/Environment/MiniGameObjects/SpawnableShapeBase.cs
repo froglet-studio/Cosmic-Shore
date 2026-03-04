@@ -96,7 +96,7 @@ public abstract class SpawnableShapeBase : SpawnableBase
                 if (!container) yield break; // Container was destroyed
 
                 var point = td.Points[i];
-                var block = Instantiate(prismPrefab, container.transform);
+                var block = GetPrismFromPool(prismPrefab, point.Position, point.Rotation, container.transform);
                 block.ChangeTeam(actualDomain);
                 block.ownerID = $"{container.name}::{i}";
                 block.transform.localPosition = point.Position;

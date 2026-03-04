@@ -101,7 +101,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected Prism CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string ownerId, Trail trail, GameObject container)
         {
-            var Block = Instantiate(prism, container.transform, false);
+            var Block = GetPrismFromPool(prism, position, Quaternion.identity, container.transform);
             Block.ChangeTeam(Domain);
             //Block.ownerId = Vessel.Player.PlayerUUID;
             //Block.PlayerName = Vessel.Player.PlayerName;

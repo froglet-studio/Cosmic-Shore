@@ -75,12 +75,10 @@ namespace CosmicShore.Game.Projectiles
 
                 string ownerId = $"{container.name}::R{ringIndex}::P{i}";
 
-                var block = Instantiate(prism, container.transform);
+                Quaternion rotation = Quaternion.LookRotation(lookDirection, transform.up);
+                var block = GetPrismFromPool(prism, adjustedPosition, rotation, container.transform);
                 block.ChangeTeam(domain);
                 block.ownerID = ownerId;
-
-                Quaternion rotation = Quaternion.LookRotation(lookDirection, transform.up);
-                block.transform.SetPositionAndRotation(adjustedPosition, rotation);
 
                 block.TargetScale = prismScale;
                 block.Trail = trail;

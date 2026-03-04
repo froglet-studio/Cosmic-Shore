@@ -108,7 +108,7 @@ namespace CosmicShore
                     continue;
                 }
 
-                HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
+                HealthPrism newHealthPrism = GetHealthPrism(growthInfo.Position, growthInfo.Rotation);
                 AddHealthBlock(newHealthPrism);
                 Branch newBranch = new Branch(newHealthPrism);
 
@@ -178,7 +178,7 @@ namespace CosmicShore
             CSDebug.Log("New Assembler");
             var newSpindle = AddSpindle();
 
-            HealthPrism newHealthPrism = Instantiate(healthPrism, transform.position, transform.rotation);
+            HealthPrism newHealthPrism = GetHealthPrism(transform.position, transform.rotation);
             AddHealthBlock(newHealthPrism);
             newHealthPrism.transform.SetParent(newSpindle.transform, false);
             newHealthPrism.LifeForm = this;

@@ -75,7 +75,7 @@ namespace CosmicShore
 
                 Domains blockDomain = (colorDangerousBlocks && isDangerous) ? dangerousDomain : domain;
 
-                var block = Instantiate(prism);
+                var block = GetPrismFromPool(prism, node.Position, node.Rotation);
                 block.ChangeTeam(blockDomain);
                 block.ownerID = $"{container.name}::BLOCK::{i}";
                 block.transform.SetPositionAndRotation(node.Position, node.Rotation);

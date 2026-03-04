@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -39,6 +40,10 @@ namespace CosmicShore.Game.Spawning
         [Tooltip("Prefab to instantiate at each generated point when this is a leaf node. " +
                  "Can be a Prism (gets trail management), Crystal, Flora, Fauna, Vessel, or any prefab.")]
         [SerializeField] protected GameObject leafPrefab;
+
+        [Header("Prism Pooling")]
+        [Tooltip("Optional pool for Prism leaf objects. When set, prisms are retrieved from this pool instead of Instantiated.")]
+        [SerializeField] protected InteractivePrismPoolManager prismPool;
 
         // Cache
         private SpawnTrailData[] _cachedTrails;
@@ -228,6 +233,19 @@ namespace CosmicShore.Game.Spawning
         }
 
         /// <summary>
+        /// Gets a Prism from pool if available, otherwise Instantiates from prefab.
+        /// </summary>
+        protected Prism GetPrismFromPool(Prism prefab, Vector3 position, Quaternion rotation, Transform parent = null)
+        {
+            if (prismPool)
+            {
+                var p = prismPool.Get(position, rotation, parent);
+                return p;
+            }
+            return parent ? Instantiate(prefab, position, rotation, parent) : Instantiate(prefab, position, rotation);
+        }
+
+        /// <summary>
         /// Instantiate Prism blocks along a trail with full initialization.
         /// Accepts an explicit Prism prefab, or falls back to leafPrefab.
         /// Reusable by multi-trail subclasses that override SpawnLeafObjects.
@@ -243,7 +261,7 @@ namespace CosmicShore.Game.Spawning
             for (int i = 0; i < points.Length; i++)
             {
                 var point = points[i];
-                var block = Instantiate(prismPrefab, container.transform);
+                var block = GetPrismFromPool(prismPrefab, point.Position, point.Rotation, container.transform);
                 block.ChangeTeam(actualDomain);
                 block.ownerID = $"{container.name}::{i}";
                 block.transform.localPosition = point.Position;

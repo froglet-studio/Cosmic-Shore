@@ -42,6 +42,9 @@ public class Boid : Fauna
     [SerializeField]
     Prism healthPrism;
 
+    [SerializeField]
+    InteractivePrismPoolManager prismPool;
+
     Vector3 currentVelocity;
     Vector3 desiredDirection;
     Quaternion desiredRotation;
@@ -260,7 +263,11 @@ public class Boid : Fauna
 
     private (Prism, GyroidAssembler) NewBlock()
     {
-        var newBlock = Instantiate(healthPrism, transform.position, transform.rotation, transform);
+        Prism newBlock;
+        if (prismPool)
+            newBlock = prismPool.Get(transform.position, transform.rotation, transform);
+        else
+            newBlock = Instantiate(healthPrism, transform.position, transform.rotation, transform);
         newBlock.ChangeTeam(domain);
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         newBlock.prismProperties = new() { prism = newBlock };

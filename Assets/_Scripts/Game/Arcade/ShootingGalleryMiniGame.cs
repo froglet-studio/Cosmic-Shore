@@ -37,6 +37,7 @@ namespace CosmicShore.Game.Arcade
         }
 
         [FormerlySerializedAs("trailBlock")] [SerializeField] protected Prism prism;
+        [SerializeField] InteractivePrismPoolManager prismPool;
         [SerializeField] float blockCount = 20;
         [SerializeField] float radius = 60f;
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
@@ -68,9 +69,12 @@ namespace CosmicShore.Game.Arcade
 
         virtual protected Prism CreateBlock(Vector3 position, Vector3 lookPosition, Trail trail)
         {
-            var Block = Instantiate(prism);
+            Prism Block;
+            if (prismPool)
+                Block = prismPool.Get(position, Quaternion.identity);
+            else
+                Block = Instantiate(prism);
             Block.ChangeTeam(ActivePlayer.Domain);
-            // Block.ownerID = LocalPlayer.PlayerUUID;
             if (SafeLookRotation.TryGet(lookPosition - transform.position, transform.forward, out var rotation, Block))
                 Block.transform.SetPositionAndRotation(position, rotation);
             else
