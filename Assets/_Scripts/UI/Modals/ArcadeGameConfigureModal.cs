@@ -561,7 +561,7 @@ namespace CosmicShore.UI
                 ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
                 : 1;
 
-            gameData.SelectedPlayerCount.Value = humanCount;
+            gameData.SelectedPlayerCount.Value = config.PlayerCount;
 
             int aiBackfill = Mathf.Max(0, config.PlayerCount - humanCount);
 
