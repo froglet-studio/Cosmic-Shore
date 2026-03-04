@@ -8,14 +8,7 @@ namespace CosmicShore
 {
     /// <summary>
     /// Displays 4 vertical fill bars with element label icons, covering levels -5 to +15.
-    ///
-    /// Two modes:
-    /// 1. Pre-placed: assign bars[] in the prefab for full editor control of layout/scale.
-    /// 2. Auto-populate: assign a pipsConfig (ElementPipsConfigSO) and a container RectTransform.
-    ///    Build() creates fill bars + label icons from the config sprites. You control overall
-    ///    scale/position by adjusting the container's RectTransform in the editor.
-    ///
-    /// If bars[] has valid entries, pre-placed mode wins. Otherwise auto-populate kicks in.
+    /// Assign bars[] in the prefab/scene for full editor control of layout, scale, and positioning.
     /// </summary>
     public class ElementalBarsView : MonoBehaviour
     {
@@ -35,24 +28,8 @@ namespace CosmicShore
             public Sprite normalLabelSprite;
         }
 
-        [Header("Pre-placed Bindings (optional — takes priority)")]
+        [Header("Bar Bindings")]
         [SerializeField] private ElementBarBinding[] bars = new ElementBarBinding[0];
-
-        [Header("Auto-populate from Pips Config")]
-        [Tooltip("Assign the existing ElementPipsConfigSO to auto-create bars at runtime")]
-        [SerializeField] private ElementPipsConfigSO pipsConfig;
-
-        [Tooltip("Parent RectTransform for auto-generated bars. Scale this to control overall size.")]
-        [SerializeField] private RectTransform container;
-
-        [Header("Auto-populate Layout")]
-        [SerializeField] private float columnSpacing = 32f;
-        [SerializeField] private Vector2 barSize = new(18f, 120f);
-        [SerializeField] private Vector2 labelIconSize = new(28f, 28f);
-        [SerializeField] private float labelGap = 6f;
-        [SerializeField] private Color barBackgroundColor = new(1f, 1f, 1f, 0.08f);
-        [SerializeField] private Color zeroLineColor = new(1f, 1f, 1f, 0.5f);
-        [SerializeField] private float zeroLineHeight = 2f;
 
         [Header("Range")]
         [SerializeField] private int minLevel = -5;
@@ -78,7 +55,6 @@ namespace CosmicShore
         [SerializeField] private Sprite doubleDriftSprite;
 
         // Runtime state
-        private bool _isAutoPopulated;
         private RectTransform _rootRT;
         private Tween _scaleTween;
         private int[] _currentLevels;
@@ -91,69 +67,14 @@ namespace CosmicShore
         private Tween[] _fillColorTweens;
         private bool _built;
 
-        static readonly Element[] DefaultOrder = { Element.Charge, Element.Mass, Element.Space, Element.Time };
-
         public void Build()
         {
             if (_built) return;
-
-            // Subscribe to SO changes for live updating
-            if (pipsConfig)
-                pipsConfig.OnChanged += OnConfigChanged;
-
-            // Decide mode: pre-placed bindings or auto-populate
-            _isAutoPopulated = !(bars is { Length: > 0 } && bars[0].fillImage != null);
-
-            if (_isAutoPopulated && pipsConfig && container)
-                AutoPopulateFromPipsConfig();
-
             if (bars == null || bars.Length == 0) return;
 
-            // Cache the root transform for runtime scaling
-            _rootRT = container ? container : (RectTransform)transform;
+            _rootRT = (RectTransform)transform;
 
-            InitBarArrays();
-
-            _built = true;
-            RefreshAllBars();
-        }
-
-        /// <summary>Destroys auto-generated children and rebuilds from the SO config.</summary>
-        public void Rebuild()
-        {
-            if (!_isAutoPopulated || !pipsConfig || !container) return;
-
-            // Kill all tweens
-            KillAllTweens();
-
-            // Destroy auto-generated children
-            for (int i = container.childCount - 1; i >= 0; i--)
-                DestroyImmediate(container.GetChild(i).gameObject);
-
-            bars = new ElementBarBinding[0];
-            _built = false;
-
-            AutoPopulateFromPipsConfig();
-            if (bars == null || bars.Length == 0) return;
-
-            _rootRT = container ? container : (RectTransform)transform;
-            InitBarArrays();
-
-            // Restore previous levels
-            _built = true;
-            RefreshAllBars();
-        }
-
-        void OnConfigChanged()
-        {
-            if (_built && _isAutoPopulated)
-                Rebuild();
-        }
-
-        void InitBarArrays()
-        {
             int count = bars.Length;
-            int[] prevLevels = _currentLevels;
             _currentLevels = new int[count];
             _barFillColors = new Color[count];
             _originalLabelColors = new Color[count];
@@ -183,9 +104,12 @@ namespace CosmicShore
                     bar.fillImage.fillOrigin = (int)Image.OriginVertical.Bottom;
                 }
 
-                _currentLevels[i] = prevLevels != null && i < prevLevels.Length ? prevLevels[i] : 0;
+                _currentLevels[i] = 0;
                 _barFillColors[i] = debuffFillColor;
             }
+
+            _built = true;
+            RefreshAllBars();
         }
 
         // ---------------------------------------------------------------
@@ -228,107 +152,6 @@ namespace CosmicShore
 
         /// <summary>Current local scale of the bars root.</summary>
         public Vector3 Scale => _rootRT ? _rootRT.localScale : Vector3.one;
-
-        // ---------------------------------------------------------------
-        // Auto-populate: creates bars from ElementPipsConfigSO sprites
-        // Scale/position by adjusting the container RectTransform in editor
-        // ---------------------------------------------------------------
-        void AutoPopulateFromPipsConfig()
-        {
-            // Read layout from SO — changes to the SO trigger a rebuild
-            var cfgColumnSpacing = pipsConfig.columnSpacing;
-            var cfgPipSize = pipsConfig.pipSize;
-            var cfgLabelIconSize = pipsConfig.labelIconSize;
-            var cfgLabelGap = pipsConfig.labelGap;
-            var cfgZeroLineColor = pipsConfig.zeroLineColor;
-            var cfgZeroLineHeight = pipsConfig.zeroLineHeight;
-
-            int cols = DefaultOrder.Length;
-            bars = new ElementBarBinding[cols];
-
-            float totalWidth = (cols - 1) * cfgColumnSpacing;
-            float startX = -totalWidth * 0.5f;
-            float zeroFraction = (float)(-minLevel) / (maxLevel - minLevel);
-
-            for (int c = 0; c < cols; c++)
-            {
-                var element = DefaultOrder[c];
-                float xPos = startX + c * cfgColumnSpacing;
-
-                // Column parent
-                var colGO = new GameObject($"ElementBar_{element}", typeof(RectTransform));
-                var colRT = (RectTransform)colGO.transform;
-                colRT.SetParent(container, false);
-                colRT.anchorMin = colRT.anchorMax = new Vector2(0.5f, 0f);
-                colRT.pivot = new Vector2(0.5f, 0f);
-                colRT.anchoredPosition = new Vector2(xPos, 0f);
-                colRT.sizeDelta = new Vector2(cfgPipSize.x, 0f);
-
-                // Label icon
-                var labelGO = new GameObject($"Label_{element}", typeof(RectTransform), typeof(Image));
-                var labelRT = (RectTransform)labelGO.transform;
-                labelRT.SetParent(colRT, false);
-                labelRT.anchorMin = labelRT.anchorMax = new Vector2(0.5f, 0f);
-                labelRT.pivot = new Vector2(0.5f, 0f);
-                labelRT.anchoredPosition = Vector2.zero;
-                labelRT.sizeDelta = cfgLabelIconSize;
-
-                var labelImg = labelGO.GetComponent<Image>();
-                labelImg.sprite = pipsConfig.GetLabelSprite(element);
-                labelImg.color = debuffFillColor;
-                labelImg.preserveAspect = true;
-                labelImg.raycastTarget = false;
-
-                float barBaseY = cfgLabelIconSize.y + cfgLabelGap;
-
-                // Bar background
-                var bgGO = new GameObject($"BarBG_{element}", typeof(RectTransform), typeof(Image));
-                var bgRT = (RectTransform)bgGO.transform;
-                bgRT.SetParent(colRT, false);
-                bgRT.anchorMin = bgRT.anchorMax = new Vector2(0.5f, 0f);
-                bgRT.pivot = new Vector2(0.5f, 0f);
-                bgRT.anchoredPosition = new Vector2(0f, barBaseY);
-                bgRT.sizeDelta = cfgPipSize;
-                var bgImg = bgGO.GetComponent<Image>();
-                bgImg.color = barBackgroundColor;
-                bgImg.raycastTarget = false;
-
-                // Fill image
-                var fillGO = new GameObject($"Fill_{element}", typeof(RectTransform), typeof(Image));
-                var fillRT = (RectTransform)fillGO.transform;
-                fillRT.SetParent(colRT, false);
-                fillRT.anchorMin = fillRT.anchorMax = new Vector2(0.5f, 0f);
-                fillRT.pivot = new Vector2(0.5f, 0f);
-                fillRT.anchoredPosition = new Vector2(0f, barBaseY);
-                fillRT.sizeDelta = cfgPipSize;
-
-                var fillImg = fillGO.GetComponent<Image>();
-                fillImg.sprite = pipsConfig.GetPipSprite(element);
-                fillImg.color = debuffFillColor;
-                fillImg.raycastTarget = false;
-
-                // Zero-line marker
-                var zeroGO = new GameObject($"ZeroLine_{element}", typeof(RectTransform), typeof(Image));
-                var zeroRT = (RectTransform)zeroGO.transform;
-                zeroRT.SetParent(colRT, false);
-                zeroRT.anchorMin = zeroRT.anchorMax = new Vector2(0.5f, 0f);
-                zeroRT.pivot = new Vector2(0.5f, 0.5f);
-                float zeroY = barBaseY + zeroFraction * cfgPipSize.y;
-                zeroRT.anchoredPosition = new Vector2(0f, zeroY);
-                zeroRT.sizeDelta = new Vector2(cfgPipSize.x + 6f, cfgZeroLineHeight);
-                var zeroImg = zeroGO.GetComponent<Image>();
-                zeroImg.color = cfgZeroLineColor;
-                zeroImg.raycastTarget = false;
-
-                bars[c] = new ElementBarBinding
-                {
-                    element = element,
-                    fillImage = fillImg,
-                    labelIcon = labelImg,
-                    normalLabelSprite = labelImg.sprite,
-                };
-            }
-        }
 
         // ---------------------------------------------------------------
         // Level updates
@@ -521,7 +344,7 @@ namespace CosmicShore
             return -1;
         }
 
-        void KillAllTweens()
+        void OnDestroy()
         {
             _scaleTween?.Kill();
             if (_driftRotationTweens != null)
@@ -532,13 +355,6 @@ namespace CosmicShore
                 foreach (var t in _labelColorTweens) t?.Kill();
             if (_fillColorTweens != null)
                 foreach (var t in _fillColorTweens) t?.Kill();
-        }
-
-        void OnDestroy()
-        {
-            KillAllTweens();
-            if (pipsConfig)
-                pipsConfig.OnChanged -= OnConfigChanged;
         }
     }
 }
