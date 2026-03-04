@@ -36,7 +36,7 @@ namespace CosmicShore.App.UI.Views
         [Header("Dynamic Images")]
         [SerializeField] List<Sprite> IntensitySprites;
 
-        [SerializeField] SO_ShipList _shipList;
+        [SerializeField] SO_VesselList _shipList;
 
         public override void UpdateView()
         {
@@ -49,9 +49,9 @@ namespace CosmicShore.App.UI.Views
 
             IntensityImage.sprite = IntensitySprites[game.DailyChallengeIntensity - 1];
 
-            if (!_shipList.TryGetShipSOByShipType(game._SO_Ship.Class, out SO_Ship shipSO))
+            if (!_shipList.TryGetVesselByClass(game._SO_Vessel.Class, out SO_Vessel vesselSO))
                 return;
-            ShipClassImage.sprite = shipSO.IconInactive;
+            ShipClassImage.sprite = vesselSO.IconInactive;
 
             RewardButtonOne.SetReward(game.DailyChallengeTierOneReward);
             RewardButtonTwo.SetReward(game.DailyChallengeTierTwoReward);

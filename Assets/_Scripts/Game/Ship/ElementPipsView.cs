@@ -157,7 +157,7 @@ namespace CosmicShore
             {
                 int pipLevel = MinLevel + 1 + p; // -4, -3, ..., 0, ..., 15
                 bool filled = level >= pipLevel;
-                bool isNegative = pipLevel < 0;
+                bool isNegative = pipLevel <= 0;
 
                 var img = _pips[col, p];
                 if (!img) continue;

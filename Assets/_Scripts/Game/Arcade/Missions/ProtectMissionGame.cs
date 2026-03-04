@@ -48,7 +48,7 @@ namespace CosmicShore
         {
             base.Start();
             CurrentDifficulty = IntensityLevel;
-            Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
+            // Captain system removed — mission initialization needs refactoring
 
             // TODO - Cannot modify player datas directly... need other way of initialization.
             /*Players[0].ShipType = SquadSystem.SquadLeader.Vessel.Class;
