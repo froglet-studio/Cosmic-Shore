@@ -6,6 +6,16 @@ namespace CosmicShore
     [CreateAssetMenu(fileName = "ElementPipsConfig", menuName = "CosmicShore/UI/Element Pips Config")]
     public class ElementPipsConfigSO : ScriptableObject
     {
+        /// <summary>Fires when any field changes (editor OnValidate or runtime setter).</summary>
+        public event Action OnChanged;
+
+        /// <summary>Call this at runtime after modifying fields to trigger a rebuild.</summary>
+        public void NotifyChanged() => OnChanged?.Invoke();
+
+#if UNITY_EDITOR
+        void OnValidate() => OnChanged?.Invoke();
+#endif
+
         [Header("Layout")]
         [Tooltip("Number of pips per element column (range covers -5 to +15 = 20 steps)")]
         public int pipsPerColumn = 20;

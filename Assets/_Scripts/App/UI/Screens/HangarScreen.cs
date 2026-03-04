@@ -111,11 +111,9 @@ namespace CosmicShore.App.UI.Screens
 
         void RefreshGridCards()
         {
-            foreach (var card in _gridCards)
-            {
-                if (card)
-                    card.UpdateLockState();
-            }
+            // Re-populate the entire grid so cards re-sort (unlocked first)
+            // and lock overlays update immediately after a purchase.
+            PopulateGrid();
         }
 
         void ToggleVesselNames()

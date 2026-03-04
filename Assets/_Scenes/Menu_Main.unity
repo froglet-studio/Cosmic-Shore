@@ -41410,7 +41410,7 @@ MonoBehaviour:
         m_Calls:
         - m_Target: {fileID: 921072167}
           m_TargetAssemblyTypeName: CosmicShore.App.UI.ScreenSwitcher, Assembly-CSharp
-          m_MethodName: OnClickHangarNav
+          m_MethodName: OnClickProfileNav
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -61984,7 +61984,7 @@ MonoBehaviour:
         m_Calls:
         - m_Target: {fileID: 921072167}
           m_TargetAssemblyTypeName: CosmicShore.App.UI.ScreenSwitcher, Assembly-CSharp
-          m_MethodName: OnClickHangarNav
+          m_MethodName: OnClickHomeNav
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -66528,8 +66528,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -44.910156, y: -71}
-  m_SizeDelta: {x: 2235.1797, y: 35}
+  m_AnchoredPosition: {x: -14.628052, y: -71}
+  m_SizeDelta: {x: 2174.6, y: 35}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1550255714
 MonoBehaviour:
@@ -80418,7 +80418,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 16
+    m_Left: 3
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
