@@ -92,6 +92,28 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Single source of truth for player count configuration at game launch.
+        /// Computes and stores both SelectedPlayerCount and RequestedAIBackfillCount atomically.
+        /// </summary>
+        /// <param name="totalDesired">Total players the user selected (human + AI)</param>
+        /// <param name="humanCount">Number of human players in the party</param>
+        /// <param name="isMultiplayer">Whether the game mode is multiplayer (competitive modes need min 1 AI for solo)</param>
+        public void ConfigurePlayerCounts(int totalDesired, int humanCount, bool isMultiplayer)
+        {
+            SelectedPlayerCount.Value = totalDesired;
+
+            int aiBackfill = Mathf.Max(0, totalDesired - humanCount);
+
+            // Competitive multiplayer modes always need at least 1 AI opponent for solo play
+            if (isMultiplayer && humanCount <= 1 && aiBackfill < 1)
+                aiBackfill = 1;
+
+            RequestedAIBackfillCount = aiBackfill;
+
+            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts — total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+        }
+
+        /// <summary>
         /// Applies game-mode-specific minimum AI backfill.
         /// Called by SceneLoader.LaunchGame() before scene load and ClientRpc sync.
         /// HexRace always needs at least 1 AI opponent for solo play.

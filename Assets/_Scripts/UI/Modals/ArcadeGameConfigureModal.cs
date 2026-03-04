@@ -561,19 +561,13 @@ namespace CosmicShore.UI
                 ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
                 : 1;
 
-            gameData.SelectedPlayerCount.Value = config.PlayerCount;
-
-            int aiBackfill = Mathf.Max(0, config.PlayerCount - humanCount);
-
-            // Competitive multiplayer modes always need at least 1 AI opponent when solo
-            if (selectedGame.IsMultiplayer && humanCount <= 1 && aiBackfill < 1)
-                aiBackfill = 1;
-
-            gameData.RequestedAIBackfillCount = aiBackfill;
+            // Single source of truth — GameDataSO owns the player count computation
+            gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount, selectedGame.IsMultiplayer);
 
             Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
-                      $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, AIBackfill={aiBackfill}, " +
+                      $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, " +
+                      $"AIBackfill={gameData.RequestedAIBackfillCount}, " +
                       $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}</color>");
 
             // Hand off the party session so MultiplayerSetup in the game scene
@@ -608,8 +602,9 @@ namespace CosmicShore.UI
             if (gameData.SelectedIntensity)
                 gameData.SelectedIntensity.Value = config.Intensity;
 
-            if (gameData.SelectedPlayerCount)
-                gameData.SelectedPlayerCount.Value = config.PlayerCount;
+            // SelectedPlayerCount is NOT synced here — during modal interaction,
+            // config.PlayerCount (ArcadeGameConfigSO) is the interim store.
+            // Player count is only committed to gameData at launch via ConfigurePlayerCounts().
         }
 
         void SyncGameDataShip(SO_Ship ship)

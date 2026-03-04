@@ -151,7 +151,8 @@ namespace CosmicShore.Core
         {
             _gameData.SetSpawnPositions(_playerOrigins);
             _gameData.selectedVesselClass.Value = menuVesselClass;
-            _gameData.SelectedPlayerCount.Value = menuPlayerCount;
+            // SelectedPlayerCount is NOT set here — menu autopilot spawns exactly 1 Player
+            // via the Netcode pipeline. The game-launch path sets it via ConfigurePlayerCounts().
             _gameData.SelectedIntensity.Value = menuIntensity;
         }
 
