@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 3}
   m_Name: ElementPipsConfig
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   pipsPerColumn: 20
   pipSpacing: 8
   columnSpacing: 24
@@ -24,11 +24,11 @@ MonoBehaviour:
   filledColor: {r: 1, g: 1, b: 1, a: 1}
   emptyColor: {r: 1, g: 1, b: 1, a: 0.15}
   negativeFillColor: {r: 1, g: 0.3, b: 0.3, a: 0.8}
-  chargeSprite: {fileID: 21300000, guid: 98f307ae5164847418e03869ab5332d3, type: 3}
-  massSprite: {fileID: 21300000, guid: 4c87445c864c0ad47b51130f69e11219, type: 3}
-  spaceSprite: {fileID: 21300000, guid: eb42e89bc568f4c4ba2222b04ac4cf6d, type: 3}
-  timeSprite: {fileID: 21300000, guid: 15677eb39f2fcb949aa92a8514101d96, type: 3}
-  chargeLabelSprite: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
-  massLabelSprite: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
-  spaceLabelSprite: {fileID: 21300000, guid: 87a02d4518d0ec0468fa82912056d632, type: 3}
-  timeLabelSprite: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}
+  chargeSprite: {fileID: 21300000, guid: 1c3b923eb6a15ee42ad96e4cd5d4c836, type: 3}
+  massSprite: {fileID: 21300000, guid: 1c3b923eb6a15ee42ad96e4cd5d4c836, type: 3}
+  spaceSprite: {fileID: 21300000, guid: 1c3b923eb6a15ee42ad96e4cd5d4c836, type: 3}
+  timeSprite: {fileID: 21300000, guid: 1c3b923eb6a15ee42ad96e4cd5d4c836, type: 3}
+  chargeLabelSprite: {fileID: 21300000, guid: cbac2ac9cd6900044b197490af5727f1, type: 3}
+  massLabelSprite: {fileID: 21300000, guid: 1eb2c03794f55824d8e01e96c4fe7a3e, type: 3}
+  spaceLabelSprite: {fileID: 21300000, guid: 4e788082740141a45b47f1c51a5c15b0, type: 3}
+  timeLabelSprite: {fileID: 21300000, guid: 809450069823742448227b7dceef6fcc, type: 3}
