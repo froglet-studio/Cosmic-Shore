@@ -39,7 +39,10 @@ namespace CosmicShore.Game.Cinematics
         protected bool localPlayerWon;
         protected Coroutine runningRoutine;
         protected float cachedBoostMultiplier;
-        
+
+        /// <summary>Tracks the intensity level unlocked during this game session (0 = none).</summary>
+        private int _intensityUnlockedThisGame;
+
         protected virtual void OnEnable()
         {
             if (!gameData) return;
@@ -47,6 +50,10 @@ namespace CosmicShore.Game.Cinematics
 
             if (crystalRewardRoot)
                 crystalRewardRoot.SetActive(false);
+
+            _intensityUnlockedThisGame = 0;
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnIntensityUnlocked += HandleIntensityUnlocked;
 
             if (!view) return;
             view.Initialize();
@@ -57,6 +64,9 @@ namespace CosmicShore.Game.Cinematics
         {
             if (!gameData) return;
             gameData.OnWinnerCalculated -= OnWinnerCalculated;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnIntensityUnlocked -= HandleIntensityUnlocked;
 
             if (view)
                 view.OnContinuePressed -= HandleContinuePressed;
@@ -71,6 +81,12 @@ namespace CosmicShore.Game.Cinematics
                 view.Cleanup();
 
             isRunning = false;
+        }
+
+        void HandleIntensityUnlocked(GameModes mode, int intensity)
+        {
+            if (gameData != null && mode == gameData.GameMode)
+                _intensityUnlockedThisGame = intensity;
         }
 
         protected virtual void OnWinnerCalculated()
@@ -319,29 +335,18 @@ namespace CosmicShore.Game.Cinematics
         /// <summary>
         /// Checks whether the just-finished game unlocked a new intensity level (3 or 4).
         /// If so, shows a brief message via the quest-completion text panel before moving on.
-        /// Must run after RecordIntensityPlay has already updated the progression data.
+        /// Uses the _intensityUnlockedThisGame field set by the OnIntensityUnlocked event.
         /// </summary>
         protected virtual IEnumerator ShowIntensityUnlockSequence()
         {
-            if (!gameData) yield break;
+            if (_intensityUnlockedThisGame <= 0) yield break;
 
             var service = GameModeProgressionService.Instance;
-            if (service == null) yield break;
+            var quest = service?.GetQuestForMode(gameData.GameMode);
+            string displayName = quest != null ? quest.DisplayName : gameData.GameMode.ToString();
 
-            var mode = gameData.GameMode;
-            int maxUnlocked = service.GetMaxUnlockedIntensity(mode);
-
-            if (maxUnlocked >= 3 && service.GetPlaysRemainingForIntensity(mode, 3) == 0 &&
-                maxUnlocked < 4 && service.GetPlaysRemainingForIntensity(mode, 4) > 0)
-            {
-                ToastNotificationAPI.Show("Intensity 3 Unlocked!");
-                yield return new WaitForSeconds(1f);
-            }
-            else if (maxUnlocked >= 4 && !service.IsQuestCompleted(mode))
-            {
-                ToastNotificationAPI.Show("Intensity 4 Unlocked!");
-                yield return new WaitForSeconds(1f);
-            }
+            ToastNotificationAPI.Show($"{displayName} Intensity {_intensityUnlockedThisGame} Unlocked!");
+            yield return new WaitForSeconds(1f);
         }
 
         /// <summary>

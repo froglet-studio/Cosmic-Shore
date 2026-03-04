@@ -468,17 +468,18 @@ namespace CosmicShore.Game.Progression
             if (quest.TargetType == QuestTargetType.IntensityUnlocked)
             {
                 int playedIntensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
-                RecordIntensityPlay(mode, quest, playedIntensity);
+                float statValue = ExtractStatForIntensityGoal(quest);
+                RecordIntensityPlay(mode, quest, playedIntensity, statValue);
                 return;
             }
 
             // Legacy stat-based quest evaluation
-            float statValue = ExtractStatForQuest(quest);
+            float legacyStatValue = ExtractStatForQuest(quest);
             CSDebug.Log($"[GameModeProgressionService] HandleGameEnd — mode:{mode}, targetType:{quest.TargetType}, " +
-                       $"targetValue:{quest.TargetValue}, extractedStat:{statValue}");
+                       $"targetValue:{quest.TargetValue}, extractedStat:{legacyStatValue}");
 
-            if (statValue > 0f)
-                ReportQuestStat(mode, statValue);
+            if (legacyStatValue > 0f)
+                ReportQuestStat(mode, legacyStatValue);
             else
                 CSDebug.LogWarning($"[GameModeProgressionService] Extracted stat is 0 for {mode}. " +
                                   $"RoundStatsList count: {gameData.RoundStatsList?.Count ?? 0}, " +
@@ -487,49 +488,140 @@ namespace CosmicShore.Game.Progression
 
         /// <summary>
         /// Records a completed game at the given intensity and checks whether a new intensity tier should unlock.
+        /// Uses stat-based checks when IntensityUnlockStatType is configured, otherwise falls back to play counts.
         /// When intensity 4 is unlocked, the quest is marked as completed.
         /// </summary>
-        void RecordIntensityPlay(GameModes mode, SO_GameModeQuestData quest, int playedIntensity)
+        void RecordIntensityPlay(GameModes mode, SO_GameModeQuestData quest, int playedIntensity, float statValue)
         {
             string modeName = mode.ToString();
             ProgressionData.EnsureIntensityInitialized(modeName);
 
             int newCount = ProgressionData.IncrementIntensityPlayCount(modeName, playedIntensity);
             int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName);
+            bool useStatBased = quest.IntensityUnlockStatType != QuestTargetType.Placeholder;
 
             CSDebug.Log($"[GameModeProgressionService] RecordIntensityPlay — mode:{mode}, " +
-                       $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}");
+                       $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
+                       $"statBased:{useStatBased}, statValue:{statValue}");
 
             // Check if playing at intensity 2 should unlock intensity 3
-            if (maxUnlocked == 2 && playedIntensity == 2 && newCount >= quest.PlaysToUnlockIntensity3)
+            if (maxUnlocked == 2 && playedIntensity == 2)
             {
-                ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
-                CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
-                OnIntensityUnlocked?.Invoke(mode, 3);
-                OnProgressionChanged?.Invoke(ProgressionData);
-                ScheduleDebouncedSave();
-                return;
+                bool shouldUnlock = useStatBased
+                    ? EvaluateIntensityStat(quest, statValue, 3)
+                    : newCount >= quest.PlaysToUnlockIntensity3;
+
+                if (shouldUnlock)
+                {
+                    ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
+                    CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
+                    OnIntensityUnlocked?.Invoke(mode, 3);
+                    OnProgressionChanged?.Invoke(ProgressionData);
+                    SaveImmediateAsync();
+                    return;
+                }
             }
 
-            // Check if playing at intensity 3 should unlock intensity 4
-            if (maxUnlocked == 3 && playedIntensity == 3 && newCount >= quest.PlaysToUnlockIntensity4)
+            // Check if playing at intensity 3 should unlock intensity 4 + quest complete
+            if (maxUnlocked == 3 && playedIntensity == 3)
             {
-                ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
-                CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
-                OnIntensityUnlocked?.Invoke(mode, 4);
+                bool shouldUnlock = useStatBased
+                    ? EvaluateIntensityStat(quest, statValue, 4)
+                    : newCount >= quest.PlaysToUnlockIntensity4;
 
-                // Intensity 4 unlocked = quest completed
-                ProgressionData.MarkQuestCompleted(modeName);
-                quest.IsCompleted = true;
-                OnQuestCompleted?.Invoke(quest);
-                OnProgressionChanged?.Invoke(ProgressionData);
-                SaveImmediateAsync();
-                return;
+                if (shouldUnlock)
+                {
+                    ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
+                    CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
+                    OnIntensityUnlocked?.Invoke(mode, 4);
+
+                    // Intensity 4 unlocked = quest completed
+                    ProgressionData.MarkQuestCompleted(modeName);
+                    quest.IsCompleted = true;
+                    OnQuestCompleted?.Invoke(quest);
+                    OnProgressionChanged?.Invoke(ProgressionData);
+                    SaveImmediateAsync();
+                    return;
+                }
             }
 
             // No tier unlock — just save the updated play count
             OnProgressionChanged?.Invoke(ProgressionData);
             ScheduleDebouncedSave();
+        }
+
+        /// <summary>
+        /// Extracts the relevant stat from the game data for intensity unlock evaluation.
+        /// Uses the quest's IntensityUnlockStatType to determine which stat to read.
+        /// </summary>
+        float ExtractStatForIntensityGoal(SO_GameModeQuestData quest)
+        {
+            if (quest.IntensityUnlockStatType == QuestTargetType.Placeholder)
+                return 0f;
+
+            if (gameData.LocalPlayer == null) return 0f;
+
+            var localName = gameData.LocalPlayer.Name;
+            IRoundStats localStats = null;
+            if (gameData.RoundStatsList != null)
+            {
+                foreach (var stats in gameData.RoundStatsList)
+                {
+                    if (stats.Name == localName)
+                    {
+                        localStats = stats;
+                        break;
+                    }
+                }
+            }
+
+            switch (quest.IntensityUnlockStatType)
+            {
+                case QuestTargetType.CrystalsCollected:
+                case QuestTargetType.ScoreAbove:
+                case QuestTargetType.SurvivalTime:
+                    return localStats?.Score ?? 0f;
+
+                case QuestTargetType.JoustsWon:
+                    return localStats?.JoustCollisions ?? 0;
+
+                case QuestTargetType.RaceTimeUnder:
+                    float time = localStats?.Score ?? 10000f;
+                    return time < 10000f ? time : 0f;
+
+                case QuestTargetType.WinMatch:
+                    if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
+                        gameData.RoundStatsList[0].Name == localName)
+                        return 1f;
+                    return 0f;
+
+                default:
+                    return 0f;
+            }
+        }
+
+        /// <summary>
+        /// Evaluates whether the given stat value meets the intensity unlock target.
+        /// </summary>
+        bool EvaluateIntensityStat(SO_GameModeQuestData quest, float value, int targetIntensity)
+        {
+            float target = targetIntensity == 3 ? quest.Intensity3StatTarget : quest.Intensity4StatTarget;
+
+            switch (quest.IntensityUnlockStatType)
+            {
+                case QuestTargetType.CrystalsCollected:
+                case QuestTargetType.ScoreAbove:
+                case QuestTargetType.JoustsWon:
+                case QuestTargetType.SurvivalTime:
+                case QuestTargetType.WinMatch:
+                    return value >= target;
+
+                case QuestTargetType.RaceTimeUnder:
+                    return value > 0f && value <= target;
+
+                default:
+                    return false;
+            }
         }
 
         float ExtractStatForQuest(SO_GameModeQuestData quest)
@@ -565,7 +657,7 @@ namespace CosmicShore.Game.Progression
                     return time < 10000f ? time : 0f;
 
                 case QuestTargetType.JoustsWon:
-                    return localStats?.Score ?? 0f;
+                    return localStats?.JoustCollisions ?? 0;
 
                 case QuestTargetType.WinMatch:
                     // Check if the local player is first in the sorted round stats
