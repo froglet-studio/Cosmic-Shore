@@ -240,6 +240,14 @@ namespace CosmicShore.Gameplay
             IsActive = false;
             VesselNetId = 0;
 
+            // Reset gameplay stats from previous game.
+            // Cleanup() zeroes all stats via property setters, which also
+            // update NetworkVariables on the server. Name/Domain are re-set below.
+            RoundStats.Cleanup();
+
+            // Reset input state (joystick positions, throttle, flags).
+            InputStatus?.ResetForReplay();
+
             // Update owner-writable NetworkVariables to match new game config.
             if (IsOwner)
                 NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
