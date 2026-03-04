@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 3}
+  m_Name: ElementPipsConfig
+  m_EditorClassIdentifier: 
+  pipsPerColumn: 20
+  pipSpacing: 8
+  columnSpacing: 24
+  pipSize: {x: 14, y: 5}
+  labelIconSize: {x: 20, y: 20}
+  labelGap: 4
+  zeroLineIndex: 5
+  zeroLineColor: {r: 1, g: 1, b: 1, a: 0.4}
+  zeroLineHeight: 1
+  filledColor: {r: 1, g: 1, b: 1, a: 1}
+  emptyColor: {r: 1, g: 1, b: 1, a: 0.15}
+  negativeFillColor: {r: 1, g: 0.3, b: 0.3, a: 0.8}
+  chargeSprite: {fileID: 21300000, guid: 1c3b923eb6a15ee42ad96e4cd5d4c836, type: 3}
+  massSprite: {fileID: 21300000, guid: 1c3b923eb6a15ee42ad96e4cd5d4c836, type: 3}
+  spaceSprite: {fileID: 21300000, guid: 1c3b923eb6a15ee42ad96e4cd5d4c836, type: 3}
+  timeSprite: {fileID: 21300000, guid: 1c3b923eb6a15ee42ad96e4cd5d4c836, type: 3}
+  chargeLabelSprite: {fileID: 21300000, guid: cbac2ac9cd6900044b197490af5727f1, type: 3}
+  massLabelSprite: {fileID: 21300000, guid: 1eb2c03794f55824d8e01e96c4fe7a3e, type: 3}
+  spaceLabelSprite: {fileID: 21300000, guid: 4e788082740141a45b47f1c51a5c15b0, type: 3}
+  timeLabelSprite: {fileID: 21300000, guid: 809450069823742448227b7dceef6fcc, type: 3}
