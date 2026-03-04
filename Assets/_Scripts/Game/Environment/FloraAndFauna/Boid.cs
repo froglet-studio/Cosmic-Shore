@@ -65,6 +65,10 @@ public class Boid : Fauna
 
     public override void Initialize(Cell cell)
     {
+        // Auto-wire pool when spawned from prefab (prefab instances can't hold scene references)
+        if (!prismPool)
+            prismPool = FindAnyObjectByType<InteractivePrismPoolManager>();
+
         embeddedHealthPrism = GetComponentInChildren<HealthPrism>(true);
         if (!embeddedHealthPrism)
         {

@@ -18,6 +18,10 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
     public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
+
+        // Auto-wire pool when not set in inspector
+        if (!prismPool)
+            prismPool = FindAnyObjectByType<InteractivePrismPoolManager>();
     }
 
     public void Begin(FireTrailBlockActionSO so)

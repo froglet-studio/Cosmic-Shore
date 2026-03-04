@@ -140,6 +140,10 @@ namespace CosmicShore.Game.Spawning
         /// </summary>
         public virtual GameObject Spawn(int intensity = 1)
         {
+            // Auto-wire pool when spawned from prefab (prefab instances can't hold scene references)
+            if (!prismPool)
+                prismPool = FindAnyObjectByType<InteractivePrismPoolManager>();
+
             intensityLevel = intensity;
             trails.Clear();
 
