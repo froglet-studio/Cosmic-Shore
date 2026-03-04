@@ -349,8 +349,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void OnNetVesselIdChanged(ulong previousValue, ulong newValue) =>
+        void OnNetVesselIdChanged(ulong previousValue, ulong newValue)
+        {
             VesselNetId = newValue;
+            if (newValue == 0)
+            {
+                Vessel = null;
+                IsActive = false;
+            }
+        }
 
         void OnNetAvatarIdChanged(int previousValue, int newValue) =>
             AvatarId = newValue;

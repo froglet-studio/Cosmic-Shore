@@ -143,6 +143,14 @@ namespace CosmicShore.Core
         {
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
+
+            // Clear vessel references on persistent Players before scene transition.
+            // Vessels have destroyWithScene=true and are auto-handled by Netcode.
+            // Setting NetVesselId to 0 propagates to clients via OnNetVesselIdChanged,
+            // which nulls Player.Vessel — preventing stale references to destroyed objects.
+            if (useNetworkSceneLoading)
+                ClearPlayerVesselReferences();
+
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
 
@@ -176,6 +184,15 @@ namespace CosmicShore.Core
             else
             {
                 RequestSceneLoadServerRpc(sceneName);
+            }
+        }
+
+        void ClearPlayerVesselReferences()
+        {
+            foreach (var player in gameData.Players)
+            {
+                if (player is Player netPlayer && netPlayer.IsSpawned)
+                    netPlayer.NetVesselId.Value = 0;
             }
         }
 
