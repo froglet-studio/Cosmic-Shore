@@ -237,12 +237,15 @@ namespace CosmicShore.Game.Spawning
         /// </summary>
         protected Prism GetPrismFromPool(Prism prefab, Vector3 position, Quaternion rotation, Transform parent = null)
         {
-            if (prismPool)
+            if (!prismPool)
             {
-                var p = prismPool.Get(position, rotation, parent);
-                return p;
+                Debug.LogError(
+                    $"[{GetType().Name}] '{gameObject.name}' has no InteractivePrismPoolManager assigned. " +
+                    "All prisms must come from a pool. Add an InteractivePrismPoolManager to the scene " +
+                    "and assign it to the 'prismPool' field on this SpawnableBase.", this);
+                return null;
             }
-            return parent ? Instantiate(prefab, position, rotation, parent) : Instantiate(prefab, position, rotation);
+            return prismPool.Get(position, rotation, parent);
         }
 
         /// <summary>

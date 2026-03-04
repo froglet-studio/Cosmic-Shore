@@ -144,7 +144,7 @@ public class SpawnableWaypointTrack : SpawnableBase
 
                 var rotation = SpawnPoint.LookRotation(position, lookTarget, Vector3.up);
 
-                var block = Instantiate(blockPrism, container.transform);
+                var block = GetPrismFromPool(blockPrism, position, rotation, container.transform);
                 block.ChangeTeam(blockDomain);
                 block.ownerID = $"{container.name}::BLOCK::{totalBlocks}";
                 block.transform.localPosition = position;

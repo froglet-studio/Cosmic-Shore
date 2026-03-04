@@ -48,12 +48,15 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
     {
         if (prismPrefab == null || muzzle == null) return;
 
-        Prism blockInstance;
-        if (prismPool)
-            blockInstance = prismPool.Get(muzzle.position, muzzle.rotation);
-        else
-            blockInstance = Instantiate(prismPrefab, muzzle.position, muzzle.rotation);
+        if (!prismPool)
+        {
+            Debug.LogError(
+                $"[FireTrailBlockActionExecutor] '{gameObject.name}' has no InteractivePrismPoolManager assigned. " +
+                "All prisms must come from a pool. Assign the 'prismPool' field.", this);
+            return;
+        }
 
+        var blockInstance = prismPool.Get(muzzle.position, muzzle.rotation);
         if (blockInstance == null) return;
 
         blockInstance.TargetScale *= so.ProjectileScale;

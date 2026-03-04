@@ -28,6 +28,13 @@ namespace CosmicShore.Game
             ReleaseAllActiveAsync(100).Forget();
         }
 
+        protected override Prism CreateFunc()
+        {
+            Prism.BeginPoolCreation();
+            try { return base.CreateFunc(); }
+            finally { Prism.EndPoolCreation(); }
+        }
+
         public override Prism Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var instance = Get_(position, rotation, parent, worldPositionStays);

@@ -17,6 +17,27 @@ namespace CosmicShore.Core
     {
         protected const string DEFAULT_PLAYER_NAME = "DefaultPlayer";
 
+        #region Pool Enforcement
+
+        /// <summary>
+        /// Static guard: pool managers increment before Instantiate, decrement after.
+        /// Unity is single-threaded so a simple counter is safe.
+        /// </summary>
+        private static int _poolCreationDepth;
+        internal static void BeginPoolCreation() => _poolCreationDepth++;
+        internal static void EndPoolCreation() => _poolCreationDepth--;
+
+        /// <summary>True when this instance was created inside a pool's CreateFunc.</summary>
+        internal bool CreatedByPool { get; private set; }
+
+        /// <summary>
+        /// True when this instance is embedded in a prefab hierarchy (e.g. LifeForm children).
+        /// Set by the owning system before Initialize() to exempt from pool-creation checks.
+        /// </summary>
+        internal bool IsEmbedded { get; set; }
+
+        #endregion
+
         [Header("Prism Properties")] 
         [SerializeField] public PrismProperties prismProperties;
         public GameObject ParticleEffect;
@@ -106,6 +127,8 @@ namespace CosmicShore.Core
 
         private void Awake()
         {
+            CreatedByPool = _poolCreationDepth > 0;
+
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
             scaleAnimator = GetComponent<PrismScaleAnimator>();
             teamManager = GetComponent<PrismTeamManager>();
@@ -122,6 +145,17 @@ namespace CosmicShore.Core
         /// </summary>
         public virtual void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!CreatedByPool && !IsEmbedded)
+            {
+                Debug.LogError(
+                    $"[Prism] '{gameObject.name}' was Instantiate()'d outside of a pool. " +
+                    "All prisms MUST be spawned from a pool manager (InteractivePrismPoolManager, " +
+                    "HealthPrismPoolManager, or BlockProjectilePoolManager). " +
+                    "Add the appropriate pool manager to your scene and assign it to the spawning component's " +
+                    "pool field. See GenericPoolManager<T> for setup.", this);
+            }
+#endif
             // [Fix] Always clean up previous state when coming from pool
             ResetState();
 
@@ -392,8 +426,18 @@ namespace CosmicShore.Core
 
         private void OnDestroy()
         {
-            // No material cleanup needed — we use sharedMaterial exclusively,
-            // so no per-instance material clones are created.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // Pool-managed prisms that are still active were Destroy()'d instead of returned.
+            // Released prisms are inactive (SetActive(false)) so this won't false-positive on pool cleanup.
+            // During scene unload, scene.isLoaded is false — skip check to avoid noise.
+            if (CreatedByPool && gameObject.activeSelf && gameObject.scene.isLoaded)
+            {
+                Debug.LogError(
+                    $"[Prism] '{gameObject.name}' was Destroy()'d while still active. " +
+                    "Pool-managed prisms must be returned via ReturnToPool() — never Destroy()'d directly. " +
+                    "The pool manages the full object lifecycle.", this);
+            }
+#endif
         }
     }
 }

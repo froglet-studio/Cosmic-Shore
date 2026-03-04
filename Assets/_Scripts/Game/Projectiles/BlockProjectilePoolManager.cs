@@ -6,6 +6,13 @@ namespace CosmicShore.Game.Projectiles
 {
     public class BlockProjectilePoolManager : GenericPoolManager<Prism>
     {
+        protected override Prism CreateFunc()
+        {
+            Prism.BeginPoolCreation();
+            try { return base.CreateFunc(); }
+            finally { Prism.EndPoolCreation(); }
+        }
+
         public override Prism Get(Vector3 position, Quaternion rotation, Transform parent, bool worldPositionStays)
         {
             var p = Get_(position, rotation, null);     

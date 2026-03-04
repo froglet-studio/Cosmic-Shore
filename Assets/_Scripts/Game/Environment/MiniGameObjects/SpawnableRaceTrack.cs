@@ -150,7 +150,7 @@ public class SpawnableRaceTrack : SpawnableBase
 
             var rotation = SpawnPoint.LookRotation(position, lookPosition, Vector3.up);
 
-            var spawnedBlock = Instantiate(blockPrism, container.transform);
+            var spawnedBlock = GetPrismFromPool(blockPrism, position, rotation, container.transform);
             spawnedBlock.ChangeTeam(blockDomain);
             spawnedBlock.ownerID = $"{container.name}::BLOCK::{block}";
             spawnedBlock.transform.localPosition = position;

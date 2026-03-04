@@ -71,6 +71,7 @@ public class Boid : Fauna
             CSDebug.LogError($"{nameof(Boid)} on {name} has no embedded HealthPrism in children. Scaling cannot work.");
             return;
         }
+        embeddedHealthPrism.IsEmbedded = true;
 
         blockCollider = embeddedHealthPrism.GetComponent<BoxCollider>();
         if (!blockCollider)
@@ -263,11 +264,15 @@ public class Boid : Fauna
 
     private (Prism, GyroidAssembler) NewBlock()
     {
-        Prism newBlock;
-        if (prismPool)
-            newBlock = prismPool.Get(transform.position, transform.rotation, transform);
-        else
-            newBlock = Instantiate(healthPrism, transform.position, transform.rotation, transform);
+        if (!prismPool)
+        {
+            Debug.LogError(
+                $"[Boid] '{gameObject.name}' has no InteractivePrismPoolManager assigned. " +
+                "All prisms must come from a pool. Add an InteractivePrismPoolManager to the scene " +
+                "and assign it to the 'prismPool' field on this Boid.", this);
+            return (null, null);
+        }
+        var newBlock = prismPool.Get(transform.position, transform.rotation, transform);
         newBlock.ChangeTeam(domain);
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         newBlock.prismProperties = new() { prism = newBlock };

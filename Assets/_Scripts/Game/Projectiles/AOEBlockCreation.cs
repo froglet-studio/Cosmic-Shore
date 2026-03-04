@@ -37,10 +37,10 @@ namespace CosmicShore.Game.Projectiles
             // 1. Stop any active spawning tasks
             CancelExplosion();
 
-            // 2. Destroy all the blocks we spawned
+            // 2. Return all spawned blocks to their pool
             foreach (var block in from trail in trails where trail != null from block in trail.TrailList where block select block)
             {
-                Destroy(block.gameObject);
+                block.ReturnToPool();
             }
             trails.Clear();
 

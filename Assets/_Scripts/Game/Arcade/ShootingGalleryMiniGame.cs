@@ -69,11 +69,14 @@ namespace CosmicShore.Game.Arcade
 
         virtual protected Prism CreateBlock(Vector3 position, Vector3 lookPosition, Trail trail)
         {
-            Prism Block;
-            if (prismPool)
-                Block = prismPool.Get(position, Quaternion.identity);
-            else
-                Block = Instantiate(prism);
+            if (!prismPool)
+            {
+                Debug.LogError(
+                    $"[ShootingGalleryMiniGame] '{gameObject.name}' has no InteractivePrismPoolManager assigned. " +
+                    "All prisms must come from a pool. Assign the 'prismPool' field.", this);
+                return null;
+            }
+            var Block = prismPool.Get(position, Quaternion.identity);
             Block.ChangeTeam(ActivePlayer.Domain);
             if (SafeLookRotation.TryGet(lookPosition - transform.position, transform.forward, out var rotation, Block))
                 Block.transform.SetPositionAndRotation(position, rotation);

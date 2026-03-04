@@ -94,18 +94,25 @@ namespace CosmicShore
             foreach (var hp in embeddedHealthPrisms)
             {
                 if (!hp) continue;
+                hp.IsEmbedded = true;
                 hp.LifeForm = this;
                 hp.ChangeTeam(domain);
                 hp.Initialize("FaunaPrefab");
-                AddHealthBlock(hp); // [Visual Note] Ensure we explicitly add it to tracking
+                AddHealthBlock(hp);
             }
         }
 
         protected HealthPrism GetHealthPrism(Vector3 position, Quaternion rotation, Transform parent = null)
         {
-            if (healthPrismPool)
-                return healthPrismPool.Get(position, rotation, parent);
-            return Instantiate(healthPrism, position, rotation, parent);
+            if (!healthPrismPool)
+            {
+                Debug.LogError(
+                    $"[{GetType().Name}] '{gameObject.name}' has no HealthPrismPoolManager assigned. " +
+                    "All HealthPrisms must come from a pool. Add a HealthPrismPoolManager to the scene " +
+                    "and assign it to the 'healthPrismPool' field on this LifeForm.", this);
+                return null;
+            }
+            return healthPrismPool.Get(position, rotation, parent);
         }
 
         protected void ReturnHealthPrism(HealthPrism hp)
