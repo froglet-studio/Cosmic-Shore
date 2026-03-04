@@ -3,13 +3,14 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Core;
+using CosmicShore.Game.IO;
 
 namespace CosmicShore
 {
     /// <summary>
     /// Displays 4 element columns, each with 15 discrete pip images.
-    /// Bar_BG pips are always visible (dim background). Fill_BG pips light up based on level.
-    /// Level range maps to pip count via zeroLineIndex: level 0 → zeroLineIndex pips lit.
+    /// Fill pips start disabled. On Build(), first zeroLineIndex (5) are enabled as level-0 baseline.
+    /// Buffs enable pips upward with staggered scale punch. Debuffs disable pips with shake + haptics.
     /// </summary>
     public class ElementalBarsView : MonoBehaviour
     {
@@ -43,6 +44,30 @@ namespace CosmicShore
         [SerializeField] private Color filledColor = Color.white;
         [Tooltip("Fill color when level is below zero")]
         [SerializeField] private Color negativeFillColor = new(1f, 0.3f, 0.3f, 0.8f);
+        [Tooltip("Color flash on debuff pips before they disappear")]
+        [SerializeField] private Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
+
+        [Header("Juice — Pip Transitions")]
+        [Tooltip("Scale multiplier when a pip appears (buff)")]
+        [SerializeField] private float buffPopScale = 1.5f;
+        [Tooltip("Duration of the pop-in tween per pip")]
+        [SerializeField] private float buffPopDuration = 0.18f;
+        [Tooltip("Stagger delay between each pip appearing")]
+        [SerializeField] private float buffStaggerDelay = 0.04f;
+        [Tooltip("Duration of the shake-out tween per pip on debuff")]
+        [SerializeField] private float debuffShakeDuration = 0.15f;
+        [Tooltip("Shake strength on debuff pip removal")]
+        [SerializeField] private float debuffShakeStrength = 8f;
+
+        [Header("Juice — Haptics")]
+        [Tooltip("Fire haptic on debuff (element level decrease)")]
+        [SerializeField] private bool hapticOnDebuff = true;
+        [Tooltip("Haptic intensity for debuff (0-1)")]
+        [SerializeField] private float debuffHapticAmplitude = 0.6f;
+        [Tooltip("Haptic frequency for debuff")]
+        [SerializeField] private float debuffHapticFrequency = 0.5f;
+        [Tooltip("Haptic duration for debuff")]
+        [SerializeField] private float debuffHapticDuration = 0.15f;
 
         [Header("Juice — General")]
         [SerializeField] private float iconPunchDuration = 0.25f;
@@ -67,7 +92,7 @@ namespace CosmicShore
         private Tween[] _driftRotationTweens;
         private Tween[] _labelScaleTweens;
         private Tween[] _labelColorTweens;
-        private Tween[][] _pipScaleTweens; // [barIndex][pipIndex]
+        private Tween[][] _pipTweens; // [barIndex][pipIndex]
         private bool _built;
 
         public void Build()
@@ -85,7 +110,7 @@ namespace CosmicShore
             _driftRotationTweens = new Tween[count];
             _labelScaleTweens = new Tween[count];
             _labelColorTweens = new Tween[count];
-            _pipColorTweens = new Tween[count][];
+            _pipTweens = new Tween[count][];
 
             for (int i = 0; i < count; i++)
             {
@@ -101,7 +126,7 @@ namespace CosmicShore
                 }
 
                 int pipCount = bar.fillPips != null ? bar.fillPips.Length : 0;
-                _pipScaleTweens[i] = new Tween[pipCount];
+                _pipTweens[i] = new Tween[pipCount];
 
                 // Fill pips: first zeroLineIndex enabled (level 0 baseline), rest disabled
                 if (bar.fillPips != null)
@@ -112,6 +137,7 @@ namespace CosmicShore
                         if (!pip) continue;
                         pip.gameObject.SetActive(p < zeroLineIndex);
                         pip.color = filledColor;
+                        pip.rectTransform.localScale = Vector3.one;
                     }
                 }
 
@@ -164,8 +190,8 @@ namespace CosmicShore
         // ---------------------------------------------------------------
 
         /// <summary>
-        /// Set the level for an element. Level 0 = zeroLineIndex pips lit.
-        /// Negative levels light pips below the zero line in negativeFillColor.
+        /// Set the level for an element. Level 0 = zeroLineIndex pips enabled.
+        /// Positive levels enable more pips with pop-in. Negative levels disable with shake + haptics.
         /// </summary>
         public void SetLevel(Element element, int level, Color domainColor)
         {
@@ -198,15 +224,19 @@ namespace CosmicShore
             if (bar.fillPips == null) return;
 
             int pipCount = bar.fillPips.Length;
-            // Number of pips to enable: level + zeroLineIndex
-            // Level 0 → zeroLineIndex pips (the baseline 5)
-            // Level +10 → 15 pips (all on)
-            // Level -5 → 0 pips (all off)
             int enabledCount = Mathf.Clamp(level + zeroLineIndex, 0, pipCount);
             int prevEnabledCount = Mathf.Clamp(previousLevel + zeroLineIndex, 0, pipCount);
             bool isNegative = level < 0;
             bool isIncreasing = level > previousLevel;
             bool isDecreasing = level < previousLevel;
+
+            // Haptic on debuff
+            if (isDecreasing && hapticOnDebuff)
+            {
+                HapticController.PlayConstant(debuffHapticAmplitude, debuffHapticFrequency, debuffHapticDuration);
+            }
+
+            int newPipIndex = 0; // counter for stagger delay on buff
 
             for (int p = 0; p < pipCount; p++)
             {
@@ -216,41 +246,62 @@ namespace CosmicShore
                 bool shouldBeOn = p < enabledCount;
                 bool wasOn = p < prevEnabledCount;
 
-                _pipScaleTweens[idx][p]?.Kill();
+                _pipTweens[idx][p]?.Kill();
 
                 if (shouldBeOn)
                 {
                     pip.gameObject.SetActive(true);
+                    pip.rectTransform.localScale = Vector3.one;
 
                     // Color: negative territory pips get negativeFillColor
                     pip.color = (p < zeroLineIndex && isNegative)
                         ? negativeFillColor
                         : _barDomainColors[idx];
 
-                    // Pop-in juice for newly enabled pips
+                    // Staggered pop-in for newly enabled pips (buff)
                     if (isIncreasing && !wasOn)
                     {
                         var rt = pip.rectTransform;
-                        rt.localScale = Vector3.one * 1.4f;
-                        _pipScaleTweens[idx][p] = rt
-                            .DOScale(Vector3.one, 0.15f)
-                            .SetEase(Ease.OutBack);
+                        rt.localScale = Vector3.zero;
+                        float delay = newPipIndex * buffStaggerDelay;
+                        _pipTweens[idx][p] = rt
+                            .DOScale(Vector3.one * buffPopScale, buffPopDuration * 0.4f)
+                            .SetDelay(delay)
+                            .SetEase(Ease.OutQuad)
+                            .OnComplete(() =>
+                            {
+                                rt.DOScale(Vector3.one, buffPopDuration * 0.6f)
+                                    .SetEase(Ease.OutBounce);
+                            });
+                        newPipIndex++;
                     }
                 }
                 else
                 {
-                    // Shrink-out juice for newly disabled pips, then deactivate
+                    // Shake + flash + shrink-out for newly disabled pips (debuff)
                     if (isDecreasing && wasOn)
                     {
                         var rt = pip.rectTransform;
-                        _pipScaleTweens[idx][p] = rt
-                            .DOScale(Vector3.zero, 0.12f)
-                            .SetEase(Ease.InBack)
-                            .OnComplete(() => pip.gameObject.SetActive(false));
+                        pip.color = debuffFlashColor;
+
+                        // Shake then shrink to zero, then deactivate
+                        _pipTweens[idx][p] = rt
+                            .DOShakePosition(debuffShakeDuration, debuffShakeStrength, 20, 90f, false, false)
+                            .OnComplete(() =>
+                            {
+                                rt.DOScale(Vector3.zero, 0.08f)
+                                    .SetEase(Ease.InBack)
+                                    .OnComplete(() =>
+                                    {
+                                        pip.gameObject.SetActive(false);
+                                        rt.localScale = Vector3.one;
+                                    });
+                            });
                     }
                     else
                     {
                         pip.gameObject.SetActive(false);
+                        pip.rectTransform.localScale = Vector3.one;
                     }
                 }
             }
@@ -336,9 +387,13 @@ namespace CosmicShore
         {
             if (!_built) return;
 
+            // Haptic burst for overtake
+            if (hapticOnDebuff)
+                HapticController.PlayConstant(0.8f, 0.7f, 0.25f);
+
             for (int i = 0; i < bars.Length; i++)
             {
-                // Flash all active fill pips red then back
+                // Flash + shake all active fill pips
                 ref var bar = ref bars[i];
                 if (bar.fillPips != null)
                 {
@@ -348,12 +403,15 @@ namespace CosmicShore
                         var pip = bar.fillPips[p];
                         if (!pip || !pip.gameObject.activeSelf) continue;
 
-                        _pipScaleTweens[i][p]?.Kill();
+                        _pipTweens[i][p]?.Kill();
                         pip.color = Color.red;
                         var origColor = _barDomainColors[i];
-                        _pipScaleTweens[i][p] = pip
-                            .DOColor(origColor, 0.5f)
-                            .SetEase(Ease.OutQuad);
+
+                        var rt = pip.rectTransform;
+                        // Shake then color-recover
+                        _pipTweens[i][p] = DOTween.Sequence()
+                            .Append(rt.DOShakePosition(0.3f, 6f, 15, 90f, false, false))
+                            .Join(pip.DOColor(origColor, 0.5f).SetEase(Ease.OutQuad));
                     }
                 }
 
@@ -416,8 +474,8 @@ namespace CosmicShore
                 foreach (var t in _labelScaleTweens) t?.Kill();
             if (_labelColorTweens != null)
                 foreach (var t in _labelColorTweens) t?.Kill();
-            if (_pipScaleTweens != null)
-                foreach (var row in _pipScaleTweens)
+            if (_pipTweens != null)
+                foreach (var row in _pipTweens)
                     if (row != null)
                         foreach (var t in row) t?.Kill();
         }
