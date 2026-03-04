@@ -131,6 +131,7 @@ namespace CosmicShore.Core
         /// cleaned up. This prevents "Invalid Destroy on non-host client" errors
         /// that occur when client-side scene unload triggers Destroy() on vessels
         /// before Netcode's despawn messages arrive.
+        /// Clients must never call Despawn/Destroy on spawned NetworkObjects they don't own.
         /// </summary>
         void PreDespawnVessels()
         {
@@ -138,10 +139,25 @@ namespace CosmicShore.Core
             if (nm == null || !nm.IsServer) return;
 
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] PreDespawnVessels — Vessels.Count={gameData.Vessels.Count}</color>");
+
+            // Primary path: despawn all tracked vessels
             for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
             {
                 if (gameData.Vessels[i] is VesselController vc && vc.IsSpawned)
                     vc.NetworkObject.Despawn(true);
+            }
+
+            // Fallback: scan SpawnManager for any VesselController not in gameData.Vessels
+            // (e.g. vessels added to scene but not yet registered via OnNetworkSpawn)
+            if (nm.SpawnManager != null)
+            {
+                foreach (var kvp in nm.SpawnManager.SpawnedObjects)
+                {
+                    if (kvp.Value != null
+                        && kvp.Value.TryGetComponent<VesselController>(out var vc)
+                        && vc.IsSpawned)
+                        vc.NetworkObject.Despawn(true);
+                }
             }
         }
 
