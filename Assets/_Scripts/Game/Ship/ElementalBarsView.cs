@@ -76,6 +76,7 @@ namespace CosmicShore
         [SerializeField] private Sprite doubleDriftSprite;
 
         // Runtime state
+        private RectTransform _rootRT;
         private int[] _currentLevels;
         private Color[] _originalLabelColors;
         private Vector3[] _originalLabelScales;
@@ -98,6 +99,9 @@ namespace CosmicShore
                 AutoPopulateFromPipsConfig();
 
             if (bars == null || bars.Length == 0) return;
+
+            // Cache the root transform for runtime scaling
+            _rootRT = container ? container : (RectTransform)transform;
 
             int count = bars.Length;
             _currentLevels = new int[count];
@@ -134,6 +138,25 @@ namespace CosmicShore
             _built = true;
             RefreshAllBars();
         }
+
+        // ---------------------------------------------------------------
+        // Runtime scale control
+        // ---------------------------------------------------------------
+
+        /// <summary>Uniform scale (1 = default). Scales the container or this transform.</summary>
+        public void SetScale(float uniformScale)
+        {
+            if (_rootRT) _rootRT.localScale = Vector3.one * uniformScale;
+        }
+
+        /// <summary>Non-uniform scale for independent X/Y control.</summary>
+        public void SetScale(Vector3 scale)
+        {
+            if (_rootRT) _rootRT.localScale = scale;
+        }
+
+        /// <summary>Current local scale of the bars root.</summary>
+        public Vector3 Scale => _rootRT ? _rootRT.localScale : Vector3.one;
 
         // ---------------------------------------------------------------
         // Auto-populate: creates bars from ElementPipsConfigSO sprites
