@@ -25,11 +25,10 @@ namespace CosmicShore.Game
             if (spawnOnClientReady)
             {
                 gameData.OnClientReady += OnClientReadySpawn;
-                // In multiplayer, OnClientReady fires per-client as each connects.
-                // The host fires first when only 1 player exists, so we also
-                // catch up when new players join and when the turn actually starts.
-                gameData.OnPlayerAdded += OnPlayerAddedSpawn;
-                gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStartedSpawnMissing;
+                // In multiplayer, OnClientReady fires per-client before all
+                // players have connected.  Subscribe to turn start as a
+                // fallback so crystals spawn once everyone is present.
+                gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStartedCatchUp;
             }
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
@@ -43,8 +42,7 @@ namespace CosmicShore.Game
             if (spawnOnClientReady)
             {
                 gameData.OnClientReady -= OnClientReadySpawn;
-                gameData.OnPlayerAdded -= OnPlayerAddedSpawn;
-                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStartedSpawnMissing;
+                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStartedCatchUp;
             }
             else
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
@@ -55,18 +53,31 @@ namespace CosmicShore.Game
                 n_Positions.OnListChanged -= OnPositionsChanged;
         }
 
-        private void OnClientReadySpawn() => OnTurnStarted();
-
-        private void OnPlayerAddedSpawn(string playerName, Domains domain)
+        private void OnClientReadySpawn()
         {
-            if (!IsServer) return;
-            SpawnMissingCrystals();
+            // In multiplayer, OnClientReady fires per-client before all players
+            // have connected.  Defer to OnMiniGameTurnStarted so every crystal
+            // shares the same batch anchor — identical to offline behaviour.
+            if (gameData.IsMultiplayerMode)
+                return;
+
+            OnTurnStarted();
         }
 
-        private void OnTurnStartedSpawnMissing()
+        /// <summary>
+        /// Fallback for the spawnOnClientReady path: if crystals were not yet
+        /// spawned (multiplayer) or new players arrived since the early spawn,
+        /// run the full OnTurnStarted now — all players are guaranteed present.
+        /// </summary>
+        private void OnTurnStartedCatchUp()
         {
             if (!IsServer) return;
-            SpawnMissingCrystals();
+
+            int expected = GetCrystalCountToSpawn();
+            if (n_Positions.Count >= expected && n_Positions.Count > 0)
+                return; // Already fully spawned (offline early-spawn path).
+
+            OnTurnStarted();
         }
 
         // ---------------- Replay Reset ----------------
@@ -105,25 +116,6 @@ namespace CosmicShore.Game
                 n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
 
             AdvanceBatchAnchor_ForNetworkTurnStart();
-        }
-
-        /// <summary>
-        /// Spawns crystals for newly joined players without relocating existing ones.
-        /// Called when OnPlayerAdded fires after the initial OnClientReady spawn.
-        /// </summary>
-        private void SpawnMissingCrystals()
-        {
-            int expected = GetCrystalCountToSpawn();
-            if (n_Positions.Count >= expected) return;
-
-            EnsureListSizedToSelectedPlayerCount();
-
-            Vector3 batchAnchor = GetBatchAnchor_ForNetworkTurnStart();
-            for (int i = 0; i < n_Positions.Count; i++)
-            {
-                if (n_Positions[i] == Vector3.zero)
-                    n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
-            }
         }
 
         // ---------------- Anchor Helpers ----------------
