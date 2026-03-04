@@ -8,8 +8,9 @@ using CosmicShore.Utility;
 namespace CosmicShore.App.UI.ToastNotification
 {
     /// <summary>
-    /// Persistent singleton that manages the toast notification canvas and item lifecycle.
-    /// Creates its own overlay Canvas so toasts render on top of everything, across all scenes.
+    /// Persistent singleton that manages toast notification lifecycle.
+    /// Spawns toasts inside an assigned UI container (RectTransform with RectMask2D).
+    /// New toasts appear at the bottom; older ones slide upward and out.
     /// </summary>
     public sealed class ToastNotificationManager : SingletonPersistent<ToastNotificationManager>
     {
@@ -24,19 +25,29 @@ namespace CosmicShore.App.UI.ToastNotification
         [Tooltip("Prefab for individual toast items. If null, a default one is created at runtime.")]
         [SerializeField] private ToastNotificationItem toastPrefab;
 
+        [Header("Container")]
+        [Tooltip("RectTransform inside the UI hierarchy where toasts are spawned. " +
+                 "Should have a RectMask2D so toasts clip when they slide out the top.")]
+        [SerializeField] private RectTransform container;
+
         // Runtime
-        private Canvas _canvas;
-        private RectTransform _canvasRect;
         private readonly List<ToastNotificationItem> _activeToasts = new();
         private readonly Queue<string> _pendingQueue = new();
         private readonly Stack<ToastNotificationItem> _pool = new();
+
+        /// <summary>
+        /// Assign the container at runtime (used by auto-creation in ToastNotificationAPI).
+        /// </summary>
+        public RectTransform Container
+        {
+            get => container;
+            set => container = value;
+        }
 
         public override void Awake()
         {
             base.Awake();
             if (Instance != this) return;
-
-            EnsureCanvas();
 
             if (toastPrefab == null)
                 toastPrefab = CreateDefaultPrefab();
@@ -63,9 +74,14 @@ namespace CosmicShore.App.UI.ToastNotification
                 return;
             }
 
+            if (container == null)
+            {
+                CSDebug.LogWarning("[ToastNotificationManager] No container assigned. Toast dropped.");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(message)) return;
 
-            // If at capacity, either queue or evict the oldest
             if (_activeToasts.Count >= settings.maxVisible)
             {
                 if (_pendingQueue.Count < settings.maxQueue)
@@ -74,7 +90,6 @@ namespace CosmicShore.App.UI.ToastNotification
                     return;
                 }
 
-                // Queue is full — drop the oldest queued message and enqueue new one
                 _pendingQueue.Dequeue();
                 _pendingQueue.Enqueue(message);
                 return;
@@ -88,16 +103,37 @@ namespace CosmicShore.App.UI.ToastNotification
             var item = GetOrCreateItem();
             _activeToasts.Add(item);
 
+            // Push all existing toasts up by one slot
+            RepositionAll();
+
+            // New toast enters at the bottom slot (index = count - 1)
             var showPos = CalculatePosition(_activeToasts.Count - 1);
             item.Show(message, showPos, settings);
         }
 
+        /// <summary>
+        /// Calculates position for a given slot index.
+        /// Index 0 = topmost slot (oldest), highest index = bottommost (newest).
+        /// Positions are anchored from the bottom of the container upward.
+        /// </summary>
         private Vector2 CalculatePosition(int index)
         {
-            // Anchor: top-left. Y goes downward from top.
+            float itemHeight = GetItemHeight();
+            int count = _activeToasts.Count;
+
+            // Stack from the bottom of the container. Slot 0 = top, slot (count-1) = bottom.
+            float y = (count - 1 - index) * (itemHeight + settings.stackSpacing);
             float x = settings.leftMargin;
-            float y = -(settings.topMargin + index * (GetItemHeight() + settings.stackSpacing));
             return new Vector2(x, y);
+        }
+
+        private void RepositionAll()
+        {
+            for (int i = 0; i < _activeToasts.Count - 1; i++)
+            {
+                var pos = CalculatePosition(i);
+                _activeToasts[i].AnimateToY(pos.y);
+            }
         }
 
         private float GetItemHeight()
@@ -108,7 +144,7 @@ namespace CosmicShore.App.UI.ToastNotification
                 if (rt != null && rt.rect.height > 0)
                     return rt.rect.height;
             }
-            return 80f; // fallback
+            return 80f;
         }
 
         #region Pool
@@ -120,10 +156,11 @@ namespace CosmicShore.App.UI.ToastNotification
             if (_pool.Count > 0)
             {
                 item = _pool.Pop();
+                item.transform.SetParent(container, false);
             }
             else
             {
-                item = Instantiate(toastPrefab, _canvasRect);
+                item = Instantiate(toastPrefab, container);
                 item.OnDismissed += HandleDismissed;
             }
 
@@ -135,7 +172,7 @@ namespace CosmicShore.App.UI.ToastNotification
             _activeToasts.Remove(item);
             _pool.Push(item);
 
-            // Reposition remaining toasts
+            // Reposition remaining toasts — they slide down to fill the gap
             for (int i = 0; i < _activeToasts.Count; i++)
             {
                 var pos = CalculatePosition(i);
@@ -151,44 +188,18 @@ namespace CosmicShore.App.UI.ToastNotification
 
         #endregion
 
-        #region Canvas Setup
-
-        private void EnsureCanvas()
-        {
-            if (_canvas != null) return;
-
-            var canvasGO = new GameObject("ToastNotificationCanvas");
-            canvasGO.transform.SetParent(transform, false);
-
-            _canvas = canvasGO.AddComponent<Canvas>();
-            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 999; // on top of everything
-
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080, 1920);
-            scaler.matchWidthOrHeight = 0.5f;
-
-            canvasGO.AddComponent<GraphicRaycaster>();
-
-            _canvasRect = canvasGO.GetComponent<RectTransform>();
-        }
-
-        #endregion
-
         #region Default Prefab (Runtime Fallback)
 
         private ToastNotificationItem CreateDefaultPrefab()
         {
-            // Root
             var go = new GameObject("ToastItem_Default", typeof(RectTransform));
-            go.SetActive(false); // prefab template, stays inactive
+            go.SetActive(false);
 
             var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, 1f);
-            rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.sizeDelta = new Vector2(500f, 80f);
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.sizeDelta = new Vector2(0f, 80f);
 
             var cg = go.AddComponent<CanvasGroup>();
             cg.alpha = 0f;
@@ -218,20 +229,13 @@ namespace CosmicShore.App.UI.ToastNotification
             tmp.enableWordWrapping = true;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
 
-            // Add ToastNotificationItem component and wire references via reflection-free approach
             var item = go.AddComponent<ToastNotificationItem>();
-
-            // We need to set the serialized field. Since it's private [SerializeField], we use a helper.
             SetMessageText(item, tmp);
 
             go.transform.SetParent(transform, false);
             return item;
         }
 
-        /// <summary>
-        /// Sets the private messageText field on a ToastNotificationItem via reflection.
-        /// Only used for the runtime-generated fallback prefab.
-        /// </summary>
         private static void SetMessageText(ToastNotificationItem item, TMP_Text text)
         {
             var field = typeof(ToastNotificationItem).GetField("messageText",

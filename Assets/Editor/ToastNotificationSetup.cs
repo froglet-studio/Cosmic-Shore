@@ -136,7 +136,7 @@ namespace CosmicShore.Editor
 
             // Wire settings
             var settings = AssetDatabase.LoadAssetAtPath<ToastNotificationSettingsSO>(
-                SOFolder + "/ToastNotificationSettings.asset");
+                "Assets/Resources/ToastNotificationSettings.asset");
             if (settings != null)
             {
                 var settingsField = typeof(ToastNotificationManager).GetField("settings",

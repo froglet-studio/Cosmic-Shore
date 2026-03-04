@@ -48,7 +48,12 @@ namespace CosmicShore.App.UI.ToastNotification
 
             if (messageText) messageText.text = message;
 
-            // Start position: off-screen to the left
+            // Anchor bottom-left, pivot bottom-left
+            _rect.anchorMin = new Vector2(0f, 0f);
+            _rect.anchorMax = new Vector2(1f, 0f);
+            _rect.pivot = new Vector2(0.5f, 0f);
+
+            // Start off-screen to the left
             float offscreenX = -((_rect.rect.width > 0 ? _rect.rect.width : 600f) + settings.offscreenPadding);
             _rect.anchoredPosition = new Vector2(offscreenX, showPosition.y);
             _canvasGroup.alpha = 0f;
