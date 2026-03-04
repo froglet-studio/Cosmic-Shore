@@ -23,6 +23,9 @@ namespace CosmicShore
         [Header("Element Pips")]
         [SerializeField] private ElementPipsView elementPips;
 
+        [Header("Element Bars (fill-bar alternative)")]
+        [SerializeField] private ElementalBarsView elementBars;
+
         private IVessel _vessel;
         private IVesselStatus _status;
         private ResourceSystem _resources;
@@ -70,6 +73,7 @@ namespace CosmicShore
 
             TryUnsubscribeResources();
             TryUnsubscribeElementPips();
+            TryUnsubscribeElementBars();
 
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
         }
@@ -89,6 +93,7 @@ namespace CosmicShore
             }
 
             InitializeElementPips();
+            InitializeElementBars();
         }
 
         void TrySubscribeResources()
@@ -235,7 +240,42 @@ namespace CosmicShore
         void HandleElementLevelChanged(Element element, int level)
         {
             elementPips?.SetLevel(element, level);
+            elementBars?.SetLevel(element, level);
         }
+
+        // --- Element Bars ---
+        void TryUnsubscribeElementBars()
+        {
+            if (_resources != null)
+                _resources.OnElementLevelChange -= HandleElementBarsLevelChanged;
+        }
+
+        void InitializeElementBars()
+        {
+            if (!elementBars) return;
+
+            elementBars.Build();
+
+            if (_resources != null)
+            {
+                _resources.OnElementLevelChange += HandleElementBarsLevelChanged;
+
+                elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
+                elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
+                elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
+                elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
+            }
+        }
+
+        void HandleElementBarsLevelChanged(Element element, int level)
+        {
+            elementBars?.SetLevel(element, level);
+        }
+
+        /// <summary>
+        /// Exposes the ElementalBarsView for the HUD controller to apply juice effects.
+        /// </summary>
+        public ElementalBarsView ElementBars => elementBars;
 
     }
 }
