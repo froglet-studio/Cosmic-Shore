@@ -302,7 +302,7 @@ namespace CosmicShore.Gameplay
 
             vesselNO = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
-            vesselNO.Spawn(false);
+            vesselNO.Spawn(true);
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
             return true;
         }
