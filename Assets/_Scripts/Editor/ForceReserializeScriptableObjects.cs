@@ -5,7 +5,7 @@ using CosmicShore.Utility;
 
 public class ForceReserializeScriptableObjects
 {
-    [MenuItem("FrogletTools/Force Re-Serialize All ScriptableObjects")]
+    [MenuItem("FrogletTools/Legacy/Force Re-Serialize All ScriptableObjects")]
     public static void ReserializeAllScriptableObjects()
     {
         // Find all ScriptableObject asset GUIDs in the project

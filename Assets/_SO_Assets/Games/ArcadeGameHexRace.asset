@@ -24,8 +24,8 @@ MonoBehaviour:
     type: 3}
   GolfScoring: 1
   SceneName: MinigameHexRace
-  Captains:
-  - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
+  Vessels:
+  - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1

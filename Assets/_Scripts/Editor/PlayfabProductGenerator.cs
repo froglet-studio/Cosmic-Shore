@@ -8,7 +8,7 @@ using CosmicShore.Utility;
 
 public class PlayFabProductGenerator : EditorWindow
 {
-    SO_Ship selectedShip;
+    SO_Vessel selectedShip;
     SO_Captain selectedCaptain;
     static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
@@ -36,7 +36,7 @@ public class PlayFabProductGenerator : EditorWindow
     void OnGUI()
     {
         GUILayout.Label("Generate Products from Vessel", EditorStyles.boldLabel);
-        selectedShip = (SO_Ship)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Ship), false);
+        selectedShip = (SO_Vessel)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Vessel), false);
 
         EditorGUI.BeginDisabledGroup(isProcessing);
         if (GUILayout.Button("Generate Products from Vessel"))
@@ -72,7 +72,7 @@ public class PlayFabProductGenerator : EditorWindow
     */
 
     /*
-    private async void GenerateProductsFromShip(SO_Ship vessel)
+    private async void GenerateProductsFromShip(SO_Vessel vessel)
     {
         isProcessing = true;
         foreach (var captain in vessel.Captains)

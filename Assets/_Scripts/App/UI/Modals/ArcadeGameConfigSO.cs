@@ -11,7 +11,7 @@ using UnityEngine;
         public int           Intensity;
         public int           PlayerCount;
         public int           TeamCount;
-        public SO_Ship       SelectedShip;
+        public SO_Vessel       SelectedShip;
 
         public void ResetState()
         {

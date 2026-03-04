@@ -238,20 +238,18 @@ namespace CosmicShore.Game
 
         protected VesselClassType PickAIVesselType()
         {
-            // Try to pick a random ship from the game's available captains
             if (gameList != null)
             {
                 var game = FindGameByMode(gameData.GameMode);
-                if (game != null && game.Captains != null && game.Captains.Count > 0)
+                if (game != null && game.Vessels is { Count: > 0 })
                 {
-                    var captain = game.Captains[UnityEngine.Random.Range(0, game.Captains.Count)];
-                    if (captain != null && captain.Ship != null)
+                    var vessel = game.Vessels[UnityEngine.Random.Range(0, game.Vessels.Count)];
+                    if (vessel != null)
                     {
-                        var shipType = captain.Ship.Class;
-                        // Validate the prefab container can spawn this type
+                        var shipType = vessel.Class;
                         if (vesselPrefabContainer.TryGetShipPrefab(shipType, out _))
                         {
-                            CSDebug.Log($"[ServerPlayerVesselInitializer] AI picking ship {shipType} from captain {captain.Name}");
+                            CSDebug.Log($"[ServerPlayerVesselInitializer] AI picking vessel {shipType}");
                             return shipType;
                         }
                         CSDebug.LogWarning($"[ServerPlayerVesselInitializer] No prefab for {shipType}, falling back to Sparrow");

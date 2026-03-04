@@ -29,7 +29,7 @@ namespace CosmicShore.App.UI.Views
 
         public override void UpdateView()
         {
-            var model = SelectedModel as SO_Ship;
+            var model = SelectedModel as SO_Vessel;
 
             if (ShipName != null) ShipName.text = model.Name;
             if (ShipDescription != null) ShipDescription.text = model.Description;

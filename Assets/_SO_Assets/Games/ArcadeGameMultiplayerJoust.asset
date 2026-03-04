@@ -23,8 +23,8 @@ MonoBehaviour:
     type: 3}
   GolfScoring: 0
   SceneName: MinigameJoust_Gameplay
-  Captains:
-  - {fileID: 11400000, guid: f2d76569deb637b4e90869cb5a908a6b, type: 2}
+  Vessels:
+  - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1
