@@ -59,7 +59,9 @@ namespace CosmicShore
         [SerializeField] private int maxLevel = 15;
 
         [Header("Colors")]
-        [SerializeField] private Color positiveFillColor = Color.white;
+        [Tooltip("Fill color when an element is debuffed (level decreasing)")]
+        [SerializeField] private Color debuffFillColor = Color.white;
+        [Tooltip("Fill color when level is below zero")]
         [SerializeField] private Color negativeFillColor = new(1f, 0.3f, 0.3f, 0.8f);
 
         [Header("Juice — General")]
@@ -77,7 +79,9 @@ namespace CosmicShore
 
         // Runtime state
         private RectTransform _rootRT;
+        private Tween _scaleTween;
         private int[] _currentLevels;
+        private Color[] _barFillColors;
         private Color[] _originalLabelColors;
         private Vector3[] _originalLabelScales;
         private Tween[] _driftRotationTweens;
@@ -105,6 +109,7 @@ namespace CosmicShore
 
             int count = bars.Length;
             _currentLevels = new int[count];
+            _barFillColors = new Color[count];
             _originalLabelColors = new Color[count];
             _originalLabelScales = new Vector3[count];
             _driftRotationTweens = new Tween[count];
@@ -133,6 +138,7 @@ namespace CosmicShore
                 }
 
                 _currentLevels[i] = 0;
+                _barFillColors[i] = debuffFillColor;
             }
 
             _built = true;
@@ -143,16 +149,38 @@ namespace CosmicShore
         // Runtime scale control
         // ---------------------------------------------------------------
 
-        /// <summary>Uniform scale (1 = default). Scales the container or this transform.</summary>
+        /// <summary>Snap to uniform scale.</summary>
         public void SetScale(float uniformScale)
         {
+            _scaleTween?.Kill();
             if (_rootRT) _rootRT.localScale = Vector3.one * uniformScale;
         }
 
-        /// <summary>Non-uniform scale for independent X/Y control.</summary>
+        /// <summary>Snap to non-uniform scale.</summary>
         public void SetScale(Vector3 scale)
         {
+            _scaleTween?.Kill();
             if (_rootRT) _rootRT.localScale = scale;
+        }
+
+        /// <summary>Animate to uniform scale over duration.</summary>
+        public void AnimateScale(float targetScale, float duration = 0.3f, Ease ease = Ease.OutBack)
+        {
+            if (!_rootRT) return;
+            _scaleTween?.Kill();
+            _scaleTween = _rootRT
+                .DOScale(Vector3.one * targetScale, duration)
+                .SetEase(ease);
+        }
+
+        /// <summary>Animate to non-uniform scale over duration.</summary>
+        public void AnimateScale(Vector3 targetScale, float duration = 0.3f, Ease ease = Ease.OutBack)
+        {
+            if (!_rootRT) return;
+            _scaleTween?.Kill();
+            _scaleTween = _rootRT
+                .DOScale(targetScale, duration)
+                .SetEase(ease);
         }
 
         /// <summary>Current local scale of the bars root.</summary>
@@ -196,7 +224,7 @@ namespace CosmicShore
 
                 var labelImg = labelGO.GetComponent<Image>();
                 labelImg.sprite = pipsConfig.GetLabelSprite(element);
-                labelImg.color = positiveFillColor;
+                labelImg.color = debuffFillColor;
                 labelImg.preserveAspect = true;
                 labelImg.raycastTarget = false;
 
@@ -225,7 +253,7 @@ namespace CosmicShore
 
                 var fillImg = fillGO.GetComponent<Image>();
                 fillImg.sprite = pipsConfig.GetPipSprite(element);
-                fillImg.color = positiveFillColor;
+                fillImg.color = debuffFillColor;
                 fillImg.raycastTarget = false;
 
                 // Zero-line marker
@@ -254,13 +282,30 @@ namespace CosmicShore
         // ---------------------------------------------------------------
         // Level updates
         // ---------------------------------------------------------------
-        public void SetLevel(Element element, int level)
+
+        /// <summary>
+        /// Set the level for an element. Pass a domainColor so the fill
+        /// shows the domain color when buffing (increasing) and white when debuffing (decreasing).
+        /// </summary>
+        public void SetLevel(Element element, int level, Color domainColor)
         {
             int idx = GetBarIndex(element);
             if (idx < 0 || !_built) return;
 
-            _currentLevels[idx] = Mathf.Clamp(level, minLevel, maxLevel);
+            int clamped = Mathf.Clamp(level, minLevel, maxLevel);
+            int prev = _currentLevels[idx];
+            _currentLevels[idx] = clamped;
+
+            // Buff = increasing, debuff = decreasing
+            _barFillColors[idx] = clamped > prev ? domainColor : debuffFillColor;
+
             RefreshBar(idx);
+        }
+
+        /// <summary>Overload without domain color — uses white for both directions.</summary>
+        public void SetLevel(Element element, int level)
+        {
+            SetLevel(element, level, debuffFillColor);
         }
 
         public void RefreshAllBars()
@@ -280,7 +325,7 @@ namespace CosmicShore
             if (!img) return;
 
             img.fillAmount = Mathf.Clamp01(fillFraction);
-            img.color = level < 0 ? negativeFillColor : positiveFillColor;
+            img.color = level < 0 ? negativeFillColor : _barFillColors[idx];
         }
 
         // ---------------------------------------------------------------
@@ -427,6 +472,7 @@ namespace CosmicShore
 
         void OnDestroy()
         {
+            _scaleTween?.Kill();
             if (_driftRotationTweens != null)
                 foreach (var t in _driftRotationTweens) t?.Kill();
             if (_labelScaleTweens != null)
