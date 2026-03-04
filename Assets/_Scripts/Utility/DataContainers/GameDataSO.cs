@@ -571,6 +571,31 @@ namespace CosmicShore.Utility
         }
         
         // -----------------------------------------------------------------------------------------
+        // Team Balancing
+
+        /// <summary>
+        /// Counts how many players are on each team (Jade, Ruby, Gold).
+        /// Used by AI spawning to assign AI to the team with the fewest players.
+        /// </summary>
+        public Dictionary<Domains, int> BuildTeamCounts()
+        {
+            var counts = new Dictionary<Domains, int>
+            {
+                { Domains.Jade, 0 },
+                { Domains.Ruby, 0 },
+                { Domains.Gold, 0 }
+            };
+
+            foreach (var p in Players)
+            {
+                if (p is Player player && counts.ContainsKey(player.NetDomain.Value))
+                    counts[player.NetDomain.Value]++;
+            }
+
+            return counts;
+        }
+
+        // -----------------------------------------------------------------------------------------
         // Helpers (private)
 
         IRoundStats FindByTeam(Domains domain) =>

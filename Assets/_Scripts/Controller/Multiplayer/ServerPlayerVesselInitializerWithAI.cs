@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -113,9 +114,12 @@ namespace CosmicShore.Gameplay
             }
 
             // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
-            System.Collections.Generic.List<AIProfile> profiles = null;
+            List<AIProfile> profiles = null;
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
+
+            // Build team counts from existing human players so AI fills the smallest teams first.
+            var teamCounts = gameData.BuildTeamCounts();
 
             for (int i = 0; i < aiCount; i++)
             {
@@ -143,7 +147,8 @@ namespace CosmicShore.Gameplay
                     ? profiles[i].Name
                     : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                var aiDomain = GetBalancedDomain(teamCounts);
+                teamCounts[aiDomain]++;
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;
@@ -166,6 +171,26 @@ namespace CosmicShore.Gameplay
                 clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
                 ConfigureAIPilot(aiVesselNO);
             }
+        }
+
+        /// <summary>
+        /// Returns the domain with the fewest players. Ties broken by enum order (Jade first).
+        /// </summary>
+        static Domains GetBalancedDomain(Dictionary<Domains, int> counts)
+        {
+            Domains best = Domains.Jade;
+            int bestCount = int.MaxValue;
+
+            foreach (var kvp in counts)
+            {
+                if (kvp.Value < bestCount)
+                {
+                    bestCount = kvp.Value;
+                    best = kvp.Key;
+                }
+            }
+
+            return best;
         }
 
         VesselClassType PickAIVesselType()
