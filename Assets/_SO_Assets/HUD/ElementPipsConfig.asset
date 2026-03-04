@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pipsPerColumn: 20
   pipSpacing: 8
-  columnSpacing: 24
-  pipSize: {x: 14, y: 5}
-  labelIconSize: {x: 20, y: 20}
-  labelGap: 4
+  columnSpacing: 35
+  pipSize: {x: 40, y: 20}
+  labelIconSize: {x: 40, y: 40}
+  labelGap: 10
   zeroLineIndex: 5
   zeroLineColor: {r: 1, g: 1, b: 1, a: 0.4}
   zeroLineHeight: 1
