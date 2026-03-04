@@ -8,13 +8,12 @@ namespace CosmicShore.Game
     public class HealthPrismPoolManager : GenericPoolManager<HealthPrism>
     {
         static HealthPrismPoolManager s_instance;
-        public static HealthPrismPoolManager Instance
+        public static HealthPrismPoolManager Instance => s_instance;
+
+        protected override void Awake()
         {
-            get
-            {
-                if (!s_instance) s_instance = FindAnyObjectByType<HealthPrismPoolManager>();
-                return s_instance;
-            }
+            base.Awake();
+            s_instance = this;
         }
 
         [Header("Cleanup Events")]
