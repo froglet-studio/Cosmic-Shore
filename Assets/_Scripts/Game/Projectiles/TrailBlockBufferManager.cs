@@ -127,7 +127,7 @@ namespace CosmicShore.Game.Projectiles
             return teamBuffers.ContainsKey(domain) && teamBuffers[domain].Count >= count;
         }
 
-        protected void OnDestroy()
+        protected override void OnDestroy()
         {
             if (teamBuffers != null)
             {
@@ -143,6 +143,7 @@ namespace CosmicShore.Game.Projectiles
                     }
                 }
             }
+            base.OnDestroy();
         }
     }
 }

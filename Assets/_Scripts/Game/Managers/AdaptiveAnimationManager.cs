@@ -198,9 +198,10 @@ namespace CosmicShore.Core
             CleanupResources();
         }
 
-        protected virtual void OnDestroy()
+        protected override void OnDestroy()
         {
             CleanupResources();
+            base.OnDestroy();
         }
 
         protected virtual void CleanupResources()

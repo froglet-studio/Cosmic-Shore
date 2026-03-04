@@ -56,7 +56,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             NetworkMonitor.OnNetworkConnectionLost += Inventory.LoadFromDisk;
         }
 
-        public void OnDestroy()
+        protected override void OnDestroy()
         {
             AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess -= LoadAllCatalogItems;
@@ -64,6 +64,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             OnLoadInventory -= GrantStartingInventoryIfInventoryIsEmpty;
 
             NetworkMonitor.OnNetworkConnectionLost -= Inventory.LoadFromDisk;
+            base.OnDestroy();
         }
 
         #region Initialize PlayFab Economy API with Auth Context

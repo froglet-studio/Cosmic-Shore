@@ -36,9 +36,10 @@ namespace CosmicShore.Integrations.PlayFab.Groups
              AuthenticationManager.OnLoginSuccess += InitializeGroupsInstanceAPI;
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
             AuthenticationManager.OnLoginSuccess -= InitializeGroupsInstanceAPI;
+            base.OnDestroy();
         }
 
         #region Initialize PlayFab Groups API with Auth Context

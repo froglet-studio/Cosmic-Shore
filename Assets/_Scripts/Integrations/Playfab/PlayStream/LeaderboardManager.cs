@@ -67,12 +67,13 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         /// <summary>
         /// Clear out all delegates
         /// </summary>
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
             NetworkMonitor.OnNetworkConnectionFound -= ComeOnline;
             NetworkMonitor.OnNetworkConnectionLost -= GoOffline;
             PlayerDataController.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "this instance is disposed.");
+            base.OnDestroy();
         }
 
         // ReSharper disable Unity.PerformanceAnalysis
