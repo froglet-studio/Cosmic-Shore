@@ -52,8 +52,6 @@ namespace CosmicShore.Gameplay
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
         public bool IsInitializedAsAI { get; private set; }
 
-        bool _spawnEventRaised;
-
         private InputController _inputController;
         public InputController InputController
         {
@@ -122,95 +120,50 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
             base.OnNetworkSpawn();
 
-            // Add to game data early so ServerPlayerVesselInitializer can find us.
+            // Cache it to game data early, so that later,
+            // ClientInitializer can find the player and vessels with their Ids
             gameData.Players.Add(this);
 
             VesselNetId = NetVesselId.Value;
 
-            // Subscribe BEFORE writes so deferred spawn-event logic in
-            // OnNetNameValueChanged / OnNetDefaultVesselTypeChanged catches
-            // the first client value replication.
             NetDomain.OnValueChanged += OnNetDomainChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
-            NetDefaultVesselType.OnValueChanged += OnNetDefaultVesselTypeChanged;
             NetVesselId.OnValueChanged += OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
 
-            // --- Server writes (server-perm vars) ---
-            // Domain is NOT assigned here — it is the spawner's responsibility:
-            //   AI players:        SpawnAIs() in ServerPlayerVesselInitializerWithAI
-            //   Persistent humans: PrepareForNewScene() via FindUnprocessedPlayerByOwnerClientId
-            //   New humans:        HandlePlayerNetworkSpawnedAsync() fallback in ServerPlayerVesselInitializer
-            // Assigning here caused double-consumption of the DomainAssigner pool for AI players,
-            // because Player.OnNetworkSpawn fires synchronously during Spawn() inside SpawnAIs(),
-            // wasting a pool slot that SpawnAIs then overwrites.
-            if (IsServer)
+            if (!IsLocalUser)
+                return;
+
+            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+
+            // Resolve display name & avatar ID with a 3-tier fallback
+            if (playerDataService != null && playerDataService.IsInitialized
+                && playerDataService.CurrentProfile != null)
             {
-                NetIsAI.Value = IsInitializedAsAI;
+                NetName.Value = playerDataService.CurrentProfile.displayName;
+                NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
             }
-
-            // --- Owner writes (owner-perm vars: NetName, NetAvatarId, NetDefaultVesselType) ---
-            // For host's own player: IsOwner=true → writes here.
-            // For client's player on server: IsOwner=false → skipped;
-            //   values arrive later via replication → OnNetNameValueChanged /
-            //   OnNetDefaultVesselTypeChanged raise the deferred spawn event.
-            // For host's player on client: IsOwner=false → skipped (correct).
-            if (IsOwner)
+            else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
             {
-                if (playerDataService != null && playerDataService.IsInitialized
-                    && playerDataService.CurrentProfile != null)
-                {
-                    NetName.Value = playerDataService.CurrentProfile.displayName;
-                    NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
-                }
-                else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
-                {
-                    NetName.Value = gameData.LocalPlayerDisplayName;
-                    NetAvatarId.Value = gameData.LocalPlayerAvatarId;
-                }
-                else
-                {
-                    NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
-                }
-
-                NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
-            }
-
-            // --- Raise spawn event AFTER all local writes ---
-            // Server: only when all required values are populated.
-            //   Host player (IsOwner && IsServer): name written above → raise now.
-            //   Client player (!IsOwner && IsServer): name empty → deferred to
-            //   OnNetNameValueChanged when the client's name replicates.
-            // Non-server: raise immediately for client-side pair resolution.
-            if (IsServer)
-            {
-                if (!_spawnEventRaised && IsSpawnReady())
-                {
-                    _spawnEventRaised = true;
-                    gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
-                }
+                NetName.Value = gameData.LocalPlayerDisplayName;
+                NetAvatarId.Value = gameData.LocalPlayerAvatarId;
             }
             else
             {
-                gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
+                NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
             }
-
-            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn DONE — Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}</color>");
 
             InputController.Initialize();
         }
 
         public override void OnNetworkDespawn()
         {
-            _spawnEventRaised = false;
             gameData.Players.Remove(this);
 
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
-            NetDefaultVesselType.OnValueChanged -= OnNetDefaultVesselTypeChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
         }
@@ -219,50 +172,6 @@ namespace CosmicShore.Gameplay
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.
         public void ToggleGameObject(bool toggle) => 
             gameObject.SetActive(toggle);
-
-        /// <summary>
-        /// Re-initializes a persistent Player for a new game scene.
-        /// Player NetworkObjects survive Netcode scene loads (DestroyWithScene=false)
-        /// but OnNetworkSpawn() only fires once (initial creation in Auth scene).
-        /// This method handles all subsequent scene transitions:
-        ///   - Clears stale vessel reference (old vessel destroyed with scene)
-        ///   - Updates NetworkVariables to match new game config
-        ///   - Syncs local properties from NetworkVariables
-        ///   - Re-registers with gameData.Players (cleared by ResetRuntimeData)
-        /// Called by ServerPlayerVesselInitializer when discovering persistent Players.
-        /// </summary>
-        public void PrepareForNewScene()
-        {
-            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
-            // Clear stale references from previous scene.
-            // Vessels have destroyWithScene=true and are already destroyed.
-            Vessel = null;
-            IsActive = false;
-            VesselNetId = 0;
-
-            // Update owner-writable NetworkVariables to match new game config.
-            if (IsOwner)
-                NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
-
-            // Update server-writable NetworkVariables.
-            if (IsServer)
-            {
-                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
-                NetVesselId.Value = 0;
-            }
-
-            // Force-sync local properties from NetworkVariables.
-            // OnValueChanged callbacks only fire on actual changes;
-            // if a value happens to be the same, the local property
-            // would remain stale without this explicit sync.
-            Domain = NetDomain.Value;
-            Name = NetName.Value.ToString();
-            AvatarId = NetAvatarId.Value;
-
-            // Re-register with gameData (cleared by ResetRuntimeData during scene transition)
-            if (!gameData.Players.Contains(this))
-                gameData.Players.Add(this);
-        }
 
         public void DestroyPlayer()
         {
@@ -324,41 +233,14 @@ namespace CosmicShore.Gameplay
         void OnNetDomainChanged(Domains previousValue, Domains newValue) =>
             Domain = newValue;
         
-        void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
-        {
+        void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>
             Name = newValue.ToString();
-            TryRaiseDeferredSpawnEvent();
-        }
-
-        void OnNetDefaultVesselTypeChanged(VesselClassType previousValue, VesselClassType newValue)
-        {
-            TryRaiseDeferredSpawnEvent();
-        }
-
-        /// <summary>
-        /// Server-only: when a remote client's owner-written values (name, vessel type)
-        /// replicate, check if we can now raise the spawn event that was deferred
-        /// in OnNetworkSpawn because the owner block was skipped.
-        /// </summary>
-        void TryRaiseDeferredSpawnEvent()
-        {
-            if (IsServer && !_spawnEventRaised && IsSpawnReady())
-            {
-                _spawnEventRaised = true;
-                gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
-            }
-        }
 
         void OnNetVesselIdChanged(ulong previousValue, ulong newValue) =>
             VesselNetId = newValue;
 
         void OnNetAvatarIdChanged(int previousValue, int newValue) =>
             AvatarId = newValue;
-        
-        bool IsSpawnReady() =>
-            NetDefaultVesselType.Value != VesselClassType.Random
-            && NetDefaultVesselType.Value != VesselClassType.Any
-            && !string.IsNullOrEmpty(NetName.Value.ToString());
 
         void SetGameObjectName()
         {

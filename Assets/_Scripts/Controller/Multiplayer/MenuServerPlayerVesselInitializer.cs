@@ -1,4 +1,4 @@
-using System.Threading;
+using System;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -8,21 +8,15 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Menu_Main vessel initializer. Spawns the host vessel on the network,
-    /// initializes it, then activates autopilot.
+    /// Menu_Main vessel initializer. After the base class spawns the vessel,
+    /// activates autopilot for the player.
     ///
     /// Also handles runtime vessel swaps requested by any client via
-    /// <see cref="ClientPlayerVesselInitializer.RequestVesselSwap_ServerRpc"/>.
-    /// The swap despawns the old vessel, spawns a new one with the same ownership,
-    /// re-initializes on the host, then notifies all clients via
-    /// <see cref="ClientPlayerVesselInitializer.ReplaceVesselForPlayer_ClientRpc"/>.
+    /// ClientPlayerVesselInitializer.RequestVesselSwap_ServerRpc.
     ///
     /// Game data configuration (vessel class, player count, intensity) is handled
-    /// by <see cref="Core.MainMenuController"/> — this class only handles the
-    /// network spawn chain, autopilot activation, and vessel swap.
-    ///
-    /// Listens to <see cref="GameDataSO.OnPlayerNetworkSpawnedUlong"/> via the base class,
-    /// which waits for NetworkVariables to sync before spawning.
+    /// by MainMenuController — this class only handles the network spawn chain,
+    /// autopilot activation, and vessel swap.
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
@@ -58,12 +52,49 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
+        /// Override: after spawning vessel, wait for it to be ready, then activate autopilot.
         /// </summary>
-        protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
+        protected override void OnClientConnected(ulong clientId)
         {
-            await base.OnPlayerReadyToSpawnAsync(player, ct);
-            ActivateAutopilot(player);
+            SpawnAndActivateAutopilot(clientId).Forget();
+        }
+
+        async UniTaskVoid SpawnAndActivateAutopilot(ulong clientId)
+        {
+            try
+            {
+                // Wait for vessel spawn (500ms delay) + spawn vessel + notify clients (500ms delay)
+                await UniTask.Delay(500, DelayType.UnscaledDeltaTime, cancellationToken: _cts.Token);
+
+                var playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+                if (!playerNetObj || !playerNetObj.TryGetComponent<Player>(out var player))
+                {
+                    CSDebug.LogError($"[MenuServerVesselInit] Player not found for client {clientId}");
+                    return;
+                }
+
+                player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                player.NetIsAI.Value = false;
+
+                if (player.NetDefaultVesselType.Value == VesselClassType.Random)
+                    player.NetDefaultVesselType.Value = VesselClassType.Dolphin;
+
+                SpawnVesselForPlayer(clientId, player);
+
+                // Wait for vessel to replicate
+                await UniTask.Delay(500, DelayType.UnscaledDeltaTime, cancellationToken: _cts.Token);
+
+                // Activate autopilot
+                ActivateAutopilot(player);
+
+                // Notify clients
+                NotifyClients(clientId);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                CSDebug.LogError($"[MenuServerVesselInit] Error in SpawnAndActivateAutopilot: {ex}");
+            }
         }
 
         // ---------------------------------------------------------
@@ -72,7 +103,6 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Entry point for the host's UI: request a vessel swap for the local player.
-        /// Can also be called by remote clients via <see cref="ClientPlayerVesselInitializer.RequestVesselSwap_ServerRpc"/>.
         /// </summary>
         public void RequestSwap(VesselClassType targetClass)
         {
@@ -95,7 +125,6 @@ namespace CosmicShore.Gameplay
 
             if (NetworkManager.Singleton.IsServer)
             {
-                // Host path: swap directly
                 SwapVesselAsync(
                     netPlayer.OwnerClientId,
                     netPlayer.NetworkObjectId,
@@ -105,7 +134,6 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // Client path: send RPC to server
                 clientPlayerVesselInitializer.RequestVesselSwap_ServerRpc(
                     netPlayer.NetworkObjectId,
                     targetClass,
@@ -124,11 +152,10 @@ namespace CosmicShore.Gameplay
             ulong playerNetId,
             VesselClassType targetClass,
             Pose snapshotPose,
-            CancellationToken ct)
+            System.Threading.CancellationToken ct)
         {
             _isSwapping = true;
 
-            // 1. Find the player
             if (!gameData.TryGetPlayerByNetworkObjectId(playerNetId, out var iPlayer)
                 || iPlayer is not Player player)
             {
@@ -145,10 +172,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // 2. Despawn old vessel
             DespawnVessel(oldVessel);
 
-            // 3. Spawn new vessel
             var vesselNO = SpawnVesselForPlayer(ownerClientId, player, targetClass);
             if (!vesselNO)
             {
@@ -163,13 +188,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // 4. Re-initialize on host
             clientPlayerVesselInitializer.ReplaceVesselForPlayer(player, newVessel);
             newVessel.SetPose(snapshotPose);
             ActivateAutopilot(player);
 
-            // 5. Wait for replication, then notify all non-host clients
-            await UniTask.Delay(postSpawnDelayMs, cancellationToken: ct);
+            await UniTask.Delay(200, cancellationToken: ct);
             NotifyClientsOfSwap(player, newVessel);
 
             _isSwapping = false;
@@ -209,9 +232,6 @@ namespace CosmicShore.Gameplay
             player.StartPlayer();
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
-
-            // Camera setup is handled by MainMenuController.HandleMenuReady()
-            // which activates the CM Main Menu Cinemachine camera for menu state.
         }
     }
 }
