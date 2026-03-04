@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
@@ -145,24 +143,10 @@ namespace CosmicShore.Core
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
 
-            // Prepare clients BEFORE the server despawns vessels.
-            // The ClientRpc marks vessels DestroyWithScene=false on non-host clients so they
-            // survive the scene unload even if the despawn messages haven't arrived yet.
-            // The 0.5s waitBeforeLoading delay gives clients time to process this RPC.
-            // Server-side: clear stale vessel references, then despawn all vessels.
-            if (useNetworkSceneLoading)
-            {
-                PrepareClientsForSceneTransition_ClientRpc();
-
-                foreach (var player in gameData.Players)
-                {
-                    if (player is Player p)
-                        p.PrepareForNewScene();
-                }
-
-                DespawnTrackedVesselsOnServer();
-            }
-
+            // Do NOT manually despawn vessels here — Netcode's NetworkSceneManager
+            // handles destroyWithScene=true objects automatically during scene transitions.
+            // Players (DestroyWithScene=false) persist and get re-initialized by
+            // ServerPlayerVesselInitializer.ProcessPreExistingPlayers() in the new scene.
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
 
@@ -211,26 +195,6 @@ namespace CosmicShore.Core
 
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Server loading network scene: {sceneName} via nm.SceneManager.LoadScene</color>");
             nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-        }
-
-        /// <summary>
-        /// Despawns all tracked vessels on the server before a scene transition.
-        /// Vessels are spawned with <c>destroyWithScene=true</c> and would otherwise be
-        /// destroyed by Unity's scene unload on non-host clients, triggering
-        /// "Invalid Destroy" errors. Explicit server despawn sends proper despawn
-        /// messages so clients remove the objects cleanly.
-        /// </summary>
-        void DespawnTrackedVesselsOnServer()
-        {
-            var nm = NetworkManager.Singleton;
-            if (nm == null || !nm.IsServer) return;
-
-            var vessels = new List<IVessel>(gameData.Vessels);
-            foreach (var vessel in vessels)
-            {
-                if (vessel is VesselController vc && vc.IsSpawned)
-                    vc.NetworkObject.Despawn(true);
-            }
         }
 
         #endregion
@@ -289,30 +253,6 @@ namespace CosmicShore.Core
 
             if (CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
-        }
-
-        /// <summary>
-        /// Prepares non-host clients for a scene transition.
-        /// Marks vessels DestroyWithScene=false so they survive the scene unload
-        /// and get properly cleaned up by the server's despawn messages.
-        /// Clears stale Player.Vessel references to prevent MissingReferenceException.
-        /// </summary>
-        [ClientRpc]
-        void PrepareClientsForSceneTransition_ClientRpc()
-        {
-            if (IsServer) return; // Host handles cleanup directly in LoadSceneAsync
-
-            foreach (var player in gameData.Players)
-            {
-                if (player is Player p)
-                    p.PrepareForNewScene();
-            }
-
-            foreach (var vessel in gameData.Vessels)
-            {
-                if (vessel is VesselController vc && vc.IsSpawned)
-                    vc.NetworkObject.DestroyWithScene = false;
-            }
         }
 
         /// <summary>
