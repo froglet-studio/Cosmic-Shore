@@ -249,7 +249,8 @@ namespace CosmicShore.Gameplay
         {
             Debug.Log($"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
             // Clear stale references from previous scene.
-            // Vessels have destroyWithScene=true — Netcode handles their cleanup during scene transitions.
+            // Vessels are explicitly despawned by PreDespawnVessels() before scene load
+            // to avoid "Invalid Destroy" warnings on non-host clients.
             Vessel = null;
             IsActive = false;
             VesselNetId = 0;

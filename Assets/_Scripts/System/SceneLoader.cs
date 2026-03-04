@@ -126,6 +126,41 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Server-only: explicitly despawns all vessels before a network scene load.
+        /// Netcode's destroyWithScene=true relies on Unity's scene unload to destroy objects,
+        /// but NetworkObject.OnDestroy() logs "Invalid Destroy" on non-host clients because
+        /// IsSpawned is still true when the scene unloads. Pre-despawning sends despawn messages
+        /// to clients before the scene event, so IsSpawned=false when OnDestroy fires.
+        /// </summary>
+        void PreDespawnVessels()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return;
+
+            // Primary path: despawn all tracked vessels
+            for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
+            {
+                if (gameData.Vessels[i] is VesselController vc && vc.IsSpawned)
+                    vc.NetworkObject.Despawn(true);
+            }
+
+            // Fallback: scan SpawnManager for any VesselController not in gameData.Vessels
+            if (nm.SpawnManager != null)
+            {
+                var strayVessels = new System.Collections.Generic.List<NetworkObject>();
+                foreach (var kvp in nm.SpawnManager.SpawnedObjects)
+                {
+                    if (kvp.Value != null
+                        && kvp.Value.TryGetComponent<VesselController>(out _)
+                        && kvp.Value.IsSpawned)
+                        strayVessels.Add(kvp.Value);
+                }
+                foreach (var no in strayVessels)
+                    no.Despawn(true);
+            }
+        }
+
+        /// <summary>
         /// Load the main menu scene.
         /// Called by SOAP EventListener (EventOnClickToMainMenuButton).
         /// Uses network scene loading when a Netcode host is active.
@@ -143,6 +178,9 @@ namespace CosmicShore.Core
         {
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
+
+            if (useNetworkSceneLoading)
+                PreDespawnVessels();
 
             gameData.ResetRuntimeData();
             Debug.Log("<color=#FF8C00>[FLOW-3] [SceneLoader] ResetRuntimeData done. Waiting before load...</color>");
