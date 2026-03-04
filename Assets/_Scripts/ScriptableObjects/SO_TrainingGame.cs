@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.Data;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -11,7 +12,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public SO_ArcadeGame Game;
         [SerializeField] public SO_Element ElementOne;
         [SerializeField] public SO_Element ElementTwo;
-        [SerializeField] public SO_Ship _SO_Ship;
+        [FormerlySerializedAs("_SO_Ship")]
+        [SerializeField] public SO_Vessel _SO_Vessel;
         [Range(1,4)]
         [SerializeField] public int DailyChallengeIntensity;
         [SerializeField] public GameplayReward DailyChallengeTierOneReward;

@@ -16,11 +16,11 @@ namespace CosmicShore.Core
 
         public Squad(SO_Captain leader, SO_Captain rogueOne, SO_Captain rogueTwo)
         {
-            SquadLeaderClass = leader.Ship.Class;
+            SquadLeaderClass = leader.Vessel.Class;
             SquadLeaderElement = leader.PrimaryElement;
-            RogueOneClass = rogueOne.Ship.Class;
+            RogueOneClass = rogueOne.Vessel.Class;
             RogueOneElement = rogueOne.PrimaryElement;
-            RogueTwoClass = rogueTwo.Ship.Class;
+            RogueTwoClass = rogueTwo.Vessel.Class;
             RogueTwoElement = rogueTwo.PrimaryElement;
         }
     }

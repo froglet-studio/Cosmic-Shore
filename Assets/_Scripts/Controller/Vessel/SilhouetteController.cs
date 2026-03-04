@@ -20,6 +20,9 @@ namespace CosmicShore.Gameplay
         [Header("View")]
         [SerializeField] private SilhouetteView view; // view
 
+        [Header("Element Pips")]
+        [SerializeField] private ElementPipsView elementPips;
+
         private IVessel _vessel;
         private IVesselStatus _status;
         private ResourceSystem _resources;
@@ -65,6 +68,7 @@ namespace CosmicShore.Gameplay
             }
 
             TryUnsubscribeResources();
+            TryUnsubscribeElementPips();
 
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
         }
@@ -82,6 +86,8 @@ namespace CosmicShore.Gameplay
                 var r = _resources.Resources[energyResourceIndex];
                 view?.UpdateEnergyUI(r.CurrentAmount, r.MaxAmount);
             }
+
+            InitializeElementPips();
         }
 
         void TrySubscribeResources()
@@ -197,6 +203,36 @@ namespace CosmicShore.Gameplay
         private void HandleMantaFlowerExplosion(VesselImpactor vessel)
         {
             view?.ShowMantaFlowerOverlay();
+        }
+
+        // --- Element Pips ---
+        void TryUnsubscribeElementPips()
+        {
+            if (_resources != null)
+                _resources.OnElementLevelChange -= HandleElementLevelChanged;
+        }
+
+        void InitializeElementPips()
+        {
+            if (!elementPips) return;
+
+            elementPips.Build();
+
+            if (_resources != null)
+            {
+                _resources.OnElementLevelChange += HandleElementLevelChanged;
+
+                // Sync current levels
+                elementPips.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
+                elementPips.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
+                elementPips.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
+                elementPips.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
+            }
+        }
+
+        void HandleElementLevelChanged(Element element, int level)
+        {
+            elementPips?.SetLevel(element, level);
         }
 
     }

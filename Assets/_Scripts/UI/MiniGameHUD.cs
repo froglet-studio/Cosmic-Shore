@@ -272,7 +272,7 @@ namespace CosmicShore.UI
             var localPlayer = gameData.LocalPlayer;
             var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
-            card.Setup(localPlayer.Name, 0, teamColor, true);
+            card.Setup(localPlayer.Name, 0, teamColor, true, 0);
 
             var sprite = ResolveAvatarSprite(localPlayer.AvatarId);
             card.SetAvatar(sprite);
@@ -298,13 +298,14 @@ namespace CosmicShore.UI
             _aiScoreHandlers.Clear();
             AssignAIProfiles();
 
+            int staggerIdx = 1; // 0 is the local player card
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (stats == localRoundStats) continue;
 
                 var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
                 var teamColor = view.GetColorForDomain(stats.Domain);
-                card.Setup(stats.Name, (int)stats.Score, teamColor, false);
+                card.Setup(stats.Name, (int)stats.Score, teamColor, false, staggerIdx++);
 
                 // Resolve avatar: try AI profile first, then fall back to player AvatarId
                 var avatarSprite = ResolveAIAvatarSprite(stats.Name);

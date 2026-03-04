@@ -28,6 +28,10 @@ namespace CosmicShore.Gameplay
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
         GameObject membrane;
+        GameObject nucleus;
+
+        public float NucleusRadius => nucleus ? nucleus.transform.localScale.x : 0f;
+        public float MembraneRadius => membrane ? membrane.transform.localScale.x : 0f;
 
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
@@ -197,7 +201,7 @@ namespace CosmicShore.Gameplay
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
 
             if (cellConfigData.NucleusPrefab == null) return;
-            var nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
+            nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
         }
 

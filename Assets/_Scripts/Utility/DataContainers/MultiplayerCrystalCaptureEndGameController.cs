@@ -1,10 +1,12 @@
 ﻿// MultiplayerCrystalCaptureEndGameController.cs
 using System.Collections;
 using System.Linq;
+using CosmicShore.Game.Cinematics;
+using CosmicShore.Game.Progression;
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerCrystalCaptureEndGameController : EndGameCinematicController
     {
@@ -56,6 +58,38 @@ namespace CosmicShore.Utility
                 cinematic.scoreRevealSettings,
                 false
             );
+        }
+
+        protected override IEnumerator ShowQuestCompletionSequence()
+        {
+            if (!view || !gameData) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) yield break;
+
+            var mode = gameData.GameMode;
+            var quest = service.GetQuestForMode(mode);
+            if (quest == null || quest.IsPlaceholder) yield break;
+
+            // Use direct score check — the local player's score is readily available
+            var localName = gameData.LocalPlayer?.Name;
+            var localStats = gameData.RoundStatsList?.FirstOrDefault(s => s.Name == localName);
+            int myScore = localStats != null ? (int)localStats.Score : 0;
+
+            bool questMet = service.IsQuestCompleted(mode) || myScore >= quest.TargetValue;
+
+            if (questMet)
+            {
+                quest.IsCompleted = true;
+
+                // Ensure the service also knows (in case HandleGameEnd hasn't fired yet)
+                if (!service.IsQuestCompleted(mode) && myScore > 0)
+                    service.ReportQuestStat(mode, myScore);
+
+                view.ShowQuestCompletion($"Quest Complete!\n{quest.DisplayName}");
+                CSDebug.Log($"[CrystalCapture] Quest completed — score:{myScore} target:{quest.TargetValue}");
+                yield return new WaitForSeconds(2f);
+            }
         }
     }
 }

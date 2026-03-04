@@ -30,10 +30,10 @@ namespace CosmicShore.UI
 
         public override void UpdateView()
         {
-            var model = SelectedModel as SO_ShipAbility;
+            var model = SelectedModel as SO_VesselAbility;
 
-            if (ClassName != null) ClassName.text = model.Ship.Name;
-            if (ClassLockedImage != null) ClassLockedImage.gameObject.SetActive(model.Ship.IsLocked);
+            if (ClassName != null) ClassName.text = model.Vessel.Name;
+            if (ClassLockedImage != null) ClassLockedImage.gameObject.SetActive(model.Vessel.IsLocked);
             if (AbilityName != null) AbilityName.text = model.Name;
             if (AbilityDescription != null) AbilityDescription.text = model.Description;
             if (AbilityPreviewWindow != null)
@@ -46,8 +46,8 @@ namespace CosmicShore.UI
                 AbilityPreviewWindow.SetActive(true);
                 Canvas.ForceUpdateCanvases();
             }
-            if (TrainButton != null) TrainButton.gameObject.SetActive(!model.Ship.IsLocked);
-            if (GoToStoreButton != null) GoToStoreButton.gameObject.SetActive(model.Ship.IsLocked);
+            if (TrainButton != null) TrainButton.gameObject.SetActive(!model.Vessel.IsLocked);
+            if (GoToStoreButton != null) GoToStoreButton.gameObject.SetActive(model.Vessel.IsLocked);
         }
     }
 }

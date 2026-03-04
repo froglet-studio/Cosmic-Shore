@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a269e1ecd2eaa6046b40062d218ad974, type: 3}
+  m_Name: GameModeQuest_WildlifeBlitz
+  m_EditorClassIdentifier: 
+  GameMode: 26
+  DisplayName: WILDLIFE BLITZ
+  Description: Unlock Intensity 4 to unlock next game mode
+  Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  TargetType: 6
+  TargetValue: 4
+  PlaysToUnlockIntensity3: 3
+  PlaysToUnlockIntensity4: 3
+  Intensity3GoalDescription: Play Intensity 2 to unlock
+  Intensity4GoalDescription: Play Intensity 3 to unlock
+  Order: 4
+  IsPlaceholder: 0

@@ -34,10 +34,10 @@ namespace CosmicShore.UI
         [SerializeField] Sprite InactiveLockSprite;
 
         [HideInInspector] public HangarScreen HangarMenu;
-        public SO_Ship Ship;
+        public SO_Vessel Ship;
         [SerializeField] int shipIndex;
 
-        public void AssignShipClass(SO_Ship ship)
+        public void AssignShipClass(SO_Vessel ship)
         {
             Ship = ship;
             LockImage.enabled = ship.IsLocked;
