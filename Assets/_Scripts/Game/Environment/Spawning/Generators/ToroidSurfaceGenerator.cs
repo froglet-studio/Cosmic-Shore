@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Spawning
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(radius, count, difficultyAngle, seed, origin);
+            return System.HashCode.Combine(radius, count, difficultyAngle, origin);
         }
     }
 }

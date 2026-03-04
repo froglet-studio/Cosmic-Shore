@@ -42,7 +42,7 @@ public class SpawnableZigzag : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(amplitude, period, blockCount, seed);
+        return System.HashCode.Combine(amplitude, period, blockCount);
     }
 
     private float NextFloat(float min, float max)

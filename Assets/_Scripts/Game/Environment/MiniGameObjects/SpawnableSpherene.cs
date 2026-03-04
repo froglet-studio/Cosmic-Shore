@@ -100,7 +100,7 @@ namespace CosmicShore
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(subdivisions, radius, blocksPerEdge, blockScale, edgeDomain, vertexDomain, seed);
+            return System.HashCode.Combine(subdivisions, radius, blocksPerEdge, blockScale, edgeDomain, vertexDomain);
         }
 
         void AddEdge(HashSet<(int, int)> edges, int a, int b)

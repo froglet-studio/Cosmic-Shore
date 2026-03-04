@@ -63,7 +63,7 @@ namespace CosmicShore.Game
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(Width, Height, blockSize, padding, seed);
+            return System.HashCode.Combine(Width, Height, blockSize, padding);
         }
     }
 }

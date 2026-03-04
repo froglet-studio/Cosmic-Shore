@@ -25,7 +25,7 @@ namespace CosmicShore.Game.Spawning
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(count, randomRotation, seed, origin);
+            return System.HashCode.Combine(count, randomRotation, origin);
         }
 
         private Quaternion RandomRotation()

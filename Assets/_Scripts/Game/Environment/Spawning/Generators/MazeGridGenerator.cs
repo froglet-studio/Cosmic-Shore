@@ -32,7 +32,7 @@ namespace CosmicShore.Game.Spawning
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(count, gridWidth, gridHeight, gridThickness, cellSize, seed, origin);
+            return System.HashCode.Combine(count, gridWidth, gridHeight, gridThickness, cellSize, origin);
         }
     }
 }

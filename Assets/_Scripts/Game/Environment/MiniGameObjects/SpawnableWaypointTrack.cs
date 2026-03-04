@@ -40,8 +40,8 @@ public class SpawnableWaypointTrack : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(seed, blocksPerSegment, scale, markWaypoints,
-            waypointScaleMultiplier, waypointDomain, trackDomain, intensityLevel);
+        return System.HashCode.Combine(blocksPerSegment, scale, markWaypoints,
+            waypointScaleMultiplier, waypointDomain, trackDomain);
     }
 
     private bool UseSpline(int intensityLevel)

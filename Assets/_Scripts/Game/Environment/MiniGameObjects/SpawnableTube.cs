@@ -50,7 +50,7 @@ namespace CosmicShore
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(radius, length, segments, blockSize, seed);
+            return System.HashCode.Combine(radius, length, segments, blockSize);
         }
     }
 }

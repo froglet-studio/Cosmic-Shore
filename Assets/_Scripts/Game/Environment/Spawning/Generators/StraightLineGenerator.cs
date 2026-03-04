@@ -43,7 +43,7 @@ namespace CosmicShore.Game.Spawning
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(count, spacing, rotationMode, rotationAmount, seed, origin);
+            return System.HashCode.Combine(count, spacing, rotationMode, rotationAmount, origin);
         }
     }
 }

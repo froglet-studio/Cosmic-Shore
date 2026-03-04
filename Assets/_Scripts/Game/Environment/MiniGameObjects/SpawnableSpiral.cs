@@ -46,6 +46,6 @@ public class SpawnableSpiral : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(maxRadius, revolutions, baseBlockCount, intensityLevel, seed, domain);
+        return System.HashCode.Combine(maxRadius, revolutions, baseBlockCount);
     }
 }

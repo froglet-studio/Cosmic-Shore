@@ -43,6 +43,6 @@ public class SpawnableCardioidSmear : SpawnableEllipsoid
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(maxlength, maxwidth, maxheight, seed);
+        return System.HashCode.Combine(maxlength, maxwidth, maxheight);
     }
 }

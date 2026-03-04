@@ -39,7 +39,7 @@ namespace CosmicShore.Game.Spawning
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(count, stepLength, jitterInterval, maxJitterAngle, seed, origin);
+            return System.HashCode.Combine(count, stepLength, jitterInterval, maxJitterAngle, origin);
         }
     }
 }

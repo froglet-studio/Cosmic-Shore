@@ -26,7 +26,7 @@ namespace CosmicShore.Game.Spawning
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(radius, count, seed, origin);
+            return System.HashCode.Combine(radius, count, origin);
         }
 
         private Vector3 RandomInsideUnitSphere()

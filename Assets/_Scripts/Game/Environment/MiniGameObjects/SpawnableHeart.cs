@@ -38,6 +38,6 @@ public class SpawnableHeart : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(baseBlockCount, intensityLevel, seed, domain);
+        return System.HashCode.Combine(baseBlockCount);
     }
 }

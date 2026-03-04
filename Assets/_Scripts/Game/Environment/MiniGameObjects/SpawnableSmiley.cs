@@ -84,6 +84,6 @@ public class SpawnableSmiley : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(faceRadius, baseBlockCount, intensityLevel, seed, domain);
+        return System.HashCode.Combine(faceRadius, baseBlockCount);
     }
 }

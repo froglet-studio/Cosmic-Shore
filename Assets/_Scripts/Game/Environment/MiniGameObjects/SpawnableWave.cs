@@ -50,6 +50,6 @@ public class SpawnableWave : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(amplitude, wavelength, cycles, baseBlockCount, intensityLevel, seed, domain);
+        return System.HashCode.Combine(amplitude, wavelength, cycles, baseBlockCount);
     }
 }

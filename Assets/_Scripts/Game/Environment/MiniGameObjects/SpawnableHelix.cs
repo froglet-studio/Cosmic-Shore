@@ -49,7 +49,7 @@ public class SpawnableHelix : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(firstOrderRadius, secondOrderRadius, blockCount, seed, scale);
+        return System.HashCode.Combine(firstOrderRadius, secondOrderRadius, blockCount, scale);
     }
 
     private float NextFloat(float min, float max)

@@ -54,7 +54,7 @@ public class SpawnableRaceTrack : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(seed, targetLapTime, expectedShipSpeed, blockCount,
+        return System.HashCode.Combine(targetLapTime, expectedShipSpeed, blockCount,
             System.HashCode.Combine(trackWidth, trackDepth, maxElevation, complexity, includeCorkscrew, includeBanking, featureCount,
                 System.HashCode.Combine(checkpointCount, checkpointScaleMultiplier, startFinishDomain, checkpointDomain)));
     }

@@ -44,7 +44,7 @@ namespace CosmicShore.Game.Spawning
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(layers, scaleFalloff, rotationPerLayer, seed);
+            return System.HashCode.Combine(layers, scaleFalloff, rotationPerLayer);
         }
     }
 }

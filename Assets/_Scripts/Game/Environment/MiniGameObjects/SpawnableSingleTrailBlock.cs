@@ -21,6 +21,6 @@ public class SpawnableSingleTrailBlock : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(blockScale, seed);
+        return System.HashCode.Combine(blockScale);
     }
 }

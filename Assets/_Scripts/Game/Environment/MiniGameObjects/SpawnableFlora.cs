@@ -19,6 +19,6 @@ public class SpawnableFlora : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(seed);
+        return 0;
     }
 }
