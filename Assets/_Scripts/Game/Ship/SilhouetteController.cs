@@ -244,11 +244,7 @@ namespace CosmicShore
         }
 
         // --- Element Bars ---
-        void TryUnsubscribeElementBars()
-        {
-            if (_resources != null)
-                _resources.OnElementLevelChange -= HandleElementBarsLevelChanged;
-        }
+        void TryUnsubscribeElementBars() { }
 
         void InitializeElementBars()
         {
@@ -256,20 +252,14 @@ namespace CosmicShore
 
             elementBars.Build();
 
+            // Sync current levels (ongoing updates come via HandleElementLevelChanged)
             if (_resources != null)
             {
-                _resources.OnElementLevelChange += HandleElementBarsLevelChanged;
-
                 elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
                 elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
                 elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
                 elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
             }
-        }
-
-        void HandleElementBarsLevelChanged(Element element, int level)
-        {
-            elementBars?.SetLevel(element, level);
         }
 
         /// <summary>

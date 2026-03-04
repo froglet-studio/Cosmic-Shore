@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,210 +7,161 @@ using CosmicShore.Core;
 namespace CosmicShore
 {
     /// <summary>
-    /// Renders 4 vertical fill bars with element label icons, covering levels -5 to +15.
-    /// Each bar has a background, a fill image, and a zero-line marker.
-    /// Subscribes to ResourceSystem.OnElementLevelChange to stay in sync.
-    /// Provides juice methods for crystal collection, jousting, and drifting.
+    /// Displays 4 vertical fill bars with element label icons, covering levels -5 to +15.
+    /// All UI references are pre-placed in the prefab — you control layout, scale, and
+    /// anchoring directly in the editor. No runtime GameObject creation.
+    /// Provides juice methods for crystal collection, jousting, drifting, and overtake penalty.
     /// </summary>
     public class ElementalBarsView : MonoBehaviour
     {
-        [Header("Config")]
-        [SerializeField] private ElementalBarsConfigSO config;
+        [Serializable]
+        public struct ElementBarBinding
+        {
+            [Tooltip("The element this bar represents")]
+            public Element element;
 
-        [Header("Container")]
-        [Tooltip("RectTransform that holds all bar columns.")]
-        [SerializeField] private RectTransform container;
+            [Tooltip("Fill image (Image.Type = Filled, Vertical, Bottom origin)")]
+            public Image fillImage;
 
-        static readonly Element[] ColumnOrder = { Element.Charge, Element.Mass, Element.Space, Element.Time };
+            [Tooltip("Label/icon image below the bar")]
+            public Image labelIcon;
 
-        // Runtime references
-        private Image[] _fillImages;
-        private Image[] _labelImages;
-        private RectTransform[] _labelTransforms;
+            [Tooltip("Normal sprite for the label (restored after drift)")]
+            public Sprite normalLabelSprite;
+        }
+
+        [Header("Bar Bindings (assign in prefab)")]
+        [SerializeField] private ElementBarBinding[] bars = new ElementBarBinding[4];
+
+        [Header("Range")]
+        [SerializeField] private int minLevel = -5;
+        [SerializeField] private int maxLevel = 15;
+
+        [Header("Colors")]
+        [SerializeField] private Color positiveFillColor = Color.white;
+        [SerializeField] private Color negativeFillColor = new(1f, 0.3f, 0.3f, 0.8f);
+
+        [Header("Juice — General")]
+        [Tooltip("Duration for icon scale punch on events")]
+        [SerializeField] private float iconPunchDuration = 0.25f;
+        [Tooltip("Scale multiplier for icon punch")]
+        [SerializeField] private float iconPunchScale = 1.4f;
+        [Tooltip("Duration for color tween back to original")]
+        [SerializeField] private float colorTweenDuration = 0.35f;
+
+        [Header("Juice — Joust")]
+        [SerializeField] private Color joustFlashColor = Color.red;
+
+        [Header("Juice — Drift")]
+        [Tooltip("Rotation angle for drift icon (degrees)")]
+        [SerializeField] private float driftRotationAngle = 15f;
+        [Tooltip("Duration of drift rotation tween")]
+        [SerializeField] private float driftRotationDuration = 0.2f;
+        [Tooltip("Optional sprite override for double-drift state")]
+        [SerializeField] private Sprite doubleDriftSprite;
+
+        // Per-bar runtime state
         private int[] _currentLevels;
         private Color[] _originalLabelColors;
         private Vector3[] _originalLabelScales;
-        private bool _built;
-
-        // Drift state
         private Tween[] _driftRotationTweens;
         private Tween[] _labelScaleTweens;
         private Tween[] _labelColorTweens;
         private Tween[] _fillColorTweens;
+        private bool _built;
 
-        // Double drift sprites (optional override)
-        [Header("Drift Icon Override")]
-        [SerializeField] private Sprite doubleDriftSprite;
-
-        private Sprite[] _normalLabelSprites;
-        private bool _isDoubleDrifting;
-
-        const int MinLevel = -5;
-        const int MaxLevel = 15;
-
+        /// <summary>
+        /// Initialize runtime state from the pre-placed bindings.
+        /// Call once after the component is active (e.g. from SilhouetteController).
+        /// </summary>
         public void Build()
         {
-            if (_built || !config || !container) return;
+            if (_built) return;
+            if (bars == null || bars.Length == 0) return;
 
-            int cols = ColumnOrder.Length;
-            _fillImages = new Image[cols];
-            _labelImages = new Image[cols];
-            _labelTransforms = new RectTransform[cols];
-            _currentLevels = new int[cols];
-            _originalLabelColors = new Color[cols];
-            _originalLabelScales = new Vector3[cols];
-            _driftRotationTweens = new Tween[cols];
-            _labelScaleTweens = new Tween[cols];
-            _labelColorTweens = new Tween[cols];
-            _fillColorTweens = new Tween[cols];
-            _normalLabelSprites = new Sprite[cols];
+            int count = bars.Length;
+            _currentLevels = new int[count];
+            _originalLabelColors = new Color[count];
+            _originalLabelScales = new Vector3[count];
+            _driftRotationTweens = new Tween[count];
+            _labelScaleTweens = new Tween[count];
+            _labelColorTweens = new Tween[count];
+            _fillColorTweens = new Tween[count];
 
-            float totalWidth = (cols - 1) * config.columnSpacing;
-            float startX = -totalWidth * 0.5f;
-            float zeroFraction = (float)(-config.minLevel) / (config.maxLevel - config.minLevel);
-
-            for (int c = 0; c < cols; c++)
+            for (int i = 0; i < count; i++)
             {
-                var element = ColumnOrder[c];
-                float xPos = startX + c * config.columnSpacing;
+                ref var bar = ref bars[i];
 
-                // Column parent
-                var colGO = new GameObject($"ElementBar_{element}", typeof(RectTransform));
-                var colRT = (RectTransform)colGO.transform;
-                colRT.SetParent(container, false);
-                colRT.anchorMin = colRT.anchorMax = new Vector2(0.5f, 0f);
-                colRT.pivot = new Vector2(0.5f, 0f);
-                colRT.anchoredPosition = new Vector2(xPos, 0f);
-                colRT.sizeDelta = new Vector2(config.barSize.x, 0f);
+                if (bar.labelIcon)
+                {
+                    _originalLabelColors[i] = bar.labelIcon.color;
+                    _originalLabelScales[i] = bar.labelIcon.rectTransform.localScale;
 
-                // Label icon at the bottom
-                var labelGO = new GameObject($"Label_{element}", typeof(RectTransform), typeof(Image));
-                var labelRT = (RectTransform)labelGO.transform;
-                labelRT.SetParent(colRT, false);
-                labelRT.anchorMin = labelRT.anchorMax = new Vector2(0.5f, 0f);
-                labelRT.pivot = new Vector2(0.5f, 0f);
-                labelRT.anchoredPosition = Vector2.zero;
-                labelRT.sizeDelta = config.labelIconSize;
+                    if (!bar.normalLabelSprite)
+                        bar.normalLabelSprite = bar.labelIcon.sprite;
+                }
 
-                var labelImg = labelGO.GetComponent<Image>();
-                labelImg.sprite = config.GetLabelSprite(element);
-                labelImg.color = config.positiveFillColor;
-                labelImg.preserveAspect = true;
-                labelImg.raycastTarget = false;
-                _labelImages[c] = labelImg;
-                _labelTransforms[c] = labelRT;
-                _originalLabelColors[c] = labelImg.color;
-                _originalLabelScales[c] = labelRT.localScale;
-                _normalLabelSprites[c] = labelImg.sprite;
+                if (bar.fillImage)
+                {
+                    bar.fillImage.type = Image.Type.Filled;
+                    bar.fillImage.fillMethod = Image.FillMethod.Vertical;
+                    bar.fillImage.fillOrigin = (int)Image.OriginVertical.Bottom;
+                }
 
-                float barBaseY = config.labelIconSize.y + config.labelGap;
-
-                // Bar background
-                var bgGO = new GameObject($"BarBG_{element}", typeof(RectTransform), typeof(Image));
-                var bgRT = (RectTransform)bgGO.transform;
-                bgRT.SetParent(colRT, false);
-                bgRT.anchorMin = bgRT.anchorMax = new Vector2(0.5f, 0f);
-                bgRT.pivot = new Vector2(0.5f, 0f);
-                bgRT.anchoredPosition = new Vector2(0f, barBaseY);
-                bgRT.sizeDelta = config.barSize;
-
-                var bgImg = bgGO.GetComponent<Image>();
-                bgImg.color = config.barBackgroundColor;
-                bgImg.raycastTarget = false;
-
-                // Fill image (bottom-to-top vertical fill)
-                var fillGO = new GameObject($"Fill_{element}", typeof(RectTransform), typeof(Image));
-                var fillRT = (RectTransform)fillGO.transform;
-                fillRT.SetParent(colRT, false);
-                fillRT.anchorMin = fillRT.anchorMax = new Vector2(0.5f, 0f);
-                fillRT.pivot = new Vector2(0.5f, 0f);
-                fillRT.anchoredPosition = new Vector2(0f, barBaseY);
-                fillRT.sizeDelta = config.barSize;
-
-                var fillImg = fillGO.GetComponent<Image>();
-                fillImg.sprite = config.GetFillSprite(element);
-                fillImg.type = Image.Type.Filled;
-                fillImg.fillMethod = Image.FillMethod.Vertical;
-                fillImg.fillOrigin = (int)Image.OriginVertical.Bottom;
-                fillImg.fillAmount = zeroFraction; // Start at zero level
-                fillImg.color = config.positiveFillColor;
-                fillImg.raycastTarget = false;
-                _fillImages[c] = fillImg;
-
-                // Zero-line marker
-                var zeroGO = new GameObject($"ZeroLine_{element}", typeof(RectTransform), typeof(Image));
-                var zeroRT = (RectTransform)zeroGO.transform;
-                zeroRT.SetParent(colRT, false);
-                zeroRT.anchorMin = zeroRT.anchorMax = new Vector2(0.5f, 0f);
-                zeroRT.pivot = new Vector2(0.5f, 0.5f);
-
-                float zeroY = barBaseY + zeroFraction * config.barSize.y;
-                zeroRT.anchoredPosition = new Vector2(0f, zeroY);
-                zeroRT.sizeDelta = new Vector2(config.barSize.x + 6f, config.zeroLineHeight);
-
-                var zeroImg = zeroGO.GetComponent<Image>();
-                zeroImg.color = config.zeroLineColor;
-                zeroImg.raycastTarget = false;
-
-                _currentLevels[c] = 0;
+                _currentLevels[i] = 0;
             }
 
             _built = true;
             RefreshAllBars();
         }
 
-        /// <summary>
-        /// Called by controller when an element level changes.
-        /// </summary>
         public void SetLevel(Element element, int level)
         {
-            int col = GetColumnIndex(element);
-            if (col < 0 || !_built) return;
+            int idx = GetBarIndex(element);
+            if (idx < 0 || !_built) return;
 
-            _currentLevels[col] = Mathf.Clamp(level, MinLevel, MaxLevel);
-            RefreshBar(col);
+            _currentLevels[idx] = Mathf.Clamp(level, minLevel, maxLevel);
+            RefreshBar(idx);
         }
 
         public void RefreshAllBars()
         {
             if (!_built) return;
-            for (int c = 0; c < ColumnOrder.Length; c++)
-                RefreshBar(c);
+            for (int i = 0; i < bars.Length; i++)
+                RefreshBar(i);
         }
 
-        void RefreshBar(int col)
+        void RefreshBar(int idx)
         {
-            int level = _currentLevels[col];
-            int range = config.maxLevel - config.minLevel; // 20
-            float fillFraction = (float)(level - config.minLevel) / range;
+            int level = _currentLevels[idx];
+            int range = maxLevel - minLevel;
+            float fillFraction = (float)(level - minLevel) / range;
 
-            var img = _fillImages[col];
+            var img = bars[idx].fillImage;
             if (!img) return;
 
             img.fillAmount = Mathf.Clamp01(fillFraction);
-
-            // Color: negative region = negativeFillColor, positive = positiveFillColor
-            img.color = level < 0 ? config.negativeFillColor : config.positiveFillColor;
+            img.color = level < 0 ? negativeFillColor : positiveFillColor;
         }
 
         // ---------------------------------------------------------------
-        // Juice: Crystal Collection — scale up icon + tween to domain color
+        // Juice: Crystal Collection — scale up icons + tween to domain color
         // ---------------------------------------------------------------
         public void JuiceCrystalCollected(Color domainColor)
         {
             if (!_built) return;
-            for (int c = 0; c < ColumnOrder.Length; c++)
-                PunchIconWithColor(c, domainColor);
+            for (int i = 0; i < bars.Length; i++)
+                PunchIconWithColor(i, domainColor);
         }
 
         // ---------------------------------------------------------------
-        // Juice: Joust — scale up icon + tween to red
+        // Juice: Joust — scale up icons + tween to red
         // ---------------------------------------------------------------
         public void JuiceJoust()
         {
             if (!_built) return;
-            for (int c = 0; c < ColumnOrder.Length; c++)
-                PunchIconWithColor(c, config.joustFlashColor);
+            for (int i = 0; i < bars.Length; i++)
+                PunchIconWithColor(i, joustFlashColor);
         }
 
         // ---------------------------------------------------------------
@@ -219,25 +171,24 @@ namespace CosmicShore
         {
             if (!_built) return;
 
-            _isDoubleDrifting = isDoubleDrift;
-            float targetAngle = isLeft ? config.driftRotationAngle : -config.driftRotationAngle;
+            float targetAngle = isLeft ? driftRotationAngle : -driftRotationAngle;
 
-            for (int c = 0; c < ColumnOrder.Length; c++)
+            for (int i = 0; i < bars.Length; i++)
             {
-                // Swap to double drift sprite if available
-                if (isDoubleDrift && doubleDriftSprite)
-                    _labelImages[c].sprite = doubleDriftSprite;
+                var label = bars[i].labelIcon;
+                if (!label) continue;
 
-                // Rotate icon
-                _driftRotationTweens[c]?.Kill();
-                _driftRotationTweens[c] = _labelTransforms[c]
-                    .DOLocalRotate(new Vector3(0, 0, targetAngle), config.driftRotationDuration)
+                if (isDoubleDrift && doubleDriftSprite)
+                    label.sprite = doubleDriftSprite;
+
+                _driftRotationTweens[i]?.Kill();
+                _driftRotationTweens[i] = label.rectTransform
+                    .DOLocalRotate(new Vector3(0, 0, targetAngle), driftRotationDuration)
                     .SetEase(Ease.OutBack);
 
-                // Subtle color shift
-                _labelColorTweens[c]?.Kill();
-                _labelColorTweens[c] = _labelImages[c]
-                    .DOColor(new Color(0.7f, 0.9f, 1f, 1f), config.driftRotationDuration)
+                _labelColorTweens[i]?.Kill();
+                _labelColorTweens[i] = label
+                    .DOColor(new Color(0.7f, 0.9f, 1f, 1f), driftRotationDuration)
                     .SetEase(Ease.OutQuad);
             }
         }
@@ -246,79 +197,93 @@ namespace CosmicShore
         {
             if (!_built) return;
 
-            for (int c = 0; c < ColumnOrder.Length; c++)
+            for (int i = 0; i < bars.Length; i++)
             {
-                // Restore normal sprite
-                _labelImages[c].sprite = _normalLabelSprites[c];
+                var label = bars[i].labelIcon;
+                if (!label) continue;
 
-                // Rotate back
-                _driftRotationTweens[c]?.Kill();
-                _driftRotationTweens[c] = _labelTransforms[c]
-                    .DOLocalRotate(Vector3.zero, config.driftRotationDuration)
+                if (bars[i].normalLabelSprite)
+                    label.sprite = bars[i].normalLabelSprite;
+
+                _driftRotationTweens[i]?.Kill();
+                _driftRotationTweens[i] = label.rectTransform
+                    .DOLocalRotate(Vector3.zero, driftRotationDuration)
                     .SetEase(Ease.OutQuad);
 
-                // Color back
-                _labelColorTweens[c]?.Kill();
-                _labelColorTweens[c] = _labelImages[c]
-                    .DOColor(_originalLabelColors[c], config.colorTweenDuration)
+                _labelColorTweens[i]?.Kill();
+                _labelColorTweens[i] = label
+                    .DOColor(_originalLabelColors[i], colorTweenDuration)
                     .SetEase(Ease.OutQuad);
             }
-
-            _isDoubleDrifting = false;
         }
 
         // ---------------------------------------------------------------
-        // Juice: Overtake penalty — flash red across all bars
+        // Juice: Overtake penalty — flash red across all bars + shake icons
         // ---------------------------------------------------------------
         public void JuiceOvertakePenalty()
         {
             if (!_built) return;
 
-            for (int c = 0; c < ColumnOrder.Length; c++)
+            for (int i = 0; i < bars.Length; i++)
             {
-                // Quick red flash on fill bars
-                _fillColorTweens[c]?.Kill();
-                var fillImg = _fillImages[c];
-                fillImg.color = Color.red;
-                _fillColorTweens[c] = fillImg
-                    .DOColor(config.negativeFillColor, 0.5f)
-                    .SetEase(Ease.OutQuad);
+                var fillImg = bars[i].fillImage;
+                if (fillImg)
+                {
+                    _fillColorTweens[i]?.Kill();
+                    fillImg.color = Color.red;
+                    _fillColorTweens[i] = fillImg
+                        .DOColor(negativeFillColor, 0.5f)
+                        .SetEase(Ease.OutQuad);
+                }
 
-                // Shake the icons
-                _labelScaleTweens[c]?.Kill();
-                _labelScaleTweens[c] = _labelTransforms[c]
-                    .DOShakeScale(0.4f, 0.3f, 10, 90f)
-                    .OnComplete(() => { });
+                var label = bars[i].labelIcon;
+                if (label)
+                {
+                    _labelScaleTweens[i]?.Kill();
+                    _labelScaleTweens[i] = label.rectTransform
+                        .DOShakeScale(0.4f, 0.3f, 10, 90f);
+                }
             }
         }
 
         // ---------------------------------------------------------------
-        // Internal juice helpers
+        // Internal
         // ---------------------------------------------------------------
-        void PunchIconWithColor(int col, Color flashColor)
+        void PunchIconWithColor(int idx, Color flashColor)
         {
-            var labelRT = _labelTransforms[col];
-            var labelImg = _labelImages[col];
+            var label = bars[idx].labelIcon;
+            if (!label) return;
 
-            // Scale punch
-            _labelScaleTweens[col]?.Kill();
-            labelRT.localScale = _originalLabelScales[col];
-            _labelScaleTweens[col] = labelRT
-                .DOScale(_originalLabelScales[col] * config.iconPunchScale, config.iconPunchDuration * 0.3f)
+            var rt = label.rectTransform;
+            var origScale = _originalLabelScales[idx];
+
+            _labelScaleTweens[idx]?.Kill();
+            rt.localScale = origScale;
+            _labelScaleTweens[idx] = rt
+                .DOScale(origScale * iconPunchScale, iconPunchDuration * 0.3f)
                 .SetEase(Ease.OutQuad)
                 .OnComplete(() =>
                 {
-                    _labelScaleTweens[col] = labelRT
-                        .DOScale(_originalLabelScales[col], config.iconPunchDuration * 0.7f)
+                    _labelScaleTweens[idx] = rt
+                        .DOScale(origScale, iconPunchDuration * 0.7f)
                         .SetEase(Ease.OutBounce);
                 });
 
-            // Color flash
-            _labelColorTweens[col]?.Kill();
-            labelImg.color = flashColor;
-            _labelColorTweens[col] = labelImg
-                .DOColor(_originalLabelColors[col], config.colorTweenDuration)
+            _labelColorTweens[idx]?.Kill();
+            label.color = flashColor;
+            _labelColorTweens[idx] = label
+                .DOColor(_originalLabelColors[idx], colorTweenDuration)
                 .SetEase(Ease.OutQuad);
+        }
+
+        int GetBarIndex(Element element)
+        {
+            for (int i = 0; i < bars.Length; i++)
+            {
+                if (bars[i].element == element)
+                    return i;
+            }
+            return -1;
         }
 
         void OnDestroy()
@@ -332,14 +297,5 @@ namespace CosmicShore
             if (_fillColorTweens != null)
                 foreach (var t in _fillColorTweens) t?.Kill();
         }
-
-        static int GetColumnIndex(Element element) => element switch
-        {
-            Element.Charge => 0,
-            Element.Mass   => 1,
-            Element.Space  => 2,
-            Element.Time   => 3,
-            _              => -1
-        };
     }
 }
