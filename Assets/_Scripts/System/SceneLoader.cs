@@ -148,16 +148,20 @@ namespace CosmicShore.Core
             }
 
             // Fallback: scan SpawnManager for any VesselController not in gameData.Vessels
-            // (e.g. vessels added to scene but not yet registered via OnNetworkSpawn)
+            // (e.g. vessels added to scene but not yet registered via OnNetworkSpawn).
+            // Collect first, then despawn — calling Despawn() modifies SpawnedObjects.
             if (nm.SpawnManager != null)
             {
+                var strayVessels = new System.Collections.Generic.List<NetworkObject>();
                 foreach (var kvp in nm.SpawnManager.SpawnedObjects)
                 {
                     if (kvp.Value != null
-                        && kvp.Value.TryGetComponent<VesselController>(out var vc)
-                        && vc.IsSpawned)
-                        vc.NetworkObject.Despawn(true);
+                        && kvp.Value.TryGetComponent<VesselController>(out _)
+                        && kvp.Value.IsSpawned)
+                        strayVessels.Add(kvp.Value);
                 }
+                foreach (var no in strayVessels)
+                    no.Despawn(true);
             }
         }
 

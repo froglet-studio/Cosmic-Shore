@@ -102,8 +102,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Finds persistent AI players from previous scene transitions or creates
         /// new ones. Spawns vessels for all AI players and initializes pairs.
-        /// AI players are persistent (DestroyWithScene=false); only vessels are
-        /// scene-bound (DestroyWithScene=true).
+        /// AI players are persistent (DestroyWithScene=false). Vessels also use
+        /// DestroyWithScene=false to avoid "Invalid Destroy" race conditions on
+        /// non-host clients during scene transitions — they are explicitly
+        /// despawned by PreDespawnVessels() before scene loads.
         /// </summary>
         void EnsureAIPlayersAndVessels()
         {
@@ -300,7 +302,7 @@ namespace CosmicShore.Gameplay
 
             vesselNO = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
-            vesselNO.Spawn(true);
+            vesselNO.Spawn(false);
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
             return true;
         }

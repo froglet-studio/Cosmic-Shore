@@ -314,7 +314,7 @@ namespace CosmicShore.Gameplay
 
             var networkVessel = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
-            networkVessel.SpawnWithOwnership(clientId, true);
+            networkVessel.SpawnWithOwnership(clientId, false);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
             return networkVessel;
         }
