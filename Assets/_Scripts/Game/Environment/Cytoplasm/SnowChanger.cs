@@ -52,14 +52,15 @@ namespace CosmicShore.Game
             float outerR = membraneRadius;
             float cellVolume = shardDistance * shardDistance * shardDistance;
 
-            // Naive spherical sampling — no volume correction, so density ∝ 1/r²
+            // Uniform density throughout the full sphere (0 → membrane)
             float sphereVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR);
             int shardCount = Mathf.Max(1, Mathf.RoundToInt(sphereVolume / cellVolume));
+            float outerR3 = outerR * outerR * outerR;
 
             shards = new GameObject[shardCount];
             for (int i = 0; i < shardCount; i++)
             {
-                float r = Random.Range(0f, outerR);
+                float r = Mathf.Pow(Random.Range(0f, outerR3), 1f / 3f);
                 float cosTheta = Random.Range(-1f, 1f);
                 float sinTheta = Mathf.Sqrt(1f - cosTheta * cosTheta);
                 float phi = Random.Range(0f, 2f * Mathf.PI);
