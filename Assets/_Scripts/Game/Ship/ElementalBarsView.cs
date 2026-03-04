@@ -78,6 +78,7 @@ namespace CosmicShore
         [SerializeField] private Sprite doubleDriftSprite;
 
         // Runtime state
+        private bool _isAutoPopulated;
         private RectTransform _rootRT;
         private Tween _scaleTween;
         private int[] _currentLevels;
@@ -96,10 +97,14 @@ namespace CosmicShore
         {
             if (_built) return;
 
-            // Decide mode: pre-placed bindings or auto-populate
-            bool hasPrePlaced = bars is { Length: > 0 } && bars[0].fillImage != null;
+            // Subscribe to SO changes for live updating
+            if (pipsConfig)
+                pipsConfig.OnChanged += OnConfigChanged;
 
-            if (!hasPrePlaced && pipsConfig && container)
+            // Decide mode: pre-placed bindings or auto-populate
+            _isAutoPopulated = !(bars is { Length: > 0 } && bars[0].fillImage != null);
+
+            if (_isAutoPopulated && pipsConfig && container)
                 AutoPopulateFromPipsConfig();
 
             if (bars == null || bars.Length == 0) return;
@@ -107,7 +112,48 @@ namespace CosmicShore
             // Cache the root transform for runtime scaling
             _rootRT = container ? container : (RectTransform)transform;
 
+            InitBarArrays();
+
+            _built = true;
+            RefreshAllBars();
+        }
+
+        /// <summary>Destroys auto-generated children and rebuilds from the SO config.</summary>
+        public void Rebuild()
+        {
+            if (!_isAutoPopulated || !pipsConfig || !container) return;
+
+            // Kill all tweens
+            KillAllTweens();
+
+            // Destroy auto-generated children
+            for (int i = container.childCount - 1; i >= 0; i--)
+                DestroyImmediate(container.GetChild(i).gameObject);
+
+            bars = new ElementBarBinding[0];
+            _built = false;
+
+            AutoPopulateFromPipsConfig();
+            if (bars == null || bars.Length == 0) return;
+
+            _rootRT = container ? container : (RectTransform)transform;
+            InitBarArrays();
+
+            // Restore previous levels
+            _built = true;
+            RefreshAllBars();
+        }
+
+        void OnConfigChanged()
+        {
+            if (_built && _isAutoPopulated)
+                Rebuild();
+        }
+
+        void InitBarArrays()
+        {
             int count = bars.Length;
+            int[] prevLevels = _currentLevels;
             _currentLevels = new int[count];
             _barFillColors = new Color[count];
             _originalLabelColors = new Color[count];
@@ -137,12 +183,9 @@ namespace CosmicShore
                     bar.fillImage.fillOrigin = (int)Image.OriginVertical.Bottom;
                 }
 
-                _currentLevels[i] = 0;
+                _currentLevels[i] = prevLevels != null && i < prevLevels.Length ? prevLevels[i] : 0;
                 _barFillColors[i] = debuffFillColor;
             }
-
-            _built = true;
-            RefreshAllBars();
         }
 
         // ---------------------------------------------------------------
@@ -192,17 +235,25 @@ namespace CosmicShore
         // ---------------------------------------------------------------
         void AutoPopulateFromPipsConfig()
         {
+            // Read layout from SO — changes to the SO trigger a rebuild
+            var cfgColumnSpacing = pipsConfig.columnSpacing;
+            var cfgPipSize = pipsConfig.pipSize;
+            var cfgLabelIconSize = pipsConfig.labelIconSize;
+            var cfgLabelGap = pipsConfig.labelGap;
+            var cfgZeroLineColor = pipsConfig.zeroLineColor;
+            var cfgZeroLineHeight = pipsConfig.zeroLineHeight;
+
             int cols = DefaultOrder.Length;
             bars = new ElementBarBinding[cols];
 
-            float totalWidth = (cols - 1) * columnSpacing;
+            float totalWidth = (cols - 1) * cfgColumnSpacing;
             float startX = -totalWidth * 0.5f;
             float zeroFraction = (float)(-minLevel) / (maxLevel - minLevel);
 
             for (int c = 0; c < cols; c++)
             {
                 var element = DefaultOrder[c];
-                float xPos = startX + c * columnSpacing;
+                float xPos = startX + c * cfgColumnSpacing;
 
                 // Column parent
                 var colGO = new GameObject($"ElementBar_{element}", typeof(RectTransform));
@@ -211,7 +262,7 @@ namespace CosmicShore
                 colRT.anchorMin = colRT.anchorMax = new Vector2(0.5f, 0f);
                 colRT.pivot = new Vector2(0.5f, 0f);
                 colRT.anchoredPosition = new Vector2(xPos, 0f);
-                colRT.sizeDelta = new Vector2(barSize.x, 0f);
+                colRT.sizeDelta = new Vector2(cfgPipSize.x, 0f);
 
                 // Label icon
                 var labelGO = new GameObject($"Label_{element}", typeof(RectTransform), typeof(Image));
@@ -220,7 +271,7 @@ namespace CosmicShore
                 labelRT.anchorMin = labelRT.anchorMax = new Vector2(0.5f, 0f);
                 labelRT.pivot = new Vector2(0.5f, 0f);
                 labelRT.anchoredPosition = Vector2.zero;
-                labelRT.sizeDelta = labelIconSize;
+                labelRT.sizeDelta = cfgLabelIconSize;
 
                 var labelImg = labelGO.GetComponent<Image>();
                 labelImg.sprite = pipsConfig.GetLabelSprite(element);
@@ -228,7 +279,7 @@ namespace CosmicShore
                 labelImg.preserveAspect = true;
                 labelImg.raycastTarget = false;
 
-                float barBaseY = labelIconSize.y + labelGap;
+                float barBaseY = cfgLabelIconSize.y + cfgLabelGap;
 
                 // Bar background
                 var bgGO = new GameObject($"BarBG_{element}", typeof(RectTransform), typeof(Image));
@@ -237,7 +288,7 @@ namespace CosmicShore
                 bgRT.anchorMin = bgRT.anchorMax = new Vector2(0.5f, 0f);
                 bgRT.pivot = new Vector2(0.5f, 0f);
                 bgRT.anchoredPosition = new Vector2(0f, barBaseY);
-                bgRT.sizeDelta = barSize;
+                bgRT.sizeDelta = cfgPipSize;
                 var bgImg = bgGO.GetComponent<Image>();
                 bgImg.color = barBackgroundColor;
                 bgImg.raycastTarget = false;
@@ -249,7 +300,7 @@ namespace CosmicShore
                 fillRT.anchorMin = fillRT.anchorMax = new Vector2(0.5f, 0f);
                 fillRT.pivot = new Vector2(0.5f, 0f);
                 fillRT.anchoredPosition = new Vector2(0f, barBaseY);
-                fillRT.sizeDelta = barSize;
+                fillRT.sizeDelta = cfgPipSize;
 
                 var fillImg = fillGO.GetComponent<Image>();
                 fillImg.sprite = pipsConfig.GetPipSprite(element);
@@ -262,11 +313,11 @@ namespace CosmicShore
                 zeroRT.SetParent(colRT, false);
                 zeroRT.anchorMin = zeroRT.anchorMax = new Vector2(0.5f, 0f);
                 zeroRT.pivot = new Vector2(0.5f, 0.5f);
-                float zeroY = barBaseY + zeroFraction * barSize.y;
+                float zeroY = barBaseY + zeroFraction * cfgPipSize.y;
                 zeroRT.anchoredPosition = new Vector2(0f, zeroY);
-                zeroRT.sizeDelta = new Vector2(barSize.x + 6f, zeroLineHeight);
+                zeroRT.sizeDelta = new Vector2(cfgPipSize.x + 6f, cfgZeroLineHeight);
                 var zeroImg = zeroGO.GetComponent<Image>();
-                zeroImg.color = zeroLineColor;
+                zeroImg.color = cfgZeroLineColor;
                 zeroImg.raycastTarget = false;
 
                 bars[c] = new ElementBarBinding
@@ -470,7 +521,7 @@ namespace CosmicShore
             return -1;
         }
 
-        void OnDestroy()
+        void KillAllTweens()
         {
             _scaleTween?.Kill();
             if (_driftRotationTweens != null)
@@ -481,6 +532,13 @@ namespace CosmicShore
                 foreach (var t in _labelColorTweens) t?.Kill();
             if (_fillColorTweens != null)
                 foreach (var t in _fillColorTweens) t?.Kill();
+        }
+
+        void OnDestroy()
+        {
+            KillAllTweens();
+            if (pipsConfig)
+                pipsConfig.OnChanged -= OnConfigChanged;
         }
     }
 }
