@@ -26,9 +26,10 @@ namespace CosmicShore.Game
             {
                 gameData.OnClientReady += OnClientReadySpawn;
                 // In multiplayer, OnClientReady fires per-client as each connects.
-                // The host fires first when only 1 player exists, so we also listen
-                // for new players joining to spawn their crystals on the server.
+                // The host fires first when only 1 player exists, so we also
+                // catch up when new players join and when the turn actually starts.
                 gameData.OnPlayerAdded += OnPlayerAddedSpawn;
+                gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStartedSpawnMissing;
             }
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
@@ -43,6 +44,7 @@ namespace CosmicShore.Game
             {
                 gameData.OnClientReady -= OnClientReadySpawn;
                 gameData.OnPlayerAdded -= OnPlayerAddedSpawn;
+                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStartedSpawnMissing;
             }
             else
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
@@ -58,7 +60,12 @@ namespace CosmicShore.Game
         private void OnPlayerAddedSpawn(string playerName, Domains domain)
         {
             if (!IsServer) return;
-            // Only spawn missing crystals — don't relocate existing ones.
+            SpawnMissingCrystals();
+        }
+
+        private void OnTurnStartedSpawnMissing()
+        {
+            if (!IsServer) return;
             SpawnMissingCrystals();
         }
 
