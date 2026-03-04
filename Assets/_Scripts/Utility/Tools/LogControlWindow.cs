@@ -32,6 +32,7 @@ namespace CosmicShore.Utility.Tools
         bool _multiplayerFoldout;
         bool _utilitiesFoldout;
         bool _nonQuestFoldout;
+        bool _intensityFoldout;
         bool _vesselFoldout;
         bool _crystalFoldout;
         SO_VesselList _vesselList;
@@ -316,6 +317,62 @@ namespace CosmicShore.Utility.Tools
                         {
                             svc.DebugSetModeUnlocked(mode, v);
                         });
+                    }
+                }
+
+                EndSection();
+            }
+
+            GUILayout.Space(2);
+
+            // ═════════════════════════════════════════════════════════════════
+            //  INTENSITY DEBUG
+            // ═════════════════════════════════════════════════════════════════
+            DrawSectionHeader("Intensity Debug", ref _intensityFoldout);
+            if (_intensityFoldout)
+            {
+                BeginSection();
+
+                bool intensityAvailable = Application.isPlaying && GameModeProgressionService.Instance != null;
+
+                if (!intensityAvailable)
+                {
+                    GUILayout.Space(Pad);
+                    EditorGUILayout.LabelField("Enter Play Mode to use intensity tools.", _mutedLabel);
+                }
+                else
+                {
+                    var svc = GameModeProgressionService.Instance;
+                    var questList = svc.QuestList;
+
+                    if (questList == null || questList.Quests.Count == 0)
+                    {
+                        GUILayout.Space(Pad);
+                        EditorGUILayout.LabelField("No quest list configured.", _mutedLabel);
+                    }
+                    else
+                    {
+                        foreach (var quest in questList.Quests)
+                        {
+                            if (quest == null || quest.IsPlaceholder) continue;
+
+                            var mode = quest.GameMode;
+                            int maxUnlocked = svc.GetMaxUnlockedIntensity(mode);
+
+                            EditorGUILayout.BeginHorizontal();
+                            GUILayout.Space(Pad);
+                            GUILayout.Label(mode.ToString(), GUILayout.Width(120));
+                            GUILayout.Label($"Max: {maxUnlocked}", GUILayout.Width(48));
+
+                            if (GUILayout.Button("2", GUILayout.Width(28)))
+                                svc.DebugSetMaxIntensity(mode, 2);
+                            if (GUILayout.Button("3", GUILayout.Width(28)))
+                                svc.DebugSetMaxIntensity(mode, 3);
+                            if (GUILayout.Button("4", GUILayout.Width(28)))
+                                svc.DebugSetMaxIntensity(mode, 4);
+
+                            EditorGUILayout.EndHorizontal();
+                        }
                     }
                 }
 

@@ -288,6 +288,22 @@ namespace CosmicShore.Game.Progression
             OnProgressionChanged?.Invoke(ProgressionData);
         }
 
+        /// <summary>
+        /// Debug: Sets the max unlocked intensity for a game mode directly.
+        /// Clamped to [2, 4]. Fires OnIntensityUnlocked and saves.
+        /// </summary>
+        public void DebugSetMaxIntensity(GameModes mode, int maxIntensity)
+        {
+            maxIntensity = Mathf.Clamp(maxIntensity, 2, 4);
+            string modeName = mode.ToString();
+            ProgressionData.EnsureIntensityInitialized(modeName);
+            ProgressionData.SetMaxUnlockedIntensity(modeName, maxIntensity);
+            OnIntensityUnlocked?.Invoke(mode, maxIntensity);
+            OnProgressionChanged?.Invoke(ProgressionData);
+            ScheduleDebouncedSave();
+            CSDebug.Log($"[GameModeProgressionService] Debug: Set {mode} max intensity to {maxIntensity}.");
+        }
+
         // ── Intensity Progression Public API ─────────────────────────────────
 
         /// <summary>

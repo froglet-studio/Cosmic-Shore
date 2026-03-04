@@ -106,6 +106,7 @@ namespace CosmicShore.Game.Cinematics
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
             yield return StartCoroutine(AwardCrystalReward());
+            yield return StartCoroutine(ShowIntensityUnlockSequence());
             yield return StartCoroutine(ShowQuestCompletionSequence());
 
             if (view)
@@ -311,6 +312,41 @@ namespace CosmicShore.Game.Cinematics
                 }
 
                 yield return new WaitForSeconds(1.5f);
+            }
+        }
+
+        /// <summary>
+        /// Checks whether the just-finished game unlocked a new intensity level (3 or 4).
+        /// If so, shows a brief message via the quest-completion text panel before moving on.
+        /// Must run after RecordIntensityPlay has already updated the progression data.
+        /// </summary>
+        protected virtual IEnumerator ShowIntensityUnlockSequence()
+        {
+            if (!view || !gameData) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) yield break;
+
+            var mode = gameData.GameMode;
+            int maxUnlocked = service.GetMaxUnlockedIntensity(mode);
+
+            // Only show if intensity 3 or 4 was just unlocked this game
+            // We detect this by comparing remaining plays — 0 remaining means it was just unlocked
+            // (the quest completion sequence handles the full-quest-complete case separately)
+            if (maxUnlocked >= 3 && service.GetPlaysRemainingForIntensity(mode, 3) == 0 &&
+                maxUnlocked < 4 && service.GetPlaysRemainingForIntensity(mode, 4) > 0)
+            {
+                // Intensity 3 was recently unlocked, intensity 4 still locked
+                view.ShowQuestCompletion("Intensity 3 Unlocked!");
+                yield return new WaitForSeconds(2f);
+                view.HideQuestCompletion();
+            }
+            else if (maxUnlocked >= 4 && !service.IsQuestCompleted(mode))
+            {
+                // Intensity 4 unlocked but quest not yet flagged as complete
+                view.ShowQuestCompletion("Intensity 4 Unlocked!");
+                yield return new WaitForSeconds(2f);
+                view.HideQuestCompletion();
             }
         }
 
