@@ -7,9 +7,9 @@ using UnityEngine.EventSystems;
 namespace CosmicShore.App.UI.ToastNotification
 {
     /// <summary>
-    /// Individual toast item view. Handles its own slide/fade animations and swipe-to-dismiss gesture.
+    /// Individual toast item view. Sets text, fades in/out, supports swipe-to-dismiss.
+    /// Never modifies its own anchors, pivot, size, or position — layout is owned by the container.
     /// </summary>
-    [RequireComponent(typeof(RectTransform))]
     [RequireComponent(typeof(CanvasGroup))]
     public sealed class ToastNotificationItem : MonoBehaviour,
         IBeginDragHandler, IDragHandler, IEndDragHandler
@@ -17,112 +17,76 @@ namespace CosmicShore.App.UI.ToastNotification
         [Header("Bindings")]
         [SerializeField] private TMP_Text messageText;
 
-        // Cached references
-        private RectTransform _rect;
         private CanvasGroup _canvasGroup;
+        private RectTransform _rect;
         private Sequence _activeSeq;
 
-        // Runtime state
         private ToastNotificationSettingsSO _settings;
-        private Vector2 _showPosition;
         private float _dragStartX;
+        private float _restX;
         private bool _isDismissing;
 
-        /// <summary>Fired when the toast finishes its dismiss animation and should be recycled.</summary>
         public event Action<ToastNotificationItem> OnDismissed;
 
         private void Awake()
         {
-            _rect = GetComponent<RectTransform>();
             _canvasGroup = GetComponent<CanvasGroup>();
+            _rect = GetComponent<RectTransform>();
         }
 
         /// <summary>
-        /// Initialise and play the slide-in + fade-in animation.
+        /// Set the message text, activate, and fade in. Does not touch layout.
         /// </summary>
-        public void Show(string message, Vector2 showPosition, ToastNotificationSettingsSO settings)
+        public void Show(string message, ToastNotificationSettingsSO settings)
         {
             _settings = settings;
-            _showPosition = showPosition;
             _isDismissing = false;
 
             if (messageText) messageText.text = message;
 
-            // Anchor bottom-left, pivot bottom-left
-            _rect.anchorMin = new Vector2(0f, 0f);
-            _rect.anchorMax = new Vector2(1f, 0f);
-            _rect.pivot = new Vector2(0.5f, 0f);
-
-            // Start off-screen to the left
-            float offscreenX = -((_rect.rect.width > 0 ? _rect.rect.width : 600f) + settings.offscreenPadding);
-            _rect.anchoredPosition = new Vector2(offscreenX, showPosition.y);
             _canvasGroup.alpha = 0f;
             _canvasGroup.blocksRaycasts = true;
             gameObject.SetActive(true);
+
+            // Cache resting X so swipe-dismiss can restore it
+            _restX = _rect.anchoredPosition.x;
 
             KillSequence();
 
             _activeSeq = DOTween.Sequence();
             if (settings.useUnscaledTime) _activeSeq.SetUpdate(true);
 
-            // Slide in from left
-            _activeSeq.Join(
-                _rect.DOAnchorPosX(showPosition.x, settings.slideInDuration)
-                    .SetEase(settings.slideInEase));
-
-            // Fade in
-            _activeSeq.Join(
-                _canvasGroup.DOFade(1f, settings.fadeInDuration));
-
-            // Hold
+            _activeSeq.Join(_canvasGroup.DOFade(1f, settings.fadeInDuration));
             _activeSeq.AppendInterval(settings.autoRemoveDelay);
-
-            // Auto-dismiss after hold
             _activeSeq.AppendCallback(AutoDismiss);
         }
 
-        /// <summary>
-        /// Slide the toast to a new Y position (used when other toasts are dismissed and stack shifts).
-        /// </summary>
-        public void AnimateToY(float newY)
-        {
-            if (_isDismissing || _settings == null) return;
-            _showPosition = new Vector2(_showPosition.x, newY);
+        // Legacy overload kept for compatibility — ignores position parameter.
+        public void Show(string message, Vector2 _, ToastNotificationSettingsSO settings)
+            => Show(message, settings);
 
-            _rect.DOAnchorPosY(newY, _settings.slideInDuration * 0.5f)
-                .SetEase(Ease.OutCubic)
-                .SetUpdate(_settings.useUnscaledTime);
-        }
+        // Legacy — no-op, layout handles positioning.
+        public void AnimateToY(float _) { }
 
         #region Dismiss
 
         private void AutoDismiss()
         {
             if (_isDismissing) return;
-            SlideOutRight();
+            FadeOutAndDismiss();
         }
 
-        /// <summary>
-        /// Plays the dismiss animation: slide right and fade out.
-        /// </summary>
-        private void SlideOutRight()
+        private void FadeOutAndDismiss()
         {
             if (_isDismissing) return;
             _isDismissing = true;
 
             KillSequence();
 
-            float exitX = (_rect.rect.width > 0 ? _rect.rect.width : 600f) + _settings.offscreenPadding;
-
             _activeSeq = DOTween.Sequence();
             if (_settings.useUnscaledTime) _activeSeq.SetUpdate(true);
 
-            _activeSeq.Join(
-                _rect.DOAnchorPosX(_showPosition.x + exitX, _settings.slideOutDuration)
-                    .SetEase(_settings.slideOutEase));
-
-            _activeSeq.Join(
-                _canvasGroup.DOFade(0f, _settings.fadeOutDuration));
+            _activeSeq.Join(_canvasGroup.DOFade(0f, _settings.fadeOutDuration));
 
             _activeSeq.OnComplete(() =>
             {
@@ -132,9 +96,6 @@ namespace CosmicShore.App.UI.ToastNotification
             });
         }
 
-        /// <summary>
-        /// Immediately dismiss without animation (used when capacity is exceeded).
-        /// </summary>
         public void DismissImmediate()
         {
             if (_isDismissing) return;
@@ -154,8 +115,6 @@ namespace CosmicShore.App.UI.ToastNotification
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (_isDismissing) return;
-
-            // Kill the auto-dismiss timer when user starts dragging
             KillSequence();
             _dragStartX = eventData.position.x;
         }
@@ -165,13 +124,10 @@ namespace CosmicShore.App.UI.ToastNotification
             if (_isDismissing || _settings == null) return;
 
             float deltaX = eventData.position.x - _dragStartX;
-
-            // Only allow dragging to the right (positive direction)
             if (deltaX < 0f) deltaX = 0f;
 
-            _rect.anchoredPosition = new Vector2(_showPosition.x + deltaX, _rect.anchoredPosition.y);
+            _rect.anchoredPosition = new Vector2(_restX + deltaX, _rect.anchoredPosition.y);
 
-            // Fade proportionally as the user drags further right
             float progress = Mathf.Clamp01(deltaX / (_settings.swipeDismissThreshold * 2f));
             _canvasGroup.alpha = 1f - progress * 0.5f;
         }
@@ -184,22 +140,16 @@ namespace CosmicShore.App.UI.ToastNotification
 
             if (deltaX >= _settings.swipeDismissThreshold)
             {
-                // Swipe threshold met — dismiss
-                SlideOutRight();
+                FadeOutAndDismiss();
             }
             else
             {
-                // Snap back and restart auto-dismiss timer
                 _canvasGroup.alpha = 1f;
+                _rect.anchoredPosition = new Vector2(_restX, _rect.anchoredPosition.y);
 
                 KillSequence();
                 _activeSeq = DOTween.Sequence();
                 if (_settings.useUnscaledTime) _activeSeq.SetUpdate(true);
-
-                _activeSeq.Join(
-                    _rect.DOAnchorPosX(_showPosition.x, _settings.slideInDuration * 0.5f)
-                        .SetEase(Ease.OutCubic));
-
                 _activeSeq.AppendInterval(_settings.autoRemoveDelay);
                 _activeSeq.AppendCallback(AutoDismiss);
             }
@@ -216,9 +166,6 @@ namespace CosmicShore.App.UI.ToastNotification
             }
         }
 
-        private void OnDestroy()
-        {
-            KillSequence();
-        }
+        private void OnDestroy() => KillSequence();
     }
 }
