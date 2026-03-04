@@ -6,25 +6,45 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Generates geometric shape sprites for the Element Pips HUD system.
+    /// Generates premium UI sprites for the Element Pips HUD system.
     /// Run via menu: CosmicShore > Generate Element Shape Sprites
     ///
-    /// Shapes (from design spec):
-    ///   Mass   = Triangle
-    ///   Space  = Pentagon (kite/shield)
-    ///   Charge = Hexagon
-    ///   Time   = Diamond (rhombus)
+    /// Produces:
+    ///   - 1 uniform tick sprite (used for all element pip indicators)
+    ///   - 4 premium label outlines (one per element shape)
     ///
-    /// Produces filled (pip) and outline (label) variants for each element,
-    /// saves as PNGs, configures sprite import settings, and optionally
-    /// assigns them to an ElementPipsConfigSO asset.
+    /// Shapes (geometry from design spec — unchanged):
+    ///   Mass   = Equilateral triangle, point up
+    ///   Space  = Kite (4-sided, sharp top, wide shoulders, bottom point)
+    ///   Charge = Irregular pentagon (flat top, wide middle, bottom point)
+    ///   Time   = Tall diamond/rhombus (~1.4:1 aspect)
     /// </summary>
     public static class ElementShapeGenerator
     {
-        const int Size = 64;
-        const int OutlineSize = 128;
-        const float StrokeWidth = 3f;
+        const int LabelSize = 256;
+        const int TickSize = 128;
         const string OutputFolder = "Assets/_Graphics/ElementShapes";
+
+        // --- Premium Rendering Parameters ---
+
+        // Label outline stroke
+        const float LabelStrokePx = 5f;
+        const float FeatherPx = 1.5f;
+
+        // Label outer glow (soft halo outside the stroke)
+        const float LabelOuterGlowPx = 14f;
+        const float LabelOuterGlowIntensity = 0.28f;
+
+        // Label inner edge glow (luminous falloff just inside the stroke)
+        const float LabelInnerEdgePx = 10f;
+        const float LabelInnerEdgeIntensity = 0.12f;
+
+        // Label subtle inner fill
+        const float LabelInnerFillAlpha = 0.04f;
+
+        // Tick outer glow
+        const float TickGlowPx = 10f;
+        const float TickGlowIntensity = 0.32f;
 
         struct ShapeDef
         {
@@ -47,41 +67,40 @@ namespace CosmicShore.Editor
                 MakeDiamond(),
             };
 
-            var filledPaths = new Dictionary<Element, string>();
-            var outlinePaths = new Dictionary<Element, string>();
+            var pipPaths = new Dictionary<Element, string>();
+            var labelPaths = new Dictionary<Element, string>();
+
+            // --- Generate premium tick (single sprite, all elements share it) ---
+            var tickTex = CreatePremiumTick(TickSize);
+            string tickPath = $"{OutputFolder}/pip_tick.png";
+            SaveTexture(tickTex, tickPath);
 
             foreach (var shape in shapes)
             {
-                // Filled (pip) variant
-                var filledTex = CreateFilledTexture(shape.vertices, Size);
-                string filledPath = $"{OutputFolder}/{shape.name}_filled.png";
-                SaveTexture(filledTex, filledPath);
-                filledPaths[shape.element] = filledPath;
+                pipPaths[shape.element] = tickPath;
 
-                // Outline (label) variant
-                var outlineTex = CreateOutlineTexture(shape.vertices, OutlineSize, StrokeWidth);
-                string outlinePath = $"{OutputFolder}/{shape.name}_outline.png";
-                SaveTexture(outlineTex, outlinePath);
-                outlinePaths[shape.element] = outlinePath;
+                // --- Generate premium label outline (unique shape per element) ---
+                var labelTex = CreatePremiumLabel(shape.vertices, LabelSize);
+                string labelPath = $"{OutputFolder}/{shape.name}_label.png";
+                SaveTexture(labelTex, labelPath);
+                labelPaths[shape.element] = labelPath;
             }
 
             AssetDatabase.Refresh();
 
-            // Configure sprite import settings
-            foreach (var path in filledPaths.Values) ConfigureSpriteImport(path);
-            foreach (var path in outlinePaths.Values) ConfigureSpriteImport(path);
+            // Configure sprite imports
+            ConfigureSpriteImport(tickPath);
+            foreach (var path in labelPaths.Values)
+                ConfigureSpriteImport(path);
 
-            // Try to auto-assign to ElementPipsConfigSO
-            TryAssignToConfig(filledPaths, outlinePaths);
+            // Auto-assign to config SO
+            TryAssignToConfig(pipPaths, labelPaths);
 
-            Debug.Log($"[ElementShapeGenerator] Generated {shapes.Length * 2} sprites in {OutputFolder}");
+            Debug.Log($"[ElementShapeGenerator] Generated {1 + shapes.Length} premium sprites in {OutputFolder}");
         }
 
-        // --- Shape Definitions (matched to design spec image) ---
-        // All vertices in normalized 0..1 coords with 0.08 padding from edges.
-        // Shapes are portrait-oriented to match the spec proportions.
+        // --- Shape Definitions (geometry unchanged from design spec) ---
 
-        // Mass = Equilateral triangle, point up
         static ShapeDef MakeTriangle() => new()
         {
             name = "mass_triangle",
@@ -94,7 +113,6 @@ namespace CosmicShore.Editor
             },
         };
 
-        // Space = Kite (4-sided, sharp top point, wide shoulders, long bottom point)
         static ShapeDef MakeKite() => new()
         {
             name = "space_kite",
@@ -108,7 +126,6 @@ namespace CosmicShore.Editor
             },
         };
 
-        // Charge = Irregular pentagon (flat top, widens at middle, converges to bottom point)
         static ShapeDef MakePentagon() => new()
         {
             name = "charge_pentagon",
@@ -123,7 +140,6 @@ namespace CosmicShore.Editor
             },
         };
 
-        // Time = Tall diamond/rhombus (height > width, ~1.4:1 aspect)
         static ShapeDef MakeDiamond() => new()
         {
             name = "time_diamond",
@@ -137,24 +153,40 @@ namespace CosmicShore.Editor
             },
         };
 
-        // --- Texture Generation ---
+        // --- Premium Tick Pip ---
 
-        static Texture2D CreateFilledTexture(Vector2[] verts, int size)
+        static Texture2D CreatePremiumTick(int size)
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             var pixels = new Color32[size * size];
+
+            // Rounded rectangle (pill shape): wide, short
+            var halfExtent = new Vector2(0.34f, 0.09f);
+            float cornerRadius = 0.07f;
+
+            float feather = FeatherPx / size;
+            float glowR = TickGlowPx / size;
 
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var uv = new Vector2((x + 0.5f) / size, (y + 0.5f) / size);
-                    float dist = SignedDistanceToPolygon(uv, verts);
+                    // Center origin
+                    var p = new Vector2((x + 0.5f) / size - 0.5f, (y + 0.5f) / size - 0.5f);
+                    float dist = SdfRoundedRect(p, halfExtent, cornerRadius);
 
-                    // Anti-aliased edge: ~1 pixel feather
-                    float feather = 1.5f / size;
-                    float alpha = Mathf.Clamp01(-dist / feather);
+                    // Core fill — solid white, anti-aliased
+                    float core = Mathf.Clamp01(-dist / feather);
 
+                    // Outer glow — soft quadratic falloff halo
+                    float glow = 0f;
+                    if (dist > 0f)
+                    {
+                        glow = Mathf.Clamp01(1f - dist / glowR);
+                        glow *= glow * TickGlowIntensity;
+                    }
+
+                    float alpha = Mathf.Max(core, glow);
                     pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
                 }
             }
@@ -164,13 +196,30 @@ namespace CosmicShore.Editor
             return tex;
         }
 
-        static Texture2D CreateOutlineTexture(Vector2[] verts, int size, float strokeWidth)
+        /// <summary>
+        /// SDF for an axis-aligned rounded rectangle centered at origin.
+        /// </summary>
+        static float SdfRoundedRect(Vector2 p, Vector2 halfExtent, float radius)
+        {
+            var d = new Vector2(
+                Mathf.Abs(p.x) - halfExtent.x + radius,
+                Mathf.Abs(p.y) - halfExtent.y + radius);
+            float outside = new Vector2(Mathf.Max(d.x, 0f), Mathf.Max(d.y, 0f)).magnitude;
+            float inside = Mathf.Min(Mathf.Max(d.x, d.y), 0f);
+            return outside + inside - radius;
+        }
+
+        // --- Premium Label Outline ---
+
+        static Texture2D CreatePremiumLabel(Vector2[] verts, int size)
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             var pixels = new Color32[size * size];
 
-            float strokeHalf = strokeWidth / size;
-            float feather = 1.5f / size;
+            float strokeHalf = LabelStrokePx * 0.5f / size;
+            float feather = FeatherPx / size;
+            float outerGlowR = LabelOuterGlowPx / size;
+            float innerEdgeR = LabelInnerEdgePx / size;
 
             for (int y = 0; y < size; y++)
             {
@@ -178,10 +227,35 @@ namespace CosmicShore.Editor
                 {
                     var uv = new Vector2((x + 0.5f) / size, (y + 0.5f) / size);
                     float dist = SignedDistanceToPolygon(uv, verts);
-
-                    // Outline = ring around boundary
                     float absDist = Mathf.Abs(dist);
-                    float alpha = Mathf.Clamp01((strokeHalf - absDist) / feather);
+
+                    // 1. Crisp anti-aliased stroke
+                    float stroke = Mathf.Clamp01((strokeHalf - absDist) / feather);
+
+                    // 2. Outer glow — soft halo bleeding outward from the stroke
+                    float outerGlow = 0f;
+                    if (dist > strokeHalf)
+                    {
+                        float d = dist - strokeHalf;
+                        outerGlow = Mathf.Clamp01(1f - d / outerGlowR);
+                        outerGlow *= outerGlow * LabelOuterGlowIntensity; // quadratic falloff
+                    }
+
+                    // 3. Inner edge glow — luminous rim just inside the stroke
+                    float innerEdge = 0f;
+                    if (dist < -strokeHalf)
+                    {
+                        float d = -dist - strokeHalf;
+                        innerEdge = Mathf.Clamp01(1f - d / innerEdgeR);
+                        innerEdge *= innerEdge * LabelInnerEdgeIntensity;
+                    }
+
+                    // 4. Subtle inner fill — gives the shape body
+                    float fill = dist < 0f ? LabelInnerFillAlpha : 0f;
+
+                    float alpha = Mathf.Max(
+                        Mathf.Max(stroke, outerGlow),
+                        Mathf.Max(innerEdge, fill));
 
                     pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
                 }
@@ -220,7 +294,6 @@ namespace CosmicShore.Editor
                 else if (a.y > p.y && b.y <= p.y && cross < 0f) sign = -sign;
             }
 
-            // Negative inside, positive outside
             return sign * minDist;
         }
 
@@ -250,10 +323,9 @@ namespace CosmicShore.Editor
         // --- Config Assignment ---
 
         static void TryAssignToConfig(
-            Dictionary<Element, string> filledPaths,
-            Dictionary<Element, string> outlinePaths)
+            Dictionary<Element, string> pipPaths,
+            Dictionary<Element, string> labelPaths)
         {
-            // Find any ElementPipsConfigSO in the project
             string[] guids = AssetDatabase.FindAssets("t:ElementPipsConfigSO");
             if (guids.Length == 0)
             {
@@ -269,19 +341,19 @@ namespace CosmicShore.Editor
 
                 var so = new SerializedObject(config);
 
-                AssignSprite(so, "chargeSprite",      filledPaths,  Element.Charge);
-                AssignSprite(so, "massSprite",         filledPaths,  Element.Mass);
-                AssignSprite(so, "spaceSprite",        filledPaths,  Element.Space);
-                AssignSprite(so, "timeSprite",         filledPaths,  Element.Time);
-                AssignSprite(so, "chargeLabelSprite",  outlinePaths, Element.Charge);
-                AssignSprite(so, "massLabelSprite",    outlinePaths, Element.Mass);
-                AssignSprite(so, "spaceLabelSprite",   outlinePaths, Element.Space);
-                AssignSprite(so, "timeLabelSprite",    outlinePaths, Element.Time);
+                AssignSprite(so, "chargeSprite",      pipPaths,   Element.Charge);
+                AssignSprite(so, "massSprite",         pipPaths,   Element.Mass);
+                AssignSprite(so, "spaceSprite",        pipPaths,   Element.Space);
+                AssignSprite(so, "timeSprite",         pipPaths,   Element.Time);
+                AssignSprite(so, "chargeLabelSprite",  labelPaths, Element.Charge);
+                AssignSprite(so, "massLabelSprite",    labelPaths, Element.Mass);
+                AssignSprite(so, "spaceLabelSprite",   labelPaths, Element.Space);
+                AssignSprite(so, "timeLabelSprite",    labelPaths, Element.Time);
 
                 so.ApplyModifiedProperties();
                 EditorUtility.SetDirty(config);
 
-                Debug.Log($"[ElementShapeGenerator] Assigned sprites to {assetPath}");
+                Debug.Log($"[ElementShapeGenerator] Assigned premium sprites to {assetPath}");
             }
 
             AssetDatabase.SaveAssets();

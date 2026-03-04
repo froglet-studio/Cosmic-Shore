@@ -15,7 +15,7 @@ MonoBehaviour:
   pipsPerColumn: 20
   pipSpacing: 8
   columnSpacing: 24
-  pipSize: {x: 12, y: 12}
+  pipSize: {x: 14, y: 5}
   labelIconSize: {x: 20, y: 20}
   labelGap: 4
   zeroLineIndex: 5

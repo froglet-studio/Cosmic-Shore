@@ -16,8 +16,8 @@ namespace CosmicShore
         [Tooltip("Horizontal spacing between element columns")]
         public float columnSpacing = 24f;
 
-        [Tooltip("Size of each pip image")]
-        public Vector2 pipSize = new(12f, 12f);
+        [Tooltip("Size of each pip tick mark")]
+        public Vector2 pipSize = new(14f, 5f);
 
         [Tooltip("Size of the element label icon at the bottom of each column")]
         public Vector2 labelIconSize = new(20f, 20f);
