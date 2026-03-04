@@ -145,13 +145,15 @@ namespace CosmicShore.Core
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
 
-            // Server: clear stale vessel references on persistent Players, then despawn
-            // all vessels before the scene transition. PrepareForNewScene() nulls Player.Vessel
-            // so no code path can traverse into destroyed HUD components (prevents
-            // MissingReferenceException). Despawn sends messages to clients so they cleanly
-            // remove objects before the old scene unloads (prevents "Invalid Destroy" errors).
+            // Prepare clients BEFORE the server despawns vessels.
+            // The ClientRpc marks vessels DestroyWithScene=false on non-host clients so they
+            // survive the scene unload even if the despawn messages haven't arrived yet.
+            // The 0.5s waitBeforeLoading delay gives clients time to process this RPC.
+            // Server-side: clear stale vessel references, then despawn all vessels.
             if (useNetworkSceneLoading)
             {
+                PrepareClientsForSceneTransition_ClientRpc();
+
                 foreach (var player in gameData.Players)
                 {
                     if (player is Player p)
@@ -287,6 +289,30 @@ namespace CosmicShore.Core
 
             if (CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
+        }
+
+        /// <summary>
+        /// Prepares non-host clients for a scene transition.
+        /// Marks vessels DestroyWithScene=false so they survive the scene unload
+        /// and get properly cleaned up by the server's despawn messages.
+        /// Clears stale Player.Vessel references to prevent MissingReferenceException.
+        /// </summary>
+        [ClientRpc]
+        void PrepareClientsForSceneTransition_ClientRpc()
+        {
+            if (IsServer) return; // Host handles cleanup directly in LoadSceneAsync
+
+            foreach (var player in gameData.Players)
+            {
+                if (player is Player p)
+                    p.PrepareForNewScene();
+            }
+
+            foreach (var vessel in gameData.Vessels)
+            {
+                if (vessel is VesselController vc && vc.IsSpawned)
+                    vc.NetworkObject.DestroyWithScene = false;
+            }
         }
 
         /// <summary>
