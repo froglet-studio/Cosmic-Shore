@@ -79,9 +79,11 @@ namespace CosmicShore.Utility.Tools
         [NonSerialized] GUIStyle _badgeStyle;
         [NonSerialized] GUIStyle _infoStyle;
         [NonSerialized] GUIStyle _mutedLabel;
-        [NonSerialized] GUIStyle _tabStyle;
-        [NonSerialized] GUIStyle _tabActiveStyle;
+        [NonSerialized] GUIStyle _tabLabelStyle;
         [NonSerialized] GUIStyle _sectionTitleStyle;
+        [NonSerialized] GUIStyle _contentLabelStyle;
+        [NonSerialized] GUIStyle _contentBoldStyle;
+        [NonSerialized] Texture2D _whiteTexture;
         [NonSerialized] bool _stylesBuilt;
 
         [MenuItem("FrogletTools/Toolbox", false, 0)]
@@ -152,9 +154,19 @@ namespace CosmicShore.Utility.Tools
             }
         }
 
+        Texture2D MakeColorTexture(Color color)
+        {
+            var tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, color);
+            tex.Apply();
+            return tex;
+        }
+
         void BuildStyles()
         {
             if (_stylesBuilt) return;
+
+            _whiteTexture = MakeColorTexture(Color.white);
 
             _bannerStyle = new GUIStyle(EditorStyles.boldLabel)
             {
@@ -183,30 +195,21 @@ namespace CosmicShore.Utility.Tools
             _mutedLabel = new GUIStyle(EditorStyles.centeredGreyMiniLabel) { fontSize = 10 };
             _mutedLabel.normal.textColor = TextMuted;
 
-            _tabStyle = new GUIStyle(EditorStyles.miniButton)
+            _tabLabelStyle = new GUIStyle(EditorStyles.boldLabel)
             {
-                fontSize = 10,
+                fontSize = 12,
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-                padding = new RectOffset(6, 6, 4, 4),
-                margin = new RectOffset(1, 1, 0, 0),
-                fixedHeight = 0
+                alignment = TextAnchor.MiddleCenter
             };
-            _tabStyle.normal.textColor = new Color(0.70f, 0.68f, 0.78f);
-
-            _tabActiveStyle = new GUIStyle(_tabStyle)
-            {
-                fontSize = 10,
-                fontStyle = FontStyle.Bold
-            };
-            _tabActiveStyle.normal.textColor = Color.white;
 
             _sectionTitleStyle = new GUIStyle(EditorStyles.boldLabel)
             {
-                fontSize = 13,
-                padding = new RectOffset(4, 0, 2, 2)
+                fontSize = 14,
+                padding = new RectOffset(8, 0, 4, 4)
             };
-            _sectionTitleStyle.normal.textColor = new Color(0.85f, 0.83f, 0.92f);
+
+            _contentLabelStyle = new GUIStyle(EditorStyles.label) { fontSize = 11 };
+            _contentBoldStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
 
             _stylesBuilt = true;
         }
@@ -232,6 +235,17 @@ namespace CosmicShore.Utility.Tools
 
             // ── Tab Content ──────────────────────────────────────────────────
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
+
+            // Draw a subtle tinted background for the entire content area
+            if (_selectedTab >= 0 && _selectedTab < Tabs.Length)
+            {
+                Color tint = Color.Lerp(new Color(0.18f, 0.17f, 0.22f), Tabs[_selectedTab].Color, 0.06f);
+                var contentBgRect = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true));
+                // We paint a large rect behind everything
+                var bgRect = new Rect(contentBgRect.x, contentBgRect.y, position.width, position.height);
+                EditorGUI.DrawRect(bgRect, tint);
+            }
+
             GUILayout.Space(6);
 
             if (_selectedTab >= 0 && _selectedTab < Tabs.Length)
@@ -248,91 +262,74 @@ namespace CosmicShore.Utility.Tools
 
         void DrawTabBar()
         {
-            GUILayout.Space(2);
+            // Two rows: row 1 = first 4 tabs, row 2 = remaining 3 tabs
+            const float tabHeight = 32;
+            const float gap = 2;
+            const float padding = 4;
+            int row1Count = 4;
+            int row2Count = Tabs.Length - row1Count;
+            float totalHeight = tabHeight * 2 + gap + padding * 2;
 
-            // Use a flow layout: multiple rows of tabs that wrap based on window width
-            float availableWidth = position.width - 8;
-            float x = 4;
-            float y = 0;
-            float tabHeight = 24;
-            float rowSpacing = 2;
-
-            // First pass: measure to figure out total height needed
-            float totalHeight = tabHeight;
-            float tempX = 4;
-            for (int i = 0; i < Tabs.Length; i++)
-            {
-                var content = new GUIContent(Tabs[i].Label);
-                float tabWidth = Mathf.Max(_tabStyle.CalcSize(content).x + 12, 58);
-                if (tempX + tabWidth > availableWidth && tempX > 4)
-                {
-                    tempX = 4;
-                    totalHeight += tabHeight + rowSpacing;
-                }
-                tempX += tabWidth + 2;
-            }
-
-            var barRect = GUILayoutUtility.GetRect(0, totalHeight + 6, GUILayout.ExpandWidth(true));
+            var barRect = GUILayoutUtility.GetRect(0, totalHeight, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(barRect, new Color(0.16f, 0.15f, 0.20f, 1f));
 
-            x = 4;
-            y = barRect.y + 3;
+            float usableWidth = barRect.width - padding * 2;
 
-            for (int i = 0; i < Tabs.Length; i++)
-            {
-                var tab = Tabs[i];
-                var content = new GUIContent(tab.Label);
-                float tabWidth = Mathf.Max(_tabStyle.CalcSize(content).x + 12, 58);
-
-                // Wrap to next row if needed
-                if (x + tabWidth > availableWidth && x > 4)
-                {
-                    x = 4;
-                    y += tabHeight + rowSpacing;
-                }
-
-                var tabRect = new Rect(barRect.x + x, y, tabWidth, tabHeight);
-                bool isSelected = (i == _selectedTab);
-                bool isHover = tabRect.Contains(Event.current.mousePosition);
-
-                // Draw tab background
-                Color bgColor = isSelected ? tab.Color : (isHover ? TabHover : TabInactive);
-                EditorGUI.DrawRect(tabRect, bgColor);
-
-                // Draw bottom accent line for selected tab
-                if (isSelected)
-                {
-                    var accentRect = new Rect(tabRect.x, tabRect.yMax - 3, tabRect.width, 3);
-                    EditorGUI.DrawRect(accentRect, tab.Color * 1.2f);
-                }
-
-                // Draw label
-                var style = isSelected ? _tabActiveStyle : _tabStyle;
-                if (isSelected)
-                    style.normal.textColor = Color.white;
-                else
-                    style.normal.textColor = isHover ? new Color(0.85f, 0.83f, 0.90f) : new Color(0.70f, 0.68f, 0.78f);
-
-                GUI.Label(tabRect, content, style);
-
-                // Handle click
-                if (Event.current.type == EventType.MouseDown && tabRect.Contains(Event.current.mousePosition))
-                {
-                    _selectedTab = i;
-                    _scrollPos = Vector2.zero;
-                    Event.current.Use();
-                    Repaint();
-                }
-
-                x += tabWidth + 2;
-            }
+            // Row 1
+            DrawTabRow(barRect.x + padding, barRect.y + padding, usableWidth, tabHeight, 0, row1Count);
+            // Row 2
+            DrawTabRow(barRect.x + padding, barRect.y + padding + tabHeight + gap, usableWidth, tabHeight, row1Count, row2Count);
 
             // Repaint on hover for highlight effect
             if (Event.current.type == EventType.MouseMove)
                 Repaint();
+        }
 
-            var divRect = GUILayoutUtility.GetRect(0, 1, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(divRect, DividerColor);
+        void DrawTabRow(float startX, float startY, float totalWidth, float height, int startIdx, int count)
+        {
+            float gap = 2;
+            float tabWidth = (totalWidth - gap * (count - 1)) / count;
+
+            for (int i = 0; i < count; i++)
+            {
+                int tabIdx = startIdx + i;
+                var tab = Tabs[tabIdx];
+                bool isSelected = tabIdx == _selectedTab;
+
+                var tabRect = new Rect(startX + i * (tabWidth + gap), startY, tabWidth, height);
+                bool isHover = tabRect.Contains(Event.current.mousePosition);
+
+                // Background: selected = full color, hover = dimmed color, inactive = dark with color tint
+                Color bgColor;
+                if (isSelected)
+                    bgColor = tab.Color;
+                else if (isHover)
+                    bgColor = Color.Lerp(TabInactive, tab.Color, 0.45f);
+                else
+                    bgColor = Color.Lerp(TabInactive, tab.Color, 0.15f);
+
+                EditorGUI.DrawRect(tabRect, bgColor);
+
+                // Selected indicator: bright bottom bar
+                if (isSelected)
+                {
+                    var indicatorRect = new Rect(tabRect.x, tabRect.yMax - 3, tabRect.width, 3);
+                    EditorGUI.DrawRect(indicatorRect, Color.white * 0.9f);
+                }
+
+                // Label
+                _tabLabelStyle.normal.textColor = isSelected ? Color.white : new Color(0.88f, 0.86f, 0.94f);
+                GUI.Label(tabRect, tab.Label, _tabLabelStyle);
+
+                // Click
+                if (Event.current.type == EventType.MouseDown && tabRect.Contains(Event.current.mousePosition))
+                {
+                    _selectedTab = tabIdx;
+                    _scrollPos = Vector2.zero;
+                    Event.current.Use();
+                    Repaint();
+                }
+            }
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -794,22 +791,35 @@ namespace CosmicShore.Utility.Tools
 
         void DrawTabTitle(string title, Color accentColor)
         {
-            var rect = GUILayoutUtility.GetRect(0, 28, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(rect, SectionHeader);
-            var accent = new Rect(rect.x, rect.y, 3, rect.height);
+            var rect = GUILayoutUtility.GetRect(0, 32, GUILayout.ExpandWidth(true));
+            // Tinted header background
+            Color headerBg = Color.Lerp(SectionHeader, accentColor, 0.18f);
+            EditorGUI.DrawRect(rect, headerBg);
+            // Left accent bar
+            var accent = new Rect(rect.x, rect.y, 4, rect.height);
             EditorGUI.DrawRect(accent, accentColor);
-            var labelRect = new Rect(rect.x + 10, rect.y, rect.width - 10, rect.height);
+            // Title text in accent color
+            _sectionTitleStyle.normal.textColor = accentColor;
+            var labelRect = new Rect(rect.x + 12, rect.y, rect.width - 12, rect.height);
             GUI.Label(labelRect, title, _sectionTitleStyle);
-            GUILayout.Space(4);
+            GUILayout.Space(6);
         }
 
         void DrawSubSectionLabel(string title)
         {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(Pad);
-            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-            EditorGUILayout.EndHorizontal();
             GUILayout.Space(2);
+            var rect = GUILayoutUtility.GetRect(0, 22, GUILayout.ExpandWidth(true));
+            // Subtle darker strip behind sub-section
+            EditorGUI.DrawRect(rect, new Color(0.16f, 0.15f, 0.20f, 0.5f));
+            var labelRect = new Rect(rect.x + Pad, rect.y, rect.width - Pad, rect.height);
+            // Use active tab color for sub-section text
+            Color subColor = (_selectedTab >= 0 && _selectedTab < Tabs.Length)
+                ? Color.Lerp(new Color(0.85f, 0.83f, 0.92f), Tabs[_selectedTab].Color, 0.5f)
+                : new Color(0.85f, 0.83f, 0.92f);
+            _contentBoldStyle.normal.textColor = subColor;
+            _contentBoldStyle.fontSize = 12;
+            GUI.Label(labelRect, "— " + title, _contentBoldStyle);
+            GUILayout.Space(4);
         }
 
         void DrawSceneButton(string label, string scenePath)
@@ -852,8 +862,12 @@ namespace CosmicShore.Utility.Tools
         {
             var content = new GUIContent(text);
             var size = _badgeStyle.CalcSize(content);
-            var rect = GUILayoutUtility.GetRect(size.x + 4, 16, GUILayout.Width(size.x + 4));
-            EditorGUI.DrawRect(rect, bg);
+            var rect = GUILayoutUtility.GetRect(size.x + 8, 18, GUILayout.Width(size.x + 8));
+            // Round the badge color slightly toward the active tab color
+            Color badgeBg = bg;
+            if (_selectedTab >= 0 && _selectedTab < Tabs.Length)
+                badgeBg = Color.Lerp(bg, Tabs[_selectedTab].Color, 0.2f);
+            EditorGUI.DrawRect(rect, badgeBg);
             GUI.Label(rect, content, _badgeStyle);
         }
 
