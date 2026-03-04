@@ -144,10 +144,12 @@ namespace CosmicShore.Core
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}, waitBeforeLoading={waitBeforeLoading}s</color>");
             gameData.InvokeSceneTransition(false);
 
-            // Clear vessel references on persistent Players before scene transition.
-            // Vessels have destroyWithScene=true and are auto-handled by Netcode.
-            // Setting NetVesselId to 0 propagates to clients via OnNetVesselIdChanged,
-            // which nulls Player.Vessel — preventing stale references to destroyed objects.
+            // Despawn vessels and clear Player references before scene transition.
+            // Despawning here ensures clients receive despawn RPCs in an earlier
+            // network tick than the scene load event. Without this, Netcode batches
+            // both in the same tick, and Unity's scene unload destroys vessels
+            // before clients can process the despawn ("destroyed before despawn" error).
+            // NetVesselId=0 propagates via OnNetVesselIdChanged, nulling Player.Vessel.
             if (useNetworkSceneLoading)
                 ClearPlayerVesselReferences();
 
@@ -189,11 +191,24 @@ namespace CosmicShore.Core
 
         void ClearPlayerVesselReferences()
         {
+            // 1. Clear vessel references on persistent Players.
             foreach (var player in gameData.Players)
             {
                 if (player is Player netPlayer && netPlayer.IsSpawned)
                     netPlayer.NetVesselId.Value = 0;
             }
+
+            // 2. Despawn all tracked vessels so clients receive despawn RPCs
+            //    before the scene load event (sent in a later network tick).
+            //    Without this, Unity's scene unload on the client destroys
+            //    vessels before Netcode can process their despawn.
+            for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
+            {
+                var vessel = gameData.Vessels[i];
+                if (vessel is VesselController vc && vc.IsSpawned)
+                    vc.NetworkObject.Despawn(true);
+            }
+            gameData.Vessels.Clear();
         }
 
         void LoadNetworkSceneOnServer(string sceneName)
