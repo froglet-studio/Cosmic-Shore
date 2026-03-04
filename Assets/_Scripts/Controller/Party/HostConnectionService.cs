@@ -121,19 +121,11 @@ namespace CosmicShore.Gameplay
             SyncLocalIdentity();
             await JoinPresenceLobbyAsync();
 
-            // Create Relay-backed party session so the NetworkManager starts as a
-            // Relay host. Wrapped in try-catch so a Relay failure does not block
-            // _initialized — the presence lobby and refresh loop must always work.
-            // SendInviteAsync has a lazy-creation fallback if _partySession is null.
-            try
-            {
-                await CreatePartySessionAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] Party session creation failed (Relay may be unavailable). " +
-                    $"Invite send will retry on demand. Error: {e.Message}");
-            }
+            // Relay party session is NOT created here — MultiplayerSetup starts a
+            // local host for the menu scene. The Relay session is created on demand
+            // when the first party invite is sent (via TransitionToPartyHostAsync →
+            // CreatePartySessionPublicAsync). SendInviteAsync also has a lazy
+            // creation fallback if _partySession is null at invite time.
 
             _initialized = true;
             DebugExtensions.LogColored(
@@ -185,18 +177,8 @@ namespace CosmicShore.Gameplay
             {
                 await JoinPresenceLobbyAsync();
 
-                // Create Relay-backed party session so the NetworkManager starts as a
-                // Relay host. Failure is non-fatal — the presence lobby and refresh loop
-                // must always work. SendInviteAsync has a lazy-creation fallback.
-                try
-                {
-                    await CreatePartySessionAsync();
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[HostConnectionService] Party session creation failed (Relay may be unavailable). " +
-                        $"Invite send will retry on demand. Error: {e.Message}");
-                }
+                // Relay party session deferred to invite time — local host is
+                // started by MultiplayerSetup. See CreatePartySessionPublicAsync().
 
                 _initialized = true;
                 DebugExtensions.LogColored(
@@ -249,8 +231,11 @@ namespace CosmicShore.Gameplay
 
                 if (_partySession == null)
                 {
+                    // The proper path is TransitionToPartyHostAsync() → CreatePartySessionPublicAsync(),
+                    // which shuts down the local host before creating a Relay session. This lazy
+                    // fallback may fail if a local host is still running.
                     DebugExtensions.LogWarningColored(
-                        "[INVITE-SEND] _partySession is null — creating on demand...", Color.yellow);
+                        "[INVITE-SEND] _partySession is null — creating on demand (local host must already be shut down)...", Color.yellow);
                     await CreatePartySessionAsync();
                 }
 
@@ -807,6 +792,17 @@ namespace CosmicShore.Gameplay
         // Party Session
         // ─────────────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Creates a Relay-backed party session. The UGS Multiplayer SDK calls
+        /// <c>NetworkManager.StartHost()</c> internally when creating a session
+        /// with <c>WithRelayNetwork()</c>.
+        ///
+        /// <b>Caller must ensure the local host is shut down first</b> — if a
+        /// local host is already running (started by <see cref="MultiplayerSetup"/>),
+        /// the SDK's internal <c>StartHost()</c> will conflict. Use
+        /// <see cref="PartyInviteController.TransitionToPartyHostAsync"/> which
+        /// handles the full shutdown → Relay → reload flow.
+        /// </summary>
         private async Task CreatePartySessionAsync()
         {
             if (_partySession != null) return;
@@ -823,10 +819,6 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    // The UGS Multiplayer SDK calls NetworkManager.StartHost()
-                    // internally when creating a Relay-backed session.
-                    // AuthenticationSceneController waits for nm.IsListening
-                    // before loading Menu_Main — no local host fallback.
                     _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
                     connectionData.IsHost = true;
                     Debug.Log($"[HostConnectionService] Created Relay party session {_partySession.Id}");

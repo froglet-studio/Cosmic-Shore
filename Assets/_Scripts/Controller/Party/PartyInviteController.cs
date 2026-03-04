@@ -1,11 +1,13 @@
 using System;
 using System.Threading;
+using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Gameplay
 {
@@ -36,6 +38,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float sceneLoadTimeoutSeconds = 15f;
 
         [Inject] private GameDataSO gameData;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private SceneNameListSO _sceneNames;
 
         private CancellationTokenSource _cts;
         private bool _transitioning;
@@ -166,21 +170,75 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Previously transitioned the local host from local-only to Relay-based.
-        /// Now a no-op: the Relay-backed party session is created at startup by
-        /// <see cref="HostConnectionService"/>, so no transition is needed.
-        /// Kept for API compatibility; callers have been updated to not call this.
+        /// Transitions from the local host (started by <see cref="MultiplayerSetup"/>)
+        /// to a Relay-backed party session so remote players can join via invite.
+        ///
+        /// Flow: fade to black → despawn vessels → shutdown local host →
+        /// create Relay party session → reload Menu_Main via Netcode.
+        /// The fade screen covers the entire transition so the user never sees
+        /// Menu_Main loading twice.
         /// </summary>
-        public UniTask TransitionToPartyHostAsync()
+        public async UniTask TransitionToPartyHostAsync()
         {
             if (HostConnectionService.Instance?.PartySession != null)
             {
                 Debug.Log("[PartyInviteController] Party session already active — no transition needed.");
-                return UniTask.CompletedTask;
+                return;
             }
 
-            Debug.LogWarning("[PartyInviteController] No party session at invite time — invites may fail.");
-            return UniTask.CompletedTask;
+            if (_transitioning)
+            {
+                Debug.LogWarning("[PartyInviteController] Already transitioning — ignoring.");
+                return;
+            }
+
+            _transitioning = true;
+            Debug.Log("[PartyInviteController] Transitioning from local host to Relay...");
+
+            try
+            {
+                // Fade to black so the user doesn't see the scene reload
+                if (_sceneTransitionManager != null)
+                    await _sceneTransitionManager.FadeToBlack();
+
+                // 1. Despawn menu vessels and reset game data
+                CleanUpCurrentSession();
+
+                // 2. Shutdown the local host
+                using var cts = new CancellationTokenSource();
+                cts.CancelAfter(TimeSpan.FromSeconds(shutdownTimeoutSeconds + 15));
+                var ct = cts.Token;
+
+                await ShutdownNetworkManagerAsync(ct);
+
+                // 3. Create Relay-backed party session (internally starts Relay host)
+                if (HostConnectionService.Instance != null)
+                    await HostConnectionService.Instance.CreatePartySessionPublicAsync();
+
+                // 4. Reload Menu_Main via Netcode scene management
+                var nm = NetworkManager.Singleton;
+                string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+
+                if (nm != null && nm.IsListening)
+                {
+                    Debug.Log($"[PartyInviteController] Loading {menuScene} via Netcode (Relay host)...");
+                    nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+                }
+                else
+                {
+                    Debug.LogError("[PartyInviteController] Relay host not running after transition. Falling back to direct load.");
+                    SceneManager.LoadScene(menuScene);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[PartyInviteController] Relay transition failed: {e.Message}");
+                await RecoverFromFailedTransitionAsync();
+            }
+            finally
+            {
+                _transitioning = false;
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -279,40 +337,44 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// If the transition fails, recreate the Relay party session via
-        /// <see cref="HostConnectionService"/> so the user returns to a
-        /// functional menu state with networking.
+        /// If a transition fails, restart a local host so the user returns to
+        /// a functional menu state. Relay can be re-attempted on next invite.
         /// </summary>
         private async UniTask RecoverFromFailedTransitionAsync()
         {
-            Debug.Log("[PartyInviteController] Attempting recovery — restarting Relay host...");
+            Debug.Log("[PartyInviteController] Attempting recovery — restarting local host...");
 
             try
             {
-                if (HostConnectionService.Instance != null)
+                var nm = NetworkManager.Singleton;
+
+                // Start a local host if nothing is running
+                if (nm != null && !nm.IsListening)
                 {
-                    await HostConnectionService.Instance.CreatePartySessionPublicAsync();
-                    await UniTask.Delay(500);
-                }
-                else
-                {
-                    Debug.LogError("[PartyInviteController] HostConnectionService not available for recovery.");
+                    nm.StartHost();
+                    await UniTask.Delay(200);
                 }
 
                 // Return to Menu_Main if not already there
-                var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-                if (activeScene.name != "Menu_Main")
+                string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+                var activeScene = SceneManager.GetActiveScene();
+
+                if (activeScene.name != menuScene)
                 {
-                    var nm = NetworkManager.Singleton;
+                    nm = NetworkManager.Singleton;
                     if (nm != null && nm.IsListening && nm.SceneManager != null)
                     {
-                        nm.SceneManager.LoadScene("Menu_Main", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                        nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
                     }
                     else
                     {
-                        UnityEngine.SceneManagement.SceneManager.LoadScene("Menu_Main");
+                        SceneManager.LoadScene(menuScene);
                     }
                 }
+
+                // Fade from black so the menu is visible again
+                if (_sceneTransitionManager != null)
+                    await _sceneTransitionManager.FadeFromBlack();
             }
             catch (Exception e)
             {

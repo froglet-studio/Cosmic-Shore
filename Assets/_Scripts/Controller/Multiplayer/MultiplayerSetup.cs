@@ -165,12 +165,21 @@ namespace CosmicShore.Gameplay
                 }
 #endif
 
-                // Host startup is delegated to HostConnectionService which creates a
-                // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).
-                // AuthenticationSceneController waits for the Relay host with a 15s
-                // timeout; if Relay fails, Menu_Main loads without networking.
-                Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
-                CSDebug.Log("[MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.");
+                // Start a local host immediately so the menu scene can spawn
+                // player vessels without waiting for Relay. HostConnectionService
+                // will create a Relay-backed party session on demand when an
+                // invite is sent (via TransitionToPartyHostAsync).
+                bool started = nm.StartHost();
+                if (started)
+                {
+                    Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Local host started successfully.</color>");
+                    CSDebug.Log("[MultiplayerSetup] Local host started.");
+                }
+                else
+                {
+                    Debug.LogError("<color=#FF0000>[FLOW-1] [MultiplayerSetup] StartHost() failed!</color>");
+                    CSDebug.LogError("[MultiplayerSetup] StartHost() returned false — networking will not work.");
+                }
             }
             finally
             {
