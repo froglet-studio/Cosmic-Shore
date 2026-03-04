@@ -167,8 +167,8 @@ namespace CosmicShore.Gameplay
 
                 // Host startup is delegated to HostConnectionService which creates a
                 // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).
-                // AuthenticationSceneController.EnsureHostStartedAsync provides a local
-                // host fallback if the Relay allocation times out.
+                // AuthenticationSceneController waits for the Relay host with a 15s
+                // timeout; if Relay fails, Menu_Main loads without networking.
                 Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
                 CSDebug.Log("[MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.");
             }

@@ -279,27 +279,39 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// If the transition fails, restart the local NetworkManager host so the
-        /// user returns to a functional menu state.
+        /// If the transition fails, recreate the Relay party session via
+        /// <see cref="HostConnectionService"/> so the user returns to a
+        /// functional menu state with networking.
         /// </summary>
         private async UniTask RecoverFromFailedTransitionAsync()
         {
-            Debug.Log("[PartyInviteController] Attempting recovery — restarting local host...");
+            Debug.Log("[PartyInviteController] Attempting recovery — restarting Relay host...");
 
             try
             {
-                var nm = NetworkManager.Singleton;
-                if (nm != null && !nm.IsListening)
+                if (HostConnectionService.Instance != null)
                 {
-                    nm.StartHost();
+                    await HostConnectionService.Instance.CreatePartySessionPublicAsync();
                     await UniTask.Delay(500);
+                }
+                else
+                {
+                    Debug.LogError("[PartyInviteController] HostConnectionService not available for recovery.");
                 }
 
                 // Return to Menu_Main if not already there
                 var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
                 if (activeScene.name != "Menu_Main")
                 {
-                    UnityEngine.SceneManagement.SceneManager.LoadScene("Menu_Main");
+                    var nm = NetworkManager.Singleton;
+                    if (nm != null && nm.IsListening && nm.SceneManager != null)
+                    {
+                        nm.SceneManager.LoadScene("Menu_Main", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                    }
+                    else
+                    {
+                        UnityEngine.SceneManagement.SceneManager.LoadScene("Menu_Main");
+                    }
                 }
             }
             catch (Exception e)

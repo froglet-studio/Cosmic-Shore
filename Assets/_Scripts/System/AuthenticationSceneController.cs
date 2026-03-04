@@ -53,8 +53,8 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Hard safety timeout — force-navigates to main menu if everything hangs.")]
         private float safetyTimeout = 10f;
 
-        [SerializeField, Tooltip("Seconds to wait for the network host to become ready before starting it from the auth scene.")]
-        private float networkHostTimeout = 3f;
+        [SerializeField, Tooltip("Seconds to wait for the Relay host to become ready before loading Menu_Main without networking.")]
+        private float networkHostTimeout = 15f;
 
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
@@ -458,11 +458,11 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Guarantees the network host is running before Menu_Main is loaded.
-        /// The NetworkManager lives in the Bootstrap scene as DontDestroyOnLoad.
-        /// First waits for MultiplayerSetup to start the host (via OnSignedIn).
-        /// If that doesn't happen within <see cref="networkHostTimeout"/>, starts
-        /// the host directly on the existing NetworkManager.
+        /// Waits for the Relay host (started by <see cref="HostConnectionService"/>)
+        /// to become ready before Menu_Main is loaded. The NetworkManager lives in
+        /// the Bootstrap scene as DontDestroyOnLoad. If the Relay host is not ready
+        /// within <see cref="networkHostTimeout"/>, returns without starting a host
+        /// — the caller falls back to a direct (non-networked) scene load.
         /// </summary>
         async UniTask EnsureHostStartedAsync(CancellationToken ct)
         {
@@ -473,7 +473,10 @@ namespace CosmicShore.Core
                 return;
             }
 
-            // Wait for MultiplayerSetup to start the host (triggered by OnSignedIn).
+            // Wait for HostConnectionService to start the Relay host (triggered by
+            // OnSignedIn). HostConnectionService.CreatePartySessionAsync() allocates
+            // Relay and starts the host via the UGS SDK's CreateSessionAsync().
+            // Relay allocation typically takes 1-5s; the timeout covers retries.
             using (var waitCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
             {
                 waitCts.CancelAfter(TimeSpan.FromSeconds(networkHostTimeout));
@@ -483,45 +486,14 @@ namespace CosmicShore.Core
                     await UniTask.WaitUntil(
                         () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
                         cancellationToken: waitCts.Token);
-                    CSDebug.Log("[AuthScene] Network host started (by MultiplayerSetup).");
-                    return;
+                    CSDebug.Log("[AuthScene] Relay host started (by HostConnectionService).");
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
-                    CSDebug.Log("[AuthScene] MultiplayerSetup did not start host within timeout. Starting host from auth scene.");
+                    CSDebug.LogWarning($"[AuthScene] Relay host not ready after {networkHostTimeout}s. " +
+                        "Menu will load without networking — player spawning will not work.");
                 }
             }
-
-            // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
-            var nm = NetworkManager.Singleton;
-            if (nm == null)
-            {
-                CSDebug.LogError("[AuthScene] NetworkManager.Singleton is null — it should exist from the Bootstrap scene.");
-                return;
-            }
-
-            if (nm.IsListening)
-                return;
-
-            // Register connection approval so the host's player object is created.
-            nm.ConnectionApprovalCallback += OnConnectionApproval;
-
-            CSDebug.Log("[AuthScene] Starting network host...");
-            nm.StartHost();
-
-            // Wait one frame for the host to finish starting.
-            await UniTask.Yield(ct);
-        }
-
-        static void OnConnectionApproval(
-            NetworkManager.ConnectionApprovalRequest request,
-            NetworkManager.ConnectionApprovalResponse response)
-        {
-            response.Approved = true;
-            response.CreatePlayerObject = true;
-            response.Position = Vector3.zero;
-            response.Rotation = Quaternion.identity;
-            response.PlayerPrefabHash = null;
         }
 
         void LoadMainMenuDirect()
