@@ -141,21 +141,36 @@ namespace CosmicShore.Game.Progression
         }
 
         /// <summary>
-        /// Returns true if the Vessel Hangar quest has been reached (unlocked) in the
-        /// progression chain. Until this is true, vessel purchases are gated.
-        /// Identified by DisplayName "VESSEL HANGAR" in the quest list.
+        /// Returns true if the Vessel Hangar quest has been reached in the progression chain.
+        /// The hangar quest is identified by DisplayName "VESSEL HANGAR" and is unlocked when
+        /// every quest before it in the chain is completed.
         /// </summary>
         public bool IsVesselHangarUnlocked()
         {
             if (questList == null) return false;
 
-            foreach (var quest in questList.Quests)
+            int hangarIndex = -1;
+            for (int i = 0; i < questList.Quests.Count; i++)
             {
-                if (quest != null && quest.DisplayName == "VESSEL HANGAR")
-                    return IsGameModeUnlocked(quest.GameMode) || quest.IsCompleted;
+                if (questList.Quests[i] != null && questList.Quests[i].DisplayName == "VESSEL HANGAR")
+                {
+                    hangarIndex = i;
+                    break;
+                }
             }
 
-            return false;
+            if (hangarIndex < 0) return false;
+
+            // All quests before the hangar must be completed
+            for (int i = 0; i < hangarIndex; i++)
+            {
+                var quest = questList.Quests[i];
+                if (quest == null || quest.IsPlaceholder) continue;
+                if (!ProgressionData.IsQuestCompleted(quest.GameMode.ToString()))
+                    return false;
+            }
+
+            return true;
         }
 
         /// <summary>

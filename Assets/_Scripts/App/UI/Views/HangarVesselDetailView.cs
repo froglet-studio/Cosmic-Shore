@@ -212,7 +212,7 @@ namespace CosmicShore.App.UI.Views
             var progression = GameModeProgressionService.Instance;
             if (progression != null && !progression.IsVesselHangarUnlocked())
             {
-                ToastNotificationAPI.Show("Vessels can only be unlocked after completing the Vessel Hangar quest.");
+                ToastNotificationAPI.Show("Vessel Hangars LOCKED!");
                 return;
             }
 
