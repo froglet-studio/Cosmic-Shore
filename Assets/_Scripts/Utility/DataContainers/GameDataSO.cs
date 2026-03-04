@@ -92,16 +92,44 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Applies game-mode-specific minimum AI backfill.
-        /// Called by SceneLoader.LaunchGame() before scene load and ClientRpc sync.
-        /// HexRace always needs at least 1 AI opponent for solo play.
+        /// Single source of truth for player count configuration at game launch.
+        /// Computes and stores both SelectedPlayerCount and RequestedAIBackfillCount atomically.
+        /// </summary>
+        /// <param name="totalDesired">Total players the user selected (human + AI)</param>
+        /// <param name="humanCount">Number of human players in the party</param>
+        /// <param name="isMultiplayer">Whether the game mode is multiplayer (competitive modes need min 1 AI for solo)</param>
+        public void ConfigurePlayerCounts(int totalDesired, int humanCount, bool isMultiplayer)
+        {
+            int aiBackfill = Mathf.Max(0, totalDesired - humanCount);
+
+            // Competitive multiplayer modes always need at least 1 AI opponent for solo play
+            if (isMultiplayer && humanCount <= 1 && aiBackfill < 1)
+            {
+                aiBackfill = 1;
+                totalDesired = humanCount + aiBackfill; // bump total to stay consistent
+            }
+
+            SelectedPlayerCount.Value = totalDesired;
+            RequestedAIBackfillCount = aiBackfill;
+
+            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts — total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+        }
+
+        /// <summary>
+        /// Safety net for game-mode-specific minimum AI backfill.
+        /// Called by SceneLoader.LaunchGame() and SpawnAIs().
+        /// Only forces AI for true solo HexRace (1 total player, no opponents).
+        /// With 2+ total players (e.g., 2 humans), no AI is needed.
         /// </summary>
         public int EnsureMinimumAIBackfill()
         {
-            if (GameMode == GameModes.HexRace && RequestedAIBackfillCount < 1)
+            if (GameMode == GameModes.HexRace
+                && SelectedPlayerCount.Value <= 1
+                && RequestedAIBackfillCount < 1)
             {
                 RequestedAIBackfillCount = 1;
-                Debug.Log("<color=#FFD700>[GameDataSO] HexRace: forced RequestedAIBackfillCount=1</color>");
+                SelectedPlayerCount.Value = 2;
+                Debug.Log("<color=#FFD700>[GameDataSO] HexRace solo: forced AI=1, total=2</color>");
             }
             return RequestedAIBackfillCount;
         }

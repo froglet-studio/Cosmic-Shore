@@ -45,7 +45,8 @@ namespace CosmicShore.UI
             {
                 BorderImage.sprite = BorderSpriteSelected;
                 MeepleImage.sprite = PlayerCountSpriteActive;
-                selectedPlayerCount.Value = Count;
+                // Player count is stored in ArcadeGameConfigSO.PlayerCount during modal
+                // interaction, then committed to GameDataSO via ConfigurePlayerCounts() at launch.
             }
             else
             {

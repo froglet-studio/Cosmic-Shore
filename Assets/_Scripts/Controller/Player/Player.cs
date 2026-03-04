@@ -240,6 +240,14 @@ namespace CosmicShore.Gameplay
             IsActive = false;
             VesselNetId = 0;
 
+            // Reset gameplay stats from previous game.
+            // Cleanup() zeroes all stats via property setters, which also
+            // update NetworkVariables on the server. Name/Domain are re-set below.
+            RoundStats.Cleanup();
+
+            // Reset input state (joystick positions, throttle, flags).
+            InputStatus?.ResetForReplay();
+
             // Update owner-writable NetworkVariables to match new game config.
             if (IsOwner)
                 NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
@@ -349,8 +357,17 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void OnNetVesselIdChanged(ulong previousValue, ulong newValue) =>
+        void OnNetVesselIdChanged(ulong previousValue, ulong newValue)
+        {
+            Debug.Log($"<color=#FF00FF>[PLAYER] OnNetVesselIdChanged '{Name}' — prev={previousValue}, new={newValue}, IsServer={IsServer}, IsOwner={IsOwner}</color>");
             VesselNetId = newValue;
+            if (newValue == 0)
+            {
+                Debug.Log($"<color=#FF00FF>[PLAYER] Clearing Vessel+IsActive on '{Name}' (was VesselId={previousValue})</color>");
+                Vessel = null;
+                IsActive = false;
+            }
+        }
 
         void OnNetAvatarIdChanged(int previousValue, int newValue) =>
             AvatarId = newValue;
