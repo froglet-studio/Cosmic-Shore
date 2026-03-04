@@ -190,6 +190,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Creates a block at offset using PrismFactory via event channel.</summary>
         void CreateBlock(float halfGap, Trail trail)
         {
+            if (!this) return;
+
             if (!_onPrismSpawnedEventChannel)
             {
                 CSDebug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
