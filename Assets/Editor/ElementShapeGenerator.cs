@@ -77,52 +77,67 @@ namespace CosmicShore.Editor
             Debug.Log($"[ElementShapeGenerator] Generated {shapes.Length * 2} sprites in {OutputFolder}");
         }
 
-        // --- Shape Definitions ---
+        // --- Shape Definitions (matched to design spec image) ---
+        // All vertices in normalized 0..1 coords with 0.08 padding from edges.
+        // Shapes are portrait-oriented to match the spec proportions.
 
+        // Mass = Equilateral triangle, point up
         static ShapeDef MakeTriangle() => new()
         {
             name = "mass_triangle",
             element = Element.Mass,
-            vertices = RegularPolygon(3, -Mathf.PI / 2f), // point up
+            vertices = new[]
+            {
+                new Vector2(0.50f, 0.92f), // top center
+                new Vector2(0.92f, 0.08f), // bottom right
+                new Vector2(0.08f, 0.08f), // bottom left
+            },
         };
 
+        // Space = Kite/shield (5-sided, sharp top point, wide shoulders, narrower base)
         static ShapeDef MakePentagon() => new()
         {
             name = "space_pentagon",
             element = Element.Space,
-            vertices = RegularPolygon(5, -Mathf.PI / 2f), // point up
+            vertices = new[]
+            {
+                new Vector2(0.50f, 0.92f), // top point
+                new Vector2(0.92f, 0.62f), // right shoulder
+                new Vector2(0.72f, 0.08f), // bottom right
+                new Vector2(0.28f, 0.08f), // bottom left
+                new Vector2(0.08f, 0.62f), // left shoulder
+            },
         };
 
+        // Charge = Tall hexagon (short flat top/bottom, widest at middle)
         static ShapeDef MakeHexagon() => new()
         {
             name = "charge_hexagon",
             element = Element.Charge,
-            vertices = RegularPolygon(6, 0f), // flat top
+            vertices = new[]
+            {
+                new Vector2(0.30f, 0.92f), // top left
+                new Vector2(0.70f, 0.92f), // top right
+                new Vector2(0.92f, 0.50f), // right middle
+                new Vector2(0.70f, 0.08f), // bottom right
+                new Vector2(0.30f, 0.08f), // bottom left
+                new Vector2(0.08f, 0.50f), // left middle
+            },
         };
 
+        // Time = Tall diamond/rhombus (height > width, ~1.4:1 aspect)
         static ShapeDef MakeDiamond() => new()
         {
             name = "time_diamond",
             element = Element.Time,
-            vertices = RegularPolygon(4, -Mathf.PI / 2f), // point up (rotated square)
-        };
-
-        static Vector2[] RegularPolygon(int sides, float startAngle)
-        {
-            var verts = new Vector2[sides];
-            float step = 2f * Mathf.PI / sides;
-            for (int i = 0; i < sides; i++)
+            vertices = new[]
             {
-                float angle = startAngle + i * step;
-                // Map from [-1,1] to [0,1] with padding
-                float padding = 0.08f;
-                float radius = 0.5f - padding;
-                verts[i] = new Vector2(
-                    0.5f + radius * Mathf.Cos(angle),
-                    0.5f + radius * Mathf.Sin(angle));
-            }
-            return verts;
-        }
+                new Vector2(0.50f, 0.92f), // top
+                new Vector2(0.80f, 0.50f), // right
+                new Vector2(0.50f, 0.08f), // bottom
+                new Vector2(0.20f, 0.50f), // left
+            },
+        };
 
         // --- Texture Generation ---
 
