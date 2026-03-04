@@ -232,11 +232,35 @@ namespace CosmicShore.Gameplay
                 if (_partySession == null)
                 {
                     // The proper path is TransitionToPartyHostAsync() → CreatePartySessionPublicAsync(),
-                    // which shuts down the local host before creating a Relay session. This lazy
-                    // fallback may fail if a local host is still running.
-                    DebugExtensions.LogWarningColored(
-                        "[INVITE-SEND] _partySession is null — creating on demand (local host must already be shut down)...", Color.yellow);
-                    await CreatePartySessionAsync();
+                    // which shuts down the local host before creating a Relay session.
+                    // Direct CreatePartySessionAsync() fails when a local host is still running
+                    // because the UGS SDK's internal StartAsHost() conflicts with the active NetworkManager.
+                    var pic = PartyInviteController.Instance;
+                    if (pic != null)
+                    {
+                        if (pic.IsTransitioning)
+                        {
+                            DebugExtensions.LogWarningColored(
+                                "[INVITE-SEND] Waiting for ongoing Relay transition...", Color.yellow);
+                            while (pic.IsTransitioning)
+                                await Task.Yield();
+                        }
+
+                        if (_partySession == null)
+                        {
+                            DebugExtensions.LogWarningColored(
+                                "[INVITE-SEND] _partySession is null — transitioning to Relay host...", Color.yellow);
+                            _lobbyBusy = false; // Release lock during scene-reloading transition
+                            await pic.TransitionToPartyHostAsync().AsTask();
+                        }
+                    }
+
+                    if (_partySession == null)
+                    {
+                        DebugExtensions.LogErrorColored(
+                            "[INVITE-SEND] Party session still null after transition — cannot send invite.", Color.red);
+                        return;
+                    }
                 }
 
                 DebugExtensions.LogColored(
