@@ -1,6 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Injectors;
 using Unity.Netcode;
 using UnityEngine;
@@ -8,15 +9,14 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Extension of ServerPlayerVesselInitializer:
-    /// spawns server-owned AI players and their vessels, then delegates
-    /// human player handling to the base class via OnPlayerNetworkSpawnedUlong.
+    /// Extension of ServerPlayerVesselInitializer for game scenes with AI opponents.
     ///
-    /// OnNetworkSpawn flow:
-    ///   1. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawnedUlong
-    ///      for each, but we haven't subscribed yet so the base ignores them)
-    ///   2. Mark AI players in _processedPlayers so the base never processes them
-    ///   3. base.OnNetworkSpawn() — subscribes to event + handles human players going forward
+    /// Overrides OnClientConnected so that when the host connects:
+    ///   1. SpawnAIs() creates server-owned AI players and vessels
+    ///   2. AI players are marked as processed (base class skips them)
+    ///   3. After a delay for AI replication, base.OnClientConnected spawns the human vessel
+    ///
+    /// For non-host clients, delegates directly to base.OnClientConnected.
     /// </summary>
     public class ServerPlayerVesselInitializerWithAI : ServerPlayerVesselInitializer
     {
@@ -41,76 +41,65 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn — NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn — IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
-
             // Fresh domain pool before any player/AI spawning.
-            // Previous session's pool state is stale after scene transition.
             DomainAssigner.Initialize();
 
-            // Set scene-specific spawn positions before AI spawning.
-            // base.OnNetworkSpawn() also sets them, but AI spawns happen first
-            // (before base runs), so positions must be configured here.
+            // Set scene-specific spawn positions before base runs.
             if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
 
-            // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
-            // AI players fire the event during Spawn(), but since we haven't
-            // subscribed yet (base.OnNetworkSpawn hasn't run), those events
-            // are harmlessly ignored by the base.
-            // Wrapped in try-catch to guarantee base.OnNetworkSpawn() always
-            // runs — otherwise no human players would be processed.
-            if (spawnAIOnServerReady)
+            base.OnNetworkSpawn();
+        }
+
+        protected override void OnClientConnected(ulong clientId)
+        {
+            // Host connects first: spawn AIs, wait, then spawn human vessel
+            if (clientId == NetworkManager.Singleton.LocalClientId && spawnAIOnServerReady)
+                SpawnAIsThenHuman(clientId).Forget();
+            else
+                base.OnClientConnected(clientId);
+        }
+
+        async UniTaskVoid SpawnAIsThenHuman(ulong hostClientId)
+        {
+            try
             {
-                try
-                {
-                    Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
-                    SpawnAIs();
-                    Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}</color>");
-                    CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] SpawnAIs failed: {e.Message}");
-                }
+                SpawnAIs();
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] SpawnAIs failed: {e.Message}");
             }
 
-            // Mark all AI players as processed so the base skips them
-            int aiMarked = 0;
+            // Mark AI players as processed so base.DelayedSpawnVesselForPlayer skips them
             foreach (var p in gameData.Players)
             {
                 if (p is Player aiPlayer && aiPlayer.NetIsAI.Value)
-                {
                     _processedPlayers.Add(aiPlayer.NetworkObjectId);
-                    aiMarked++;
-                }
             }
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
 
-            // Now subscribe (via base) and handle human players going forward
-            base.OnNetworkSpawn();
+            // Wait for AI NetworkObjects to replicate to all clients
+            await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, cancellationToken: _cts.Token);
+
+            // Now spawn the human vessel via base flow
+            base.OnClientConnected(hostClientId);
         }
 
         void SpawnAIs()
         {
             if (!aiPlayerPrefab)
             {
-                Debug.LogError("<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] aiPlayerPrefab is NOT assigned!</color>");
                 CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
                 return;
             }
 
             int aiCount = gameData.EnsureMinimumAIBackfill();
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}</color>");
             if (aiCount <= 0)
-            {
-                Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
                 return;
-            }
 
             // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
             System.Collections.Generic.List<AIProfile> profiles = null;
@@ -159,7 +148,7 @@ namespace CosmicShore.Gameplay
                 // Server-side initialization of the AI player-vessel pair
                 if (!aiVesselNO.TryGetComponent(out IVessel vessel))
                 {
-                    CSDebug.LogError("[ClientPlayerVesselInitializer] Spawned vessel missing IVessel component.");
+                    CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] Spawned vessel missing IVessel component.");
                     return;
                 }
 

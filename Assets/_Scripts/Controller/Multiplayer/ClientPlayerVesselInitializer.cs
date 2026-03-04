@@ -1,8 +1,9 @@
 using System;
-using System.Collections.Generic;
+using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
@@ -20,19 +21,14 @@ namespace CosmicShore.Gameplay
     ///   InitializeNewPlayerAndVessel_ClientRpc   → existing client initializes one new pair
     ///   ReplaceVesselForPlayer_ClientRpc         → swap: re-initialize with a new vessel
     ///
-    /// When an RPC arrives but objects haven't replicated yet, pairs are queued.
-    /// OnPlayerNetworkSpawnedUlong + OnVesselNetworkSpawned SOAP events trigger
-    /// re-processing of the queue — zero WaitUntil polling.
+    /// When an RPC arrives but objects haven't replicated yet, pairs are resolved
+    /// via UniTask.WaitUntil polling until the NetworkObjects appear in gameData.
     /// </summary>
     public class ClientPlayerVesselInitializer : NetworkBehaviour
     {
         [SerializeField] ThemeManagerDataContainerSO themeManagerData;
 
         [Inject] protected GameDataSO gameData;
-
-        readonly List<(ulong playerNetId, ulong vesselNetId)> _pendingPairs = new();
-        readonly List<(ulong playerNetId, ulong vesselNetId)> _pendingSwaps = new();
-        bool _signalClientReadyWhenDone;
 
         public override void OnNetworkSpawn()
         {
@@ -43,25 +39,7 @@ namespace CosmicShore.Gameplay
 
             // Re-register persistent Players that survived the Netcode scene load
             // but were cleared from gameData.Players by ResetRuntimeData().
-            // Their OnNetworkSpawn() won't re-fire, so we manually re-add them
-            // so ProcessPendingPairs() can resolve (playerNetId, vesselNetId) pairs.
             ReRegisterPersistentPlayers();
-
-            // Subscribe to SOAP events so we can process pending pairs
-            // when objects replicate (event-driven, no polling)
-            gameData.OnPlayerNetworkSpawnedUlong.OnRaised += OnPlayerNetworkSpawnedForPending;
-            gameData.OnVesselNetworkSpawned.OnRaised += ProcessPendingPairs;
-            gameData.OnVesselNetworkSpawned.OnRaised += ProcessPendingSwaps;
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= OnPlayerNetworkSpawnedForPending;
-            gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingPairs;
-            gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingSwaps;
-            _pendingPairs.Clear();
-            _pendingSwaps.Clear();
-            base.OnNetworkDespawn();
         }
 
         // ---------------------------------------------------------
@@ -91,7 +69,6 @@ namespace CosmicShore.Gameplay
                     gameData.Players.Add(player);
 
                 // Owners update their vessel type to match the new game config
-                // (synced via SyncGameConfigToClients_ClientRpc before scene load).
                 if (player.IsOwner)
                     player.NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
             }
@@ -111,19 +88,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// RPC sent to NEW client: initialize ALL existing player-vessel pairs.
-        /// Fires ClientReady when all pairs are initialized.
+        /// Fires ClientReady after a delay when all pairs should be initialized.
         /// </summary>
         [ClientRpc]
         internal void InitializeAllPlayersAndVessels_ClientRpc(
             ulong[] playerNetIds, ulong[] vesselNetIds,
             ClientRpcParams rpcParams = default)
         {
-            _signalClientReadyWhenDone = true;
+            var ct = this.GetCancellationTokenOnDestroy();
 
             for (int i = 0; i < playerNetIds.Length; i++)
-                _pendingPairs.Add((playerNetIds[i], vesselNetIds[i]));
+                InitializePlayerAndVesselByNetIds(playerNetIds[i], vesselNetIds[i], ct).Forget();
 
-            ProcessPendingPairs();
+            DelayInvokeClientReady(ct).Forget();
         }
 
         /// <summary>
@@ -135,8 +112,8 @@ namespace CosmicShore.Gameplay
             ulong playerNetId, ulong vesselNetId,
             ClientRpcParams rpcParams = default)
         {
-            _pendingPairs.Add((playerNetId, vesselNetId));
-            ProcessPendingPairs();
+            InitializePlayerAndVesselByNetIds(playerNetId, vesselNetId,
+                this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         // ---------------------------------------------------------
@@ -181,74 +158,78 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// RPC sent to ALL non-host clients when a player swaps their vessel.
         /// The old vessel was already despawned by the server; the new one is replicating.
-        /// Queued until the new vessel's NetworkObject appears.
+        /// Polls until the new vessel appears, then re-initializes.
         /// </summary>
         [ClientRpc]
         internal void ReplaceVesselForPlayer_ClientRpc(
             ulong playerNetId, ulong newVesselNetId,
             ClientRpcParams rpcParams = default)
         {
-            _pendingSwaps.Add((playerNetId, newVesselNetId));
-            ProcessPendingSwaps();
+            WaitAndReplaceVessel(playerNetId, newVesselNetId,
+                this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         // ---------------------------------------------------------
-        // PENDING PAIR RESOLUTION
+        // POLLING-BASED PAIR RESOLUTION
         // ---------------------------------------------------------
 
-        void OnPlayerNetworkSpawnedForPending(ulong _) => ProcessPendingPairs();
-
         /// <summary>
-        /// Tries to resolve pending (playerNetId, vesselNetId) pairs.
-        /// Called when RPCs arrive AND when SOAP events fire (objects replicate).
+        /// Polls until both player and vessel NetworkObjects are available in gameData,
+        /// then initializes the pair. Used by client RPCs when objects haven't replicated yet.
         /// </summary>
-        void ProcessPendingPairs()
+        async UniTaskVoid InitializePlayerAndVesselByNetIds(
+            ulong playerId, ulong vesselId, CancellationToken token)
         {
-            for (int i = _pendingPairs.Count - 1; i >= 0; i--)
-            {
-                var (pId, vId) = _pendingPairs[i];
+            await UniTask.WaitUntil(() =>
+                    gameData.TryGetPlayerByNetworkObjectId(playerId, out _) &&
+                    gameData.TryGetVesselByNetworkObjectId(vesselId, out _),
+                cancellationToken: token);
 
-                if (!gameData.TryGetPlayerByNetworkObjectId(pId, out var player))
-                    continue;
-                if (!gameData.TryGetVesselByNetworkObjectId(vId, out var vessel))
-                    continue;
+            if (!gameData.TryGetPlayerByNetworkObjectId(playerId, out var player))
+                return;
+            if (!gameData.TryGetVesselByNetworkObjectId(vesselId, out var vessel))
+                return;
 
-                // Already initialized (e.g., duplicate event)
-                if (player.Vessel != null)
-                {
-                    _pendingPairs.RemoveAt(i);
-                    continue;
-                }
+            // Already initialized (e.g., duplicate event)
+            if (player.Vessel != null)
+                return;
 
-                InitializePair(player, vessel);
-                _pendingPairs.RemoveAt(i);
-            }
-
-            if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
-            {
-                _signalClientReadyWhenDone = false;
-            }
+            InitializePair(player, vessel);
         }
 
         /// <summary>
-        /// Tries to resolve pending vessel swaps. Unlike <see cref="ProcessPendingPairs"/>,
-        /// the player already exists and has a (now-despawned) vessel reference.
-        /// We wait only for the new vessel to replicate.
+        /// Polls until both player and new vessel are available, then re-initializes.
+        /// Used for vessel swaps where the player already exists.
         /// </summary>
-        void ProcessPendingSwaps()
+        async UniTaskVoid WaitAndReplaceVessel(
+            ulong playerNetId, ulong newVesselNetId, CancellationToken token)
         {
-            for (int i = _pendingSwaps.Count - 1; i >= 0; i--)
-            {
-                var (pId, vId) = _pendingSwaps[i];
+            await UniTask.WaitUntil(() =>
+                    gameData.TryGetPlayerByNetworkObjectId(playerNetId, out _) &&
+                    gameData.TryGetVesselByNetworkObjectId(newVesselNetId, out _),
+                cancellationToken: token);
 
-                if (!gameData.TryGetPlayerByNetworkObjectId(pId, out var player))
-                    continue;
-                if (!gameData.TryGetVesselByNetworkObjectId(vId, out var vessel))
-                    continue;
+            if (!gameData.TryGetPlayerByNetworkObjectId(playerNetId, out var player))
+                return;
+            if (!gameData.TryGetVesselByNetworkObjectId(newVesselNetId, out var vessel))
+                return;
 
-                ReInitializePair(player, vessel);
-                _pendingSwaps.RemoveAt(i);
-            }
+            ReInitializePair(player, vessel);
+        }
+
+        /// <summary>
+        /// Delays then fires ClientReady. Gives time for all pending pairs
+        /// to resolve after receiving InitializeAllPlayersAndVessels_ClientRpc.
+        /// </summary>
+        async UniTaskVoid DelayInvokeClientReady(CancellationToken token)
+        {
+            await UniTask.Delay(1000, DelayType.UnscaledDeltaTime,
+                PlayerLoopTiming.LastPostLateUpdate, token);
+
+            if (token.IsCancellationRequested)
+                return;
+
+            gameData.InvokeClientReady();
         }
 
         // ---------------------------------------------------------
@@ -257,28 +238,19 @@ namespace CosmicShore.Gameplay
 
         void InitializePair(IPlayer player, IVessel vessel)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
             player.InitializeForMultiplayerMode(vessel);
             vessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, vessel);
             gameData.AddPlayer(player);
-            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}</color>");
 
             // Signal this specific player-vessel pair is fully initialized.
-            // Subscribers (e.g. MainMenuController) activate non-local players
-            // individually when their own pair resolves, avoiding the race
-            // condition of batch-activating players whose vessels haven't
-            // replicated yet.
             gameData.InvokePlayerPairInitialized(player.PlayerNetId);
 
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
 
             if (player.IsLocalUser)
-            {
-                Debug.Log("<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
                 gameData.InvokeClientReady();
-            }
         }
 
         /// <summary>

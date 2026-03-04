@@ -21,8 +21,8 @@ namespace CosmicShore.Gameplay
     /// by <see cref="Core.MainMenuController"/> — this class only handles the
     /// network spawn chain, autopilot activation, and vessel swap.
     ///
-    /// Listens to <see cref="GameDataSO.OnPlayerNetworkSpawnedUlong"/> via the base class,
-    /// which waits for NetworkVariables to sync before spawning.
+    /// Inherits OnClientConnected from the base class. Persistent Players are
+    /// handled via ProcessPreExistingPlayers() after network spawn.
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {

@@ -17,15 +17,13 @@ namespace CosmicShore.Gameplay
     /// Server-side vessel spawner.
     ///
     /// Flow:
-    ///   OnNetworkSpawn → subscribe to OnPlayerNetworkSpawnedUlong
-    ///   OnPlayerNetworkSpawnedUlong(ownerClientId) → wait for NetworkVariables to sync
-    ///   → spawn vessel → server-side init
-    ///   → wait → notify existing clients about new player
-    ///   → notify new client about all players
+    ///   OnNetworkSpawn → subscribe to OnClientConnectedCallback
+    ///   OnClientConnected(clientId) → delay for NetworkVariables
+    ///   → spawn vessel → server-side init → notify clients via RPCs
     ///
-    /// RPCs:
-    ///   New client   → InitializeAllPlayersAndVessels_ClientRpc (all pairs)
-    ///   Existing clients → InitializeNewPlayerAndVessel_ClientRpc (just the new pair)
+    /// Persistent Players (surviving Netcode scene loads) are handled by
+    /// ProcessPreExistingPlayers(), which triggers the spawn chain for
+    /// already-connected clients whose OnClientConnected won't re-fire.
     /// </summary>
     [RequireComponent(typeof(NetcodeHooks))]
     public class ServerPlayerVesselInitializer : MonoBehaviour
@@ -49,11 +47,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected Transform[] playerSpawnPoints;
 
         [Header("Timing")]
-        [Tooltip("Delay in ms after OnPlayerNetworkSpawned before reading NetworkVariables.")]
-        [SerializeField] protected int preSpawnDelayMs = 200;
+        [Tooltip("Delay in ms before spawning a vessel for a newly connected client.")]
+        [SerializeField] protected int preSpawnDelayMs = 500;
 
         [Tooltip("Delay in ms after vessel spawn before notifying clients.")]
-        [SerializeField] protected int postSpawnDelayMs = 200;
+        [SerializeField] protected int postSpawnDelayMs = 500;
 
         NetcodeHooks _netcodeHooks;
         protected CancellationTokenSource _cts;
@@ -88,43 +86,27 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                Debug.Log("<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
-
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
 
             if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
 
             _cts = new CancellationTokenSource();
-            gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
 
-            // Process players that were already spawned before this initializer
-            // existed (e.g. the host's Player object spawned in the Auth scene
-            // before Menu_Main loaded). Their SOAP event was already raised and missed.
+            // Handle persistent Players that survived a Netcode scene load.
+            // Their OnClientConnected won't re-fire, so we trigger the spawn chain manually.
             ProcessPreExistingPlayers();
         }
 
+        /// <summary>
+        /// Finds already-connected clients whose Player objects persist across scene loads
+        /// and triggers the spawn chain for them.
+        /// </summary>
         void ProcessPreExistingPlayers()
         {
-            // Stage 1: Check gameData.Players (catches players spawned in THIS scene,
-            // e.g. AI players whose OnNetworkSpawn() already added them).
-            foreach (var p in gameData.Players)
-            {
-                if (p is Player netPlayer && netPlayer.IsSpawned)
-                    HandlePlayerNetworkSpawned(netPlayer.OwnerClientId);
-            }
-
-            // Stage 2: Trigger spawn chain for persistent human Players.
-            // Player NetworkObjects survive Netcode scene loads (DestroyWithScene=false)
-            // but are cleared from gameData.Players by ResetRuntimeData().
-            // Their OnNetworkSpawn() won't re-fire, so we initiate the spawn chain here.
-            // Actual re-initialization (PrepareForNewScene) happens in
-            // FindUnprocessedPlayerByOwnerClientId() after the preSpawnDelay,
-            // which ensures it runs after any Start()-based list clearing
-            // (e.g. scene-placed MultiplayerSetup.DestroyPlayerAndVessel).
             var nm = NetworkManager.Singleton;
             if (nm == null) return;
 
@@ -136,13 +118,15 @@ namespace CosmicShore.Gameplay
                 if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
                     continue;
 
-                HandlePlayerNetworkSpawned(player.OwnerClientId);
+                OnClientConnected(kvp.Key);
             }
         }
 
         protected virtual void OnNetworkDespawn()
         {
-            gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerNetworkSpawned;
+            if (NetworkManager.Singleton)
+                NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+
             _processedPlayers.Clear();
 
             _cts?.Cancel();
@@ -154,77 +138,67 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Called when a Player's OnNetworkSpawn fires. The ownerClientId
-        /// identifies which client owns this player. We wait a short delay
-        /// for NetworkVariables (NetDomain, NetDefaultVesselType, NetIsAI, NetName)
-        /// to replicate, then proceed with vessel spawning.
+        /// Called when a new client connects, or manually for persistent Players
+        /// via ProcessPreExistingPlayers. Virtual for subclass override (AI spawning).
         /// </summary>
-        void HandlePlayerNetworkSpawned(ulong ownerClientId)
+        protected virtual void OnClientConnected(ulong clientId)
         {
-            HandlePlayerNetworkSpawnedAsync(ownerClientId, _cts.Token).Forget();
+            DelayedSpawnVesselForPlayer(clientId).Forget();
         }
 
-        async UniTaskVoid HandlePlayerNetworkSpawnedAsync(ulong ownerClientId, CancellationToken ct)
+        /// <summary>
+        /// Waits for NetworkVariables to sync, then spawns a vessel for the player.
+        /// Uses SpawnManager.GetPlayerNetworkObject for direct player lookup.
+        /// </summary>
+        protected async UniTaskVoid DelayedSpawnVesselForPlayer(ulong clientId)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync — ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
-            // Wait for NetworkVariables set in Player.OnNetworkSpawn to sync
-            await UniTask.Delay(preSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            await UniTask.Delay(preSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: _cts.Token);
 
-            Player player = FindUnprocessedPlayerByOwnerClientId(ownerClientId);
-            if (player == null)
+            var playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+            if (!playerNetObj)
             {
-                Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player object not found for client {clientId}");
                 return;
             }
 
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
+            var player = playerNetObj.GetComponent<Player>();
+            if (!player)
+            {
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player component missing on client {clientId}");
+                return;
+            }
 
-            // Assign domain if not already set.
-            // Persistent players get their domain in PrepareForNewScene() (called by FindUnprocessedPlayerByOwnerClientId).
-            // AI players get their domain in SpawnAIs() and are marked as processed (never reach here).
-            // New human players joining mid-game need assignment now.
+            if (_processedPlayers.Contains(player.NetworkObjectId))
+                return;
+
+            // Persistent players need re-initialization for the new scene
+            if (player.Vessel == null && !gameData.Players.Contains(player))
+                player.PrepareForNewScene();
+
+            // Assign domain if not already set
             if (player.NetDomain.Value is Domains.Unassigned or Domains.None)
                 player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
-            {
-                Debug.Log($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
                 return;
+
+            // Fallback vessel type if not set by owner yet
+            if (player.NetDefaultVesselType.Value is VesselClassType.Random or VesselClassType.Any)
+            {
+                CSDebug.LogWarning("[ServerPlayerVesselInitializer] Vessel type not set, defaulting to selected class");
+                player.NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
             }
 
-            if (!IsReadyToSpawn(player))
-            {
-                Debug.LogError($"<color=#FF0000>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready! VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'</color>");
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player {ownerClientId} not ready after delay. " +
-                                 $"VesselType={player.NetDefaultVesselType.Value}, Name={player.NetName.Value}");
-                return;
-            }
-
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
-            await OnPlayerReadyToSpawnAsync(player, ct);
+            await OnPlayerReadyToSpawnAsync(player, _cts.Token);
         }
 
         /// <summary>
-        /// Called when a player's vessel type is confirmed.
-        /// Spawns the vessel, initializes on server, waits, then notifies clients via RPCs.
+        /// Spawns the vessel, initializes on server, waits for replication, then notifies clients.
         /// Virtual so derived classes (Menu) can add post-init behavior.
         /// </summary>
         protected virtual async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync — SpawnVesselAndInitialize for {player.NetName.Value}</color>");
-            SpawnVesselAndInitialize(player.OwnerClientId, player);
-
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
-            // Wait for the vessel NetworkObject to fully replicate before telling clients
-            await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
-
-            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
-            NotifyClients(player);
-        }
-
-        protected void SpawnVesselAndInitialize(ulong clientId, Player player)
-        {
-            var vesselNO = SpawnVesselForPlayer(clientId, player);
+            var vesselNO = SpawnVesselForPlayer(player.OwnerClientId, player);
             if (!vesselNO)
                 return;
 
@@ -235,6 +209,10 @@ namespace CosmicShore.Gameplay
             }
 
             clientPlayerVesselInitializer.InitializePlayerAndVessel(player, vessel);
+
+            // Wait for the vessel NetworkObject to fully replicate before telling clients
+            await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            NotifyClients(player);
         }
 
         /// <summary>
@@ -280,8 +258,6 @@ namespace CosmicShore.Gameplay
                 clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(
                     playerIds.ToArray(), vesselIds.ToArray(), newTarget);
             }
-            
-            // Invoke Client Ready gameData.InvokeClientReady(); after few interval
         }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer) =>
@@ -323,57 +299,5 @@ namespace CosmicShore.Gameplay
             if (vessel is VesselController vc && vc.IsSpawned)
                 vc.NetworkObject.Despawn(true);
         }
-
-        /// <summary>
-        /// Finds the first unprocessed Player owned by the given clientId.
-        /// Falls back to NetworkManager.ConnectedClients for persistent Players
-        /// that may have been cleared from gameData.Players during scene transition
-        /// (by ResetRuntimeData or DestroyPlayerAndVessel). If found via fallback,
-        /// calls PrepareForNewScene() to re-initialize for the current game config.
-        /// </summary>
-        Player FindUnprocessedPlayerByOwnerClientId(ulong ownerClientId)
-        {
-            foreach (var p in gameData.Players)
-            {
-                if (p is Player netPlayer
-                    && netPlayer.IsSpawned
-                    && netPlayer.OwnerClientId == ownerClientId
-                    && !_processedPlayers.Contains(netPlayer.NetworkObjectId))
-                {
-                    return netPlayer;
-                }
-            }
-
-            // Fallback: discover persistent Player from ConnectedClients.
-            // Player may have been cleared from gameData.Players after
-            // ProcessPreExistingPlayers() triggered the spawn chain
-            // (e.g. scene-placed MultiplayerSetup.Start() → DestroyPlayerAndVessel).
-            var nm = NetworkManager.Singleton;
-            if (nm == null) return null;
-
-            if (!nm.ConnectedClients.TryGetValue(ownerClientId, out var client))
-                return null;
-
-            var playerObj = client.PlayerObject;
-            if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
-                return null;
-
-            if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
-                return null;
-
-            // Re-initialize the persistent Player for the current game scene.
-            player.PrepareForNewScene();
-            return player;
-        }
-
-        /// <summary>
-        /// A player is ready to spawn when both vessel type and name are set.
-        /// </summary>
-        protected bool IsReadyToSpawn(Player player) =>
-            IsValidVesselType(player.NetDefaultVesselType.Value)
-            && !string.IsNullOrEmpty(player.NetName.Value.ToString());
-
-        protected static bool IsValidVesselType(VesselClassType type) =>
-            type != VesselClassType.Random && type != VesselClassType.Any;
     }
 }
