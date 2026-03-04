@@ -21,7 +21,7 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
 
         // Auto-wire pool when not set in inspector
         if (!prismPool)
-            prismPool = FindAnyObjectByType<InteractivePrismPoolManager>();
+            prismPool = InteractivePrismPoolManager.Instance;
     }
 
     public void Begin(FireTrailBlockActionSO so)

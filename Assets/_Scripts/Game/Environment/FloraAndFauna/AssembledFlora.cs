@@ -194,7 +194,6 @@ namespace CosmicShore
 
         public Assembler CreateNewAssembler()
         {
-            CSDebug.Log("New Assembler");
             var newSpindle = AddSpindle();
 
             HealthPrism newHealthPrism = GetHealthPrism(transform.position, transform.rotation);

@@ -71,7 +71,7 @@ namespace CosmicShore
 
             // Auto-wire pool when spawned from prefab (prefab instances can't hold scene references)
             if (!healthPrismPool)
-                healthPrismPool = FindAnyObjectByType<HealthPrismPoolManager>();
+                healthPrismPool = HealthPrismPoolManager.Instance;
 
             if (shieldPeriod > 0)
                 StartCoroutine(ShieldRegen());

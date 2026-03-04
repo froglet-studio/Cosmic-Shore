@@ -142,7 +142,7 @@ namespace CosmicShore.Game.Spawning
         {
             // Auto-wire pool when spawned from prefab (prefab instances can't hold scene references)
             if (!prismPool)
-                prismPool = FindAnyObjectByType<InteractivePrismPoolManager>();
+                prismPool = InteractivePrismPoolManager.Instance;
 
             intensityLevel = intensity;
             trails.Clear();

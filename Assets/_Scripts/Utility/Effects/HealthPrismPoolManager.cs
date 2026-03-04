@@ -7,6 +7,16 @@ namespace CosmicShore.Game
 {
     public class HealthPrismPoolManager : GenericPoolManager<HealthPrism>
     {
+        static HealthPrismPoolManager s_instance;
+        public static HealthPrismPoolManager Instance
+        {
+            get
+            {
+                if (!s_instance) s_instance = FindAnyObjectByType<HealthPrismPoolManager>();
+                return s_instance;
+            }
+        }
+
         [Header("Cleanup Events")]
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 

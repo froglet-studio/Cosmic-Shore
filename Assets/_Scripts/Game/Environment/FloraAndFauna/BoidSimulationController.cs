@@ -51,7 +51,7 @@ public class BoidSImulationController : MonoBehaviour
     {
         // Auto-wire pool when spawned from prefab (prefab instances can't hold scene references)
         if (!boidPrismPool)
-            boidPrismPool = FindAnyObjectByType<InteractivePrismPoolManager>();
+            boidPrismPool = InteractivePrismPoolManager.Instance;
 
         kernel = boidSimulationShader.FindKernel("CSMain");
 

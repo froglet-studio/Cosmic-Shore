@@ -67,7 +67,7 @@ public class Boid : Fauna
     {
         // Auto-wire pool when spawned from prefab (prefab instances can't hold scene references)
         if (!prismPool)
-            prismPool = FindAnyObjectByType<InteractivePrismPoolManager>();
+            prismPool = InteractivePrismPoolManager.Instance;
 
         embeddedHealthPrism = GetComponentInChildren<HealthPrism>(true);
         if (!embeddedHealthPrism)

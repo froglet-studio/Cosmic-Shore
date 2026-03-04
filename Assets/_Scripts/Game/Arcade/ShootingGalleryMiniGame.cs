@@ -20,7 +20,7 @@ namespace CosmicShore.Game.Arcade
 
             // Auto-wire pool when not set in inspector
             if (!prismPool)
-                prismPool = FindAnyObjectByType<InteractivePrismPoolManager>();
+                prismPool = InteractivePrismPoolManager.Instance;
 
             SegmentSpawner.Seed = new System.Random().Next();
         }
