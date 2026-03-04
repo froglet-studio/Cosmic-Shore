@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using CosmicShore.App.Systems.CloudData;
+using CosmicShore.App.Systems.CloudData.Models;
 using CosmicShore.Models;
 using TMPro;
 using UnityEngine;
@@ -64,6 +66,12 @@ namespace CosmicShore.App.UI.Screens
             _loaded = true;
         }
 
+        EpisodeProgressCloudData GetCloudProgress()
+        {
+            var ds = UGSDataService.Instance;
+            return ds is { IsInitialized: true } ? ds.Episodes?.Data : null;
+        }
+
         void PopulateEpisodeCards()
         {
             foreach (var card in _spawnedCards)
@@ -72,6 +80,8 @@ namespace CosmicShore.App.UI.Screens
 
             if (episodeList == null || episodeList.episodes == null) return;
             if (cardContainer == null || episodeCardPrefab == null) return;
+
+            var cloudProgress = GetCloudProgress();
 
             foreach (var episode in episodeList.episodes)
             {
@@ -96,13 +106,18 @@ namespace CosmicShore.App.UI.Screens
                         detailTMP.text = episode.description;
                 }
 
-                // Amount / ValueText
+                // Amount / ValueText — show completion status if available
                 var valueTransform = cardGO.transform.Find("Button/ValueText");
                 if (valueTransform != null)
                 {
                     var valueTMP = valueTransform.GetComponent<TMP_Text>();
                     if (valueTMP != null)
-                        valueTMP.text = episode.amount;
+                    {
+                        if (cloudProgress != null && cloudProgress.IsCompleted(episode.episodeId))
+                            valueTMP.text = "Completed";
+                        else
+                            valueTMP.text = episode.amount;
+                    }
                 }
 
                 // BG image
@@ -114,13 +129,17 @@ namespace CosmicShore.App.UI.Screens
                         bgImage.sprite = episode.cardImage;
                 }
 
-                // ComingSoon - show if not available
+                // Button interactability — check cloud unlock state then fallback to SO
+                bool isAvailable = episode.isAvailable;
+                if (cloudProgress != null)
+                    isAvailable = isAvailable || cloudProgress.IsUnlocked(episode.episodeId);
+
                 var button = cardGO.transform.Find("Button");
                 if (button != null)
                 {
                     var btn = button.GetComponent<Button>();
                     if (btn != null)
-                        btn.interactable = episode.isAvailable;
+                        btn.interactable = isAvailable;
                 }
             }
         }

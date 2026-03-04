@@ -130,7 +130,7 @@ namespace CosmicShore.Game
                 }
             }
         }
-        public static void SetShipProperties(ThemeManagerDataContainerSO themeManagerData, IVessel vessel, SO_Captain so_captain = null)
+        public static void SetShipProperties(ThemeManagerDataContainerSO themeManagerData, IVessel vessel)
         {
             if (themeManagerData == null)
             {

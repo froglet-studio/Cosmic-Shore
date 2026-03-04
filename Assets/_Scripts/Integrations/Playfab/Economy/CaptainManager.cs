@@ -58,7 +58,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         CaptainData captainData;
 
         // TODO: Move to Hangar
-        public HashSet<SO_Ship> UnlockedShips = new();
+        public HashSet<SO_Vessel> UnlockedShips = new();
 
         void OnEnable()
         {
@@ -99,8 +99,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             // Check for Encountered
             captain.Encountered =
-                XpHandler.EncounteredCaptainsData.ContainsKey(captain.Ship.Class) &&
-                XpHandler.EncounteredCaptainsData[captain.Ship.Class].Contains(captain.PrimaryElement);
+                XpHandler.EncounteredCaptainsData.ContainsKey(captain.Vessel.Class) &&
+                XpHandler.EncounteredCaptainsData[captain.Vessel.Class].Contains(captain.PrimaryElement);
 
             if (captain.Encountered)
                 captainData.EncounteredCaptains[captain.Name] = captain;
@@ -109,7 +109,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             captain.Unlocked = CatalogManager.Inventory.ContainsCaptain(captain.Name);
             if (captain.Unlocked)
             {
-                UnlockedShips.Add(captain.Ship);
+                UnlockedShips.Add(captain.Vessel);
                 captainData.UnlockedCaptains[captain.Name] = captain;
             }
 
@@ -162,7 +162,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             foreach (var captain in captainData.AllCaptains.Values)
             {
-                if (upgrade.Tags.Contains(captain.Ship.Class.ToString()) && upgrade.Tags.Contains(captain.PrimaryElement.ToString()))
+                if (upgrade.Tags.Contains(captain.Vessel.Class.ToString()) && upgrade.Tags.Contains(captain.PrimaryElement.ToString()))
                     return captain;
             }
             return null;
@@ -197,7 +197,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         int GetCaptainUpgradeCount(Captain captain)
         {
-            return CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString())).Count();
+            return CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Vessel.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString())).Count();
         }
     }
 }

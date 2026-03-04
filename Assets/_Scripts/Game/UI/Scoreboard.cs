@@ -2,6 +2,7 @@
 using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
+using DG.Tweening;
 using Obvious.Soap;
 using System.Collections;
 using System.Collections.Generic;
@@ -68,6 +69,9 @@ namespace CosmicShore.Game.UI
         [Tooltip("Seconds before invited/denied panels auto-dismiss")]
         [SerializeField] private float rematchPanelAutoDismissSeconds = 2f;
 
+        [Header("Animation (optional)")]
+        [SerializeField] private HUDAnimationSettingsSO animSettings;
+
         #endregion
 
         #region Private Fields
@@ -75,6 +79,11 @@ namespace CosmicShore.Game.UI
         private ScoreboardStatsProvider statsProvider;
         private Coroutine _invitedAutoDismiss;
         private Coroutine _deniedAutoDismiss;
+        private CanvasGroup _scoreboardCanvasGroup;
+        private RectTransform _scoreboardRect;
+        private Sequence _entranceSeq;
+        private Tween _scoreCounterTween;
+        private Tween _highScoreCounterTween;
 
         #endregion
 
@@ -124,11 +133,16 @@ namespace CosmicShore.Game.UI
 
             PopulateDynamicStats();
 
-            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(true);
+            if (scoreboardPanel)
+            {
+                scoreboardPanel.gameObject.SetActive(true);
+                PlayEntranceAnimation();
+            }
         }
 
         void HideScoreboard()
         {
+            _entranceSeq?.Kill();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
             if(endGameObject) endGameObject.SetActive(false);
             HideAllRematchPanels();
@@ -159,6 +173,101 @@ namespace CosmicShore.Game.UI
             onDismiss?.Invoke();
         }
 
+        void PlayEntranceAnimation()
+        {
+            if (!scoreboardPanel) return;
+
+            _entranceSeq?.Kill();
+
+            if (!_scoreboardRect)
+                _scoreboardRect = scoreboardPanel.GetComponent<RectTransform>();
+            if (!_scoreboardCanvasGroup)
+            {
+                _scoreboardCanvasGroup = scoreboardPanel.GetComponent<CanvasGroup>();
+                if (!_scoreboardCanvasGroup)
+                    _scoreboardCanvasGroup = scoreboardPanel.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            float duration = animSettings ? animSettings.scoreboardEntranceDuration : 0.35f;
+            float offset = animSettings ? animSettings.scoreboardSlideOffset : 120f;
+            var ease = animSettings ? animSettings.scoreboardEntranceEase : Ease.OutCubic;
+            float rowStagger = animSettings ? animSettings.scoreboardRowStagger : 0.1f;
+            float bannerPunchDur = animSettings ? animSettings.bannerPunchDuration : 0.3f;
+            float bannerPunchScale = animSettings ? animSettings.bannerPunchScale : 1.2f;
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+
+            // Panel slide + fade
+            var targetPos = _scoreboardRect.anchoredPosition;
+            _scoreboardRect.anchoredPosition = new Vector2(targetPos.x, targetPos.y - offset);
+            _scoreboardCanvasGroup.alpha = 0f;
+
+            _entranceSeq = DOTween.Sequence()
+                .Join(_scoreboardRect.DOAnchorPos(targetPos, duration).SetEase(ease))
+                .Join(_scoreboardCanvasGroup.DOFade(1f, duration));
+
+            // Banner text punch
+            if (BannerText)
+            {
+                BannerText.transform.localScale = Vector3.one * 0.5f;
+                _entranceSeq.Join(BannerText.transform
+                    .DOScale(bannerPunchScale, bannerPunchDur * 0.5f)
+                    .SetEase(Ease.OutBack));
+                _entranceSeq.Append(BannerText.transform
+                    .DOScale(1f, bannerPunchDur * 0.5f)
+                    .SetEase(Ease.OutQuad));
+            }
+
+            // Staggered player rows — fade each name+score pair in sequence
+            StaggerPlayerRows(rowStagger);
+
+            _entranceSeq.SetUpdate(unscaled);
+        }
+
+        private void StaggerPlayerRows(float stagger)
+        {
+            for (int i = 0; i < PlayerNameTextFields.Count; i++)
+            {
+                float delay = stagger * i;
+
+                if (PlayerNameTextFields[i])
+                {
+                    var nameField = PlayerNameTextFields[i];
+                    nameField.alpha = 0f;
+                    _entranceSeq.Insert(delay, nameField.DOFade(1f, 0.2f));
+                }
+
+                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
+                {
+                    var scoreField = PlayerScoreTextFields[i];
+                    scoreField.alpha = 0f;
+                    _entranceSeq.Insert(delay, scoreField.DOFade(1f, 0.2f));
+                }
+            }
+        }
+
+        private void AnimateCounter(TMP_Text field, int target, ref Tween tween)
+        {
+            if (!field) return;
+
+            tween?.Kill();
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+
+            field.text = "0";
+            float current = 0f;
+            tween = DOTween.To(() => current, x => current = x, target, 0.6f)
+                .SetDelay(0.15f)
+                .SetEase(Ease.OutCubic)
+                .OnUpdate(() => field.text = Mathf.RoundToInt(current).ToString())
+                .SetUpdate(unscaled);
+        }
+
+        void OnDestroy()
+        {
+            _entranceSeq?.Kill();
+            _scoreCounterTween?.Kill();
+            _highScoreCounterTween?.Kill();
+        }
+
         #endregion
 
         #region Single Player View
@@ -170,8 +279,7 @@ namespace CosmicShore.Game.UI
             if (BannerText)  BannerText.text   = won ? "VICTORY" : "DEFEAT";
 
             int playerScore = (int)localDomainStats.Score;
-            if (SinglePlayerScoreTextField)
-                SinglePlayerScoreTextField.text = playerScore.ToString();
+            AnimateCounter(SinglePlayerScoreTextField, playerScore, ref _scoreCounterTween);
 
             if (SinglePlayerHighscoreTextField)
             {
@@ -182,7 +290,7 @@ namespace CosmicShore.Game.UI
                     highScore = UGSStatsManager.Instance.GetEvaluatedHighScore(
                         modeEnum, gameData.SelectedIntensity.Value, playerScore);
                 }
-                SinglePlayerHighscoreTextField.text = ((int)highScore).ToString();
+                AnimateCounter(SinglePlayerHighscoreTextField, (int)highScore, ref _highScoreCounterTween);
             }
 
             if (MultiplayerView)  MultiplayerView.gameObject.SetActive(false);
