@@ -95,7 +95,7 @@ namespace CosmicShore
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(p, q, majorRadius, minorRadius, blocksAlongKnot, strands, seed, blockScale);
+            return System.HashCode.Combine(p, q, majorRadius, minorRadius, blocksAlongKnot, strands, blockScale);
         }
 
         Vector3 EvaluateKnot(float t, float strandOffset)

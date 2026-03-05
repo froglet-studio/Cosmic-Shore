@@ -124,7 +124,7 @@ namespace CosmicShore
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(uSamples, vSamples, projectionScale, projectionPole, blockScale, seed);
+            return System.HashCode.Combine(uSamples, vSamples, projectionScale, projectionPole, blockScale);
         }
 
         Vector3 StereographicProject(float x1, float x2, float x3, float x4)

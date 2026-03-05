@@ -55,6 +55,6 @@ public class SpawnableDriftCourse : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(seed, blockScale, spawnDistance, Orgin, blocksPerSegment);
+        return System.HashCode.Combine(blockScale, spawnDistance, Orgin, blocksPerSegment);
     }
 }

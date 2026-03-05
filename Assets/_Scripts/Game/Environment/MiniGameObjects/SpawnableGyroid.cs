@@ -92,7 +92,7 @@ namespace CosmicShore
         protected override int GetParameterHash()
         {
             return System.HashCode.Combine(seedBlockType, maxDepth, separationDistance, overlapCellSize,
-                System.HashCode.Combine(expandTopLeft, expandTopRight, expandBottomLeft, expandBottomRight, blockScale, seed));
+                System.HashCode.Combine(expandTopLeft, expandTopRight, expandBottomLeft, expandBottomRight, blockScale));
         }
 
         List<GyroidNode> ComputeGyroidPositions()

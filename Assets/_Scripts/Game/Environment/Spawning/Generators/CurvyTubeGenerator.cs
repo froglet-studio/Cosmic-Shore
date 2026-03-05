@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Spawning
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(count, curviness, tubeRadius, seed, origin);
+            return System.HashCode.Combine(count, curviness, tubeRadius, origin);
         }
     }
 }

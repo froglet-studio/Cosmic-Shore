@@ -121,7 +121,7 @@ namespace CosmicShore
         protected override int GetParameterHash()
         {
             return System.HashCode.Combine(turns, height, innerRadius, outerRadius,
-                System.HashCode.Combine(samplesPerTurn, radialSamples, sheets, blockScale, seed));
+                System.HashCode.Combine(samplesPerTurn, radialSamples, sheets, blockScale));
         }
     }
 }

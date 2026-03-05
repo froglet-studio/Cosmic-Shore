@@ -87,7 +87,7 @@ namespace CosmicShore
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(seed, blockCount, ringCountHead, ringCountTail, headRadius, tailLength, blockScale, Orgin);
+            return System.HashCode.Combine(blockCount, ringCountHead, ringCountTail, headRadius, tailLength, blockScale, Orgin);
         }
     }
 }

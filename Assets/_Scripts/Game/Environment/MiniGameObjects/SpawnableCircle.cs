@@ -52,6 +52,6 @@ public class SpawnableCircle : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(radius, baseBlockCount, intensityLevel, seed, domain);
+        return System.HashCode.Combine(radius, baseBlockCount);
     }
 }

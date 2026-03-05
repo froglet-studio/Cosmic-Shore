@@ -67,7 +67,7 @@ namespace CosmicShore.Environment.MiniGameObjects
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(maxwidth, seed);
+            return System.HashCode.Combine(maxwidth);
         }
     }
 }

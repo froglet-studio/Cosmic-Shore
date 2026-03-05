@@ -22,7 +22,7 @@ namespace CosmicShore.Game
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(seed);
+            return 0;
         }
     }
 }

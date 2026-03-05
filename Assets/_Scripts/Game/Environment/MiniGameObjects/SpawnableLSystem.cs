@@ -246,6 +246,6 @@ public class SpawnableLSystem : SpawnableBase
     protected override int GetParameterHash()
     {
         return System.HashCode.Combine(preset, baseLength, baseWidth, widthScaleReduction,
-            lengthScaleReduction, seed, customAxiom, customIterations);
+            lengthScaleReduction, customAxiom, customIterations);
     }
 }

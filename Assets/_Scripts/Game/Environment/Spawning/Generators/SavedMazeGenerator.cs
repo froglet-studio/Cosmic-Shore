@@ -42,7 +42,7 @@ namespace CosmicShore.Game.Spawning
                 foreach (var md in mazeData)
                     mazeHash = System.HashCode.Combine(mazeHash, md != null ? md.GetInstanceID() : 0);
             }
-            return System.HashCode.Combine(mazeHash, intensityLevel, rotationAngle, seed, origin);
+            return System.HashCode.Combine(mazeHash, rotationAngle, origin);
         }
     }
 }

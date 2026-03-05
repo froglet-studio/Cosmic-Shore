@@ -52,7 +52,7 @@ public class SpawnableCord : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(seed, blockCount, verticesCount, length, blockScale);
+        return System.HashCode.Combine(blockCount, verticesCount, length, blockScale);
     }
 
     private void Start()

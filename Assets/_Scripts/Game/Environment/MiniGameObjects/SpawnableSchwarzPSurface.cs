@@ -162,7 +162,7 @@ namespace CosmicShore
         protected override int GetParameterHash()
         {
             return System.HashCode.Combine(periods, samplesPerPeriod, surfaceThreshold, periodScale,
-                System.HashCode.Combine(colorBySide, positiveDomain, negativeDomain, blockScale, seed));
+                System.HashCode.Combine(colorBySide, positiveDomain, negativeDomain, blockScale));
         }
     }
 }

@@ -94,7 +94,7 @@ namespace CosmicShore.Game.Spawning
         {
             return System.HashCode.Combine(
                 System.HashCode.Combine(count, stepLength, branchProbability, minBranches, maxBranches),
-                System.HashCode.Combine(minBranchAngle, maxBranchAngle, maxDepth, maxTotalPoints, seed, origin)
+                System.HashCode.Combine(minBranchAngle, maxBranchAngle, maxDepth, maxTotalPoints, origin)
             );
         }
     }

@@ -48,6 +48,6 @@ public class SpawnableBaseballCurve : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(seed, radius, numSegments, seamWidth, b, c);
+        return System.HashCode.Combine(radius, numSegments, seamWidth, b, c);
     }
 }

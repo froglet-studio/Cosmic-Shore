@@ -24,7 +24,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(seed, ringCount, prismsPerRing, ringRadius,
+            return System.HashCode.Combine(ringCount, prismsPerRing, ringRadius,
                 System.HashCode.Combine(ringSpacing, prismScale, prismAngle, isDangerous, isShielded));
         }
 

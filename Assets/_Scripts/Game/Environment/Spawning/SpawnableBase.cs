@@ -59,9 +59,10 @@ namespace CosmicShore.Game.Spawning
         #region Abstract / Virtual Generation
 
         /// <summary>
-        /// Compute a hash of all parameters that affect generation output.
+        /// Compute a hash of all subclass-specific parameters that affect generation output.
         /// Cache is invalidated when this hash changes.
-        /// Include seed, dimensions, counts — anything that changes the output.
+        /// Include dimensions, counts — anything that changes the output.
+        /// Note: seed, intensityLevel, and domain are automatically included by the base class.
         /// </summary>
         protected abstract int GetParameterHash();
 
@@ -96,10 +97,12 @@ namespace CosmicShore.Game.Spawning
 
         /// <summary>
         /// Get trail data, using cache if parameters haven't changed.
+        /// Automatically includes intensityLevel and domain in the cache key
+        /// so subclasses don't need to remember to hash them.
         /// </summary>
         public SpawnTrailData[] GetTrailData()
         {
-            int hash = GetParameterHash();
+            int hash = System.HashCode.Combine(GetParameterHash(), intensityLevel, domain, seed);
             if (_cacheValid && _cachedTrails != null && hash == _cachedHash)
                 return _cachedTrails;
 

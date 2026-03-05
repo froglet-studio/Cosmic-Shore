@@ -314,7 +314,7 @@ namespace CosmicShore
         {
             return System.HashCode.Combine(latitudeBands, fibersPerBand, blocksPerFiber, projectionScale,
                 System.HashCode.Combine(projectionPole, includePolarFibers, includeVillarceauCircles,
-                    villarceauFibers, villarceauBlocks, blockScale, seed));
+                    villarceauFibers, villarceauBlocks, blockScale));
         }
 
         /// <summary>

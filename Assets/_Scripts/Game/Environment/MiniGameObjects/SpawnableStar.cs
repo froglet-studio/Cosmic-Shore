@@ -61,6 +61,6 @@ public class SpawnableStar : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(outerRadius, innerRadius, points, baseBlockCount, intensityLevel, seed, domain);
+        return System.HashCode.Combine(outerRadius, innerRadius, points, baseBlockCount);
     }
 }

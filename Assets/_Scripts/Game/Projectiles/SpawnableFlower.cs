@@ -20,7 +20,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(seed, blockScale, depth);
+            return System.HashCode.Combine(blockScale, depth);
         }
 
         public override GameObject Spawn(int intensity = 1)

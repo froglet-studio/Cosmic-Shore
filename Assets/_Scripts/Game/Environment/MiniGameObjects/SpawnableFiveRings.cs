@@ -106,6 +106,6 @@ public class SpawnableFiveRings : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(seed, blocksPerRing, ringRadius, scale);
+        return System.HashCode.Combine(blocksPerRing, ringRadius, scale);
     }
 }

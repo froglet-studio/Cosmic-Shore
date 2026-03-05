@@ -93,6 +93,6 @@ public class SpawnableDartBoard : SpawnableBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(seed, blockCount, ringCount, ringThickness, gap);
+        return System.HashCode.Combine(blockCount, ringCount, ringThickness, gap);
     }
 }

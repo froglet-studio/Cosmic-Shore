@@ -109,7 +109,7 @@ namespace CosmicShore
 
         protected override int GetParameterHash()
         {
-            return System.HashCode.Combine(numberOfRings, blocksPerRing, ringRadius, blockScale, seed);
+            return System.HashCode.Combine(numberOfRings, blocksPerRing, ringRadius, blockScale);
         }
     }
 }

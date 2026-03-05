@@ -82,6 +82,6 @@ public class SpawnableDiamond : SpawnableShapeBase
 
     protected override int GetParameterHash()
     {
-        return System.HashCode.Combine(halfWidth, halfHeight, baseBlockCount, intensityLevel, seed, domain);
+        return System.HashCode.Combine(halfWidth, halfHeight, baseBlockCount);
     }
 }
