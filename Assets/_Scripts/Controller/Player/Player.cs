@@ -286,9 +286,20 @@ namespace CosmicShore.Gameplay
         public void StartPlayer()
         {
             ToggleActive(true);
+
+            // Vessel can be null on non-host clients when a ClientRpc (e.g. countdown end)
+            // arrives before ClientPlayerVesselInitializer has resolved the player-vessel pair.
+            // This is the same transient Netcode state handled by ResetForPlay() above.
+            if (Vessel == null)
+            {
+                Debug.LogWarning($"[Player] StartPlayer called on '{Name}' (NetObjId={NetworkObjectId}) " +
+                                 "but Vessel is null — vessel pair not yet initialized. Skipping vessel activation.");
+                return;
+            }
+
             Vessel.StartVessel();
             ToggleInputIdle(false);
-            
+
             if (IsNetworkClient)
                 return;
 
