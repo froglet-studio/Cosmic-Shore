@@ -28,10 +28,11 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
             AuthenticationManager.OnLoginSuccess += InitializeEventsInstanceAPI;
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
             AuthenticationManager.OnLoginSuccess -= InitializeEventsInstanceAPI;
             AuthenticationManager.OnLoginSuccess -= InitializePlayerClientInstanceAPI;
+            base.OnDestroy();
         }
 
         #region API Instance Initialization

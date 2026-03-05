@@ -114,11 +114,12 @@ namespace CosmicShore.Core
             }
         }
 
-        void OnDestroy()
+        protected override void OnDestroy()
         {
             var ds = UGSDataService.Instance;
             if (ds != null)
                 ds.OnInitialized -= HandleCloudDataReady;
+            base.OnDestroy();
         }
 
         void HandleCloudDataReady()

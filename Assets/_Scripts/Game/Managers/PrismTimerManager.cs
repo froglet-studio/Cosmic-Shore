@@ -19,6 +19,13 @@ namespace CosmicShore.Core
     public class PrismTimerManager : Singleton<PrismTimerManager>
     {
         /// <summary>
+        /// When true, the manager is shutting down (scene unload). Individual
+        /// CancelTimers calls become no-ops since the entire list is already cleared.
+        /// This prevents O(N²) teardown when thousands of prisms each try to cancel.
+        /// </summary>
+        private bool _disposing;
+
+        /// <summary>
         /// Ensures a PrismTimerManager instance exists. If none was placed in the scene,
         /// creates one automatically so timed shield operations don't silently fail.
         /// </summary>
@@ -54,7 +61,7 @@ namespace CosmicShore.Core
         /// </summary>
         public void ScheduleShieldDeactivation(PrismStateManager target, float delay)
         {
-            if (target == null) return;
+            if (_disposing || target == null) return;
 
             // Cancel any existing timer for this target to avoid duplicates
             CancelTimers(target);
@@ -70,14 +77,21 @@ namespace CosmicShore.Core
         /// <summary>
         /// Cancel all pending timers for the given PrismStateManager.
         /// Call this when the prism is destroyed or returned to pool.
+        /// Uses swap-remove to avoid O(N) element shifting per removal.
         /// </summary>
         public void CancelTimers(PrismStateManager target)
         {
+            if (_disposing || activeTimers.Count == 0) return;
+
             for (int i = activeTimers.Count - 1; i >= 0; i--)
             {
                 if (activeTimers[i].Target == target)
                 {
-                    activeTimers.RemoveAt(i);
+                    // Swap with last element for O(1) removal instead of O(N) shift
+                    int last = activeTimers.Count - 1;
+                    if (i != last)
+                        activeTimers[i] = activeTimers[last];
+                    activeTimers.RemoveAt(last);
                 }
             }
         }
@@ -89,7 +103,7 @@ namespace CosmicShore.Core
             float currentTime = Time.time;
             completionTargets.Clear();
 
-            // Process expired timers
+            // Process expired timers (swap-remove to avoid element shifting)
             for (int i = activeTimers.Count - 1; i >= 0; i--)
             {
                 var entry = activeTimers[i];
@@ -97,13 +111,17 @@ namespace CosmicShore.Core
                 // Null check: target may have been destroyed
                 if (entry.Target == null)
                 {
-                    activeTimers.RemoveAt(i);
+                    int last = activeTimers.Count - 1;
+                    if (i != last) activeTimers[i] = activeTimers[last];
+                    activeTimers.RemoveAt(last);
                     continue;
                 }
 
                 if (currentTime >= entry.EndTime)
                 {
-                    activeTimers.RemoveAt(i);
+                    int last = activeTimers.Count - 1;
+                    if (i != last) activeTimers[i] = activeTimers[last];
+                    activeTimers.RemoveAt(last);
                     completionTargets.Add(entry.Target);
                 }
             }
@@ -119,10 +137,19 @@ namespace CosmicShore.Core
             }
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
+            _disposing = true;
             activeTimers.Clear();
             completionTargets.Clear();
+        }
+
+        protected override void OnDestroy()
+        {
+            _disposing = true;
+            activeTimers.Clear();
+            completionTargets.Clear();
+            base.OnDestroy();
         }
     }
 }

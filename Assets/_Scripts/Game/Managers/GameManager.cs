@@ -62,12 +62,14 @@ namespace CosmicShore.Core
             _onSceneTransition.Raise(false);
 
             gameData.ResetRuntimeData();
-            
+
             // Delay is realtime so it still works if Time.timeScale = 0
-            await UniTask.Delay(TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD), 
+            await UniTask.Delay(TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD),
                 DelayType.UnscaledDeltaTime);
 
-            SceneManager.LoadScene(sceneName);
+            var op = SceneManager.LoadSceneAsync(sceneName);
+            if (op != null)
+                await op.ToUniTask();
         }
 
         private void OnApplicationQuit()

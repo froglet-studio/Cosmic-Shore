@@ -35,11 +35,12 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
             OnGettingPlayerData += XpHandler.OnLoadCaptainXpData;
         }
 
-        public void OnDestroy()
+        protected override void OnDestroy()
         {
             AuthenticationManager.OnLoginSuccess -= XpHandler.LoadCaptainXpData;
             AuthenticationManager.OnLoginSuccess -= LoadPlayerProfile;
             OnGettingPlayerData -= XpHandler.OnLoadCaptainXpData;
+            base.OnDestroy();
         }
         
         void InitializePlayerClientInstanceAPI()

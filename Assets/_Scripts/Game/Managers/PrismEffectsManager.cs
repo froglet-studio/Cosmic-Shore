@@ -321,7 +321,7 @@ namespace CosmicShore.Game
             activeImplosions.Clear();
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
             if (explosionJobData.IsCreated) explosionJobData.Dispose();
             if (implosionJobData.IsCreated) implosionJobData.Dispose();
@@ -329,6 +329,7 @@ namespace CosmicShore.Game
             activeImplosions.Clear();
             tempExplosionList.Clear();
             tempImplosionList.Clear();
+            base.OnDestroy();
         }
 
         #endregion

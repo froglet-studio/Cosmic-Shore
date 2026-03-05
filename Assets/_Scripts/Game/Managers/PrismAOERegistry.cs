@@ -425,11 +425,14 @@ namespace CosmicShore.Game
 
         #region Cleanup
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
             if (_spatial.IsCreated) _spatial.Dispose();
             if (_damage.IsCreated) _damage.Dispose();
             if (_hitIndices.IsCreated) _hitIndices.Dispose();
+            _highWaterMark = 0;
+            _freeList.Clear();
+            base.OnDestroy();
         }
 
         #endregion

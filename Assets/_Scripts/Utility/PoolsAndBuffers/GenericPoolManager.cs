@@ -29,6 +29,10 @@ namespace CosmicShore.Core
         private CancellationTokenSource maintenanceCts;
         private float instantiateTimer;
 
+        [Header("Prewarm")]
+        [Tooltip("Max objects to instantiate synchronously in Awake. The rest are deferred to the maintenance loop.")]
+        [SerializeField] private int maxSyncPrewarm = 8;
+
         protected virtual void Awake()
         {
             pool = new ObjectPool<T>(
@@ -41,8 +45,11 @@ namespace CosmicShore.Core
                 maxSize
             );
 
-            if (defaultCapacity > 0)
-                Prewarm(Mathf.Max(defaultCapacity, bufferSizeTarget));
+            // Prewarm a small batch synchronously so objects are available immediately,
+            // then let the maintenance loop fill the rest across frames.
+            int target = Mathf.Max(defaultCapacity, bufferSizeTarget);
+            if (target > 0)
+                Prewarm(Mathf.Min(target, maxSyncPrewarm));
 
             if (enableBufferMaintenance)
             {
@@ -51,8 +58,19 @@ namespace CosmicShore.Core
             }
         }
 
-        protected virtual void OnDisable() => CancelMaintenance();
-        protected virtual void OnDestroy() => CancelMaintenance();
+        protected virtual void OnDisable()
+        {
+            CancelMaintenance();
+            // Clear tracking on disable (scene unload) — active objects will be
+            // destroyed by Unity, so holding references just prevents GC.
+            _activeObjects.Clear();
+        }
+
+        protected virtual void OnDestroy()
+        {
+            CancelMaintenance();
+            _activeObjects.Clear();
+        }
 
         private void CancelMaintenance()
         {
