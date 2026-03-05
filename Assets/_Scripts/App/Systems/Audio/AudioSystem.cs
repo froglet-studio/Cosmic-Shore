@@ -140,6 +140,8 @@ namespace CosmicShore.App.Systems.Audio
         {
             GameSetting.OnChangeMusicEnabledStatus -= ChangeMusicEnabledStatus;
             GameSetting.OnChangeSFXEnabledStatus -= ChangeSFXEnabledStatus;
+            GameSetting.OnChangeMusicLevel -= ChangeMusicLevel;
+            GameSetting.OnChangeSFXLevel -= ChangeSFXLevel;
         }
 
         void ChangeMusicEnabledStatus(bool status)
@@ -199,8 +201,8 @@ namespace CosmicShore.App.Systems.Audio
 
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                // Fade out original clip masterVolume
-                activeAudioSource.volume = SFXVolume * (1 - (t / transitionTime));
+                // Fade out original clip volume
+                activeAudioSource.volume = MusicVolume * (1 - (t / transitionTime));
                 yield return null;
             }
 
@@ -211,8 +213,8 @@ namespace CosmicShore.App.Systems.Audio
 
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                // Fade in new clip masterVolume
-                activeAudioSource.volume = SFXVolume * (t / transitionTime);
+                // Fade in new clip volume
+                activeAudioSource.volume = MusicVolume * (t / transitionTime);
                 yield return null;
             }
         }
@@ -239,8 +241,8 @@ namespace CosmicShore.App.Systems.Audio
         {
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                originalSource.volume = SFXVolume * (1 - (t / transitionTime));
-                newSource.volume = SFXVolume * (t / transitionTime);
+                originalSource.volume = MusicVolume * (1 - (t / transitionTime));
+                newSource.volume = MusicVolume * (t / transitionTime);
                 yield return null;
             }
 
@@ -284,14 +286,19 @@ namespace CosmicShore.App.Systems.Audio
         }
         #region Mixer Methods
 
-        public void SetMixerMusicVolume(float value)
+        public void SetMixerMusicVolume(float linearVolume)
         {
-            masterMixer.SetFloat("MusicVolume", value);
+            masterMixer.SetFloat("MusicVolume", LinearToDecibels(linearVolume));
         }
 
-        public void SetMixerSFXVolume(float value)
+        public void SetMixerSFXVolume(float linearVolume)
         {
-            masterMixer.SetFloat("SFXVolume", value);
+            masterMixer.SetFloat("SFXVolume", LinearToDecibels(linearVolume));
+        }
+
+        static float LinearToDecibels(float linear)
+        {
+            return linear > 0.0001f ? 20f * Mathf.Log10(linear) : -80f;
         }
         #endregion
 

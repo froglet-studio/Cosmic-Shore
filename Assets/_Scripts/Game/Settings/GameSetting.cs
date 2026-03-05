@@ -87,9 +87,9 @@ namespace CosmicShore.Core
             SetPlayerPrefDefault(PlayerPrefKeys.InvertThrottleEnabled, 0);
             SetPlayerPrefDefault(PlayerPrefKeys.JoystickVisualsEnabled, 1);
 
-            SetPlayerPrefDefault(PlayerPrefKeys.MusicLevel, 1);
-            SetPlayerPrefDefault(PlayerPrefKeys.SFXLevel, 1);
-            SetPlayerPrefDefault(PlayerPrefKeys.HapticsLevel, 1);
+            SetPlayerPrefDefault(PlayerPrefKeys.MusicLevel, 1f);
+            SetPlayerPrefDefault(PlayerPrefKeys.SFXLevel, 1f);
+            SetPlayerPrefDefault(PlayerPrefKeys.HapticsLevel, 1f);
 
             PlayerPrefs.Save();
 
@@ -284,6 +284,11 @@ namespace CosmicShore.Core
         void SetPlayerPrefDefault(PlayerPrefKeys key, int value)
         {
             if (!PlayerPrefs.HasKey(key.ToString())) PlayerPrefs.SetInt(key.ToString(), value);
+        }
+
+        void SetPlayerPrefDefault(PlayerPrefKeys key, float value)
+        {
+            if (!PlayerPrefs.HasKey(key.ToString())) PlayerPrefs.SetFloat(key.ToString(), value);
         }
     }
 }
