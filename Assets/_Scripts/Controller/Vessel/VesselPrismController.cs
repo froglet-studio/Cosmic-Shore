@@ -100,7 +100,7 @@ namespace CosmicShore.Gameplay
             if (cts != null)
                 StopSpawn();
             
-            cts = new CancellationTokenSource();
+            cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             spawnerEnabled = true;
             
             _ = SpawnLoopAsync(cts.Token);
