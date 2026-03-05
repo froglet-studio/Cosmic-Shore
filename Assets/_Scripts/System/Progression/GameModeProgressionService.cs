@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
