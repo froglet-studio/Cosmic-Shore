@@ -18,6 +18,7 @@ namespace CosmicShore.UI
         int _min = 1;
         int _max = 12;
         int _current = 1;
+        bool _interactable = true;
 
         public int Value => _current;
 
@@ -65,11 +66,21 @@ namespace CosmicShore.UI
             OnValueChanged?.Invoke(_current);
         }
 
+        /// <summary>
+        /// Enable or disable the +/- buttons without hiding the stepper.
+        /// The count text remains visible so clients can see the host's value.
+        /// </summary>
+        public void SetInteractable(bool interactable)
+        {
+            _interactable = interactable;
+            Refresh();
+        }
+
         void Refresh()
         {
             if (countText) countText.text = _current.ToString();
-            if (decrementButton) decrementButton.interactable = _current > _min;
-            if (incrementButton) incrementButton.interactable = _current < _max;
+            if (decrementButton) decrementButton.interactable = _interactable && _current > _min;
+            if (incrementButton) incrementButton.interactable = _interactable && _current < _max;
         }
     }
 }
