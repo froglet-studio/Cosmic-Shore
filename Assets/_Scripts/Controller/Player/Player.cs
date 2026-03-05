@@ -279,7 +279,11 @@ namespace CosmicShore.Gameplay
         public void DestroyPlayer()
         {
             if (IsSpawned)
+            {
+                if (IsServer)
+                    NetworkObject.Despawn(true);
                 return;
+            }
             Destroy(gameObject);
         }
 

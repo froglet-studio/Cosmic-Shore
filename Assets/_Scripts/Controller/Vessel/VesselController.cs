@@ -211,8 +211,12 @@ namespace CosmicShore.Gameplay
         public void DestroyVessel()
         {
             if (IsSpawned)
+            {
+                if (IsServer)
+                    NetworkObject.Despawn(true);
                 return;
-            Destroy(gameObject);   
+            }
+            Destroy(gameObject);
         }
 
         public void StartVessel()
