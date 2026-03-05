@@ -52,16 +52,18 @@ namespace CosmicShore.Gameplay
         {
             readyClientCount++;
 
-            // Debug log to help track this state if issues persist
-            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc — {playerName} ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}</color>");
-            CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}");
+            // Use connected clients count (humans only — excludes AI)
+            int humanCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+
+            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc — {playerName} ready. Count: {readyClientCount}/{humanCount}</color>");
+            CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{humanCount}");
 
             // Broadcast which player is ready to all clients
             NotifyPlayerReady_ClientRpc(playerName);
 
-            if (!readyClientCount.Equals(gameData.SelectedPlayerCount))
+            if (readyClientCount < humanCount)
             {
-                Debug.Log($"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{gameData.SelectedPlayerCount})</color>");
+                Debug.Log($"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})</color>");
                 return;
             }
 
