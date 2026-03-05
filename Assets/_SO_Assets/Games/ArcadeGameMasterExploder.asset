@@ -24,8 +24,8 @@ MonoBehaviour:
   SceneName: MinigameMasterExploder
   Captains:
   - {fileID: 11400000, guid: c1225c10c995ac245856b6d611a70673, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 3
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 418

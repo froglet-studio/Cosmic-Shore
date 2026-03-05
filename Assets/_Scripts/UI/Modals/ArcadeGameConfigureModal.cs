@@ -48,9 +48,10 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject squadMateSelectionView;  // Screen 4
 
         [Header("Screen 1 – Configuration Controls")]
-        [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
+        [SerializeField] private PlayerCountStepper          playerCountStepper;
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
+        [SerializeField] private TeamSelectionPanel teamSelectionPanel;
 
         [Tooltip("If true, will filter out unowned ships from being available to play")]
         [SerializeField] private bool respectInventoryForShipSelection = false;
@@ -89,11 +90,14 @@ namespace CosmicShore.UI
             foreach (var intensityButton in intensityButtons)
                 intensityButton.OnSelect += HandleIntensitySelected;
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect += HandlePlayerCountSelected;
+            if (playerCountStepper)
+                playerCountStepper.OnValueChanged += HandlePlayerCountSelected;
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
+
+            if (teamSelectionPanel)
+                teamSelectionPanel.OnTeamSelected += HandleTeamSelected;
         }
 
         void OnDisable()
@@ -101,11 +105,14 @@ namespace CosmicShore.UI
             foreach (var intensityButton in intensityButtons)
                 intensityButton.OnSelect -= HandleIntensitySelected;
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect -= HandlePlayerCountSelected;
+            if (playerCountStepper)
+                playerCountStepper.OnValueChanged -= HandlePlayerCountSelected;
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
+
+            if (teamSelectionPanel)
+                teamSelectionPanel.OnTeamSelected -= HandleTeamSelected;
         }
 
         #endregion
@@ -145,7 +152,7 @@ namespace CosmicShore.UI
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
             config.Intensity   = game.MinIntensity;
-            config.PlayerCount = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
+            config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
             SyncGameDataConfig();
         }
@@ -194,22 +201,17 @@ namespace CosmicShore.UI
 
             // Player count — enforce minimum = party size so host can't select
             // fewer total players than there are humans in the lobby.
-            int effectiveMinPlayers = Mathf.Max(game.MinPlayers, CurrentPartyHumanCount);
-            for (int i = 0; i < playerCountButtons.Count; i++)
-            {
-                var button = playerCountButtons[i];
-                if (!button) continue;
+            int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
-                int count = i + 1;
-                button.SetPlayerCount(count);
-
-                bool active = count >= effectiveMinPlayers && count <= game.MaxPlayers;
-                button.SetActive(active);
-                button.SetSelected(count == config.PlayerCount);
-            }
+            // Stepper UI (preferred — supports 1-12 range)
+            if (playerCountStepper)
+                playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount);
 
             if (teamsValueText)
-                teamsValueText.text = "1";
+                teamsValueText.text = "3";
+
+            if (teamSelectionPanel && gameData.LocalPlayer is Player localPlayer)
+                teamSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -382,18 +384,22 @@ namespace CosmicShore.UI
         {
             if (_selectedGame == null || config == null) return;
 
-            int effectiveMin = Mathf.Max(_selectedGame.MinPlayers, CurrentPartyHumanCount);
-            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayers);
+            int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
+            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayersAllowed);
             config.PlayerCount = playerCount;
 
-            foreach (var button in playerCountButtons)
-            {
-                if (!button) continue;
-                button.SetSelected(button.Count == playerCount);
-            }
+            if (playerCountStepper)
+                playerCountStepper.SetValue(playerCount);
 
             SyncGameDataConfig();
             RaiseConfigChanged();
+        }
+
+        void HandleTeamSelected(Domains domain)
+        {
+            if (gameData.LocalPlayer is not Player player) return;
+            if (!player.IsOwner) return;
+            player.NetDomain.Value = domain;
         }
 
         void HandleConfigChangedExternal()
@@ -538,6 +544,12 @@ namespace CosmicShore.UI
         // Start Game button on Screen 2
         public void OnStartGameClicked()
         {
+            if (hostConnectionData != null && !hostConnectionData.IsHost)
+            {
+                Debug.LogWarning("[ArcadeConfigModal] Only the host can start a game.");
+                return;
+            }
+
             Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
 
@@ -562,7 +574,7 @@ namespace CosmicShore.UI
                 : 1;
 
             // Single source of truth — GameDataSO owns the player count computation
-            gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount, selectedGame.IsMultiplayer);
+            gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
             Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +

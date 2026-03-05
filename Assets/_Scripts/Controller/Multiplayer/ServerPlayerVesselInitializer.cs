@@ -179,12 +179,8 @@ namespace CosmicShore.Gameplay
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
 
-            // Assign domain if not already set.
-            // Persistent players get their domain in PrepareForNewScene() (called by FindUnprocessedPlayerByOwnerClientId).
-            // AI players get their domain in SpawnAIs() and are marked as processed (never reach here).
-            // New human players joining mid-game need assignment now.
-            if (player.NetDomain.Value is Domains.Unassigned or Domains.None)
-                player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+            // Domain is owner-writable: human players choose their team via TeamSelectionPanel,
+            // AI players get their domain set in SpawnAIs(). No server assignment needed here.
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
             {
