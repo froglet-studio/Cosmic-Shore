@@ -30,6 +30,16 @@ namespace CosmicShore.Game
         [Tooltip("Scale of each capsule in local space (X=width, Y=height/length, Z=depth).")]
         [SerializeField] Vector3 capsuleScale = new(12f, 30f, 12f);
 
+        [Header("Placement Noise")]
+        [Tooltip("How much each capsule's position is jittered tangentially on the sphere surface.")]
+        [SerializeField] float placementJitter = 0.15f;
+
+        [Tooltip("How much each capsule's radial distance varies from the base radius.")]
+        [SerializeField] float radialJitter = 0.05f;
+
+        [Tooltip("Seed for deterministic placement noise.")]
+        [SerializeField] int seed = 42;
+
         [Header("Rendering")]
         [SerializeField] Material membraneMaterial;
 
@@ -71,19 +81,29 @@ namespace CosmicShore.Game
             var vertices = GenerateIcosphereVertices(subdivisions);
             matrices = new Matrix4x4[vertices.Count];
             var worldPos = transform.position;
+            var rng = new System.Random(seed);
 
             for (int i = 0; i < vertices.Count; i++)
             {
                 Vector3 radialDir = vertices[i]; // already normalized
-                Vector3 position = worldPos + radialDir * radius;
+
+                // Tangential jitter: pick two perpendicular tangent vectors, offset along them
+                Vector3 tangent1 = Vector3.Cross(radialDir, Vector3.up).sqrMagnitude > 0.001f
+                    ? Vector3.Cross(radialDir, Vector3.up).normalized
+                    : Vector3.Cross(radialDir, Vector3.right).normalized;
+                Vector3 tangent2 = Vector3.Cross(radialDir, tangent1).normalized;
+
+                float jitterU = ((float)rng.NextDouble() * 2f - 1f) * placementJitter;
+                float jitterV = ((float)rng.NextDouble() * 2f - 1f) * placementJitter;
+                float jitterR = ((float)rng.NextDouble() * 2f - 1f) * radialJitter;
+
+                // Jitter the direction on the sphere surface, then re-normalize
+                Vector3 jitteredDir = (radialDir + tangent1 * jitterU + tangent2 * jitterV).normalized;
+                float jitteredRadius = radius * (1f + jitterR);
+                Vector3 position = worldPos + jitteredDir * jitteredRadius;
 
                 // Orient capsule so local Y points radially outward
-                Quaternion rotation = Quaternion.LookRotation(
-                    Vector3.Cross(radialDir, Vector3.up).sqrMagnitude > 0.001f
-                        ? Vector3.Cross(radialDir, Vector3.up).normalized
-                        : Vector3.Cross(radialDir, Vector3.right).normalized,
-                    radialDir
-                );
+                Quaternion rotation = Quaternion.LookRotation(tangent1, jitteredDir);
 
                 matrices[i] = Matrix4x4.TRS(position, rotation, capsuleScale);
             }

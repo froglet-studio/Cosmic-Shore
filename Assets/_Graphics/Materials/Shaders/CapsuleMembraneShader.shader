@@ -2,13 +2,19 @@ Shader "CosmicShore/CapsuleMembrane"
 {
     Properties
     {
-        [Header(Color)]
-        [HDR]_BrightColor ("Bright Color", Color) = (0.22, 0.35, 0.95, 1)
-        [HDR]_DarkColor ("Dark Color", Color) = (0.02, 0.03, 0.08, 1)
-        _FresnelPower ("Fresnel Power", Range(0.5, 10)) = 3.0
+        [Header(Spindle Surface)]
+        [HDR]_BrightColor ("Bright Color", Color) = (0.37, 0.40, 0.96, 1)
+        [HDR]_DullColor ("Dull Color", Color) = (0, 0.028, 1, 1)
+        [HDR]_Color1 ("Color 1", Color) = (0.12, 0.10, 1.49, 0.94)
+        [HDR]_Color2 ("Color 2", Color) = (0, 0, 1.30, 1)
+        _CellDensity ("Cell Density", Range(0.1, 10)) = 1.5
+        _Distance ("Distance Fade", Float) = 400000
+
+        [Header(Animation)]
+        _DeathAnimation ("Death Animation", Range(-0.01, 1)) = 0
 
         [Header(Radial Pulse)]
-        _NoiseFrequency ("Noise Frequency", Range(0.1, 5)) = 0.6
+        _NoiseFrequency ("Noise Frequency", Range(0.001, 2)) = 0.6
         _NoiseAmplitude ("Noise Amplitude", Range(0, 200)) = 40.0
         _PulseSpeed ("Pulse Speed", Range(0, 3)) = 0.4
     }
@@ -18,15 +24,16 @@ Shader "CosmicShore/CapsuleMembrane"
         Tags
         {
             "RenderPipeline" = "UniversalPipeline"
-            "RenderType" = "Opaque"
-            "Queue" = "Geometry"
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent"
         }
 
         Pass
         {
             Name "CapsuleMembrane"
-            Cull Back
+            Cull Off
             ZWrite On
+            Blend SrcAlpha OneMinusSrcAlpha
 
             CGPROGRAM
             #pragma vertex vert
@@ -41,6 +48,7 @@ Shader "CosmicShore/CapsuleMembrane"
             {
                 float4 vertex : POSITION;
                 float3 normal : NORMAL;
+                float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -49,16 +57,71 @@ Shader "CosmicShore/CapsuleMembrane"
                 float4 pos : SV_POSITION;
                 float3 worldNormal : TEXCOORD0;
                 float3 worldPos : TEXCOORD1;
-                UNITY_FOG_COORDS(2)
+                float2 uv : TEXCOORD2;
+                float phase : TEXCOORD3;
+                UNITY_FOG_COORDS(4)
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
+            // Spindle properties
             float4 _BrightColor;
-            float4 _DarkColor;
-            float _FresnelPower;
+            float4 _DullColor;
+            float4 _Color1;
+            float4 _Color2;
+            float _CellDensity;
+            float _Distance;
+            float _DeathAnimation;
+
+            // Radial pulse
             float _NoiseFrequency;
             float _NoiseAmplitude;
             float _PulseSpeed;
+
+            // ---- Hash / noise utilities ----
+
+            // Deterministic phase from world position
+            float hashPhase(float3 p)
+            {
+                return frac(sin(dot(p, float3(12.9898, 78.233, 45.164))) * 43758.5453) * 6.2831853;
+            }
+
+            // 2D Voronoi (matches Unity Shader Graph Voronoi node)
+            float2 voronoiHash(float2 p)
+            {
+                float3 q = float3(
+                    dot(p, float2(127.1, 311.7)),
+                    dot(p, float2(269.5, 183.3)),
+                    dot(p, float2(419.2, 371.9))
+                );
+                return frac(sin(q.xy) * 43758.5453);
+            }
+
+            float voronoi(float2 uv, float angleOffset, float cellDensity)
+            {
+                float2 g = floor(uv * cellDensity);
+                float2 f = frac(uv * cellDensity);
+
+                float minDist = 8.0;
+
+                for (int y = -1; y <= 1; y++)
+                {
+                    for (int x = -1; x <= 1; x++)
+                    {
+                        float2 lattice = float2(x, y);
+                        float2 offset = voronoiHash(g + lattice);
+
+                        // Animate cell centers
+                        float angle = angleOffset;
+                        offset = float2(sin(angle + offset.x * 6.2831853), cos(angle + offset.y * 6.2831853)) * 0.5 + 0.5;
+
+                        float2 diff = lattice + offset - f;
+                        float dist = dot(diff, diff);
+                        minDist = min(minDist, dist);
+                    }
+                }
+
+                return sqrt(minDist);
+            }
 
             // ---- 3D Perlin noise (Ashima Arts) ----
             float3 mod289(float3 x) { return x - floor(x / 289.0) * 289.0; }
@@ -136,31 +199,31 @@ Shader "CosmicShore/CapsuleMembrane"
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
 
-                // Get this instance's world-space pivot from the transform matrix
+                // Instance world-space pivot
                 float3 instanceWorldPos = float3(
                     unity_ObjectToWorld._m03,
                     unity_ObjectToWorld._m13,
                     unity_ObjectToWorld._m23
                 );
 
-                // Radial direction from sphere center (assumed at parent origin)
-                // The instance position IS the radial direction * radius
+                // Per-instance phase derived from position on sphere
+                o.phase = hashPhase(instanceWorldPos);
+
+                // Radial direction
                 float3 radialDir = normalize(instanceWorldPos);
 
-                // Sample Perlin noise using the instance's position on the sphere
+                // Perlin noise radial offset
                 float time = _Time.y * _PulseSpeed;
                 float3 noiseCoord = instanceWorldPos * _NoiseFrequency + float3(time, time * 0.7, time * 0.3);
                 float noise = cnoise(noiseCoord);
+                float3 worldOffset = radialDir * (noise * _NoiseAmplitude);
 
-                // Offset this entire capsule radially
-                float radialOffset = noise * _NoiseAmplitude;
-                float3 worldOffset = radialDir * radialOffset;
-
-                // Transform vertex to world, apply offset, then to clip
+                // Transform vertex to world + offset
                 float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz + worldOffset;
                 o.pos = mul(UNITY_MATRIX_VP, float4(worldPos, 1.0));
                 o.worldNormal = normalize(mul((float3x3)unity_ObjectToWorld, v.normal));
                 o.worldPos = worldPos;
+                o.uv = v.uv;
 
                 UNITY_TRANSFER_FOG(o, o.pos);
                 return o;
@@ -171,10 +234,50 @@ Shader "CosmicShore/CapsuleMembrane"
                 UNITY_SETUP_INSTANCE_ID(i);
 
                 float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
-                float fresnel = pow(1.0 - saturate(abs(dot(viewDir, i.worldNormal))), _FresnelPower);
+                float3 normal = normalize(i.worldNormal);
 
-                half4 col = lerp(_DarkColor, _BrightColor, fresnel);
+                // ---- Inverse Fresnel Power 4 (matches SpindleGraph sub-graph) ----
+                float NdotV = saturate(dot(viewDir, normal));
+                float inverseFresnel = NdotV * NdotV;
+                inverseFresnel = inverseFresnel * inverseFresnel; // pow4
 
+                // ---- Voronoi cellular pattern ----
+                float angleOffset = _Time.y + i.phase;
+                float voronoiDist = voronoi(i.uv, angleOffset, _CellDensity);
+
+                // ---- Squared distance fade ----
+                float3 objWorldPos = float3(
+                    unity_ObjectToWorld._m03,
+                    unity_ObjectToWorld._m13,
+                    unity_ObjectToWorld._m23
+                );
+                float3 toCam = _WorldSpaceCameraPos - objWorldPos;
+                float sqrDist = dot(toCam, toCam);
+                float distanceFade = saturate(sqrDist / max(_Distance, 0.001));
+
+                // ---- Color ----
+                // Blend BrightColor / DullColor by inverse Fresnel
+                float3 baseColor = lerp(_DullColor.rgb, _BrightColor.rgb, inverseFresnel);
+
+                // ---- Alpha ----
+                // Voronoi drives transparency, modulated by distance
+                float voronoiAlpha = 1.0 - voronoiDist;
+                float alpha = voronoiAlpha * distanceFade;
+
+                // Clamp and add inverse fresnel contribution (face-on = more opaque)
+                alpha = saturate(alpha + inverseFresnel * 0.3);
+
+                // ---- Death animation ----
+                if (_DeathAnimation > 0)
+                {
+                    // Dissolve: reduce alpha based on death progress
+                    alpha *= 1.0 - _DeathAnimation;
+                    clip(alpha - 0.05);
+                }
+
+                clip(alpha - 0.05);
+
+                half4 col = half4(baseColor, alpha);
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }
