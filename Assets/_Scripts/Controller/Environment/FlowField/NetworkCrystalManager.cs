@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using System.Linq;
 

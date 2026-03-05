@@ -2,11 +2,12 @@
 using System.Collections;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using CosmicShore.UI;
+using CosmicShore.Utility;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Utility
 {
