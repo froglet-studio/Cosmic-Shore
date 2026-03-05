@@ -48,7 +48,6 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject squadMateSelectionView;  // Screen 4
 
         [Header("Screen 1 – Configuration Controls")]
-        [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
         [SerializeField] private PlayerCountStepper          playerCountStepper;
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
@@ -91,9 +90,6 @@ namespace CosmicShore.UI
             foreach (var intensityButton in intensityButtons)
                 intensityButton.OnSelect += HandleIntensitySelected;
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect += HandlePlayerCountSelected;
-
             if (playerCountStepper)
                 playerCountStepper.OnValueChanged += HandlePlayerCountSelected;
 
@@ -108,9 +104,6 @@ namespace CosmicShore.UI
         {
             foreach (var intensityButton in intensityButtons)
                 intensityButton.OnSelect -= HandleIntensitySelected;
-
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect -= HandlePlayerCountSelected;
 
             if (playerCountStepper)
                 playerCountStepper.OnValueChanged -= HandlePlayerCountSelected;
@@ -213,20 +206,6 @@ namespace CosmicShore.UI
             // Stepper UI (preferred — supports 1-12 range)
             if (playerCountStepper)
                 playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount);
-
-            // Legacy button UI (fallback for scenes still using 4 buttons)
-            for (int i = 0; i < playerCountButtons.Count; i++)
-            {
-                var button = playerCountButtons[i];
-                if (!button) continue;
-
-                int count = i + 1;
-                button.SetPlayerCount(count);
-
-                bool active = count >= effectiveMin && count <= game.MaxPlayersAllowed;
-                button.SetActive(active);
-                button.SetSelected(count == config.PlayerCount);
-            }
 
             if (teamsValueText)
                 teamsValueText.text = "3";
@@ -411,12 +390,6 @@ namespace CosmicShore.UI
 
             if (playerCountStepper)
                 playerCountStepper.SetValue(playerCount);
-
-            foreach (var button in playerCountButtons)
-            {
-                if (!button) continue;
-                button.SetSelected(button.Count == playerCount);
-            }
 
             SyncGameDataConfig();
             RaiseConfigChanged();
