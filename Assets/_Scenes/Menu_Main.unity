@@ -99399,9 +99399,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 149703240736415088}
-        m_TargetAssemblyTypeName: ExploreMenu, Assembly-CSharp
-        m_MethodName: PlaySelectedGame
+      - m_Target: {fileID: 1486013854}
+        m_TargetAssemblyTypeName: CosmicShore.Gameplay.ArcadeConfigSyncManager, Assembly-CSharp
+        m_MethodName: ConfirmLocalPlayerReady
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
