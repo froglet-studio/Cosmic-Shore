@@ -108,6 +108,7 @@ namespace CosmicShore.App.UI.Modals
         private void PlayDOTweenIn()
         {
             EnsureCanvasGroup();
+            DisableAnimatorIfPresent();
             _scaleTween?.Kill();
             _fadeTween?.Kill();
 
@@ -136,6 +137,12 @@ namespace CosmicShore.App.UI.Modals
             _fadeTween = _canvasGroup.DOFade(0f, tweenDuration * 0.7f)
                 .SetEase(Ease.InQuad)
                 .SetUpdate(true);
+        }
+
+        private void DisableAnimatorIfPresent()
+        {
+            if (windowAnimator != null)
+                windowAnimator.enabled = false;
         }
 
         private void AutoFocusFirstSelectable()
