@@ -139,7 +139,6 @@ namespace CosmicShore.Core
 
         private void OnDisable()
         {
-            Debug.Log($"[ScenePerf] PrismTimerManager.OnDisable — {activeTimers.Count} timers t={Time.realtimeSinceStartup:F3}");
             _disposing = true;
             activeTimers.Clear();
             completionTargets.Clear();
@@ -147,7 +146,6 @@ namespace CosmicShore.Core
 
         protected override void OnDestroy()
         {
-            Debug.Log($"[ScenePerf] PrismTimerManager.OnDestroy t={Time.realtimeSinceStartup:F3}");
             _disposing = true;
             activeTimers.Clear();
             completionTargets.Clear();

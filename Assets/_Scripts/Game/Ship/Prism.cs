@@ -1,6 +1,5 @@
 ﻿using System;
 using UnityEngine;
-using System.Collections;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game;
@@ -136,7 +135,11 @@ namespace CosmicShore.Core
 
             scaleAnimator.Initialize();
             scaleAnimator.SetTargetScale(authoredTargetScale);
-            StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
+
+            // Queue activation through centralized manager instead of per-prism coroutine.
+            // This prevents the thundering-herd problem where thousands of WaitForSeconds
+            // timers expire on the same frame.
+            PrismActivationQueue.EnsureInstance().Enqueue(this, authoredTargetScale, waitTime);
 
             if (prismProperties.IsShielded) ActivateShield();
             if (prismProperties.IsDangerous) MakeDangerous();
@@ -144,6 +147,10 @@ namespace CosmicShore.Core
 
         private void ResetState()
         {
+            // Cancel any pending deferred activation from PrismActivationQueue
+            if (PrismActivationQueue.Instance != null)
+                PrismActivationQueue.Instance.Cancel(this);
+
             // Unregister from AOE batch processing
             if (AOERegistryIndex >= 0)
             {
@@ -155,18 +162,16 @@ namespace CosmicShore.Core
             devastated = false;
             IsSmallest = false;
             IsLargest = false;
-            
+
             // Clear trail renderer to prevent visual artifacts across the map
             if (Trail != null && Trail.TrailRenderer != null)
             {
                 Trail.TrailRenderer.Clear();
             }
-            
-            // Ensure physics/rendering are off until Coroutine enables them
+
+            // Ensure physics/rendering are off until activation queue enables them
             if (blockCollider) blockCollider.enabled = false;
             if (meshRenderer) meshRenderer.enabled = false;
-            
-            StopAllCoroutines();
         }
 
         /// <summary>
@@ -190,10 +195,12 @@ namespace CosmicShore.Core
             prismProperties.volume = 1f;
         }
 
-        private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
+        /// <summary>
+        /// Called by <see cref="PrismActivationQueue"/> when this prism's delay has elapsed.
+        /// Contains the same logic that was previously in CreateBlockCoroutine after the yield.
+        /// </summary>
+        internal void ExecuteDeferredActivation(Vector3 authoredTargetScale)
         {
-            yield return new WaitForSeconds(waitTime);
-
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
@@ -214,18 +221,6 @@ namespace CosmicShore.Core
             var registry = PrismAOERegistry.EnsureInstance();
             if (registry != null && registry.IsAvailable)
                 AOERegistryIndex = registry.Register(this);
-
-            // CellControlManager is deprecated, transfer the logics below to somewhere else
-            /*if (CellControlManager.Instance)
-            {
-                CellControlManager.Instance.AddBlock(Domain, prismProperties);
-                Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
-                Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
-                {
-                    if (t != Domain && targetCell)
-                        targetCell.countGrids[t].AddBlock(this);
-                });
-            }*/
         }
 
         // Growth Methods

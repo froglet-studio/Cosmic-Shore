@@ -29,11 +29,7 @@ namespace CosmicShore.Core
             gameData.OnLaunchGameScene += LaunchGameScene;
         }
 
-        private void Start()
-        {
-            Debug.Log($"[ScenePerf] GameManager.Start — scene ready t={Time.realtimeSinceStartup:F3}");
-            _onSceneTransition.Raise(true);
-        }
+        private void Start() => _onSceneTransition.Raise(true);
 
         private void OnDisable()
         {
@@ -63,23 +59,17 @@ namespace CosmicShore.Core
 
         private async UniTaskVoid LoadSceneAsync(string sceneName)
         {
-            Debug.Log($"[ScenePerf] LoadSceneAsync START → '{sceneName}' t={Time.realtimeSinceStartup:F3}");
-
             _onSceneTransition.Raise(false);
-            Debug.Log($"[ScenePerf] _onSceneTransition.Raise(false) done t={Time.realtimeSinceStartup:F3}");
 
             gameData.ResetRuntimeData();
-            Debug.Log($"[ScenePerf] ResetRuntimeData done t={Time.realtimeSinceStartup:F3}");
 
             // Delay is realtime so it still works if Time.timeScale = 0
             await UniTask.Delay(TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD),
                 DelayType.UnscaledDeltaTime);
 
-            Debug.Log($"[ScenePerf] Pre-delay done, calling LoadSceneAsync t={Time.realtimeSinceStartup:F3}");
             var op = SceneManager.LoadSceneAsync(sceneName);
             if (op != null)
                 await op.ToUniTask();
-            Debug.Log($"[ScenePerf] LoadSceneAsync COMPLETE t={Time.realtimeSinceStartup:F3}");
         }
 
         private void OnApplicationQuit()

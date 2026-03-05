@@ -35,7 +35,6 @@ namespace CosmicShore.Core
 
         protected virtual void Awake()
         {
-            float t0 = Time.realtimeSinceStartup;
             pool = new ObjectPool<T>(
                 CreateFunc,
                 OnGetFromPool,
@@ -57,12 +56,10 @@ namespace CosmicShore.Core
                 maintenanceCts = CancellationTokenSource.CreateLinkedTokenSource(this.destroyCancellationToken);
                 BufferMaintenanceAsync(maintenanceCts.Token).Forget();
             }
-            Debug.Log($"[ScenePerf] {GetType().Name}.Awake — prewarmed {Mathf.Min(target, maxSyncPrewarm)}/{target} in {(Time.realtimeSinceStartup - t0)*1000f:F1}ms t={Time.realtimeSinceStartup:F3}");
         }
 
         protected virtual void OnDisable()
         {
-            Debug.Log($"[ScenePerf] {GetType().Name}.OnDisable — active={_activeObjects.Count} t={Time.realtimeSinceStartup:F3}");
             CancelMaintenance();
             // Clear tracking on disable (scene unload) — active objects will be
             // destroyed by Unity, so holding references just prevents GC.
@@ -71,7 +68,6 @@ namespace CosmicShore.Core
 
         protected virtual void OnDestroy()
         {
-            Debug.Log($"[ScenePerf] {GetType().Name}.OnDestroy t={Time.realtimeSinceStartup:F3}");
             CancelMaintenance();
             _activeObjects.Clear();
         }
