@@ -24,8 +24,7 @@ namespace CosmicShore.Gameplay
     {
         [Inject] GameDataSO gameData;
 
-        [Header("Game List (for client-side game lookup by mode)")]
-        [SerializeField] SO_GameList gameList;
+        [Inject] SO_GameList gameList;
 
         readonly HashSet<ulong> _readyClients = new();
         int _expectedHumanCount;
