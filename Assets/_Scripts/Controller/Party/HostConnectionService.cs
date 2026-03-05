@@ -11,6 +11,7 @@ using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
@@ -42,6 +43,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float refreshIntervalSeconds = 3f;
 
         [Inject] private PlayerDataService playerDataService;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private GameDataSO _gameData;
 
         // ─────────────────────────────────────────────────────────────────────
         // Static access
@@ -894,8 +897,20 @@ namespace CosmicShore.Gameplay
             if (activeScene.name == "Menu_Main")
             {
                 Debug.Log("[HostConnectionService] Reloading Menu_Main as network scene (Relay host)...");
+                _sceneTransitionManager?.SetFadeImmediate(1f);
+
+                if (_gameData != null)
+                    _gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
+
                 nm.SceneManager.LoadScene("Menu_Main", LoadSceneMode.Single);
             }
+        }
+
+        private void FadeFromSplashOnReady()
+        {
+            if (_gameData != null)
+                _gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+            _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 
         /// <summary>
