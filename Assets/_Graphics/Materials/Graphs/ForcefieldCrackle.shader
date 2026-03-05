@@ -3,6 +3,24 @@ Shader "Shader Graphs/ForcefieldCrackle"
     Properties
     {
         [HideInInspector] _ImpactCount ("Impact Count", Int) = 0
+
+        [Header(Crackle Colors)]
+        _CrackleColorA ("Primary Color", Color) = (0.3, 0.6, 1.0, 1.0)
+        _CrackleColorB ("Secondary Color", Color) = (0.8, 0.9, 1.0, 1.0)
+
+        [Header(Voronoi Pattern)]
+        _VoronoiCellSize ("Cell Size", Range(2, 40)) = 12
+        _EdgeSharpness ("Edge Sharpness", Range(0.01, 0.5)) = 0.15
+
+        [Header(Ring and Wave)]
+        _RingThickness ("Ring Thickness", Range(0.05, 1)) = 0.4
+        _CenterFillAmount ("Center Fill", Range(0, 1)) = 0.3
+        _RippleSpeed ("Ripple Speed", Range(0.2, 3)) = 1
+
+        [Header(Fresnel Rim)]
+        _FresnelRimColor ("Rim Color", Color) = (0.3, 0.5, 0.8, 1.0)
+        _FresnelRimIntensity ("Rim Intensity", Range(0, 0.5)) = 0.08
+        _FresnelRimPower ("Rim Power", Range(1, 8)) = 3
     }
 
     SubShader

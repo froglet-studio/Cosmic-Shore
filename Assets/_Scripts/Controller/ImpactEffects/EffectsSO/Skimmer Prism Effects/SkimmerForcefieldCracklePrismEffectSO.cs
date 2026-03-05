@@ -11,12 +11,46 @@ namespace CosmicShore.Game
         [SerializeField, Range(0.1f, 2f), Tooltip("How long each crackle persists on the sphere surface (seconds).")]
         private float impactDuration = 0.6f;
 
+        [SerializeField, Range(0.2f, 3f), Tooltip("Multiplier on how fast the ripple ring expands outward. 1 = reaches max radius exactly at expiry.")]
+        private float rippleSpeed = 1f;
+
         [Header("Crackle Appearance")]
         [SerializeField, Range(0.1f, 5f), Tooltip("Brightness / emission multiplier for the crackle.")]
         private float impactIntensity = 1.5f;
 
         [SerializeField, Range(0.05f, 1f), Tooltip("Angular radius of the crackle spread (0 = point, 1 ≈ hemisphere).")]
         private float impactRadius = 0.25f;
+
+        [Header("Voronoi Crackle Pattern")]
+        [SerializeField, Range(2f, 40f), Tooltip("Voronoi cell density — higher values produce finer, denser crackle lines.")]
+        private float voronoiCellSize = 12f;
+
+        [SerializeField, Range(0.01f, 0.5f), Tooltip("Edge sharpness — lower values produce thinner, sharper crackle lines.")]
+        private float edgeSharpness = 0.15f;
+
+        [Header("Ring / Wave Shape")]
+        [SerializeField, Range(0.05f, 1f), Tooltip("Thickness of the expanding ring wavefront relative to angular radius.")]
+        private float ringThickness = 0.4f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("How much the impact center fills in (vs. purely a ring). 0 = ring only, 1 = solid fill at center.")]
+        private float centerFillAmount = 0.3f;
+
+        [Header("Colors")]
+        [SerializeField, Tooltip("Primary crackle color (the dominant line color).")]
+        private Color crackleColorA = new Color(0.3f, 0.6f, 1f, 1f);
+
+        [SerializeField, Tooltip("Secondary crackle color (highlights / hot edges).")]
+        private Color crackleColorB = new Color(0.8f, 0.9f, 1f, 1f);
+
+        [Header("Fresnel Rim")]
+        [SerializeField, Range(0f, 0.5f), Tooltip("Ambient rim glow intensity when no impacts are active.")]
+        private float fresnelRimIntensity = 0.08f;
+
+        [SerializeField, Range(1f, 8f), Tooltip("Fresnel power — higher values make the rim thinner.")]
+        private float fresnelRimPower = 3f;
+
+        [SerializeField, Tooltip("Rim glow color.")]
+        private Color fresnelRimColor = new Color(0.3f, 0.5f, 0.8f, 1f);
 
         [Header("Optional Particle Burst")]
         [SerializeField, Tooltip("Small particle burst prefab spawned at impact point for extra visual detail. Leave null to skip.")]
@@ -25,10 +59,25 @@ namespace CosmicShore.Game
         [SerializeField, Range(0.5f, 3f), Tooltip("Scale multiplier applied to the particle burst.")]
         private float particleBurstScale = 1f;
 
-        // Lazy-cached controller per skimmer instance (SO is shared, controller is per-vessel)
-        // We use the impactor's instance ID as key. Since SOs can't hold per-instance state
-        // across multiple vessels cleanly, we look it up each call — TryGetComponent is fast
-        // when the component exists and is on the same GameObject.
+        /// <summary>
+        /// Pushes all visual config to the controller so it can forward them to the shader.
+        /// Called once per impact — the controller caches until values change.
+        /// </summary>
+        void PushVisualConfig(ForcefieldCrackleController controller)
+        {
+            controller.SetVisualParams(
+                crackleColorA,
+                crackleColorB,
+                fresnelRimColor,
+                voronoiCellSize,
+                edgeSharpness,
+                ringThickness,
+                centerFillAmount,
+                rippleSpeed,
+                fresnelRimIntensity,
+                fresnelRimPower
+            );
+        }
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
@@ -45,18 +94,17 @@ namespace CosmicShore.Game
             Vector3 sphereCenter = sphereCollider.transform.TransformPoint(sphereCollider.center);
             float worldRadius = sphereCollider.radius * MaxAbsComponent(sphereCollider.transform.lossyScale);
 
-            // Closest point on the prism's box collider surface to the sphere center
             Vector3 closestOnPrism = prismCollider.ClosestPoint(sphereCenter);
 
-            // Project onto the sphere surface
             Vector3 toImpact = closestOnPrism - sphereCenter;
-            if (toImpact.sqrMagnitude < 0.0001f) return; // degenerate case — prism center inside sphere center
+            if (toImpact.sqrMagnitude < 0.0001f) return;
 
             Vector3 impactOnSphere = sphereCenter + toImpact.normalized * worldRadius;
 
             // --- Feed the controller ---
             if (!impactor.TryGetComponent<ForcefieldCrackleController>(out var controller)) return;
 
+            PushVisualConfig(controller);
             controller.AddImpact(impactOnSphere, impactDuration, impactIntensity, impactRadius);
 
             // --- Optional particle burst ---
@@ -68,12 +116,9 @@ namespace CosmicShore.Game
 
         void SpawnParticleBurst(Vector3 position, Vector3 normal)
         {
-            // Simple instantiate for the accent particles — these are short-lived fire-and-forget.
-            // If profiling shows overhead, migrate to GenericPoolManager<T>.
             var go = Instantiate(particleBurstPrefab, position, Quaternion.LookRotation(normal));
             go.transform.localScale = Vector3.one * particleBurstScale;
 
-            // Auto-destroy after the particle system finishes
             if (go.TryGetComponent<ParticleSystem>(out var ps))
             {
                 Destroy(go, ps.main.duration + ps.main.startLifetime.constantMax);
