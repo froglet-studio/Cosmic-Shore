@@ -3,7 +3,7 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
+using CosmicShore.Gameplay;
 
 namespace CosmicShore
 {

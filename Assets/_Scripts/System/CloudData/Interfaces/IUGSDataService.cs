@@ -2,9 +2,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CosmicShore.App.Systems.CloudData.Models;
-using CosmicShore.Game.Analytics;
+using CosmicShore.Gameplay;
 using CosmicShore.Game.Progression;
-using CosmicShore.App.Profile;
+using CosmicShore.UI;
 
 namespace CosmicShore.App.Systems.CloudData
 {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
-using CosmicShore.App.Profile;
-using CosmicShore.App.Systems.Audio;
+using CosmicShore.UI;
+using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Progression;
 using CosmicShore.Models;

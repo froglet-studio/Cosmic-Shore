@@ -1,14 +1,12 @@
-﻿using CosmicShore.App.Systems.Xp;
-using CosmicShore.Models;
-using CosmicShore.Utilities;
+﻿using CosmicShore.Core;
+using CosmicShore.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using CosmicShore.Utility;
 
-// TODO: Renamespace - not using playfab directly here
-namespace CosmicShore.Integrations.PlayFab.Economy
+namespace CosmicShore.Core
 {
     [System.Serializable]
     class CaptainData

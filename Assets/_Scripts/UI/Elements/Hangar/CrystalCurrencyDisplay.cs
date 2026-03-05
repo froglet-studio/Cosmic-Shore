@@ -1,4 +1,4 @@
-using CosmicShore.App.Profile;
+using CosmicShore.UI;
 using CosmicShore.App.Systems.VesselUnlock;
 using TMPro;
 using UnityEngine;

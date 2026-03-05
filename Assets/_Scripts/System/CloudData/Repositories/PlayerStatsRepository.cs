@@ -1,4 +1,4 @@
-using CosmicShore.Game.Analytics;
+using CosmicShore.Gameplay;
 
 namespace CosmicShore.App.Systems.CloudData
 {

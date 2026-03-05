@@ -18,7 +18,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public Sprite IconActive;
         [FormerlySerializedAs("Icon")]
         [SerializeField] public Sprite IconInactive;
-        [SerializeField] public SO_Ship Ship;
+        [FormerlySerializedAs("Ship")]
+        [SerializeField] public SO_Vessel Vessel;
         [SerializeField] public Element PrimaryElement;
         [SerializeField] public SO_Element Element;
         [SerializeField] public ResourceCollection InitialResourceLevels;

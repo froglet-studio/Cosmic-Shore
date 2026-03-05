@@ -1,5 +1,5 @@
 using System;
-using CosmicShore.App.Profile;
+using CosmicShore.UI;
 using CosmicShore.App.Systems.CloudData;
 using CosmicShore.Utility;
 

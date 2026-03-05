@@ -1,9 +1,6 @@
-using CosmicShore.App.Systems;
-using CosmicShore.App.Systems.Audio;
-using CosmicShore.App.UI;
-using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
-using CosmicShore.Models.Enums;
+using CosmicShore.UI;
+using CosmicShore.Data;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;

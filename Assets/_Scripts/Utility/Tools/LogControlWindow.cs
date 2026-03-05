@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.App.Profile;
+using CosmicShore.UI;
 using CosmicShore.App.Systems.CloudData;
 using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.Game.Progression;

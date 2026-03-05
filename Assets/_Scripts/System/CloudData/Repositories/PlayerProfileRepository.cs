@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CosmicShore.App.Profile;
+using CosmicShore.UI;
 
 namespace CosmicShore.App.Systems.CloudData
 {

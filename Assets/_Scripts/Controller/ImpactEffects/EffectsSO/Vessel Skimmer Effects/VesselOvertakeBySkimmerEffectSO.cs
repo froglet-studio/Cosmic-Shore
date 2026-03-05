@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Overtake impact effect: when a vessel collides with an opponent's skimmer,
