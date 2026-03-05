@@ -13,6 +13,10 @@ namespace CosmicShore.Core
 
     public class PrismStateManager : MonoBehaviour
     {
+        // [ScenePerf] Teardown counters — static so they accumulate across all instances
+        private static int _disableCount;
+        private static float _firstDisableTime;
+
         [Header("Data Containers")] [SerializeField]
         ThemeManagerDataContainerSO _themeManagerData;
 
@@ -134,12 +138,32 @@ namespace CosmicShore.Core
 
         private void OnDisable()
         {
+            _disableCount++;
+            if (_disableCount == 1)
+                _firstDisableTime = Time.realtimeSinceStartup;
+
             PrismTimerManager.Instance?.CancelTimers(this);
+
+            // Log summary every 500 prisms so we can see throughput
+            if (_disableCount % 500 == 0)
+                Debug.Log($"[ScenePerf] PrismStateManager.OnDisable #{_disableCount} elapsed={((Time.realtimeSinceStartup - _firstDisableTime)*1000f):F0}ms t={Time.realtimeSinceStartup:F3}");
         }
 
         private void OnDestroy()
         {
             PrismTimerManager.Instance?.CancelTimers(this);
+        }
+
+        /// <summary>
+        /// Call from GameManager before scene load to emit a final summary.
+        /// </summary>
+        internal static void LogTeardownSummary()
+        {
+            if (_disableCount > 0)
+            {
+                Debug.Log($"[ScenePerf] PrismStateManager TEARDOWN TOTAL: {_disableCount} prisms in {((Time.realtimeSinceStartup - _firstDisableTime)*1000f):F0}ms");
+                _disableCount = 0;
+            }
         }
     }
 }

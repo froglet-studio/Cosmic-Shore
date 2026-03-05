@@ -195,11 +195,13 @@ namespace CosmicShore.Core
 
         protected virtual void OnDisable()
         {
+            UnityEngine.Debug.Log($"[ScenePerf] {GetType().Name}.OnDisable — registered={registeredAnimators.Count} active={activeAnimators.Count} t={UnityEngine.Time.realtimeSinceStartup:F3}");
             CleanupResources();
         }
 
         protected override void OnDestroy()
         {
+            UnityEngine.Debug.Log($"[ScenePerf] {GetType().Name}.OnDestroy t={UnityEngine.Time.realtimeSinceStartup:F3}");
             CleanupResources();
             base.OnDestroy();
         }

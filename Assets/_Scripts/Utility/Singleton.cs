@@ -21,6 +21,7 @@ namespace CosmicShore.Utilities
             if (Instance == null)
             {
                 Instance = this as T;
+                Debug.Log($"[ScenePerf] Singleton<{typeof(T).Name}>.Awake — created t={Time.realtimeSinceStartup:F3}");
             }
             else
             {
@@ -31,7 +32,10 @@ namespace CosmicShore.Utilities
         protected virtual void OnDestroy()
         {
             if (Instance == this)
+            {
+                Debug.Log($"[ScenePerf] Singleton<{typeof(T).Name}>.OnDestroy — clearing Instance t={Time.realtimeSinceStartup:F3}");
                 Instance = null;
+            }
         }
     }
 

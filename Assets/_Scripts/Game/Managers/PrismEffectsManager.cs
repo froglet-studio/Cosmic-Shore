@@ -299,12 +299,14 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
+            Debug.Log($"[ScenePerf] PrismEffectsManager.OnDisable — explosions={activeExplosions.Count} implosions={activeImplosions.Count} t={Time.realtimeSinceStartup:F3}");
             activeExplosions.Clear();
             activeImplosions.Clear();
         }
 
         protected override void OnDestroy()
         {
+            Debug.Log($"[ScenePerf] PrismEffectsManager.OnDestroy t={Time.realtimeSinceStartup:F3}");
             if (explosionJobData.IsCreated) explosionJobData.Dispose();
             if (implosionJobData.IsCreated) implosionJobData.Dispose();
             activeExplosions.Clear();

@@ -129,6 +129,8 @@ namespace CosmicShore.Game.Projectiles
 
         protected override void OnDestroy()
         {
+            int totalBlocks = 0;
+            float t0 = Time.realtimeSinceStartup;
             if (teamBuffers != null)
             {
                 foreach (var buffer in teamBuffers.Values)
@@ -139,10 +141,12 @@ namespace CosmicShore.Game.Projectiles
                         if (block != null)
                         {
                             Destroy(block.gameObject);
+                            totalBlocks++;
                         }
                     }
                 }
             }
+            Debug.Log($"[ScenePerf] TrailBlockBufferManager.OnDestroy — destroyed {totalBlocks} blocks in {(Time.realtimeSinceStartup - t0)*1000f:F1}ms t={Time.realtimeSinceStartup:F3}");
             base.OnDestroy();
         }
     }

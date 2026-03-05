@@ -73,8 +73,17 @@ namespace CosmicShore.Core
             isRegistered = true;
         }
 
+        // [ScenePerf] teardown counter
+        private static int _disableCount;
+        private static float _firstDisableTime;
+
         private void OnDisable()
         {
+            _disableCount++;
+            if (_disableCount == 1) _firstDisableTime = Time.realtimeSinceStartup;
+            if (_disableCount % 500 == 0)
+                Debug.Log($"[ScenePerf] PrismScaleAnimator.OnDisable #{_disableCount} elapsed={((Time.realtimeSinceStartup - _firstDisableTime)*1000f):F0}ms t={Time.realtimeSinceStartup:F3}");
+
             if (PrismScaleManager.Instance == null || !isRegistered) return;
             PrismScaleManager.Instance.UnregisterAnimator(this);
             isRegistered = false;

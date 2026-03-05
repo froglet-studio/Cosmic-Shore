@@ -427,6 +427,7 @@ namespace CosmicShore.Game
 
         protected override void OnDestroy()
         {
+            Debug.Log($"[ScenePerf] PrismAOERegistry.OnDestroy — hwm={_highWaterMark} freeList={_freeList.Count} t={Time.realtimeSinceStartup:F3}");
             if (_spatial.IsCreated) _spatial.Dispose();
             if (_damage.IsCreated) _damage.Dispose();
             if (_hitIndices.IsCreated) _hitIndices.Dispose();
