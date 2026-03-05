@@ -77086,6 +77086,7 @@ MonoBehaviour:
   - {fileID: 1046431407}
   - {fileID: 1813300077}
   teamsValueText: {fileID: 0}
+  teamSelectionPanel: {fileID: 1847035623}
   respectInventoryForShipSelection: 0
   shipPlaceholderIcon: {fileID: 777058466}
   shipNameText: {fileID: 48527129}
