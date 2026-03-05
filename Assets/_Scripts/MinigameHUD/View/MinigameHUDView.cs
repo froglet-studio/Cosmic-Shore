@@ -42,6 +42,7 @@ namespace CosmicShore.Game.UI
 
         public Transform PlayerScoreContainer => playerScoreContainer;
         public PlayerScoreCard PlayerScoreCardPrefab => playerScoreCardPrefab;
+        public ConnectingPanel ConnectingPanel => connectingPanel;
 
         private Tween _viewFadeTween;
         private Tween _connectingFadeTween;

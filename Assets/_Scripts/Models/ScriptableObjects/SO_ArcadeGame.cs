@@ -20,5 +20,9 @@ namespace CosmicShore
         public CallToActionTargetType CallToActionTargetType;
         public UserActionType ViewUserAction;
         public UserActionType PlayUserAction;
+
+        [Header("Tips")]
+        [Tooltip("Tips shown on the connecting panel before a match starts.")]
+        public SO_GameModeTips Tips;
     }
 }

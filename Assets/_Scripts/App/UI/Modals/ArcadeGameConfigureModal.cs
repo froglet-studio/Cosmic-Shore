@@ -55,6 +55,11 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private TMP_Text shipConfigurationText;
         [SerializeField] private TMP_Text shipVesselNameText;
 
+        [Header("Vessel Navigation Arrows")]
+        [Tooltip("Next/prev vessel buttons — hidden when only one vessel is available.")]
+        [SerializeField] private GameObject nextShipButton;
+        [SerializeField] private GameObject previousShipButton;
+
         [Tooltip("Optional secondary icon (e.g. config screen).")]
         [SerializeField] private Image iconInConfigurationSelectionView;
 
@@ -231,6 +236,10 @@ namespace CosmicShore.App.UI.Modals
             if (!game || game.Vessels == null) return;
 
             _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
+
+            bool showArrows = _availableShips.Count > 1;
+            if (nextShipButton) nextShipButton.SetActive(showArrows);
+            if (previousShipButton) previousShipButton.SetActive(showArrows);
         }
         
         void InitializeDefaultShipFromAvailable()
