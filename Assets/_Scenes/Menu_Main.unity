@@ -34952,7 +34952,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f7df5bea58cb22468273de1a9facada, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  allGames: {fileID: 11400000, guid: 295aa0134b55e474d9aceca4bbb5b444, type: 2}
   GameSelectionContainer: {fileID: 283141851}
   HighScoresContainer: {fileID: 1358711680}
   ShipClassSelection: {fileID: 8022145649317117787}
@@ -60686,7 +60685,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  gameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
 --- !u!1 &1486054860
 GameObject:
   m_ObjectHideFlags: 0
@@ -76863,7 +76861,7 @@ MonoBehaviour:
   iconInConfigurationSelectionView: {fileID: 979286432}
   iconInGameDetailView: {fileID: 4125016651355798845}
   startGameButton: {fileID: 154051347}
-  waitingForOthersLabel: {fileID: 0}
+  waitingForOthersLabel: {fileID: 1057069816}
   arcadeConfigSyncManager: {fileID: 1486013854}
 --- !u!114 &1847035623
 MonoBehaviour:
@@ -89851,7 +89849,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53fdb8b87ea083742933aa41c292b9e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
   GameSelectionView: {fileID: 538005720}
   GameSelectionGrid: {fileID: 1529521931}
   ArcadeDPadNav: {fileID: 4125016653255471350}
@@ -100374,7 +100371,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7577429500dae6e4f87690915138946f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  AllGames: {fileID: 11400000, guid: 23306534ee610414c99a9b7bf3d92995, type: 2}
   AllShips: {fileID: 11400000, guid: 17dcd58a38dad2a498afe518e6a0bb58, type: 2}
   CardList:
   - {fileID: 2120755599}
