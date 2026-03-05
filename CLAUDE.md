@@ -1121,6 +1121,104 @@ Both actions can appear on the same UI row: `OnlinePlayerEntry` has both `invite
 - **DI access**: UI components access `FriendsServiceFacade` via `[Inject]`, not by finding it in the scene.
 - **Bridge between Party and Friends**: `FriendEntryView`'s invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
 
+### Player Count & AI Backfill Pipeline
+
+The player count system is fully data-driven from `SO_ArcadeGame` assets through the UI stepper, into `GameDataSO`, and finally into AI spawning. No hardcoded limits exist in the pipeline.
+
+#### Data Flow
+
+```
+SO_ArcadeGame asset (MinPlayersAllowed, MaxPlayersAllowed)
+       │
+       ▼
+ArcadeGameConfigureModal.InitializeScreen1Controls()
+       │ effectiveMin = Max(game.MinPlayersAllowed, CurrentPartyHumanCount)
+       │ playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount)
+       ▼
+PlayerCountStepper (±1 stepper, range 1-12, fires OnValueChanged)
+       │
+       ▼
+ArcadeGameConfigureModal.HandlePlayerCountSelected(playerCount)
+       │ Clamp(playerCount, effectiveMin, MaxPlayersAllowed) → config.PlayerCount
+       ▼
+ArcadeGameConfigureModal.OnStartGameClicked()
+       │ SyncAllGameDataForLaunch():
+       │   humanCount = Max(1, hostConnectionData.PartyMembers.Count)
+       │   gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount)
+       ▼
+GameDataSO.ConfigurePlayerCounts(totalDesired, humanCount)
+       │ SelectedPlayerCount.Value = totalDesired
+       │ RequestedAIBackfillCount = Max(0, totalDesired - humanCount)
+       ▼
+gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
+       │
+       ▼
+SceneLoader.LaunchGame()
+       │ Syncs SelectedPlayerCount + RequestedAIBackfillCount via ClientRpc
+       ▼
+ServerPlayerVesselInitializerWithAI.OnNetworkSpawn() [game scene]
+       │ SpawnAIs():
+       │   aiCount = gameData.RequestedAIBackfillCount
+       │   teamCounts = gameData.BuildTeamCounts()  ← counts existing human players per team
+       │   For each AI:
+       │     domain = GetBalancedDomain(teamCounts)  ← picks team with fewest players
+       │     teamCounts[domain]++
+       │     Spawn AI player + vessel with that domain
+       ▼
+MultiplayerSetup.CreateOrJoinSession()
+       │ MaxPlayers = gameData.SelectedPlayerCount.Value  ← no hardcoded cap
+```
+
+#### Player Count Examples
+
+| Humans in Party | Selected Total | AI Backfill | Teams (Jade/Ruby/Gold) |
+|---|---|---|---|
+| 1 (solo) | 1 | 0 | 1/0/0 |
+| 1 (solo) | 4 | 3 | 2/1/1 (balanced) |
+| 1 (solo) | 12 | 11 | 4/4/4 (balanced) |
+| 2 (both Jade) | 6 | 4 | 2/2/2 → 4/4/4 with AI fill |
+| 3 (J/R/G) | 9 | 6 | 3/3/3 (balanced) |
+
+#### Team Balancing Algorithm
+
+`ServerPlayerVesselInitializerWithAI.GetBalancedDomain()` assigns each AI to the team with the fewest players. Ties break by enum order (Jade → Ruby → Gold). `GameDataSO.BuildTeamCounts()` initializes a `Dictionary<Domains, int>` with {Jade=0, Ruby=0, Gold=0} and counts existing non-AI players.
+
+#### PlayerCountStepper
+
+`PlayerCountStepper` (`_Scripts/UI/Elements/PlayerCountStepper.cs`) is a ±1 stepper control with three serialized fields:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `decrementButton` | `Button` | "-" button, auto-disables at min |
+| `incrementButton` | `Button` | "+" button, auto-disables at max |
+| `countText` | `TMP_Text` | Displays current count |
+
+The modal initializes it via `playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount)`. The stepper fires `OnValueChanged` on button press, which the modal handles via `HandlePlayerCountSelected`.
+
+A legacy `playerCountButtons` list (4 fixed buttons for counts 1-4) coexists as fallback. Both UIs share the same `HandlePlayerCountSelected` callback. The stepper is required for ranges above 4.
+
+#### Separate Limits
+
+| System | Limit | Purpose |
+|---|---|---|
+| `SO_ArcadeGame.MaxPlayersAllowed` | Per-game (e.g., 12) | Total players (human + AI) in a game session |
+| `HostConnectionDataSO.MaxPartySlots` | 4 | Human players in Menu_Main party lobby |
+| UGS Presence Lobby | 100 | Player discovery (no Relay) |
+
+These are independent — a party of 2 humans can launch a 12-player game with 10 AI.
+
+#### Key Files — Player Count
+
+| Role | File | Location |
+|---|---|---|
+| Per-game min/max config | `SO_ArcadeGame.cs` | `_Scripts/ScriptableObjects/` |
+| Configure modal (UI) | `ArcadeGameConfigureModal.cs` | `_Scripts/UI/Modals/` |
+| Player count stepper | `PlayerCountStepper.cs` | `_Scripts/UI/Elements/` |
+| Player count computation | `GameDataSO.ConfigurePlayerCounts()` | `_Scripts/Utility/DataContainers/` |
+| Team count builder | `GameDataSO.BuildTeamCounts()` | `_Scripts/Utility/DataContainers/` |
+| AI spawner + team balancing | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
+| Session creation | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
+
 ### HexRace Game Mode
 
 HexRace is a competitive crystal-collection racing mode (1-4 players) using a **single unified scene** (`MinigameHexRace.unity`). There is no separate singleplayer scene — all games run through Netcode regardless of player count. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`. See `Assets/_Scripts/Controller/Arcade/HEXRACE.md` for the full technical reference.

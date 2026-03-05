@@ -52,6 +52,7 @@ namespace CosmicShore.UI
         [SerializeField] private PlayerCountStepper          playerCountStepper;
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
+        [SerializeField] private TeamSelectionPanel teamSelectionPanel;
 
         [Tooltip("If true, will filter out unowned ships from being available to play")]
         [SerializeField] private bool respectInventoryForShipSelection = false;
@@ -98,6 +99,9 @@ namespace CosmicShore.UI
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
+
+            if (teamSelectionPanel)
+                teamSelectionPanel.OnTeamSelected += HandleTeamSelected;
         }
 
         void OnDisable()
@@ -113,6 +117,9 @@ namespace CosmicShore.UI
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
+
+            if (teamSelectionPanel)
+                teamSelectionPanel.OnTeamSelected -= HandleTeamSelected;
         }
 
         #endregion
@@ -223,6 +230,9 @@ namespace CosmicShore.UI
 
             if (teamsValueText)
                 teamsValueText.text = "3";
+
+            if (teamSelectionPanel && gameData.LocalPlayer is Player localPlayer)
+                teamSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -410,6 +420,13 @@ namespace CosmicShore.UI
 
             SyncGameDataConfig();
             RaiseConfigChanged();
+        }
+
+        void HandleTeamSelected(Domains domain)
+        {
+            if (gameData.LocalPlayer is not Player player) return;
+            if (!player.IsOwner) return;
+            player.NetDomain.Value = domain;
         }
 
         void HandleConfigChangedExternal()
