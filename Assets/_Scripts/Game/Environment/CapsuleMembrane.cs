@@ -24,6 +24,8 @@ namespace CosmicShore.Game
         [Tooltip("Radius of the membrane sphere.")]
         [SerializeField] float radius = 500f;
 
+        public float Radius => radius;
+
         [Header("Capsule Shape")]
         [Tooltip("Mesh to instance. Leave null to use Unity's built-in capsule.")]
         [SerializeField] Mesh capsuleMesh;

@@ -31,7 +31,16 @@ namespace CosmicShore.Game
         GameObject nucleus;
 
         public float NucleusRadius => nucleus ? nucleus.transform.localScale.x : 0f;
-        public float MembraneRadius => membrane ? membrane.transform.localScale.x : 0f;
+        public float MembraneRadius
+        {
+            get
+            {
+                if (!membrane) return 0f;
+                if (membrane.TryGetComponent<CapsuleMembrane>(out var cm))
+                    return cm.Radius;
+                return membrane.transform.localScale.x;
+            }
+        }
 
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
