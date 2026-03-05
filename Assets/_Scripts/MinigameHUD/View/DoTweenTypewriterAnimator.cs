@@ -9,9 +9,9 @@ namespace CosmicShore.Game.UI
     /// </summary>
     public class DoTweenTypewriterAnimator : MonoBehaviour
     {
-        public UniTaskVoid PlayIn(CancellationToken ct)
+        public async UniTaskVoid PlayIn(CancellationToken ct)
         {
-            return UniTask.CompletedTask.AsUniTask().AsUniTaskVoid();
+            await UniTask.CompletedTask;
         }
 
         public void ClearInstant()

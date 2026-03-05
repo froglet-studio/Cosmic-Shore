@@ -14,11 +14,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utility;
 using CosmicShore.App.UI.ToastNotification;
+using Reflex.Attributes;
 
 namespace CosmicShore.Game.Cinematics
 {
     public class EndGameCinematicController : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [Header("References")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] protected SceneCinematicLibrarySO sceneCinematicLibrary;
@@ -48,7 +51,7 @@ namespace CosmicShore.Game.Cinematics
         protected virtual void OnEnable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated += OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
 
             if (crystalRewardRoot)
                 crystalRewardRoot.SetActive(false);
@@ -65,7 +68,7 @@ namespace CosmicShore.Game.Cinematics
         protected virtual void OnDisable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnIntensityUnlocked -= HandleIntensityUnlocked;
@@ -291,7 +294,7 @@ namespace CosmicShore.Game.Cinematics
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 

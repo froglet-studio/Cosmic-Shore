@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Game.UI;
 using DG.Tweening;
+using Reflex.Attributes;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,6 +10,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class CountdownTimer : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         [SerializeField] Image   countdownDisplay;
         [SerializeField] Sprite  countdown3;
         [SerializeField] Sprite  countdown2;
@@ -56,7 +58,7 @@ namespace CosmicShore.Game.Arcade
                     countdownDisplay.color = idx >= urgentStart
                         ? urgentColor
                         : Color.white;
-                    AudioSystem.Instance.PlaySFXClip(countdownBeep);
+                    audioSystem.PlaySFXClip(countdownBeep);
                 });
 
                 // Fade in from transparent

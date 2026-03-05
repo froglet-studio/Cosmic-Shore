@@ -274,6 +274,23 @@ namespace CosmicShore.UI
             return profileIcons.profileIcons[0].IconSprite;
         }
 
+        // ----------------- XP -----------------
+
+        public int GetXP()
+        {
+            return CurrentProfile?.xp ?? 0;
+        }
+
+        public void AddXP(int amount)
+        {
+            if (CurrentProfile == null || amount <= 0) return;
+
+            CurrentProfile.xp += amount;
+            ScheduleSave();
+            OnProfileChanged?.Invoke(CurrentProfile);
+            CSDebug.Log($"[PlayerDataService] Added {amount} XP. Total: {CurrentProfile.xp}");
+        }
+
         // ----------------- Crystal Currency -----------------
 
         public static event Action<int> OnCrystalBalanceChanged;
@@ -356,7 +373,7 @@ namespace CosmicShore.UI
         void ApplyPendingDebugCrystals()
         {
 #if UNITY_EDITOR
-            int pending = Utility.Tools.LogControlWindow.ConsumePendingDebugCrystals();
+            int pending = LogControlWindow.ConsumePendingDebugCrystals();
             if (pending > 0 && CurrentProfile != null)
             {
                 CurrentProfile.crystalBalance += pending;

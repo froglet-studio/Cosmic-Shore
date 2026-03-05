@@ -20,6 +20,10 @@ namespace CosmicShore.Gameplay
         [Header("View")]
         [SerializeField] private SilhouetteView view; // view
 
+        [Header("Elemental Bars")]
+        [SerializeField] private ElementalBarsView elementBars;
+        public ElementalBarsView ElementBars => elementBars;
+
         private IVessel _vessel;
         private IVesselStatus _status;
         private ResourceSystem _resources;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Game.Progression;
 
 namespace CosmicShore.App.Systems.CloudData

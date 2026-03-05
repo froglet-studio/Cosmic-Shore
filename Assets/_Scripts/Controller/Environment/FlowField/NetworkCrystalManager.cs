@@ -31,7 +31,7 @@ namespace CosmicShore.Game
         {
             if (spawnOnClientReady)
             {
-                gameData.OnClientReady += OnClientReadySpawn;
+                gameData.OnClientReady.OnRaised += OnClientReadySpawn;
                 // Spawn each player's crystal as they join, and catch up
                 // on turn start in case OnPlayerAdded was missed.
                 gameData.OnPlayerAdded += OnPlayerAddedSpawn;
@@ -48,7 +48,7 @@ namespace CosmicShore.Game
         {
             if (spawnOnClientReady)
             {
-                gameData.OnClientReady -= OnClientReadySpawn;
+                gameData.OnClientReady.OnRaised -= OnClientReadySpawn;
                 gameData.OnPlayerAdded -= OnPlayerAddedSpawn;
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStartedCatchUp;
             }

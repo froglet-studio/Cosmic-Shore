@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
 
         public void ChangeSnowOrientation()
         {
-            if (crystalLattice == null)
+            if (shards == null)
                 return;
 
             if (!cellData.TryGetLocalCrystal(out Crystal crystal))

@@ -9,6 +9,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.Game.Progression;
 using CosmicShore.Core;
 using CosmicShore.Utility;
+using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
 
@@ -98,21 +99,24 @@ namespace CosmicShore.App.Systems.CloudData
             if (Instance == this)
                 Instance = null;
 
-            var auth = AuthenticationController.Instance;
-            if (auth != null)
-                auth.OnSignedIn -= HandleSignedIn;
+            try
+            {
+                if (AuthenticationService.Instance != null)
+                    AuthenticationService.Instance.SignedIn -= HandleSignedInEvent;
+            }
+            catch (Exception) { /* AuthenticationService may not be initialized */ }
         }
 
         async void Start()
         {
             try
             {
-                var auth = AuthenticationController.Instance;
-                if (auth != null)
-                    auth.OnSignedIn += HandleSignedIn;
+                if (AuthenticationService.Instance != null)
+                    AuthenticationService.Instance.SignedIn += HandleSignedInEvent;
 
                 // Only initialize eagerly if Unity Services are fully ready
-                if (auth != null && auth.IsSignedIn &&
+                if (AuthenticationService.Instance != null &&
+                    AuthenticationService.Instance.IsSignedIn &&
                     UnityServices.State == ServicesInitializationState.Initialized)
                     await InitializeAsync();
             }
@@ -120,6 +124,12 @@ namespace CosmicShore.App.Systems.CloudData
             {
                 CSDebug.LogError($"[UGSDataService] Start failed: {e.Message}");
             }
+        }
+
+        void HandleSignedInEvent()
+        {
+            var playerId = AuthenticationService.Instance?.PlayerId ?? string.Empty;
+            HandleSignedIn(playerId);
         }
 
         async void HandleSignedIn(string playerId)
