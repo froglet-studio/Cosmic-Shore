@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using CosmicShore.Utility;
@@ -15,21 +16,31 @@ namespace CosmicShore.App.UI
     {
         [SerializeField] NavGroupType navGroupType;
         [SerializeField] GameObject navLinkContainer;
+
+        [Header("Controller Navigation")]
+        [Tooltip("Enable DPad left/right to cycle between nav links in this group.")]
+        [SerializeField] private bool enableDPadCycling = true;
+
         List<NavLink> navLinks = new();
+        private int _activeIndex;
 
         public void ActivateLink(NavLink linkToActivate)
         {
             int selectionIndex = 0;
             foreach (var link in navLinks)
             {
-                link.SetActive(link.Index == linkToActivate.Index);
+                bool isTarget = link.Index == linkToActivate.Index;
+                link.SetActive(isTarget);
+                if (isTarget)
+                    _activeIndex = navLinks.IndexOf(link);
+
                 switch (navGroupType)
                 {
                     case NavGroupType.SelectView:
-                        link.view.gameObject.SetActive(link.Index == linkToActivate.Index);
+                        link.view.gameObject.SetActive(isTarget);
                         break;
                     case NavGroupType.UpdateView:
-                        if (link.Index == linkToActivate.Index)
+                        if (isTarget)
                             link.view.Select(selectionIndex);
                         break;
                     default:
@@ -38,6 +49,29 @@ namespace CosmicShore.App.UI
                 }
                 selectionIndex++;
             }
+        }
+
+        void Update()
+        {
+            if (!enableDPadCycling || Gamepad.current == null || navLinks.Count == 0)
+                return;
+
+            if (Gamepad.current.leftShoulder.wasPressedThisFrame)
+                CyclePrevious();
+            if (Gamepad.current.rightShoulder.wasPressedThisFrame)
+                CycleNext();
+        }
+
+        private void CycleNext()
+        {
+            int next = (_activeIndex + 1) % navLinks.Count;
+            ActivateLink(navLinks[next]);
+        }
+
+        private void CyclePrevious()
+        {
+            int prev = (_activeIndex - 1 + navLinks.Count) % navLinks.Count;
+            ActivateLink(navLinks[prev]);
         }
 
         void Start()

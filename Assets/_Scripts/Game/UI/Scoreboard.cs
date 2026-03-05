@@ -8,6 +8,8 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using System;
 using CosmicShore.Utility;
@@ -137,6 +139,35 @@ namespace CosmicShore.Game.UI
             {
                 scoreboardPanel.gameObject.SetActive(true);
                 PlayEntranceAnimation();
+                AutoFocusForGamepad();
+            }
+        }
+
+        private void AutoFocusForGamepad()
+        {
+            if (Gamepad.current == null || EventSystem.current == null) return;
+
+            // Focus the Play Again button for controller users
+            if (playAgainButton != null && playAgainButton.activeSelf)
+            {
+                var btn = playAgainButton.GetComponent<Selectable>();
+                if (btn != null && btn.interactable)
+                {
+                    EventSystem.current.SetSelectedGameObject(playAgainButton);
+                    return;
+                }
+            }
+
+            // Fallback: find first interactable button in the scoreboard
+            if (scoreboardPanel == null) return;
+            var selectables = scoreboardPanel.GetComponentsInChildren<Selectable>(false);
+            foreach (var s in selectables)
+            {
+                if (s.interactable && s.navigation.mode != Navigation.Mode.None)
+                {
+                    EventSystem.current.SetSelectedGameObject(s.gameObject);
+                    return;
+                }
             }
         }
 

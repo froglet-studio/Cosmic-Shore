@@ -6,7 +6,10 @@ using CosmicShore.Core;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 /// <summary>
 /// Displays and controls toggles and buttons on the Pause Menu Panel
@@ -17,19 +20,26 @@ namespace CosmicShore.App.UI.Screens
 {
     public class PauseMenu : MonoBehaviour
     {
-        [SerializeField] 
+        [SerializeField]
         ScriptableEventNoParam _onClickToMainMenu;
-        
-        [SerializeField] 
+
+        [SerializeField]
         ScriptableEventNoParam _onClickToRestartButton;
-        
+
         [SerializeField]
         GameDataSO gameData;
-        
+
         [FormerlySerializedAs("canvasGroup")]
         [SerializeField] GameObject pauseMenuPanel;
         [SerializeField]
         ModalWindowManager settingsModalWindowManager;
+
+        [Header("Controller Navigation")]
+        [Tooltip("First button to select when pause menu opens with a gamepad.")]
+        [SerializeField] private Selectable firstPauseSelectable;
+
+        [Tooltip("If true, this is a multiplayer pause menu (only pauses local player input, not the game).")]
+        [SerializeField] private bool isMultiplayer;
 
         GameSetting gameSetting;
 
@@ -38,10 +48,42 @@ namespace CosmicShore.App.UI.Screens
         /// </summary>
         bool wasLocalPlayerInputPausedBefore;
 
-        //void Awake() => Hide();
-        
-        // Start is called before the first frame update
+        bool IsOpen => pauseMenuPanel != null && pauseMenuPanel.activeSelf;
+
         void Start() => gameSetting = GameSetting.Instance;
+
+        void Update()
+        {
+            if (Gamepad.current == null) return;
+
+            // Start/Menu button toggles pause
+            if (Gamepad.current.startButton.wasPressedThisFrame)
+            {
+                if (IsOpen)
+                {
+                    if (isMultiplayer)
+                        OnClickMultiplayerResumeGameButton();
+                    else
+                        OnClickResumeGameButton();
+                }
+                else
+                {
+                    if (isMultiplayer)
+                        OnClickMultiplayerPauseButton();
+                    else
+                        OnClickPauseGameButton();
+                }
+            }
+
+            // B button closes pause menu
+            if (IsOpen && Gamepad.current.buttonEast.wasPressedThisFrame)
+            {
+                if (isMultiplayer)
+                    OnClickMultiplayerResumeGameButton();
+                else
+                    OnClickResumeGameButton();
+            }
+        }
 
         /// <summary>
         /// Toggles the Master Volume On/Off
@@ -99,6 +141,29 @@ namespace CosmicShore.App.UI.Screens
             pauseMenuPanel.gameObject.SetActive(true);
             settingsModalWindowManager.ModalWindowIn();
             AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
+            AutoFocusForGamepad();
+        }
+
+        private void AutoFocusForGamepad()
+        {
+            if (Gamepad.current == null || EventSystem.current == null) return;
+
+            if (firstPauseSelectable != null && firstPauseSelectable.gameObject.activeInHierarchy && firstPauseSelectable.interactable)
+            {
+                EventSystem.current.SetSelectedGameObject(firstPauseSelectable.gameObject);
+                return;
+            }
+
+            // Fallback: find first interactable button in the pause panel
+            var selectables = pauseMenuPanel.GetComponentsInChildren<Selectable>(false);
+            foreach (var s in selectables)
+            {
+                if (s.interactable && s.navigation.mode != Navigation.Mode.None)
+                {
+                    EventSystem.current.SetSelectedGameObject(s.gameObject);
+                    return;
+                }
+            }
         }
 
         public void Hide()

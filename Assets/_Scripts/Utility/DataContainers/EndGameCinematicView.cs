@@ -5,6 +5,8 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
@@ -96,7 +98,17 @@ namespace CosmicShore.Game.Cinematics
         public void ShowContinueButton()
         {
             if (continueButton)
+            {
                 continueButton.gameObject.SetActive(true);
+                AutoFocusContinueButton();
+            }
+        }
+
+        private void AutoFocusContinueButton()
+        {
+            if (Gamepad.current == null || EventSystem.current == null) return;
+            if (continueButton != null && continueButton.interactable)
+                EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
         }
 
         public void HideContinueButton()

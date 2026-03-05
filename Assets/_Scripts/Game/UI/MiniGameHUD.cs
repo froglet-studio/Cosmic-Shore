@@ -9,6 +9,8 @@ using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game.UI
@@ -131,6 +133,7 @@ namespace CosmicShore.Game.UI
 
             SubscribeToEvents();
             CleanupUI();
+            PushTipsToConnectingPanel();
         }
 
         protected virtual void OnDisable()
@@ -358,6 +361,7 @@ namespace CosmicShore.Game.UI
             UpdateLifeformCounterDisplay("0");
             view.UpdateScoreUI("0");
 
+            PushTipsToConnectingPanel();
             view.ToggleConnectingPanel(true);
             ToggleReadyButton(false);
 
@@ -473,7 +477,13 @@ namespace CosmicShore.Game.UI
 
         public void Show() => view.ToggleView(true);
         public void Hide() => view.ToggleView(false);
-        public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
+        public void ToggleReadyButton(bool toggle)
+        {
+            view.ReadyButton.gameObject.SetActive(toggle);
+
+            if (toggle && Gamepad.current != null && EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(view.ReadyButton.gameObject);
+        }
 
         /// <summary>
         /// Shows the connecting panel flow (connecting → wait → ready button).
@@ -482,6 +492,12 @@ namespace CosmicShore.Game.UI
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
+
+        private void PushTipsToConnectingPanel()
+        {
+            if (view.ConnectingPanel == null || gameData == null) return;
+            view.ConnectingPanel.SetGameMode(gameData.GameMode);
+        }
 
         private void HideLocalVesselHUD()
         {

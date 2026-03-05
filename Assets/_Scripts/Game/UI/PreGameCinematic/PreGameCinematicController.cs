@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using CosmicShore.Game.CameraSystem;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
@@ -61,6 +62,19 @@ namespace CosmicShore.Game.UI
                 skipButton.onClick.AddListener(Skip);
 
             SetSkipButtonVisible(false);
+        }
+
+        private void Update()
+        {
+            if (!_isPlaying) return;
+            if (Gamepad.current == null) return;
+
+            // A button or Start button skips the cinematic
+            if (Gamepad.current.buttonSouth.wasPressedThisFrame ||
+                Gamepad.current.startButton.wasPressedThisFrame)
+            {
+                Skip();
+            }
         }
 
         private void OnDestroy()
