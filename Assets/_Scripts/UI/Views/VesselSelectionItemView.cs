@@ -14,7 +14,7 @@ namespace CosmicShore.UI
         //[SerializeField] private GameObject selectedHighlight;
         [SerializeField] private Button button;
 
-        public void Configure(SO_Ship ship, bool isSelected, Action onClick)
+        public void Configure(SO_Vessel ship, bool isSelected, Action onClick)
         {
             if (!ship)
             {

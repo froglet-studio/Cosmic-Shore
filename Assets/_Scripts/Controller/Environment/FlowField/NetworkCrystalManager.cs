@@ -3,9 +3,8 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
-using System.Linq;
 
-namespace CosmicShore.Gameplay
+namespace CosmicShore.Game
 {
     public class NetworkCrystalManager : CrystalManager
     {
@@ -14,6 +13,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] private bool spawnOnClientReady;
 
         private NetworkList<Vector3> n_Positions;
+
+        // Anchor used for the current initial batch so late-joining players
+        // spawn around the same position as the first crystal.
+        private Vector3 _initialBatchAnchor;
+        private bool _initialBatchStarted;
 
         protected override void Awake()
         {
@@ -24,7 +28,13 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkSpawn()
         {
             if (spawnOnClientReady)
-                gameData.OnClientReady.OnRaised += OnClientReadySpawn;
+            {
+                gameData.OnClientReady += OnClientReadySpawn;
+                // Spawn each player's crystal as they join, and catch up
+                // on turn start in case OnPlayerAdded was missed.
+                gameData.OnPlayerAdded += OnPlayerAddedSpawn;
+                gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStartedCatchUp;
+            }
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
 
@@ -35,7 +45,11 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             if (spawnOnClientReady)
-                gameData.OnClientReady.OnRaised -= OnClientReadySpawn;
+            {
+                gameData.OnClientReady -= OnClientReadySpawn;
+                gameData.OnPlayerAdded -= OnPlayerAddedSpawn;
+                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStartedCatchUp;
+            }
             else
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
 
@@ -45,18 +59,64 @@ namespace CosmicShore.Gameplay
                 n_Positions.OnListChanged -= OnPositionsChanged;
         }
 
-        private void OnClientReadySpawn() => OnTurnStarted();
+        private void OnClientReadySpawn()
+        {
+            // Server: spawn crystals for the current player count.
+            OnTurnStarted();
+
+            // Client: catch up on crystals already in the NetworkList.
+            // OnListChanged does NOT fire for entries that existed before
+            // this client subscribed, so we must read them manually.
+            SyncExistingCrystals();
+        }
+
+        private void OnPlayerAddedSpawn(string playerName, Domains domain)
+        {
+            if (!IsServer) return;
+            SpawnMissingCrystals();
+        }
+
+        /// <summary>
+        /// Final fallback: if any crystals are still missing when the turn
+        /// starts (all players guaranteed present), spawn them now.
+        /// </summary>
+        private void OnTurnStartedCatchUp()
+        {
+            if (IsServer)
+                SpawnMissingCrystals();
+
+            // All clients (including host) sync any crystals they missed.
+            SyncExistingCrystals();
+        }
+
+        /// <summary>
+        /// Reads all existing non-zero positions from the NetworkList and
+        /// spawns crystals that this client hasn't created yet. Handles the
+        /// case where a client joins after the server already set positions.
+        /// </summary>
+        private void SyncExistingCrystals()
+        {
+            for (int i = 0; i < n_Positions.Count; i++)
+            {
+                Vector3 pos = n_Positions[i];
+                if (pos == Vector3.zero) continue;
+
+                int crystalId = i + 1;
+                if (!cellData.TryGetCrystalById(crystalId, out _))
+                {
+                    var crystal = Spawn(crystalId, pos);
+                    cellData.AddCrystalToList(crystal);
+                }
+            }
+        }
 
         // ---------------- Replay Reset ----------------
 
         void OnResetForReplay()
         {
-            // Reset base class spawn state on ALL clients — destroys old crystals,
-            // clears anchor/position tracking so spawning starts fresh from index 0.
-            ResetSpawnState();
-
             if (!IsServer) return;
             serverBatchAnchorIndex = 0;
+            _initialBatchStarted = false;
 
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = Vector3.zero;
@@ -83,10 +143,35 @@ namespace CosmicShore.Gameplay
             EnsureListSizedToSelectedPlayerCount();
 
             Vector3 batchAnchor = GetBatchAnchor_ForNetworkTurnStart();
+
+            // Remember this anchor so late-joining players spawn at the
+            // same position cluster (see SpawnMissingCrystals).
+            _initialBatchAnchor = batchAnchor;
+            _initialBatchStarted = true;
+
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
 
             AdvanceBatchAnchor_ForNetworkTurnStart();
+        }
+
+        /// <summary>
+        /// Adds crystals for players who joined after the initial batch,
+        /// reusing the same batch anchor so all crystals cluster together.
+        /// </summary>
+        private void SpawnMissingCrystals()
+        {
+            int expected = GetCrystalCountToSpawn();
+            if (n_Positions.Count >= expected) return;
+            if (!_initialBatchStarted) return;
+
+            EnsureListSizedToSelectedPlayerCount();
+
+            for (int i = 0; i < n_Positions.Count; i++)
+            {
+                if (n_Positions[i] == Vector3.zero)
+                    n_Positions[i] = GetSpawnPointAroundAnchor(_initialBatchAnchor);
+            }
         }
 
         // ---------------- Anchor Helpers ----------------

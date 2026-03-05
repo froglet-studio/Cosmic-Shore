@@ -48,7 +48,6 @@ namespace CosmicShore.Gameplay
         void SetAOEExplosionMaterial(Material material);
         void SetAOEConicExplosionMaterial(Material material);
         void SetSkimmerMaterial(Material material);
-        void AssignCaptain(SO_Captain captain);
         void BindElementalFloat(string name, Element element);
         // void PerformButtonActions(int buttonNumber);
         void ToggleAIPilot(bool toggle);

@@ -39,8 +39,8 @@ namespace CosmicShore.Editor
         private const string SHOULD_LOAD_BOOTSTRAP_SCENE_KEY = "Load Main_Menu Scene";
         private const string WAS_DIRTY_BEFORE_RELOAD_KEY = "SceneBootstrapper_WasDirtyBeforeReload";
 
-        private const string LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/TestingMultiplayer/Load Bootstrap Scene on play";
-        private const string DO_NOT_LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/TestingMultiplayer/Do not load Bootstrap Scene on Play";
+        private const string LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/Legacy/TestingMultiplayer/Load Bootstrap Scene on play";
+        private const string DO_NOT_LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/Legacy/TestingMultiplayer/Do not load Bootstrap Scene on Play";
 
         // To run tests, we need to open a specific scene that has the test runner in it.
         private const string TESTRUNNER_SCENE_NAME = "InitTestScene";

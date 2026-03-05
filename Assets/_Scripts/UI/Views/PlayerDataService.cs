@@ -5,7 +5,6 @@ using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Services.Authentication;
-using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using UnityEngine;
 using Reflex.Attributes;
@@ -13,8 +12,15 @@ using Reflex.Attributes;
 
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// Domain service for player profile data (display name, avatar, crystals, rewards).
+    /// Delegates all cloud persistence to UGSDataService.ProfileRepo.
+    /// Keeps domain logic (merge, defaults, events, crystal math) here.
+    /// </summary>
     public class PlayerDataService : MonoBehaviour
     {
+        public static PlayerDataService Instance { get; private set; }
+
         [Header("Cloud Save")]
         [SerializeField] private string cloudSaveProfileKey = UGSKeys.PlayerProfile;
         [SerializeField] private SO_ProfileIconList profileIcons;
@@ -35,12 +41,22 @@ namespace CosmicShore.UI
         private bool _saveDirty;
         private bool _saveInFlight;
 
+        void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
+
         private void OnEnable()
         {
             OnProfileChanged += SyncProfileToGameData;
         }
 
-        async void Start()
+        void Start()
         {
             try
             {
@@ -54,7 +70,7 @@ namespace CosmicShore.UI
                 // If already signed in, initialize immediately
                 if (authenticationDataVariable != null && authenticationData.IsSignedIn)
                 {
-                    await InitializeAfterAuth();
+                    _ = InitializeAfterAuth();
                 }
             }
             catch (Exception e)
@@ -65,6 +81,9 @@ namespace CosmicShore.UI
 
         void OnDestroy()
         {
+            if (Instance == this)
+                Instance = null;
+
             if (authenticationDataVariable != null)
                 authenticationData.OnSignedIn.OnRaised -= HandleSignedIn;
             OnProfileChanged -= SyncProfileToGameData;
@@ -74,9 +93,6 @@ namespace CosmicShore.UI
         {
             try
             {
-                if (IsInitialized)
-                    return;
-
                 await InitializeAfterAuth();
             }
             catch (Exception e)
@@ -85,105 +101,80 @@ namespace CosmicShore.UI
             }
         }
 
-        private async Task InitializeAfterAuth()
+        async Task InitializeAfterAuth()
         {
-            if (IsInitialized)
-                return;
-
-            string playerId        = null;
-            bool   canUseCloudSave = false;
-
-            if (UnityServices.State == ServicesInitializationState.Initialized)
+            var ds = UGSDataService.Instance;
+            if (ds != null)
             {
-                try
-                {
-                    canUseCloudSave = AuthenticationService.Instance != null &&
-                                      AuthenticationService.Instance.IsSignedIn;
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"[PlayerDataService] Auth state check failed: {ex.Message}");
-                    canUseCloudSave = false;
-                }
+                if (ds.IsInitialized)
+                    HandleDataServiceReady();
+                else
+                    ds.OnInitialized += HandleDataServiceReady;
             }
+        }
 
-            if (canUseCloudSave)
-            {
-                playerId = AuthenticationService.Instance.PlayerId;
-            }
+        void HandleDataServiceReady()
+        {
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+                ds.OnInitialized -= HandleDataServiceReady;
 
-            await LoadOrCreateProfileAsync(playerId, canUseCloudSave);
+            MergeCloudProfile();
+
+            ApplyPendingDebugCrystals();
 
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
         }
 
-        async Task LoadOrCreateProfileAsync(string playerId, bool canUseCloudSave)
+        /// <summary>
+        /// Merges cloud profile data from UGSDataService.ProfileRepo on top of local defaults.
+        /// Performs union merge for unlocked rewards (local wins ties).
+        /// </summary>
+        void MergeCloudProfile()
         {
-            // Update userId now that we know the real player id
-            if (!string.IsNullOrEmpty(playerId))
-                CurrentProfile.userId = playerId;
+            var ds = UGSDataService.Instance;
+            if (ds?.ProfileRepo == null) return;
 
-            if (!canUseCloudSave)
+            var cloudData = ds.ProfileRepo.Data;
+            if (cloudData == null || string.IsNullOrEmpty(cloudData.userId))
             {
-                CSDebug.LogWarning("[PlayerDataService] Not signed in. Keeping local profile.");
+                // No cloud profile → push local defaults to cloud
+                SyncCurrentProfileToRepo();
                 return;
             }
 
-            try
+            // Merge unlocked rewards: union of local + cloud sets
+            bool needsResync = false;
+            var localRewards = CurrentProfile.unlockedRewardIds ?? new List<string>();
+            var cloudRewards = cloudData.unlockedRewardIds ?? new List<string>();
+            foreach (var rewardId in localRewards)
             {
-                var keys   = new HashSet<string> { cloudSaveProfileKey };
-                var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
-
-                if (result.TryGetValue(cloudSaveProfileKey, out var item))
+                if (!cloudRewards.Contains(rewardId))
                 {
-                    var json = item.Value.GetAs<string>();
-                    var cloudData = JsonUtility.FromJson<PlayerProfileData>(json);
-
-                    if (cloudData != null)
-                    {
-                        bool needsResync = false;
-
-                        // Merge XP: keep the higher value (local may have earned XP before cloud loaded)
-                        int localXP = CurrentProfile.xp;
-                        if (localXP > cloudData.xp)
-                        {
-                            cloudData.xp = localXP;
-                            needsResync = true;
-                        }
-
-                        // Merge unlocked rewards: union of local + cloud sets
-                        var localRewards = CurrentProfile.unlockedRewardIds ?? new List<string>();
-                        var cloudRewards = cloudData.unlockedRewardIds ?? new List<string>();
-                        foreach (var rewardId in localRewards)
-                        {
-                            if (!cloudRewards.Contains(rewardId))
-                            {
-                                cloudRewards.Add(rewardId);
-                                needsResync = true;
-                            }
-                        }
-                        cloudData.unlockedRewardIds = cloudRewards;
-
-                        CurrentProfile = cloudData;
-
-                        if (needsResync)
-                            await SaveProfileAsync(true);
-
-                        return;
-                    }
-
-                    CSDebug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Keeping local.");
-                }
-                else
-                {
-                    // No cloud profile yet → upload local
-                    await SaveProfileAsync(canUseCloudSave);
+                    cloudRewards.Add(rewardId);
+                    needsResync = true;
                 }
             }
-            catch (Exception e)
+            cloudData.unlockedRewardIds = cloudRewards;
+
+            // Update local userId from auth
+            try
             {
-                CSDebug.LogWarning($"[PlayerDataService] Cloud load failed: {e.Message}. Keeping local.");
+                if (UnityServices.State == ServicesInitializationState.Initialized &&
+                    AuthenticationService.Instance != null &&
+                    AuthenticationService.Instance.IsSignedIn)
+                {
+                    cloudData.userId = AuthenticationService.Instance.PlayerId;
+                }
+            }
+            catch { /* auth not ready, keep existing userId */ }
+
+            CurrentProfile = cloudData;
+
+            if (needsResync)
+            {
+                SyncCurrentProfileToRepo();
             }
         }
 
@@ -211,68 +202,28 @@ namespace CosmicShore.UI
             return 0;
         }
 
-        async Task SaveProfileAsync(bool canUseCloudSave)
-        {
-            if (CurrentProfile == null || !canUseCloudSave)
-                return;
-
-            try
-            {
-                var json = JsonUtility.ToJson(CurrentProfile);
-                var data = new Dictionary<string, object>
-                {
-                    { cloudSaveProfileKey, json }
-                };
-
-                await CloudSaveService.Instance.Data.Player.SaveAsync(data);
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogWarning($"[PlayerDataService] Save failed: {e.Message}");
-            }
-        }
-
         /// <summary>
-        /// Marks profile as dirty and schedules a debounced cloud save.
-        /// Multiple calls within SAVE_DEBOUNCE_SECONDS collapse into one save.
+        /// Copies CurrentProfile fields into the repository's data object and marks dirty.
+        /// The repository handles debounced cloud persistence.
         /// </summary>
-        void ScheduleDebouncedSave()
+        void SyncCurrentProfileToRepo()
         {
-            _saveDirty = true;
-            if (!_saveInFlight)
-                RunDebouncedSave();
+            var ds = UGSDataService.Instance;
+            if (ds?.ProfileRepo == null || CurrentProfile == null) return;
+
+            var repoData = ds.ProfileRepo.Data;
+            repoData.userId = CurrentProfile.userId;
+            repoData.displayName = CurrentProfile.displayName;
+            repoData.avatarId = CurrentProfile.avatarId;
+            repoData.crystalBalance = CurrentProfile.crystalBalance;
+            repoData.unlockedRewardIds = CurrentProfile.unlockedRewardIds;
+
+            ds.ProfileRepo.MarkDirty();
         }
 
-        async void RunDebouncedSave()
+        void ScheduleSave()
         {
-            if (_saveInFlight) return;
-            _saveInFlight = true;
-
-            try
-            {
-                await Task.Delay((int)(SAVE_DEBOUNCE_SECONDS * 1000));
-
-                while (_saveDirty)
-                {
-                    _saveDirty = false;
-
-                    bool canSave = UnityServices.State == ServicesInitializationState.Initialized &&
-                                   AuthenticationService.Instance != null &&
-                                   AuthenticationService.Instance.IsSignedIn;
-
-                    await SaveProfileAsync(canSave);
-                }
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogWarning($"[PlayerDataService] Debounced save failed: {e.Message}");
-            }
-            finally
-            {
-                _saveInFlight = false;
-                if (_saveDirty)
-                    RunDebouncedSave();
-            }
+            SyncCurrentProfileToRepo();
         }
 
         // ----------------- Public API -----------------
@@ -284,7 +235,7 @@ namespace CosmicShore.UI
 
             CurrentProfile.avatarId = avatarId;
             OnProfileChanged?.Invoke(CurrentProfile);
-            ScheduleDebouncedSave();
+            ScheduleSave();
         }
 
         public void SetDisplayName(string displayName)
@@ -294,7 +245,7 @@ namespace CosmicShore.UI
 
             CurrentProfile.displayName = displayName;
             OnProfileChanged?.Invoke(CurrentProfile);
-            ScheduleDebouncedSave();
+            ScheduleSave();
         }
 
         void SyncProfileToGameData(PlayerProfileData data)
@@ -303,7 +254,6 @@ namespace CosmicShore.UI
             {
                 gameData.LocalPlayerDisplayName = data.displayName;
                 gameData.LocalPlayerAvatarId = data.avatarId;
-                gameData.LocalPlayerXP = data.xp;
             }
 
             if (authenticationDataVariable != null)
@@ -324,27 +274,38 @@ namespace CosmicShore.UI
             return profileIcons.profileIcons[0].IconSprite;
         }
 
-        /// <summary>
-        /// Returns the player's current XP, or 0 if no profile is loaded.
-        /// </summary>
-        public int GetXP()
+        // ----------------- Crystal Currency -----------------
+
+        public static event Action<int> OnCrystalBalanceChanged;
+
+        public int GetCrystalBalance()
         {
-            return CurrentProfile?.xp ?? 0;
+            return CurrentProfile?.crystalBalance ?? 0;
         }
 
-        /// <summary>
-        /// Adds XP to the player's profile and syncs to Cloud Save.
-        /// Returns the new total XP.
-        /// </summary>
-        public void AddXP(int amount)
+        public int AddCrystals(int amount)
         {
-            if (CurrentProfile == null || amount <= 0)
-                return;
+            if (CurrentProfile == null || amount <= 0) return GetCrystalBalance();
 
-            CurrentProfile.xp += amount;
+            CurrentProfile.crystalBalance += amount;
+            ScheduleSave();
+            OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
-            ScheduleDebouncedSave();
-            CSDebug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
+            CSDebug.Log($"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
+            return CurrentProfile.crystalBalance;
+        }
+
+        public bool TrySpendCrystals(int amount)
+        {
+            if (CurrentProfile == null || amount <= 0) return false;
+            if (CurrentProfile.crystalBalance < amount) return false;
+
+            CurrentProfile.crystalBalance -= amount;
+            ScheduleSave();
+            OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
+            OnProfileChanged?.Invoke(CurrentProfile);
+            CSDebug.Log($"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
+            return true;
         }
 
         /// <summary>
@@ -363,7 +324,7 @@ namespace CosmicShore.UI
 
             CurrentProfile.unlockedRewardIds.Add(rewardId);
             OnProfileChanged?.Invoke(CurrentProfile);
-            ScheduleDebouncedSave();
+            ScheduleSave();
             CSDebug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
         }
 
@@ -384,6 +345,26 @@ namespace CosmicShore.UI
         {
             if (CurrentProfile == null) return;
             OnProfileChanged?.Invoke(CurrentProfile);
+        }
+
+        // ----------------- Debug Crystal Support -----------------
+
+        /// <summary>
+        /// Applies any pending debug crystals that were queued from the Froglet Toolbox
+        /// while in edit mode. Called once during initialization.
+        /// </summary>
+        void ApplyPendingDebugCrystals()
+        {
+#if UNITY_EDITOR
+            int pending = Utility.Tools.LogControlWindow.ConsumePendingDebugCrystals();
+            if (pending > 0 && CurrentProfile != null)
+            {
+                CurrentProfile.crystalBalance += pending;
+                ScheduleSave();
+                OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
+                CSDebug.Log($"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.crystalBalance}");
+            }
+#endif
         }
     }
 }

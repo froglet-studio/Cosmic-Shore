@@ -1,14 +1,14 @@
-using CosmicShore.Core;
-using CosmicShore.Data;
-using CosmicShore.ScriptableObjects;
-using CosmicShore.Utility;
+﻿using CosmicShore.App.Systems.Xp;
+using CosmicShore.Models;
+using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Utility;
 
 // TODO: Renamespace - not using playfab directly here
-namespace CosmicShore.Core
+namespace CosmicShore.Integrations.PlayFab.Economy
 {
     [System.Serializable]
     class CaptainData
@@ -50,24 +50,33 @@ namespace CosmicShore.Core
         }
     }
 
-    public class CaptainManager : MonoBehaviour
+    public  class CaptainManager : SingletonPersistent<CaptainManager>
     {
-        public event Action OnLoadCaptainData;
-        public bool CaptainDataLoaded { get; private set; }
+        public static event Action OnLoadCaptainData;
+        public static bool CaptainDataLoaded { get; private set; }
         [SerializeField] SO_CaptainList AllCaptains;
         CaptainData captainData;
 
         // TODO: Move to Hangar
-        public HashSet<SO_Ship> UnlockedShips = new();
+        public HashSet<SO_Vessel> UnlockedShips = new();
 
         void OnEnable()
         {
             // [PLAYFAB DISABLED] Captain management will be rebuilt on UGS. Pending removal.
+            return;
+
+            XpHandler.OnCaptainDataLoaded += LoadCaptainsData;
+
+            CatalogManager.OnLoadInventory += LoadCaptainsData;
+            CatalogManager.OnInventoryChange += LoadCaptainsData;
         }
 
         void OnDisable()
         {
-            // [PLAYFAB DISABLED] Matching OnEnable — nothing to unsubscribe.
+            XpHandler.OnCaptainDataLoaded -= LoadCaptainsData;
+
+            CatalogManager.OnLoadInventory += LoadCaptainsData;
+            CatalogManager.OnInventoryChange -= LoadCaptainsData;
         }
 
         void LoadCaptainsData()
@@ -90,8 +99,8 @@ namespace CosmicShore.Core
 
             // Check for Encountered
             captain.Encountered =
-                XpHandler.EncounteredCaptainsData.ContainsKey(captain.Ship.Class) &&
-                XpHandler.EncounteredCaptainsData[captain.Ship.Class].Contains(captain.PrimaryElement);
+                XpHandler.EncounteredCaptainsData.ContainsKey(captain.Vessel.Class) &&
+                XpHandler.EncounteredCaptainsData[captain.Vessel.Class].Contains(captain.PrimaryElement);
 
             if (captain.Encountered)
                 captainData.EncounteredCaptains[captain.Name] = captain;
@@ -100,8 +109,7 @@ namespace CosmicShore.Core
             captain.Unlocked = CatalogManager.Inventory.ContainsCaptain(captain.Name);
             if (captain.Unlocked)
             {
-                UnlockedShips.Add(captain.Ship);
-                captain.Ship.IsLocked = false;
+                UnlockedShips.Add(captain.Vessel);
                 captainData.UnlockedCaptains[captain.Name] = captain;
             }
 
@@ -154,7 +162,7 @@ namespace CosmicShore.Core
         {
             foreach (var captain in captainData.AllCaptains.Values)
             {
-                if (upgrade.Tags.Contains(captain.Ship.Class.ToString()) && upgrade.Tags.Contains(captain.PrimaryElement.ToString()))
+                if (upgrade.Tags.Contains(captain.Vessel.Class.ToString()) && upgrade.Tags.Contains(captain.PrimaryElement.ToString()))
                     return captain;
             }
             return null;
@@ -189,7 +197,7 @@ namespace CosmicShore.Core
 
         int GetCaptainUpgradeCount(Captain captain)
         {
-            return CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString())).Count();
+            return CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Vessel.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString())).Count();
         }
     }
 }

@@ -1,6 +1,7 @@
 using CosmicShore.Data;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -8,7 +9,8 @@ namespace CosmicShore.ScriptableObjects
     [System.Serializable]
     public class SO_ArcadeGame : SO_Game
     {
-        public List<SO_Captain> Captains;
+        [FormerlySerializedAs("Captains")]
+        public List<SO_Vessel> Vessels;
 
         public int MinPlayersAllowed = 1;
         public int MaxPlayersAllowed = 2;

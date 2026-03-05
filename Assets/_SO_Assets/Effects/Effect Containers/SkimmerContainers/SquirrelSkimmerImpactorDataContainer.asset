@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselSkimmerEffectsSO:
   - {fileID: 11400000, guid: c2570a8d81db3ab4eb0ba30f184e081f, type: 2}
+  - {fileID: 11400000, guid: dccff9a634a7377458170d26c2b9e448, type: 2}
   skimmerPrismEffectsSO:
   - {fileID: 11400000, guid: 952d25b70531ba94fbb4f1a74c64797a, type: 2}
   - {fileID: 11400000, guid: 211cf3f57a286e7499d5cf6237c3768d, type: 2}

@@ -1,51 +1,72 @@
-using System;
+﻿using System;
 using System.Collections;
-using CosmicShore.Core;
-using CosmicShore.Gameplay;
-using CosmicShore.ScriptableObjects;
-using Reflex.Attributes;
+using CosmicShore.App.Profile;
+using CosmicShore.App.Systems.Audio;
+using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Progression;
+using CosmicShore.Models;
+using CosmicShore.Soap;
+using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.UI;
 using CosmicShore.Utility;
-using System.Linq;
-using DG.Tweening;
-using CosmicShore.Data;
+using CosmicShore.App.UI.ToastNotification;
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Game.Cinematics
 {
     public class EndGameCinematicController : MonoBehaviour
     {
-        [Inject] AudioSystem audioSystem;
         [Header("References")]
-        [Inject] protected GameDataSO gameData;
+        [SerializeField] protected GameDataSO gameData;
         [SerializeField] protected SceneCinematicLibrarySO sceneCinematicLibrary;
         [SerializeField] protected CinematicCameraController cinematicCameraController;
         
         [Header("View")]
         [SerializeField] protected EndGameCinematicView view;
 
+        [Header("Crystal Reward")]
+        [Tooltip("Amount of crystals awarded per game.")]
+        [SerializeField] private int crystalsPerGame = 5;
+        [Tooltip("Root GameObject to enable/disable for the crystal reward display.")]
+        [SerializeField] private GameObject crystalRewardRoot;
+        [Tooltip("Text showing how many crystals were earned.")]
+        [SerializeField] private TMP_Text crystalRewardText;
+        [Tooltip("Duration of the fade-in animation.")]
+        [SerializeField] private float crystalFadeDuration = 0.5f;
+
         protected bool isRunning;
         protected bool localPlayerWon;
         protected Coroutine runningRoutine;
         protected float cachedBoostMultiplier;
-        
-        protected virtual void Start()
-        {
-            if (gameData)
-                gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
 
-            if (view)
-            {
-                view.Initialize();
-                view.OnContinuePressed += HandleContinuePressed;
-            }
+        /// <summary>Tracks the intensity level unlocked during this game session (0 = none).</summary>
+        private int _intensityUnlockedThisGame;
+
+        protected virtual void OnEnable()
+        {
+            if (!gameData) return;
+            gameData.OnWinnerCalculated += OnWinnerCalculated;
+
+            if (crystalRewardRoot)
+                crystalRewardRoot.SetActive(false);
+
+            _intensityUnlockedThisGame = 0;
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnIntensityUnlocked += HandleIntensityUnlocked;
+
+            if (!view) return;
+            view.Initialize();
+            view.OnContinuePressed += HandleContinuePressed;
         }
 
         protected virtual void OnDisable()
         {
-            if (gameData)
-                gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
+            if (!gameData) return;
+            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnIntensityUnlocked -= HandleIntensityUnlocked;
 
             if (view)
                 view.OnContinuePressed -= HandleContinuePressed;
@@ -62,22 +83,16 @@ namespace CosmicShore.Utility
             isRunning = false;
         }
 
+        void HandleIntensityUnlocked(GameModes mode, int intensity)
+        {
+            if (gameData != null && mode == gameData.GameMode)
+                _intensityUnlockedThisGame = intensity;
+        }
+
         protected virtual void OnWinnerCalculated()
         {
             if (isRunning) return;
             isRunning = true;
-
-            // Award XP based on placement
-            if (XPRewardService.Instance != null)
-            {
-                int xp = XPRewardService.Instance.AwardXP();
-                CSDebug.Log($"[EndGameCinematic] XP awarded: {xp}");
-            }
-            else
-            {
-                CSDebug.LogWarning("[EndGameCinematic] XPRewardService.Instance is null - XP not awarded. " +
-                                 "Ensure XPRewardService exists in the game scene.");
-            }
 
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel?.VesselStatus != null)
@@ -107,10 +122,9 @@ namespace CosmicShore.Utility
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
-
-            // Show XP earned after score reveal
-            if (view)
-                view.ShowXPEarned();
+            yield return StartCoroutine(AwardCrystalReward());
+            yield return StartCoroutine(ShowIntensityUnlockSequence());
+            yield return StartCoroutine(ShowQuestCompletionSequence());
 
             if (view)
             {
@@ -127,7 +141,6 @@ namespace CosmicShore.Utility
 
             if (view)
             {
-                view.HideXPEarned();
                 view.HideScoreRevealPanel();
             }
 
@@ -276,7 +289,7 @@ namespace CosmicShore.Utility
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 
@@ -290,6 +303,77 @@ namespace CosmicShore.Utility
             );
         }
         
+        protected virtual IEnumerator AwardCrystalReward()
+        {
+            if (crystalsPerGame <= 0) yield break;
+
+            var service = PlayerDataService.Instance;
+            if (service != null)
+            {
+                int newBalance = service.AddCrystals(crystalsPerGame);
+                CSDebug.Log($"[EndGameCinematic] Awarded {crystalsPerGame} crystals. New balance: {newBalance}");
+            }
+
+            if (crystalRewardRoot && crystalRewardText)
+            {
+                crystalRewardText.text = $"+{crystalsPerGame}";
+                crystalRewardRoot.SetActive(true);
+
+                var cg = crystalRewardRoot.GetComponent<CanvasGroup>();
+                if (cg)
+                {
+                    cg.alpha = 0f;
+                    yield return cg.DOFade(1f, crystalFadeDuration)
+                        .SetEase(Ease.OutQuad)
+                        .WaitForCompletion();
+                }
+
+                yield return new WaitForSeconds(1.5f);
+            }
+        }
+
+        /// <summary>
+        /// Checks whether the just-finished game unlocked a new intensity level (3 or 4).
+        /// If so, shows a brief message via the quest-completion text panel before moving on.
+        /// Uses the _intensityUnlockedThisGame field set by the OnIntensityUnlocked event.
+        /// </summary>
+        protected virtual IEnumerator ShowIntensityUnlockSequence()
+        {
+            if (_intensityUnlockedThisGame <= 0) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            var quest = service?.GetQuestForMode(gameData.GameMode);
+            string displayName = quest != null ? quest.DisplayName : gameData.GameMode.ToString();
+
+            ToastNotificationAPI.Show($"{displayName} Intensity {_intensityUnlockedThisGame} Unlocked!");
+            yield return new WaitForSeconds(1f);
+        }
+
+        /// <summary>
+        /// After the score reveal, checks if the current game mode's quest was completed.
+        /// If so, sets the SO runtime flag and shows a completion message in the cinematic view.
+        /// Relies on GameModeProgressionService having already evaluated the quest via HandleGameEnd.
+        /// </summary>
+        protected virtual IEnumerator ShowQuestCompletionSequence()
+        {
+            if (!view || !gameData) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) yield break;
+
+            var mode = gameData.GameMode;
+            var quest = service.GetQuestForMode(mode);
+            if (quest == null || quest.IsPlaceholder) yield break;
+
+            if (service.IsQuestCompleted(mode))
+            {
+                quest.IsCompleted = true;
+                view.ShowQuestCompletion($"Quest Complete!\n{quest.DisplayName}");
+                CSDebug.Log($"[EndGameCinematic] Quest completed for {mode}: {quest.DisplayName}");
+                yield return new WaitForSeconds(2f);
+            }
+        }
+
         #endregion
 
         #region AI Control

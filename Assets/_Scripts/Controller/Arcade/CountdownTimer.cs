@@ -1,11 +1,11 @@
-using CosmicShore.Core;
-using Reflex.Attributes;
+using CosmicShore.App.Systems.Audio;
+using CosmicShore.Game.UI;
+using DG.Tweening;
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Gameplay
+namespace CosmicShore.Game.Arcade
 {
     public class CountdownTimer : MonoBehaviour
     {
@@ -18,50 +18,76 @@ namespace CosmicShore.Gameplay
         [SerializeField] float     countdownDuration  = 1f;
         [SerializeField] float     countdownGrowScale = 1.5f;
 
-        [Inject] AudioSystem audioSystem;
+        [Header("Animation (optional)")]
+        [SerializeField] private HUDAnimationSettingsSO animSettings;
 
         Sprite[] _sprites;
+        Sequence _seq;
 
         void Awake()
         {
-            // cache into an array so we can loop
             _sprites = new[] { countdown3, countdown2, countdown1, countdown0 };
         }
 
         public void BeginCountdown(Action onComplete)
         {
-            // stop any running countdown first
-            StopAllCoroutines();
-            StartCoroutine(CountdownCoroutine(onComplete));
-        }
+            _seq?.Kill();
+            _seq = DOTween.Sequence();
 
-        IEnumerator CountdownCoroutine(Action onComplete)
-        {
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+            if (unscaled) _seq.SetUpdate(true);
+
             countdownDisplay.gameObject.SetActive(true);
 
-            foreach (var spr in _sprites)
-            {
-                countdownDisplay.sprite = spr;
-                countdownDisplay.transform.localScale = Vector3.one;
-                audioSystem.PlaySFXClip(countdownBeep);
+            var ease = animSettings ? animSettings.countdownScaleEase : Ease.OutQuad;
+            float fadeIn = animSettings ? animSettings.countdownFadeInDuration : 0.1f;
+            var urgentColor = animSettings ? animSettings.countdownUrgentColor : new Color(1f, 0.3f, 0.2f, 1f);
+            int urgentStart = animSettings ? animSettings.countdownUrgentStartIndex : 2;
 
-                float elapsed = 0f;
-                while (elapsed < countdownDuration)
+            for (int i = 0; i < _sprites.Length; i++)
+            {
+                int idx = i;
+                Sprite spr = _sprites[i];
+
+                _seq.AppendCallback(() =>
                 {
-                    elapsed += Time.deltaTime;
-                    // Lerp scale from 1 → countdownGrowScale over the duration
-                    float t = Mathf.Clamp01(elapsed / countdownDuration);
-                    countdownDisplay.transform.localScale = Vector3.Lerp(
-                        Vector3.one,
-                        Vector3.one * countdownGrowScale,
-                        t
-                    );
-                    yield return null;
+                    countdownDisplay.sprite = spr;
+                    countdownDisplay.transform.localScale = Vector3.one;
+                    countdownDisplay.color = idx >= urgentStart
+                        ? urgentColor
+                        : Color.white;
+                    AudioSystem.Instance.PlaySFXClip(countdownBeep);
+                });
+
+                // Fade in from transparent
+                _seq.Append(countdownDisplay.DOFade(1f, fadeIn));
+
+                // Scale grow with easing (runs for remaining beat duration)
+                _seq.Join(countdownDisplay.transform
+                    .DOScale(countdownGrowScale, countdownDuration - fadeIn)
+                    .SetEase(ease));
+
+                // Reset alpha before next sprite (skip on last)
+                if (idx < _sprites.Length - 1)
+                {
+                    _seq.AppendCallback(() =>
+                    {
+                        var c = countdownDisplay.color;
+                        countdownDisplay.color = new Color(c.r, c.g, c.b, 0f);
+                    });
                 }
             }
 
-            countdownDisplay.gameObject.SetActive(false);
-            onComplete?.Invoke();
+            _seq.OnComplete(() =>
+            {
+                countdownDisplay.gameObject.SetActive(false);
+                onComplete?.Invoke();
+            });
+        }
+
+        private void OnDestroy()
+        {
+            _seq?.Kill();
         }
     }
 }

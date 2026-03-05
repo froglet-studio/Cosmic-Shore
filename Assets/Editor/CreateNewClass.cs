@@ -43,7 +43,7 @@ namespace CosmicShore.Editor
 
         #region Scriptable Objects
         // Class SO
-        SO_Ship newClassSO;
+        SO_Vessel newClassSO;
         // Captains
         SO_Captain SO_Captain_Mass;
         SO_Captain SO_Captain_Charge;
@@ -66,7 +66,7 @@ namespace CosmicShore.Editor
         private void CreateClassSOInstanceFromType()
         {
             // Create an instance of the Class ScriptableObject
-            newClassSO = SO_Ship.CreateInstance<SO_Ship>();
+            newClassSO = SO_Vessel.CreateInstance<SO_Vessel>();
         }
 
         // Create Empty Vessel Scriptable Objects
@@ -86,7 +86,7 @@ namespace CosmicShore.Editor
         #endregion
 
 
-        [MenuItem("FrogletTools/Create/Class")]
+        [MenuItem("FrogletTools/Legacy/Create/Class")]
         public static void GetWindow()
         {
             // This method is called when the user selects the menu item in the Editor          
@@ -117,9 +117,9 @@ namespace CosmicShore.Editor
                 {
                     Debug.Log("Asset created and reference obtained: " + newClassSO.name);
 
-                    // TODO Add the asset to the SO_ShipList
+                    // TODO Add the asset to the SO_VesselList
                     string assetPath = "Assets/_SO_Assets/ships/" + name + ".asset";                    //TODO
-                                                                                                        //SO_ShipList SO_Classes = AssetDatabase.
+                                                                                                        //SO_VesselList SO_Classes = AssetDatabase.
                     if(classPrefab != null)
                     {
                         classPrefab.name = newClassSOName;
@@ -170,10 +170,10 @@ namespace CosmicShore.Editor
     public class ScriptableObjectEditor
     {
 
-        public static SO_Ship CreateClassScriptableObject(string name)
+        public static SO_Vessel CreateClassScriptableObject(string name)
         {
             // Create an instance of the ScriptableObject
-            SO_Ship ClassSO = SO_Ship.CreateInstance<SO_Ship>();
+            SO_Vessel ClassSO = SO_Vessel.CreateInstance<SO_Vessel>();
 
             // Set the value of the ScriptableObject
             ClassSO.name = name;                                            //TODO add values?
@@ -185,7 +185,7 @@ namespace CosmicShore.Editor
             AssetDatabase.Refresh();
 
             // Return a reference to the created asset
-            return AssetDatabase.LoadAssetAtPath<SO_Ship>(assetPath);
+            return AssetDatabase.LoadAssetAtPath<SO_Vessel>(assetPath);
         }
 
         public static SO_Captain CreateCaptainScriptableObject(string name, string element, bool training, string classSOName)
@@ -198,7 +198,7 @@ namespace CosmicShore.Editor
             VesselSO.Name = name;                                            //Sets Display Name
 
             string classSOAssetPath = "Assets/_SO_Assets/_TEMP/" + classSOName + ".asset"; //TODO
-            VesselSO.Ship = AssetDatabase.LoadAssetAtPath<SO_Ship>(classSOAssetPath); //Sets ClassSO
+            VesselSO.Vessel = AssetDatabase.LoadAssetAtPath<SO_Vessel>(classSOAssetPath); //Sets ClassSO
             VesselSO.InitialResourceLevels = new ResourceCollection(0, 0, 0, 0);
 
             switch (element)                                                  //Sets Elements
