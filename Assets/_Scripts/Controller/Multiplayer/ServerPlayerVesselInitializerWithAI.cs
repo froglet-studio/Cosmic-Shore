@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using Reflex.Injectors;
 using Unity.Netcode;
 using UnityEngine;
@@ -31,8 +32,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] IPlayer.InitializeData[] aiInitializeDatas;
 
         [Header("AI Ship Selection")]
-        [Tooltip("Game list used to look up available ships for AI opponents. If unset, AI defaults to Sparrow.")]
-        [SerializeField] SO_GameList gameList;
+        [Inject] SO_GameList gameList;
 
         [Header("AI Profiles")]
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]

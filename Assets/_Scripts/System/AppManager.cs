@@ -58,6 +58,10 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("SOAP data container for host connection, party members, and invites.")]
         HostConnectionDataSO hostConnectionData;
 
+        [Header("Game List")]
+        [SerializeField, Tooltip("Master list of all arcade games. Registered in DI for all consumers.")]
+        SO_GameList gameList;
+
         [Header("Menu Freestyle Events")]
         [SerializeField, Tooltip("SOAP event container for menu/freestyle state transition bracket events.")]
         MenuFreestyleEventsContainerSO menuFreestyleEvents;
@@ -301,6 +305,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, networkMonitorDataVariable, nameof(networkMonitorDataVariable));
             RegisterAsset(builder, friendsData, nameof(friendsData));
             RegisterAsset(builder, hostConnectionData, nameof(hostConnectionData));
+            RegisterAsset(builder, gameList, nameof(gameList));
             RegisterAsset(builder, menuFreestyleEvents, nameof(menuFreestyleEvents));
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
             RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));

@@ -17,7 +17,7 @@ namespace CosmicShore.UI
         [Inject] AudioSystem audioSystem;
 
         [Header("Game Selection View")]
-        [SerializeField] SO_GameList GameList;
+        [Inject] SO_GameList GameList;
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
