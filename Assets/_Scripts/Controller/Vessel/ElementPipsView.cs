@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Core;
+using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
