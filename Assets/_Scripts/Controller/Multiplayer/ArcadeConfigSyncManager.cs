@@ -76,7 +76,9 @@ namespace CosmicShore.Gameplay
             if (!IsServer) return;
 
             _readyClients.Clear();
-            _expectedHumanCount = humanCount;
+            // Use the higher of PartyMembers count and actual connected clients
+            // to guard against stale PartyMembers data.
+            _expectedHumanCount = Mathf.Max(humanCount, NetworkManager.Singleton.ConnectedClientsIds.Count);
 
             OpenConfigOnClients_ClientRpc(gameMode, intensity, playerCount, maxPlayers);
         }
