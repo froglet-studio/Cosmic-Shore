@@ -18,9 +18,9 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] Animator windowAnimator;
         bool isOn;
 
-        [Header("DOTween Entrance (optional)")]
-        [Tooltip("Use DOTween scale+fade instead of Animator. Leave false to keep Animator behavior.")]
-        [SerializeField] private bool useDOTweenEntrance;
+        [Header("DOTween Entrance")]
+        [Tooltip("Disable to fall back to Animator-only transitions (not recommended).")]
+        [SerializeField] private bool disableDOTweenEntrance;
         [SerializeField] private float tweenDuration = 0.3f;
         [SerializeField] private float entranceStartScale = 0.85f;
         [SerializeField] private Ease entranceEase = Ease.OutBack;
@@ -58,16 +58,16 @@ namespace CosmicShore.App.UI.Modals
                 if (screenSwitcher != null)
                     screenSwitcher.PushModal(ModalType);
 
-                if (useDOTweenEntrance)
-                {
-                    PlayDOTweenIn();
-                }
-                else
+                if (disableDOTweenEntrance && windowAnimator != null)
                 {
                     if (sharpAnimations == false)
                         windowAnimator.CrossFade("Window In", 0.1f);
                     else
                         windowAnimator.Play("Window In");
+                }
+                else
+                {
+                    PlayDOTweenIn();
                 }
 
                 AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OpenView);
@@ -86,16 +86,16 @@ namespace CosmicShore.App.UI.Modals
                 if (screenSwitcher)
                     screenSwitcher.PopModal();
 
-                if (useDOTweenEntrance)
-                {
-                    PlayDOTweenOut();
-                }
-                else
+                if (disableDOTweenEntrance && windowAnimator != null)
                 {
                     if (sharpAnimations == false)
                         windowAnimator.CrossFade("Window Out", 0.1f);
                     else
                         windowAnimator.Play("Window Out");
+                }
+                else
+                {
+                    PlayDOTweenOut();
                 }
 
                 AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.CloseView);

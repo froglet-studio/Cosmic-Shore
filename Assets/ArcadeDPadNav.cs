@@ -26,9 +26,8 @@ namespace CosmicShore
 
         void Update()
         {
-            // if (ScreenSwitcher.ScreenIsActive(ScreenSwitcher.MenuScreens.ARCADE))
-            // {
-            // }
+            if (!gameObject.activeInHierarchy) return;
+
             if (!initialized)
             {
                 if (Gamepad.current != null)
@@ -37,18 +36,15 @@ namespace CosmicShore
                 }
             }
 
-            if (Gamepad.current != null)
-            {
-                if (Gamepad.current.dpad.up.wasPressedThisFrame) NavigateUp();
-                if (Gamepad.current.dpad.down.wasPressedThisFrame) NavigateDown();
-                if (Gamepad.current.dpad.left.wasPressedThisFrame) NavigateLeft();
-                if (Gamepad.current.dpad.right.wasPressedThisFrame) NavigateRight();
-            }
+            if (Gamepad.current == null) return;
 
-            if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame)
-            {
-                selectedButton.onClick.Invoke();
-            }
+            // Only handle DPad grid navigation — Submit (A button) is handled
+            // by Unity's EventSystem / InputSystemUIInputModule to avoid
+            // double-firing and launching the wrong game mode.
+            if (Gamepad.current.dpad.up.wasPressedThisFrame) NavigateUp();
+            if (Gamepad.current.dpad.down.wasPressedThisFrame) NavigateDown();
+            if (Gamepad.current.dpad.left.wasPressedThisFrame) NavigateLeft();
+            if (Gamepad.current.dpad.right.wasPressedThisFrame) NavigateRight();
         }
 
         public void AddRow(List<Button> row)
