@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &639495419069806267
+--- !u!1 &346633111830028674
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 639495419069806266}
-  - component: {fileID: 639495419069806261}
-  m_Layer: 14
-  m_Name: SnowChanger
+  - component: {fileID: 6626304102685177629}
+  - component: {fileID: 4113188902183208274}
+  m_Layer: 0
+  m_Name: CapsuleMembrane
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &639495419069806266
+--- !u!4 &6626304102685177629
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 639495419069806267}
+  m_GameObject: {fileID: 346633111830028674}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -32,19 +32,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &639495419069806261
+--- !u!114 &4113188902183208274
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 639495419069806267}
+  m_GameObject: {fileID: 346633111830028674}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 355219de309c3c1418444878b646dca4, type: 3}
+  m_Script: {fileID: 11500000, guid: ff4ad87cf2ae84a48a72dfbaf3ee9269, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
-  snow: {fileID: 6475208383231727548, guid: 8282194b0e94abc4397f9c99a7d73027, type: 3}
-  shardDistance: 100
-  lookAt: 0
+  subdivisions: 4
+  radius: 1000
+  capsuleMesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+  capsuleScale: {x: 12, y: 30, z: 12}
+  membraneMaterial: {fileID: 2100000, guid: 4f44fa5c7514a2c45b5af7f45bc51acd, type: 2}
+  renderingLayerMask: 1
