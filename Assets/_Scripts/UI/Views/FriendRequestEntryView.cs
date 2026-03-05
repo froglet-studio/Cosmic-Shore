@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.ScriptableObjects;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -81,17 +82,26 @@ namespace CosmicShore.UI
         private void OnAcceptPressed()
         {
             SetButtonStates(showAcceptDecline: false, showCancel: false);
+            // Satisfying scale pop on accept
+            transform.DOPunchScale(Vector3.one * 0.08f, 0.25f, 4, 0.5f);
             _onAccept?.Invoke(_data);
         }
 
         private void OnDeclinePressed()
         {
+            // Fade out on decline
+            var cg = GetComponent<CanvasGroup>();
+            if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+            cg.DOFade(0f, 0.2f).SetEase(Ease.InQuad);
             SetButtonStates(showAcceptDecline: false, showCancel: false);
             _onDecline?.Invoke(_data);
         }
 
         private void OnCancelPressed()
         {
+            var cg = GetComponent<CanvasGroup>();
+            if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+            cg.DOFade(0f, 0.2f).SetEase(Ease.InQuad);
             SetButtonStates(showAcceptDecline: false, showCancel: false);
             _onCancel?.Invoke(_data);
         }

@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.ScriptableObjects;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,9 +25,14 @@ namespace CosmicShore.UI
         [SerializeField] private Color offlineColor = new(0.5f, 0.5f, 0.5f, 0.5f);
         [SerializeField] private Color busyColor = new(0.9f, 0.7f, 0.2f, 1f);
 
+        [Header("Animation")]
+        [SerializeField] private float onlinePulseScale = 1.15f;
+        [SerializeField] private float onlinePulseDuration = 1.2f;
+
         private FriendData _data;
         private Action<FriendData> _onInvite;
         private Action<FriendData> _onRemove;
+        private Tween _pulseTween;
 
         public string PlayerId => _data.PlayerId;
 
@@ -74,6 +80,21 @@ namespace CosmicShore.UI
                     3 => busyColor,   // Away
                     _ => offlineColor
                 };
+
+                // Breathing pulse for online friends
+                _pulseTween?.Kill();
+                if (data.IsOnline)
+                {
+                    onlineIndicator.transform.localScale = Vector3.one;
+                    _pulseTween = onlineIndicator.transform
+                        .DOScale(onlinePulseScale, onlinePulseDuration)
+                        .SetEase(Ease.InOutSine)
+                        .SetLoops(-1, LoopType.Yoyo);
+                }
+                else
+                {
+                    onlineIndicator.transform.localScale = Vector3.one;
+                }
             }
 
             if (statusText != null)
@@ -89,6 +110,11 @@ namespace CosmicShore.UI
             }
         }
 
+        void OnDestroy()
+        {
+            _pulseTween?.Kill();
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Events
         // ─────────────────────────────────────────────────────────────────────
@@ -100,7 +126,15 @@ namespace CosmicShore.UI
             if (inviteButton != null)
                 inviteButton.interactable = false;
 
-            inviteSentIndicator?.SetActive(true);
+            if (inviteSentIndicator != null)
+            {
+                inviteSentIndicator.SetActive(true);
+                // Pop-in animation for the sent indicator
+                inviteSentIndicator.transform.localScale = Vector3.zero;
+                inviteSentIndicator.transform
+                    .DOScale(1f, 0.3f)
+                    .SetEase(Ease.OutBack);
+            }
         }
 
         private void OnRemovePressed()

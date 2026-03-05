@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Utility;
+using DG.Tweening;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
@@ -126,6 +127,17 @@ namespace CosmicShore.UI
             if (feedbackText == null) return;
             feedbackText.text = message;
             feedbackText.color = success ? new Color(0.2f, 0.9f, 0.3f) : new Color(0.9f, 0.3f, 0.3f);
+
+            // Animate feedback text appearance
+            feedbackText.transform.localScale = Vector3.one * 0.8f;
+            feedbackText.DOKill();
+            var seq = DOTween.Sequence();
+            seq.Append(feedbackText.transform.DOScale(1f, 0.2f).SetEase(Ease.OutBack));
+            if (success)
+            {
+                // Extra punch for success
+                seq.Append(feedbackText.transform.DOPunchScale(Vector3.one * 0.1f, 0.3f, 4, 0.5f));
+            }
         }
 
         private void SetCanvasGroupVisible(bool visible)

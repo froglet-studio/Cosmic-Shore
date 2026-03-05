@@ -1,8 +1,10 @@
+using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using DG.Tweening;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
@@ -60,11 +62,20 @@ namespace CosmicShore.UI
 
         private readonly List<FriendEntryView> _friendEntries = new();
         private readonly List<FriendRequestEntryView> _requestEntries = new();
+        [Header("Animation Settings")]
+        [SerializeField] private float panelSlideDuration = 0.35f;
+        [SerializeField] private float tabFadeDuration = 0.2f;
+        [SerializeField] private float entryStaggerDelay = 0.05f;
+        [SerializeField] private float entryFadeDuration = 0.2f;
+
         private int _activeTab; // 0=friends, 1=requests, 2=addFriend
         private CanvasGroup _canvasGroup;
         private CanvasGroup _friendsListCG;
         private CanvasGroup _requestsListCG;
         private CanvasGroup _addFriendCG;
+        private RectTransform _rectTransform;
+        private Tween _showTween;
+        private Tween _badgeTween;
 
         // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
@@ -73,6 +84,7 @@ namespace CosmicShore.UI
         void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
+            _rectTransform = GetComponent<RectTransform>();
             friendsTabButton?.onClick.AddListener(() => SwitchTab(0));
             requestsTabButton?.onClick.AddListener(() => SwitchTab(1));
             addFriendTabButton?.onClick.AddListener(() => SwitchTab(2));
@@ -138,7 +150,28 @@ namespace CosmicShore.UI
         {
             if (!gameObject.activeSelf)
                 gameObject.SetActive(true);
-            SetCanvasGroupVisible(true);
+
+            _showTween?.Kill();
+
+            // Slide up from bottom with fade
+            if (_rectTransform != null)
+            {
+                var targetPos = _rectTransform.anchoredPosition;
+                _rectTransform.anchoredPosition = targetPos + Vector2.down * 200f;
+                _canvasGroup.alpha = 0f;
+                _canvasGroup.blocksRaycasts = true;
+                _canvasGroup.interactable = true;
+
+                var seq = DOTween.Sequence();
+                seq.Append(_rectTransform.DOAnchorPos(targetPos, panelSlideDuration).SetEase(Ease.OutBack));
+                seq.Join(_canvasGroup.DOFade(1f, panelSlideDuration * 0.6f));
+                _showTween = seq;
+            }
+            else
+            {
+                SetCanvasGroupVisible(true);
+            }
+
             SwitchTab(0);
             RebuildFriendsList();
             RebuildRequestsList();
@@ -147,7 +180,28 @@ namespace CosmicShore.UI
 
         public void Hide()
         {
-            SetCanvasGroupVisible(false);
+            _showTween?.Kill();
+
+            if (_rectTransform != null && _canvasGroup != null)
+            {
+                var seq = DOTween.Sequence();
+                seq.Append(_canvasGroup.DOFade(0f, panelSlideDuration * 0.5f));
+                seq.Join(_rectTransform.DOAnchorPos(
+                    _rectTransform.anchoredPosition + Vector2.down * 100f,
+                    panelSlideDuration * 0.5f).SetEase(Ease.InQuad));
+                seq.OnComplete(() =>
+                {
+                    _canvasGroup.blocksRaycasts = false;
+                    _canvasGroup.interactable = false;
+                    // Reset position for next show
+                    _rectTransform.anchoredPosition += Vector2.up * 100f;
+                });
+                _showTween = seq;
+            }
+            else
+            {
+                SetCanvasGroupVisible(false);
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -198,12 +252,23 @@ namespace CosmicShore.UI
             }
         }
 
-        private static void SetTabCanvasGroupVisible(CanvasGroup cg, bool visible)
+        private void SetTabCanvasGroupVisible(CanvasGroup cg, bool visible)
         {
             if (cg == null) return;
-            cg.alpha = visible ? 1f : 0f;
-            cg.blocksRaycasts = visible;
-            cg.interactable = visible;
+
+            cg.DOKill();
+            if (visible)
+            {
+                cg.DOFade(1f, tabFadeDuration).SetEase(Ease.OutQuad);
+                cg.blocksRaycasts = true;
+                cg.interactable = true;
+            }
+            else
+            {
+                cg.DOFade(0f, tabFadeDuration * 0.5f).SetEase(Ease.InQuad);
+                cg.blocksRaycasts = false;
+                cg.interactable = false;
+            }
         }
 
         private static void SetTabSelected(Button button, bool selected)
@@ -231,11 +296,15 @@ namespace CosmicShore.UI
 
             friendsEmptyState?.SetActive(false);
 
+            int index = 0;
             foreach (var friend in friendsData.Friends)
-                SpawnFriendEntry(friend);
+            {
+                SpawnFriendEntry(friend, index);
+                index++;
+            }
         }
 
-        private void SpawnFriendEntry(FriendData data)
+        private void SpawnFriendEntry(FriendData data, int index = 0)
         {
             if (friendEntryPrefab == null || friendsContainer == null) return;
 
@@ -245,6 +314,14 @@ namespace CosmicShore.UI
 
             entry.Populate(data, OnInviteFriendToParty, OnRemoveFriend);
             _friendEntries.Add(entry);
+
+            // Staggered fade-in animation
+            var cg = go.GetComponent<CanvasGroup>();
+            if (cg == null) cg = go.AddComponent<CanvasGroup>();
+            cg.alpha = 0f;
+            cg.DOFade(1f, entryFadeDuration)
+                .SetDelay(index * entryStaggerDelay)
+                .SetEase(Ease.OutQuad);
         }
 
         private void ClearFriendEntries()
@@ -427,8 +504,19 @@ namespace CosmicShore.UI
             if (requestsBadge == null) return;
 
             int count = friendsData?.IncomingRequestCount ?? 0;
+            bool wasActive = requestsBadge.gameObject.activeSelf;
             requestsBadge.text = count > 0 ? count.ToString() : "";
             requestsBadge.gameObject.SetActive(count > 0);
+
+            // Punch scale when badge appears or count changes
+            if (count > 0 && requestsBadge.transform != null)
+            {
+                _badgeTween?.Kill();
+                requestsBadge.transform.localScale = Vector3.one;
+                _badgeTween = requestsBadge.transform
+                    .DOPunchScale(Vector3.one * 0.3f, 0.4f, 6, 0.5f)
+                    .SetEase(Ease.OutElastic);
+            }
         }
 
         private void SetCanvasGroupVisible(bool visible)
