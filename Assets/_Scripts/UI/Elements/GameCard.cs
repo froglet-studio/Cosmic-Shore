@@ -1,7 +1,5 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
-using CosmicShore.Events;
-using CosmicShore.FTUE;
 using System.Linq;
 using TMPro;
 using UnityEngine;

@@ -1,12 +1,10 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Core;
 using CosmicShore.Data;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using PlayFab.ClientModels;
 using UnityEngine;
-using CosmicShore.Utilities;
 using CosmicShore.Utility;
 
 

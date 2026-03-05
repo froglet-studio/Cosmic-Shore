@@ -1,3 +1,7 @@
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using DG.Tweening;
 using Obvious.Soap;
 using UnityEngine;
