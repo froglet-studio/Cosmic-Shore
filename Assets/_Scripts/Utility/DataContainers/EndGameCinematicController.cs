@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;

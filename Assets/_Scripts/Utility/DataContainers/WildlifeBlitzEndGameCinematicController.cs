@@ -1,4 +1,5 @@
 using System.Collections;
+using CosmicShore.Game.Cinematics;
 using CosmicShore.Gameplay;
 using Reflex.Attributes;
 using UnityEngine;

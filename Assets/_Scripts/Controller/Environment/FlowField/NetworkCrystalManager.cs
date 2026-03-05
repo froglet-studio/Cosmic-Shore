@@ -1,4 +1,6 @@
 // NetworkCrystalManager.cs
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;

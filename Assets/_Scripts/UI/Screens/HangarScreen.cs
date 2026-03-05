@@ -1,6 +1,7 @@
 using CosmicShore.App.Systems.VesselUnlock;
 using CosmicShore.App.UI.Elements.Hangar;
 using CosmicShore.App.UI.Views;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;

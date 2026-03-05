@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Data;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;

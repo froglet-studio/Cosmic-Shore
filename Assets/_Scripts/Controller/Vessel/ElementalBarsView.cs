@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 

@@ -1,3 +1,4 @@
+using CosmicShore.Game.Arcade;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Obvious.Soap;

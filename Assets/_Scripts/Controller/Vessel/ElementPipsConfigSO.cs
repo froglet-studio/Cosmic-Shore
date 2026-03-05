@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore

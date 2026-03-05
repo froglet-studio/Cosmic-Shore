@@ -1,6 +1,7 @@
 ﻿// MultiplayerCrystalCaptureEndGameController.cs
 using System.Collections;
 using System.Linq;
+using CosmicShore.Game.Cinematics;
 using UnityEngine;
 using CosmicShore.Utility;
 

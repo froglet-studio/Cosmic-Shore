@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;

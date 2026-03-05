@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.Models;
 using DG.Tweening;
 using TMPro;

@@ -1,6 +1,7 @@
 ﻿// MultiplayerJoustEndGameController.cs
 using System.Collections;
 using System.Linq;
+using CosmicShore.Game.Cinematics;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
