@@ -24,9 +24,12 @@ namespace CosmicShore
 
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
-        
+
         bool isInitialized;
 
+        // Reusable MaterialPropertyBlock to avoid creating material instances
+        private static readonly int AlphaID = Shader.PropertyToID("_Alpha");
+        private MaterialPropertyBlock _mpb;
 
         private void OnEnable()
         {
@@ -59,12 +62,21 @@ namespace CosmicShore
                 CSDebug.LogError("Close main camera not found! This should not happen!");
                 return;
             }
-            
+
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
             transform.SetParent(visibilityCapsuleTransform);
+
+            // Kinematic Rigidbody so PhysX treats this as a dynamic object.
+            // Without it, moving the capsule every frame forces a full static-tree rebuild.
+            var rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+
             visibilityCapsule = gameObject.AddComponent<CapsuleCollider>();
             visibilityCapsule.isTrigger = true;
             visibilityCapsule.radius = capsuleRadius;
+
+            _mpb = new MaterialPropertyBlock();
 
             isInitialized = true;
         }
@@ -101,9 +113,14 @@ namespace CosmicShore
 
         private void OnTriggerStay(Collider other)
         {
-            Renderer renderer = other.GetComponent<Renderer>();
-            if (renderer != null)
-                renderer.material.SetFloat("_Alpha", scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData)/ capsuleRadius));
+            if (!other.TryGetComponent<Renderer>(out var renderer)) return;
+
+            // Use MaterialPropertyBlock to set alpha without creating per-prism material instances.
+            // renderer.material creates a copy, breaking static batching and leaking materials.
+            renderer.GetPropertyBlock(_mpb);
+            _mpb.SetFloat(AlphaID, scaleCurve.Evaluate(
+                GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData) / capsuleRadius));
+            renderer.SetPropertyBlock(_mpb);
         }
 
         void OnTriggerExit(Collider other)
