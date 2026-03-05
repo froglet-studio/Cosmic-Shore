@@ -72,9 +72,8 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
-        /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader,
-        /// ServerPlayerVesselInitializerWithAI, and EnsureMinimumAIBackfill all see
-        /// correct values.
+        /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
+        /// and ServerPlayerVesselInitializerWithAI see correct values.
         /// </summary>
         public void SyncFromArcadeGame(SO_ArcadeGame game)
         {
@@ -92,20 +91,13 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Single source of truth for player count configuration at game launch.
         /// Computes and stores both SelectedPlayerCount and RequestedAIBackfillCount atomically.
+        /// Minimum player counts are enforced upstream by SO_ArcadeGame.MinPlayersAllowed via the UI.
         /// </summary>
         /// <param name="totalDesired">Total players the user selected (human + AI)</param>
         /// <param name="humanCount">Number of human players in the party</param>
-        /// <param name="isMultiplayer">Whether the game mode is multiplayer (competitive modes need min 1 AI for solo)</param>
-        public void ConfigurePlayerCounts(int totalDesired, int humanCount, bool isMultiplayer)
+        public void ConfigurePlayerCounts(int totalDesired, int humanCount)
         {
             int aiBackfill = Mathf.Max(0, totalDesired - humanCount);
-
-            // Competitive multiplayer modes always need at least 1 AI opponent for solo play
-            if (isMultiplayer && humanCount <= 1 && aiBackfill < 1)
-            {
-                aiBackfill = 1;
-                totalDesired = humanCount + aiBackfill; // bump total to stay consistent
-            }
 
             SelectedPlayerCount.Value = totalDesired;
             RequestedAIBackfillCount = aiBackfill;
@@ -113,24 +105,6 @@ namespace CosmicShore.Utility
             Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts — total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
         }
 
-        /// <summary>
-        /// Safety net for game-mode-specific minimum AI backfill.
-        /// Called by SceneLoader.LaunchGame() and SpawnAIs().
-        /// Only forces AI for true solo HexRace (1 total player, no opponents).
-        /// With 2+ total players (e.g., 2 humans), no AI is needed.
-        /// </summary>
-        public int EnsureMinimumAIBackfill()
-        {
-            if (GameMode == GameModes.HexRace
-                && SelectedPlayerCount.Value <= 1
-                && RequestedAIBackfillCount < 1)
-            {
-                RequestedAIBackfillCount = 1;
-                SelectedPlayerCount.Value = 2;
-                Debug.Log("<color=#FFD700>[GameDataSO] HexRace solo: forced AI=1, total=2</color>");
-            }
-            return RequestedAIBackfillCount;
-        }
 
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
@@ -594,6 +568,31 @@ namespace CosmicShore.Utility
             return spawnPoint;
         }
         
+        // -----------------------------------------------------------------------------------------
+        // Team Balancing
+
+        /// <summary>
+        /// Counts how many players are on each team (Jade, Ruby, Gold).
+        /// Used by AI spawning to assign AI to the team with the fewest players.
+        /// </summary>
+        public Dictionary<Domains, int> BuildTeamCounts()
+        {
+            var counts = new Dictionary<Domains, int>
+            {
+                { Domains.Jade, 0 },
+                { Domains.Ruby, 0 },
+                { Domains.Gold, 0 }
+            };
+
+            foreach (var p in Players)
+            {
+                if (p is Player player && counts.ContainsKey(player.NetDomain.Value))
+                    counts[player.NetDomain.Value]++;
+            }
+
+            return counts;
+        }
+
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
 

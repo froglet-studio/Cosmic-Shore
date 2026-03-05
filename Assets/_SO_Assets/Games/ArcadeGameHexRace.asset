@@ -24,10 +24,10 @@ MonoBehaviour:
     type: 3}
   GolfScoring: 1
   SceneName: MinigameHexRace
-  Vessels:
-  - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 3
+  Captains:
+  - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 12
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 431

@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
         [Inject] private PlayerDataService playerDataService;
 
         public NetworkVariable<VesselClassType> NetDefaultVesselType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        public NetworkVariable<Domains> NetDomain = new();
+        public NetworkVariable<Domains> NetDomain = new(Domains.Jade, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<ulong> NetVesselId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -176,7 +176,12 @@ namespace CosmicShore.Gameplay
                     NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
                 }
 
-                NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+                // Only set vessel type from gameData if the client hasn't already
+                // chosen a vessel via the ArcadeGameConfigureModal (which writes
+                // directly to NetDefaultVesselType). This preserves per-client
+                // vessel selection in multiplayer.
+                if (!IsValidVesselTypeForSpawn(NetDefaultVesselType.Value))
+                    NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
             }
 
             // --- Raise spawn event AFTER all local writes ---
@@ -249,15 +254,14 @@ namespace CosmicShore.Gameplay
             InputStatus?.ResetForReplay();
 
             // Update owner-writable NetworkVariables to match new game config.
-            if (IsOwner)
+            // Only overwrite vessel type from gameData if the client hasn't already
+            // chosen their own vessel via the ArcadeGameConfigureModal.
+            if (IsOwner && !IsValidVesselTypeForSpawn(NetDefaultVesselType.Value))
                 NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
-            // Update server-writable NetworkVariables.
+            // Reset server-writable NetworkVariables.
             if (IsServer)
-            {
-                NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
                 NetVesselId.Value = 0;
-            }
 
             // Force-sync local properties from NetworkVariables.
             // OnValueChanged callbacks only fire on actual changes;
@@ -373,9 +377,15 @@ namespace CosmicShore.Gameplay
             AvatarId = newValue;
         
         bool IsSpawnReady() =>
-            NetDefaultVesselType.Value != VesselClassType.Random
-            && NetDefaultVesselType.Value != VesselClassType.Any
+            IsValidVesselTypeForSpawn(NetDefaultVesselType.Value)
             && !string.IsNullOrEmpty(NetName.Value.ToString());
+
+        /// <summary>
+        /// Returns true if the vessel type is a concrete, spawnable vessel
+        /// (not Random, Any, or the default enum value).
+        /// </summary>
+        static bool IsValidVesselTypeForSpawn(VesselClassType type) =>
+            type != VesselClassType.Random && type != VesselClassType.Any;
 
         void SetGameObjectName()
         {

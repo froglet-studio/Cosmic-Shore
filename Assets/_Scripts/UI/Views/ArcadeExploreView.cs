@@ -22,7 +22,7 @@ namespace CosmicShore.App.UI.Views
     public class ArcadeExploreView : MonoBehaviour
     {
         [Header("Game Selection View")]
-        [SerializeField] SO_GameList GameList;
+        [Inject] SO_GameList GameList;
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;

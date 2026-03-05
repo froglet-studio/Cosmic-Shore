@@ -72,6 +72,7 @@ namespace CosmicShore.UI
         [SerializeField] private Transform NavBar;
 
         [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
+        [Inject] private HostConnectionDataSO hostConnectionData;
 
         [Header("Disabled Screens")]
         [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
@@ -432,11 +433,22 @@ namespace CosmicShore.UI
 
         private void NavigateTo(MenuScreens screen, bool animate = true)
         {
+            // Arcade is host-only in multiplayer sessions
+            if (screen == MenuScreens.ARK && !IsHostOrSolo())
+                return;
+
             if (IsScreenDisabled(screen))
                 return;
 
             int index = GetIndexForScreen(screen);
             NavigateTo(index, animate);
+        }
+
+        bool IsHostOrSolo()
+        {
+            if (hostConnectionData == null) return true;
+            if (hostConnectionData.PartyMembers == null || hostConnectionData.PartyMembers.Count <= 1) return true;
+            return hostConnectionData.IsHost;
         }
 
         private void NavigateTo(int ScreenIndex, bool animate = true)

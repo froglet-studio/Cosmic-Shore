@@ -17,7 +17,7 @@ namespace CosmicShore.UI
     {
         [Inject] AudioSystem audioSystem;
 
-        [SerializeField] SO_GameList AllGames;
+        [Inject] SO_GameList AllGames;
         [SerializeField] SO_VesselList AllShips;
         [SerializeField] List<LoadoutCard> CardList = new(4);
         [SerializeField] Image[] GameModeImages = new Image[4];
@@ -225,11 +225,11 @@ namespace CosmicShore.UI
         {
             var selectedGame = AllGames.Games[selectedGameIndex];
 
-            if (activePlayerCount < selectedGame.MinPlayers)
-                activePlayerCount = selectedGame.MinPlayers;
+            if (activePlayerCount < selectedGame.MinPlayersAllowed)
+                activePlayerCount = selectedGame.MinPlayersAllowed;
 
-            if (activePlayerCount > selectedGame.MaxPlayers)
-                activePlayerCount = selectedGame.MaxPlayers;
+            if (activePlayerCount > selectedGame.MaxPlayersAllowed)
+                activePlayerCount = selectedGame.MaxPlayersAllowed;
 
             for (var i = 0; i < 4; i++)
             {
@@ -245,13 +245,13 @@ namespace CosmicShore.UI
                     PlayerCountBorders[i].color = SelectedColor;
                 }
             }
-            for (var i = selectedGame.MaxPlayers; i < 4; i++)
+            for (var i = selectedGame.MaxPlayersAllowed; i < 4; i++)
             {
                 PlayerCountOptions[i].GetComponent<Button>().enabled = false;
                 PlayerCountOptions[i].color = DisabledColor;
                 PlayerCountBorders[i].color = DisabledColor;
             }
-            for (var i = selectedGame.MinPlayers; i > 1; i--)
+            for (var i = selectedGame.MinPlayersAllowed; i > 1; i--)
             {
                 PlayerCountOptions[i-2].GetComponent<Button>().enabled = false;
                 PlayerCountOptions[i-2].color = DisabledColor;
