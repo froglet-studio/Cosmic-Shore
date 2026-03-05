@@ -1,5 +1,5 @@
 using CosmicShore;
-using CosmicShore.Models.Enums;
+using CosmicShore.Data;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;

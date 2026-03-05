@@ -1,12 +1,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using CosmicShore.App.Systems.CloudData.Models;
-using CosmicShore.Game.Analytics;
-using CosmicShore.Game.Progression;
-using CosmicShore.App.Profile;
+using CosmicShore.Core;
+using CosmicShore.UI;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Facade interface for all player cloud data.

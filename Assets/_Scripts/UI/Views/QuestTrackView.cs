@@ -1,15 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.App.UI.Elements;
+using CosmicShore.UI;
 using CosmicShore.Core;
-using CosmicShore.Game.Progression;
-using CosmicShore.Models;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI
 {
     public class QuestTrackView : MonoBehaviour
     {

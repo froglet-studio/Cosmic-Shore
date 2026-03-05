@@ -1,9 +1,9 @@
-using CosmicShore.App.Profile;
-using CosmicShore.App.Systems.VesselUnlock;
+using CosmicShore.UI;
+using CosmicShore.Core;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.Elements.Hangar
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Displays the player's crystal currency balance. Updates at runtime whenever

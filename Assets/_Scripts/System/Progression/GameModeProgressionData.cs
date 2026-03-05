@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore.Game.Progression
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Cloud-saved progression data for the game-mode quest chain.

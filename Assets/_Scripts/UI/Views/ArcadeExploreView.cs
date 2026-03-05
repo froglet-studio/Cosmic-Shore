@@ -1,13 +1,6 @@
-using CosmicShore.App.Systems.Audio;
-using CosmicShore.App.Systems.CTA;
-using CosmicShore.App.Systems.Favorites;
-using CosmicShore.App.Systems.Loadout;
-using CosmicShore.App.UI.Elements;
-using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.Progression;
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.UI;
+using CosmicShore.Gameplay;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +10,7 @@ using UnityEngine.Serialization;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI
 {
     public class ArcadeExploreView : MonoBehaviour
     {

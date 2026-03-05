@@ -1,11 +1,11 @@
-using CosmicShore.App.UI.Screens;
+using CosmicShore.UI;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Elements.Hangar
+namespace CosmicShore.UI
 {
     [RequireComponent(typeof(CanvasGroup))]
     public class HangarVesselGridCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler

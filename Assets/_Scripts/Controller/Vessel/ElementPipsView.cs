@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Core;
 
-namespace CosmicShore
+namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Renders 4 vertical columns of pips above the silhouette, one per element.

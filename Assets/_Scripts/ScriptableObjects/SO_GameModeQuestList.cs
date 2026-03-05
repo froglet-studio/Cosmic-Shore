@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Models
+namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// Ordered list of game-mode quests that form the progression chain.

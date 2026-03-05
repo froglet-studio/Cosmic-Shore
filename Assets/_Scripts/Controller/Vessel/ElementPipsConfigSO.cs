@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Gameplay
 {
     [CreateAssetMenu(fileName = "ElementPipsConfig", menuName = "CosmicShore/UI/Element Pips Config")]
     public class ElementPipsConfigSO : ScriptableObject

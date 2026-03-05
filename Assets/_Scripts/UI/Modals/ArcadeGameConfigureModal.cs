@@ -1,14 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.App.Systems.Audio;
-using CosmicShore.App.Systems.Favorites;
-using CosmicShore.App.Systems.Loadout;
-using CosmicShore.App.UI.ToastNotification;
-using CosmicShore.App.UI.Views;
-using CosmicShore.Game.Progression;
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Soap;
+using CosmicShore.Core;
+using CosmicShore.UI;
+using CosmicShore.Utility;
 using Obvious.Soap;
 using TMPro;
 using Unity.Netcode;
@@ -16,7 +11,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
-namespace CosmicShore.App.UI.Modals
+namespace CosmicShore.UI
 {
     public class ArcadeGameConfigureModal : ModalWindowManager
     {

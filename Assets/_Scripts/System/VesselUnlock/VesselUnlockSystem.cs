@@ -1,9 +1,9 @@
 using System;
-using CosmicShore.App.Profile;
-using CosmicShore.App.Systems.CloudData;
+using CosmicShore.UI;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.Systems.VesselUnlock
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Manages vessel lock/unlock state with cloud persistence via HangarRepository.

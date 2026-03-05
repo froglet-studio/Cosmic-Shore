@@ -1,6 +1,6 @@
-using CosmicShore.Game.Analytics;
+using CosmicShore.Core;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Repository for per-game-mode high scores and stats.

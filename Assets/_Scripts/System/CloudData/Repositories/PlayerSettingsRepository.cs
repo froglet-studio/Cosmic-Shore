@@ -1,6 +1,6 @@
-using CosmicShore.App.Systems.CloudData.Models;
+using CosmicShore.Core;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Repository for player settings/preferences (roams across devices).

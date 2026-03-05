@@ -1,12 +1,10 @@
 using System;
-using CosmicShore.App.Systems.CloudData;
 using CosmicShore.Core;
-using CosmicShore.Models;
-using CosmicShore.Soap;
-using UnityEngine;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using UnityEngine;
 
-namespace CosmicShore.Game.Progression
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Manages the game-mode quest progression chain.

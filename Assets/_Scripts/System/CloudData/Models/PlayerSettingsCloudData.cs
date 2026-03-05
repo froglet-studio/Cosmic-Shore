@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore.App.Systems.CloudData.Models
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Persists player settings/preferences to UGS Cloud Save.

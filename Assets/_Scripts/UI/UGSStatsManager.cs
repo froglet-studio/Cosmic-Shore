@@ -1,12 +1,11 @@
 ﻿using System;
-using CosmicShore.App.Systems;
-using CosmicShore.App.Systems.CloudData;
+using CosmicShore.Core;
 using Unity.Services.Analytics;
 using Unity.Services.Leaderboards;
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore.Game.Analytics
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Domain service for game stats and vessel telemetry.

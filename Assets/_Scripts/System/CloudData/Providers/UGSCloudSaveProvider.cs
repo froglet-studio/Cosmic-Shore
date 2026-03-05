@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
-using CosmicShore.App.UI.ToastNotification;
+using CosmicShore.UI;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Concrete UGS implementation of ICloudSaveProvider.

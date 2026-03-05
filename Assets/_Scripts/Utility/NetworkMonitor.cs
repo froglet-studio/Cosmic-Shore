@@ -1,4 +1,4 @@
-using CosmicShore.App.UI.ToastNotification;
+using CosmicShore.UI;
 using CosmicShore.Utilities;
 using System;
 using UnityEngine;

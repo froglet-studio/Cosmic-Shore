@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CosmicShore.App.Systems.CloudData.Models;
+using CosmicShore.Core;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Repository for episode unlock/completion state.

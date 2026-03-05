@@ -1,7 +1,7 @@
 using DG.Tweening;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.ToastNotification
+namespace CosmicShore.UI
 {
     [CreateAssetMenu(
         fileName = "ToastNotificationSettings",

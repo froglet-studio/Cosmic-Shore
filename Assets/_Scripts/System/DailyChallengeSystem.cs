@@ -1,18 +1,16 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Integrations.PlayFab.CloudScripts;
-using CosmicShore.Models.Enums;
+using CosmicShore.Core;
+using CosmicShore.Data;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using CosmicShore.Integrations.PlayFab.PlayerData;
 using PlayFab.ClientModels;
 using UnityEngine;
-using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Utilities;
 using CosmicShore.Utility;
 
 
-namespace CosmicShore.App.Systems
+namespace CosmicShore.Core
 {
     public class DailyChallengeSystem : SingletonPersistent<DailyChallengeSystem>
     {

@@ -1,13 +1,12 @@
 using System.Collections.Generic;
-using CosmicShore.App.Systems.CloudData;
-using CosmicShore.App.Systems.CloudData.Models;
-using CosmicShore.Models;
+using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI.Screens
+namespace CosmicShore.UI
 {
     public class EpisodeScreen : MonoBehaviour
     {

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CosmicShore.Game.Progression;
+using CosmicShore.Core;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Repository for game mode quest chain progression.

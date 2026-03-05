@@ -1,13 +1,12 @@
 using CosmicShore.Core;
-using CosmicShore.Game.Progression;
-using CosmicShore.Models;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utilities;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.UI
 {
     public class GameCanvas : MonoBehaviour
     {

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CosmicShore.App.Systems.CloudData.Models;
+using CosmicShore.Core;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Repository for captain XP, level, and unlock/encounter state.

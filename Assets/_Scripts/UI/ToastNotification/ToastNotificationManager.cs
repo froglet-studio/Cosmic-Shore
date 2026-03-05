@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI.ToastNotification
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Persistent singleton that manages toast notification lifecycle.

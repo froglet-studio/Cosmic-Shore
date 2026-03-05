@@ -3,9 +3,9 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
+using CosmicShore.Gameplay;
 
-namespace CosmicShore
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Displays 4 element columns, each with 15 discrete pip images.

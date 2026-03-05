@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace CosmicShore.App.UI.ToastNotification
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Individual toast item view. Sets text, fades in/out, supports swipe-to-dismiss.

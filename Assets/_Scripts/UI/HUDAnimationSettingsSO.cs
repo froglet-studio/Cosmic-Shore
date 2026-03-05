@@ -1,7 +1,7 @@
 using DG.Tweening;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.UI
 {
     [CreateAssetMenu(
         fileName = "HUDAnimationSettings",

@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Elements.Hangar
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Displays a single vessel ability in the detail view.

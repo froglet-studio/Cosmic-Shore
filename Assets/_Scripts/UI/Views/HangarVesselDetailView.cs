@@ -1,13 +1,11 @@
-using CosmicShore.App.Profile;
-using CosmicShore.App.Systems.VesselUnlock;
-using CosmicShore.App.UI.ToastNotification;
-using CosmicShore.Game.Progression;
+using CosmicShore.UI;
+using CosmicShore.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Detail view for a selected vessel in the Hangar.

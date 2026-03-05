@@ -1,7 +1,7 @@
 using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.ToastNotification
+namespace CosmicShore.UI
 {
     [CreateAssetMenu(
         fileName = "ToastNotificationChannel",

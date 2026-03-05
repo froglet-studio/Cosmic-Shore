@@ -1,12 +1,12 @@
 using System;
 using CosmicShore.Core;
-using CosmicShore.Models;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Elements
+namespace CosmicShore.UI
 {
     public class QuestItemCard : MonoBehaviour
     {

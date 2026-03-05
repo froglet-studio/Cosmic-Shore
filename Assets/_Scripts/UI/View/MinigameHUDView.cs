@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.UI
 {
     public class MiniGameHUDView : MonoBehaviour, IMiniGameHUDView
     {

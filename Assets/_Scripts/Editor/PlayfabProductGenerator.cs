@@ -2,8 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using PlayFab;
 using System;
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 
 public class PlayFabProductGenerator : EditorWindow

@@ -1,7 +1,7 @@
-using CosmicShore.App.UI.Modals;
+using CosmicShore.UI;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI
 {
     public class PortSquadMemberConfigureView : ModalWindowManager
     {

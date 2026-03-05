@@ -1,7 +1,7 @@
 using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore.Models
+namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// Defines a single game-mode quest in the progression chain.

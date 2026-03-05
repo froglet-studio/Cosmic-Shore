@@ -1,11 +1,11 @@
-using CosmicShore.App.Systems.Audio;
-using CosmicShore.Game.UI;
+using CosmicShore.Core;
+using CosmicShore.UI;
 using DG.Tweening;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Gameplay
 {
     public class CountdownTimer : MonoBehaviour
     {

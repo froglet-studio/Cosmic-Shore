@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Collections;
-using CosmicShore.App.Profile;
-using CosmicShore.App.Systems.Audio;
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.Progression;
-using CosmicShore.Models;
-using CosmicShore.Soap;
+using CosmicShore.UI;
+using CosmicShore.Core;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.Utility;
-using CosmicShore.App.UI.ToastNotification;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     public class EndGameCinematicController : MonoBehaviour
     {

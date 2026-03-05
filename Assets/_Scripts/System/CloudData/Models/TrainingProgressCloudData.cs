@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore.App.Systems.CloudData.Models
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Persists training game tier progress to UGS Cloud Save.

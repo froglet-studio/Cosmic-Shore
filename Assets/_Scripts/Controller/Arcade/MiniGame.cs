@@ -1,22 +1,17 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Integrations.PlayFab.PlayStream;
+using CosmicShore.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using CosmicShore.App.Systems.UserActions;
-using CosmicShore.Game.UI;
-using CosmicShore.Models.Enums;
-using CosmicShore.App.Systems;
-using CosmicShore.Integrations.PlayFab.PlayerData;
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.App.Systems.Xp;
+using CosmicShore.UI;
+using CosmicShore.Data;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;
 
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// DEPRECATED - Use MiniGameControllerBase instead

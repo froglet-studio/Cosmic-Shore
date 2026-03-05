@@ -3,16 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CosmicShore.App.Profile;
-using CosmicShore.App.Systems.CloudData.Models;
-using CosmicShore.Game.Analytics;
-using CosmicShore.Game.Progression;
-using CosmicShore.Services.Auth;
+using CosmicShore.UI;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 using Unity.Services.Core;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Unified facade for all player cloud data.

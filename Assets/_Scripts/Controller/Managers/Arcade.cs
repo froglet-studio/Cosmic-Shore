@@ -1,13 +1,10 @@
-﻿using CosmicShore.Game;
-using CosmicShore.Game.Arcade;
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Models.Enums;
-using CosmicShore.Utilities;
+﻿using CosmicShore.Gameplay;
+using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;

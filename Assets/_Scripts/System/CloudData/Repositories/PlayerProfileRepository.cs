@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using CosmicShore.App.Profile;
+using CosmicShore.UI;
 
-namespace CosmicShore.App.Systems.CloudData
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Repository for player profile data (display name, avatar, crystals, rewards).

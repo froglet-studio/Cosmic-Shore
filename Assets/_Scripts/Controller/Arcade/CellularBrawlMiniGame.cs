@@ -1,4 +1,4 @@
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Gameplay
 {
     public class CellularBrawlMiniGame : MiniGame
     {

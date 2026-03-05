@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore.App.Systems.CloudData.Models
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Persists captain progression (XP, level, unlock/encounter state) to UGS Cloud Save.

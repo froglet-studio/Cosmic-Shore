@@ -1,11 +1,9 @@
-using CosmicShore.App.Systems.Audio;
-using CosmicShore.App.Systems.Squads;
-using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
+using CosmicShore.UI;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.Modals
+namespace CosmicShore.UI
 {
     public class FactionMissionModal : ModalWindowManager
     {

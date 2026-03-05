@@ -1,7 +1,7 @@
 using CosmicShore.Utility;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.ToastNotification
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Static convenience API for showing toast notifications from anywhere in the codebase.

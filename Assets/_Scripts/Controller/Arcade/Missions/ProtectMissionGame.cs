@@ -1,16 +1,12 @@
-using CosmicShore.Game.Arcade;
+using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
-using CosmicShore.App.Systems.Squads;
 using CosmicShore.Core;
-using CosmicShore.Integrations.PlayFab.Economy;
 using System.Linq;
-using CosmicShore.Game;
-using CosmicShore.Soap;
 using CosmicShore.Utility;
 
-namespace CosmicShore
+namespace CosmicShore.Gameplay
 {
     public class ProtectMissionGame : MiniGame
     {

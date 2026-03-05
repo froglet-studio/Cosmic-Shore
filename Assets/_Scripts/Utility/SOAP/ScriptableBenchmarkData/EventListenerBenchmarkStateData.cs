@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility
 {
     [AddComponentMenu("Soap/EventListeners/EventListener" + nameof(BenchmarkStateData))]
     public class EventListenerBenchmarkStateData : EventListenerGeneric<BenchmarkStateData>

@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CosmicShore.App.Systems.CloudData;
-using CosmicShore.Services.Auth;
-using CosmicShore.Soap;
+using CosmicShore.Core;
+using CosmicShore.Utility;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
-using CosmicShore.Utility;
 
-namespace CosmicShore.App.Profile
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Domain service for player profile data (display name, avatar, crystals, rewards).

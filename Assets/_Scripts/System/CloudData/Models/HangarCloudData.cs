@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore.App.Systems.CloudData.Models
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Persists vessel unlock state and hangar preferences to UGS Cloud Save.

@@ -4,7 +4,7 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Game
+namespace CosmicShore.UI
 {
     public class SparrowHUDView : VesselHUDView
     {
