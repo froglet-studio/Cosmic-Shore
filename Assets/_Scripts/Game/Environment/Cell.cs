@@ -38,6 +38,7 @@ namespace CosmicShore.Game
         readonly Dictionary<Domains, float> teamVolumes = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
+        SnowChanger spawnedCytoplasm;
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
@@ -73,6 +74,12 @@ namespace CosmicShore.Game
                     runtime.OnResetForReplay.OnRaised -= ResetCell;
             }
 
+            if (spawnedCytoplasm)
+            {
+                Destroy(spawnedCytoplasm.gameObject);
+                spawnedCytoplasm = null;
+            }
+
             StopSpawner();
             runtime?.ResetRuntimeData();
         }
@@ -85,6 +92,12 @@ namespace CosmicShore.Game
                 if (spawnedLifeForms[i]) Destroy(spawnedLifeForms[i]);
             }
             spawnedLifeForms.Clear();
+
+            if (spawnedCytoplasm)
+            {
+                Destroy(spawnedCytoplasm.gameObject);
+                spawnedCytoplasm = null;
+            }
 
             StopSpawner();
             AssignConfig();
@@ -156,6 +169,7 @@ namespace CosmicShore.Game
             }
 
             ApplyModifiers();
+            SpawnCytoplasm();
             StartSpawnerForMode();
         }
 
@@ -219,6 +233,15 @@ namespace CosmicShore.Game
 
             foreach (var modifier in cfg.CellModifiers)
                 modifier.Apply(this);
+        }
+
+        void SpawnCytoplasm()
+        {
+            if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
+
+            spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
+            spawnedCytoplasm.SetOrigin(transform.position);
+            spawnedCytoplasm.Initialize();
         }
 
         void StartSpawnerForMode()
