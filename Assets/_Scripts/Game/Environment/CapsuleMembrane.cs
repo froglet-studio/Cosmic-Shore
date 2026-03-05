@@ -7,9 +7,10 @@ namespace CosmicShore.Game
     /// <summary>
     /// Renders an icospheric arrangement of capsules as the cell membrane.
     /// All capsules are drawn in a single instanced draw call via Graphics.RenderMeshInstanced.
-    /// Perlin noise radial pulsing is computed entirely in the shader — no per-frame CPU cost.
+    /// Radial pulsing is computed CPU-side via Perlin noise and baked into the per-instance
+    /// transform matrices each frame. This allows any material/shader to be used (e.g. SpindleMaterial).
     ///
-    /// Setup: Attach to a GameObject, assign a material using CosmicShore/CapsuleMembrane shader.
+    /// Setup: Attach to a GameObject, assign any material (SpindleMaterial works directly).
     /// The component generates icosphere vertex positions at the configured subdivision level,
     /// places one capsule at each vertex oriented radially, and renders them every frame.
     /// </summary>
@@ -40,6 +41,16 @@ namespace CosmicShore.Game
         [Tooltip("Seed for deterministic placement noise.")]
         [SerializeField] int seed = 42;
 
+        [Header("Radial Pulse")]
+        [Tooltip("Spatial frequency of the Perlin noise driving the radial pulse.")]
+        [SerializeField] float noiseFrequency = 0.6f;
+
+        [Tooltip("Maximum radial displacement in world units.")]
+        [SerializeField] float noiseAmplitude = 40f;
+
+        [Tooltip("How fast the pulse pattern drifts over time.")]
+        [SerializeField] float pulseSpeed = 0.4f;
+
         [Header("Rendering")]
         [SerializeField] Material membraneMaterial;
 
@@ -50,13 +61,22 @@ namespace CosmicShore.Game
         RenderParams renderParams;
         Mesh meshToRender;
 
+        // Per-capsule data computed once at startup, reused every frame
+        Vector3[] baseDirections;
+        float[] baseRadii;
+        Quaternion[] rotations;
+        // Noise sampling coordinates (one per capsule, derived from jittered position)
+        Vector3[] noiseCoords;
+
         void Awake()
         {
             meshToRender = capsuleMesh;
             if (meshToRender == null)
                 meshToRender = GetBuiltinCapsuleMesh();
 
-            BuildMatrices();
+            BuildBaseData();
+            matrices = new Matrix4x4[baseDirections.Length];
+            UpdateMatrices();
 
             renderParams = new RenderParams(membraneMaterial)
             {
@@ -71,23 +91,25 @@ namespace CosmicShore.Game
         {
             if (meshToRender == null || membraneMaterial == null) return;
 
-            // Update bounds to follow the membrane if it moves
+            UpdateMatrices();
             renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f));
             Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
         }
 
-        void BuildMatrices()
+        void BuildBaseData()
         {
             var vertices = GenerateIcosphereVertices(subdivisions);
-            matrices = new Matrix4x4[vertices.Count];
-            var worldPos = transform.position;
+            int count = vertices.Count;
+            baseDirections = new Vector3[count];
+            baseRadii = new float[count];
+            rotations = new Quaternion[count];
+            noiseCoords = new Vector3[count];
             var rng = new System.Random(seed);
 
-            for (int i = 0; i < vertices.Count; i++)
+            for (int i = 0; i < count; i++)
             {
-                Vector3 radialDir = vertices[i]; // already normalized
+                Vector3 radialDir = vertices[i];
 
-                // Tangential jitter: pick two perpendicular tangent vectors, offset along them
                 Vector3 tangent1 = Vector3.Cross(radialDir, Vector3.up).sqrMagnitude > 0.001f
                     ? Vector3.Cross(radialDir, Vector3.up).normalized
                     : Vector3.Cross(radialDir, Vector3.right).normalized;
@@ -97,15 +119,35 @@ namespace CosmicShore.Game
                 float jitterV = ((float)rng.NextDouble() * 2f - 1f) * placementJitter;
                 float jitterR = ((float)rng.NextDouble() * 2f - 1f) * radialJitter;
 
-                // Jitter the direction on the sphere surface, then re-normalize
                 Vector3 jitteredDir = (radialDir + tangent1 * jitterU + tangent2 * jitterV).normalized;
-                float jitteredRadius = radius * (1f + jitterR);
-                Vector3 position = worldPos + jitteredDir * jitteredRadius;
 
-                // Orient capsule so local Y points radially outward
-                Quaternion rotation = Quaternion.LookRotation(tangent1, jitteredDir);
+                baseDirections[i] = jitteredDir;
+                baseRadii[i] = radius * (1f + jitterR);
+                rotations[i] = Quaternion.LookRotation(tangent1, jitteredDir);
 
-                matrices[i] = Matrix4x4.TRS(position, rotation, capsuleScale);
+                // Pre-scale the noise coordinate so we only multiply by time in the hot loop
+                noiseCoords[i] = jitteredDir * noiseFrequency;
+            }
+        }
+
+        void UpdateMatrices()
+        {
+            Vector3 center = transform.position;
+            float time = Time.time * pulseSpeed;
+            int count = baseDirections.Length;
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 nc = noiseCoords[i];
+                // Sample Perlin noise at the capsule's sphere-surface coordinate + animated time offset
+                // Unity's PerlinNoise is 2D, so we take two samples for a pseudo-3D effect
+                float noise = Mathf.PerlinNoise(nc.x + time, nc.y + time * 0.7f) * 2f - 1f;
+                noise += (Mathf.PerlinNoise(nc.y + time * 0.3f, nc.z + time * 0.5f) * 2f - 1f) * 0.5f;
+                noise *= 0.667f; // normalize back to roughly -1..1
+
+                float r = baseRadii[i] + noise * noiseAmplitude;
+                Vector3 position = center + baseDirections[i] * r;
+                matrices[i] = Matrix4x4.TRS(position, rotations[i], capsuleScale);
             }
         }
 
