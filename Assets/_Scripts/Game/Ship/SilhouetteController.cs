@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using CosmicShore.Game;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Core;
 
 namespace CosmicShore
@@ -19,6 +19,9 @@ namespace CosmicShore
 
         [Header("View")]
         [SerializeField] private SilhouetteView view; // view
+
+        [Header("Element Bars")]
+        [SerializeField] private ElementalBarsView elementBars;
 
         private IVessel _vessel;
         private IVesselStatus _status;
@@ -47,6 +50,9 @@ namespace CosmicShore
 
             TrySubscribeResources();
 
+            ElementalComebackSystem.OnOvertakePenaltyApplied += HandleOvertakePenaltyApplied;
+            ElementalComebackSystem.OnOvertakePenaltyRecovered += HandleOvertakePenaltyRecovered;
+
             //flower explosion
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion += HandleMantaFlowerExplosion;
         }
@@ -66,6 +72,10 @@ namespace CosmicShore
             }
 
             TryUnsubscribeResources();
+            TryUnsubscribeElementBars();
+
+            ElementalComebackSystem.OnOvertakePenaltyApplied -= HandleOvertakePenaltyApplied;
+            ElementalComebackSystem.OnOvertakePenaltyRecovered -= HandleOvertakePenaltyRecovered;
 
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
         }
@@ -83,6 +93,8 @@ namespace CosmicShore
                 var r = _resources.Resources[energyResourceIndex];
                 view?.UpdateEnergyUI(r.CurrentAmount, r.MaxAmount);
             }
+
+            InitializeElementBars();
         }
 
         void TrySubscribeResources()
@@ -200,6 +212,53 @@ namespace CosmicShore
         {
             view?.ShowMantaFlowerOverlay();
         }
+
+        // --- Element Bars ---
+        void TryUnsubscribeElementBars()
+        {
+            if (_resources != null)
+                _resources.OnElementLevelChange -= HandleElementLevelChanged;
+        }
+
+        void InitializeElementBars()
+        {
+            if (!elementBars) return;
+            elementBars.Build();
+
+            if (_resources != null)
+            {
+                _resources.OnElementLevelChange += HandleElementLevelChanged;
+
+                elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
+                elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
+                elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
+                elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
+            }
+        }
+
+        void HandleElementLevelChanged(Element element, int level)
+        {
+            elementBars?.SetLevel(element, level);
+        }
+
+        // --- Overtake ---
+        void HandleOvertakePenaltyApplied(string playerName)
+        {
+            if (_status == null || _status.PlayerName != playerName) return;
+            elementBars?.BeginOvertake();
+            elementBars?.JuiceOvertakePenalty();
+        }
+
+        void HandleOvertakePenaltyRecovered(string playerName)
+        {
+            if (_status == null || _status.PlayerName != playerName) return;
+            elementBars?.EndOvertake();
+        }
+
+        /// <summary>
+        /// Exposes the ElementalBarsView for the HUD controller to apply juice effects.
+        /// </summary>
+        public ElementalBarsView ElementBars => elementBars;
 
     }
 }

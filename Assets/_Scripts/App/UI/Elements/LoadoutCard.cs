@@ -12,7 +12,7 @@ namespace CosmicShore.App.UI.Elements
     {
         [Header("Resources")]
         [SerializeField] SO_GameList AllGames;
-        [SerializeField] SO_ShipList AllShips;
+        [SerializeField] SO_VesselList AllShips;
         [SerializeField] Sprite PlusIconBackground;
         [SerializeField] Sprite[] PlayerCountImages = new Sprite[4];
         [SerializeField] Sprite[] IntensityImages = new Sprite[4];
@@ -72,7 +72,7 @@ namespace CosmicShore.App.UI.Elements
                 GameTitle.text = game.DisplayName;
                 BackgroundImage.sprite = game.CardBackground;
 
-                SO_Ship ship = AllShips.ShipList.Where(x => x.Class == loadout.VesselType).FirstOrDefault();
+                SO_Vessel ship = AllShips.VesselList.Where(x => x.Class == loadout.VesselType).FirstOrDefault();
                 ShipImage.sprite = ship.CardSilohoutteInactive;
 
                 PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];

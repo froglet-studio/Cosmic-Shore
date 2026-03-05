@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
+using CosmicShore.App.UI.ToastNotification;
 using CosmicShore.App.UI.Views;
+using CosmicShore.Game.Progression;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Soap;
 using Obvious.Soap;
@@ -46,9 +49,6 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
 
-        [Tooltip("If true, will filter out unowned ships from being available to play")]
-        [SerializeField] private bool respectInventoryForShipSelection = false;
-
         [Header("Screen 2 – Selected Vessel Summary")]
         [SerializeField] private Image    shipPlaceholderIcon;
         [SerializeField] private TMP_Text shipNameText;
@@ -61,11 +61,14 @@ namespace CosmicShore.App.UI.Modals
         [Tooltip("Optional icon in the game-detail view.")]
         [SerializeField] private Image iconInGameDetailView;
 
+        /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
+        public event Action<int> OnLockedIntensityClicked;
+
         // Runtime state
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
 
-        readonly List<SO_Ship> _availableShips = new();
+        readonly List<SO_Vessel> _availableShips = new();
         int _currentShipIndex = -1;
 
         #region Unity lifecycle
@@ -81,7 +84,10 @@ namespace CosmicShore.App.UI.Modals
         void OnEnable()
         {
             foreach (var intensityButton in intensityButtons)
+            {
                 intensityButton.OnSelect += HandleIntensitySelected;
+                intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
+            }
 
             foreach (var playerCountButton in playerCountButtons)
                 playerCountButton.OnSelect += HandlePlayerCountSelected;
@@ -93,7 +99,10 @@ namespace CosmicShore.App.UI.Modals
         void OnDisable()
         {
             foreach (var intensityButton in intensityButtons)
+            {
                 intensityButton.OnSelect -= HandleIntensitySelected;
+                intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
+            }
 
             foreach (var playerCountButton in playerCountButtons)
                 playerCountButton.OnSelect -= HandlePlayerCountSelected;
@@ -133,7 +142,13 @@ namespace CosmicShore.App.UI.Modals
 
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
-            config.Intensity   = game.MinIntensity;
+            // Clamp default intensity to what the player has actually unlocked
+            var progressionService = GameModeProgressionService.Instance;
+            int maxUnlocked = progressionService != null
+                ? progressionService.GetMaxUnlockedIntensity(game.Mode)
+                : game.MaxIntensity;
+
+            config.Intensity   = Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
             config.PlayerCount = game.MinPlayers;
 
             SyncGameDataConfig();
@@ -168,6 +183,8 @@ namespace CosmicShore.App.UI.Modals
 
         void InitializeScreen1Controls(SO_ArcadeGame game)
         {
+            var progressionService = GameModeProgressionService.Instance;
+
             for (int i = 0; i < intensityButtons.Count; i++)
             {
                 var button = intensityButtons[i];
@@ -178,7 +195,15 @@ namespace CosmicShore.App.UI.Modals
 
                 bool active = level >= game.MinIntensity && level <= game.MaxIntensity;
                 button.SetActive(active);
-                button.SetSelected(level == config.Intensity);
+
+                // Lock intensity 3 and 4 if the player hasn't unlocked them yet
+                if (active && progressionService != null)
+                {
+                    bool unlocked = progressionService.IsIntensityUnlocked(game.Mode, level);
+                    button.SetLocked(!unlocked);
+                }
+
+                button.SetSelected(active && level == config.Intensity);
             }
 
             // Player count
@@ -203,20 +228,9 @@ namespace CosmicShore.App.UI.Modals
         {
             _availableShips.Clear();
 
-            if (!game) return;
+            if (!game || game.Vessels == null) return;
 
-            var ships = game.Captains
-                .Where(c => c && c.Ship)
-                .Select(c => c.Ship)
-                .ToList();
-
-            if (respectInventoryForShipSelection && CaptainManager.Instance)
-            {
-                var unlocked = CaptainManager.Instance.UnlockedShips;
-                ships = ships.Where(s => unlocked.Contains(s)).ToList();
-            }
-
-            _availableShips.AddRange(ships);
+            _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
         }
         
         void InitializeDefaultShipFromAvailable()
@@ -228,7 +242,7 @@ namespace CosmicShore.App.UI.Modals
                 return;
             }
 
-            SO_Ship chosen = null;
+            SO_Vessel chosen = null;
 
             if (gameData && gameData.selectedVesselClass)
             {
@@ -321,6 +335,25 @@ namespace CosmicShore.App.UI.Modals
             RaiseConfigChanged();
         }
 
+        void HandleLockedIntensitySelected(int intensity)
+        {
+            OnLockedIntensityClicked?.Invoke(intensity);
+
+            if (_selectedGame == null) return;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) return;
+
+            var quest = service.GetQuestForMode(_selectedGame.Mode);
+            if (quest == null) return;
+
+            string goalDescription = intensity == 3
+                ? quest.Intensity3GoalDescription
+                : quest.Intensity4GoalDescription;
+
+            ToastNotificationAPI.Show(goalDescription);
+        }
+
         void HandleConfigChangedExternal()
         {
             if (!gameObject.activeInHierarchy || !config) return;
@@ -366,7 +399,7 @@ namespace CosmicShore.App.UI.Modals
             RaiseConfigChanged();
         }
 
-        void SetSelectedShipInternal(SO_Ship ship)
+        void SetSelectedShipInternal(SO_Vessel ship)
         {
             if (config)
                 config.SelectedShip = ship;
@@ -392,7 +425,7 @@ namespace CosmicShore.App.UI.Modals
             RefreshShipSummaryView(config ? config.SelectedShip : null);
         }
 
-        void RefreshShipSummaryView(SO_Ship ship)
+        void RefreshShipSummaryView(SO_Vessel ship)
         {
             // Icons
             Sprite icon = ship && ship.IconActive ? ship.IconActive : null;
@@ -479,7 +512,7 @@ namespace CosmicShore.App.UI.Modals
                 gameData.SelectedPlayerCount.Value = config.PlayerCount;
         }
 
-        void SyncGameDataShip(SO_Ship ship)
+        void SyncGameDataShip(SO_Vessel ship)
         {
             if (!gameData || !gameData.selectedVesselClass)
                 return;

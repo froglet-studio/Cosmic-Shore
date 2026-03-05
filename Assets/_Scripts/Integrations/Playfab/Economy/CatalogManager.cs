@@ -508,7 +508,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             // Find the upgrade
             var elementTag = captain.PrimaryElement.ToString();
-            var shipTypeTag = captain.Ship.Class.ToString();
+            var shipTypeTag = captain.Vessel.Class.ToString();
             var upgradeLevelTag = "UpgradeLevel_" + (captain.Level+1);
 
             CSDebug.Log($"PurchaseCaptainUpgrade - elementTag:{elementTag},shipTypeTag:{shipTypeTag},upgradeLevelTag:{upgradeLevelTag}");
@@ -582,11 +582,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public VirtualItem GetCaptainUpgrade(Captain captain)
         {
             CSDebug.Log($"GetCaptainUpgrade - Element:{captain.PrimaryElement}");
-            CSDebug.Log($"GetCaptainUpgrade - Class:{captain.Ship.Class}");
+            CSDebug.Log($"GetCaptainUpgrade - Class:{captain.Vessel.Class}");
             CSDebug.Log($"GetCaptainUpgrade - Level:{ "UpgradeLevel_" + (captain.Level + 1)}");
 
             return StoreShelve.captainUpgrades.Values.FirstOrDefault(x => x.Tags.Contains(captain.PrimaryElement.ToString()) &&
-                                                                          x.Tags.Contains(captain.Ship.Class.ToString()) &&
+                                                                          x.Tags.Contains(captain.Vessel.Class.ToString()) &&
                                                                           x.Tags.Contains("UpgradeLevel_" + (captain.Level + 1)));
         }
 

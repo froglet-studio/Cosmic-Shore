@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CosmicShore.App.UI.ToastNotification;
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
@@ -75,6 +76,7 @@ namespace CosmicShore.Services.Auth
                 {
                     State = AuthState.Failed;
                     Log($"Startup auth failed: {ex}");
+                    ToastNotificationAPI.Show($"Authentication failed: {ex.Message}");
                     OnSignInFailed?.Invoke(ex.Message);
                 }
             }

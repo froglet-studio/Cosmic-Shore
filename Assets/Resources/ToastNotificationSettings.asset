@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5fc19ce839730a41a0c8a2cbe57cc8f, type: 3}
+  m_Name: ToastNotificationSettings
+  m_EditorClassIdentifier: 
+  slideInDuration: 0.35
+  slideOutDuration: 0.25
+  slideInEase: 9
+  slideOutEase: 8
+  fadeInDuration: 0.25
+  fadeOutDuration: 0.2
+  autoRemoveDelay: 5
+  swipeDismissThreshold: 60
+  offscreenPadding: 24
+  topMargin: 120
+  leftMargin: 24
+  stackSpacing: 10
+  maxVisible: 3
+  maxQueue: 10
+  useUnscaledTime: 1

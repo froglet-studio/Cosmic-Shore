@@ -6,6 +6,7 @@ using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Progression;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections.Generic;
@@ -40,11 +41,17 @@ namespace CosmicShore.App.UI.Views
         void OnEnable()
         {
             CatalogManager.OnLoadInventory += PopulateGameSelectionList;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
         }
 
         void OnDisable()
         {
             CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
         }
 
         void Start()
@@ -74,14 +81,23 @@ namespace CosmicShore.App.UI.Views
                 }
             }
 
-            // Sort favorited first, then alphabetically
+            var progressionService = GameModeProgressionService.Instance;
+
+            // Sort unlocked first, then favorited, then alphabetically
             var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games;
             var sortedGames = filteredGames;
             sortedGames.Sort((x, y) =>
             {
+                // Unlocked games before locked games
+                bool xLocked = progressionService != null && !progressionService.IsGameModeUnlocked(x.Mode);
+                bool yLocked = progressionService != null && !progressionService.IsGameModeUnlocked(y.Mode);
+                int lockComparison = xLocked.CompareTo(yLocked);
+                if (lockComparison != 0)
+                    return lockComparison;
+
                 int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
                 if (flagComparison == 0)
-                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal); // Sort alphabetically by Name if they're tied
+                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal);
 
                 return flagComparison;
             });
@@ -96,21 +112,34 @@ namespace CosmicShore.App.UI.Views
                 gameCard.GameMode = game.Mode;
                 gameCard.Favorited = FavoriteSystem.IsFavorited(game.Mode);
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
-                gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
                 gameCard.ExploreView = this;
-                
+
+                // Check if this game mode is unlocked via the quest progression system
+                bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
+                gameCard.SetLocked(isLocked);
+
+                if (!isLocked)
+                {
+                    gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
+                }
+
                 if (gameCard.TryGetComponent(out CallToActionTarget target))
                 {
                     target.TargetID = game.CallToActionTargetType;
                 }
                 else
                 {
-                    CSDebug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.", 
+                    CSDebug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.",
                         nameof(ArcadeExploreView), game.CallToActionTargetType.ToString());
                 }
-                
+
                 gameCard.gameObject.SetActive(true);
             }
+        }
+
+        void OnProgressionChanged(GameModeProgressionData data)
+        {
+            PopulateGameSelectionList();
         }
 
         public void SelectGame(SO_ArcadeGame selectedGame)
@@ -122,7 +151,7 @@ namespace CosmicShore.App.UI.Views
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
 
-        public void SelectShip(SO_Ship selectedShip)
+        public void SelectShip(SO_Vessel selectedShip)
         {
             CSDebug.Log($"SelectShip: {selectedShip.Name}");
 
@@ -131,13 +160,8 @@ namespace CosmicShore.App.UI.Views
             // notify the mini game engine that this is the vessel to play
             // MiniGame.PlayerShipType = selectedShip.Class;
 
-            // if game.captains matches selectedShip.captains, that's the one
-            foreach (var captain in selectedShip.Captains)
-            {
-                if (SelectedGame.Captains.Contains(captain))
-                    //MiniGame.ShipResources = captain.InitialResourceLevels;
-                    MiniGame.ResourceCollection = captain.InitialResourceLevels;
-            }
+            // Set resource levels from the vessel's config
+            MiniGame.ResourceCollection = selectedShip.InitialResourceLevels;
         }
 
         public void PlaySelectedGame()

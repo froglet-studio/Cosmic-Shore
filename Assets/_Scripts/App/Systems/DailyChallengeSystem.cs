@@ -171,7 +171,7 @@ namespace CosmicShore.App.Systems
             {
                 CSDebug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
                 CatalogManager.Instance.UseDailyChallengeTicket();
-                Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Ship.Class, ShipResources, dailyChallenge.Intensity, 1, true);
+                Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Vessel.Class, ShipResources, dailyChallenge.Intensity, 1, true);
             }
             else
             {
