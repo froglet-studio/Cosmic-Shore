@@ -17,15 +17,18 @@ namespace CosmicShore.Game.UI
         [Tooltip("Tip text element on the connecting panel (add in scene).")]
         [SerializeField] private TMP_Text tipText;
 
-        private SO_GameModeTips _activeTips;
+        [Tooltip("Single tips list asset containing tips for all game modes.")]
+        [SerializeField] private SO_GameModeTips tipsList;
+
+        private GameModes _activeMode;
 
         /// <summary>
-        /// Set the tips SO for the current game mode before the panel is enabled.
-        /// Called by MiniGameHUD when the connecting panel is shown.
+        /// Set the current game mode before the panel is enabled so the
+        /// correct tips are shown. Called by MiniGameHUD.
         /// </summary>
-        public void SetTips(SO_GameModeTips tips)
+        public void SetGameMode(GameModes mode)
         {
-            _activeTips = tips;
+            _activeMode = mode;
         }
 
         private void OnEnable()
@@ -40,9 +43,9 @@ namespace CosmicShore.Game.UI
                     displayImage.sprite = sprite;
             }
 
-            if (tipText != null && _activeTips != null)
+            if (tipText != null && tipsList != null)
             {
-                var tip = _activeTips.GetRandomTip();
+                var tip = tipsList.GetRandomTip(_activeMode);
                 tipText.text = string.IsNullOrEmpty(tip) ? string.Empty : tip;
                 tipText.gameObject.SetActive(!string.IsNullOrEmpty(tip));
             }

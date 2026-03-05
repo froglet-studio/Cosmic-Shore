@@ -1,26 +1,38 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore
 {
-    [CreateAssetMenu(fileName = "New GameModeTips", menuName = "CosmicShore/UI/GameModeTips", order = 0)]
+    [CreateAssetMenu(fileName = "GameModeTipsList", menuName = "CosmicShore/UI/GameModeTipsList", order = 0)]
     public class SO_GameModeTips : ScriptableObject
     {
-        [Tooltip("Tips specific to this game mode.")]
+        [Tooltip("Tips shared across all game modes.")]
         [TextArea(2, 4)]
-        [SerializeField] private List<string> tips = new();
+        [SerializeField] private List<string> commonTips = new();
 
-        [Tooltip("Optional shared/common tips list. Entries here are merged with mode-specific tips.")]
-        [SerializeField] private SO_GameModeTips commonTips;
+        [Tooltip("Per-game-mode tip entries.")]
+        [SerializeField] private List<GameModeTipEntry> modeTips = new();
 
-        public string GetRandomTip()
+        public string GetRandomTip(GameModes mode)
         {
-            var all = new List<string>(tips);
-            if (commonTips != null && commonTips.tips is { Count: > 0 })
-                all.AddRange(commonTips.tips);
+            var pool = new List<string>(commonTips);
 
-            if (all.Count == 0) return string.Empty;
-            return all[Random.Range(0, all.Count)];
+            var entry = modeTips.Find(e => e.mode == mode);
+            if (entry != null && entry.tips is { Count: > 0 })
+                pool.AddRange(entry.tips);
+
+            if (pool.Count == 0) return string.Empty;
+            return pool[UnityEngine.Random.Range(0, pool.Count)];
         }
+    }
+
+    [Serializable]
+    public class GameModeTipEntry
+    {
+        public GameModes mode;
+
+        [TextArea(2, 4)]
+        public List<string> tips = new();
     }
 }

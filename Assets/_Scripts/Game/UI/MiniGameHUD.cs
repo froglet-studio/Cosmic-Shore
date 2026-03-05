@@ -36,7 +36,6 @@ namespace CosmicShore.Game.UI
 
         [Header("Intro / Connecting")]
         [SerializeField] private float minConnectingSeconds = 5f;
-        [SerializeField] private ArcadeGameConfigSO arcadeGameConfig;
 
         [Header("Pre-Game Cinematic")]
         [SerializeField] private PreGameCinematicController preGameCinematic;
@@ -496,13 +495,8 @@ namespace CosmicShore.Game.UI
 
         private void PushTipsToConnectingPanel()
         {
-            if (view.ConnectingPanel == null) return;
-
-            SO_GameModeTips tips = arcadeGameConfig != null && arcadeGameConfig.SelectedGame != null
-                ? arcadeGameConfig.SelectedGame.Tips
-                : null;
-
-            view.ConnectingPanel.SetTips(tips);
+            if (view.ConnectingPanel == null || gameData == null) return;
+            view.ConnectingPanel.SetGameMode(gameData.GameMode);
         }
 
         private void HideLocalVesselHUD()
