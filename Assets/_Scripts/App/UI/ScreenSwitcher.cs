@@ -1,7 +1,9 @@
 using CosmicShore.App.Systems.UserActions;
+using CosmicShore.App.UI.FX;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.App.UI.Screens;
 using CosmicShore.Core;
+using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,8 +83,12 @@ namespace CosmicShore.App.UI
         [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
         [SerializeField] private GameObject arcadePanelRoot;
 
+        [Header("Controller Navigation")]
+        [Tooltip("Optional DPad navigator for auto-selecting UI elements on screen change.")]
+        [SerializeField] private MenuDPadNavigator dpadNavigator;
+
         private Vector3 panelLocation;
-        private Coroutine navigateCoroutine;
+        private Tween _slideTween;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
@@ -449,9 +455,16 @@ namespace CosmicShore.App.UI
                 if (menuAudio)
                     menuAudio.PlayAudio();
 
-                if (navigateCoroutine != null)
-                    StopCoroutine(navigateCoroutine);
-                navigateCoroutine = StartCoroutine(SmoothMove(transform.position, newLocation, easing));
+                _slideTween?.Kill();
+                _slideTween = transform.DOMove(newLocation, easing)
+                    .SetEase(Ease.OutCubic)
+                    .SetUpdate(true)
+                    .OnComplete(() =>
+                    {
+                        // Auto-select first focusable element on new screen for controller support
+                        if (dpadNavigator != null)
+                            dpadNavigator.OnScreenChanged(ScreenIndex);
+                    });
             }
             else
             {
@@ -603,17 +616,11 @@ namespace CosmicShore.App.UI
 
         #endregion
 
-        #region Helpers
+        #region Cleanup
 
-        private IEnumerator SmoothMove(Vector3 startpos, Vector3 endpos, float seconds)
+        void OnDestroy()
         {
-            float t = 0f;
-            while (t <= 1.0f)
-            {
-                t += Time.unscaledDeltaTime / seconds;
-                transform.position = Vector3.Lerp(startpos, endpos, Mathf.SmoothStep(0f, 1f, t));
-                yield return null;
-            }
+            _slideTween?.Kill();
         }
 
         #endregion

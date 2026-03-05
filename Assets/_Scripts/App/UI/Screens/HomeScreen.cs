@@ -1,4 +1,5 @@
 using CosmicShore.App.Profile;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,7 +8,8 @@ using CosmicShore.Utility;
 namespace CosmicShore.App.UI.Screens
 {
     /// <summary>
-    /// Provides high level functionality to panels in the main menu scene
+    /// Provides high level functionality to panels in the main menu scene.
+    /// Includes entrance animation for visual polish.
     /// </summary>
     public class HomeScreen : MonoBehaviour
     {
@@ -19,6 +21,15 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField] private TMP_Text usernameText;
         [SerializeField] private Image avatarImage;
         [SerializeField] private PlayerDataService playerDataService;
+
+        [Header("Entrance Animation")]
+        [Tooltip("Elements to animate in on start. Animates in order with stagger.")]
+        [SerializeField] private RectTransform[] entranceElements;
+        [SerializeField] private float entranceDelay = 0.15f;
+        [SerializeField] private float entranceStagger = 0.1f;
+        [SerializeField] private float entranceDuration = 0.4f;
+        [SerializeField] private float entranceStartScale = 0.8f;
+        [SerializeField] private Ease entranceEase = Ease.OutBack;
 
         enum PlayerPrefKeys
         {
@@ -46,6 +57,8 @@ namespace CosmicShore.App.UI.Screens
                 if (playerDataService.IsInitialized)
                     RefreshProfile(playerDataService.CurrentProfile);
             }
+
+            PlayEntranceAnimation();
         }
 
         void OnDestroy()
@@ -66,6 +79,41 @@ namespace CosmicShore.App.UI.Screens
                 var sprite = playerDataService.GetAvatarSprite(profile.avatarId);
                 avatarImage.sprite = sprite;
                 avatarImage.enabled = sprite != null;
+            }
+        }
+
+        private void PlayEntranceAnimation()
+        {
+            if (entranceElements == null || entranceElements.Length == 0)
+                return;
+
+            for (int i = 0; i < entranceElements.Length; i++)
+            {
+                var element = entranceElements[i];
+                if (element == null) continue;
+
+                // Ensure a CanvasGroup exists for fade
+                var canvasGroup = element.GetComponent<CanvasGroup>();
+                if (canvasGroup == null)
+                    canvasGroup = element.gameObject.AddComponent<CanvasGroup>();
+
+                // Set initial state
+                element.localScale = Vector3.one * entranceStartScale;
+                canvasGroup.alpha = 0f;
+
+                float delay = entranceDelay + (i * entranceStagger);
+
+                // Scale animation
+                element.DOScale(Vector3.one, entranceDuration)
+                    .SetDelay(delay)
+                    .SetEase(entranceEase)
+                    .SetUpdate(true);
+
+                // Fade animation
+                canvasGroup.DOFade(1f, entranceDuration * 0.6f)
+                    .SetDelay(delay)
+                    .SetEase(Ease.OutQuad)
+                    .SetUpdate(true);
             }
         }
 
