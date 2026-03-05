@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game;
@@ -21,8 +20,6 @@ namespace CosmicShore
         HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
-        Coroutine condenseCoroutine;
-
         bool deregistered;
         bool dying = false;
 
@@ -32,10 +29,131 @@ namespace CosmicShore
         bool isPooled;
         bool startedOnce;
 
+        // Per-instance animation state (driven by static tick)
+        float animProgress;
+        bool isEvaporating;
+        bool isCondensing;
+
         public event Action<Spindle> OnReturnToPool;
 
-        static readonly System.Predicate<HealthPrism> s_deadHealthPrism = h => !h;
-        static readonly System.Predicate<Spindle> s_deadSpindle = s => !s;
+        static readonly Predicate<HealthPrism> s_deadHealthPrism = h => !h;
+        static readonly Predicate<Spindle> s_deadSpindle = s => !s;
+
+        // ──────────────── Batched animation system ────────────────
+        // Replaces per-spindle coroutines with a single Update pass.
+
+        // When more than this many spindles are evaporating, new deaths
+        // skip animation and clean up immediately. Players can't track
+        // 50+ individual fade-outs anyway.
+        const int MaxAnimatedEvaporations = 48;
+        const int MaxAnimatedCondensations = 64;
+
+        static readonly List<Spindle> s_evaporating = new List<Spindle>(256);
+        static readonly List<Spindle> s_condensing = new List<Spindle>(256);
+        static readonly List<Spindle> s_pendingLifeCheck = new List<Spindle>(64);
+        static readonly HashSet<Spindle> s_pendingLifeCheckSet = new HashSet<Spindle>();
+        static bool s_driverInstalled;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void InstallDriver()
+        {
+            if (s_driverInstalled) return;
+            s_driverInstalled = true;
+            var go = new GameObject("[SpindleAnimDriver]");
+            go.hideFlags = HideFlags.HideAndDontSave;
+            UnityEngine.Object.DontDestroyOnLoad(go);
+            go.AddComponent<SpindleAnimDriver>();
+        }
+
+        /// <summary>
+        /// Single-pass update for all evaporating and condensing spindles.
+        /// Called once per frame by SpindleAnimDriver.
+        /// </summary>
+        internal static void TickAllAnimations()
+        {
+            float dt = Time.deltaTime;
+
+            // Tick evaporating (iterate backwards for safe removal)
+            for (int i = s_evaporating.Count - 1; i >= 0; i--)
+            {
+                var s = s_evaporating[i];
+                if (!s || !s.isEvaporating)
+                {
+                    SwapRemove(s_evaporating, i);
+                    continue;
+                }
+
+                s.animProgress += dt;
+                if (s.animProgress >= 1f)
+                {
+                    s.FinishEvaporation();
+                    SwapRemove(s_evaporating, i);
+                }
+                else if (s.RenderedObject && s.RenderedObject.isVisible)
+                {
+                    // Only touch MaterialPropertyBlock for on-screen spindles
+                    s.SetDeathAnimation(s.animProgress);
+                }
+            }
+
+            // Tick condensing
+            for (int i = s_condensing.Count - 1; i >= 0; i--)
+            {
+                var s = s_condensing[i];
+                if (!s || !s.isCondensing)
+                {
+                    SwapRemove(s_condensing, i);
+                    continue;
+                }
+
+                s.animProgress -= dt;
+                if (s.animProgress <= 0f)
+                {
+                    s.isCondensing = false;
+                    s.ClearDeathAnimation();
+                    SwapRemove(s_condensing, i);
+                }
+                else if (s.RenderedObject && s.RenderedObject.isVisible)
+                {
+                    s.SetDeathAnimation(s.animProgress);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Processes deferred CheckForLife calls so the death cascade
+        /// doesn't spike a single frame. Called in LateUpdate.
+        /// </summary>
+        internal static void FlushPendingLifeChecks()
+        {
+            if (s_pendingLifeCheck.Count == 0) return;
+
+            // Process in a loop — new entries may be added during iteration
+            // Cap iterations to prevent infinite cascade
+            int iterations = 0;
+            while (s_pendingLifeCheck.Count > 0 && iterations < 4)
+            {
+                int count = s_pendingLifeCheck.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var s = s_pendingLifeCheck[i];
+                    if (s) s.CheckForLifeImmediate();
+                }
+                s_pendingLifeCheck.RemoveRange(0, count);
+                iterations++;
+            }
+            s_pendingLifeCheck.Clear();
+            s_pendingLifeCheckSet.Clear();
+        }
+
+        static void SwapRemove<T>(List<T> list, int index)
+        {
+            int last = list.Count - 1;
+            if (index < last) list[index] = list[last];
+            list.RemoveAt(last);
+        }
+
+        // ──────────────── Lifecycle ────────────────
 
         void CleanupDeadRefs()
         {
@@ -45,25 +163,24 @@ namespace CosmicShore
 
         void OnEnable()
         {
-            // pooled spindles must be allowed to deregister again later
             if (!isPermanentlyWithered)
                 deregistered = false;
 
             if (!isPermanentlyWithered) return;
 
             if (RenderedObject) RenderedObject.enabled = false;
-            StopAllCoroutines();
+            CancelAnimations();
         }
 
-        IEnumerator Start()
+        void Start()
         {
             if (isPermanentlyWithered)
-                yield break;
+                return;
 
             if (RenderedObject == null || RenderedObject.sharedMaterial == null)
             {
                 CSDebug.LogError($"{gameObject.name}: RenderedObject does not have a valid material at Start.");
-                yield break;
+                return;
             }
 
             startedOnce = true;
@@ -74,7 +191,7 @@ namespace CosmicShore
             propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
             RenderedObject.SetPropertyBlock(propertyBlock);
 
-            condenseCoroutine = StartCoroutine(CondenseCoroutine());
+            BeginCondense();
 
             if (LifeForm) LifeForm.AddSpindle(this);
             parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
@@ -83,15 +200,13 @@ namespace CosmicShore
 
         /// <summary>
         /// Called by SpindlePoolManager when this spindle is taken from the pool.
-        /// Re-runs the initialization that Start() would normally do.
         /// </summary>
         public void InitializeFromPool()
         {
             isPooled = true;
 
-            if (!startedOnce) return; // Start() hasn't run yet — let it handle init
+            if (!startedOnce) return;
 
-            // Re-initialize state for reuse
             if (RenderedObject == null || RenderedObject.sharedMaterial == null) return;
 
             propertyBlock ??= new MaterialPropertyBlock();
@@ -103,17 +218,12 @@ namespace CosmicShore
 
             if (RenderedObject) RenderedObject.enabled = true;
 
-            condenseCoroutine = StartCoroutine(CondenseCoroutine());
+            BeginCondense();
         }
 
-        /// <summary>
-        /// Clears all state so this spindle can be reused from the pool.
-        /// Called by SpindlePoolManager.Release().
-        /// </summary>
         public void ResetForPool()
         {
-            StopAllCoroutines();
-            condenseCoroutine = null;
+            CancelAnimations();
 
             dying = false;
             isPermanentlyWithered = false;
@@ -128,16 +238,11 @@ namespace CosmicShore
             ClearDeathAnimation();
         }
 
-        /// <summary>
-        /// Returns this spindle to the pool instead of destroying it.
-        /// Falls back to Destroy if no pool is available.
-        /// </summary>
         public void ReturnToPool()
         {
             if (isPooled && SpindlePoolManager.Instance)
             {
                 OnReturnToPool?.Invoke(this);
-                // Pool manager will call ResetForPool and reparent
                 SpindlePoolManager.Instance.Release(this);
             }
             else
@@ -145,6 +250,8 @@ namespace CosmicShore
                 Destroy(gameObject);
             }
         }
+
+        // ──────────────── Health / Structure ────────────────
 
         public void AddHealthBlock(HealthPrism healthPrism)
         {
@@ -159,7 +266,7 @@ namespace CosmicShore
         {
             if (!healthPrism) return;
             healthBlocks.Remove(healthPrism);
-            CheckForLife();
+            DeferCheckForLife();
         }
 
         public void AddSpindle(Spindle spindle)
@@ -175,10 +282,23 @@ namespace CosmicShore
         {
             if (!spindle) return;
             spindles.Remove(spindle);
-            CheckForLife();
+            DeferCheckForLife();
+        }
+
+        void DeferCheckForLife()
+        {
+            if (dying || isPermanentlyWithered) return;
+            // Deduplicate — same spindle may be queued multiple times per frame
+            if (!s_pendingLifeCheckSet.Add(this)) return;
+            s_pendingLifeCheck.Add(this);
         }
 
         public void CheckForLife()
+        {
+            DeferCheckForLife();
+        }
+
+        void CheckForLifeImmediate()
         {
             if (dying || isPermanentlyWithered) return;
 
@@ -188,13 +308,70 @@ namespace CosmicShore
 
             dying = true;
             if (permanentWither) isPermanentlyWithered = true;
-            EvaporateSpindle();
+            BeginEvaporate();
         }
 
-        private void EvaporateSpindle()
+        // ──────────────── Animation ────────────────
+
+        void BeginEvaporate()
         {
-            if (gameObject && gameObject.activeInHierarchy)
-                StartCoroutine(EvaporateCoroutine());
+            if (!gameObject || !gameObject.activeInHierarchy) return;
+
+            // Cancel any condense in progress
+            if (isCondensing) isCondensing = false;
+
+            // If too many spindles are already animating death, skip animation
+            // and clean up immediately. The player cannot track 50+ individual fades.
+            if (s_evaporating.Count >= MaxAnimatedEvaporations)
+            {
+                FinishEvaporation();
+                return;
+            }
+
+            isEvaporating = true;
+            animProgress = 0f;
+            s_evaporating.Add(this);
+        }
+
+        void BeginCondense()
+        {
+            if (isPermanentlyWithered) return;
+
+            // Cap simultaneous condense animations too
+            if (s_condensing.Count >= MaxAnimatedCondensations)
+            {
+                ClearDeathAnimation();
+                return;
+            }
+
+            isCondensing = true;
+            animProgress = 1f;
+            s_condensing.Add(this);
+        }
+
+        void CancelAnimations()
+        {
+            isEvaporating = false;
+            isCondensing = false;
+            // Lists are cleaned up lazily during TickAllAnimations
+        }
+
+        void FinishEvaporation()
+        {
+            isEvaporating = false;
+            ClearDeathAnimation();
+            if (RenderedObject) RenderedObject.enabled = false;
+
+            DisableSpindle();
+
+            if (retainSpindle)
+            {
+                gameObject.SetActive(false);
+            }
+            else
+            {
+                ReturnToPool();
+            }
         }
 
         void SetDeathAnimation(float value)
@@ -215,57 +392,7 @@ namespace CosmicShore
             RenderedObject.SetPropertyBlock(propertyBlock);
         }
 
-        IEnumerator EvaporateCoroutine()
-        {
-            if (condenseCoroutine != null)
-            {
-                StopCoroutine(condenseCoroutine);
-                condenseCoroutine = null;
-            }
-
-            float deathAnimation = 0f;
-            float animationSpeed = 1f;
-            while (deathAnimation < 1f)
-            {
-                yield return null;
-
-                if (!RenderedObject) yield break;
-
-                SetDeathAnimation(deathAnimation);
-                deathAnimation += Time.deltaTime * animationSpeed;
-            }
-
-            ClearDeathAnimation();
-            if (RenderedObject) RenderedObject.enabled = false;
-
-            DisableSpindle();
-
-            if (retainSpindle)
-            {
-                gameObject.SetActive(false);
-            }
-            else
-            {
-                ReturnToPool();
-            }
-        }
-
-        IEnumerator CondenseCoroutine()
-        {
-            if (isPermanentlyWithered) yield break;
-
-            float deathAnimation = 1f;
-            float animationSpeed = 1f;
-            while (deathAnimation > 0f)
-            {
-                if (isPermanentlyWithered) yield break;
-                SetDeathAnimation(deathAnimation);
-                deathAnimation -= Time.deltaTime * animationSpeed;
-                yield return null;
-            }
-
-            ClearDeathAnimation();
-        }
+        // ──────────────── Wither ────────────────
 
         private static readonly List<Spindle> s_forceWitherScratch = new List<Spindle>(64);
 
@@ -287,7 +414,7 @@ namespace CosmicShore
             }
             s_forceWitherScratch.Clear();
 
-            EvaporateSpindle();
+            BeginEvaporate();
         }
 
         void DisableSpindle()
@@ -299,7 +426,6 @@ namespace CosmicShore
             if (parentSpindle)
             {
                 parentSpindle.RemoveSpindle(this);
-                parentSpindle.CheckForLife();
             }
 
             if (LifeForm)
@@ -313,20 +439,17 @@ namespace CosmicShore
         {
             if (deregistered) return;
 
-            // only deregister if we are truly gone (dying/perma-wither) or being unloaded
             if (!dying && !isPermanentlyWithered && gameObject.scene.isLoaded) return;
 
             deregistered = true;
+            CancelAnimations();
 
-            // During scene unload, only remove references — don't trigger the death
-            // cascade (CheckForLife/CheckIfDead) which explodes prisms, accesses
-            // disposed NativeArrays, and spawns new GameObjects during teardown.
             bool sceneUnloading = !gameObject.scene.isLoaded;
 
             if (parentSpindle)
             {
-                parentSpindle.RemoveSpindle(this);
-                if (!sceneUnloading) parentSpindle.CheckForLife();
+                parentSpindle.spindles.Remove(this);
+                if (!sceneUnloading) parentSpindle.DeferCheckForLife();
             }
 
             if (LifeForm)
@@ -340,7 +463,18 @@ namespace CosmicShore
         {
             if (deregistered) return;
             deregistered = true;
+            CancelAnimations();
             DisableSpindle();
         }
+    }
+
+    /// <summary>
+    /// Lightweight driver that ticks all spindle animations in a single Update pass.
+    /// Auto-created via RuntimeInitializeOnLoadMethod, hidden, persistent across scenes.
+    /// </summary>
+    internal class SpindleAnimDriver : MonoBehaviour
+    {
+        void Update() => Spindle.TickAllAnimations();
+        void LateUpdate() => Spindle.FlushPendingLifeChecks();
     }
 }
