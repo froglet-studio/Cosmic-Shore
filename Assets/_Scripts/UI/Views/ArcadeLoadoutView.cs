@@ -17,7 +17,7 @@ namespace CosmicShore.UI
     {
         [Inject] AudioSystem audioSystem;
 
-        [SerializeField] SO_GameList AllGames;
+        [Inject] SO_GameList AllGames;
         [SerializeField] SO_ShipList AllShips;
         [SerializeField] List<LoadoutCard> CardList = new(4);
         [SerializeField] Image[] GameModeImages = new Image[4];

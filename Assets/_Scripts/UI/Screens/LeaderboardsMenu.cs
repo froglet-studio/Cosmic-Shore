@@ -8,14 +8,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using System.Linq;
 namespace CosmicShore.UI
 {
     [RequireComponent(typeof(MenuAudio))]
     public class LeaderboardsMenu : MonoBehaviour, IScreen
     {
-        [SerializeField] 
-        SO_GameList allGames;
+        [Inject] SO_GameList allGames;
         
         List<LeaderboardManager.LeaderboardEntry> LeaderboardEntriesV2;
 
