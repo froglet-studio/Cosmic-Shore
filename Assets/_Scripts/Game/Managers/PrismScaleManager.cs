@@ -34,10 +34,15 @@ namespace CosmicShore.Core
             int scalingCount = 0;
 
             // Build contiguous job input + aligned animator list
+            // Skip off-screen animators to avoid unnecessary Transform reads/writes
             for (int i = 0; i < activeAnimatorsList.Count; i++)
             {
                 var block = activeAnimatorsList[i];
                 if (block == null || !block.enabled || !block.IsScaling) continue;
+
+                // Skip off-screen prisms — they'll catch up on the next visible frame
+                var renderer = block.MeshRenderer;
+                if (renderer != null && !renderer.isVisible) continue;
 
                 var targetScale = Vector3.Min(
                     Vector3.Max(block.TargetScale, block.MinScale),

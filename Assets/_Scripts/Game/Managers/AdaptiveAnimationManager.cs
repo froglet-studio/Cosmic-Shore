@@ -122,7 +122,7 @@ namespace CosmicShore.Core
                 return;
             }
 
-            if (Time.realtimeSinceStartup - lastIntervalUpdateTime < 0.5f)
+            if (Time.realtimeSinceStartup - lastIntervalUpdateTime < 0.25f)
                 return;
 
             lastIntervalUpdateTime = Time.realtimeSinceStartup;
@@ -132,38 +132,34 @@ namespace CosmicShore.Core
                 frameTimeHistory.Dequeue();
 
             float avgFrameTime = 0f;
-            float maxFrameTime = 0f;
             foreach (float frameTime in frameTimeHistory)
-            {
                 avgFrameTime += frameTime;
-                maxFrameTime = Mathf.Max(maxFrameTime, frameTime);
-            }
             avgFrameTime /= frameTimeHistory.Count;
 
-            // More aggressive capacity scaling
-            float capacityFactor = capacity / 50f; // Start scaling earlier and more aggressively
-
             // Scale based on both capacity and frame time pressure
+            float capacityFactor = capacity / 50f;
             float performancePressure = avgFrameTime / TARGET_FRAME_TIME;
-            performancePressure = Mathf.Pow(performancePressure, 1.5f); // Exponential scaling for performance pressure
+            performancePressure = Mathf.Pow(performancePressure, 1.5f);
 
-            // Higher baseline interval for large numbers of objects
             float baseInterval = Mathf.Max(BASE_FRAME_INTERVAL, capacityFactor);
-
-            // Combine factors multiplicatively instead of weighted average
             float scaleFactor = baseInterval * (1f + performancePressure);
 
-            // Calculate new interval with smoother clamping
             int newInterval = Mathf.Clamp(
                 Mathf.RoundToInt(scaleFactor),
                 Mathf.Max(BASE_FRAME_INTERVAL, Mathf.FloorToInt(capacityFactor)),
                 MAX_FRAME_INTERVAL
             );
 
-            // Smooth transition to new interval
-            if (newInterval != currentFrameInterval)
+            // Respond quickly when under pressure (jump up fast, ease down slowly)
+            if (newInterval > currentFrameInterval)
             {
-                currentFrameInterval += (newInterval > currentFrameInterval) ? 1 : -1;
+                // Under pressure — jump up aggressively (halve the gap each tick)
+                currentFrameInterval += Mathf.Max(1, (newInterval - currentFrameInterval + 1) / 2);
+                currentFrameInterval = Mathf.Min(currentFrameInterval, MAX_FRAME_INTERVAL);
+            }
+            else if (newInterval < currentFrameInterval)
+            {
+                currentFrameInterval -= 1; // ease down slowly
             }
         }
 
@@ -172,10 +168,12 @@ namespace CosmicShore.Core
             // Early exit if nothing is animating
             if (activeAnimators.Count == 0)
             {
-                // Ensure we're not accumulating time when idle
                 accumulatedTime = 0f;
                 return;
             }
+
+            // Periodically re-evaluate throttle based on actual frame performance
+            UpdateFrameInterval(activeAnimators.Count);
 
             // Accumulate time with protection against spikes
             float deltaTime = Mathf.Min(Time.deltaTime, MAX_FRAME_TIME);

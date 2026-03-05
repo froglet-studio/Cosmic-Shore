@@ -28,6 +28,8 @@ namespace CosmicShore.Core
         private MeshRenderer meshRenderer;
         private bool isRegistered;
 
+        public MeshRenderer MeshRenderer => meshRenderer;
+
         private Vector3 prefabAuthoredScale;
 
         private bool isScaling;
