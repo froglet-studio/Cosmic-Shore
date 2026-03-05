@@ -59,6 +59,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event System.Action OnAllPlayersReady;
 
+        /// <summary>
+        /// Raised on clients when the host navigates between modal screens.
+        /// Arg: screen index (0=config, 1=gameDetail, 2=vesselSelection, 3=squadMate)
+        /// </summary>
+        public event System.Action<int> OnScreenChangedOnClient;
+
         #region Host → Client: Config modal open/close/update
 
         /// <summary>
@@ -115,6 +121,23 @@ namespace CosmicShore.Gameplay
         {
             if (IsServer) return;
             OnConfigUpdatedOnClient?.Invoke(intensity, playerCount);
+        }
+
+        /// <summary>
+        /// Called by ArcadeGameConfigureModal on the host when navigating between
+        /// modal screens so clients follow the same screen transitions.
+        /// </summary>
+        public void NotifyScreenChanged(int screenIndex)
+        {
+            if (!IsServer) return;
+            ChangeScreenOnClients_ClientRpc(screenIndex);
+        }
+
+        [ClientRpc]
+        void ChangeScreenOnClients_ClientRpc(int screenIndex)
+        {
+            if (IsServer) return;
+            OnScreenChangedOnClient?.Invoke(screenIndex);
         }
 
         #endregion

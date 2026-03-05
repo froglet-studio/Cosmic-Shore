@@ -122,6 +122,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnConfigUpdatedOnClient += HandleConfigUpdatedOnClient;
+                arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
             }
         }
@@ -145,6 +146,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnConfigUpdatedOnClient -= HandleConfigUpdatedOnClient;
+                arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
             }
         }
@@ -577,38 +579,62 @@ namespace CosmicShore.UI
         {
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
             ShowGameDetailScreen();
+
+            if (!IsClientMode && arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyScreenChanged(1);
         }
 
         // Screen 2 → Screen 1 (Back button)
         public void OnBackFromGameSelectView()
         {
             ShowConfigurationScreen();
+
+            if (!IsClientMode && arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyScreenChanged(0);
         }
 
         // Screen 2 → Screen 3 (Vessel Selection)
         public void OnOpenVesselSelectionClicked()
         {
             ShowVesselSelectionScreen();
+
+            if (!IsClientMode && arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyScreenChanged(2);
         }
 
         // Screen 3 → Screen 2 (Back from Vessel Selection)
         public void OnBackFromVesselSelectionClicked()
         {
             ShowGameDetailScreen();
+
+            if (!IsClientMode && arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyScreenChanged(1);
         }
 
         // Screen 4 → Screen 2 (Back from Squad Mate Selection)
         public void OnBackFromSquadMateSelectionClicked()
         {
             ShowGameDetailScreen();
+
+            if (!IsClientMode && arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyScreenChanged(1);
         }
 
-        // Modal close (back/cancel) — host notifies clients to close too
+        /// <summary>
+        /// Modal close (back/cancel) — host notifies clients to close too.
+        /// Wire ALL close/back buttons to this method instead of ModalWindowOut() directly.
+        /// </summary>
         public void OnCloseModal()
+        {
+            CloseAndNotifyClients();
+        }
+
+        void CloseAndNotifyClients()
         {
             if (arcadeConfigSyncManager && !IsClientMode)
                 arcadeConfigSyncManager.NotifyConfigClosed();
 
+            _isClientMode = false;
             ModalWindowOut();
         }
 
@@ -795,6 +821,21 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Called on non-host clients when the host navigates between modal screens.
+        /// Clients follow the same screen transitions so they can see vessel/domain selection.
+        /// </summary>
+        void HandleScreenChangedOnClient(int screenIndex)
+        {
+            switch (screenIndex)
+            {
+                case 0: ShowConfigurationScreen(); break;
+                case 1: ShowGameDetailScreen(); break;
+                case 2: ShowVesselSelectionScreen(); break;
+                case 3: ShowSquadMateSelectionScreen(); break;
+            }
+        }
+
+        /// <summary>
         /// Called on non-host clients when the host changes intensity or player count.
         /// Updates the read-only display values.
         /// </summary>
@@ -835,9 +876,9 @@ namespace CosmicShore.UI
                 if (uiButton) uiButton.interactable = isHost;
             }
 
-            // Player count stepper — read-only for clients
+            // Player count stepper — visible for all, but only host can change it
             if (playerCountStepper)
-                playerCountStepper.gameObject.SetActive(isHost);
+                playerCountStepper.SetInteractable(isHost);
         }
 
         /// <summary>
