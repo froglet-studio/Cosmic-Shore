@@ -20,13 +20,24 @@ Material:
   stringTagMap:
     RenderType: Transparent
   disabledShaderPasses: []
-  m_LockedProperties:
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints:
     - _ImpactCount: 0
-    m_Floats: []
-    m_Colors: []
+    m_Floats:
+    - _CenterFillAmount: 0.105
+    - _EdgeSharpness: 0.122
+    - _FresnelRimIntensity: 0.156
+    - _FresnelRimPower: 1.97
+    - _ImpactCount: 0
+    - _RingThickness: 0.123
+    - _RippleSpeed: 0.44
+    - _VoronoiCellSize: 10.6
+    m_Colors:
+    - _CrackleColorA: {r: 0.3155927, g: 0.33311638, b: 0.509434, a: 1}
+    - _CrackleColorB: {r: 0.16985081, g: 0.19574417, b: 0.47798735, a: 1}
+    - _FresnelRimColor: {r: 0.08253225, g: 0.12554911, b: 0.67295593, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
