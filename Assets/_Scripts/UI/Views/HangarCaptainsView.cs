@@ -57,13 +57,13 @@ namespace CosmicShore.UI
         void Start()
         {
             if (_captainManager != null)
-                _captainManager.OnLoadCaptainData += NewCaptainData;
+                CaptainManager.OnLoadCaptainData += NewCaptainData;
         }
 
         void OnDisable()
         {
             if (_captainManager != null)
-                _captainManager.OnLoadCaptainData -= NewCaptainData;
+                CaptainManager.OnLoadCaptainData -= NewCaptainData;
         }
 
         void NewCaptainData()
@@ -233,12 +233,12 @@ namespace CosmicShore.UI
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
-                CSDebug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", nameof(HangarScreen),
+                CSDebug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", "HangarScreen",
                     nameof(SelectCaptain), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
-                CSDebug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", nameof(HangarScreen),
+                CSDebug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", "HangarScreen",
                     nameof(SelectCaptain), nullReferenceException.Message);
             }
         }
