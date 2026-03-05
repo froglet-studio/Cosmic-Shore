@@ -2254,9 +2254,9 @@ RectTransform:
   - {fileID: 214864}
   m_Father: {fileID: 278420062}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 53.99055, y: -29.56865}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 89.9811, y: 43.1373}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &32365889
@@ -32494,10 +32494,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 4125016652611855912}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0.5}
-  m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -28.83, y: 2.41}
-  m_SizeDelta: {x: 20, y: 20}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 147.5, y: 44.9}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &709792737
 MonoBehaviour:
@@ -32512,7 +32512,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.3137255}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -68173,9 +68173,9 @@ RectTransform:
   - {fileID: 1206377489}
   m_Father: {fileID: 278420062}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 152.07166, y: -29.56865}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 89.9811, y: 43.1373}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1634973828
@@ -76860,8 +76860,8 @@ MonoBehaviour:
   shipVesselNameText: {fileID: 199442422}
   iconInConfigurationSelectionView: {fileID: 979286432}
   iconInGameDetailView: {fileID: 4125016651355798845}
-  startGameButton: {fileID: 154051347}
-  waitingForOthersLabel: {fileID: 1057069816}
+  startGameButton: {fileID: 4125016652611855919}
+  waitingForOthersLabel: {fileID: 709792735}
   arcadeConfigSyncManager: {fileID: 1486013854}
 --- !u!114 &1847035623
 MonoBehaviour:
@@ -84095,9 +84095,9 @@ RectTransform:
   - {fileID: 54570830}
   m_Father: {fileID: 278420062}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 250.15276, y: -29.56865}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 89.9811, y: 43.1373}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2012268514
@@ -99399,18 +99399,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1486013854}
-        m_TargetAssemblyTypeName: CosmicShore.Gameplay.ArcadeConfigSyncManager, Assembly-CSharp
-        m_MethodName: ConfirmLocalPlayerReady
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 1726012253}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -99562,7 +99550,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &4125016653357952139
 RectTransform:
   m_ObjectHideFlags: 0
