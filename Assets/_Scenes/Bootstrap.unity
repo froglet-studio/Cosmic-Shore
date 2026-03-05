@@ -3435,6 +3435,12 @@ PrefabInstance:
       objectReference: {fileID: 820208345}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
+      propertyPath: gameList
+      value: 
+      objectReference: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57,
+        type: 2}
+    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
+        type: 3}
       propertyPath: iapManager
       value: 
       objectReference: {fileID: 2100000006}
