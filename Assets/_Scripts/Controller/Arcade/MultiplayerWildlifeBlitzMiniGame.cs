@@ -23,8 +23,9 @@ namespace CosmicShore.Gameplay
         {
             readyClientCount++;
 
-            // Keep the same pattern you used in MultiplayerCellularDuelController
-            if (!readyClientCount.Equals(gameData.SelectedPlayerCount))
+            // Use connected clients count (humans only — excludes AI)
+            int humanCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+            if (readyClientCount < humanCount)
                 return;
 
             readyClientCount = 0;

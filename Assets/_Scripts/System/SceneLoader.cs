@@ -297,8 +297,13 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Syncs the host's game configuration to all clients before a network scene load.
-        /// Clients update their local GameDataSO so that Player.OnNetworkSpawn() reads the
-        /// correct vessel class and HexRaceController generates an identical track.
+        /// Clients update their local GameDataSO so that game controllers (e.g.
+        /// HexRaceController) see correct game parameters.
+        ///
+        /// Note: vesselClass is synced to gameData as the host's default, but each
+        /// client's Player.NetDefaultVesselType (owner-writable) takes precedence
+        /// for vessel spawning. Clients who selected their own vessel via the
+        /// ArcadeGameConfigureModal already have their NetDefaultVesselType set.
         /// </summary>
         [ClientRpc]
         void SyncGameConfigToClients_ClientRpc(
