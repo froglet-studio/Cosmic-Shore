@@ -18,6 +18,9 @@ MonoBehaviour:
   Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
   TargetType: 6
   TargetValue: 4
+  IntensityUnlockStatType: 2
+  Intensity3StatTarget: 3
+  Intensity4StatTarget: 3
   PlaysToUnlockIntensity3: 3
   PlaysToUnlockIntensity4: 3
   Intensity3GoalDescription: Get 3 jousts under 200 seconds in Intensity 2
