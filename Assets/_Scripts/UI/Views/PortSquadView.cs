@@ -16,7 +16,7 @@ namespace CosmicShore.UI
         [SerializeField] SquadMemberCard RogueTwoCaptainButton;
 
         // TODO: Need to pull this from inventory
-        [SerializeField] SO_ShipList PlayerShips;
+        [SerializeField] SO_VesselList PlayerShips;
         List<SO_Captain> AllCaptains = new();
 
         public int ActiveSquadMember = 0;

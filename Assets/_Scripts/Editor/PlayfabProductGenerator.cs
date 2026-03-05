@@ -11,7 +11,7 @@ namespace CosmicShore.Editor
 {
     public class PlayFabProductGenerator : EditorWindow
     {
-        SO_Ship selectedShip;
+        SO_Vessel selectedShip;
         SO_Captain selectedCaptain;
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 

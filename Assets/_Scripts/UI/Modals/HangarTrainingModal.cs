@@ -171,7 +171,8 @@ namespace CosmicShore
             if (SelectedGame.ElementOne.Element == Element.Time || SelectedGame.ElementTwo.Element == Element.Time )
                 shipResources.Time = 1;
             
-            Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame._SO_Vessel.Class, shipResources, Intensity, 1, false);
+            // TODO: Arcade singleton was removed — migrate to gameData + SceneLoader pipeline
+            // Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame._SO_Vessel.Class, shipResources, Intensity, 1, false);
         }
     }
 }

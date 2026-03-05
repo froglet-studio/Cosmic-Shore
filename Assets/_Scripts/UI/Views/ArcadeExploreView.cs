@@ -120,22 +120,13 @@ namespace CosmicShore.UI
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
 
-        public void SelectShip(SO_Ship selectedShip)
+        public void SelectShip(SO_Vessel selectedShip)
         {
             CSDebug.Log($"SelectShip: {selectedShip.Name}");
 
             selectedVesselClassType.Value = selectedShip.Class;
-            // TODO - Remove statics from MiniGame, use SOAP Data Container
-            // notify the mini game engine that this is the vessel to play
-            // MiniGame.PlayerShipType = selectedShip.Class;
 
-            // if game.captains matches selectedShip.captains, that's the one
-            foreach (var captain in selectedShip.Captains)
-            {
-                if (SelectedGame.Captains.Contains(captain))
-                    //MiniGame.ShipResources = captain.InitialResourceLevels;
-                    gameData.ResourceCollection = captain.InitialResourceLevels;
-            }
+            gameData.ResourceCollection = selectedShip.InitialResourceLevels;
         }
 
         public void PlaySelectedGame()

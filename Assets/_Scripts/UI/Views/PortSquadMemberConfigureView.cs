@@ -14,7 +14,7 @@ namespace CosmicShore.UI
         [SerializeField] PortSquadView homeSquadView;
 
         // TODO: Need to pull this from inventory
-        [SerializeField] SO_ShipList PlayerShips;
+        [SerializeField] SO_VesselList PlayerShips;
 
         SO_Captain SelectedCaptain;
 
@@ -43,19 +43,19 @@ namespace CosmicShore.UI
         protected override void Start()
         {
             if (shipSelectionView != null && PlayerShips != null)
-                shipSelectionView.AssignModels(PlayerShips.ShipList.ConvertAll(x => (ScriptableObject)x));
+                shipSelectionView.AssignModels(PlayerShips.VesselList.ConvertAll(x => (ScriptableObject)x));
 
             base.Start();
         }
 
         public void InitializeView(SO_Captain captain, bool isPlayer) 
         {
-            shipSelectionView.Select(PlayerShips.ShipList.IndexOf(captain.Ship));
+            shipSelectionView.Select(PlayerShips.VesselList.IndexOf(captain.Vessel));
             captainSelectView.IsPlayer = isPlayer;
-            squadMemberCard.SetShip(captain.Ship);
+            squadMemberCard.SetShip(captain.Vessel);
 
             squadMemberCard.SetCaptain(captain);
-            captainSelectView.AssignModel(captain.Ship);
+            captainSelectView.AssignModel(captain.Vessel);
             captainSelectView.SetSelectedCaptain(captain);
         }
 

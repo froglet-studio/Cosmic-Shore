@@ -84,7 +84,7 @@ namespace CosmicShore.UI
         VideoPlayer   _previewVideo;
         bool _isClientMode;
 
-        readonly List<SO_Ship> _availableShips = new();
+        readonly List<SO_Vessel> _availableShips = new();
         int _currentShipIndex = -1;
 
         /// <summary>
@@ -281,9 +281,8 @@ namespace CosmicShore.UI
 
             if (!game) return;
 
-            var ships = game.Captains
-                .Where(c => c && c.Ship)
-                .Select(c => c.Ship)
+            var ships = game.Vessels
+                .Where(v => v != null)
                 .ToList();
 
             if (respectInventoryForShipSelection && _captainManager)
@@ -304,7 +303,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            SO_Ship chosen = null;
+            SO_Vessel chosen = null;
 
             if (gameData && gameData.selectedVesselClass)
             {
@@ -518,7 +517,7 @@ namespace CosmicShore.UI
             RaiseConfigChanged();
         }
 
-        void SetSelectedShipInternal(SO_Ship ship)
+        void SetSelectedShipInternal(SO_Vessel ship)
         {
             if (config)
                 config.SelectedShip = ship;
@@ -548,7 +547,7 @@ namespace CosmicShore.UI
             RefreshShipSummaryView(config ? config.SelectedShip : null);
         }
 
-        void RefreshShipSummaryView(SO_Ship ship)
+        void RefreshShipSummaryView(SO_Vessel ship)
         {
             // Icons
             Sprite icon = ship && ship.IconActive ? ship.IconActive : null;
@@ -750,7 +749,7 @@ namespace CosmicShore.UI
             // Player count is only committed to gameData at launch via ConfigurePlayerCounts().
         }
 
-        void SyncGameDataShip(SO_Ship ship)
+        void SyncGameDataShip(SO_Vessel ship)
         {
             if (!gameData || !gameData.selectedVesselClass)
                 return;
@@ -772,7 +771,7 @@ namespace CosmicShore.UI
         /// each client's vessel choice is propagated to the server independently
         /// of gameData.selectedVesselClass (which carries the host's choice).
         /// </summary>
-        void SyncLocalPlayerVesselType(SO_Ship ship)
+        void SyncLocalPlayerVesselType(SO_Vessel ship)
         {
             if (gameData.LocalPlayer is not Player localPlayer) return;
             if (!localPlayer.IsOwner) return;

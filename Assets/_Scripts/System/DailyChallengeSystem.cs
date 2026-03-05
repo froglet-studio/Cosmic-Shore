@@ -139,7 +139,8 @@ namespace CosmicShore.App.Systems
             PlayerPrefs.Save();
 
             dailyChallenge = FetchDailyChallenge();
-            DailyGame = Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
+            // TODO: Arcade singleton was removed — migrate to SO_GameList + DI
+            // DailyGame = Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
             ShipResources = LoadGameResourceCollection(DailyGame);
         }
 
@@ -150,11 +151,12 @@ namespace CosmicShore.App.Systems
             long dateTicks = currentDate.Ticks;
             var random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
 
-            var trainingGames = Arcade.Instance.TrainingGames.Games;
-            var index = random.Next(trainingGames.Count);
-            var dailyGame = trainingGames[index];
+            // TODO: Arcade singleton was removed — migrate to SO_GameList + DI
+            // var trainingGames = Arcade.Instance.TrainingGames.Games;
+            // var index = random.Next(trainingGames.Count);
+            // var dailyGame = trainingGames[index];
             var challenge = new DailyChallenge();
-            challenge.GameMode = dailyGame.Game.Mode;
+            // challenge.GameMode = dailyGame.Game.Mode;
             challenge.Intensity = random.Next(4);
 
             return challenge;
@@ -167,7 +169,8 @@ namespace CosmicShore.App.Systems
             {
                 CSDebug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
                 CatalogManager.Instance.UseDailyChallengeTicket();
-                Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Vessel.Class, ShipResources, dailyChallenge.Intensity, 1, true);
+                // TODO: Arcade singleton was removed — migrate to gameData + SceneLoader pipeline
+                // Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Vessel.Class, ShipResources, dailyChallenge.Intensity, 1, true);
             }
             else
             {

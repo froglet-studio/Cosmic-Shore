@@ -18,7 +18,7 @@ namespace CosmicShore.UI
         [Inject] AudioSystem audioSystem;
 
         [Inject] SO_GameList AllGames;
-        [SerializeField] SO_ShipList AllShips;
+        [SerializeField] SO_VesselList AllShips;
         [SerializeField] List<LoadoutCard> CardList = new(4);
         [SerializeField] Image[] GameModeImages = new Image[4];
         [SerializeField] Image ShipClassImage;
@@ -31,7 +31,7 @@ namespace CosmicShore.UI
         [SerializeField] Color SelectedColor;
         [SerializeField] Color DisabledColor;
 
-        List<SO_Ship> availableShips = new List<SO_Ship>();
+        List<SO_Vessel> availableShips = new List<SO_Vessel>();
 
         int selectedShipIndex;
         int selectedGameIndex;
@@ -100,7 +100,7 @@ namespace CosmicShore.UI
             // 
             selectedGameIndex = AllGames.Games.IndexOf(AllGames.Games.Where(x => x.Mode == activeGameMode).FirstOrDefault());
             UpdateGameMode();
-            selectedShipIndex = availableShips.IndexOf(AllShips.ShipList.Where(x => x.Class == activeVesselType).FirstOrDefault());
+            selectedShipIndex = availableShips.IndexOf(AllShips.VesselList.Where(x => x.Class == activeVesselType).FirstOrDefault());
             UpdateShipClass();
 
             CSDebug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
@@ -164,12 +164,12 @@ namespace CosmicShore.UI
             foreach (var image in GameModeImages)
                 image.sprite = selectedGame.CardBackground;
 
-            availableShips = new List<SO_Ship>();
-            foreach (var captain in selectedGame.Captains)
-                availableShips.Add(captain.Ship);
+            availableShips = new List<SO_Vessel>();
+            foreach (var vessel in selectedGame.Vessels)
+                if (vessel != null) availableShips.Add(vessel);
 
             // If selected vessel is not available, fall back to zero
-            if (!availableShips.Contains(AllShips.ShipList.Where(x => x.Class == activeVesselType).FirstOrDefault()))
+            if (!availableShips.Contains(AllShips.VesselList.Where(x => x.Class == activeVesselType).FirstOrDefault()))
             {
                 selectedShipIndex = 0;
                 UpdateShipClass();
