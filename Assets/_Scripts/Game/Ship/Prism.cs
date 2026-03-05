@@ -209,6 +209,15 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Enables the BoxCollider. Called by PrismScaleAnimator.ExecuteOnScaleComplete()
+        /// after growth finishes, so PhysX doesn't pay AABB-rebuild costs during growth.
+        /// </summary>
+        internal void EnableCollider()
+        {
+            if (blockCollider) blockCollider.enabled = true;
+        }
+
+        /// <summary>
         /// Public method to immediately return this instance to the pool.
         /// </summary>
         public void ReturnToPool()
@@ -236,7 +245,10 @@ namespace CosmicShore.Core
         internal void ExecuteDeferredActivation(Vector3 authoredTargetScale)
         {
             meshRenderer.enabled = true;
-            blockCollider.enabled = true;
+            // Collider is NOT enabled here — it stays off while the prism grows.
+            // PrismScaleAnimator.ExecuteOnScaleComplete() calls EnableCollider()
+            // once growth finishes. This prevents thousands of simultaneously-growing
+            // prisms from forcing PhysX to recompute AABBs every fixed step.
 
             if (scaleAnimator.TargetScale == Vector3.zero)
                 scaleAnimator.SetTargetScale(authoredTargetScale);

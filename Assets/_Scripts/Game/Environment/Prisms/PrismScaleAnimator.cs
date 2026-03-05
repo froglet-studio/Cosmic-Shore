@@ -125,6 +125,9 @@ namespace CosmicShore.Core
 
         public void ExecuteOnScaleComplete()
         {
+            // Enable the collider now that scaling is done — avoids AABB churn during growth
+            prism.EnableCollider();
+
             var deltaVolume = UpdateVolume();
             onPrismVolumeModified.Raise(new PrismStats
             {
