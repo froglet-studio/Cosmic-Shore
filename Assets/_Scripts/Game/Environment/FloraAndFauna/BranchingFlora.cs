@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Game;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -33,7 +32,9 @@ namespace CosmicShore
         [SerializeField] float branchingScaleFactor = 14f;
         public Vector3 goal;
 
-        HashSet<Branch> activeBranches = new HashSet<Branch>();
+        List<Branch> activeBranches = new List<Branch>();
+        static readonly List<Branch> s_newBranches = new List<Branch>(16);
+        static readonly List<int> s_removeIndices = new List<int>(16);
 
         [SerializeField] float plantRadius = 75f;
         [SerializeField] float noLeafFailsafeSeconds = 8f;
@@ -64,13 +65,13 @@ namespace CosmicShore
             if (noLeafFailsafeRoutine != null) StopCoroutine(noLeafFailsafeRoutine);
             noLeafFailsafeRoutine = StartCoroutine(KillIfStillNoLeaves(noLeafFailsafeSeconds));
         }
-        
+
         void SpawnOneLeafOnAnyTrunk()
         {
             if (activeBranches.Count == 0) return;
 
             // pick any trunk
-            var trunk = activeBranches.First();
+            var trunk = activeBranches[0];
 
             var hp = GetHealthPrism(
                 trunk.gameObject.transform.position + (branchingScaleFactor * trunk.gameObject.transform.forward),
@@ -98,17 +99,25 @@ namespace CosmicShore
             CSDebug.LogWarning($"{name}: BranchingFlora had no HealthPrisms after {seconds}s. Auto-dying.");
             Die();
         }
+
+        Spindle GetOrCreateSpindle(Vector3 position, Quaternion rotation, Transform parent = null)
+        {
+            if (SpindlePoolManager.Instance)
+                return SpindlePoolManager.Instance.Get(position, rotation, parent);
+            return Instantiate(spindle, position, rotation, parent);
+        }
+
         void SeedBranches()
         {
             for (int i = 0; i < Random.Range(minTrunks, maxTrunks + 1); i++)
             {
                 Branch branch = new Branch();
-                branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
+                var newSpindle = GetOrCreateSpindle(transform.position, transform.rotation, transform);
+                branch.gameObject = newSpindle.gameObject;
                 branch.gameObject.transform.rotation = RandomVectorRotation(0,180);
-                branch.gameObject.transform.parent = transform;
                 branch.depth = 0;
                 activeBranches.Add(branch);
-                AddSpindle(branch.gameObject.GetComponent<Spindle>());
+                AddSpindle(newSpindle);
             }
         }
 
@@ -116,10 +125,11 @@ namespace CosmicShore
         {
             if (spawnedItemCount >= maxTotalSpawnedObjects) return;
 
-            List<Branch> newBranches = new List<Branch>();
-            List<Branch> branchesToRemove = new List<Branch>();
-            foreach (Branch branch in activeBranches)
+            s_newBranches.Clear();
+            s_removeIndices.Clear();
+            for (int idx = 0; idx < activeBranches.Count; idx++)
             {
+                Branch branch = activeBranches[idx];
                 if (Random.value < growthChance && branch.depth < maxDepth)
                 {
                     Branch newBranch = new Branch();
@@ -149,35 +159,38 @@ namespace CosmicShore
                         int numBranches = Random.Range(minBranches, maxBranches + 1);
                         for (int i = 0; i < numBranches; i++)
                         {
-                            newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
+                            Vector3 branchPos = branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward);
+                            var newSpindle = GetOrCreateSpindle(branchPos, branch.gameObject.transform.rotation);
+                            newBranch.gameObject = newSpindle.gameObject;
                             ScaleAndPositionBranch(ref newBranch, branch);
 
                             if (goal != Vector3.zero && SafeLookRotation.TryGet(goal - transform.position, out var branchRotation, newBranch.gameObject))
-                                newBranch.gameObject.transform.rotation = branchRotation * RandomVectorRotation(minBranchAngle, maxBranchAngle);   
+                                newBranch.gameObject.transform.rotation = branchRotation * RandomVectorRotation(minBranchAngle, maxBranchAngle);
                             else newBranch.gameObject.transform.localRotation = RandomVectorRotation(minBranchAngle, maxBranchAngle); //* branch.gameObject.transform.rotation;
-                         
 
-                            AddSpindle(newBranch.gameObject.GetComponent<Spindle>());
-                            newBranches.Add(newBranch);
+
+                            AddSpindle(newSpindle);
+                            s_newBranches.Add(newBranch);
                             leafChance += leafChanceIncrement;
                         }
                     }
-                    
-                    branchesToRemove.Add(branch);
+
+                    s_removeIndices.Add(idx);
                 }
             }
 
-            foreach (Branch branch in branchesToRemove)
-            {
-                activeBranches.Remove(branch);
-            }
+            // Remove in reverse order to preserve indices
+            for (int i = s_removeIndices.Count - 1; i >= 0; i--)
+                activeBranches.RemoveAt(s_removeIndices[i]);
 
-            activeBranches.UnionWith(newBranches);
+            activeBranches.AddRange(s_newBranches);
+            s_newBranches.Clear();
+            s_removeIndices.Clear();
         }
 
         public override void Plant()
         {
-            if (plantAroundCrystal) 
+            if (plantAroundCrystal)
                 transform.position = cellData.CrystalTransform.position + (plantRadius * Random.onUnitSphere);
         }
 
@@ -203,4 +216,3 @@ namespace CosmicShore
         }
     }
 }
-

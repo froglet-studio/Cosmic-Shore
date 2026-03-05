@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Game;
 using CosmicShore.Utility;
 
 namespace CosmicShore
@@ -26,6 +28,11 @@ namespace CosmicShore
 
         [SerializeField] bool permanentWither = true;
         bool isPermanentlyWithered = false;
+
+        bool isPooled;
+        bool startedOnce;
+
+        public event Action<Spindle> OnReturnToPool;
 
         static readonly System.Predicate<HealthPrism> s_deadHealthPrism = h => !h;
         static readonly System.Predicate<Spindle> s_deadSpindle = s => !s;
@@ -59,6 +66,7 @@ namespace CosmicShore
                 yield break;
             }
 
+            startedOnce = true;
             propertyBlock = new MaterialPropertyBlock();
 
             float randomOffset = Random.Range(0f, Mathf.PI * 2f);
@@ -71,6 +79,71 @@ namespace CosmicShore
             if (LifeForm) LifeForm.AddSpindle(this);
             parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
             if (parentSpindle) parentSpindle.AddSpindle(this);
+        }
+
+        /// <summary>
+        /// Called by SpindlePoolManager when this spindle is taken from the pool.
+        /// Re-runs the initialization that Start() would normally do.
+        /// </summary>
+        public void InitializeFromPool()
+        {
+            isPooled = true;
+
+            if (!startedOnce) return; // Start() hasn't run yet — let it handle init
+
+            // Re-initialize state for reuse
+            if (RenderedObject == null || RenderedObject.sharedMaterial == null) return;
+
+            propertyBlock ??= new MaterialPropertyBlock();
+
+            float randomOffset = Random.Range(0f, Mathf.PI * 2f);
+            RenderedObject.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
+            RenderedObject.SetPropertyBlock(propertyBlock);
+
+            if (RenderedObject) RenderedObject.enabled = true;
+
+            condenseCoroutine = StartCoroutine(CondenseCoroutine());
+        }
+
+        /// <summary>
+        /// Clears all state so this spindle can be reused from the pool.
+        /// Called by SpindlePoolManager.Release().
+        /// </summary>
+        public void ResetForPool()
+        {
+            StopAllCoroutines();
+            condenseCoroutine = null;
+
+            dying = false;
+            isPermanentlyWithered = false;
+            deregistered = false;
+
+            parentSpindle = null;
+            LifeForm = null;
+
+            healthBlocks.Clear();
+            spindles.Clear();
+
+            ClearDeathAnimation();
+        }
+
+        /// <summary>
+        /// Returns this spindle to the pool instead of destroying it.
+        /// Falls back to Destroy if no pool is available.
+        /// </summary>
+        public void ReturnToPool()
+        {
+            if (isPooled && SpindlePoolManager.Instance)
+            {
+                OnReturnToPool?.Invoke(this);
+                // Pool manager will call ResetForPool and reparent
+                SpindlePoolManager.Instance.Release(this);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
 
         public void AddHealthBlock(HealthPrism healthPrism)
@@ -173,7 +246,7 @@ namespace CosmicShore
             }
             else
             {
-                Destroy(gameObject);
+                ReturnToPool();
             }
         }
 

@@ -121,10 +121,21 @@ namespace CosmicShore
                     continue;
                 }
 
-                Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
+                Spindle newSpindle;
+                if (SpindlePoolManager.Instance)
+                {
+                    newSpindle = SpindlePoolManager.Instance.Get(
+                        newHealthPrism.transform.position,
+                        newHealthPrism.transform.rotation,
+                        branch.gameObject.transform);
+                }
+                else
+                {
+                    newSpindle = Instantiate(spindle, branch.gameObject.transform);
+                    newSpindle.transform.position = newHealthPrism.transform.position;
+                    newSpindle.transform.rotation = newHealthPrism.transform.rotation;
+                }
                 newSpindle.LifeForm = this;
-                newSpindle.transform.position = newHealthPrism.transform.position;
-                newSpindle.transform.rotation = newHealthPrism.transform.rotation;
 
                 newHealthPrism.transform.SetParent(newSpindle.transform, false);
                 newHealthPrism.transform.localPosition = Vector3.zero;

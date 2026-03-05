@@ -148,7 +148,15 @@ namespace CosmicShore
 
         public Spindle AddSpindle()
         {
-            Spindle newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
+            Spindle newSpindle;
+            if (SpindlePoolManager.Instance)
+            {
+                newSpindle = SpindlePoolManager.Instance.Get(transform.position, transform.rotation, transform);
+            }
+            else
+            {
+                newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
+            }
             AddSpindle(newSpindle);
             return newSpindle;
         }
