@@ -69,7 +69,7 @@ namespace CosmicShore
             startedOnce = true;
             propertyBlock = new MaterialPropertyBlock();
 
-            float randomOffset = Random.Range(0f, Mathf.PI * 2f);
+            float randomOffset = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
             RenderedObject.GetPropertyBlock(propertyBlock);
             propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
             RenderedObject.SetPropertyBlock(propertyBlock);
@@ -96,7 +96,7 @@ namespace CosmicShore
 
             propertyBlock ??= new MaterialPropertyBlock();
 
-            float randomOffset = Random.Range(0f, Mathf.PI * 2f);
+            float randomOffset = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
             RenderedObject.GetPropertyBlock(propertyBlock);
             propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
             RenderedObject.SetPropertyBlock(propertyBlock);
