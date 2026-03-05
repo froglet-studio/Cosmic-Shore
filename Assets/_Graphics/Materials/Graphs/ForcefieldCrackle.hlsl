@@ -14,9 +14,23 @@
 //   float  Alpha           — transparency (0 = fully transparent, 1 = fully opaque)
 //
 // Properties set via MaterialPropertyBlock from ForcefieldCrackleController.cs:
-//   float4 _ImpactPositions[16]  — xyz = unit-sphere direction of impact, w = elapsed time
-//   float4 _ImpactParams[16]     — x = intensity, y = angular radius, z = max lifetime, w = unused
-//   int    _ImpactCount           — number of active impacts (early-out optimization)
+//
+// Impact data (per-frame):
+//   float4 _ImpactPositions[16]  — xyz = unit-sphere direction, w = elapsed time
+//   float4 _ImpactParams[16]     — x = intensity, y = angular radius, z = max lifetime
+//   int    _ImpactCount           — active impact count (early-out optimization)
+//
+// Visual params (set from SO config, updated on change):
+//   float4 _CrackleColorA        — primary crackle line color
+//   float4 _CrackleColorB        — secondary / highlight color
+//   float4 _FresnelRimColor      — ambient rim glow color
+//   float  _VoronoiCellSize      — voronoi cell density (2–40, default 12)
+//   float  _EdgeSharpness        — voronoi edge threshold (0.01–0.5, default 0.15)
+//   float  _RingThickness        — ring width factor (0.05–1, default 0.4)
+//   float  _CenterFillAmount     — center fill ratio (0–1, default 0.3)
+//   float  _RippleSpeed          — expansion speed multiplier (0.2–3, default 1)
+//   float  _FresnelRimIntensity  — rim glow strength (0–0.5, default 0.08)
+//   float  _FresnelRimPower      — fresnel exponent (1–8, default 3)
 
 #ifndef FORCEFIELD_CRACKLE_INCLUDED
 #define FORCEFIELD_CRACKLE_INCLUDED
@@ -25,6 +39,18 @@
 float4 _ImpactPositions[16];
 float4 _ImpactParams[16];
 int _ImpactCount;
+
+// Visual params — set from C# via MaterialPropertyBlock (sourced from SO config)
+float4 _CrackleColorA;       // primary crackle line color (RGB)
+float4 _CrackleColorB;       // secondary / highlight color (RGB)
+float4 _FresnelRimColor;     // ambient rim glow color (RGB)
+float _VoronoiCellSize;      // density of crackle cells (default 12)
+float _EdgeSharpness;        // voronoi edge threshold (default 0.15)
+float _RingThickness;        // ring width relative to angular radius (default 0.4)
+float _CenterFillAmount;     // center fill vs. ring-only (default 0.3)
+float _RippleSpeed;          // expansion speed multiplier (default 1)
+float _FresnelRimIntensity;  // ambient rim glow strength (default 0.08)
+float _FresnelRimPower;      // fresnel exponent (default 3)
 
 // ─── Procedural noise helpers ───────────────────────────────────────────────
 
@@ -119,14 +145,16 @@ void ForcefieldCrackle_float(
         float angle = acos(saturate(cosAngle)); // [0, PI]
 
         // Expanding ring edge — the crackle wavefront expands outward over time
-        float maxAngle = angularRadius * 3.14159 * lifeRatio;
-        float ringWidth = angularRadius * 0.4;
+        // _RippleSpeed controls how fast the ring expands (1 = reaches max radius at expiry)
+        float expandedLife = saturate(lifeRatio * _RippleSpeed);
+        float maxAngle = angularRadius * 3.14159 * expandedLife;
+        float ringWidth = angularRadius * _RingThickness;
 
         // Distance from the expanding ring edge
         float distFromRing = abs(angle - maxAngle);
 
         // Also add a filled contribution near the impact center that fades with time
-        float centerFill = smoothstep(angularRadius * 3.14159 * 0.3, 0, angle) * (1.0 - lifeRatio);
+        float centerFill = smoothstep(angularRadius * 3.14159 * _CenterFillAmount, 0, angle) * (1.0 - lifeRatio);
 
         // Ring contribution — sharp at the wavefront
         float ringContrib = smoothstep(ringWidth, ringWidth * 0.1, distFromRing);
@@ -144,23 +172,22 @@ void ForcefieldCrackle_float(
         float3 bitangent = cross(impactDir, tangent);
         float2 localUV = float2(dot(fragDir, tangent), dot(fragDir, bitangent));
 
-        float voronoiScale = 12.0; // density of crackle cells
-        float3 voronoiInput = float3(localUV * voronoiScale, angle * voronoiScale * 0.5);
+        float3 voronoiInput = float3(localUV * _VoronoiCellSize, angle * _VoronoiCellSize * 0.5);
         float3 vor = Voronoi3D(voronoiInput);
 
         // Edge detection: difference between F2 and F1 highlights cell boundaries
         float edgeFactor = vor.y - vor.x;
-        float crackle = smoothstep(0.0, 0.15, edgeFactor); // 0 at edges, 1 in cell interiors
+        float crackle = smoothstep(0.0, _EdgeSharpness, edgeFactor); // 0 at edges, 1 in cell interiors
         crackle = 1.0 - crackle; // invert: 1 at edges (the crackle lines)
 
         // Combine everything
         float contribution = spatialFalloff * crackle * timeFade * intensity;
 
-        // Color: electric blue-white with slight variation per impact
+        // Color: lerp between the two configurable crackle colors
         float hueShift = frac(vor.z + i * 0.137);
         float3 crackleColor = lerp(
-            float3(0.3, 0.6, 1.0),  // electric blue
-            float3(0.8, 0.9, 1.0),  // white
+            _CrackleColorA.rgb,
+            _CrackleColorB.rgb,
             crackle * 0.6 + hueShift * 0.2
         );
 
@@ -172,12 +199,12 @@ void ForcefieldCrackle_float(
 
     // Fresnel rim boost — makes the sphere edge more visible even without impacts
     float fresnel = 1.0 - abs(dot(normalize(ObjectNormal), normalize(ObjectPosition)));
-    float rimBoost = pow(fresnel, 3.0) * 0.08;
+    float rimBoost = pow(fresnel, _FresnelRimPower) * _FresnelRimIntensity;
 
     Alpha = saturate(totalContribution + rimBoost);
     EmissionColor = totalContribution > 0.001
         ? (totalColor / max(totalContribution, 0.001)) * Alpha
-        : float3(0.3, 0.5, 0.8) * rimBoost;
+        : _FresnelRimColor.rgb * rimBoost;
 }
 
 // Half-precision variant for mobile
