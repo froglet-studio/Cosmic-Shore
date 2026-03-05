@@ -113,7 +113,7 @@ Material:
     - _DeathAnimation: -0
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _Distance: 400000
+    - _Distance: 2000000
     - _DstBlend: 10
     - _DstBlendAlpha: 10
     - _EnvironmentReflections: 1
