@@ -69,12 +69,12 @@ namespace CosmicShore.UI
         [Tooltip("Optional icon in the game-detail view.")]
         [SerializeField] private Image iconInGameDetailView;
 
-        [Header("Host-Only UI")]
-        [Tooltip("Start Game button — hidden for non-host clients.")]
+        [Header("Ready-Up UI")]
+        [Tooltip("Start/Confirm button — all players press this to lock in their choices.")]
         [SerializeField] private Button startGameButton;
 
-        [Tooltip("Optional 'Waiting for host...' text shown to non-host clients in place of Start Game.")]
-        [SerializeField] private GameObject waitingForHostLabel;
+        [Tooltip("'Waiting for others...' label — shown after a player confirms, hidden when choosing.")]
+        [SerializeField] private GameObject waitingForOthersLabel;
 
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
@@ -122,6 +122,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnConfigUpdatedOnClient += HandleConfigUpdatedOnClient;
+                arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
             }
         }
 
@@ -144,6 +145,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnConfigUpdatedOnClient -= HandleConfigUpdatedOnClient;
+                arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
             }
         }
 
@@ -169,6 +171,7 @@ namespace CosmicShore.UI
             InitializeScreen1Controls(selectedGame);
             InitializeDefaultShipFromAvailable();
             ApplyHostOnlyInteractability();
+            ResetReadyUpUI();
 
             ShowConfigurationScreen();
             RaiseConfigChanged();
@@ -180,7 +183,8 @@ namespace CosmicShore.UI
                     (int)selectedGame.Mode,
                     config.Intensity,
                     config.PlayerCount,
-                    selectedGame.MaxPlayersAllowed);
+                    selectedGame.MaxPlayersAllowed,
+                    CurrentPartyHumanCount);
             }
         }
 
@@ -599,7 +603,7 @@ namespace CosmicShore.UI
             ShowGameDetailScreen();
         }
 
-        // Screen 2 back or modal close — notify clients to close their modal too
+        // Modal close (back/cancel) — host notifies clients to close too
         public void OnCloseModal()
         {
             if (arcadeConfigSyncManager && !IsClientMode)
@@ -608,25 +612,46 @@ namespace CosmicShore.UI
             ModalWindowOut();
         }
 
-        // Start Game button on Screen 2
+        /// <summary>
+        /// Start/Confirm button — called by ALL players (host and clients).
+        /// Confirms the player's team + vessel choices and enters the waiting state.
+        /// When all human players have confirmed, the host auto-launches the game.
+        /// </summary>
         public void OnStartGameClicked()
         {
-            if (hostConnectionData != null && !hostConnectionData.IsHost)
+            Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
+            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
+
+            // Show "Waiting for others..." and hide the Start button
+            if (startGameButton)
+                startGameButton.gameObject.SetActive(false);
+            if (waitingForOthersLabel)
+                waitingForOthersLabel.SetActive(true);
+
+            // Tell the server this player is ready
+            if (arcadeConfigSyncManager)
+                arcadeConfigSyncManager.ConfirmLocalPlayerReady();
+        }
+
+        /// <summary>
+        /// Called on ALL instances (host + clients) when every human player
+        /// has pressed Start/Confirm. The host launches the game; clients
+        /// close their modal (they'll be pulled into the game scene via Netcode).
+        /// </summary>
+        void HandleAllPlayersReady()
+        {
+            Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
+
+            if (hostConnectionData != null && hostConnectionData.IsHost)
             {
-                Debug.LogWarning("[ArcadeConfigModal] Only the host can start a game.");
-                return;
+                audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
+                SyncAllGameDataForLaunch();
+                Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch()</color>");
+                gameData.InvokeGameLaunch();
             }
 
-            Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked</color>");
-            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
-
-            // Close clients' modals before launching
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigClosed();
-
-            SyncAllGameDataForLaunch();
-            Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch()</color>");
-            gameData.InvokeGameLaunch();
+            // Close the modal on all instances
+            ModalWindowOut();
         }
 
         void SyncAllGameDataForLaunch()
@@ -754,6 +779,7 @@ namespace CosmicShore.UI
             InitializeScreen1Controls(game);
             InitializeDefaultShipFromAvailable();
             ApplyHostOnlyInteractability();
+            ResetReadyUpUI();
 
             ModalWindowIn();
             ShowConfigurationScreen();
@@ -793,9 +819,9 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Disables host-only controls when in client mode.
-        /// Intensity buttons, player count stepper, and start game button become
-        /// non-interactable. Team selection and vessel selection remain interactive
-        /// so each client can choose independently.
+        /// Intensity buttons and player count stepper become non-interactable.
+        /// Team selection, vessel selection, and the Start/Confirm button remain
+        /// interactive for all players (host and clients).
         /// </summary>
         void ApplyHostOnlyInteractability()
         {
@@ -812,14 +838,18 @@ namespace CosmicShore.UI
             // Player count stepper — read-only for clients
             if (playerCountStepper)
                 playerCountStepper.gameObject.SetActive(isHost);
+        }
 
-            // Start Game button — hidden for clients
+        /// <summary>
+        /// Resets the ready-up UI to its initial state: Start button visible,
+        /// "Waiting for others..." label hidden.
+        /// </summary>
+        void ResetReadyUpUI()
+        {
             if (startGameButton)
-                startGameButton.gameObject.SetActive(isHost);
-
-            // "Waiting for host..." label — shown for clients
-            if (waitingForHostLabel)
-                waitingForHostLabel.SetActive(!isHost);
+                startGameButton.gameObject.SetActive(true);
+            if (waitingForOthersLabel)
+                waitingForOthersLabel.SetActive(false);
         }
 
         #endregion

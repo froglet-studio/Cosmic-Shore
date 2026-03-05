@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -10,9 +11,11 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Lightweight NetworkBehaviour that relays arcade game configuration UI state
     /// between host and clients. When the host opens the ArcadeGameConfigureModal,
-    /// this manager sends a ClientRpc so all party clients also open the modal
-    /// (with host-only fields read-only). When the host closes or starts the game,
-    /// clients close their modals.
+    /// this manager sends a ClientRpc so all party clients also open the modal.
+    ///
+    /// Each player (host and clients) independently selects their team and vessel,
+    /// then presses Start to confirm. Once all human players have confirmed,
+    /// the host automatically launches the game.
     ///
     /// Place on a scene-level GameObject in Menu_Main alongside the existing
     /// ServerPlayerVesselInitializer hierarchy.
@@ -24,40 +27,62 @@ namespace CosmicShore.Gameplay
         [Header("Game List (for client-side game lookup by mode)")]
         [SerializeField] SO_GameList gameList;
 
+        readonly HashSet<ulong> _readyClients = new();
+        int _expectedHumanCount;
+
         /// <summary>
         /// Raised on clients when the host opens the arcade config modal.
-        /// Payload is the GameModes int so clients can look up the SO_ArcadeGame.
+        /// Args: gameMode, intensity, playerCount, maxPlayers
         /// </summary>
         public event System.Action<int, int, int, int> OnConfigOpenedOnClient;
 
         /// <summary>
-        /// Raised on clients when the host closes the arcade config modal
-        /// or starts the game.
+        /// Raised on all clients when the host closes/cancels the config modal.
         /// </summary>
         public event System.Action OnConfigClosedOnClient;
 
         /// <summary>
         /// Raised on clients when the host changes intensity or player count.
+        /// Args: intensity, playerCount
         /// </summary>
         public event System.Action<int, int> OnConfigUpdatedOnClient;
+
+        /// <summary>
+        /// Raised on all instances (host + clients) when a player confirms ready.
+        /// Args: readyCount, totalExpected
+        /// </summary>
+        public event System.Action<int, int> OnPlayerReadyCountChanged;
+
+        /// <summary>
+        /// Raised on all instances when every human player has confirmed ready.
+        /// The host uses this to auto-launch the game.
+        /// </summary>
+        public event System.Action OnAllPlayersReady;
+
+        #region Host → Client: Config modal open/close/update
 
         /// <summary>
         /// Called by ArcadeGameConfigureModal on the host when the modal opens.
         /// Sends game mode, intensity, player count, and max players to all clients.
         /// </summary>
-        public void NotifyConfigOpened(int gameMode, int intensity, int playerCount, int maxPlayers)
+        public void NotifyConfigOpened(int gameMode, int intensity, int playerCount, int maxPlayers, int humanCount)
         {
             if (!IsServer) return;
+
+            _readyClients.Clear();
+            _expectedHumanCount = humanCount;
+
             OpenConfigOnClients_ClientRpc(gameMode, intensity, playerCount, maxPlayers);
         }
 
         /// <summary>
         /// Called by ArcadeGameConfigureModal on the host when the modal closes
-        /// (back button or game start).
+        /// (back button or cancel — NOT game start).
         /// </summary>
         public void NotifyConfigClosed()
         {
             if (!IsServer) return;
+            _readyClients.Clear();
             CloseConfigOnClients_ClientRpc();
         }
 
@@ -92,6 +117,67 @@ namespace CosmicShore.Gameplay
             OnConfigUpdatedOnClient?.Invoke(intensity, playerCount);
         }
 
+        #endregion
+
+        #region Ready-up system
+
+        /// <summary>
+        /// Called by ArcadeGameConfigureModal when ANY player (host or client)
+        /// presses the Start/Confirm button to lock in their team + vessel choices.
+        /// Clients send a ServerRpc; the host confirms locally.
+        /// </summary>
+        public void ConfirmLocalPlayerReady()
+        {
+            if (IsServer)
+            {
+                // Host confirms directly
+                HandlePlayerReady(NetworkManager.Singleton.LocalClientId);
+            }
+            else
+            {
+                ConfirmReady_ServerRpc();
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void ConfirmReady_ServerRpc(ServerRpcParams rpcParams = default)
+        {
+            HandlePlayerReady(rpcParams.Receive.SenderClientId);
+        }
+
+        void HandlePlayerReady(ulong clientId)
+        {
+            if (!_readyClients.Add(clientId))
+                return; // Already confirmed
+
+            Debug.Log($"[ArcadeConfigSync] Player {clientId} confirmed ready ({_readyClients.Count}/{_expectedHumanCount})");
+
+            // Notify all clients of the updated ready count
+            SyncReadyCount_ClientRpc(_readyClients.Count, _expectedHumanCount);
+
+            if (_readyClients.Count >= _expectedHumanCount)
+            {
+                Debug.Log("[ArcadeConfigSync] All players ready — launching game");
+                AllPlayersReady_ClientRpc();
+            }
+        }
+
+        [ClientRpc]
+        void SyncReadyCount_ClientRpc(int readyCount, int totalExpected)
+        {
+            OnPlayerReadyCountChanged?.Invoke(readyCount, totalExpected);
+        }
+
+        [ClientRpc]
+        void AllPlayersReady_ClientRpc()
+        {
+            OnAllPlayersReady?.Invoke();
+        }
+
+        #endregion
+
+        #region Utility
+
         /// <summary>
         /// Helper for clients to look up an SO_ArcadeGame by its GameModes int value.
         /// Returns null if not found.
@@ -107,5 +193,7 @@ namespace CosmicShore.Gameplay
             }
             return null;
         }
+
+        #endregion
     }
 }
