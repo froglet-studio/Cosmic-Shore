@@ -9,6 +9,7 @@ using CosmicShore.Utility;
 using Obvious.Soap;
 using Reflex.Attributes;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
@@ -68,12 +69,29 @@ namespace CosmicShore.UI
         [Tooltip("Optional icon in the game-detail view.")]
         [SerializeField] private Image iconInGameDetailView;
 
+        [Header("Host-Only UI")]
+        [Tooltip("Start Game button — hidden for non-host clients.")]
+        [SerializeField] private Button startGameButton;
+
+        [Tooltip("Optional 'Waiting for host...' text shown to non-host clients in place of Start Game.")]
+        [SerializeField] private GameObject waitingForHostLabel;
+
+        [Header("Network Sync")]
+        [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
+
         // Runtime state
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
+        bool _isClientMode;
 
         readonly List<SO_Ship> _availableShips = new();
         int _currentShipIndex = -1;
+
+        /// <summary>
+        /// True when this modal is being shown on a non-host client via RPC.
+        /// Host-only controls (intensity, player count, start button) are read-only.
+        /// </summary>
+        bool IsClientMode => _isClientMode;
 
         #region Unity lifecycle
 
@@ -98,6 +116,13 @@ namespace CosmicShore.UI
 
             if (teamSelectionPanel)
                 teamSelectionPanel.OnTeamSelected += HandleTeamSelected;
+
+            if (arcadeConfigSyncManager)
+            {
+                arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
+                arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
+                arcadeConfigSyncManager.OnConfigUpdatedOnClient += HandleConfigUpdatedOnClient;
+            }
         }
 
         void OnDisable()
@@ -113,6 +138,13 @@ namespace CosmicShore.UI
 
             if (teamSelectionPanel)
                 teamSelectionPanel.OnTeamSelected -= HandleTeamSelected;
+
+            if (arcadeConfigSyncManager)
+            {
+                arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
+                arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
+                arcadeConfigSyncManager.OnConfigUpdatedOnClient -= HandleConfigUpdatedOnClient;
+            }
         }
 
         #endregion
@@ -120,10 +152,11 @@ namespace CosmicShore.UI
         #region Public API
 
         /// <summary>
-        /// Entry point from ArcadeExploreView when a game tile is selected.
+        /// Entry point from ArcadeExploreView when a game tile is selected (host path).
         /// </summary>
         public void SetSelectedGame(SO_ArcadeGame selectedGame)
         {
+            _isClientMode = false;
             _selectedGame = selectedGame;
 
             config.ResetState();
@@ -135,9 +168,20 @@ namespace CosmicShore.UI
             InitializeGameMetaView(selectedGame);
             InitializeScreen1Controls(selectedGame);
             InitializeDefaultShipFromAvailable();
+            ApplyHostOnlyInteractability();
 
             ShowConfigurationScreen();
             RaiseConfigChanged();
+
+            // Notify all clients to open their own modal with team + vessel selection
+            if (arcadeConfigSyncManager)
+            {
+                arcadeConfigSyncManager.NotifyConfigOpened(
+                    (int)selectedGame.Mode,
+                    config.Intensity,
+                    config.PlayerCount,
+                    selectedGame.MaxPlayersAllowed);
+            }
         }
 
         #endregion
@@ -366,6 +410,7 @@ namespace CosmicShore.UI
         void HandleIntensitySelected(int intensity)
         {
             if (_selectedGame == null || config == null) return;
+            if (IsClientMode) return; // Clients cannot change intensity
 
             intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
             config.Intensity = intensity;
@@ -378,11 +423,16 @@ namespace CosmicShore.UI
 
             SyncGameDataConfig();
             RaiseConfigChanged();
+
+            // Sync intensity + player count to clients so they see updated read-only values
+            if (arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
         }
 
         void HandlePlayerCountSelected(int playerCount)
         {
             if (_selectedGame == null || config == null) return;
+            if (IsClientMode) return; // Clients cannot change player count
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
             playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayersAllowed);
@@ -393,6 +443,10 @@ namespace CosmicShore.UI
 
             SyncGameDataConfig();
             RaiseConfigChanged();
+
+            // Sync intensity + player count to clients so they see updated read-only values
+            if (arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
         }
 
         void HandleTeamSelected(Domains domain)
@@ -453,6 +507,10 @@ namespace CosmicShore.UI
                 config.SelectedShip = ship;
 
             SyncGameDataShip(ship);
+
+            // Write the selected vessel class to the local player's NetworkVariable
+            // so the server spawns the correct vessel for this client.
+            SyncLocalPlayerVesselType(ship);
 
             // Also broadcast via ScriptableVariable<int> so other Views can react
             if (shipClassTypeVariable != null)
@@ -541,6 +599,15 @@ namespace CosmicShore.UI
             ShowGameDetailScreen();
         }
 
+        // Screen 2 back or modal close — notify clients to close their modal too
+        public void OnCloseModal()
+        {
+            if (arcadeConfigSyncManager && !IsClientMode)
+                arcadeConfigSyncManager.NotifyConfigClosed();
+
+            ModalWindowOut();
+        }
+
         // Start Game button on Screen 2
         public void OnStartGameClicked()
         {
@@ -552,6 +619,10 @@ namespace CosmicShore.UI
 
             Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
+
+            // Close clients' modals before launching
+            if (arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyConfigClosed();
 
             SyncAllGameDataForLaunch();
             Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch()</color>");
@@ -633,6 +704,122 @@ namespace CosmicShore.UI
 
             if (shipClassTypeVariable != null)
                 shipClassTypeVariable.Value = (int)targetClass;
+        }
+
+        /// <summary>
+        /// Writes the selected vessel class directly to the local Player's
+        /// NetDefaultVesselType NetworkVariable (owner-writable). This ensures
+        /// each client's vessel choice is propagated to the server independently
+        /// of gameData.selectedVesselClass (which carries the host's choice).
+        /// </summary>
+        void SyncLocalPlayerVesselType(SO_Ship ship)
+        {
+            if (gameData.LocalPlayer is not Player localPlayer) return;
+            if (!localPlayer.IsOwner) return;
+
+            var vesselType = ship ? ship.Class : VesselClassType.Dolphin;
+            localPlayer.NetDefaultVesselType.Value = vesselType;
+        }
+
+        #endregion
+
+        #region Client-side RPC handlers
+
+        /// <summary>
+        /// Called on non-host clients when the host opens the arcade config modal.
+        /// Opens the same modal in client mode with host-only controls disabled.
+        /// </summary>
+        void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers)
+        {
+            _isClientMode = true;
+
+            // Look up the SO_ArcadeGame by mode so we can show the same game info
+            SO_ArcadeGame game = arcadeConfigSyncManager.FindGameByMode(gameModeInt);
+            if (game == null)
+            {
+                Debug.LogWarning($"[ArcadeConfigModal] Client could not find game for mode {gameModeInt}");
+                return;
+            }
+
+            _selectedGame = game;
+
+            config.ResetState();
+            config.SelectedGame = game;
+            config.TeamCount    = 1;
+            config.Intensity    = intensity;
+            config.PlayerCount  = playerCount;
+
+            BuildAvailableShips(game);
+            InitializeGameMetaView(game);
+            InitializeScreen1Controls(game);
+            InitializeDefaultShipFromAvailable();
+            ApplyHostOnlyInteractability();
+
+            ModalWindowIn();
+            ShowConfigurationScreen();
+        }
+
+        /// <summary>
+        /// Called on non-host clients when the host closes the modal or starts a game.
+        /// </summary>
+        void HandleConfigClosedOnClient()
+        {
+            _isClientMode = false;
+            ModalWindowOut();
+        }
+
+        /// <summary>
+        /// Called on non-host clients when the host changes intensity or player count.
+        /// Updates the read-only display values.
+        /// </summary>
+        void HandleConfigUpdatedOnClient(int intensity, int playerCount)
+        {
+            if (_selectedGame == null || config == null) return;
+
+            config.Intensity   = intensity;
+            config.PlayerCount = playerCount;
+
+            // Update intensity button visuals (read-only — buttons are not interactable)
+            foreach (var button in intensityButtons)
+            {
+                if (!button) continue;
+                button.SetSelected(button.Intensity == intensity);
+            }
+
+            // Update player count display (read-only — stepper is not interactable)
+            if (playerCountStepper)
+                playerCountStepper.SetValue(playerCount);
+        }
+
+        /// <summary>
+        /// Disables host-only controls when in client mode.
+        /// Intensity buttons, player count stepper, and start game button become
+        /// non-interactable. Team selection and vessel selection remain interactive
+        /// so each client can choose independently.
+        /// </summary>
+        void ApplyHostOnlyInteractability()
+        {
+            bool isHost = !IsClientMode;
+
+            // Intensity buttons — read-only for clients
+            foreach (var button in intensityButtons)
+            {
+                if (!button) continue;
+                var uiButton = button.GetComponent<Button>();
+                if (uiButton) uiButton.interactable = isHost;
+            }
+
+            // Player count stepper — read-only for clients
+            if (playerCountStepper)
+                playerCountStepper.gameObject.SetActive(isHost);
+
+            // Start Game button — hidden for clients
+            if (startGameButton)
+                startGameButton.gameObject.SetActive(isHost);
+
+            // "Waiting for host..." label — shown for clients
+            if (waitingForHostLabel)
+                waitingForHostLabel.SetActive(!isHost);
         }
 
         #endregion
