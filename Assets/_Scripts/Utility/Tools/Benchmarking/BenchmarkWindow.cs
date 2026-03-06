@@ -486,7 +486,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             EditorGUILayout.HelpBox(
                 "Run a benchmark multiple times through the Arcade bootstrap flow:\n" +
                 "1. Enter play mode (SceneBootstrapper loads Menu_Main)\n" +
-                "2. Arcade.Instance launches the selected game mode + vessel\n" +
+                "2. Arcade launches the selected game from OrganicRematchGames\n" +
                 "3. Once the game scene loads, benchmark sampling begins\n" +
                 "4. After sampling, results are saved and play mode exits\n" +
                 "5. Repeat for N iterations, then generate reproducibility report",
@@ -1374,13 +1374,13 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
         void RefreshArcadeGameList()
         {
-            // Find the ArcadeGames SO asset
+            // Find the OrganicRematchGames SO asset (the active game list)
             string[] guids = AssetDatabase.FindAssets("t:SO_GameList", new[] { "Assets/_SO_Assets" });
             foreach (string guid in guids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 var list = AssetDatabase.LoadAssetAtPath<SO_GameList>(path);
-                if (list != null && list.name == "ArcadeGames")
+                if (list != null && list.name == "OrganicRematchGames")
                 {
                     _arcadeGameList = list;
                     break;
@@ -1402,14 +1402,11 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                     buildSceneNames.Add(System.IO.Path.GetFileNameWithoutExtension(scene.path));
             }
 
-            // Filter to singleplayer games with scenes in build settings
+            // Include games with scenes in build settings
             var valid = new List<SO_ArcadeGame>();
             foreach (var game in _arcadeGameList.Games)
             {
                 if (game == null) continue;
-                // Skip multiplayer-only modes for benchmarking
-                if (game.IsMultiplayer) continue;
-                // Only include if the scene exists in build settings
                 if (buildSceneNames.Contains(game.SceneName))
                     valid.Add(game);
             }
