@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Core;
@@ -136,13 +136,13 @@ namespace CosmicShore.Gameplay
         }
 
         // ... [CalculateImpactVector and ExplodeAsync remain unchanged] ...
-        
+
         public Vector3 CalculateImpactVector(Vector3 impacteePosition)
         {
             Vector3 direction = (impacteePosition - transform.position).normalized;
             return direction * speed * Inertia;
         }
-        
+
         protected virtual async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
             // Cache impactor ref — _explosionImpactor may be null after Destroy

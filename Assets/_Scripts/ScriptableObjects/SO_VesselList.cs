@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 
 [CreateAssetMenu(fileName = "New Vessel List", menuName = "CosmicShore/Vessel/VesselList", order = 12)]

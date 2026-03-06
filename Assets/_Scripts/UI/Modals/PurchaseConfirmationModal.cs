@@ -38,7 +38,7 @@ namespace CosmicShore.UI
             TicketBalanceText.text = CatalogManager.Instance.GetDailyChallengeTicketBalance().ToString();
             OnConfirm = confirmCallback;
 
-            switch(virtualItem.ContentType) 
+            switch(virtualItem.ContentType)
             {
                 case "Captain":
                     var captain = _captainManager.GetCaptainByName(virtualItem.Name);
@@ -71,7 +71,7 @@ namespace CosmicShore.UI
                     CaptainImage.gameObject.SetActive(false);
                     TicketImage.gameObject.SetActive(true);
                     break;
-                default: 
+                default:
                     break;
             }
         }
@@ -117,7 +117,7 @@ namespace CosmicShore.UI
         {
             var ticketBalance = int.Parse(TicketBalanceText.text);
             var newTicketBalance = ticketBalance + 1;
-            
+
             var duration = .5f;
             var elapsedTime = 0f;
 

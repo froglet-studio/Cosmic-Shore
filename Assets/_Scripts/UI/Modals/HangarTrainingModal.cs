@@ -96,7 +96,7 @@ namespace CosmicShore.UI
             SetIntensity(currentIntensity);
 
             // Rewards
-            
+
 
             // Preview
             if (SelectedGamePreviewWindow != null)
@@ -162,16 +162,16 @@ namespace CosmicShore.UI
             var shipResources = new ResourceCollection();
             if (SelectedGame.ElementOne.Element == Element.Charge || SelectedGame.ElementTwo.Element == Element.Charge)
                 shipResources.Charge = 1;
-            
+
             if (SelectedGame.ElementOne.Element == Element.Mass || SelectedGame.ElementTwo.Element == Element.Mass)
                 shipResources.Mass = 1;
 
             if (SelectedGame.ElementOne.Element == Element.Space || SelectedGame.ElementTwo.Element == Element.Space)
                 shipResources.Space = 1;
-            
+
             if (SelectedGame.ElementOne.Element == Element.Time || SelectedGame.ElementTwo.Element == Element.Time )
                 shipResources.Time = 1;
-            
+
             Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame._SO_Vessel.Class, shipResources, Intensity, 1, false);
         }
     }
