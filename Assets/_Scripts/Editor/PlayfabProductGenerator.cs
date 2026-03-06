@@ -3,6 +3,7 @@ using UnityEditor;
 using PlayFab;
 using System;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 
 public class PlayFabProductGenerator : EditorWindow
