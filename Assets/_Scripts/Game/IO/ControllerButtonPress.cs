@@ -154,6 +154,13 @@ namespace CosmicShore.Game.IO
 
         void InvokeButton()
         {
+            if (!button.interactable || !button.isActiveAndEnabled)
+                return;
+
+            // Skip if a parent CanvasGroup is blocking raycasts (hidden panel)
+            if (!button.IsInteractable())
+                return;
+
             button.onClick.Invoke();
             button.OnDeselect(new BaseEventData(eventSystem));
         }
