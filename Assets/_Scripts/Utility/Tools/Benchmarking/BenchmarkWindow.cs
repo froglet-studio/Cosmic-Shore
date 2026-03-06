@@ -7,6 +7,7 @@ using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Models.Enums;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -53,20 +54,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         [NonSerialized] List<BenchmarkReport> _sessionReports;
         [NonSerialized] BenchmarkSessionSummary _sessionSummary;
 
-        // ── Game mode / vessel names for dropdowns ──────────────────────────
-        static readonly GameModes[] SelectableGameModes =
-        {
-            GameModes.Freestyle,
-            GameModes.WildlifeBlitz,
-            GameModes.CellularDuel,
-            GameModes.Elimination,
-            GameModes.BlockBandit,
-            GameModes.RiskyDriftness,
-            GameModes.Rampage,
-            GameModes.Darts,
-            GameModes.ShootingGallery,
-        };
-        static readonly string[] GameModeNames = SelectableGameModes.Select(m => m.ToString()).ToArray();
+        // ── Arcade game list (loaded from SO at editor time) ─────────────────
+        [NonSerialized] SO_GameList _arcadeGameList;
+        [NonSerialized] SO_ArcadeGame[] _selectableGames;
+        [NonSerialized] string[] _gameDisplayNames;
 
         static readonly VesselClassType[] SelectableVessels =
         {
@@ -125,6 +116,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         void OnEnable()
         {
             RefreshSavedReports();
+            RefreshArcadeGameList();
             _session = BenchmarkSessionConfig.Load();
             RegisterSessionCallback();
         }
@@ -502,20 +494,39 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
             GUILayout.Space(4);
 
-            // Game mode + vessel picker
+            // Game mode from ArcadeGames SO
             DrawSection("Game Configuration");
 
-            int gameModeIdx = Array.IndexOf(SelectableGameModes, _session.GameMode);
-            if (gameModeIdx < 0) gameModeIdx = 0;
+            if (_selectableGames == null || _selectableGames.Length == 0)
+                RefreshArcadeGameList();
 
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(12);
-            GUILayout.Label("Game Mode", GUILayout.Width(100));
-            int newGameModeIdx = EditorGUILayout.Popup(gameModeIdx, GameModeNames);
-            if (newGameModeIdx != gameModeIdx)
-                _session.GameMode = SelectableGameModes[newGameModeIdx];
-            EditorGUILayout.EndHorizontal();
+            if (_selectableGames != null && _selectableGames.Length > 0)
+            {
+                int gameModeIdx = Array.FindIndex(_selectableGames, g => g.Mode == _session.GameMode);
+                if (gameModeIdx < 0) gameModeIdx = 0;
 
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(12);
+                GUILayout.Label("Game Mode", GUILayout.Width(100));
+                int newGameModeIdx = EditorGUILayout.Popup(gameModeIdx, _gameDisplayNames);
+                if (newGameModeIdx != gameModeIdx || _session.GameMode != _selectableGames[newGameModeIdx].Mode)
+                    _session.GameMode = _selectableGames[newGameModeIdx].Mode;
+                EditorGUILayout.EndHorizontal();
+
+                // Show scene name for clarity
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(28);
+                var sceneStyle = new GUIStyle(EditorStyles.miniLabel);
+                sceneStyle.normal.textColor = TextMuted;
+                GUILayout.Label($"Scene: {_selectableGames[Mathf.Clamp(newGameModeIdx, 0, _selectableGames.Length - 1)].SceneName}", sceneStyle);
+                EditorGUILayout.EndHorizontal();
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("Could not find ArcadeGames SO. Check Assets/_SO_Assets/Games/GameLists/.", MessageType.Warning);
+            }
+
+            // Vessel picker
             int vesselIdx = Array.IndexOf(SelectableVessels, _session.Vessel);
             if (vesselIdx < 0) vesselIdx = 0;
 
@@ -527,10 +538,11 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                 _session.Vessel = SelectableVessels[newVesselIdx];
             EditorGUILayout.EndHorizontal();
 
+            // Intensity 1-4
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(12);
             GUILayout.Label("Intensity", GUILayout.Width(100));
-            _session.Intensity = EditorGUILayout.IntSlider(_session.Intensity, 1, 10);
+            _session.Intensity = EditorGUILayout.IntSlider(_session.Intensity, 1, 4);
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(4);
@@ -1354,6 +1366,56 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
             RefreshSavedReports();
             Repaint();
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  ARCADE GAME LIST (loaded from SO at editor time)
+        // ═════════════════════════════════════════════════════════════════════
+
+        void RefreshArcadeGameList()
+        {
+            // Find the ArcadeGames SO asset
+            string[] guids = AssetDatabase.FindAssets("t:SO_GameList", new[] { "Assets/_SO_Assets" });
+            foreach (string guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var list = AssetDatabase.LoadAssetAtPath<SO_GameList>(path);
+                if (list != null && list.name == "ArcadeGames")
+                {
+                    _arcadeGameList = list;
+                    break;
+                }
+            }
+
+            if (_arcadeGameList == null || _arcadeGameList.Games == null)
+            {
+                _selectableGames = Array.Empty<SO_ArcadeGame>();
+                _gameDisplayNames = Array.Empty<string>();
+                return;
+            }
+
+            // Build settings scene names for filtering
+            var buildSceneNames = new HashSet<string>();
+            foreach (var scene in EditorBuildSettings.scenes)
+            {
+                if (scene.enabled)
+                    buildSceneNames.Add(System.IO.Path.GetFileNameWithoutExtension(scene.path));
+            }
+
+            // Filter to singleplayer games with scenes in build settings
+            var valid = new List<SO_ArcadeGame>();
+            foreach (var game in _arcadeGameList.Games)
+            {
+                if (game == null) continue;
+                // Skip multiplayer-only modes for benchmarking
+                if (game.IsMultiplayer) continue;
+                // Only include if the scene exists in build settings
+                if (buildSceneNames.Contains(game.SceneName))
+                    valid.Add(game);
+            }
+
+            _selectableGames = valid.ToArray();
+            _gameDisplayNames = valid.Select(g => $"{g.DisplayName} ({g.Mode})").ToArray();
         }
 
         // ═════════════════════════════════════════════════════════════════════
