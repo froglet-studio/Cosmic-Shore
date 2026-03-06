@@ -9,7 +9,7 @@ Shader "Shader Graphs/ForcefieldCrackle"
         _CrackleColorB ("Outer Glow Color", Color) = (0.3, 0.6, 1.0, 1.0)
 
         [Header(Arc Pattern)]
-        _ArcDensity ("Arc Count", Range(4, 20)) = 8
+        _ArcDensity ("Arc Count", Range(1, 20)) = 8
         _ArcSharpness ("Arc Width", Range(0.01, 0.5)) = 0.06
 
         [Header(Wave and Expansion)]
@@ -40,7 +40,7 @@ Shader "Shader Graphs/ForcefieldCrackle"
             Blend One One          // Additive blending
             ZWrite Off
             ZTest LEqual
-            Cull Off               // Render both faces
+            Cull Back              // Single-sided — no additive double-draw
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -62,6 +62,7 @@ Shader "Shader Graphs/ForcefieldCrackle"
                 float3 positionOS : TEXCOORD0;
                 float3 normalOS   : TEXCOORD1;
                 float  fogFactor  : TEXCOORD2;
+                float3 viewDirOS  : TEXCOORD3;
             };
 
             // Include the crackle function
@@ -74,6 +75,11 @@ Shader "Shader Graphs/ForcefieldCrackle"
                 output.positionOS = input.positionOS.xyz;
                 output.normalOS = input.normalOS;
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
+
+                // Camera position in object space for proper fresnel
+                float3 cameraPosOS = TransformWorldToObject(GetCameraPositionWS());
+                output.viewDirOS = cameraPosOS - input.positionOS.xyz;
+
                 return output;
             }
 
@@ -81,7 +87,7 @@ Shader "Shader Graphs/ForcefieldCrackle"
             {
                 float3 emissionColor;
                 float alpha;
-                ForcefieldCrackle_float(input.positionOS, input.normalOS, emissionColor, alpha);
+                ForcefieldCrackle_float(input.positionOS, input.normalOS, input.viewDirOS, emissionColor, alpha);
 
                 // Apply fog
                 emissionColor = MixFog(emissionColor, input.fogFactor);

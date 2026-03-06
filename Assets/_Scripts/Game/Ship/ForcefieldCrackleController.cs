@@ -8,9 +8,9 @@ namespace CosmicShore.Game
     /// Receives impact points from <see cref="SkimmerForcefieldCracklePrismEffectSO"/>
     /// and feeds them to the crackle shader via MaterialPropertyBlock each frame.
     ///
-    /// In the Editor, visual params are exposed as serialized fields so you can
-    /// tweak the look in Scene view without entering Play mode. At runtime the
-    /// SO calls <see cref="SetVisualParams"/> which overrides the serialized values.
+    /// All visual params live here as serialized fields — tweak them in the
+    /// Inspector (edit mode or play mode) and they update live in Scene view.
+    /// The SO only sends impact events (position, duration, intensity, radius).
     /// </summary>
     [ExecuteAlways]
     public class ForcefieldCrackleController : MonoBehaviour
@@ -32,7 +32,7 @@ namespace CosmicShore.Game
         private Color fresnelRimColor = new Color(0.3f, 0.5f, 0.8f, 1f);
 
         [Header("Arc Pattern")]
-        [SerializeField, Range(3f, 20f), Tooltip("Number of arc branches radiating from each impact.")]
+        [SerializeField, Range(1f, 20f), Tooltip("Number of arc branches radiating from each impact.")]
         private float arcDensity = 8f;
 
         [SerializeField, Range(0.01f, 0.5f), Tooltip("Arc width — lower = thinner, sharper arcs.")]
@@ -103,7 +103,6 @@ namespace CosmicShore.Game
         {
             _visualParamsDirty = true;
 
-            // Push immediately if we have a prop block (edit mode live preview)
             if (_propBlock != null)
                 PushToShader();
         }
@@ -137,35 +136,6 @@ namespace CosmicShore.Game
                 _activeCount = alive;
                 PushToShader();
             }
-        }
-
-        /// <summary>
-        /// Set all visual parameters from the effect SO.
-        /// Overrides the serialized Inspector values at runtime.
-        /// </summary>
-        public void SetVisualParams(
-            Color crackleColorA,
-            Color crackleColorB,
-            Color fresnelRimColor,
-            float arcDensity,
-            float arcSharpness,
-            float ringThickness,
-            float centerFillAmount,
-            float rippleSpeed,
-            float fresnelRimIntensity,
-            float fresnelRimPower)
-        {
-            this.crackleColorA       = crackleColorA;
-            this.crackleColorB       = crackleColorB;
-            this.fresnelRimColor     = fresnelRimColor;
-            this.arcDensity          = arcDensity;
-            this.arcSharpness        = arcSharpness;
-            this.ringThickness       = ringThickness;
-            this.centerFillAmount    = centerFillAmount;
-            this.rippleSpeed         = rippleSpeed;
-            this.fresnelRimIntensity = fresnelRimIntensity;
-            this.fresnelRimPower     = fresnelRimPower;
-            _visualParamsDirty       = true;
         }
 
         /// <summary>
@@ -212,7 +182,7 @@ namespace CosmicShore.Game
             _propBlock.SetVectorArray(ImpactParamsId, _params);
             _propBlock.SetInt(ImpactCountId, _activeCount);
 
-            // Visual params (always push when dirty)
+            // Visual params
             if (_visualParamsDirty)
             {
                 _propBlock.SetColor(CrackleColorAId, crackleColorA);

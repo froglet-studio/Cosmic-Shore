@@ -15,12 +15,12 @@ Material:
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 1
+  m_DoubleSidedGI: 0
   m_CustomRenderQueue: 3000
   stringTagMap:
     RenderType: Transparent
   disabledShaderPasses: []
-  m_LockedProperties: 
+  m_LockedProperties:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs: []
@@ -30,13 +30,10 @@ Material:
     - _ArcDensity: 4
     - _ArcSharpness: 0.01
     - _CenterFillAmount: 0.3
-    - _EdgeSharpness: 0.122
     - _FresnelRimIntensity: 0.276
     - _FresnelRimPower: 3.55
-    - _ImpactCount: 0
     - _RingThickness: 0.05
     - _RippleSpeed: 0.7
-    - _VoronoiCellSize: 10.6
     m_Colors:
     - _CrackleColorA: {r: 0.94509804, g: 0, b: 0, a: 1}
     - _CrackleColorB: {r: 0.08627451, g: 0.49019608, b: 0.11402935, a: 1}
