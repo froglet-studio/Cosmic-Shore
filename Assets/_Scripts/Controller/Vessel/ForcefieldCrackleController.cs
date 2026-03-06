@@ -7,7 +7,12 @@ namespace CosmicShore.Game
     /// Manages a forcefield crackle overlay on the Skimmer's sphere collider.
     /// Receives impact points from <see cref="SkimmerForcefieldCracklePrismEffectSO"/>
     /// and feeds them to the crackle shader via MaterialPropertyBlock each frame.
+    ///
+    /// In the Editor, visual params are exposed as serialized fields so you can
+    /// tweak the look in Scene view without entering Play mode. At runtime the
+    /// SO calls <see cref="SetVisualParams"/> which overrides the serialized values.
     /// </summary>
+    [ExecuteAlways]
     public class ForcefieldCrackleController : MonoBehaviour
     {
         const int MaxImpacts = 16;
@@ -15,6 +20,40 @@ namespace CosmicShore.Game
         [Header("Refs")]
         [SerializeField, Tooltip("MeshRenderer on the child sphere overlay mesh.")]
         private MeshRenderer overlayRenderer;
+
+        [Header("Colors")]
+        [SerializeField, Tooltip("Core arc color (hot center of each lightning bolt).")]
+        private Color crackleColorA = new Color(0.7f, 0.85f, 1f, 1f);
+
+        [SerializeField, Tooltip("Outer glow color (halo around arcs).")]
+        private Color crackleColorB = new Color(0.3f, 0.6f, 1f, 1f);
+
+        [SerializeField, Tooltip("Ambient rim glow color.")]
+        private Color fresnelRimColor = new Color(0.3f, 0.5f, 0.8f, 1f);
+
+        [Header("Arc Pattern")]
+        [SerializeField, Range(4f, 20f), Tooltip("Number of arc branches radiating from each impact.")]
+        private float arcDensity = 8f;
+
+        [SerializeField, Range(0.01f, 0.5f), Tooltip("Arc width — lower = thinner, sharper arcs.")]
+        private float arcSharpness = 0.06f;
+
+        [Header("Ring / Wave")]
+        [SerializeField, Range(0.05f, 1f), Tooltip("Expanding ring wavefront thickness.")]
+        private float ringThickness = 0.4f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("Center glow fill amount. 0 = ring only, 1 = solid center.")]
+        private float centerFillAmount = 0.15f;
+
+        [SerializeField, Range(0.2f, 3f), Tooltip("Ripple expansion speed multiplier.")]
+        private float rippleSpeed = 1f;
+
+        [Header("Fresnel Rim")]
+        [SerializeField, Range(0f, 0.5f), Tooltip("Rim glow intensity.")]
+        private float fresnelRimIntensity = 0.08f;
+
+        [SerializeField, Range(1f, 8f), Tooltip("Fresnel exponent — higher = thinner rim.")]
+        private float fresnelRimPower = 3f;
 
         // Shader property IDs — impact data
         static readonly int ImpactPositionsId     = Shader.PropertyToID("_ImpactPositions");
@@ -42,30 +81,31 @@ namespace CosmicShore.Game
         int _activeCount;
         int _nextSlot;
 
-        // Cached visual params (pushed from SO, forwarded to shader)
-        Color _crackleColorA       = new Color(0.7f, 0.85f, 1f, 1f);
-        Color _crackleColorB       = new Color(0.3f, 0.6f, 1f, 1f);
-        Color _fresnelRimColor     = new Color(0.3f, 0.5f, 0.8f, 1f);
-        float _arcDensity          = 8f;
-        float _arcSharpness        = 0.06f;
-        float _ringThickness       = 0.4f;
-        float _centerFillAmount    = 0.15f;
-        float _rippleSpeed         = 1f;
-        float _fresnelRimIntensity = 0.08f;
-        float _fresnelRimPower     = 3f;
-        bool _visualParamsDirty    = true;
+        bool _visualParamsDirty = true;
 
         MaterialPropertyBlock _propBlock;
 
-        void Awake()
+        void OnEnable()
         {
-            _propBlock = new MaterialPropertyBlock();
+            _propBlock ??= new MaterialPropertyBlock();
 
             for (int i = 0; i < MaxImpacts; i++)
             {
                 _positions[i] = Vector4.zero;
                 _params[i]    = Vector4.zero;
             }
+
+            _visualParamsDirty = true;
+            PushToShader();
+        }
+
+        void OnValidate()
+        {
+            _visualParamsDirty = true;
+
+            // Push immediately if we have a prop block (edit mode live preview)
+            if (_propBlock != null)
+                PushToShader();
         }
 
         void Update()
@@ -101,7 +141,7 @@ namespace CosmicShore.Game
 
         /// <summary>
         /// Set all visual parameters from the effect SO.
-        /// Values are cached and marked dirty so the next PushToShader sends them.
+        /// Overrides the serialized Inspector values at runtime.
         /// </summary>
         public void SetVisualParams(
             Color crackleColorA,
@@ -115,17 +155,17 @@ namespace CosmicShore.Game
             float fresnelRimIntensity,
             float fresnelRimPower)
         {
-            _crackleColorA       = crackleColorA;
-            _crackleColorB       = crackleColorB;
-            _fresnelRimColor     = fresnelRimColor;
-            _arcDensity          = arcDensity;
-            _arcSharpness        = arcSharpness;
-            _ringThickness       = ringThickness;
-            _centerFillAmount    = centerFillAmount;
-            _rippleSpeed         = rippleSpeed;
-            _fresnelRimIntensity = fresnelRimIntensity;
-            _fresnelRimPower     = fresnelRimPower;
-            _visualParamsDirty   = true;
+            this.crackleColorA       = crackleColorA;
+            this.crackleColorB       = crackleColorB;
+            this.fresnelRimColor     = fresnelRimColor;
+            this.arcDensity          = arcDensity;
+            this.arcSharpness        = arcSharpness;
+            this.ringThickness       = ringThickness;
+            this.centerFillAmount    = centerFillAmount;
+            this.rippleSpeed         = rippleSpeed;
+            this.fresnelRimIntensity = fresnelRimIntensity;
+            this.fresnelRimPower     = fresnelRimPower;
+            _visualParamsDirty       = true;
         }
 
         /// <summary>
@@ -133,6 +173,8 @@ namespace CosmicShore.Game
         /// </summary>
         public void AddImpact(Vector3 worldPoint, float duration, float intensity, float radius)
         {
+            _propBlock ??= new MaterialPropertyBlock();
+
             Vector3 localPoint = transform.InverseTransformPoint(worldPoint);
             Vector3 dir = localPoint.normalized;
 
@@ -162,26 +204,27 @@ namespace CosmicShore.Game
         {
             if (!overlayRenderer) return;
 
+            _propBlock ??= new MaterialPropertyBlock();
             overlayRenderer.GetPropertyBlock(_propBlock);
 
-            // Impact data (every frame)
+            // Impact data
             _propBlock.SetVectorArray(ImpactPositionsId, _positions);
             _propBlock.SetVectorArray(ImpactParamsId, _params);
             _propBlock.SetInt(ImpactCountId, _activeCount);
 
-            // Visual params (only when changed)
+            // Visual params (always push when dirty)
             if (_visualParamsDirty)
             {
-                _propBlock.SetColor(CrackleColorAId, _crackleColorA);
-                _propBlock.SetColor(CrackleColorBId, _crackleColorB);
-                _propBlock.SetColor(FresnelRimColorId, _fresnelRimColor);
-                _propBlock.SetFloat(ArcDensityId, _arcDensity);
-                _propBlock.SetFloat(ArcSharpnessId, _arcSharpness);
-                _propBlock.SetFloat(RingThicknessId, _ringThickness);
-                _propBlock.SetFloat(CenterFillAmountId, _centerFillAmount);
-                _propBlock.SetFloat(RippleSpeedId, _rippleSpeed);
-                _propBlock.SetFloat(FresnelRimIntensityId, _fresnelRimIntensity);
-                _propBlock.SetFloat(FresnelRimPowerId, _fresnelRimPower);
+                _propBlock.SetColor(CrackleColorAId, crackleColorA);
+                _propBlock.SetColor(CrackleColorBId, crackleColorB);
+                _propBlock.SetColor(FresnelRimColorId, fresnelRimColor);
+                _propBlock.SetFloat(ArcDensityId, arcDensity);
+                _propBlock.SetFloat(ArcSharpnessId, arcSharpness);
+                _propBlock.SetFloat(RingThicknessId, ringThickness);
+                _propBlock.SetFloat(CenterFillAmountId, centerFillAmount);
+                _propBlock.SetFloat(RippleSpeedId, rippleSpeed);
+                _propBlock.SetFloat(FresnelRimIntensityId, fresnelRimIntensity);
+                _propBlock.SetFloat(FresnelRimPowerId, fresnelRimPower);
                 _visualParamsDirty = false;
             }
 
