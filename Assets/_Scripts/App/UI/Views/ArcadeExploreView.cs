@@ -183,9 +183,27 @@ namespace CosmicShore.App.UI.Views
 
         public void PlaySelectedGame()
         {
+            if (SelectedGame == null) return;
+
+            var vesselType = MiniGame.PlayerVesselType;
+            var resources  = MiniGame.ResourceCollection;
+
+            // Validate vessel: must exist in the game's vessel list and be unlocked
+            var validVessels = SelectedGame.Vessels?.Where(v => v != null && !v.IsLocked).ToList();
+            if (validVessels == null || validVessels.Count == 0) return;
+
+            var matchedVessel = validVessels.FirstOrDefault(v => v.Class == vesselType);
+            if (matchedVessel == null)
+            {
+                // Selected vessel not available for this game mode — fall back to first unlocked
+                matchedVessel = validVessels[0];
+                vesselType = matchedVessel.Class;
+                resources  = matchedVessel.InitialResourceLevels;
+            }
+
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
-            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
-            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
+            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, vesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
+            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, vesselType, resources, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
         }
 
         public void ToggleFavorite()

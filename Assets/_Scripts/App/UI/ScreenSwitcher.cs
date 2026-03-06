@@ -248,12 +248,21 @@ namespace CosmicShore.App.UI
             if (Gamepad.current == null) return;
             if (HasActiveModal) return; // Don't switch screens while a modal is open
 
-            // Hardcoded: A (South) on HOME opens the Arcade modal
-            if (Gamepad.current.buttonSouth.wasPressedThisFrame &&
-                ScreenIsActive(MenuScreens.HOME))
+            if (ScreenIsActive(MenuScreens.HOME))
             {
-                OpenArcadeModal();
-                return;
+                // A (South) on HOME opens the Arcade modal
+                if (Gamepad.current.buttonSouth.wasPressedThisFrame)
+                {
+                    OpenArcadeModal();
+                    return;
+                }
+
+                // X (West) on HOME opens the Settings modal
+                if (Gamepad.current.buttonWest.wasPressedThisFrame)
+                {
+                    OpenModalByType(ModalWindows.SETTINGS);
+                    return;
+                }
             }
 
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
@@ -479,7 +488,7 @@ namespace CosmicShore.App.UI
 
         #endregion
 
-        #region Arcade Modal Logic
+        #region Modal Helpers
 
         private void OpenArcadeModal()
         {
@@ -487,6 +496,18 @@ namespace CosmicShore.App.UI
             if (ArcadeModal)
             {
                 ArcadeModal.ModalWindowIn();
+            }
+        }
+
+        private void OpenModalByType(ModalWindows modalType)
+        {
+            foreach (var modal in Modals)
+            {
+                if (modal != null && modal.ModalType == modalType)
+                {
+                    modal.ModalWindowIn();
+                    return;
+                }
             }
         }
 
