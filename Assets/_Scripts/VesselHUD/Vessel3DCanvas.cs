@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -16,17 +17,31 @@ namespace CosmicShore.Game
         [Tooltip("If set, this prefab is instantiated as the canvas content on Initialize.")]
         [SerializeField] private GameObject contentPrefab;
 
+        [Header("Built-in Label")]
+        [Tooltip("Default text shown on the canvas. Leave empty to hide.")]
+        [SerializeField] private string defaultLabelText = "";
+
+        [Tooltip("Font size for the built-in label (in points).")]
+        [SerializeField] private float labelFontSize = 4f;
+
         Canvas _canvas;
         RectTransform _canvasRect;
         Transform _cameraTransform;
+        TMP_Text _label;
 
         public Canvas Canvas => _canvas;
         public RectTransform ContentRoot => _canvasRect;
+
+        /// <summary>
+        /// The built-in TMP label. Use this to read or change text at runtime.
+        /// </summary>
+        public TMP_Text Label => _label;
 
         public void Initialize()
         {
             BuildCanvas();
             ApplySettings();
+            BuildLabel();
 
             if (contentPrefab)
             {
@@ -49,6 +64,24 @@ namespace CosmicShore.Game
             _canvas.renderMode = RenderMode.WorldSpace;
 
             _canvasRect = _canvas.GetComponent<RectTransform>();
+        }
+
+        void BuildLabel()
+        {
+            var labelGO = new GameObject("Label");
+            labelGO.transform.SetParent(_canvasRect, false);
+
+            _label = labelGO.AddComponent<TextMeshProUGUI>();
+            _label.text = defaultLabelText;
+            _label.fontSize = labelFontSize;
+            _label.alignment = TextAlignmentOptions.Center;
+            _label.enableWordWrapping = false;
+
+            var rt = _label.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
         }
 
         void ApplySettings()
