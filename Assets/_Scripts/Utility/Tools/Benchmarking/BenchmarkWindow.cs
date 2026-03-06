@@ -16,8 +16,15 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         float _warmupSeconds = 2f;
         float _durationSeconds = 10f;
 
+        // ── Deterministic config ─────────────────────────────────────────
+        bool _deterministicMode = true;
+        int _deterministicSeed = 42;
+        int _deterministicWarmupFrames = 120;
+        float _deterministicFixedDt = 0.02f;
+
         // ── State ───────────────────────────────────────────────────────────
         PerformanceSampler _activeSampler;
+        DeterministicBenchmarkController _deterministicController;
         BenchmarkReport _lastReport;
         BenchmarkReport _baselineReport;
         Vector2 _scrollPos;
@@ -211,9 +218,6 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(12);
-            GUILayout.Label("Warmup (s)", GUILayout.Width(80));
-            _warmupSeconds = EditorGUILayout.FloatField(_warmupSeconds, GUILayout.Width(60));
-            GUILayout.Space(16);
             GUILayout.Label("Duration (s)", GUILayout.Width(80));
             _durationSeconds = EditorGUILayout.FloatField(_durationSeconds, GUILayout.Width(60));
             GUILayout.FlexibleSpace();
@@ -221,8 +225,59 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
             GUILayout.Space(8);
 
+            // Deterministic mode
+            DrawSection("Deterministic Mode");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            _deterministicMode = EditorGUILayout.Toggle(_deterministicMode, GUILayout.Width(16));
+            GUILayout.Label("Enable deterministic mode (removes randomness for repeatable results)");
+            EditorGUILayout.EndHorizontal();
+
+            if (_deterministicMode)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(28);
+                GUILayout.Label("Seed", GUILayout.Width(100));
+                _deterministicSeed = EditorGUILayout.IntField(_deterministicSeed, GUILayout.Width(80));
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(28);
+                GUILayout.Label("Warmup Frames", GUILayout.Width(100));
+                _deterministicWarmupFrames = EditorGUILayout.IntField(_deterministicWarmupFrames, GUILayout.Width(80));
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(28);
+                GUILayout.Label("Fixed Delta Time", GUILayout.Width(100));
+                _deterministicFixedDt = EditorGUILayout.FloatField(_deterministicFixedDt, GUILayout.Width(80));
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.HelpBox(
+                    "Deterministic mode seeds Random.InitState(), locks physics timestep, " +
+                    "disables VSync, and uses frame-counted warmup instead of wall-clock time. " +
+                    "This makes benchmark results comparable across runs.",
+                    MessageType.None);
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(12);
+                GUILayout.Label("Warmup (s)", GUILayout.Width(80));
+                _warmupSeconds = EditorGUILayout.FloatField(_warmupSeconds, GUILayout.Width(60));
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(8);
+
             bool isPlaying = Application.isPlaying;
-            bool isSampling = _activeSampler != null && (_activeSampler.IsSampling || _activeSampler.IsWarming);
+            bool isSampling = _activeSampler != null &&
+                (_activeSampler.IsSampling || _activeSampler.IsWarming || _activeSampler.IsWaitingForDeterministic);
 
             if (!isPlaying)
             {
@@ -238,7 +293,13 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
                 string status;
                 float progress;
-                if (_activeSampler.IsWarming)
+                if (_activeSampler.IsWaitingForDeterministic && _deterministicController != null)
+                {
+                    int remaining = _deterministicController.FramesRemaining;
+                    status = $"Deterministic warmup... {remaining} frames remaining (seed={_deterministicController.Seed})";
+                    progress = 1f - (remaining / (float)_deterministicWarmupFrames);
+                }
+                else if (_activeSampler.IsWarming)
                 {
                     status = $"Warming up... {_activeSampler.WarmupRemaining:F1}s remaining";
                     progress = 1f - (_activeSampler.WarmupRemaining / _warmupSeconds);
@@ -476,6 +537,8 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             DrawMetric("Scene", r.SceneName);
             DrawMetric("Duration", $"{r.DurationSeconds:F1}s ({r.TotalFrames} frames)");
             DrawMetric("Git Commit", r.GitCommit);
+            if (r.Deterministic)
+                DrawMetric("Deterministic", $"seed={r.DeterministicSeed}");
 
             GUILayout.Space(6);
             DrawSubSection("Frame Time");
@@ -586,13 +649,33 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
         void StartBenchmark()
         {
+            // Clean up previous run
             if (_activeSampler != null)
                 DestroyImmediate(_activeSampler.gameObject);
+            if (_deterministicController != null)
+                DestroyImmediate(_deterministicController.gameObject);
+
+            // Set up deterministic controller if enabled
+            if (_deterministicMode)
+            {
+                var detGo = new GameObject("[Benchmark Deterministic]");
+                detGo.hideFlags = HideFlags.DontSave;
+                _deterministicController = detGo.AddComponent<DeterministicBenchmarkController>();
+                _deterministicController.Configure(_deterministicSeed, _deterministicWarmupFrames, _deterministicFixedDt);
+            }
+            else
+            {
+                _deterministicController = null;
+            }
 
             var go = new GameObject("[Benchmark Sampler]");
             go.hideFlags = HideFlags.DontSave;
             _activeSampler = go.AddComponent<PerformanceSampler>();
             _activeSampler.Configure(_label, _warmupSeconds, _durationSeconds);
+
+            if (_deterministicController != null)
+                _activeSampler.SetDeterministicController(_deterministicController);
+
             _activeSampler.OnSamplingComplete += HandleReport;
             _activeSampler.StartSampling();
         }
@@ -603,9 +686,18 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             _lastReport = report;
             _selectedTab = 1;
             _scrollPos = Vector2.zero;
+
+            // Clean up deterministic controller
+            if (_deterministicController != null)
+            {
+                DestroyImmediate(_deterministicController.gameObject);
+                _deterministicController = null;
+            }
+
             Repaint();
 
-            CSDebug.Log($"[Benchmark] Complete — {report.AvgFps:F1} avg FPS, {report.P99FrameTimeMs:F2}ms P99, {report.TotalFrames} frames in {report.DurationSeconds:F1}s");
+            string detInfo = report.Deterministic ? $" [deterministic seed={report.DeterministicSeed}]" : "";
+            CSDebug.Log($"[Benchmark] Complete — {report.AvgFps:F1} avg FPS, {report.P99FrameTimeMs:F2}ms P99, {report.TotalFrames} frames in {report.DurationSeconds:F1}s{detInfo}");
         }
 
         static readonly string ReportsDir = Path.Combine(Application.dataPath, "..", "BenchmarkReports");

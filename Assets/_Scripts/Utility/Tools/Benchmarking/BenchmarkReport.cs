@@ -20,6 +20,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         public float DurationSeconds;
         public int TotalFrames;
 
+        // ── Deterministic settings ────────────────────────────────────────
+        public bool Deterministic;
+        public int DeterministicSeed;
+
         // ── Frame Time (ms) ─────────────────────────────────────────────────
         public float AvgFrameTimeMs;
         public float MinFrameTimeMs;
@@ -71,7 +75,9 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             List<long> drawCalls,
             List<long> triangles,
             List<long> vertices,
-            List<long> setPassCalls)
+            List<long> setPassCalls,
+            bool deterministic = false,
+            int deterministicSeed = 0)
         {
             var sorted = frameTimesMs.OrderBy(t => t).ToList();
             int count = sorted.Count;
@@ -110,6 +116,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                 FrameTimeSamples = frameTimesMs,
                 JankPercent = 100f * sorted.Count(t => t > avg * 2f) / count,
             };
+
+            // Deterministic metadata
+            report.Deterministic = deterministic;
+            report.DeterministicSeed = deterministicSeed;
 
             // Try to grab git commit hash
             report.GitCommit = GetGitCommit();
