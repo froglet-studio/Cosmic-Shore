@@ -171,6 +171,8 @@ namespace CosmicShore.App.UI.Views
             int activeIndex = GetActiveQuestIndex();
             if (activeIndex >= 0)
                 SnapToCard(activeIndex, true);
+            else if (_cards.Count > 0)
+                SnapToCard(_cards.Count - 1, true);
         }
 
         // ── Card State ────────────────────────────────────────────────────────
@@ -224,7 +226,7 @@ namespace CosmicShore.App.UI.Views
 
         /// <summary>
         /// Returns the index of the first quest that is Unlocked or ReadyToClaim (the frontier).
-        /// Falls back to the last card if all are claimed.
+        /// Returns -1 if all quests are claimed (chain complete).
         /// </summary>
         int GetActiveQuestIndex()
         {
@@ -234,7 +236,7 @@ namespace CosmicShore.App.UI.Views
                 if (state == QuestItemState.Unlocked || state == QuestItemState.ReadyToClaim)
                     return i;
             }
-            return _cards.Count > 0 ? _cards.Count - 1 : -1;
+            return -1;
         }
 
         void UpdateActivePulse()
@@ -347,16 +349,20 @@ namespace CosmicShore.App.UI.Views
                 });
             }
 
-            // ── Step 5: Fade in new description ─────────────────────────────
+            // ── Step 5: Fade in new description (only if there is an active frontier quest) ─
             float fadeInTime = sliderStart + sliderAnimDuration;
-            int newActiveIndex = hasNextCard ? nextCardIndex : cardIndex;
-
-            if (newActiveIndex >= 0 && newActiveIndex < _descriptionLabels.Count)
+            // Defer to GetActiveQuestIndex so that completed chains show no description
+            int newActiveIndex = -1;
+            seq.InsertCallback(fadeInTime, () =>
             {
-                var newCg = _descriptionLabels[newActiveIndex];
-                seq.Insert(fadeInTime, DOTween.To(() => newCg.alpha, a => newCg.alpha = a, 1f, fadeDur));
-            }
-            _lastActiveDescIndex = newActiveIndex;
+                newActiveIndex = GetActiveQuestIndex();
+                if (newActiveIndex >= 0 && newActiveIndex < _descriptionLabels.Count)
+                {
+                    var newCg = _descriptionLabels[newActiveIndex];
+                    DOTween.To(() => newCg.alpha, a => newCg.alpha = a, 1f, fadeDur).SetUpdate(true);
+                }
+                _lastActiveDescIndex = newActiveIndex;
+            });
 
             // ── Cleanup ─────────────────────────────────────────────────────
             seq.OnComplete(() =>
