@@ -25,8 +25,8 @@ namespace CosmicShore.Game
         static readonly int CrackleColorAId       = Shader.PropertyToID("_CrackleColorA");
         static readonly int CrackleColorBId       = Shader.PropertyToID("_CrackleColorB");
         static readonly int FresnelRimColorId     = Shader.PropertyToID("_FresnelRimColor");
-        static readonly int VoronoiCellSizeId     = Shader.PropertyToID("_VoronoiCellSize");
-        static readonly int EdgeSharpnessId       = Shader.PropertyToID("_EdgeSharpness");
+        static readonly int ArcDensityId          = Shader.PropertyToID("_ArcDensity");
+        static readonly int ArcSharpnessId        = Shader.PropertyToID("_ArcSharpness");
         static readonly int RingThicknessId       = Shader.PropertyToID("_RingThickness");
         static readonly int CenterFillAmountId    = Shader.PropertyToID("_CenterFillAmount");
         static readonly int RippleSpeedId         = Shader.PropertyToID("_RippleSpeed");
@@ -43,13 +43,13 @@ namespace CosmicShore.Game
         int _nextSlot;
 
         // Cached visual params (pushed from SO, forwarded to shader)
-        Color _crackleColorA       = new Color(0.3f, 0.6f, 1f, 1f);
-        Color _crackleColorB       = new Color(0.8f, 0.9f, 1f, 1f);
+        Color _crackleColorA       = new Color(0.7f, 0.85f, 1f, 1f);
+        Color _crackleColorB       = new Color(0.3f, 0.6f, 1f, 1f);
         Color _fresnelRimColor     = new Color(0.3f, 0.5f, 0.8f, 1f);
-        float _voronoiCellSize     = 12f;
-        float _edgeSharpness       = 0.15f;
+        float _arcDensity          = 8f;
+        float _arcSharpness        = 0.06f;
         float _ringThickness       = 0.4f;
-        float _centerFillAmount    = 0.3f;
+        float _centerFillAmount    = 0.15f;
         float _rippleSpeed         = 1f;
         float _fresnelRimIntensity = 0.08f;
         float _fresnelRimPower     = 3f;
@@ -107,8 +107,8 @@ namespace CosmicShore.Game
             Color crackleColorA,
             Color crackleColorB,
             Color fresnelRimColor,
-            float voronoiCellSize,
-            float edgeSharpness,
+            float arcDensity,
+            float arcSharpness,
             float ringThickness,
             float centerFillAmount,
             float rippleSpeed,
@@ -118,8 +118,8 @@ namespace CosmicShore.Game
             _crackleColorA       = crackleColorA;
             _crackleColorB       = crackleColorB;
             _fresnelRimColor     = fresnelRimColor;
-            _voronoiCellSize     = voronoiCellSize;
-            _edgeSharpness       = edgeSharpness;
+            _arcDensity          = arcDensity;
+            _arcSharpness        = arcSharpness;
             _ringThickness       = ringThickness;
             _centerFillAmount    = centerFillAmount;
             _rippleSpeed         = rippleSpeed;
@@ -175,8 +175,8 @@ namespace CosmicShore.Game
                 _propBlock.SetColor(CrackleColorAId, _crackleColorA);
                 _propBlock.SetColor(CrackleColorBId, _crackleColorB);
                 _propBlock.SetColor(FresnelRimColorId, _fresnelRimColor);
-                _propBlock.SetFloat(VoronoiCellSizeId, _voronoiCellSize);
-                _propBlock.SetFloat(EdgeSharpnessId, _edgeSharpness);
+                _propBlock.SetFloat(ArcDensityId, _arcDensity);
+                _propBlock.SetFloat(ArcSharpnessId, _arcSharpness);
                 _propBlock.SetFloat(RingThicknessId, _ringThickness);
                 _propBlock.SetFloat(CenterFillAmountId, _centerFillAmount);
                 _propBlock.SetFloat(RippleSpeedId, _rippleSpeed);

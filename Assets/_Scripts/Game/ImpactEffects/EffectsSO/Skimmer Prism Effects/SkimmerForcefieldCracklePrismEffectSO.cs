@@ -21,12 +21,12 @@ namespace CosmicShore.Game
         [SerializeField, Range(0.05f, 1f), Tooltip("Angular radius of the crackle spread (0 = point, 1 ≈ hemisphere).")]
         private float impactRadius = 0.25f;
 
-        [Header("Voronoi Crackle Pattern")]
-        [SerializeField, Range(2f, 40f), Tooltip("Voronoi cell density — higher values produce finer, denser crackle lines.")]
-        private float voronoiCellSize = 12f;
+        [Header("Arc Pattern")]
+        [SerializeField, Range(4f, 20f), Tooltip("Number of arc branches radiating from each impact point.")]
+        private float arcDensity = 8f;
 
-        [SerializeField, Range(0.01f, 0.5f), Tooltip("Edge sharpness — lower values produce thinner, sharper crackle lines.")]
-        private float edgeSharpness = 0.15f;
+        [SerializeField, Range(0.01f, 0.5f), Tooltip("Arc width — lower values produce thinner, sharper lightning arcs.")]
+        private float arcSharpness = 0.06f;
 
         [Header("Ring / Wave Shape")]
         [SerializeField, Range(0.05f, 1f), Tooltip("Thickness of the expanding ring wavefront relative to angular radius.")]
@@ -69,8 +69,8 @@ namespace CosmicShore.Game
                 crackleColorA,
                 crackleColorB,
                 fresnelRimColor,
-                voronoiCellSize,
-                edgeSharpness,
+                arcDensity,
+                arcSharpness,
                 ringThickness,
                 centerFillAmount,
                 rippleSpeed,
