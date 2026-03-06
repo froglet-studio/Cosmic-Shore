@@ -5,7 +5,9 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Utility.Tools.Benchmarking
 {
@@ -41,6 +43,17 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         BenchmarkReport _comparedBaseline;
         BenchmarkReport _comparedCurrent;
 
+        // ── Session config (persists across play mode via EditorPrefs) ──────
+        [NonSerialized] BenchmarkSessionConfig _session;
+        [NonSerialized] string[] _scenePaths;
+        [NonSerialized] string[] _sceneNames;
+        [NonSerialized] int _selectedSceneIdx;
+        [NonSerialized] bool _sessionCallbackRegistered;
+
+        // ── Session results (loaded after session completes) ────────────────
+        [NonSerialized] List<BenchmarkReport> _sessionReports;
+        [NonSerialized] BenchmarkSessionSummary _sessionSummary;
+
         // ── Palette (consistent with LogControlWindow) ──────────────────────
         static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
         static readonly Color AccentColor    = new(0.55f, 0.82f, 0.65f, 1f);
@@ -51,6 +64,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         static readonly Color GoodColor      = new(0.35f, 0.78f, 0.48f, 1f);
         static readonly Color BadColor       = new(0.88f, 0.38f, 0.35f, 1f);
         static readonly Color NeutralColor   = new(0.72f, 0.72f, 0.72f, 1f);
+        static readonly Color SessionColor   = new(0.82f, 0.55f, 0.55f, 1f);
 
         // ── Styles ──────────────────────────────────────────────────────────
         [NonSerialized] GUIStyle _bannerStyle;
@@ -61,10 +75,11 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         [NonSerialized] GUIStyle _metricLabel;
         [NonSerialized] bool _stylesBuilt;
 
-        static readonly string[] TabLabels = { "Run", "Results", "Compare", "History" };
+        static readonly string[] TabLabels = { "Run", "Session", "Results", "Compare", "History" };
         static readonly Color[] TabColors =
         {
             new(0.55f, 0.82f, 0.65f, 1f),
+            new(0.82f, 0.55f, 0.55f, 1f),
             new(0.65f, 0.65f, 0.88f, 1f),
             new(0.88f, 0.72f, 0.55f, 1f),
             new(0.72f, 0.55f, 0.82f, 1f),
@@ -74,14 +89,25 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         static void Open()
         {
             var w = GetWindow<BenchmarkWindow>("Benchmark");
-            w.minSize = new Vector2(400, 500);
+            w.minSize = new Vector2(440, 500);
         }
 
-        void OnEnable() => RefreshSavedReports();
+        void OnEnable()
+        {
+            RefreshSavedReports();
+            RefreshSceneList();
+            _session = BenchmarkSessionConfig.Load();
+            RegisterSessionCallback();
+        }
+
+        void OnDisable()
+        {
+            UnregisterSessionCallback();
+        }
 
         void OnInspectorUpdate()
         {
-            if (_activeSampler != null)
+            if (_activeSampler != null || (_session != null && _session.IsRunning))
                 Repaint();
         }
 
@@ -150,9 +176,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             switch (_selectedTab)
             {
                 case 0: DrawRunTab(); break;
-                case 1: DrawResultsTab(); break;
-                case 2: DrawCompareTab(); break;
-                case 3: DrawHistoryTab(); break;
+                case 1: DrawSessionTab(); break;
+                case 2: DrawResultsTab(); break;
+                case 3: DrawCompareTab(); break;
+                case 4: DrawHistoryTab(); break;
             }
 
             GUILayout.Space(8);
@@ -188,7 +215,16 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                     EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - 3, rect.width, 3), Color.white * 0.9f);
 
                 _tabStyle.normal.textColor = selected ? Color.white : new Color(0.88f, 0.86f, 0.94f);
-                GUI.Label(rect, TabLabels[i], _tabStyle);
+
+                // Flash the Session tab if a session is running
+                string label = TabLabels[i];
+                if (i == 1 && _session is { IsRunning: true })
+                {
+                    float pulse = Mathf.PingPong((float)EditorApplication.timeSinceStartup * 2f, 1f);
+                    _tabStyle.normal.textColor = Color.Lerp(Color.white, SessionColor, pulse);
+                }
+
+                GUI.Label(rect, label, _tabStyle);
 
                 if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
                 {
@@ -203,7 +239,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        //  TAB: RUN
+        //  TAB: RUN (manual single benchmark)
         // ═════════════════════════════════════════════════════════════════════
 
         void DrawRunTab()
@@ -352,6 +388,209 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         }
 
         // ═════════════════════════════════════════════════════════════════════
+        //  TAB: SESSION (automated multi-iteration benchmark)
+        // ═════════════════════════════════════════════════════════════════════
+
+        void DrawSessionTab()
+        {
+            if (_session == null)
+                _session = BenchmarkSessionConfig.Load();
+
+            bool isRunning = _session.IsRunning;
+
+            // ── Active session banner ────────────────────────────────────────
+            if (isRunning)
+            {
+                DrawSection($"Session In Progress — Iteration {_session.CurrentIteration + 1} / {_session.Iterations}");
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(12);
+                string sceneName = Path.GetFileNameWithoutExtension(_session.ScenePath);
+                GUILayout.Label($"Scene: {sceneName}   |   Duration: {_session.DurationSeconds}s   |   Deterministic: {_session.Deterministic}");
+                EditorGUILayout.EndHorizontal();
+
+                // Overall progress bar
+                float overallProgress = _session.CurrentIteration / (float)_session.Iterations;
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(12);
+                var rect = GUILayoutUtility.GetRect(0, 20, GUILayout.ExpandWidth(true));
+                rect.width -= 12;
+                EditorGUI.DrawRect(rect, new Color(0.15f, 0.15f, 0.2f));
+                var fill = new Rect(rect.x, rect.y, rect.width * overallProgress, rect.height);
+                EditorGUI.DrawRect(fill, SessionColor);
+
+                // Show text on the bar
+                var labelStyle = new GUIStyle(EditorStyles.boldLabel)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 11
+                };
+                labelStyle.normal.textColor = Color.white;
+                GUI.Label(rect, $"{_session.CompletedReportPaths.Count} / {_session.Iterations} iterations complete", labelStyle);
+                EditorGUILayout.EndHorizontal();
+
+                GUILayout.Space(4);
+
+                if (Application.isPlaying)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(12);
+                    GUILayout.Label("Benchmark running in play mode...");
+                    EditorGUILayout.EndHorizontal();
+                }
+                else
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(12);
+                    GUILayout.Label("Waiting for next iteration to start...");
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                GUILayout.Space(8);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(12);
+                if (GUILayout.Button("Abort Session", GUILayout.Height(28)))
+                {
+                    AbortSession();
+                }
+                EditorGUILayout.EndHorizontal();
+
+                return;
+            }
+
+            // ── Configuration ────────────────────────────────────────────────
+            DrawSection("Automated Session");
+
+            EditorGUILayout.HelpBox(
+                "Run a benchmark multiple times automatically. The tool will:\n" +
+                "1. Load the selected scene\n" +
+                "2. Enter play mode\n" +
+                "3. Run the benchmark with deterministic settings\n" +
+                "4. Save the report and exit play mode\n" +
+                "5. Repeat for N iterations\n" +
+                "6. Generate a reproducibility report comparing all runs",
+                MessageType.None);
+
+            GUILayout.Space(4);
+
+            // Scene picker
+            DrawSection("Scene");
+
+            if (_scenePaths == null || _scenePaths.Length == 0)
+                RefreshSceneList();
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            GUILayout.Label("Target Scene", GUILayout.Width(100));
+            int newIdx = EditorGUILayout.Popup(_selectedSceneIdx, _sceneNames ?? Array.Empty<string>());
+            if (newIdx != _selectedSceneIdx)
+            {
+                _selectedSceneIdx = newIdx;
+                if (_scenePaths != null && _selectedSceneIdx >= 0 && _selectedSceneIdx < _scenePaths.Length)
+                    _session.ScenePath = _scenePaths[_selectedSceneIdx];
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            if (GUILayout.Button("Refresh Scenes", GUILayout.Width(120)))
+                RefreshSceneList();
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            // Session parameters
+            DrawSection("Parameters");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            GUILayout.Label("Label", GUILayout.Width(100));
+            _session.Label = EditorGUILayout.TextField(_session.Label);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            GUILayout.Label("Iterations", GUILayout.Width(100));
+            _session.Iterations = EditorGUILayout.IntField(_session.Iterations, GUILayout.Width(60));
+            _session.Iterations = Mathf.Clamp(_session.Iterations, 2, 50);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            GUILayout.Label("Duration (s)", GUILayout.Width(100));
+            _session.DurationSeconds = EditorGUILayout.FloatField(_session.DurationSeconds, GUILayout.Width(60));
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            // Deterministic settings
+            DrawSection("Deterministic Settings");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            _session.Deterministic = EditorGUILayout.Toggle(_session.Deterministic, GUILayout.Width(16));
+            GUILayout.Label("Deterministic mode (strongly recommended for reproducibility)");
+            EditorGUILayout.EndHorizontal();
+
+            if (_session.Deterministic)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(28);
+                GUILayout.Label("Seed", GUILayout.Width(100));
+                _session.Seed = EditorGUILayout.IntField(_session.Seed, GUILayout.Width(80));
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(28);
+                GUILayout.Label("Warmup Frames", GUILayout.Width(100));
+                _session.WarmupFrames = EditorGUILayout.IntField(_session.WarmupFrames, GUILayout.Width(80));
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(28);
+                GUILayout.Label("Fixed Delta Time", GUILayout.Width(100));
+                _session.FixedDt = EditorGUILayout.FloatField(_session.FixedDt, GUILayout.Width(80));
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(8);
+
+            // Launch button
+            bool canLaunch = !string.IsNullOrEmpty(_session.ScenePath) && !Application.isPlaying;
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            GUI.enabled = canLaunch;
+            if (GUILayout.Button("Run Session", GUILayout.Height(34)))
+            {
+                LaunchSession();
+            }
+            GUI.enabled = true;
+            EditorGUILayout.EndHorizontal();
+
+            if (Application.isPlaying)
+            {
+                EditorGUILayout.HelpBox("Exit Play Mode before starting a session.", MessageType.Warning);
+            }
+            else if (string.IsNullOrEmpty(_session.ScenePath))
+            {
+                EditorGUILayout.HelpBox("Select a target scene first.", MessageType.Warning);
+            }
+
+            // ── Last session results ─────────────────────────────────────────
+            if (_sessionSummary != null)
+            {
+                GUILayout.Space(12);
+                DrawSessionSummary();
+            }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
         //  TAB: RESULTS
         // ═════════════════════════════════════════════════════════════════════
 
@@ -496,7 +735,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                 if (GUILayout.Button("Load", GUILayout.Width(45)))
                 {
                     _lastReport = report;
-                    _selectedTab = 1;
+                    _selectedTab = 2;
                     _scrollPos = Vector2.zero;
                 }
                 if (GUILayout.Button("Base", GUILayout.Width(40)))
@@ -514,6 +753,125 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                 }
                 EditorGUILayout.EndHorizontal();
             }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  SESSION SUMMARY DRAWING
+        // ═════════════════════════════════════════════════════════════════════
+
+        void DrawSessionSummary()
+        {
+            var s = _sessionSummary;
+
+            DrawSection($"Session Results — {s.Label} ({s.IterationCount} iterations)");
+
+            DrawMetric("Scene", s.SceneName);
+            DrawMetric("Iterations", $"{s.IterationCount}");
+            DrawMetric("Duration/iter", $"{s.DurationPerIteration:F1}s");
+            if (s.Deterministic)
+                DrawMetric("Deterministic", $"seed={s.Seed}");
+
+            GUILayout.Space(6);
+            DrawSubSection("Avg Frame Time (ms)");
+            DrawMetric("Mean", $"{s.AvgFrameTimeMean:F2}");
+            DrawMetric("Min / Max", $"{s.AvgFrameTimeMin:F2} / {s.AvgFrameTimeMax:F2}");
+            DrawMetric("Spread", $"{s.AvgFrameTimeSpread:F2} ({s.AvgFrameTimeSpreadPercent:F1}%)");
+            DrawReproducibilityMetric("CoV", s.AvgFrameTimeCoV);
+
+            GUILayout.Space(6);
+            DrawSubSection("Avg FPS");
+            DrawMetric("Mean", $"{s.AvgFpsMean:F1}");
+            DrawMetric("Min / Max", $"{s.AvgFpsMin:F1} / {s.AvgFpsMax:F1}");
+            DrawMetric("Spread", $"{s.AvgFpsSpread:F1} ({s.AvgFpsSpreadPercent:F1}%)");
+            DrawReproducibilityMetric("CoV", s.AvgFpsCoV);
+
+            GUILayout.Space(6);
+            DrawSubSection("P99 Frame Time (ms)");
+            DrawMetric("Mean", $"{s.P99FrameTimeMean:F2}");
+            DrawMetric("Min / Max", $"{s.P99FrameTimeMin:F2} / {s.P99FrameTimeMax:F2}");
+            DrawReproducibilityMetric("CoV", s.P99FrameTimeCoV);
+
+            GUILayout.Space(6);
+            DrawSubSection("Jank %");
+            DrawMetric("Mean", $"{s.JankPercentMean:F2}%");
+            DrawMetric("Min / Max", $"{s.JankPercentMin:F2}% / {s.JankPercentMax:F2}%");
+
+            GUILayout.Space(6);
+            DrawSubSection("Reproducibility Verdict");
+
+            Color verdictColor;
+            string verdict;
+            if (s.AvgFrameTimeCoV < 0.02f)
+            {
+                verdictColor = GoodColor;
+                verdict = "EXCELLENT — CoV < 2%, results are highly reproducible";
+            }
+            else if (s.AvgFrameTimeCoV < 0.05f)
+            {
+                verdictColor = Color.Lerp(GoodColor, NeutralColor, 0.5f);
+                verdict = "GOOD — CoV < 5%, results are reasonably reproducible";
+            }
+            else if (s.AvgFrameTimeCoV < 0.10f)
+            {
+                verdictColor = NeutralColor;
+                verdict = "FAIR — CoV < 10%, some variance present. Consider longer duration or more warmup.";
+            }
+            else
+            {
+                verdictColor = BadColor;
+                verdict = "POOR — CoV >= 10%, results are not reproducible. Check for background processes, thermal throttling, or non-deterministic scene behavior.";
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(16);
+            var style = new GUIStyle(EditorStyles.wordWrappedLabel) { fontSize = 11 };
+            style.normal.textColor = verdictColor;
+            GUILayout.Label(verdict, style);
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+            DrawSubSection("Per-Iteration Results");
+
+            // Header
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(16);
+            GUILayout.Label("#", EditorStyles.boldLabel, GUILayout.Width(30));
+            GUILayout.Label("Avg FPS", EditorStyles.boldLabel, GUILayout.Width(70));
+            GUILayout.Label("Avg ms", EditorStyles.boldLabel, GUILayout.Width(70));
+            GUILayout.Label("P99 ms", EditorStyles.boldLabel, GUILayout.Width(70));
+            GUILayout.Label("Jank%", EditorStyles.boldLabel, GUILayout.Width(60));
+            GUILayout.Label("Frames", EditorStyles.boldLabel, GUILayout.Width(60));
+            EditorGUILayout.EndHorizontal();
+
+            if (_sessionReports != null)
+            {
+                for (int i = 0; i < _sessionReports.Count; i++)
+                {
+                    var r = _sessionReports[i];
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(16);
+                    GUILayout.Label($"{i + 1}", GUILayout.Width(30));
+                    GUILayout.Label($"{r.AvgFps:F1}", GUILayout.Width(70));
+                    GUILayout.Label($"{r.AvgFrameTimeMs:F2}", GUILayout.Width(70));
+                    GUILayout.Label($"{r.P99FrameTimeMs:F2}", GUILayout.Width(70));
+                    GUILayout.Label($"{r.JankPercent:F1}%", GUILayout.Width(60));
+                    GUILayout.Label($"{r.TotalFrames}", GUILayout.Width(60));
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+        }
+
+        void DrawReproducibilityMetric(string label, float cov)
+        {
+            Color color = cov < 0.02f ? GoodColor : cov < 0.05f ? NeutralColor : BadColor;
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(16);
+            GUILayout.Label(label, _metricLabel, GUILayout.Width(160));
+            var style = new GUIStyle(_valueStyle);
+            style.normal.textColor = color;
+            GUILayout.Label($"{cov * 100f:F2}%", style);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -644,7 +1002,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        //  LOGIC
+        //  MANUAL BENCHMARK LOGIC
         // ═════════════════════════════════════════════════════════════════════
 
         void StartBenchmark()
@@ -684,7 +1042,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         {
             if (report == null) return;
             _lastReport = report;
-            _selectedTab = 1;
+            _selectedTab = 2;
             _scrollPos = Vector2.zero;
 
             // Clean up deterministic controller
@@ -699,6 +1057,267 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             string detInfo = report.Deterministic ? $" [deterministic seed={report.DeterministicSeed}]" : "";
             CSDebug.Log($"[Benchmark] Complete — {report.AvgFps:F1} avg FPS, {report.P99FrameTimeMs:F2}ms P99, {report.TotalFrames} frames in {report.DurationSeconds:F1}s{detInfo}");
         }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  SESSION ORCHESTRATION
+        // ═════════════════════════════════════════════════════════════════════
+
+        void RegisterSessionCallback()
+        {
+            if (_sessionCallbackRegistered) return;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            _sessionCallbackRegistered = true;
+        }
+
+        void UnregisterSessionCallback()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            _sessionCallbackRegistered = false;
+        }
+
+        void LaunchSession()
+        {
+            _session.IsRunning = true;
+            _session.CurrentIteration = 0;
+            _session.CompletedReportPaths.Clear();
+            _session.Save();
+
+            _sessionReports = null;
+            _sessionSummary = null;
+
+            CSDebug.Log($"[Benchmark Session] Starting {_session.Iterations} iterations on {Path.GetFileNameWithoutExtension(_session.ScenePath)}");
+
+            StartNextIteration();
+        }
+
+        void StartNextIteration()
+        {
+            _session = BenchmarkSessionConfig.Load();
+
+            if (!_session.IsRunning || _session.CurrentIteration >= _session.Iterations)
+            {
+                FinishSession();
+                return;
+            }
+
+            CSDebug.Log($"[Benchmark Session] Starting iteration {_session.CurrentIteration + 1} / {_session.Iterations}");
+
+            // Open the target scene (must happen outside play mode)
+            if (!string.IsNullOrEmpty(_session.ScenePath) && File.Exists(_session.ScenePath))
+            {
+                // Save current scene if dirty
+                if (SceneManager.GetActiveScene().isDirty)
+                    EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
+
+                EditorSceneManager.OpenScene(_session.ScenePath);
+            }
+
+            // Enter play mode — the callback will auto-start the benchmark
+            EditorApplication.EnterPlaymode();
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            _session = BenchmarkSessionConfig.Load();
+
+            if (!_session.IsRunning) return;
+
+            switch (state)
+            {
+                case PlayModeStateChange.EnteredPlayMode:
+                    // Auto-start the benchmark for this iteration
+                    EditorApplication.delayCall += AutoStartSessionBenchmark;
+                    break;
+
+                case PlayModeStateChange.EnteredEditMode:
+                    // Play mode exited — start next iteration or finish
+                    EditorApplication.delayCall += StartNextIteration;
+                    break;
+            }
+        }
+
+        void AutoStartSessionBenchmark()
+        {
+            _session = BenchmarkSessionConfig.Load();
+            if (!_session.IsRunning) return;
+
+            // Clean up any previous sampler
+            if (_activeSampler != null)
+                DestroyImmediate(_activeSampler.gameObject);
+            if (_deterministicController != null)
+                DestroyImmediate(_deterministicController.gameObject);
+
+            // Set up deterministic controller
+            if (_session.Deterministic)
+            {
+                var detGo = new GameObject("[Benchmark Session Deterministic]");
+                detGo.hideFlags = HideFlags.DontSave;
+                _deterministicController = detGo.AddComponent<DeterministicBenchmarkController>();
+                _deterministicController.Configure(_session.Seed, _session.WarmupFrames, _session.FixedDt);
+            }
+
+            string iterLabel = $"{_session.Label}_iter{_session.CurrentIteration + 1}";
+            var go = new GameObject("[Benchmark Session Sampler]");
+            go.hideFlags = HideFlags.DontSave;
+            _activeSampler = go.AddComponent<PerformanceSampler>();
+            _activeSampler.Configure(iterLabel, 2f, _session.DurationSeconds);
+
+            if (_deterministicController != null)
+                _activeSampler.SetDeterministicController(_deterministicController);
+
+            _activeSampler.OnSamplingComplete += HandleSessionIterationComplete;
+            _activeSampler.StartSampling();
+
+            CSDebug.Log($"[Benchmark Session] Iteration {_session.CurrentIteration + 1} benchmark started");
+            Repaint();
+        }
+
+        void HandleSessionIterationComplete(BenchmarkReport report)
+        {
+            if (report == null) return;
+
+            // Save the report
+            string path = report.Save();
+            CSDebug.Log($"[Benchmark Session] Iteration {_session.CurrentIteration + 1} complete — {report.AvgFps:F1} fps, saved to {path}");
+
+            // Update session state
+            _session = BenchmarkSessionConfig.Load();
+            _session.CompletedReportPaths.Add(path);
+            _session.CurrentIteration++;
+            _session.Save();
+
+            // Clean up
+            if (_deterministicController != null)
+            {
+                DestroyImmediate(_deterministicController.gameObject);
+                _deterministicController = null;
+            }
+
+            _lastReport = report;
+            Repaint();
+
+            // Exit play mode — the callback will handle starting the next iteration
+            EditorApplication.ExitPlaymode();
+        }
+
+        void FinishSession()
+        {
+            _session = BenchmarkSessionConfig.Load();
+            var paths = _session.CompletedReportPaths;
+
+            _session.IsRunning = false;
+            _session.Save();
+
+            CSDebug.Log($"[Benchmark Session] All {paths.Count} iterations complete. Generating reproducibility report...");
+
+            // Load all reports
+            _sessionReports = new List<BenchmarkReport>();
+            foreach (var path in paths)
+            {
+                var report = BenchmarkReport.Load(path);
+                if (report != null)
+                    _sessionReports.Add(report);
+            }
+
+            // Generate summary
+            if (_sessionReports.Count >= 2)
+            {
+                _sessionSummary = BenchmarkSessionSummary.Build(_sessionReports, _session);
+                CSDebug.Log($"[Benchmark Session] Reproducibility — Avg FPS CoV: {_sessionSummary.AvgFpsCoV * 100f:F2}%, Avg Frame Time CoV: {_sessionSummary.AvgFrameTimeCoV * 100f:F2}%");
+            }
+
+            _selectedTab = 1; // Switch to Session tab to show results
+            RefreshSavedReports();
+            Repaint();
+        }
+
+        void AbortSession()
+        {
+            CSDebug.Log("[Benchmark Session] Aborted by user.");
+
+            // Stop any active sampling
+            if (_activeSampler != null)
+            {
+                _activeSampler.StopSampling();
+                DestroyImmediate(_activeSampler.gameObject);
+                _activeSampler = null;
+            }
+            if (_deterministicController != null)
+            {
+                DestroyImmediate(_deterministicController.gameObject);
+                _deterministicController = null;
+            }
+
+            // Load whatever reports were completed so far
+            _session = BenchmarkSessionConfig.Load();
+            var paths = _session.CompletedReportPaths;
+
+            _session.IsRunning = false;
+            _session.Save();
+
+            // Build partial summary if we have enough data
+            _sessionReports = new List<BenchmarkReport>();
+            foreach (var path in paths)
+            {
+                var report = BenchmarkReport.Load(path);
+                if (report != null)
+                    _sessionReports.Add(report);
+            }
+            if (_sessionReports.Count >= 2)
+                _sessionSummary = BenchmarkSessionSummary.Build(_sessionReports, _session);
+
+            if (Application.isPlaying)
+                EditorApplication.ExitPlaymode();
+
+            RefreshSavedReports();
+            Repaint();
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  SCENE LIST
+        // ═════════════════════════════════════════════════════════════════════
+
+        void RefreshSceneList()
+        {
+            var paths = new List<string>();
+            var names = new List<string>();
+
+            // Add scenes from Build Settings first
+            foreach (var scene in EditorBuildSettings.scenes)
+            {
+                if (scene.enabled && File.Exists(scene.path))
+                {
+                    paths.Add(scene.path);
+                    names.Add(Path.GetFileNameWithoutExtension(scene.path));
+                }
+            }
+
+            // Also find scenes in _Scenes that might not be in build settings
+            string[] allScenes = AssetDatabase.FindAssets("t:Scene", new[] { "Assets/_Scenes" });
+            foreach (string guid in allScenes)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!paths.Contains(path) && File.Exists(path))
+                {
+                    paths.Add(path);
+                    names.Add(Path.GetFileNameWithoutExtension(path) + " (not in build)");
+                }
+            }
+
+            _scenePaths = paths.ToArray();
+            _sceneNames = names.ToArray();
+
+            // Try to match current session scene
+            if (_session != null && !string.IsNullOrEmpty(_session.ScenePath))
+            {
+                _selectedSceneIdx = Array.IndexOf(_scenePaths, _session.ScenePath);
+                if (_selectedSceneIdx < 0) _selectedSceneIdx = 0;
+            }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  REPORT MANAGEMENT
+        // ═════════════════════════════════════════════════════════════════════
 
         static readonly string ReportsDir = Path.Combine(Application.dataPath, "..", "BenchmarkReports");
 
