@@ -7,13 +7,6 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    [Serializable]
-    public struct ShipSelectionSlot
-    {
-        public VesselClassType vesselType;
-        public ShipSelectionItemView itemView;
-    }
-
     /// <summary>
     /// Type-driven ship selection view.
     /// - Each slot is bound to a VesselClassType.
