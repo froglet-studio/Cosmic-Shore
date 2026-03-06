@@ -1077,7 +1077,7 @@ MonoBehaviour:
     - {fileID: 5336919717917348301}
     - {fileID: 5764724588688564405}
     labelIcon: {fileID: 7765495972499482060}
-    normalLabelSprite: {fileID: 21300000, guid: cbac2ac9cd6900044b197490af5727f1,
+    normalLabelSprite: {fileID: 21300000, guid: ba0f49bfbc3c0a24c836d1fb4446432f,
       type: 3}
   - element: 2
     bgPips:
@@ -1113,7 +1113,7 @@ MonoBehaviour:
     - {fileID: 1444696947056910769}
     - {fileID: 3685619560591751681}
     labelIcon: {fileID: 6876775113113134987}
-    normalLabelSprite: {fileID: 21300000, guid: 1eb2c03794f55824d8e01e96c4fe7a3e,
+    normalLabelSprite: {fileID: 21300000, guid: 729a100b8ad2f8145a1fcbe2ac19d42f,
       type: 3}
   - element: 3
     bgPips:
@@ -1149,7 +1149,7 @@ MonoBehaviour:
     - {fileID: 3771388388741003530}
     - {fileID: 3798055573850905941}
     labelIcon: {fileID: 2073992627507280207}
-    normalLabelSprite: {fileID: 21300000, guid: 4e788082740141a45b47f1c51a5c15b0,
+    normalLabelSprite: {fileID: 21300000, guid: 5a2eaf0a05e3a1a4981382c56f47b0a4,
       type: 3}
   - element: 4
     bgPips:
@@ -1185,7 +1185,7 @@ MonoBehaviour:
     - {fileID: 2904775466500806123}
     - {fileID: 9131221931632565330}
     labelIcon: {fileID: 8690812660076800128}
-    normalLabelSprite: {fileID: 21300000, guid: 809450069823742448227b7dceef6fcc,
+    normalLabelSprite: {fileID: 21300000, guid: 819effa465b72bb45b905aedef472366,
       type: 3}
   zeroLineIndex: 5
   filledColor: {r: 1, g: 1, b: 1, a: 1}
