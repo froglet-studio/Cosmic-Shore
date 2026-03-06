@@ -32,6 +32,7 @@ namespace CosmicShore.Gameplay
                     if(!DoesEffectExist(mineShipEffects)) return;
                     foreach (var effect in mineShipEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(shipImpactee, this);
                     }
                     break;
@@ -39,6 +40,7 @@ namespace CosmicShore.Gameplay
                     if(!DoesEffectExist(mineProjectileEffects)) return;
                     foreach (var effect in mineProjectileEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(projectileImpactee, this);
                     }
                     break;
@@ -46,6 +48,7 @@ namespace CosmicShore.Gameplay
                     if(!DoesEffectExist(mineExplosionEffects)) return;
                     foreach (var effect in mineExplosionEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(explosionImpactee, this);
                     }
                     break;

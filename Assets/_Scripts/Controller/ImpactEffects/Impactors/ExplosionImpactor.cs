@@ -101,10 +101,11 @@ namespace CosmicShore.Gameplay
                     if(!DoesEffectExist(vesselExplosionEffects)) return;
                     foreach (var effect in vesselExplosionEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(vesselImpactee, this);
                     }
                     break;
-                
+
                 case PrismImpactor prismImpactee:
                     ExecuteCommonPrismCommands(prismImpactee.Prism, impactVector);
                     if (!explosionImpactorDataContainer) return;
@@ -112,6 +113,7 @@ namespace CosmicShore.Gameplay
                     if(!DoesEffectExist(explosionPrismEffects)) return;
                     foreach (var effect in explosionPrismEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(this, prismImpactee);
                     }
                     break;

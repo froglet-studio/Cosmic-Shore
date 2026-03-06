@@ -57,7 +57,10 @@ namespace CosmicShore.Gameplay
                     {
                         CrystalImpactData data = CrystalImpactData.FromCrystal(Crystal);
                         foreach (var effect in omniCrystalShipEffects)
+                        {
+                            if (effect == null) continue;
                             effect.Execute(shipImpactee, data);
+                        }
                     }
                     
                     Crystal.Respawn();
