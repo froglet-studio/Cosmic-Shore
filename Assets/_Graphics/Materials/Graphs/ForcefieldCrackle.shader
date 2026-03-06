@@ -40,7 +40,7 @@ Shader "Shader Graphs/ForcefieldCrackle"
             Blend One One          // Additive blending
             ZWrite Off
             ZTest LEqual
-            Cull Back              // Single-sided — no additive double-draw
+            Cull Off               // Render both sides so it's visible from inside
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -83,11 +83,14 @@ Shader "Shader Graphs/ForcefieldCrackle"
                 return output;
             }
 
-            half4 frag(Varyings input) : SV_Target
+            half4 frag(Varyings input, half facing : VFACE) : SV_Target
             {
+                // Flip normal for back faces so fresnel works from inside the sphere
+                float3 normal = input.normalOS * (facing > 0 ? 1.0 : -1.0);
+
                 float3 emissionColor;
                 float alpha;
-                ForcefieldCrackle_float(input.positionOS, input.normalOS, input.viewDirOS, emissionColor, alpha);
+                ForcefieldCrackle_float(input.positionOS, normal, input.viewDirOS, emissionColor, alpha);
 
                 // Apply fog
                 emissionColor = MixFog(emissionColor, input.fogFactor);
