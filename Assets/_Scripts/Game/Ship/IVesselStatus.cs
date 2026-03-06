@@ -120,6 +120,8 @@ namespace CosmicShore.Game
         // Renamed: IShipHUDController -> IVesselHUDController
         IVesselHUDController VesselHUDController { get; }
 
+        Vessel3DCanvas Vessel3DCanvas { get; }
+
         VesselCustomization Customization { get; }
         R_VesselActionHandler ActionHandler { get; }
 

@@ -58,6 +58,9 @@ namespace CosmicShore.Game
         }
 
 
+        [SerializeField] private Vessel3DCanvas vessel3DCanvas;
+        public Vessel3DCanvas Vessel3DCanvas => vessel3DCanvas;
+
         [SerializeField] protected float boostMultiplier = 4f;
         public float BoostMultiplier
         {

@@ -108,6 +108,9 @@ namespace CosmicShore.Game
                 CSDebug.LogWarning($"[VesselController] VesselHUDController is null on {name}. HUD will not function.");
             }
 
+            if (VesselStatus.Vessel3DCanvas)
+                VesselStatus.Vessel3DCanvas.Initialize();
+
             if (VesselStatus.NearFieldSkimmer)
                 VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
 
