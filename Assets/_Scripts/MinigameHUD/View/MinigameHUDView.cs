@@ -109,7 +109,7 @@ namespace CosmicShore.Game.UI
             }
         }
 
-        public void ToggleConnectingPanel(bool active)
+        public void ToggleConnectingPanel(bool active, GameModes gameMode = GameModes.Random)
         {
             if (!connectingPanelCanvasGroup) return;
 
@@ -122,7 +122,10 @@ namespace CosmicShore.Game.UI
             {
                 // Enable/disable the ConnectingPanel component so OnEnable picks a random sprite
                 if (connectingPanel != null)
+                {
                     connectingPanel.enabled = true;
+                    connectingPanel.StartTips(gameMode);
+                }
 
                 connectingPanelCanvasGroup.interactable = true;
                 connectingPanelCanvasGroup.blocksRaycasts = true;
@@ -133,6 +136,9 @@ namespace CosmicShore.Game.UI
             else
             {
                 StopConnectingAnimations();
+
+                if (connectingPanel != null)
+                    connectingPanel.StopTips();
 
                 _connectingFadeTween = connectingPanelCanvasGroup.DOFade(0f, duration).SetUpdate(unscaled)
                     .OnComplete(() =>

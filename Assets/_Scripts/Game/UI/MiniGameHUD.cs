@@ -358,7 +358,7 @@ namespace CosmicShore.Game.UI
             UpdateLifeformCounterDisplay("0");
             view.UpdateScoreUI("0");
 
-            view.ToggleConnectingPanel(true);
+            view.ToggleConnectingPanel(true, gameData != null ? gameData.GameMode : GameModes.Random);
             ToggleReadyButton(false);
 
             RunConnectingMinimum().Forget();
