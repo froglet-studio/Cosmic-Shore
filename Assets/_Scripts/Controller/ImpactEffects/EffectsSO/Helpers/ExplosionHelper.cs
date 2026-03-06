@@ -22,6 +22,7 @@ namespace CosmicShore.Gameplay
             if (impactor?.Vessel?.VesselStatus == null) return;
 
             var ss = impactor.Vessel.VesselStatus;
+            if (ss.Vessel == null || ss.ShipTransform == null) return;
             var shipTransform = ss.ShipTransform;
 
             var init = new AOEExplosion.InitializeStruct
@@ -49,6 +50,7 @@ namespace CosmicShore.Gameplay
 
             var proj = impactor.Projectile;
             var ss   = proj.VesselStatus;
+            if (ss?.Vessel == null) return;
 
             var init = new AOEExplosion.InitializeStruct
             {
