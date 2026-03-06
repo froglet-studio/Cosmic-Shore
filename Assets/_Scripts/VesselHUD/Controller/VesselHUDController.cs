@@ -1,3 +1,4 @@
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -10,19 +11,43 @@ namespace CosmicShore.Game
         [Header("Legacy Silhouette")]
         [SerializeField] private SilhouetteController silhouette;
 
+        [Header("Score Popup")]
+        [SerializeField] private ScorePopup scorePopup;
+
+        [Tooltip("Used to check the active game mode for score popup filtering.")]
+        [SerializeField] private GameDataSO gameData;
+
         protected R_VesselActionHandler Actions { get; private set; }
         protected VesselHUDView View => baseView;
 
-        private void OnDestroy() => UnsubscribeFromEvents();
+        private IVesselStatus _vesselStatusBase;
+        private float _previousScore;
+
+        // Game modes where the score popup should NOT appear
+        static readonly System.Collections.Generic.HashSet<GameModes> _excludedModes = new()
+        {
+            GameModes.Freestyle,
+            GameModes.MultiplayerFreestyle,
+            GameModes.WildlifeBlitz,
+            GameModes.MultiplayerWildlifeBlitzGame,
+        };
+
+        private void OnDestroy()
+        {
+            UnsubscribeFromEvents();
+            UnsubscribeScorePopup();
+        }
 
         public virtual void Initialize(IVesselStatus vesselStatus)
         {
+            _vesselStatusBase = vesselStatus;
             Actions = vesselStatus.ActionHandler;
 
             if (!baseView)
                 baseView = GetComponentInChildren<VesselHUDView>(true);
 
             baseView?.Initialize();
+            InitializeScorePopup(vesselStatus);
         }
 
         public void SubscribeToEvents()
@@ -63,6 +88,58 @@ namespace CosmicShore.Game
 
             if (silhouette != null)
                 silhouette.SetBlockPrefab(prefab);
+        }
+
+        // ---------------------------------------------------------------
+        // Score Popup
+        // ---------------------------------------------------------------
+
+        private void InitializeScorePopup(IVesselStatus vesselStatus)
+        {
+            if (!scorePopup) return;
+
+            // Only show score popup for local player
+            if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser)
+                return;
+
+            // Skip excluded game modes
+            if (gameData && _excludedModes.Contains(gameData.GameMode))
+                return;
+
+            var canvas = vesselStatus.Vessel3DCanvas;
+            if (!canvas) return;
+
+            scorePopup.Initialize(canvas);
+
+            // Track score and subscribe
+            var roundStats = vesselStatus.Player?.RoundStats;
+            if (roundStats != null)
+            {
+                _previousScore = roundStats.Score;
+                roundStats.OnScoreChanged += HandleScoreChanged;
+            }
+        }
+
+        private void UnsubscribeScorePopup()
+        {
+            var roundStats = _vesselStatusBase?.Player?.RoundStats;
+            if (roundStats != null)
+                roundStats.OnScoreChanged -= HandleScoreChanged;
+        }
+
+        private void HandleScoreChanged()
+        {
+            if (!scorePopup || _vesselStatusBase?.Player?.RoundStats == null) return;
+
+            float currentScore = _vesselStatusBase.Player.RoundStats.Score;
+            float delta = currentScore - _previousScore;
+            _previousScore = currentScore;
+
+            if (delta > 0f)
+            {
+                int points = Mathf.Max(1, Mathf.RoundToInt(delta));
+                scorePopup.ShowScorePoint(points);
+            }
         }
     }
 }
