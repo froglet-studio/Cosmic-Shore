@@ -3,79 +3,61 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// Creates and manages a World Space canvas positioned above the vessel.
-    /// Attach this to the vessel prefab root (or a child).
-    /// Call <see cref="Initialize"/> after the vessel is fully set up.
+    /// Manages a manually-created World Space canvas on the vessel prefab.
+    /// Set up the Canvas in the editor, assign it here, then call <see cref="Initialize"/>.
     /// </summary>
     public class Vessel3DCanvas : MonoBehaviour
     {
         [Header("Settings")]
         [SerializeField] private Vessel3DCanvasSettingsSO settings;
 
-        [Header("Content (optional)")]
-        [Tooltip("If set, this prefab is instantiated as the canvas content on Initialize.")]
-        [SerializeField] private GameObject contentPrefab;
+        [Header("Canvas Reference")]
+        [Tooltip("Assign the World Space Canvas you created in the editor.")]
+        [SerializeField] private Canvas canvas;
 
-        Canvas _canvas;
-        RectTransform _canvasRect;
         Transform _cameraTransform;
 
-        public Canvas Canvas => _canvas;
-        public RectTransform ContentRoot => _canvasRect;
+        public Canvas Canvas => canvas;
+        public RectTransform ContentRoot => canvas ? canvas.GetComponent<RectTransform>() : null;
 
         public void Initialize()
         {
-            BuildCanvas();
-            ApplySettings();
-
-            if (contentPrefab)
+            if (!canvas)
             {
-                var instance = Instantiate(contentPrefab, _canvasRect);
-                var rt = instance.GetComponent<RectTransform>();
-                if (rt)
-                {
-                    rt.anchoredPosition = Vector2.zero;
-                    rt.localScale = Vector3.one;
-                }
+                Debug.LogError($"[Vessel3DCanvas] No Canvas assigned on {gameObject.name}. " +
+                               "Create a World Space Canvas as a child and assign it.", this);
+                return;
             }
-        }
 
-        void BuildCanvas()
-        {
-            var canvasGO = new GameObject("Vessel3DCanvas");
-            canvasGO.transform.SetParent(transform, false);
-
-            _canvas = canvasGO.AddComponent<Canvas>();
-            _canvas.renderMode = RenderMode.WorldSpace;
-
-            _canvasRect = _canvas.GetComponent<RectTransform>();
+            ApplySettings();
         }
 
         void ApplySettings()
         {
+            var canvasRect = canvas.GetComponent<RectTransform>();
+
             if (!settings)
             {
-                // Sensible defaults when no SO is assigned
-                _canvasRect.localPosition = new Vector3(0f, 2f, 0f);
-                _canvasRect.sizeDelta = new Vector2(100f, 50f);
-                _canvas.sortingOrder = 10;
+                canvasRect.localPosition = new Vector3(0f, 2f, 0f);
+                canvasRect.sizeDelta = new Vector2(100f, 50f);
+                canvas.sortingOrder = 10;
                 return;
             }
 
-            _canvasRect.localPosition = settings.localOffset;
-            _canvasRect.sizeDelta = settings.canvasSize * settings.pixelsPerUnit;
-            _canvasRect.localScale = Vector3.one / settings.pixelsPerUnit;
-            _canvas.sortingOrder = settings.sortingOrder;
+            canvasRect.localPosition = settings.localOffset;
+            canvasRect.sizeDelta = settings.canvasSize * settings.pixelsPerUnit;
+            canvasRect.localScale = Vector3.one / settings.pixelsPerUnit;
+            canvas.sortingOrder = settings.sortingOrder;
         }
 
         void LateUpdate()
         {
-            if (!_canvas || !ShouldBillboard()) return;
+            if (!canvas || !ShouldBillboard()) return;
 
             EnsureCamera();
             if (!_cameraTransform) return;
 
-            var canvasTransform = _canvas.transform;
+            var canvasTransform = canvas.transform;
             if (settings && settings.lockVerticalAxis)
             {
                 var lookDir = _cameraTransform.position - canvasTransform.position;
