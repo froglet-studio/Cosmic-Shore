@@ -60,9 +60,9 @@ namespace CosmicShore.App.UI.Views
         {
             LoadoutSystem.Init();
 
-            // Disable Daily Challenge card
+            // Show Daily Challenge card but disable interaction
             if (DailyChallengeCard != null)
-                DailyChallengeCard.gameObject.SetActive(false);
+                DailyChallengeCard.SetComingSoon();
 
             // Wire QuickPlay button
             if (QuickPlayButton != null)
@@ -76,11 +76,12 @@ namespace CosmicShore.App.UI.Views
             GameCards = new List<GameCard>();
             ArcadeDPadNav.AddRow(new List<Button>());
 
-            // Only add QuickPlay to nav row 0 (Daily Challenge is disabled)
+            // Add top-row buttons to nav row 0
+            if (DailyChallengeCard != null && DailyChallengeCard.gameObject.activeSelf
+                && DailyChallengeCard.TryGetComponent<Button>(out var dcButton))
+                ArcadeDPadNav.AddButtonToRow(dcButton, 0);
             if (QuickPlayButton != null)
                 ArcadeDPadNav.AddButtonToRow(QuickPlayButton, 0);
-            else if (DailyChallengeCard != null && DailyChallengeCard.gameObject.activeSelf)
-                ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
@@ -195,6 +196,7 @@ namespace CosmicShore.App.UI.Views
 
         /// <summary>
         /// Launches the latest unlocked game in the quest chain at the highest unlocked intensity.
+        /// Always single-player. Randomly selects from unlocked vessels only.
         /// </summary>
         void LaunchQuickPlay()
         {
@@ -212,7 +214,6 @@ namespace CosmicShore.App.UI.Views
                 if (quest == null || quest.IsPlaceholder) continue;
                 if (!progressionService.IsGameModeUnlocked(quest.GameMode)) continue;
 
-                // Find the matching SO_ArcadeGame
                 latestGame = GameList.Games.FirstOrDefault(g => g.Mode == quest.GameMode);
                 if (latestGame != null) break;
             }
@@ -222,14 +223,14 @@ namespace CosmicShore.App.UI.Views
             int maxIntensity = progressionService.GetMaxUnlockedIntensity(latestGame.Mode);
             if (maxIntensity <= 0) maxIntensity = latestGame.MinIntensity;
 
-            // Use default vessel (Dolphin, or first available)
-            var vessel = latestGame.Vessels?.FirstOrDefault(v => v != null && !v.IsLocked && v.Class == VesselClassType.Dolphin)
-                         ?? latestGame.Vessels?.FirstOrDefault(v => v != null && !v.IsLocked);
-            var vesselType = vessel != null ? vessel.Class : VesselClassType.Dolphin;
-            var resources = vessel != null ? vessel.InitialResourceLevels : new ResourceCollection(.5f, .5f, .5f, .5f);
+            // Collect only unlocked vessels and pick one at random
+            var unlockedVessels = latestGame.Vessels?.Where(v => v != null && !v.IsLocked).ToList();
+            if (unlockedVessels == null || unlockedVessels.Count == 0) return;
+
+            var vessel = unlockedVessels[UnityEngine.Random.Range(0, unlockedVessels.Count)];
 
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
-            Arcade.Instance.LaunchArcadeGame(latestGame.Mode, vesselType, resources, maxIntensity, 1, latestGame.IsMultiplayer, false);
+            Arcade.Instance.LaunchArcadeGame(latestGame.Mode, vessel.Class, vessel.InitialResourceLevels, maxIntensity, 1, false, false);
         }
     }
 }
