@@ -10,6 +10,7 @@ namespace CosmicShore.UI
         public string displayName;
         public int avatarId;
         public int crystalBalance;
+        public int xp;
         public List<string> unlockedRewardIds = new();
     }
 }

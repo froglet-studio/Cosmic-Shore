@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using Reflex.Attributes;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace CosmicShore.UI
 {
     public class GameCard : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         [Header("Resources")]
         [SerializeField] SO_GameList AllGames;
         [SerializeField] Sprite StarIconActive;
@@ -72,7 +74,7 @@ namespace CosmicShore.UI
 
             FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType);
 
-            if (game.CallToActionTargetType == Systems.CTA.CallToActionTargetType.PlayGameFreestyle)
+            if (game.CallToActionTargetType == CallToActionTargetType.PlayGameFreestyle)
             {
                 GetComponent<Button>().onClick.AddListener(delegate { FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType); });
             }
@@ -83,14 +85,14 @@ namespace CosmicShore.UI
         {
             Favorited = !Favorited;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
             FavoriteSystem.ToggleFavorite(gameMode);
             ExploreView.PopulateGameSelectionList();
         }
 
         public void OnCardClicked()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
             CSDebug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
         }
 
