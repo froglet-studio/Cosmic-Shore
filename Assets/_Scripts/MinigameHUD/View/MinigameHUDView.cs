@@ -1,6 +1,7 @@
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
@@ -58,6 +59,19 @@ namespace CosmicShore.Game.UI
                     hackerTextAnimator = panelGO.GetComponentInChildren<DoTweenTypewriterAnimator>();
                 if (dotsAnimator == null)
                     dotsAnimator = panelGO.GetComponentInChildren<ConnectingDotsAnimator>();
+            }
+        }
+
+        private void Update()
+        {
+            // Gamepad A presses the Ready button when it's visible
+            if (Gamepad.current != null &&
+                Gamepad.current.buttonSouth.wasPressedThisFrame &&
+                readyButton != null &&
+                readyButton.gameObject.activeSelf &&
+                readyButton.interactable)
+            {
+                readyButton.onClick.Invoke();
             }
         }
 

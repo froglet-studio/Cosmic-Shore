@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
@@ -78,6 +79,18 @@ namespace CosmicShore.Game.Cinematics
 
             if (continueButton)
                 continueButton.onClick.RemoveListener(HandleContinueButtonClicked);
+        }
+
+        private void Update()
+        {
+            if (Gamepad.current == null) return;
+
+            // A button presses the continue button when it's visible
+            if (Gamepad.current.buttonSouth.wasPressedThisFrame &&
+                continueButton != null && continueButton.gameObject.activeSelf)
+            {
+                HandleContinueButtonClicked();
+            }
         }
 
         #region Panel Visibility
