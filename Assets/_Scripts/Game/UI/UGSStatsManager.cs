@@ -165,13 +165,13 @@ namespace CosmicShore.Game.Analytics
         {
             if (!_isReady || telemetry == null || string.IsNullOrEmpty(vesselTypeName))
             {
-                Debug.LogWarning($"[UGSStats] ReportVesselTelemetry skipped — " +
+                CSDebug.LogWarning($"[UGSStats] ReportVesselTelemetry skipped — " +
                     $"ready={_isReady}, telemetry={(telemetry != null ? telemetry.GetType().Name : "NULL")}, " +
                     $"vessel='{vesselTypeName}'");
                 return;
             }
 
-            Debug.Log($"[UGSStats] ReportVesselTelemetry — {telemetry.GetType().Name} for '{vesselTypeName}', " +
+            CSDebug.Log($"[UGSStats] ReportVesselTelemetry — {telemetry.GetType().Name} for '{vesselTypeName}', " +
                 $"drift={telemetry.MaxDriftTime:F2}s, boost={telemetry.MaxBoostTime:F2}s, " +
                 $"prismsDmg={telemetry.PrismsDamaged}");
 
@@ -189,14 +189,14 @@ namespace CosmicShore.Game.Analytics
             switch (telemetry)
             {
                 case SparrowVesselTelemetry sparrow:
-                    Debug.Log($"[UGSStats] Sparrow stats — prismBlocks={sparrow.PrismBlocksShot}, " +
+                    CSDebug.Log($"[UGSStats] Sparrow stats — prismBlocks={sparrow.PrismBlocksShot}, " +
                         $"skyburst={sparrow.SkyburstMissilesShot}, dangerBlocks={sparrow.DangerBlocksSpawned}");
                     stats.IncrementCounter("PrismBlocksShot", sparrow.PrismBlocksShot);
                     stats.IncrementCounter("SkyburstMissilesShot", sparrow.SkyburstMissilesShot);
                     stats.IncrementCounter("DangerBlocksSpawned", sparrow.DangerBlocksSpawned);
                     break;
                 case SquirrelVesselTelemetry squirrel:
-                    Debug.Log($"[UGSStats] Squirrel stats — jousts={squirrel.JoustsWon}, " +
+                    CSDebug.Log($"[UGSStats] Squirrel stats — jousts={squirrel.JoustsWon}, " +
                         $"stolen={squirrel.PrismsStolen}, cleanStreak={squirrel.MaxCleanStreak}");
                     stats.IncrementCounter("JoustsWon", squirrel.JoustsWon);
                     stats.IncrementCounter("PrismsStolen", squirrel.PrismsStolen);
@@ -223,7 +223,7 @@ namespace CosmicShore.Game.Analytics
                 var evt = new CustomEvent(UGSKeys.EventPlayAgain);
                 AnalyticsService.Instance.RecordEvent(evt);
                 AnalyticsService.Instance.Flush();
-                Debug.Log("[UGSStats] Play Again analytics event sent.");
+                CSDebug.Log("[UGSStats] Play Again analytics event sent.");
             }
             catch (Exception ex)
             {

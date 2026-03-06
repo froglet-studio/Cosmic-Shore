@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Game.UI;
 using CosmicShore.Soap;
+using CosmicShore.Utility;
 using UnityEngine;
 using Obvious.Soap;
 using UnityEngine.Events;
@@ -280,7 +281,7 @@ namespace CosmicShore.Game.ShapeDrawing
 
             if (guideLine) guideLine.enabled = true;
 
-            Debug.Log($"[ShapeDrawing] Drawing started. VesselStatus: {(_vesselStatus != null ? "OK" : "NULL")}");
+            CSDebug.Log($"[ShapeDrawing] Drawing started. VesselStatus: {(_vesselStatus != null ? "OK" : "NULL")}");
         }
 
         /// <summary>
@@ -582,7 +583,7 @@ namespace CosmicShore.Game.ShapeDrawing
             {
                 _trackingPath = true;
                 _nextSampleTime = Time.time;
-                Debug.Log("[ShapeDrawing] First crystal hit — tracking started.");
+                CSDebug.Log("[ShapeDrawing] First crystal hit — tracking started.");
             }
 
             _currentWaypointIndex++;
@@ -839,7 +840,7 @@ namespace CosmicShore.Game.ShapeDrawing
 
             var score = CalculateScore();
 
-            Debug.Log($"[ShapeDrawing] ── Shape Complete ──────────────────────\n" +
+            CSDebug.Log($"[ShapeDrawing] ── Shape Complete ──────────────────────\n" +
                       $"  Shape:        {score.ShapeName}\n" +
                       $"  Elapsed:      {score.ElapsedTime:F2}s  (par {_activeShape.parTime:F1}s)\n" +
                       $"  Accuracy:     {score.AccuracyPercent:F1}%\n" +
@@ -939,7 +940,7 @@ namespace CosmicShore.Game.ShapeDrawing
             File.WriteAllBytes(filePath, screenshot.EncodeToPNG());
             Object.Destroy(screenshot);
 
-            Debug.Log($"[ShapeDrawing] Screenshot saved (UI excluded): {filePath}");
+            CSDebug.Log($"[ShapeDrawing] Screenshot saved (UI excluded): {filePath}");
         }
     }
 }
