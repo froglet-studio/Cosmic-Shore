@@ -290,7 +290,7 @@ namespace CosmicShore.UI
             if (teamsValueText)
                 teamsValueText.text = "3";
 
-            if (teamSelectionPanel && gameData.LocalPlayer is Player localPlayer)
+            if (teamSelectionPanel && gameData && gameData.LocalPlayer is Player localPlayer)
                 teamSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
         }
 
@@ -427,7 +427,7 @@ namespace CosmicShore.UI
 
         void HandleTeamSelected(Domains domain)
         {
-            if (gameData.LocalPlayer is not Player player) return;
+            if (!gameData || gameData.LocalPlayer is not Player player) return;
             if (!player.IsOwner) return;
             player.NetDomain.Value = domain;
         }
@@ -751,7 +751,7 @@ namespace CosmicShore.UI
         /// </summary>
         void SyncLocalPlayerVesselType(SO_Vessel ship)
         {
-            if (gameData.LocalPlayer is not Player localPlayer) return;
+            if (!gameData || gameData.LocalPlayer is not Player localPlayer) return;
             if (!localPlayer.IsOwner) return;
 
             var vesselType = ship ? ship.Class : VesselClassType.Dolphin;
