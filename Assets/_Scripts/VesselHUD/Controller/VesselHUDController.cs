@@ -122,7 +122,7 @@ namespace CosmicShore.Game
             if (roundStats == null) return;
 
             // Subscribe to the correct stat event based on game mode
-            var mode = gameData ? gameData.GameMode : GameModes.None;
+            var mode = gameData ? gameData.GameMode : GameModes.Random;
 
             switch (mode)
             {
