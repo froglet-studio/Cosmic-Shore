@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -14,12 +13,8 @@ namespace CosmicShore.Gameplay
     /// Attach to minigame scene alongside the minigame controller. Assign a comeback profile
     /// to configure per-vessel, per-element weights.
     ///
-    /// Example: In HexRace with SpaceWeight=1 and source=CrystalsCollected,
-    /// a player 4 crystals behind the leader gets Space element +4, growing their skimmer.
-    /// In CrystalCapture with TimeWeight=1 and source=Score, the losing player speeds up.
-    ///
-    /// Also detects overtake events: when a player who was leading gets overtaken,
-    /// all their elemental values slam to -5 and gradually recover to 0.
+    /// Operates only in the 0.0–1.5 normalized range (levels 0–15). The first 5 base pips
+    /// (levels -5 to 0) are reserved for the overtake impact effect and are never touched here.
     /// </summary>
     public class ElementalComebackSystem : MonoBehaviour
     {
@@ -48,27 +43,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("How often (in seconds) to recalculate comeback buffs")]
         [SerializeField] float updateInterval = 1f;
 
-        [Header("Overtake Penalty")]
-        [Tooltip("Enable the overtake penalty system")]
-        [SerializeField] bool enableOvertakePenalty = true;
-        [Tooltip("Normalized level to slam elements to on overtake (-0.5 = level -5)")]
-        [SerializeField] float overtakePenaltyLevel = -0.5f;
-        [Tooltip("Seconds to recover from penalty back to baseline (0)")]
-        [SerializeField] float overtakeRecoveryDuration = 3f;
-
         [Header("Debug")]
         [SerializeField] bool debugLogging;
-
-        /// <summary>
-        /// Fired when a player gets overtaken. String parameter is the player name.
-        /// HUD systems can subscribe to trigger visual juice.
-        /// </summary>
-        public event Action<string> OnPlayerOvertaken;
-        public event Action<string> OnPlayerOvertakeRecovered;
-
-        /// <summary>Static events for systems without a direct reference (e.g. SilhouetteController).</summary>
-        public static event Action<string> OnOvertakePenaltyApplied;
-        public static event Action<string> OnOvertakePenaltyRecovered;
 
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
@@ -76,10 +52,6 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<string, float[]> _baselines = new();
         float _lastUpdateTime;
         bool _isActive;
-
-        // Overtake tracking
-        string _currentLeaderName;
-        readonly Dictionary<string, float> _overtakePenaltyTimers = new();
 
         void OnEnable()
         {
@@ -119,8 +91,6 @@ namespace CosmicShore.Gameplay
 
             _isActive = true;
             _baselines.Clear();
-            _overtakePenaltyTimers.Clear();
-            _currentLeaderName = null;
 
             foreach (var player in gameData.Players)
             {
@@ -166,36 +136,10 @@ namespace CosmicShore.Gameplay
         {
             if (!_isActive || comebackProfile == null) return;
 
-            // Tick overtake penalty recovery every frame for smooth interpolation
-            if (enableOvertakePenalty)
-                TickOvertakeRecovery();
-
-            // Check for overtake every frame so it registers instantly
-            if (enableOvertakePenalty)
-                CheckForOvertake();
-
             if (Time.time - _lastUpdateTime < updateInterval) return;
 
             _lastUpdateTime = Time.time;
             ApplyComebackBuffs();
-        }
-
-        void CheckForOvertake()
-        {
-            var players = gameData.Players;
-            if (players == null || players.Count < 2) return;
-
-            float leaderValue = GetLeaderValue();
-            string newLeaderName = FindLeaderName(leaderValue);
-
-            if (_currentLeaderName != null
-                && newLeaderName != null
-                && _currentLeaderName != newLeaderName)
-            {
-                ApplyOvertakePenalty(_currentLeaderName);
-            }
-
-            _currentLeaderName = newLeaderName;
         }
 
         void ApplyComebackBuffs()
@@ -212,10 +156,6 @@ namespace CosmicShore.Gameplay
                 if (rs == null) continue;
                 if (!_baselines.TryGetValue(player.Name, out var baseline)) continue;
 
-                // Skip normal comeback buff while player is recovering from overtake penalty
-                if (_overtakePenaltyTimers.ContainsKey(player.Name))
-                    continue;
-
                 float playerValue = GetPlayerValue(player);
                 float scoreDiff = CalculateScoreDifference(leaderValue, playerValue);
 
@@ -228,6 +168,9 @@ namespace CosmicShore.Gameplay
                     float weight = config.GetWeight(element);
                     float bonusLevels = scoreDiff * weight;
                     float targetNormalized = baseline[i] + (bonusLevels / 10f);
+
+                    // Clamp to 0.0–1.5 — never touch the base pips (below 0)
+                    targetNormalized = Mathf.Clamp(targetNormalized, 0f, 1.5f);
 
                     rs.SetElementLevel(element, targetNormalized);
                 }
@@ -245,7 +188,9 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < AllElements.Length; i++)
             {
                 float initialLevel = config.GetInitialLevel(AllElements[i]);
-                rs.SetElementLevel(AllElements[i], initialLevel / 10f);
+                // Clamp initial values to 0.0–1.5 range
+                float normalized = Mathf.Clamp(initialLevel / 10f, 0f, 1.5f);
+                rs.SetElementLevel(AllElements[i], normalized);
             }
         }
 
@@ -283,10 +228,6 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        /// <summary>
-        /// For CrystalsCollected the leader has MORE crystals (higher is better).
-        /// For Score it depends on useGolfRules (golf = lower is better).
-        /// </summary>
         bool IsHigherBetter()
         {
             return differenceSource switch
@@ -297,129 +238,11 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        /// <summary>
-        /// Returns a non-negative value representing how far behind this player is.
-        /// 0 for the leader; positive for everyone else.
-        /// </summary>
         float CalculateScoreDifference(float leaderValue, float playerValue)
         {
             return IsHigherBetter()
                 ? Mathf.Max(0f, leaderValue - playerValue)
                 : Mathf.Max(0f, playerValue - leaderValue);
-        }
-
-        // ---------------------------------------------------------------
-        // Overtake penalty — slam elements to -5, recover to 0
-        // ---------------------------------------------------------------
-
-        string FindLeaderName(float leaderValue)
-        {
-            var players = gameData.Players;
-            if (players == null) return null;
-
-            for (int i = 0; i < players.Count; i++)
-            {
-                float v = GetPlayerValue(players[i]);
-                if (Mathf.Approximately(v, leaderValue))
-                    return players[i].Name;
-            }
-            return null;
-        }
-
-        void ApplyOvertakePenalty(string playerName)
-        {
-            var players = gameData.Players;
-            if (players == null) return;
-
-            IPlayer target = null;
-            for (int i = 0; i < players.Count; i++)
-            {
-                if (players[i].Name == playerName)
-                {
-                    target = players[i];
-                    break;
-                }
-            }
-
-            if (target == null) return;
-
-            var rs = GetResourceSystem(target);
-            if (rs == null) return;
-
-            // Slam all elements to penalty level (-5)
-            for (int i = 0; i < AllElements.Length; i++)
-                rs.SetElementLevel(AllElements[i], overtakePenaltyLevel);
-
-            // Start recovery timer
-            _overtakePenaltyTimers[playerName] = 0f;
-
-            if (debugLogging)
-                CSDebug.Log($"[ElementalComebackSystem] OVERTAKE PENALTY applied to {playerName}! " +
-                          $"All elements slammed to {overtakePenaltyLevel * 10f:F0}");
-
-            OnPlayerOvertaken?.Invoke(playerName);
-            OnOvertakePenaltyApplied?.Invoke(playerName);
-        }
-
-        void TickOvertakeRecovery()
-        {
-            if (_overtakePenaltyTimers.Count == 0) return;
-
-            var players = gameData.Players;
-            if (players == null) return;
-
-            // Collect completed recoveries to remove after iteration
-            List<string> completed = null;
-
-            foreach (var kvp in _overtakePenaltyTimers)
-            {
-                string playerName = kvp.Key;
-                float elapsed = kvp.Value + Time.deltaTime;
-
-                IPlayer target = null;
-                for (int i = 0; i < players.Count; i++)
-                {
-                    if (players[i].Name == playerName)
-                    {
-                        target = players[i];
-                        break;
-                    }
-                }
-
-                if (target == null) continue;
-
-                var rs = GetResourceSystem(target);
-                if (rs == null) continue;
-
-                float t = Mathf.Clamp01(elapsed / overtakeRecoveryDuration);
-                // Lerp from penalty level to 0 (baseline)
-                float currentLevel = Mathf.Lerp(overtakePenaltyLevel, 0f, t);
-
-                for (int i = 0; i < AllElements.Length; i++)
-                    rs.SetElementLevel(AllElements[i], currentLevel);
-
-                if (t >= 1f)
-                {
-                    completed ??= new List<string>();
-                    completed.Add(playerName);
-
-                    OnPlayerOvertakeRecovered?.Invoke(playerName);
-                    OnOvertakePenaltyRecovered?.Invoke(playerName);
-
-                    if (debugLogging)
-                        CSDebug.Log($"[ElementalComebackSystem] {playerName} recovered from overtake penalty.");
-                }
-            }
-
-            // Update timers (can't modify during foreach, so rebuild)
-            var keys = new List<string>(_overtakePenaltyTimers.Keys);
-            foreach (var key in keys)
-            {
-                if (completed != null && completed.Contains(key))
-                    _overtakePenaltyTimers.Remove(key);
-                else
-                    _overtakePenaltyTimers[key] = _overtakePenaltyTimers[key] + Time.deltaTime;
-            }
         }
 
         static ResourceSystem GetResourceSystem(IPlayer player)

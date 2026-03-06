@@ -3,6 +3,8 @@ using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.UI;
+using CosmicShore.Core;
+
 namespace CosmicShore.Gameplay
 {
     public class SilhouetteController : MonoBehaviour
@@ -49,9 +51,6 @@ namespace CosmicShore.Gameplay
 
             TrySubscribeResources();
 
-            ElementalComebackSystem.OnOvertakePenaltyApplied += HandleOvertakePenaltyApplied;
-            ElementalComebackSystem.OnOvertakePenaltyRecovered += HandleOvertakePenaltyRecovered;
-
             //flower explosion
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion += HandleMantaFlowerExplosion;
         }
@@ -72,9 +71,6 @@ namespace CosmicShore.Gameplay
 
             TryUnsubscribeResources();
             TryUnsubscribeElementBars();
-
-            ElementalComebackSystem.OnOvertakePenaltyApplied -= HandleOvertakePenaltyApplied;
-            ElementalComebackSystem.OnOvertakePenaltyRecovered -= HandleOvertakePenaltyRecovered;
 
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
         }
@@ -237,20 +233,6 @@ namespace CosmicShore.Gameplay
         void HandleElementLevelChanged(Element element, int level)
         {
             elementBars?.SetLevel(element, level);
-        }
-
-        // --- Overtake ---
-        void HandleOvertakePenaltyApplied(string playerName)
-        {
-            if (_status == null || _status.PlayerName != playerName) return;
-            elementBars?.BeginOvertake();
-            elementBars?.JuiceOvertakePenalty();
-        }
-
-        void HandleOvertakePenaltyRecovered(string playerName)
-        {
-            if (_status == null || _status.PlayerName != playerName) return;
-            elementBars?.EndOvertake();
         }
 
         /// <summary>
