@@ -4803,6 +4803,7 @@ MonoBehaviour:
   rematchDeniedText: {fileID: 4417955567440517670}
   playAgainButton: {fileID: 0}
   rematchPanelAutoDismissSeconds: 2
+  animSettings: {fileID: 0}
 --- !u!1 &4505094612981188546
 GameObject:
   m_ObjectHideFlags: 0
@@ -7437,7 +7438,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -45, y: -12}
-  m_SizeDelta: {x: 75, y: 75}
+  m_SizeDelta: {x: 65, y: 65}
   m_Pivot: {x: 1, y: 1}
 --- !u!222 &5497835174443352329
 CanvasRenderer:
@@ -7459,7 +7460,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 2100000, guid: 818593555994e214ea75fcbb04d3558b, type: 2}
+  m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -7467,7 +7468,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 707a9687e00ef94409a1490cc3894a90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 318d4882d142ac0489312d84222e4681, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -7583,7 +7584,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ActiveMenuScreens: 
   ActiveModalWindows: 
-  activationButton: 12
+  activationButton: 7
   activationButtonImage: {fileID: 1555798096597751640}
   TriangleButtonSprite: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
     type: 3}
@@ -7602,7 +7603,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5497835174443352335}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ab5bb3a7e3f94a54c9f2436c5d375c16, type: 3}
   m_Name: 
@@ -7827,6 +7828,7 @@ MonoBehaviour:
   playerScoreContainer: {fileID: 0}
   playerScoreCardPrefab: {fileID: 0}
   domainColors: []
+  animSettings: {fileID: 0}
 --- !u!114 &1567971284630841138
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10962,10 +10964,6 @@ PrefabInstance:
         type: 3}
       insertIndex: 3
       addedObject: {fileID: 3219158110593327102}
-    - targetCorrespondingSourceObject: {fileID: 3708656379894223299, guid: 358e11ad6d037a24998bd295142ff242,
-        type: 3}
-      insertIndex: 6
-      addedObject: {fileID: 8390816771645221088}
   m_SourcePrefab: {fileID: 100100000, guid: 358e11ad6d037a24998bd295142ff242, type: 3}
 --- !u!1 &1259559001432499751 stripped
 GameObject:
@@ -10994,24 +10992,10 @@ MonoBehaviour:
   backgroundImage: {fileID: 0}
   scoreRevealToastText: {fileID: 6100698916795978146}
   scoreRevealToastCanvasGroup: {fileID: 6276051027706023258}
+  questTextDialogObject: {fileID: 0}
+  questCompletionText: {fileID: 0}
   vesselDisplayManager: {fileID: 1609491637613402814}
-  xpEarnedText: {fileID: 0}
-  xpEarnedCanvasGroup: {fileID: 0}
   connectingPanel: {fileID: 1897917299}
---- !u!114 &8390816771645221088
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1259559001432499751}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9c6aeb31e847224089e84f47d1f90c7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  xpTrackData: {fileID: 11400000, guid: f17645cf96bd5d54e80aa5e87f6e4ce0, type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &1462904225399142908 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3909219916716576280, guid: 358e11ad6d037a24998bd295142ff242,
