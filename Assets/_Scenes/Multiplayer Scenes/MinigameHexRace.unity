@@ -371,6 +371,18 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1556114762}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &465326699 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9206983607273120591, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9d7d32a80a2fde429a78a0a3ccf421b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &472396704 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1619673762671833843, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -2589,6 +2601,8 @@ MonoBehaviour:
   preGameCinematic: {fileID: 0}
   cinematicLookAtCenter: {x: 0, y: 0, z: 0}
   enablePreGameCinematic: 1
+  preGameCinematicLibrary: {fileID: 11400000, guid: 9bdbedab8ee0d9c4eb564f4a1352b177,
+    type: 2}
   isAIAvailable: 0
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
@@ -2617,7 +2631,7 @@ MonoBehaviour:
   connectingPanelCanvasGroup: {fileID: 1556114767}
   canvasGroup: {fileID: 1556114777}
   lifeFormCounter: {fileID: 1556114768}
-  connectingPanel: {fileID: 0}
+  connectingPanel: {fileID: 465326699}
   hackerTextAnimator: {fileID: 1951025784}
   dotsAnimator: {fileID: 1951025785}
   playerScoreContainer: {fileID: 1313205415}
@@ -2632,6 +2646,7 @@ MonoBehaviour:
     Color: {r: 0, g: 0.15447235, b: 1, a: 1}
   - Domain: 4
     Color: {r: 1, g: 0.62498116, b: 0, a: 1}
+  animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
 --- !u!1001 &1655328213
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3051,6 +3066,7 @@ MonoBehaviour:
   rematchDeniedText: {fileID: 154101603}
   playAgainButton: {fileID: 154101605}
   rematchPanelAutoDismissSeconds: 2
+  animSettings: {fileID: 0}
 --- !u!114 &1897523412
 MonoBehaviour:
   m_ObjectHideFlags: 0

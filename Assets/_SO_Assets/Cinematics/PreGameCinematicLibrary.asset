@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6f92a9d4f52d6b41b831cc2c3a88c7c, type: 3}
+  m_Name: PreGameCinematicLibrary
+  m_EditorClassIdentifier: 
+  entries:
+  - gameMode: 35
+    setup: {fileID: 11400000, guid: 6cb714ffd35255a43801c17217fef213, type: 2}
+  - gameMode: 34
+    setup: {fileID: 11400000, guid: 487c7765393b4d741aa6b77f92783172, type: 2}
+  - gameMode: 7
+    setup: {fileID: 11400000, guid: f3952c6eb2434f64d9d60e3bf3212c80, type: 2}
+  defaultSetup: {fileID: 11400000, guid: 4d0d9d464c7b8e94aba0cbc705bb0942, type: 2}
