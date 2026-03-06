@@ -16,8 +16,8 @@ MonoBehaviour:
   rippleSpeed: 1
   impactIntensity: 1.5
   impactRadius: 0.25
-  voronoiCellSize: 12
-  edgeSharpness: 0.15
+  arcDensity: 8
+  arcSharpness: 0.06
   ringThickness: 0.4
   centerFillAmount: 0.3
   crackleColorA: {r: 0.2980392, g: 0.35886303, b: 1, a: 1}

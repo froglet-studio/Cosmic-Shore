@@ -5,16 +5,16 @@ Shader "Shader Graphs/ForcefieldCrackle"
         [HideInInspector] _ImpactCount ("Impact Count", Int) = 0
 
         [Header(Crackle Colors)]
-        _CrackleColorA ("Primary Color", Color) = (0.3, 0.6, 1.0, 1.0)
-        _CrackleColorB ("Secondary Color", Color) = (0.8, 0.9, 1.0, 1.0)
+        _CrackleColorA ("Core Arc Color", Color) = (0.7, 0.85, 1.0, 1.0)
+        _CrackleColorB ("Outer Glow Color", Color) = (0.3, 0.6, 1.0, 1.0)
 
-        [Header(Voronoi Pattern)]
-        _VoronoiCellSize ("Cell Size", Range(2, 40)) = 12
-        _EdgeSharpness ("Edge Sharpness", Range(0.01, 0.5)) = 0.15
+        [Header(Arc Pattern)]
+        _ArcDensity ("Arc Count", Range(4, 20)) = 8
+        _ArcSharpness ("Arc Width", Range(0.01, 0.5)) = 0.06
 
-        [Header(Ring and Wave)]
+        [Header(Wave and Expansion)]
         _RingThickness ("Ring Thickness", Range(0.05, 1)) = 0.4
-        _CenterFillAmount ("Center Fill", Range(0, 1)) = 0.3
+        _CenterFillAmount ("Center Fill", Range(0, 1)) = 0.15
         _RippleSpeed ("Ripple Speed", Range(0.2, 3)) = 1
 
         [Header(Fresnel Rim)]
