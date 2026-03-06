@@ -20,3 +20,4 @@ MonoBehaviour:
   TargetValue: 0
   Order: 6
   IsPlaceholder: 0
+  IsFeatureUnlock: 1

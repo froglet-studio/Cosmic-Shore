@@ -246,10 +246,10 @@ namespace CosmicShore.App.UI.Modals
             bool canCycle = _availableShips.Count > 1;
 
             if (previousShipButton)
-                previousShipButton.interactable = canCycle;
+                previousShipButton.gameObject.SetActive(canCycle);
 
             if (nextShipButton)
-                nextShipButton.interactable = canCycle;
+                nextShipButton.gameObject.SetActive(canCycle);
         }
         
         void InitializeDefaultShipFromAvailable()
