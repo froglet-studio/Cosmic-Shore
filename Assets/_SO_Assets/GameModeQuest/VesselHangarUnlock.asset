@@ -11,13 +11,20 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a269e1ecd2eaa6046b40062d218ad974, type: 3}
   m_Name: VesselHangarUnlock
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   GameMode: 0
   DisplayName: VESSEL HANGAR
-  Description: Complete all game mode quests to unlock the Vessel Hangar
+  Description: All Achievements Completed, Stay tuned for more.
   Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
   TargetType: 99
   TargetValue: 0
+  IntensityUnlockStatType: 99
+  Intensity3StatTarget: 0
+  Intensity4StatTarget: 0
+  PlaysToUnlockIntensity3: 1
+  PlaysToUnlockIntensity4: 1
+  Intensity3GoalDescription: 
+  Intensity4GoalDescription: 
   Order: 6
   IsPlaceholder: 0
   IsFeatureUnlock: 1
