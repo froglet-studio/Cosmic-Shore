@@ -12,10 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1d03e473eb34f143898704abb119ff5, type: 3}
   m_Name: EpisodeData_
   m_EditorClassIdentifier: 
-  episodeId: 
-  title: 
-  description: 
-  cardImage: {fileID: 0}
-  episodeNumber: 0
-  amount: 
-  isAvailable: 0
+  header: 'Cosmic Shore '
+  description: Only press support us if you enjoy our game and want to support us

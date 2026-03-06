@@ -9,9 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db5fb7a894f85c547b3e8688e4bd9563, type: 3}
-  m_Name: EpisodeList
+  m_Script: {fileID: 11500000, guid: b1d03e473eb34f143898704abb119ff5, type: 3}
+  m_Name: EpisodeData_ 1
   m_EditorClassIdentifier: 
-  episodes:
-  - {fileID: 11400000, guid: cdafa6af6d9127e47b517e952e12cef8, type: 2}
-  - {fileID: 11400000, guid: fbd42f280bdf2e045a2554b8631aff48, type: 2}
+  header: Cosmic Shore
+  description: Only press support us if you enjoy our game and want to support us
