@@ -4,8 +4,9 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Core;
+using CosmicShore.Models.Enums;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -45,14 +46,43 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
         // ── Session config (persists across play mode via EditorPrefs) ──────
         [NonSerialized] BenchmarkSessionConfig _session;
-        [NonSerialized] string[] _scenePaths;
-        [NonSerialized] string[] _sceneNames;
-        [NonSerialized] int _selectedSceneIdx;
         [NonSerialized] bool _sessionCallbackRegistered;
+        [NonSerialized] bool _waitingForGameScene;
 
         // ── Session results (loaded after session completes) ────────────────
         [NonSerialized] List<BenchmarkReport> _sessionReports;
         [NonSerialized] BenchmarkSessionSummary _sessionSummary;
+
+        // ── Game mode / vessel names for dropdowns ──────────────────────────
+        static readonly GameModes[] SelectableGameModes =
+        {
+            GameModes.Freestyle,
+            GameModes.WildlifeBlitz,
+            GameModes.CellularDuel,
+            GameModes.Elimination,
+            GameModes.BlockBandit,
+            GameModes.RiskyDriftness,
+            GameModes.Rampage,
+            GameModes.Darts,
+            GameModes.ShootingGallery,
+        };
+        static readonly string[] GameModeNames = SelectableGameModes.Select(m => m.ToString()).ToArray();
+
+        static readonly VesselClassType[] SelectableVessels =
+        {
+            VesselClassType.Squirrel,
+            VesselClassType.Sparrow,
+            VesselClassType.Manta,
+            VesselClassType.Dolphin,
+            VesselClassType.Rhino,
+            VesselClassType.Urchin,
+            VesselClassType.Grizzly,
+            VesselClassType.Serpent,
+            VesselClassType.Termite,
+            VesselClassType.Falcon,
+            VesselClassType.Shrike,
+        };
+        static readonly string[] VesselNames = SelectableVessels.Select(v => v.ToString()).ToArray();
 
         // ── Palette (consistent with LogControlWindow) ──────────────────────
         static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
@@ -95,7 +125,6 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         void OnEnable()
         {
             RefreshSavedReports();
-            RefreshSceneList();
             _session = BenchmarkSessionConfig.Load();
             RegisterSessionCallback();
         }
@@ -388,7 +417,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        //  TAB: SESSION (automated multi-iteration benchmark)
+        //  TAB: SESSION (automated multi-iteration benchmark via Arcade)
         // ═════════════════════════════════════════════════════════════════════
 
         void DrawSessionTab()
@@ -405,8 +434,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(12);
-                string sceneName = Path.GetFileNameWithoutExtension(_session.ScenePath);
-                GUILayout.Label($"Scene: {sceneName}   |   Duration: {_session.DurationSeconds}s   |   Deterministic: {_session.Deterministic}");
+                GUILayout.Label($"Mode: {_session.GameMode}   |   Vessel: {_session.Vessel}   |   Duration: {_session.DurationSeconds}s");
                 EditorGUILayout.EndHorizontal();
 
                 // Overall progress bar
@@ -419,7 +447,6 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                 var fill = new Rect(rect.x, rect.y, rect.width * overallProgress, rect.height);
                 EditorGUI.DrawRect(fill, SessionColor);
 
-                // Show text on the bar
                 var labelStyle = new GUIStyle(EditorStyles.boldLabel)
                 {
                     alignment = TextAnchor.MiddleCenter,
@@ -433,16 +460,19 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
                 if (Application.isPlaying)
                 {
+                    string phase = _waitingForGameScene
+                        ? "Waiting for game scene to load via Arcade..."
+                        : "Benchmark running...";
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Space(12);
-                    GUILayout.Label("Benchmark running in play mode...");
+                    GUILayout.Label(phase);
                     EditorGUILayout.EndHorizontal();
                 }
                 else
                 {
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Space(12);
-                    GUILayout.Label("Waiting for next iteration to start...");
+                    GUILayout.Label("Entering play mode for next iteration...");
                     EditorGUILayout.EndHorizontal();
                 }
 
@@ -462,39 +492,45 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             DrawSection("Automated Session");
 
             EditorGUILayout.HelpBox(
-                "Run a benchmark multiple times automatically. The tool will:\n" +
-                "1. Load the selected scene\n" +
-                "2. Enter play mode\n" +
-                "3. Run the benchmark with deterministic settings\n" +
-                "4. Save the report and exit play mode\n" +
-                "5. Repeat for N iterations\n" +
-                "6. Generate a reproducibility report comparing all runs",
+                "Run a benchmark multiple times through the Arcade bootstrap flow:\n" +
+                "1. Enter play mode (SceneBootstrapper loads Menu_Main)\n" +
+                "2. Arcade.Instance launches the selected game mode + vessel\n" +
+                "3. Once the game scene loads, benchmark sampling begins\n" +
+                "4. After sampling, results are saved and play mode exits\n" +
+                "5. Repeat for N iterations, then generate reproducibility report",
                 MessageType.None);
 
             GUILayout.Space(4);
 
-            // Scene picker
-            DrawSection("Scene");
+            // Game mode + vessel picker
+            DrawSection("Game Configuration");
 
-            if (_scenePaths == null || _scenePaths.Length == 0)
-                RefreshSceneList();
+            int gameModeIdx = Array.IndexOf(SelectableGameModes, _session.GameMode);
+            if (gameModeIdx < 0) gameModeIdx = 0;
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(12);
-            GUILayout.Label("Target Scene", GUILayout.Width(100));
-            int newIdx = EditorGUILayout.Popup(_selectedSceneIdx, _sceneNames ?? Array.Empty<string>());
-            if (newIdx != _selectedSceneIdx)
-            {
-                _selectedSceneIdx = newIdx;
-                if (_scenePaths != null && _selectedSceneIdx >= 0 && _selectedSceneIdx < _scenePaths.Length)
-                    _session.ScenePath = _scenePaths[_selectedSceneIdx];
-            }
+            GUILayout.Label("Game Mode", GUILayout.Width(100));
+            int newGameModeIdx = EditorGUILayout.Popup(gameModeIdx, GameModeNames);
+            if (newGameModeIdx != gameModeIdx)
+                _session.GameMode = SelectableGameModes[newGameModeIdx];
+            EditorGUILayout.EndHorizontal();
+
+            int vesselIdx = Array.IndexOf(SelectableVessels, _session.Vessel);
+            if (vesselIdx < 0) vesselIdx = 0;
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            GUILayout.Label("Vessel", GUILayout.Width(100));
+            int newVesselIdx = EditorGUILayout.Popup(vesselIdx, VesselNames);
+            if (newVesselIdx != vesselIdx)
+                _session.Vessel = SelectableVessels[newVesselIdx];
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(12);
-            if (GUILayout.Button("Refresh Scenes", GUILayout.Width(120)))
-                RefreshSceneList();
+            GUILayout.Label("Intensity", GUILayout.Width(100));
+            _session.Intensity = EditorGUILayout.IntSlider(_session.Intensity, 1, 10);
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(4);
@@ -561,7 +597,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             GUILayout.Space(8);
 
             // Launch button
-            bool canLaunch = !string.IsNullOrEmpty(_session.ScenePath) && !Application.isPlaying;
+            bool canLaunch = !Application.isPlaying;
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(12);
@@ -576,10 +612,6 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             if (Application.isPlaying)
             {
                 EditorGUILayout.HelpBox("Exit Play Mode before starting a session.", MessageType.Warning);
-            }
-            else if (string.IsNullOrEmpty(_session.ScenePath))
-            {
-                EditorGUILayout.HelpBox("Select a target scene first.", MessageType.Warning);
             }
 
             // ── Last session results ─────────────────────────────────────────
@@ -1059,7 +1091,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        //  SESSION ORCHESTRATION
+        //  SESSION ORCHESTRATION (Arcade bootstrap flow)
         // ═════════════════════════════════════════════════════════════════════
 
         void RegisterSessionCallback()
@@ -1079,15 +1111,18 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         {
             _session.IsRunning = true;
             _session.CurrentIteration = 0;
+            _session.GameLaunched = false;
             _session.CompletedReportPaths.Clear();
             _session.Save();
 
             _sessionReports = null;
             _sessionSummary = null;
 
-            CSDebug.Log($"[Benchmark Session] Starting {_session.Iterations} iterations on {Path.GetFileNameWithoutExtension(_session.ScenePath)}");
+            CSDebug.Log($"[Benchmark Session] Starting {_session.Iterations} iterations — {_session.GameMode} / {_session.Vessel}");
 
-            StartNextIteration();
+            // Just enter play mode. SceneBootstrapper will redirect to Menu_Main (bootstrap).
+            // Our playModeStateChanged callback handles the rest.
+            EditorApplication.EnterPlaymode();
         }
 
         void StartNextIteration()
@@ -1102,17 +1137,11 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
             CSDebug.Log($"[Benchmark Session] Starting iteration {_session.CurrentIteration + 1} / {_session.Iterations}");
 
-            // Open the target scene (must happen outside play mode)
-            if (!string.IsNullOrEmpty(_session.ScenePath) && File.Exists(_session.ScenePath))
-            {
-                // Save current scene if dirty
-                if (SceneManager.GetActiveScene().isDirty)
-                    EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
+            // Reset game-launched flag for this iteration
+            _session.GameLaunched = false;
+            _session.Save();
 
-                EditorSceneManager.OpenScene(_session.ScenePath);
-            }
-
-            // Enter play mode — the callback will auto-start the benchmark
+            // Enter play mode — SceneBootstrapper handles loading Menu_Main
             EditorApplication.EnterPlaymode();
         }
 
@@ -1125,8 +1154,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             switch (state)
             {
                 case PlayModeStateChange.EnteredPlayMode:
-                    // Auto-start the benchmark for this iteration
-                    EditorApplication.delayCall += AutoStartSessionBenchmark;
+                    // We're now in play mode (Menu_Main loaded by SceneBootstrapper).
+                    // Wait a frame for Arcade singleton to initialize, then launch the game.
+                    _waitingForGameScene = true;
+                    EditorApplication.delayCall += LaunchGameViaArcade;
                     break;
 
                 case PlayModeStateChange.EnteredEditMode:
@@ -1136,10 +1167,59 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             }
         }
 
+        void LaunchGameViaArcade()
+        {
+            _session = BenchmarkSessionConfig.Load();
+            if (!_session.IsRunning || !Application.isPlaying) return;
+
+            // Check if Arcade singleton is ready
+            if (Arcade.Instance == null)
+            {
+                // Arcade not ready yet — try again next frame
+                EditorApplication.delayCall += LaunchGameViaArcade;
+                return;
+            }
+
+            // Subscribe to scene load so we know when the game scene arrives
+            SceneManager.sceneLoaded += OnGameSceneLoaded;
+
+            CSDebug.Log($"[Benchmark Session] Launching {_session.GameMode} with {_session.Vessel} via Arcade...");
+
+            // Launch through the Arcade — this populates GameDataSO and fires the event
+            // that GameManager listens to, which loads the game scene after a 0.5s delay
+            Arcade.Instance.LaunchArcadeGame(
+                gameMode: _session.GameMode,
+                vessel: _session.Vessel,
+                shipResources: new ResourceCollection(0.5f, 0.5f, 0.5f, 0.5f),
+                intensity: _session.Intensity,
+                numberOfPlayers: 1,
+                isMultiplayer: false,
+                isDailyChallenge: false
+            );
+
+            _session.GameLaunched = true;
+            _session.Save();
+        }
+
+        void OnGameSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // Ignore the bootstrap scene itself
+            string bootstrapName = "Menu_Main";
+            if (scene.name == bootstrapName) return;
+
+            SceneManager.sceneLoaded -= OnGameSceneLoaded;
+            _waitingForGameScene = false;
+
+            CSDebug.Log($"[Benchmark Session] Game scene '{scene.name}' loaded. Starting benchmark...");
+
+            // The game scene is loaded — now start the benchmark sampler
+            EditorApplication.delayCall += AutoStartSessionBenchmark;
+        }
+
         void AutoStartSessionBenchmark()
         {
             _session = BenchmarkSessionConfig.Load();
-            if (!_session.IsRunning) return;
+            if (!_session.IsRunning || !Application.isPlaying) return;
 
             // Clean up any previous sampler
             if (_activeSampler != null)
@@ -1235,6 +1315,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         {
             CSDebug.Log("[Benchmark Session] Aborted by user.");
 
+            // Unsubscribe from scene loads in case we're mid-wait
+            SceneManager.sceneLoaded -= OnGameSceneLoaded;
+            _waitingForGameScene = false;
+
             // Stop any active sampling
             if (_activeSampler != null)
             {
@@ -1250,14 +1334,13 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
             // Load whatever reports were completed so far
             _session = BenchmarkSessionConfig.Load();
-            var paths = _session.CompletedReportPaths;
 
             _session.IsRunning = false;
             _session.Save();
 
             // Build partial summary if we have enough data
             _sessionReports = new List<BenchmarkReport>();
-            foreach (var path in paths)
+            foreach (var path in _session.CompletedReportPaths)
             {
                 var report = BenchmarkReport.Load(path);
                 if (report != null)
@@ -1271,48 +1354,6 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
             RefreshSavedReports();
             Repaint();
-        }
-
-        // ═════════════════════════════════════════════════════════════════════
-        //  SCENE LIST
-        // ═════════════════════════════════════════════════════════════════════
-
-        void RefreshSceneList()
-        {
-            var paths = new List<string>();
-            var names = new List<string>();
-
-            // Add scenes from Build Settings first
-            foreach (var scene in EditorBuildSettings.scenes)
-            {
-                if (scene.enabled && File.Exists(scene.path))
-                {
-                    paths.Add(scene.path);
-                    names.Add(Path.GetFileNameWithoutExtension(scene.path));
-                }
-            }
-
-            // Also find scenes in _Scenes that might not be in build settings
-            string[] allScenes = AssetDatabase.FindAssets("t:Scene", new[] { "Assets/_Scenes" });
-            foreach (string guid in allScenes)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                if (!paths.Contains(path) && File.Exists(path))
-                {
-                    paths.Add(path);
-                    names.Add(Path.GetFileNameWithoutExtension(path) + " (not in build)");
-                }
-            }
-
-            _scenePaths = paths.ToArray();
-            _sceneNames = names.ToArray();
-
-            // Try to match current session scene
-            if (_session != null && !string.IsNullOrEmpty(_session.ScenePath))
-            {
-                _selectedSceneIdx = Array.IndexOf(_scenePaths, _session.ScenePath);
-                if (_selectedSceneIdx < 0) _selectedSceneIdx = 0;
-            }
         }
 
         // ═════════════════════════════════════════════════════════════════════

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using CosmicShore.Models.Enums;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,10 +18,14 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         const string EditorPrefsKey = "CosmicShore_BenchmarkSession";
 
         // ── User Configuration ───────────────────────────────────────────────
-        public string ScenePath = "";
         public string Label = "Session";
         public int Iterations = 3;
         public float DurationSeconds = 15f;
+
+        // ── Game Launch Configuration ────────────────────────────────────────
+        public GameModes GameMode = GameModes.Freestyle;
+        public VesselClassType Vessel = VesselClassType.Squirrel;
+        public int Intensity = 1;
 
         // ── Deterministic ────────────────────────────────────────────────────
         public bool Deterministic = true;
@@ -32,6 +37,12 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         public bool IsRunning;
         public int CurrentIteration;
         public List<string> CompletedReportPaths = new();
+
+        /// <summary>
+        /// Tracks whether we've already launched the game via Arcade this iteration.
+        /// Reset to false at start of each iteration; set true once Arcade.LaunchArcadeGame runs.
+        /// </summary>
+        public bool GameLaunched;
 
         // ── Persistence ──────────────────────────────────────────────────────
 
