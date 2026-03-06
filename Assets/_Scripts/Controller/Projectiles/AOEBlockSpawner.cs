@@ -19,6 +19,7 @@ namespace CosmicShore.Gameplay
                 if (Vessel == null || spawnable == null)
                 {
                     Debug.LogWarning($"[AOEBlockSpawner] ExplodeAsync aborted — Vessel:{Vessel != null}, spawnable:{spawnable != null}", this);
+                    Destroy(gameObject);
                     return;
                 }
 
