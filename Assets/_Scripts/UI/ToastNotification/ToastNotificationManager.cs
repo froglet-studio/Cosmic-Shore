@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using CosmicShore.Utilities;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {

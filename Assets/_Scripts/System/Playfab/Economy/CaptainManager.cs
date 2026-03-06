@@ -1,12 +1,11 @@
 ﻿using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
-using CosmicShore.Utilities;
+using CosmicShore.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using CosmicShore.Utility;
 
 // TODO: Renamespace - not using playfab directly here
 namespace CosmicShore.Core

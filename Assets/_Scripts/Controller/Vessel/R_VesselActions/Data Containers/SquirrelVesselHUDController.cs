@@ -1,8 +1,11 @@
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.UI
 {
     public sealed class SquirrelVesselHUDController : VesselHUDController
     {

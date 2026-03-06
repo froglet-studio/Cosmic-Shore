@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using CosmicShore.App.UI.ToastNotification;
+using CosmicShore.UI;
 
 namespace CosmicShore.Editor
 {
