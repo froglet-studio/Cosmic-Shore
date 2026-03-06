@@ -27,17 +27,19 @@ Material:
     m_Ints:
     - _ImpactCount: 0
     m_Floats:
-    - _CenterFillAmount: 0.105
+    - _ArcDensity: 4
+    - _ArcSharpness: 0.01
+    - _CenterFillAmount: 0.3
     - _EdgeSharpness: 0.122
-    - _FresnelRimIntensity: 0.156
-    - _FresnelRimPower: 1.97
+    - _FresnelRimIntensity: 0.276
+    - _FresnelRimPower: 3.55
     - _ImpactCount: 0
-    - _RingThickness: 0.123
-    - _RippleSpeed: 0.44
+    - _RingThickness: 0.05
+    - _RippleSpeed: 0.7
     - _VoronoiCellSize: 10.6
     m_Colors:
-    - _CrackleColorA: {r: 0.3155927, g: 0.33311638, b: 0.509434, a: 1}
-    - _CrackleColorB: {r: 0.16985081, g: 0.19574417, b: 0.47798735, a: 1}
-    - _FresnelRimColor: {r: 0.08253225, g: 0.12554911, b: 0.67295593, a: 1}
+    - _CrackleColorA: {r: 0.94509804, g: 0, b: 0, a: 1}
+    - _CrackleColorB: {r: 0.08627451, g: 0.49019608, b: 0.11402935, a: 1}
+    - _FresnelRimColor: {r: 0.9519239, g: 1, b: 0.0047169924, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
