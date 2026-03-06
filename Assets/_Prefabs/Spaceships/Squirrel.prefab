@@ -9037,7 +9037,6 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: f7c718f7fdda9404aa17411e47f0a372, type: 2}
   energyResourceIndex: 0
   view: {fileID: 3398420945983132518}
-  elementPips: {fileID: 0}
   elementBars: {fileID: 6460679599271634359}
 --- !u!114 &6989089190155014109
 MonoBehaviour:
@@ -14449,6 +14448,86 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 3397189760217659071}
     m_Modifications:
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: arcDensity
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: rippleSpeed
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: arcSharpness
+      value: 0.03
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: ringThickness
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: crackleColorA.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: crackleColorA.g
+      value: 0.84506845
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: crackleColorA.r
+      value: 0.6933962
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: crackleColorB.b
+      value: 0.8490566
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: crackleColorB.g
+      value: 0.44511262
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: crackleColorB.r
+      value: 0.14017442
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: fresnelRimPower
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: centerFillAmount
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: fresnelRimColor.b
+      value: 0.7075472
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: fresnelRimColor.g
+      value: 0.34094512
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: fresnelRimColor.r
+      value: 0.09011214
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: fresnelRimIntensity
+      value: 0.04
+      objectReference: {fileID: 0}
     - target: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_Name
@@ -14457,6 +14536,11 @@ PrefabInstance:
     - target: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6724190831275839400, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_DynamicOccludee
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,

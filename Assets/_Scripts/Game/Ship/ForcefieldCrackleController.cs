@@ -32,7 +32,7 @@ namespace CosmicShore.Game
         private Color fresnelRimColor = new Color(0.3f, 0.5f, 0.8f, 1f);
 
         [Header("Arc Pattern")]
-        [SerializeField, Range(4f, 20f), Tooltip("Number of arc branches radiating from each impact.")]
+        [SerializeField, Range(3f, 20f), Tooltip("Number of arc branches radiating from each impact.")]
         private float arcDensity = 8f;
 
         [SerializeField, Range(0.01f, 0.5f), Tooltip("Arc width — lower = thinner, sharper arcs.")]
