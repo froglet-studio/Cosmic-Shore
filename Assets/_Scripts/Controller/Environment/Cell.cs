@@ -1,6 +1,7 @@
 // Cell.cs
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;

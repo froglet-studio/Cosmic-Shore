@@ -7,6 +7,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using DG.Tweening;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -33,6 +34,8 @@ namespace CosmicShore.Utility
         [Tooltip("Duration of the fade-in animation.")]
         [SerializeField] private float crystalFadeDuration = 0.5f;
 
+        [Inject] protected AudioSystem audioSystem;
+
         protected bool isRunning;
         protected bool localPlayerWon;
         protected Coroutine runningRoutine;
@@ -44,7 +47,7 @@ namespace CosmicShore.Utility
         protected virtual void OnEnable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated += OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
 
             if (crystalRewardRoot)
                 crystalRewardRoot.SetActive(false);
@@ -61,7 +64,7 @@ namespace CosmicShore.Utility
         protected virtual void OnDisable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnIntensityUnlocked -= HandleIntensityUnlocked;
@@ -92,7 +95,7 @@ namespace CosmicShore.Utility
             if (isRunning) return;
             isRunning = true;
 
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
 
 
             var localPlayer = gameData.LocalPlayer;
@@ -290,7 +293,7 @@ namespace CosmicShore.Utility
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 
