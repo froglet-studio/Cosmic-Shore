@@ -50,7 +50,8 @@ namespace CosmicShore.Core
                 if (Squad.Equals(default(Squad)))
                     Init();
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Vessel.Class == Squad.SquadLeaderClass).FirstOrDefault(); 
+                if (CaptainList == null) return null;
+                return CaptainList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Vessel.Class == Squad.SquadLeaderClass).FirstOrDefault();
             }
         }
 
@@ -61,7 +62,8 @@ namespace CosmicShore.Core
                 if (Squad.Equals(default(Squad)))
                     Init();
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueOneElement && x.Vessel.Class == Squad.RogueOneClass).FirstOrDefault(); 
+                if (CaptainList == null) return null;
+                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueOneElement && x.Vessel.Class == Squad.RogueOneClass).FirstOrDefault();
             }
         }
 
@@ -72,6 +74,7 @@ namespace CosmicShore.Core
                 if (Squad.Equals(default(Squad)))
                     Init();
 
+                if (CaptainList == null) return null;
                 return CaptainList.Where(x => x.PrimaryElement == Squad.RogueTwoElement && x.Vessel.Class == Squad.RogueTwoClass).FirstOrDefault(); 
             }
         }

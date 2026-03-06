@@ -80,6 +80,9 @@ namespace CosmicShore.UI
 
         public override void UpdateView()
         {
+            if (SquadSystem.CaptainList == null || SquadSystem.CaptainList.Count == 0)
+                return;
+
             SquadSystem.LoadSquad();
             PlayerCaptainButton.Captain = SquadSystem.SquadLeader;
             RogueOneCaptainButton.Captain = SquadSystem.RogueOne;
