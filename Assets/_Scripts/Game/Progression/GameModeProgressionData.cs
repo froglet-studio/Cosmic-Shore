@@ -27,6 +27,13 @@ namespace CosmicShore.Game.Progression
         public List<string> CompletedQuests = new();
 
         /// <summary>
+        /// Set of feature names that the player has unlocked via the quest chain.
+        /// Feature quests (e.g. Vessel Hangar) use DisplayName as their unique key
+        /// instead of a GameMode enum name.
+        /// </summary>
+        public List<string> UnlockedFeatures = new();
+
+        /// <summary>
         /// Per-mode best stats for quest evaluation.
         /// Key = GameModes enum name, Value = best achieved value for that mode's target.
         /// </summary>
@@ -65,6 +72,17 @@ namespace CosmicShore.Game.Progression
         {
             if (!CompletedQuests.Contains(modeName))
                 CompletedQuests.Add(modeName);
+        }
+
+        public bool IsFeatureUnlocked(string featureName)
+        {
+            return UnlockedFeatures.Contains(featureName);
+        }
+
+        public void MarkFeatureUnlocked(string featureName)
+        {
+            if (!UnlockedFeatures.Contains(featureName))
+                UnlockedFeatures.Add(featureName);
         }
 
         public float GetBestStat(string modeName)

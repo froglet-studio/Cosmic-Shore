@@ -68,6 +68,10 @@ namespace CosmicShore.Models
         [Tooltip("If true, this quest is a placeholder for a mode not yet implemented")]
         public bool IsPlaceholder;
 
+        [Tooltip("If true, this quest unlocks a feature (e.g. Vessel Hangar) rather than a game mode. " +
+                 "The DisplayName is used as the feature key for persistence.")]
+        public bool IsFeatureUnlock;
+
         /// <summary>
         /// Runtime flag set when the quest goal is achieved during gameplay.
         /// Not serialized — lives only in the current session, synced from ProgressionData on load.
