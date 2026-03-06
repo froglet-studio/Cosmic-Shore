@@ -43,8 +43,8 @@ namespace CosmicShore.Gameplay
         private ProjectileFactory _factory;
 
         private bool _poolParentCaptured;
-        private bool _detachOnLaunch;   
-        private bool _detachedThisFlight; 
+        private bool _detachOnLaunch;
+        private bool _detachedThisFlight;
 
         private void OnEnable()
         {
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
                 _poolParentCaptured = true;
             }
         }
-        
+
         private void Awake()
         {
             InitialScale = transform.localScale;
@@ -79,7 +79,7 @@ namespace CosmicShore.Gameplay
         }*/
 
         #region Initialization
-        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false) 
+        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false)
         {
             _factory = factory;
             OwnDomain = ownDomain;
@@ -108,14 +108,14 @@ namespace CosmicShore.Gameplay
 
             if (_detachOnLaunch && transform.parent)
             {
-                transform.SetParent(null, true); 
+                transform.SetParent(null, true);
                 _detachedThisFlight = true;
             }
             else
             {
                 _detachedThisFlight = false;
             }
-            
+
             // === DETACH when spawned if it's a spike ===
             if (spike)
             {
@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
                 this.GetCancellationTokenOnDestroy());
             MoveProjectileAsync(projectileTime, _moveCts.Token).Forget();
         }
-        
+
         public void ReturnToFactory()
         {
             Stop();

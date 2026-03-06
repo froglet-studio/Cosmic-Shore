@@ -1,7 +1,7 @@
 using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Central SOAP data container for the performance benchmark system.

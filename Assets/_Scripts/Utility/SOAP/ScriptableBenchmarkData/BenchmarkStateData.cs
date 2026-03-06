@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Immutable snapshot of benchmark progress/results broadcast via SOAP events.

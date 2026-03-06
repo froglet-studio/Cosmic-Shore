@@ -22,7 +22,7 @@ namespace CosmicShore.Editor
         string sceneSavePath = "Assets/_Scenes/MiniGames/_New/";
         string newMiniGameName = string.Empty;
 
-        [MenuItem("FrogletTools/Create/MiniGame")]
+        [MenuItem("FrogletTools/Legacy/Create/MiniGame")]
 
         public static void GetWindow()
         {

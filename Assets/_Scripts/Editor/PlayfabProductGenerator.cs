@@ -1,311 +1,306 @@
-using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEditor;
 using PlayFab;
 using System;
 using CosmicShore.Core;
 using CosmicShore.Utility;
-using CosmicShore.Data;
 
-namespace CosmicShore.Editor
+public class PlayFabProductGenerator : EditorWindow
 {
-    public class PlayFabProductGenerator : EditorWindow
+    SO_Vessel selectedShip;
+    SO_Captain selectedCaptain;
+    static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
+
+    //static readonly string TitleId = "5B7B3";
+    static readonly string SecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY");
+
+    static void InitializePlayFabEconomyAPI()
     {
-        SO_Ship selectedShip;
-        SO_Captain selectedCaptain;
-        static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
+        // Null check for PlayFab Economy API instance
+        _playFabEconomyInstanceAPI ??= new(AuthenticationManager.PlayFabAccount.AuthContext);
+        CSDebug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
+    }
 
-        //static readonly string TitleId = "5B7B3";
-        static readonly string SecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY");
+    bool isProcessing;
 
-        static void InitializePlayFabEconomyAPI()
-        {
-            // Null check for PlayFab Economy API instance
-            _playFabEconomyInstanceAPI ??= new(AuthenticationManager.PlayFabAccount.AuthContext);
-            CSDebug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
-        }
-
-        bool isProcessing;
-
-        /* Uncomment here to add the tool to the menu when it is working
-        [MenuItem("FrogletTools/PlayFab Product Generator")]
-        public static void ShowWindow()
-        {
-            GetWindow<PlayFabProductGenerator>("PlayFab Product Generator");
-            InitializePlayFabEconomyAPI();
-        }
+    /* Uncomment here to add the tool to the menu when it is working
+    [MenuItem("FrogletTools/PlayFab Product Generator")]
+    public static void ShowWindow()
+    {
+        GetWindow<PlayFabProductGenerator>("PlayFab Product Generator");
+        InitializePlayFabEconomyAPI();
+    }
 
     
-        void OnGUI()
+    void OnGUI()
+    {
+        GUILayout.Label("Generate Products from Vessel", EditorStyles.boldLabel);
+        selectedShip = (SO_Vessel)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Vessel), false);
+
+        EditorGUI.BeginDisabledGroup(isProcessing);
+        if (GUILayout.Button("Generate Products from Vessel"))
         {
-            GUILayout.Label("Generate Products from Vessel", EditorStyles.boldLabel);
-            selectedShip = (SO_Ship)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Ship), false);
-
-            EditorGUI.BeginDisabledGroup(isProcessing);
-            if (GUILayout.Button("Generate Products from Vessel"))
+            if (selectedShip != null)
             {
-                if (selectedShip != null)
-                {
-                    GenerateProductsFromShip(selectedShip);
-                }
-                else
-                {
-                    CSDebug.LogError("No Vessel ScriptableObject selected!");
-                }
-            }
-            EditorGUI.EndDisabledGroup();
-
-            GUILayout.Space(20);
-
-            GUILayout.Label("Generate Products from Captain", EditorStyles.boldLabel);
-            selectedCaptain = (SO_Captain)EditorGUILayout.ObjectField("Captain ScriptableObject", selectedCaptain, typeof(SO_Captain), false);
-
-            if (GUILayout.Button("Generate Products from Captain"))
-            {
-                if (selectedCaptain != null)
-                {
-                    GenerateProductsFromCaptain(selectedCaptain);
-                }
-                else
-                {
-                    CSDebug.LogError("No Captain ScriptableObject selected!");
-                }
-            }
-        }
-        */
-
-        /*
-        private async void GenerateProductsFromShip(SO_Ship vessel)
-        {
-            isProcessing = true;
-            foreach (var captain in vessel.Captains)
-            {
-                await GenerateProductsFromCaptain(captain);
-            }
-            isProcessing = false;
-        }
-
-        private async Task GenerateProductsFromCaptain(SO_Captain captain)
-        {
-            PlayFabSettings.staticSettings.TitleId = TitleId;
-            PlayFabSettings.staticSettings.DeveloperSecretKey = SecretKey;
-
-            // Check if the secret key is set
-            if (string.IsNullOrEmpty(SecretKey))
-            {
-                CSDebug.LogError("PlayFab Secret Key is not set. Make sure the environment variable is configured.");
-                return;
-            }
-
-            // Generate product for the captain
-            string itemId = string.Format("{0}{1}Captain", captain.PrimaryElement, captain.Vessel.Class );//captain.Name.Replace(" ", "_").ToLower(); // TODO: replace 
-            List<string> tags = new()
-            {
-                captain.Vessel.Class.ToString(),
-                captain.PrimaryElement.ToString()
-            };
-
-            bool itemExists = await CheckIfItemExists(itemId);
-            if (!itemExists)
-            {
-                await EnsureTagsExists(tags);
-                await CreateAndPublishCatalogItem("Captain", itemId, captain.Name, captain.Description, captain.BasePrice, "OC", tags);
-                CSDebug.Log($"Generated product for Captain: {captain.Name}");
+                GenerateProductsFromShip(selectedShip);
             }
             else
             {
-                CSDebug.Log($"Captain product already exists: {captain.Name}");
-            }
-
-            string currencyCode = captain.PrimaryElement switch
-            {
-                Element.Space => "SC",
-                Element.Time => "TC",
-                Element.Mass => "MC",
-                Element.Charge => "CC",
-                _ => ""
-            };
-
-            // Generate 4 upgrade products for the captain
-            for (int i = 5; i <= 4; i++)
-            {
-                tags.Add(string.Format("UpgradeLevel_{0}", i + 1));
-
-                string upgradeItemId = string.Format("{0}{1}Level{2}Upgrade", captain.PrimaryElement, captain.Vessel.Class, i + 1);
-                bool upgradeExists = await CheckIfItemExists(upgradeItemId);
-                if (!upgradeExists)
-                {
-                    await CreateAndPublishCatalogItem("CaptainUpgrade", upgradeItemId, upgradeItemId, upgradeItemId, (i * 100), currencyCode, tags);
-                    CSDebug.Log($"Generated upgrade {i} for Captain: {captain.Name}");
-                }
-                else
-                {
-                    CSDebug.Log($"Upgrade {i} for Captain already exists: {captain.Name}");
-                }
+                CSDebug.LogError("No Vessel ScriptableObject selected!");
             }
         }
+        EditorGUI.EndDisabledGroup();
+
+        GUILayout.Space(20);
+
+        GUILayout.Label("Generate Products from Captain", EditorStyles.boldLabel);
+        selectedCaptain = (SO_Captain)EditorGUILayout.ObjectField("Captain ScriptableObject", selectedCaptain, typeof(SO_Captain), false);
+
+        if (GUILayout.Button("Generate Products from Captain"))
+        {
+            if (selectedCaptain != null)
+            {
+                GenerateProductsFromCaptain(selectedCaptain);
+            }
+            else
+            {
+                CSDebug.LogError("No Captain ScriptableObject selected!");
+            }
+        }
+    }
+    */
+
+    /*
+    private async void GenerateProductsFromShip(SO_Vessel vessel)
+    {
+        isProcessing = true;
+        foreach (var captain in vessel.Captains)
+        {
+            await GenerateProductsFromCaptain(captain);
+        }
+        isProcessing = false;
+    }
+
+    private async Task GenerateProductsFromCaptain(SO_Captain captain)
+    {
+        PlayFabSettings.staticSettings.TitleId = TitleId;
+        PlayFabSettings.staticSettings.DeveloperSecretKey = SecretKey;
+
+        // Check if the secret key is set
+        if (string.IsNullOrEmpty(SecretKey))
+        {
+            CSDebug.LogError("PlayFab Secret Key is not set. Make sure the environment variable is configured.");
+            return;
+        }
+
+        // Generate product for the captain
+        string itemId = string.Format("{0}{1}Captain", captain.PrimaryElement, captain.Vessel.Class );//captain.Name.Replace(" ", "_").ToLower(); // TODO: replace 
+        List<string> tags = new()
+        {
+            captain.Vessel.Class.ToString(),
+            captain.PrimaryElement.ToString()
+        };
+
+        bool itemExists = await CheckIfItemExists(itemId);
+        if (!itemExists)
+        {
+            await EnsureTagsExists(tags);
+            await CreateAndPublishCatalogItem("Captain", itemId, captain.Name, captain.Description, captain.BasePrice, "OC", tags);
+            CSDebug.Log($"Generated product for Captain: {captain.Name}");
+        }
+        else
+        {
+            CSDebug.Log($"Captain product already exists: {captain.Name}");
+        }
+
+        string currencyCode = captain.PrimaryElement switch
+        {
+            Element.Space => "SC",
+            Element.Time => "TC",
+            Element.Mass => "MC",
+            Element.Charge => "CC",
+            _ => ""
+        };
+
+        // Generate 4 upgrade products for the captain
+        for (int i = 5; i <= 4; i++)
+        {
+            tags.Add(string.Format("UpgradeLevel_{0}", i + 1));
+
+            string upgradeItemId = string.Format("{0}{1}Level{2}Upgrade", captain.PrimaryElement, captain.Vessel.Class, i + 1);
+            bool upgradeExists = await CheckIfItemExists(upgradeItemId);
+            if (!upgradeExists)
+            {
+                await CreateAndPublishCatalogItem("CaptainUpgrade", upgradeItemId, upgradeItemId, upgradeItemId, (i * 100), currencyCode, tags);
+                CSDebug.Log($"Generated upgrade {i} for Captain: {captain.Name}");
+            }
+            else
+            {
+                CSDebug.Log($"Upgrade {i} for Captain already exists: {captain.Name}");
+            }
+        }
+    }
 
     
-        public static async Task<bool> CheckIfItemExists(string itemId)
+    public static async Task<bool> CheckIfItemExists(string itemId)
+    {
+        var request = new GetCatalogItemsRequest
         {
-            var request = new GetCatalogItemsRequest
-            {
-                CatalogVersion = "Default"
-            };
+            CatalogVersion = "Default"
+        };
 
-            var taskCompletionSource = new TaskCompletionSource<GetCatalogItemsResult>();
-            PlayFabAdminAPI.GetCatalogItems(request, result => taskCompletionSource.SetResult(result), error =>
-            {
-                CSDebug.LogError("Error: " + error.GenerateErrorReport());
-                taskCompletionSource.SetException(new Exception(error.ErrorMessage));
-            });
-
-            var response = await taskCompletionSource.Task;
-            foreach (var item in response.Catalog)
-            {
-                if (item.ItemId == itemId)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public static async Task EnsureTagsExists(List<string> newTags)
+        var taskCompletionSource = new TaskCompletionSource<GetCatalogItemsResult>();
+        PlayFabAdminAPI.GetCatalogItems(request, result => taskCompletionSource.SetResult(result), error =>
         {
-            var request = new GetTitleDataRequest
+            CSDebug.LogError("Error: " + error.GenerateErrorReport());
+            taskCompletionSource.SetException(new Exception(error.ErrorMessage));
+        });
+
+        var response = await taskCompletionSource.Task;
+        foreach (var item in response.Catalog)
+        {
+            if (item.ItemId == itemId)
             {
-                Keys = new List<string> { "Tags" }
-            };
-
-            var taskCompletionSource = new TaskCompletionSource<GetTitleDataResult>();
-            PlayFabAdminAPI.GetTitleData(request, result => taskCompletionSource.SetResult(result), error =>
-            {
-                CSDebug.LogError("Error: " + error.GenerateErrorReport());
-                taskCompletionSource.SetException(new Exception(error.ErrorMessage));
-            });
-
-            var response = await taskCompletionSource.Task;
-            var tags = response.Data.ContainsKey("Tags")
-                ? JsonConvert.DeserializeObject<HashSet<string>>(response.Data["Tags"])
-                : new HashSet<string>();
-
-            bool missingTag = false;
-            foreach (var tag in newTags)
-            {
-                if (!tags.Contains(tag))
-                {
-                    tags.Add(tag);
-                    missingTag = true;
-                }
-            }
-
-            if (missingTag)
-            {
-                var updateRequest = new SetTitleDataRequest
-                {
-                    Key = "Tags",
-                    Value = JsonConvert.SerializeObject(tags)
-                };
-
-                var updateTaskCompletionSource = new TaskCompletionSource<SetTitleDataResult>();
-                PlayFabAdminAPI.SetTitleData(updateRequest, result => updateTaskCompletionSource.SetResult(result), error =>
-                {
-                    CSDebug.LogError("Error: " + error.GenerateErrorReport());
-                    updateTaskCompletionSource.SetException(new Exception(error.ErrorMessage));
-                });
-
-                await updateTaskCompletionSource.Task;
+                return true;
             }
         }
-        public static async Task<CreateDraftItemResponse> CreateAndPublishCatalogItem(string contentType, string itemId, string displayName, string description, int price, string currencyCode, List<string> tags)
+
+        return false;
+    }
+
+    public static async Task EnsureTagsExists(List<string> newTags)
+    {
+        var request = new GetTitleDataRequest
         {
-            var priceOptions = new CatalogPriceOptions()
+            Keys = new List<string> { "Tags" }
+        };
+
+        var taskCompletionSource = new TaskCompletionSource<GetTitleDataResult>();
+        PlayFabAdminAPI.GetTitleData(request, result => taskCompletionSource.SetResult(result), error =>
+        {
+            CSDebug.LogError("Error: " + error.GenerateErrorReport());
+            taskCompletionSource.SetException(new Exception(error.ErrorMessage));
+        });
+
+        var response = await taskCompletionSource.Task;
+        var tags = response.Data.ContainsKey("Tags")
+            ? JsonConvert.DeserializeObject<HashSet<string>>(response.Data["Tags"])
+            : new HashSet<string>();
+
+        bool missingTag = false;
+        foreach (var tag in newTags)
+        {
+            if (!tags.Contains(tag))
             {
-                Prices = new()
+                tags.Add(tag);
+                missingTag = true;
+            }
+        }
+
+        if (missingTag)
+        {
+            var updateRequest = new SetTitleDataRequest
+            {
+                Key = "Tags",
+                Value = JsonConvert.SerializeObject(tags)
+            };
+
+            var updateTaskCompletionSource = new TaskCompletionSource<SetTitleDataResult>();
+            PlayFabAdminAPI.SetTitleData(updateRequest, result => updateTaskCompletionSource.SetResult(result), error =>
+            {
+                CSDebug.LogError("Error: " + error.GenerateErrorReport());
+                updateTaskCompletionSource.SetException(new Exception(error.ErrorMessage));
+            });
+
+            await updateTaskCompletionSource.Task;
+        }
+    }
+    public static async Task<CreateDraftItemResponse> CreateAndPublishCatalogItem(string contentType, string itemId, string displayName, string description, int price, string currencyCode, List<string> tags)
+    {
+        var priceOptions = new CatalogPriceOptions()
+        {
+            Prices = new()
+            {
+                new CatalogPrice()
                 {
-                    new CatalogPrice()
+                    UnitAmount = 1,
+                    Amounts = new()
                     {
-                        UnitAmount = 1,
-                        Amounts = new()
+                        new CatalogPriceAmount()
                         {
-                            new CatalogPriceAmount()
-                            {
-                                Amount = price,
-                                ItemId = currencyCode
-                            }
+                            Amount = price,
+                            ItemId = currencyCode
                         }
                     }
                 }
-            };
+            }
+        };
 
-            var draftRequest = new CreateDraftItemRequest
-            {
-                Item = new PlayFab.EconomyModels.CatalogItem
-                {
-                    Id = itemId,
-                    ContentType = contentType,
-                    PriceOptions = priceOptions,
-                    Title = new Dictionary<string, string> { { "NEUTRAL", displayName } },
-                    Description = new Dictionary<string, string> { { "NEUTRAL", description } },
-                    Tags = tags,
-                    Type = "catalogItem",
-                },
-                Publish = true
-            };
-
-            var taskCompletionSource = new TaskCompletionSource<CreateDraftItemResponse>();
-
-            _playFabEconomyInstanceAPI.CreateDraftItem(draftRequest, result =>
-            {
-                taskCompletionSource.SetResult(result);
-            }, error =>
-            {
-                CSDebug.LogError("Error: " + error.GenerateErrorReport());
-                taskCompletionSource.SetResult(null);
-            });
-
-            return await taskCompletionSource.Task;
-        }
-        */
-
-        /*
-        public static async Task<UpdateCatalogItemsResult> CreateCatalogItem(string itemId, string displayName, string description, int price, string currencyCode, List<string> tags)
+        var draftRequest = new CreateDraftItemRequest
         {
-
-            var request = new UpdateCatalogItemsRequest
+            Item = new PlayFab.EconomyModels.CatalogItem
             {
-                CatalogVersion = "Default",
-                Catalog = new List<CatalogItem>
-                {
-                    new CatalogItem
-                    {
-                        ItemId = itemId,
-                        DisplayName = displayName,
-                        Description = description,
-                        VirtualCurrencyPrices = new Dictionary<string, uint> { { currencyCode, (uint)price } },
-                        Consumable = new CatalogItemConsumableInfo { UsageCount = 1 },
-                        IsStackable = false,
-                        IsTradable = false,
-                        Tags = tags
-                    }
-                }
-            };
+                Id = itemId,
+                ContentType = contentType,
+                PriceOptions = priceOptions,
+                Title = new Dictionary<string, string> { { "NEUTRAL", displayName } },
+                Description = new Dictionary<string, string> { { "NEUTRAL", description } },
+                Tags = tags,
+                Type = "catalogItem",
+            },
+            Publish = true
+        };
 
-            var taskCompletionSource = new TaskCompletionSource<UpdateCatalogItemsResult>();
+        var taskCompletionSource = new TaskCompletionSource<CreateDraftItemResponse>();
 
-            PlayFabAdminAPI.UpdateCatalogItems(request, result =>
-            {
-                taskCompletionSource.SetResult(result);
-            }, error =>
-            {
-                CSDebug.LogError("Error: " + error.GenerateErrorReport());
-                taskCompletionSource.SetResult(null);
-            });
+        _playFabEconomyInstanceAPI.CreateDraftItem(draftRequest, result =>
+        {
+            taskCompletionSource.SetResult(result);
+        }, error =>
+        {
+            CSDebug.LogError("Error: " + error.GenerateErrorReport());
+            taskCompletionSource.SetResult(null);
+        });
 
-            return await taskCompletionSource.Task;
-        }
-        */
+        return await taskCompletionSource.Task;
     }
+    */
+
+    /*
+    public static async Task<UpdateCatalogItemsResult> CreateCatalogItem(string itemId, string displayName, string description, int price, string currencyCode, List<string> tags)
+    {
+
+        var request = new UpdateCatalogItemsRequest
+        {
+            CatalogVersion = "Default",
+            Catalog = new List<CatalogItem>
+            {
+                new CatalogItem
+                {
+                    ItemId = itemId,
+                    DisplayName = displayName,
+                    Description = description,
+                    VirtualCurrencyPrices = new Dictionary<string, uint> { { currencyCode, (uint)price } },
+                    Consumable = new CatalogItemConsumableInfo { UsageCount = 1 },
+                    IsStackable = false,
+                    IsTradable = false,
+                    Tags = tags
+                }
+            }
+        };
+
+        var taskCompletionSource = new TaskCompletionSource<UpdateCatalogItemsResult>();
+
+        PlayFabAdminAPI.UpdateCatalogItems(request, result =>
+        {
+            taskCompletionSource.SetResult(result);
+        }, error =>
+        {
+            CSDebug.LogError("Error: " + error.GenerateErrorReport());
+            taskCompletionSource.SetResult(null);
+        });
+
+        return await taskCompletionSource.Task;
+    }
+    */
 }

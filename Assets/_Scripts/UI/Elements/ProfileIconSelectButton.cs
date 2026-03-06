@@ -16,11 +16,11 @@ namespace CosmicShore.UI
         [HideInInspector]
         public ProfileIconSelectView IconView;
         ProfileIcon profileIcon;
-        public ProfileIcon ProfileIcon { 
-            get => profileIcon; 
-            set 
-            { 
-                profileIcon = value; 
+        public ProfileIcon ProfileIcon {
+            get => profileIcon;
+            set
+            {
+                profileIcon = value;
                 IconImage.sprite = value.IconSprite;
             }
         }

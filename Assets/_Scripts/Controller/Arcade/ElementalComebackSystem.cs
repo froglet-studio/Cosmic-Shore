@@ -13,9 +13,8 @@ namespace CosmicShore.Gameplay
     /// Attach to minigame scene alongside the minigame controller. Assign a comeback profile
     /// to configure per-vessel, per-element weights.
     ///
-    /// Example: In HexRace with SpaceWeight=1 and source=CrystalsCollected,
-    /// a player 4 crystals behind the leader gets Space element +4, growing their skimmer.
-    /// In CrystalCapture with TimeWeight=1 and source=Score, the losing player speeds up.
+    /// Operates only in the 0.0–1.5 normalized range (levels 0–15). The first 5 base pips
+    /// (levels -5 to 0) are reserved for the overtake impact effect and are never touched here.
     /// </summary>
     public class ElementalComebackSystem : MonoBehaviour
     {
@@ -66,7 +65,7 @@ namespace CosmicShore.Gameplay
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
-            gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
+            gameData.OnMiniGameEnd += OnGameEnded;
 
             if (debugLogging)
                 CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
@@ -77,7 +76,7 @@ namespace CosmicShore.Gameplay
             if (gameData == null) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
-            gameData.OnMiniGameEnd.OnRaised -= OnGameEnded;
+            gameData.OnMiniGameEnd -= OnGameEnded;
         }
 
         void OnTurnStarted()
@@ -136,6 +135,7 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (!_isActive || comebackProfile == null) return;
+
             if (Time.time - _lastUpdateTime < updateInterval) return;
 
             _lastUpdateTime = Time.time;
@@ -169,6 +169,9 @@ namespace CosmicShore.Gameplay
                     float bonusLevels = scoreDiff * weight;
                     float targetNormalized = baseline[i] + (bonusLevels / 10f);
 
+                    // Clamp to 0.0–1.5 — never touch the base pips (below 0)
+                    targetNormalized = Mathf.Clamp(targetNormalized, 0f, 1.5f);
+
                     rs.SetElementLevel(element, targetNormalized);
                 }
 
@@ -185,7 +188,9 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < AllElements.Length; i++)
             {
                 float initialLevel = config.GetInitialLevel(AllElements[i]);
-                rs.SetElementLevel(AllElements[i], initialLevel / 10f);
+                // Clamp initial values to 0.0–1.5 range
+                float normalized = Mathf.Clamp(initialLevel / 10f, 0f, 1.5f);
+                rs.SetElementLevel(AllElements[i], normalized);
             }
         }
 
@@ -223,10 +228,6 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        /// <summary>
-        /// For CrystalsCollected the leader has MORE crystals (higher is better).
-        /// For Score it depends on useGolfRules (golf = lower is better).
-        /// </summary>
         bool IsHigherBetter()
         {
             return differenceSource switch
@@ -237,10 +238,6 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        /// <summary>
-        /// Returns a non-negative value representing how far behind this player is.
-        /// 0 for the leader; positive for everyone else.
-        /// </summary>
         float CalculateScoreDifference(float leaderValue, float playerValue)
         {
             return IsHigherBetter()

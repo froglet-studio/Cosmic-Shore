@@ -24,6 +24,7 @@ namespace CosmicShore.UI
             HOME   = 2,
             PORT   = 3,
             HANGAR = 4,
+            PROFILE = 5,
         }
 
         public enum ModalWindows
@@ -73,6 +74,10 @@ namespace CosmicShore.UI
         [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
         [Inject] private HostConnectionDataSO hostConnectionData;
 
+        [Header("Disabled Screens")]
+        [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
+        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
+
         [Header("Arcade Panel (separate)")]
         [Tooltip("ArcadeScreen component for the Arcade panel. Uses CanvasGroup for visibility.")]
         [SerializeField] private ArcadeScreen arcadeScreen;
@@ -90,11 +95,12 @@ namespace CosmicShore.UI
         private readonly Dictionary<int, IScreen> _screenMap = new();
 
         // Old constants kept for compatibility
-        private const int STORE  = (int)MenuScreens.STORE;
-        private const int ARCADE = (int)MenuScreens.ARK;
-        private const int HOME   = (int)MenuScreens.HOME;
-        private const int PORT   = (int)MenuScreens.PORT;
-        private const int HANGAR = (int)MenuScreens.HANGAR;
+        private const int STORE   = (int)MenuScreens.STORE;
+        private const int ARCADE  = (int)MenuScreens.ARK;
+        private const int HOME    = (int)MenuScreens.HOME;
+        private const int PORT    = (int)MenuScreens.PORT;
+        private const int HANGAR  = (int)MenuScreens.HANGAR;
+        private const int PROFILE = (int)MenuScreens.PROFILE;
 
         [Header("Nav Bar Line")]
         [SerializeField] private Image NavBarLine;
@@ -229,6 +235,11 @@ namespace CosmicShore.UI
             {
                 var screenEnumInt = PlayerPrefs.GetInt(ReturnToScreenPrefKey);
                 var screenEnum = (MenuScreens)screenEnumInt;
+
+                // Fall back to HOME if the saved screen is now disabled
+                if (IsScreenDisabled(screenEnum))
+                    screenEnum = MenuScreens.HOME;
+
                 NavigateTo(screenEnum, false);
                 PlayerPrefs.DeleteKey(ReturnToScreenPrefKey);
                 PlayerPrefs.Save();
@@ -406,6 +417,16 @@ namespace CosmicShore.UI
             return (int)screen;
         }
 
+        private bool IsScreenDisabled(MenuScreens screen)
+        {
+            return disabledScreens != null && disabledScreens.Contains(screen);
+        }
+
+        private bool IsIndexDisabled(int index)
+        {
+            return IsScreenDisabled(GetScreenIdForIndex(index));
+        }
+
         #endregion
 
         #region Navigation Core
@@ -414,6 +435,9 @@ namespace CosmicShore.UI
         {
             // Arcade is host-only in multiplayer sessions
             if (screen == MenuScreens.ARK && !IsHostOrSolo())
+                return;
+
+            if (IsScreenDisabled(screen))
                 return;
 
             int index = GetIndexForScreen(screen);
@@ -440,6 +464,9 @@ namespace CosmicShore.UI
             }
 
             ScreenIndex = Mathf.Clamp(ScreenIndex, 0, max);
+
+            if (IsIndexDisabled(ScreenIndex))
+                return;
 
             if (ScreenIndex == currentScreen)
                 return;
@@ -525,6 +552,11 @@ namespace CosmicShore.UI
             NavigateTo(MenuScreens.ARK);
         }
 
+        public void OnClickProfileNav()
+        {
+            NavigateTo(MenuScreens.PROFILE);
+        }
+
         public void OnClickArcadeNav()
         {
             OpenArcadePanel();
@@ -542,18 +574,27 @@ namespace CosmicShore.UI
 
         private void NavigateLeft()
         {
-            if (currentScreen <= 0)
+            int target = currentScreen - 1;
+            while (target >= 0 && IsIndexDisabled(target))
+                target--;
+
+            if (target < 0)
                 return;
 
-            NavigateTo(currentScreen - 1);
+            NavigateTo(target);
         }
 
         private void NavigateRight()
         {
-            if (currentScreen >= GetScreenCount() - 1)
+            int max = GetScreenCount() - 1;
+            int target = currentScreen + 1;
+            while (target <= max && IsIndexDisabled(target))
+                target++;
+
+            if (target > max)
                 return;
 
-            NavigateTo(currentScreen + 1);
+            NavigateTo(target);
         }
 
 

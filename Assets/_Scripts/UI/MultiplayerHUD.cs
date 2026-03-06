@@ -85,19 +85,19 @@ namespace CosmicShore.UI
             _playerCards.Clear();
             AssignAIProfiles();
 
-            foreach (var stats in gameData.RoundStatsList)
+            for (int i = 0; i < gameData.RoundStatsList.Count; i++)
             {
-                CreateCardForPlayer(stats);
+                CreateCardForPlayer(gameData.RoundStatsList[i], i);
             }
         }
 
-        private void CreateCardForPlayer(IRoundStats stats)
+        private void CreateCardForPlayer(IRoundStats stats, int staggerIndex)
         {
             var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var isLocal = gameData.LocalPlayer != null && stats.Name == gameData.LocalPlayer.Name;
             var teamColor = view.GetColorForDomain(stats.Domain);
 
-            card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal);
+            card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal, staggerIndex);
 
             // Resolve avatar: for non-local players, try AI profile first
             Sprite avatarSprite = null;

@@ -17,15 +17,15 @@ namespace CosmicShore.UI
 {
     public class PauseMenu : MonoBehaviour
     {
-        [SerializeField] 
+        [SerializeField]
         ScriptableEventNoParam _onClickToMainMenu;
-        
-        [SerializeField] 
+
+        [SerializeField]
         ScriptableEventNoParam _onClickToRestartButton;
-        
+
         [SerializeField]
         GameDataSO gameData;
-        
+
         [FormerlySerializedAs("canvasGroup")]
         [SerializeField] GameObject pauseMenuPanel;
         [SerializeField]
@@ -62,7 +62,7 @@ namespace CosmicShore.UI
             _ = TogglePlayerPauseWithDelay(true);
             Show();
         }
-        
+
         /// <summary>
         /// On click the resume button from UI
         /// </summary>
@@ -70,7 +70,7 @@ namespace CosmicShore.UI
         {
             PauseSystem.TogglePauseGame(false);
             Hide();
-            
+
             if (!wasLocalPlayerInputPausedBefore)
                 _ = TogglePlayerPauseWithDelay(false);
         }
@@ -82,7 +82,7 @@ namespace CosmicShore.UI
         {
             PauseSystem.TogglePauseGame(true);
             Show();
-            
+
             wasLocalPlayerInputPausedBefore = gameData.LocalPlayer.InputStatus.Paused;
             if (!wasLocalPlayerInputPausedBefore)
                 _ = TogglePlayerPauseWithDelay(true);
@@ -103,7 +103,7 @@ namespace CosmicShore.UI
             pauseMenuPanel.gameObject.SetActive(false);
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseClose);
         }
-        
+
         async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)
         {
             await UniTask.Yield();

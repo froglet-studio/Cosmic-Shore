@@ -1,17 +1,15 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Core;
 using CosmicShore.Utility;
-using Reflex.Attributes;
 
 namespace CosmicShore.UI
 {
     public class EpisodeScreen : MonoBehaviour
     {
-        [Inject] IAPManager _iapManager;
         [Header("Data")]
         [SerializeField] private SO_EpisodeList episodeList;
 
@@ -28,32 +26,28 @@ namespace CosmicShore.UI
 
         private readonly List<GameObject> _spawnedCards = new();
         private bool _loaded;
-        private bool _panelVisible;
-        private CanvasGroup _episodePanelCG;
 
         void Start()
         {
             if (supportUsButton != null)
                 supportUsButton.onClick.AddListener(OnSupportUsClicked);
-
-            EnsureEpisodePanelCanvasGroup();
         }
 
         public void TogglePanel()
         {
             if (episodePanel == null) return;
 
-            _panelVisible = !_panelVisible;
-            SetEpisodePanelVisible(_panelVisible);
+            bool show = !episodePanel.activeSelf;
+            episodePanel.SetActive(show);
 
-            if (_panelVisible && !_loaded)
+            if (show && !_loaded)
                 LoadView();
         }
 
         public void ShowPanel()
         {
-            _panelVisible = true;
-            SetEpisodePanelVisible(true);
+            if (episodePanel != null)
+                episodePanel.SetActive(true);
 
             if (!_loaded)
                 LoadView();
@@ -61,36 +55,20 @@ namespace CosmicShore.UI
 
         public void HidePanel()
         {
-            _panelVisible = false;
-            SetEpisodePanelVisible(false);
-        }
-
-        void EnsureEpisodePanelCanvasGroup()
-        {
-            if (_episodePanelCG == null && episodePanel != null)
-            {
-                if (!episodePanel.TryGetComponent(out _episodePanelCG))
-                    _episodePanelCG = episodePanel.AddComponent<CanvasGroup>();
-            }
-        }
-
-        void SetEpisodePanelVisible(bool visible)
-        {
-            if (episodePanel != null && !episodePanel.activeSelf)
-                episodePanel.SetActive(true);
-
-            EnsureEpisodePanelCanvasGroup();
-            if (_episodePanelCG == null) return;
-
-            _episodePanelCG.alpha = visible ? 1f : 0f;
-            _episodePanelCG.blocksRaycasts = visible;
-            _episodePanelCG.interactable = visible;
+            if (episodePanel != null)
+                episodePanel.SetActive(false);
         }
 
         public void LoadView()
         {
             PopulateEpisodeCards();
             _loaded = true;
+        }
+
+        EpisodeProgressCloudData GetCloudProgress()
+        {
+            var ds = UGSDataService.Instance;
+            return ds is { IsInitialized: true } ? ds.Episodes?.Data : null;
         }
 
         void PopulateEpisodeCards()
@@ -101,6 +79,8 @@ namespace CosmicShore.UI
 
             if (episodeList == null || episodeList.episodes == null) return;
             if (cardContainer == null || episodeCardPrefab == null) return;
+
+            var cloudProgress = GetCloudProgress();
 
             foreach (var episode in episodeList.episodes)
             {
@@ -125,13 +105,18 @@ namespace CosmicShore.UI
                         detailTMP.text = episode.description;
                 }
 
-                // Amount / ValueText
+                // Amount / ValueText — show completion status if available
                 var valueTransform = cardGO.transform.Find("Button/ValueText");
                 if (valueTransform != null)
                 {
                     var valueTMP = valueTransform.GetComponent<TMP_Text>();
                     if (valueTMP != null)
-                        valueTMP.text = episode.amount;
+                    {
+                        if (cloudProgress != null && cloudProgress.IsCompleted(episode.episodeId))
+                            valueTMP.text = "Completed";
+                        else
+                            valueTMP.text = episode.amount;
+                    }
                 }
 
                 // BG image
@@ -143,13 +128,17 @@ namespace CosmicShore.UI
                         bgImage.sprite = episode.cardImage;
                 }
 
-                // ComingSoon - show if not available
+                // Button interactability — check cloud unlock state then fallback to SO
+                bool isAvailable = episode.isAvailable;
+                if (cloudProgress != null)
+                    isAvailable = isAvailable || cloudProgress.IsUnlocked(episode.episodeId);
+
                 var button = cardGO.transform.Find("Button");
                 if (button != null)
                 {
                     var btn = button.GetComponent<Button>();
                     if (btn != null)
-                        btn.interactable = episode.isAvailable;
+                        btn.interactable = isAvailable;
                 }
             }
         }
@@ -157,7 +146,7 @@ namespace CosmicShore.UI
         void OnSupportUsClicked()
         {
             CSDebug.Log("[EpisodeScreen] Support Us clicked - IAP not yet configured.");
-            _iapManager?.InitiateSupportPurchase();
+            IAPManager.Instance?.InitiateSupportPurchase();
         }
     }
 }

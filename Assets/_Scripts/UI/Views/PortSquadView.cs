@@ -1,14 +1,12 @@
-using CosmicShore.ScriptableObjects;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using System.Collections.Generic;
-using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
 {
     public class PortSquadView : View
     {
-        [Inject] CaptainManager _captainManager;
         [SerializeField] PortSquadMemberConfigureView squadMemberConfigureView;
 
         [SerializeField] SquadMemberCard PlayerCaptainButton;
@@ -16,26 +14,23 @@ namespace CosmicShore.UI
         [SerializeField] SquadMemberCard RogueTwoCaptainButton;
 
         // TODO: Need to pull this from inventory
-        [SerializeField] SO_ShipList PlayerShips;
+        [SerializeField] SO_VesselList PlayerShips;
         List<SO_Captain> AllCaptains = new();
 
         public int ActiveSquadMember = 0;
 
         void Start()
         {
-            // TODO: Re-enable when PortSquadView is actively being worked on
-            // foreach (var ship in PlayerShips.ShipList)
-            //     foreach (var captain in ship.Captains)
-            //         AllCaptains.Add(captain);
-            //
-            // // Populate Squad Buttons
-            // SquadSystem.CaptainList = _captainManager.GetAllSOCaptains();
-            // SquadSystem.DefaultLeader = AllCaptains[0];
-            // SquadSystem.DefaultRogueOne = AllCaptains[0];
-            // SquadSystem.DefaultRogueTwo = AllCaptains[0];
-            //
-            // // Get player captain and set captain image for button. set player button active
-            // UpdateView();
+            // Captain system removed from vessels — squad system is inactive.
+            // Keeping this stub to prevent runtime errors until squad is refactored.
+            if (AllCaptains.Count > 0)
+            {
+                SquadSystem.DefaultLeader = AllCaptains[0];
+                SquadSystem.DefaultRogueOne = AllCaptains[0];
+                SquadSystem.DefaultRogueTwo = AllCaptains[0];
+            }
+
+            UpdateView();
         }
 
         public void AssignCaptain(SO_Captain captain)

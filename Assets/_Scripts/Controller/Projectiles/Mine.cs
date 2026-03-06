@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using Reflex.Attributes;
@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
         public Material explodingMaterial;
         public Material inactiveMaterial;
     }
-    
+
     public class Mine : MonoBehaviour
     {
         [Inject] AudioSystem audioSystem;
@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
             }
 
             if (_explosionNullified) yield break;
-            
+
             Explode(Vector3.one);
             _explodeRoutine = null;
         }

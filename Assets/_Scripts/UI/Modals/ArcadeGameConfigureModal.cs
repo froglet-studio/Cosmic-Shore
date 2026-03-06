@@ -1,13 +1,13 @@
-using CosmicShore.ScriptableObjects;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
-using CosmicShore.Gameplay;
-using CosmicShore.UI;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Obvious.Soap;
-using Reflex.Attributes;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -18,8 +18,6 @@ namespace CosmicShore.UI
 {
     public class ArcadeGameConfigureModal : ModalWindowManager
     {
-        [Inject] CaptainManager _captainManager;
-
         // TEMP for legacy systems (e.g. DailyChallengeSystem)
         public static ArcadeGameConfigureModal Instance { get; private set; }
 
@@ -29,8 +27,7 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventNoParam startGameRequestedEvent;
 
         [Header("Shared Game Data")]
-        [Inject] private GameDataSO gameData;
-        [Inject] private HostConnectionDataSO hostConnectionData;
+        [SerializeField] private GameDataSO gameData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
         [Header("External Views")]
@@ -45,17 +42,12 @@ namespace CosmicShore.UI
         [Header("Screens (right side)")]
         [SerializeField] private GameObject configurationDetailView; // Screen 1
         [SerializeField] private GameObject gameDetailView;          // Screen 2
-        [SerializeField] private GameObject vesselSelectionView;     // Screen 3
-        [SerializeField] private GameObject squadMateSelectionView;  // Screen 4
 
         [Header("Screen 1 – Configuration Controls")]
         [SerializeField] private PlayerCountStepper          playerCountStepper;
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
         [SerializeField] private TMP_Text teamsValueText;
         [SerializeField] private TeamSelectionPanel teamSelectionPanel;
-
-        [Tooltip("If true, will filter out unowned ships from being available to play")]
-        [SerializeField] private bool respectInventoryForShipSelection = false;
 
         [Header("Screen 2 – Selected Vessel Summary")]
         [SerializeField] private Image    shipPlaceholderIcon;
@@ -68,6 +60,9 @@ namespace CosmicShore.UI
 
         [Tooltip("Optional icon in the game-detail view.")]
         [SerializeField] private Image iconInGameDetailView;
+
+        /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
+        public event Action<int> OnLockedIntensityClicked;
 
         [Header("Ready-Up UI")]
         [Tooltip("Start/Confirm button — all players press this to lock in their choices.")]
@@ -84,7 +79,7 @@ namespace CosmicShore.UI
         VideoPlayer   _previewVideo;
         bool _isClientMode;
 
-        readonly List<SO_Ship> _availableShips = new();
+        readonly List<SO_Vessel> _availableShips = new();
         int _currentShipIndex = -1;
 
         /// <summary>
@@ -106,7 +101,10 @@ namespace CosmicShore.UI
         void OnEnable()
         {
             foreach (var intensityButton in intensityButtons)
+            {
                 intensityButton.OnSelect += HandleIntensitySelected;
+                intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
+            }
 
             if (playerCountStepper)
                 playerCountStepper.OnValueChanged += HandlePlayerCountSelected;
@@ -130,7 +128,10 @@ namespace CosmicShore.UI
         void OnDisable()
         {
             foreach (var intensityButton in intensityButtons)
+            {
                 intensityButton.OnSelect -= HandleIntensitySelected;
+                intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
+            }
 
             if (playerCountStepper)
                 playerCountStepper.OnValueChanged -= HandlePlayerCountSelected;
@@ -212,7 +213,13 @@ namespace CosmicShore.UI
 
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
-            config.Intensity   = game.MinIntensity;
+            // Clamp default intensity to what the player has actually unlocked
+            var progressionService = GameModeProgressionService.Instance;
+            int maxUnlocked = progressionService != null
+                ? progressionService.GetMaxUnlockedIntensity(game.Mode)
+                : game.MaxIntensity;
+
+            config.Intensity   = Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
             SyncGameDataConfig();
@@ -247,6 +254,8 @@ namespace CosmicShore.UI
 
         void InitializeScreen1Controls(SO_ArcadeGame game)
         {
+            var progressionService = GameModeProgressionService.Instance;
+
             for (int i = 0; i < intensityButtons.Count; i++)
             {
                 var button = intensityButtons[i];
@@ -257,7 +266,15 @@ namespace CosmicShore.UI
 
                 bool active = level >= game.MinIntensity && level <= game.MaxIntensity;
                 button.SetActive(active);
-                button.SetSelected(level == config.Intensity);
+
+                // Lock intensity 3 and 4 if the player hasn't unlocked them yet
+                if (active && progressionService != null)
+                {
+                    bool unlocked = progressionService.IsIntensityUnlocked(game.Mode, level);
+                    button.SetLocked(!unlocked);
+                }
+
+                button.SetSelected(active && level == config.Intensity);
             }
 
             // Player count — enforce minimum = party size so host can't select
@@ -279,20 +296,9 @@ namespace CosmicShore.UI
         {
             _availableShips.Clear();
 
-            if (!game) return;
+            if (!game || game.Vessels == null) return;
 
-            var ships = game.Captains
-                .Where(c => c && c.Ship)
-                .Select(c => c.Ship)
-                .ToList();
-
-            if (respectInventoryForShipSelection && _captainManager)
-            {
-                var unlocked = _captainManager.UnlockedShips;
-                ships = ships.Where(s => unlocked.Contains(s)).ToList();
-            }
-
-            _availableShips.AddRange(ships);
+            _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
         }
         
         void InitializeDefaultShipFromAvailable()
@@ -304,7 +310,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            SO_Ship chosen = null;
+            SO_Vessel chosen = null;
 
             if (gameData && gameData.selectedVesselClass)
             {
@@ -339,85 +345,24 @@ namespace CosmicShore.UI
 
         #region Screen switching
 
-        // All screen GameObjects and their cached CanvasGroups.
-        // Screens may start inactive in the scene — we activate them on first use
-        // and rely exclusively on CanvasGroup for visibility after that.
-        readonly struct ScreenSlot
+        void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen)
         {
-            public readonly GameObject Go;
-            public readonly CanvasGroup Cg;
-            public ScreenSlot(GameObject go, CanvasGroup cg) { Go = go; Cg = cg; }
-        }
+            if (configurationDetailView)
+                configurationDetailView.SetActive(configurationDetailView == configScreen);
 
-        ScreenSlot[] _screens;
-        bool _screensInitialized;
-
-        void EnsureScreensInitialized()
-        {
-            if (_screensInitialized) return;
-            _screensInitialized = true;
-
-            _screens = new ScreenSlot[]
-            {
-                InitSlot(configurationDetailView),
-                InitSlot(gameDetailView),
-                InitSlot(vesselSelectionView),
-                InitSlot(squadMateSelectionView),
-            };
-        }
-
-        static ScreenSlot InitSlot(GameObject go)
-        {
-            if (go == null) return default;
-
-            // Activate the GO so CanvasGroup can control visibility.
-            if (!go.activeSelf) go.SetActive(true);
-
-            if (!go.TryGetComponent(out CanvasGroup cg))
-                cg = go.AddComponent<CanvasGroup>();
-
-            // Start hidden — the caller will show the right screen.
-            cg.alpha = 0f;
-            cg.blocksRaycasts = false;
-            cg.interactable = false;
-
-            return new ScreenSlot(go, cg);
-        }
-
-        void ShowScreen(GameObject target)
-        {
-            EnsureScreensInitialized();
-
-            foreach (var slot in _screens)
-            {
-                if (slot.Cg == null) continue;
-                bool show = slot.Go == target;
-                slot.Cg.alpha = show ? 1f : 0f;
-                slot.Cg.blocksRaycasts = show;
-                slot.Cg.interactable = show;
-            }
+            if (gameDetailView)
+                gameDetailView.SetActive(gameDetailView == gameDetailScreen);
         }
 
         void ShowConfigurationScreen()
         {
-            ShowScreen(configurationDetailView);
+            SetScreenActive(configurationDetailView, null);
         }
 
         void ShowGameDetailScreen()
         {
-            ShowScreen(gameDetailView);
+            SetScreenActive(null, gameDetailView);
             RefreshShipSummaryView();
-        }
-
-        void ShowVesselSelectionScreen()
-        {
-            ShowScreen(vesselSelectionView);
-            RefreshShipSummaryView();
-        }
-
-        void ShowSquadMateSelectionScreen()
-        {
-            ShowScreen(squadMateSelectionView);
         }
 
         #endregion
@@ -473,6 +418,25 @@ namespace CosmicShore.UI
             player.NetDomain.Value = domain;
         }
 
+        void HandleLockedIntensitySelected(int intensity)
+        {
+            OnLockedIntensityClicked?.Invoke(intensity);
+
+            if (_selectedGame == null) return;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) return;
+
+            var quest = service.GetQuestForMode(_selectedGame.Mode);
+            if (quest == null) return;
+
+            string goalDescription = intensity == 3
+                ? quest.Intensity3GoalDescription
+                : quest.Intensity4GoalDescription;
+
+            ToastNotificationAPI.Show(goalDescription);
+        }
+
         void HandleConfigChangedExternal()
         {
             if (!gameObject.activeInHierarchy || !config) return;
@@ -518,7 +482,7 @@ namespace CosmicShore.UI
             RaiseConfigChanged();
         }
 
-        void SetSelectedShipInternal(SO_Ship ship)
+        void SetSelectedShipInternal(SO_Vessel ship)
         {
             if (config)
                 config.SelectedShip = ship;
@@ -548,7 +512,7 @@ namespace CosmicShore.UI
             RefreshShipSummaryView(config ? config.SelectedShip : null);
         }
 
-        void RefreshShipSummaryView(SO_Ship ship)
+        void RefreshShipSummaryView(SO_Vessel ship)
         {
             // Icons
             Sprite icon = ship && ship.IconActive ? ship.IconActive : null;
@@ -588,7 +552,7 @@ namespace CosmicShore.UI
         // Screen 1 → Screen 2
         public void OnConfirmConfiguration()
         {
-            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
             ShowGameDetailScreen();
 
             if (!IsClientMode && arcadeConfigSyncManager)
@@ -745,12 +709,11 @@ namespace CosmicShore.UI
             if (gameData.SelectedIntensity)
                 gameData.SelectedIntensity.Value = config.Intensity;
 
-            // SelectedPlayerCount is NOT synced here — during modal interaction,
-            // config.PlayerCount (ArcadeGameConfigSO) is the interim store.
-            // Player count is only committed to gameData at launch via ConfigurePlayerCounts().
+            if (gameData.SelectedPlayerCount)
+                gameData.SelectedPlayerCount.Value = config.PlayerCount;
         }
 
-        void SyncGameDataShip(SO_Ship ship)
+        void SyncGameDataShip(SO_Vessel ship)
         {
             if (!gameData || !gameData.selectedVesselClass)
                 return;
@@ -772,7 +735,7 @@ namespace CosmicShore.UI
         /// each client's vessel choice is propagated to the server independently
         /// of gameData.selectedVesselClass (which carries the host's choice).
         /// </summary>
-        void SyncLocalPlayerVesselType(SO_Ship ship)
+        void SyncLocalPlayerVesselType(SO_Vessel ship)
         {
             if (gameData.LocalPlayer is not Player localPlayer) return;
             if (!localPlayer.IsOwner) return;

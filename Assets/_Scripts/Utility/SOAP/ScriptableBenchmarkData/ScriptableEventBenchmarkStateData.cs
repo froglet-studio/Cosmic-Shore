@@ -1,7 +1,7 @@
 using UnityEngine;
 using Obvious.Soap;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(
         fileName = "scriptable_event_" + nameof(BenchmarkStateData),

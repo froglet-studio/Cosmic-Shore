@@ -32,8 +32,6 @@ namespace CosmicShore.Gameplay
 
         float Inertia { get; }
 
-        SO_Captain Captain { get; set; }
-
         float ChargedBoostCharge { get; set; }
         bool IsChargedBoostDischarging { get; set; }
 

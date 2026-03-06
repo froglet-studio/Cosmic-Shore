@@ -1,10 +1,10 @@
 ﻿// MultiplayerCrystalCaptureEndGameController.cs
 using System.Collections;
 using System.Linq;
-using UnityEngine;
 using CosmicShore.Utility;
+using UnityEngine;
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Gameplay
 {
     public class MultiplayerCrystalCaptureEndGameController : EndGameCinematicController
     {

@@ -1,13 +1,12 @@
 using CosmicShore.Core;
-using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility;
-using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.UI
 {
@@ -97,7 +96,7 @@ namespace CosmicShore.UI
             SetIntensity(currentIntensity);
 
             // Rewards
-            
+
 
             // Preview
             if (SelectedGamePreviewWindow != null)
@@ -159,21 +158,21 @@ namespace CosmicShore.UI
 
         public void LaunchSelectedGame()
         {
-            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             var shipResources = new ResourceCollection();
             if (SelectedGame.ElementOne.Element == Element.Charge || SelectedGame.ElementTwo.Element == Element.Charge)
                 shipResources.Charge = 1;
-            
+
             if (SelectedGame.ElementOne.Element == Element.Mass || SelectedGame.ElementTwo.Element == Element.Mass)
                 shipResources.Mass = 1;
 
             if (SelectedGame.ElementOne.Element == Element.Space || SelectedGame.ElementTwo.Element == Element.Space)
                 shipResources.Space = 1;
-            
+
             if (SelectedGame.ElementOne.Element == Element.Time || SelectedGame.ElementTwo.Element == Element.Time )
                 shipResources.Time = 1;
-            
-            // Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame._SO_Ship.Class, shipResources, Intensity, 1, false);
+
+            Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame._SO_Vessel.Class, shipResources, Intensity, 1, false);
         }
     }
 }

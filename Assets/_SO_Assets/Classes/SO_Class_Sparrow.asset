@@ -14,7 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 11
   Name: Sparrow
-  Description: The classic arcade flyer. Use your Pulsefire Cannons and Skyburst Rockets to destroy enemy blocks, flora, fauna, structures, everything...
+  Description: The classic arcade flyer. Use your Pulsefire Cannons and Skyburst
+    Rockets to destroy enemy blocks, flora, fauna, structures, everything...
+  PrimaryElement: 0
+  Element: {fileID: 0}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
   IconActive: {fileID: 21300000, guid: ba44f040361ef7a48bc5af4f07dc0123, type: 3}
   IconInactive: {fileID: 21300000, guid: ec6d1c30320775940a869e5509f3e3f3, type: 3}
   PreviewImage: {fileID: 21300000, guid: 1f4cbb23d1a737f4e8952f4015810811, type: 3}
@@ -29,11 +37,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 417e8082f9f3c0747919031a76b7e360, type: 2}
   - {fileID: 11400000, guid: 1bb66dc886864fb4c84b653159a78cd6, type: 2}
   - {fileID: 11400000, guid: 1420851e46925ba4bbc3a5b5e4d940d2, type: 2}
-  Captains:
-  - {fileID: 11400000, guid: 7f165b71dbb0ecf498a0c72fd080457d, type: 2}
-  - {fileID: 11400000, guid: fe133531e5ac3fa4bbe25a674654ee9a, type: 2}
-  - {fileID: 11400000, guid: 81c8a34028484c749afd0761119af199, type: 2}
-  - {fileID: 11400000, guid: 2cd54de582d5f6c4ab6968d845324516, type: 2}
   Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   TrainingGames:
@@ -51,3 +54,5 @@ MonoBehaviour:
     LeftHandLabel: Solo
     RightHandLabel: Social
     Value: 0.5
+  isLocked: 1
+  UnlockCost: 4000

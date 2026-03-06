@@ -183,12 +183,6 @@ namespace CosmicShore.Gameplay
         public virtual void SetSkimmerMaterial(Material material) =>
                 VesselStatus.SkimmerMaterial = material;
 
-        public virtual void AssignCaptain(SO_Captain captain)
-        {
-            VesselStatus.Captain = captain;
-            SetResourceLevels(captain.InitialResourceLevels);
-        }
-
         public virtual void BindElementalFloat(string name, Element element) =>
             VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
 

@@ -1,11 +1,10 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Data;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Data;
-using CosmicShore.Gameplay;
-using CosmicShore.UI;
+
 namespace CosmicShore.UI
 {
     public class SparrowHUDView : VesselHUDView
@@ -20,14 +19,19 @@ namespace CosmicShore.UI
         [SerializeField] private Color boostFullColor;
         [SerializeField] private Color overheatingColor;
 
+        [Header("Boost Animation")]
+        [SerializeField] private float boostFillTweenDuration = 0.15f;
+
         [Header("Weapon Mode")]
         [SerializeField] private Image weaponModeIcon;
         [SerializeField] private Sprite[] weaponModeIcons = new Sprite[2];
 
         [Header("Blocked Input Highlights")]
         [SerializeField] private Color blockedInputColor = Color.red;
+        [SerializeField] private float blockedPulseDuration = 0.4f;
 
-        readonly Dictionary<InputEvents, Coroutine> _blockEnforcers = new();
+        readonly Dictionary<InputEvents, Tween> _blockTweens = new();
+        private Tween _boostFillTween;
 
         public override void Initialize()
         {
@@ -90,7 +94,11 @@ namespace CosmicShore.UI
             if (!boostFill) return;
 
             var clamped = Mathf.Clamp01(heat01);
-            boostFill.fillAmount = clamped;
+
+            // Smooth fill interpolation instead of instant snap
+            _boostFillTween?.Kill();
+            _boostFillTween = boostFill.DOFillAmount(clamped, boostFillTweenDuration)
+                .SetEase(Ease.Linear);
 
             if (overheated)
                 boostFill.color = overheatingColor;
@@ -134,18 +142,28 @@ namespace CosmicShore.UI
             var img = FindHighlightImage(input);
             if (!img) return;
 
-            if (_blockEnforcers.TryGetValue(input, out var running) && running != null)
-                StopCoroutine(running);
+            // Kill existing tween for this input
+            if (_blockTweens.TryGetValue(input, out var existing))
+                existing?.Kill();
 
-            _blockEnforcers[input] = StartCoroutine(EnforceBlockedHighlight(img, input));
+            img.enabled = true;
+            img.color = blockedInputColor;
+
+            // Pulse between blocked color and a dimmed version
+            var dimColor = blockedInputColor * 0.5f;
+            dimColor.a = 1f;
+            _blockTweens[input] = img.DOColor(dimColor, blockedPulseDuration)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetEase(Ease.InOutSine);
         }
 
         void StopBlockedHighlight(InputEvents input)
         {
-            if (_blockEnforcers.TryGetValue(input, out var running) && running != null)
-                StopCoroutine(running);
-
-            _blockEnforcers.Remove(input);
+            if (_blockTweens.TryGetValue(input, out var tween))
+            {
+                tween?.Kill();
+                _blockTweens.Remove(input);
+            }
 
             var img = FindHighlightImage(input);
             if (!img) return;
@@ -162,17 +180,15 @@ namespace CosmicShore.UI
             return null;
         }
 
-        IEnumerator EnforceBlockedHighlight(Image img, InputEvents input)
-        {
-            while (true)
-            {
-                if (!img) yield break;
-                img.enabled = true;
-                img.color = blockedInputColor;
-                yield return null;
-            }
-        }
-
         #endregion
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            _boostFillTween?.Kill();
+            foreach (var tween in _blockTweens.Values)
+                tween?.Kill();
+            _blockTweens.Clear();
+        }
     }
 }

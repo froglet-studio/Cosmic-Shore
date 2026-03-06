@@ -1,13 +1,13 @@
-using CosmicShore.ScriptableObjects;
-using CosmicShore.Core;
+﻿using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Utility;
-using System.Linq;
+
 
 namespace CosmicShore.Core
 {
@@ -140,15 +140,25 @@ namespace CosmicShore.Core
             PlayerPrefs.Save();
 
             dailyChallenge = FetchDailyChallenge();
-            DailyGame = null; // Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
-
-            if (DailyGame != null)
-                ShipResources = LoadGameResourceCollection(DailyGame);
+            DailyGame = Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
+            ShipResources = LoadGameResourceCollection(DailyGame);
         }
 
         DailyChallenge FetchDailyChallenge()
         {
-            return default;
+            // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed 
+            DateTime currentDate = DateTime.UtcNow.Date;
+            long dateTicks = currentDate.Ticks;
+            var random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
+
+            var trainingGames = Arcade.Instance.TrainingGames.Games;
+            var index = random.Next(trainingGames.Count);
+            var dailyGame = trainingGames[index];
+            var challenge = new DailyChallenge();
+            challenge.GameMode = dailyGame.Game.Mode;
+            challenge.Intensity = random.Next(4);
+
+            return challenge;
         }
 
         public void PlayDailyChallenge()
@@ -158,7 +168,7 @@ namespace CosmicShore.Core
             {
                 CSDebug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
                 CatalogManager.Instance.UseDailyChallengeTicket();
-                // Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Ship.Class, ShipResources, dailyChallenge.Intensity, 1, true);
+                Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Vessel.Class, ShipResources, dailyChallenge.Intensity, 1, true);
             }
             else
             {

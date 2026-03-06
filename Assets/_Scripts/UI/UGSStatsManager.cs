@@ -1,53 +1,74 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System;
 using CosmicShore.Core;
-using Unity.Services.Analytics;
-using CosmicShore.ScriptableObjects;
-using Unity.Services.CloudSave;
-using Unity.Services.Leaderboards;
-using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.UI;
+using Unity.Services.Analytics;
+using Unity.Services.Leaderboards;
+using UnityEngine;
 using CosmicShore.Utility;
-using System.Linq;
 
-namespace CosmicShore.UI
+namespace CosmicShore.Core
 {
+    /// <summary>
+    /// Domain service for game stats and vessel telemetry.
+    /// Delegates all cloud persistence to UGSDataService.StatsRepo and VesselStatsRepo.
+    /// Keeps leaderboard submission, analytics, and stat evaluation logic here.
+    /// </summary>
     public class UGSStatsManager : MonoBehaviour
     {
-        [Header("Dependencies")] 
-        [SerializeField] LeaderboardConfigSO leaderboardConfig; 
-        
-        [SerializeField]
-        AuthenticationDataVariable authenticationDataVariable;
-        AuthenticationData authenticationData => authenticationDataVariable.Value;
+        public static UGSStatsManager Instance { get; private set; }
 
-        private PlayerStatsProfile _cachedProfile = new PlayerStatsProfile();
-        private VesselStatsCloudData _vesselStats = new VesselStatsCloudData();
-        private const string CLOUD_KEY = UGSKeys.PlayerStatsProfile;
-        private const string VESSEL_KEY = UGSKeys.VesselStats;
-        private bool _isReady = false;
+        [Header("Dependencies")]
+        [SerializeField] LeaderboardConfigSO leaderboardConfig;
 
-        // Save debouncing: coalesces rapid saves into a single cloud call
-        private const float SAVE_DEBOUNCE_SECONDS = 2f;
-        private bool _saveDirty;
-        private bool _saveInFlight;
+        private PlayerStatsProfile _cachedProfile = new();
+        private VesselStatsCloudData _vesselStats = new();
+        private bool _isReady;
 
-        private void OnEnable()
+        void Awake()
         {
-            if (authenticationDataVariable == null)
-            {
-                Debug.LogWarning("[UGSStatsManager] authenticationDataVariable is not assigned — auth events will not be observed.");
-                return;
-            }
-            authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
+            if (Instance != null) { Destroy(gameObject); return; }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
 
-        private void OnDisable()
+        void Start()
         {
-            if (authenticationDataVariable == null) return;
-            authenticationData.OnSignedIn.OnRaised -= OnAuthenticationSignedIn;
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+            {
+                if (ds.IsInitialized)
+                    HandleDataServiceReady();
+                else
+                    ds.OnInitialized += HandleDataServiceReady;
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+                ds.OnInitialized -= HandleDataServiceReady;
+        }
+
+        void HandleDataServiceReady()
+        {
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+                ds.OnInitialized -= HandleDataServiceReady;
+
+            // Use the repo's data directly — no separate cloud load needed
+            if (ds?.StatsRepo != null)
+                _cachedProfile = ds.StatsRepo.Data;
+            if (ds?.VesselStatsRepo != null)
+                _vesselStats = ds.VesselStatsRepo.Data;
+
+            _isReady = true;
+            CSDebug.Log("[UGSStats] Initialized from UGSDataService repositories.");
         }
 
         #region Public API - Smart High Score Evaluation
@@ -63,22 +84,22 @@ namespace CosmicShore.UI
                 float cloudBest = 0f;
 
                 if (mode == GameModes.HexRace)
-                    cloudBest = _cachedProfile.MultiHexStats.BestMultiplayerRaceTimes.GetValueOrDefault(key, 0f);
+                    _cachedProfile.MultiHexStats.BestMultiplayerRaceTimes.TryGetValue(key, out cloudBest);
                 else if (mode == GameModes.MultiplayerJoust)
-                    cloudBest = _cachedProfile.JoustStats.BestRaceTimes.GetValueOrDefault(key, 0f);
+                    _cachedProfile.JoustStats.BestRaceTimes.TryGetValue(key, out cloudBest);
                 
                 if (cloudBest <= 0.001f) return currentSessionScore;
                 return currentSessionScore >= 10000f ? cloudBest : Mathf.Min(cloudBest, currentSessionScore);
             }
             else if (mode == GameModes.WildlifeBlitz)
             {
-                int cloudBest = _cachedProfile.BlitzStats.HighScores.GetValueOrDefault(key, 0);
-                return Mathf.Max(cloudBest, currentSessionScore);
+                _cachedProfile.BlitzStats.HighScores.TryGetValue(key, out int blitzBest);
+                return Mathf.Max(blitzBest, currentSessionScore);
             }
             else if (mode == GameModes.MultiplayerCrystalCapture)
             {
-                int cloudBest = _cachedProfile.CrystalCaptureStats.HighScores.GetValueOrDefault(key, 0);
-                return Mathf.Max(cloudBest, currentSessionScore);
+                _cachedProfile.CrystalCaptureStats.HighScores.TryGetValue(key, out int ccBest);
+                return Mathf.Max(ccBest, currentSessionScore);
             }
 
             return currentSessionScore;
@@ -181,7 +202,8 @@ namespace CosmicShore.UI
                         $"stolen={squirrel.PrismsStolen}, cleanStreak={squirrel.MaxCleanStreak}");
                     stats.IncrementCounter("JoustsWon", squirrel.JoustsWon);
                     stats.IncrementCounter("PrismsStolen", squirrel.PrismsStolen);
-                    if (squirrel.MaxCleanStreak > stats.Counters.GetValueOrDefault("BestCleanStreak", 0))
+                    stats.Counters.TryGetValue("BestCleanStreak", out int prevStreak);
+                    if (squirrel.MaxCleanStreak > prevStreak)
                         stats.Counters["BestCleanStreak"] = squirrel.MaxCleanStreak;
                     break;
                 default:
@@ -191,6 +213,10 @@ namespace CosmicShore.UI
 
             SaveVesselStats();
         }
+
+        #endregion
+
+        #region Internal
 
         public void TrackPlayAgain()
         {
@@ -205,16 +231,6 @@ namespace CosmicShore.UI
             {
                 Debug.LogWarning($"[UGSStats] Failed to send Play Again event: {ex.Message}");
             }
-        }
-
-        #endregion
-
-        #region Internal
-
-        void OnAuthenticationSignedIn()
-        {
-            _isReady = true;
-            LoadProfile();
         }
 
         async void SubmitScoreInternal(GameModes mode, int intensity, double score)
@@ -236,89 +252,18 @@ namespace CosmicShore.UI
             }
         }
 
-        async void LoadProfile()
-        {
-            try
-            {
-                var keys = new HashSet<string> { CLOUD_KEY, VESSEL_KEY };
-                var data = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
-
-                if (data.TryGetValue(CLOUD_KEY, out var statsItem))
-                    _cachedProfile = statsItem.Value.GetAs<PlayerStatsProfile>();
-
-                if (data.TryGetValue(VESSEL_KEY, out var vesselItem))
-                    _vesselStats = vesselItem.Value.GetAs<VesselStatsCloudData>();
-
-                _cachedProfile.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
-                _cachedProfile.MultiHexStats ??= new HexRacePlayerStatsProfile();
-                _cachedProfile.JoustStats ??= new JoustPlayerStatsProfile();
-                _cachedProfile.CrystalCaptureStats ??= new CrystalCapturePlayerStatsProfile();
-                _vesselStats ??= new VesselStatsCloudData();
-
-                Debug.Log("[UGSStats] Profile and vessel stats loaded from cloud save.");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[UGSStats] Failed to load from cloud save: {ex.Message}. Using defaults.");
-            }
-        }
-
         /// <summary>
-        /// Marks profile as dirty and schedules a debounced cloud save.
-        /// Multiple calls within SAVE_DEBOUNCE_SECONDS collapse into one actual save.
+        /// Delegates save to StatsRepo (debounced by the repository).
         /// </summary>
         void SaveProfile()
         {
-            _saveDirty = true;
-            if (!_saveInFlight)
-                DebouncedSaveAsync();
+            _cachedProfile.LastLoginTick = DateTime.UtcNow.Ticks;
+            UGSDataService.Instance?.StatsRepo?.MarkDirty();
         }
 
-        async void DebouncedSaveAsync()
+        void SaveVesselStats()
         {
-            if (_saveInFlight) return;
-            _saveInFlight = true;
-
-            try
-            {
-                // Wait to coalesce rapid mutations
-                await Task.Delay((int)(SAVE_DEBOUNCE_SECONDS * 1000));
-
-                // Drain: keep saving while mutations arrive during the save
-                while (_saveDirty)
-                {
-                    _saveDirty = false;
-                    _cachedProfile.LastLoginTick = DateTime.UtcNow.Ticks;
-                    var data = new Dictionary<string, object> { { CLOUD_KEY, _cachedProfile } };
-                    await CloudSaveService.Instance.Data.Player.SaveAsync(data);
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[UGSStats] Save failed: {e.Message}");
-            }
-            finally
-            {
-                _saveInFlight = false;
-
-                // If something dirtied during our save, kick off another cycle
-                if (_saveDirty)
-                    DebouncedSaveAsync();
-            }
-        }
-
-        async void SaveVesselStats()
-        {
-            try
-            {
-                var data = new Dictionary<string, object> { { VESSEL_KEY, _vesselStats } };
-                await CloudSaveService.Instance.Data.Player.SaveAsync(data);
-                Debug.Log("[UGSStats] Vessel stats saved to cloud.");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[UGSStats] Vessel stats save failed: {e.Message}");
-            }
+            UGSDataService.Instance?.VesselStatsRepo?.MarkDirty();
         }
 
         #endregion

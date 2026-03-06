@@ -1,5 +1,9 @@
 using CosmicShore.Gameplay;
 using UnityEngine;
+using System.Collections;
+using System;
+using CosmicShore.Core;
+
 namespace CosmicShore.Gameplay
 {
     public enum BlockState
@@ -104,6 +108,7 @@ namespace CosmicShore.Gameplay
             CurrentState = BlockState.Shielded;
 
             SyncAOERegistryShieldState();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
 
         private void ApplyNormalState()
@@ -120,6 +125,9 @@ namespace CosmicShore.Gameplay
             CurrentState = BlockState.Normal;
 
             SyncAOERegistryShieldState();
+
+            if (wasShielded)
+                AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
         }
 
         private void SyncAOERegistryShieldState()

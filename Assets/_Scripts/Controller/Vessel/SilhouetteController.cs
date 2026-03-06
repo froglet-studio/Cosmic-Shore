@@ -3,6 +3,8 @@ using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.UI;
+using CosmicShore.Core;
+
 namespace CosmicShore.Gameplay
 {
     public class SilhouetteController : MonoBehaviour
@@ -19,6 +21,9 @@ namespace CosmicShore.Gameplay
 
         [Header("View")]
         [SerializeField] private SilhouetteView view; // view
+
+        [Header("Element Bars")]
+        [SerializeField] private ElementalBarsView elementBars;
 
         private IVessel _vessel;
         private IVesselStatus _status;
@@ -65,6 +70,7 @@ namespace CosmicShore.Gameplay
             }
 
             TryUnsubscribeResources();
+            TryUnsubscribeElementBars();
 
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
         }
@@ -82,6 +88,8 @@ namespace CosmicShore.Gameplay
                 var r = _resources.Resources[energyResourceIndex];
                 view?.UpdateEnergyUI(r.CurrentAmount, r.MaxAmount);
             }
+
+            InitializeElementBars();
         }
 
         void TrySubscribeResources()
@@ -198,6 +206,39 @@ namespace CosmicShore.Gameplay
         {
             view?.ShowMantaFlowerOverlay();
         }
+
+        // --- Element Bars ---
+        void TryUnsubscribeElementBars()
+        {
+            if (_resources != null)
+                _resources.OnElementLevelChange -= HandleElementLevelChanged;
+        }
+
+        void InitializeElementBars()
+        {
+            if (!elementBars) return;
+            elementBars.Build();
+
+            if (_resources != null)
+            {
+                _resources.OnElementLevelChange += HandleElementLevelChanged;
+
+                elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
+                elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
+                elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
+                elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
+            }
+        }
+
+        void HandleElementLevelChanged(Element element, int level)
+        {
+            elementBars?.SetLevel(element, level);
+        }
+
+        /// <summary>
+        /// Exposes the ElementalBarsView for the HUD controller to apply juice effects.
+        /// </summary>
+        public ElementalBarsView ElementBars => elementBars;
 
     }
 }

@@ -94,12 +94,12 @@ namespace CosmicShore.UI
 
             // Populate Captain Details
             SelectedCaptainName.text = captain.Name;
-            SelectedCaptainElementLabel.text = "The " + captain.PrimaryElement.ToString() + " " + captain.Ship.Name;
+            SelectedCaptainElementLabel.text = "The " + captain.PrimaryElement.ToString() + " " + captain.Vessel.Name;
             SelectedUpgradeDescription.text = captain.Description;
             SelectedCaptainQuote.text = captain.Flavor;
             SelectedCaptainImage.sprite = captain.Image;
             SelectedCaptainImage.color = Color.white;
-            SelectedCaptainShipImage.sprite = captain.Ship.IconActive;
+            SelectedCaptainShipImage.sprite = captain.Vessel.IconActive;
 
             //
             // Populate Requirements Box

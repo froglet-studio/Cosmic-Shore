@@ -1,11 +1,9 @@
-using CosmicShore.ScriptableObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Utility;
-using Reflex.Attributes;
-using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
+using UnityEngine;
 
 namespace CosmicShore.UI
 {
@@ -13,7 +11,7 @@ namespace CosmicShore.UI
     /// Type-driven ship selection view.
     /// - Each slot is bound to a VesselClassType.
     /// - GameDataSO holds the selected vessel type and index.
-    /// - shipsCatalog provides the SO_Ship data per class.
+    /// - shipsCatalog provides the SO_Vessel data per class.
     /// </summary>
     public class ShipSelectionView : View
     {
@@ -22,16 +20,16 @@ namespace CosmicShore.UI
         [SerializeField] private List<ShipSelectionSlot> slots = new(); // wired in inspector
 
         [Header("Data")]
-        [Inject] private GameDataSO gameData;                            // the shared GameDataSO
-        [SerializeField] private List<SO_Ship> shipsCatalog = new();    // all ships, one per class
+        [SerializeField] private GameDataSO gameData;                   // the shared GameDataSO
+        [SerializeField] private List<SO_Vessel> shipsCatalog = new();    // all ships, one per class
 
         [SerializeField] private bool verboseLogging;
 
-        public delegate void SelectionCallback(SO_Ship ship);
+        public delegate void SelectionCallback(SO_Vessel ship);
         public SelectionCallback OnSelect;
 
         MenuAudio _menuAudio;
-        Dictionary<VesselClassType, SO_Ship> _shipsByClass;
+        Dictionary<VesselClassType, SO_Vessel> _shipsByClass;
 
         void Awake()
         {
@@ -39,9 +37,7 @@ namespace CosmicShore.UI
                 _menuAudio = shipSelectionGrid.GetComponent<MenuAudio>();
         }
 
-        void Start() => NormalizeAndPaint();
-
-        void NormalizeAndPaint()
+        void OnEnable()
         {
             EnsureLookup();
 
@@ -70,7 +66,7 @@ namespace CosmicShore.UI
         {
             if (_shipsByClass != null) return;
 
-            _shipsByClass = new Dictionary<VesselClassType, SO_Ship>();
+            _shipsByClass = new Dictionary<VesselClassType, SO_Vessel>();
 
             foreach (var ship in shipsCatalog)
             {
@@ -120,7 +116,7 @@ namespace CosmicShore.UI
             // Base view is still index-based, we keep this for compatibility,
             // but real source of truth is GameDataSO.selectedVesselClass.
             base.Select(index);
-            OnSelect?.Invoke(SelectedModel as SO_Ship);
+            OnSelect?.Invoke(SelectedModel as SO_Vessel);
         }
 
         public override void UpdateView()
@@ -167,8 +163,16 @@ namespace CosmicShore.UI
             }
         }
 
-        void HandleSlotClicked(VesselClassType vesselType, SO_Ship ship)
+        void HandleSlotClicked(VesselClassType vesselType, SO_Vessel ship)
         {
+            // Prevent selecting locked vessels
+            if (ship != null && ship.IsLocked)
+            {
+                if (verboseLogging)
+                    CSDebug.Log($"[ShipSelectionView] Blocked selection of locked vessel {vesselType}");
+                return;
+            }
+
             if (gameData != null && gameData.selectedVesselClass != null)
             {
                 gameData.selectedVesselClass.Value = vesselType;

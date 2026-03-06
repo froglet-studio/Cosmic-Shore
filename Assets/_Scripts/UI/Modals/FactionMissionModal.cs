@@ -1,11 +1,9 @@
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
-using CosmicShore.Gameplay;
 using TMPro;
 using UnityEngine;
-using CosmicShore.Data;
-using CosmicShore.Utility;
+
 namespace CosmicShore.UI
 {
     public class FactionMissionModal : ModalWindowManager
@@ -23,8 +21,8 @@ namespace CosmicShore.UI
 
         public void Play()
         {
-            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
-            // Arcade.Instance.LaunchMission(Mission.Mode, SquadSystem.SquadLeader, Intensity);
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            Arcade.Instance.LaunchMission(Mission.Mode, SquadSystem.SquadLeader?.Vessel, Intensity);
         }
 
         public void SetIntensity(float intensity)

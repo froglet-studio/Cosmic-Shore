@@ -21,13 +21,8 @@ namespace CosmicShore.UI
 
         public override void AssignModel(ScriptableObject Model)
         {
-            // cast
-            var ship = Model as SO_Ship;
-
-            // sort
-            sortedCaptains = ship.Captains;
-            sortedCaptains.Sort((x, y) => { return x.PrimaryElement < y.PrimaryElement ? 1 : -1; });
-            
+            // Captain system removed from vessels — Port screen is inactive.
+            sortedCaptains.Clear();
             base.AssignModel(Model);
         }
 
@@ -76,6 +71,9 @@ namespace CosmicShore.UI
 
         public override void Select(int index)
         {
+            if (sortedCaptains == null || index < 0 || index >= sortedCaptains.Count)
+                return;
+
             CSDebug.Log($"Selected {index}");
             shipClassTypeVariable.Value = index;
             OnSelect?.Invoke(sortedCaptains[index]);
