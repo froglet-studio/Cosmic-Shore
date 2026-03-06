@@ -11,7 +11,7 @@ using Reflex.Attributes;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public class NavLink : MonoBehaviour
     {

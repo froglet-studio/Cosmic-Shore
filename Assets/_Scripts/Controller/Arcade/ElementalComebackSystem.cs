@@ -14,6 +14,10 @@ namespace CosmicShore.Gameplay
     /// Attach to minigame scene alongside the minigame controller. Assign a comeback profile
     /// to configure per-vessel, per-element weights.
     ///
+    /// Example: In HexRace with SpaceWeight=1 and source=CrystalsCollected,
+    /// a player 4 crystals behind the leader gets Space element +4, growing their skimmer.
+    /// In CrystalCapture with TimeWeight=1 and source=Score, the losing player speeds up.
+    ///
     /// Also detects overtake events: when a player who was leading gets overtaken,
     /// all their elemental values slam to -5 and gradually recover to 0.
     /// </summary>
@@ -89,7 +93,7 @@ namespace CosmicShore.Gameplay
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
-            gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
+            gameData.OnMiniGameEnd += OnGameEnded;
 
             if (debugLogging)
                 CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
@@ -100,7 +104,7 @@ namespace CosmicShore.Gameplay
             if (gameData == null) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
-            gameData.OnMiniGameEnd.OnRaised -= OnGameEnded;
+            gameData.OnMiniGameEnd -= OnGameEnded;
         }
 
         void OnTurnStarted()
@@ -200,8 +204,6 @@ namespace CosmicShore.Gameplay
             if (players == null || players.Count < 2) return;
 
             float leaderValue = GetLeaderValue();
-
-            // Leader tracking now handled by CheckForOvertake() every frame
 
             for (int p = 0; p < players.Count; p++)
             {

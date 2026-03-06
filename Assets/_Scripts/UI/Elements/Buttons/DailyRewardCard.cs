@@ -144,6 +144,7 @@ namespace CosmicShore.UI
         void ClaimAdWatchReward(string adUnitId, UnityAdsShowCompletionState showCompletionState)
         {
             CSDebug.Log("Claim Daily Reward via ad watch");
+            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
             DailyRewardHandler.Instance.Claim();
             IconEmitter?.EmitIcons();
             StartCoroutine(RotateCoroutine(EnterClockMode));
