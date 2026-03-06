@@ -163,6 +163,8 @@ namespace CosmicShore.App.UI
             PlayerPrefs.Save();
         }
         
+        public bool HasActiveModal => activeModalStack.Count > 0;
+
         public bool ScreenIsActive(MenuScreens screen)
         {
             return GetScreenIdForIndex(currentScreen) == screen;
@@ -244,6 +246,7 @@ namespace CosmicShore.App.UI
         private void Update()
         {
             if (Gamepad.current == null) return;
+            if (HasActiveModal) return; // Don't switch screens while a modal is open
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
             if (Gamepad.current.rightTrigger.wasPressedThisFrame)

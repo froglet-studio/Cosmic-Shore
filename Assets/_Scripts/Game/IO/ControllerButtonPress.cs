@@ -114,12 +114,15 @@ namespace CosmicShore.Game.IO
             
             if (screenSwitcher != null)
             {
-                // If the screen context is active do the action
-                foreach (var screen in ActiveMenuScreens)
+                if (Gamepad.current == null || !Gamepad.current[activationButton].wasPressedThisFrame)
+                    return;
+
+                // If any modal is open, only modal-scoped buttons may fire.
+                if (screenSwitcher.HasActiveModal)
                 {
-                    if (screenSwitcher.ScreenIsActive(screen))
+                    foreach (var modal in ActiveModalWindows)
                     {
-                        if (Gamepad.current != null && Gamepad.current[activationButton].wasPressedThisFrame)
+                        if (screenSwitcher.ModalIsActive(modal))
                         {
                             button.onClick.Invoke();
                             button.OnDeselect(new BaseEventData(eventSystem));
@@ -127,13 +130,12 @@ namespace CosmicShore.Game.IO
                         }
                     }
                 }
-
-                // If the modal context is active do the action
-                foreach (var modal in ActiveModalWindows)
+                else
                 {
-                    if (screenSwitcher.ModalIsActive(modal))
+                    // No modal open — screen-scoped buttons may fire.
+                    foreach (var screen in ActiveMenuScreens)
                     {
-                        if (Gamepad.current != null && Gamepad.current[activationButton].wasPressedThisFrame)
+                        if (screenSwitcher.ScreenIsActive(screen))
                         {
                             button.onClick.Invoke();
                             button.OnDeselect(new BaseEventData(eventSystem));
