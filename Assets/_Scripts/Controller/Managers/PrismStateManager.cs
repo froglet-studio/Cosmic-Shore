@@ -28,11 +28,14 @@ namespace CosmicShore.Gameplay
 
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
+        private bool _hasThemeData;
+
         private void Awake()
         {
             prism = GetComponent<Prism>();
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
             teamManager = GetComponent<PrismTeamManager>();
+            _hasThemeData = _themeManagerData != null;
         }
 
         public void MakeDangerous()
@@ -41,10 +44,13 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.speedDebuffAmount = 0.1f;
             prism.prismProperties.IsShielded = false;
 
-            materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Domain),
-                _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Domain)
-            );
+            if (_hasThemeData)
+            {
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Domain),
+                    _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Domain)
+                );
+            }
             CurrentState = BlockState.Dangerous;
         }
 
@@ -68,10 +74,13 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsSuperShielded = true;
             prism.prismProperties.IsDangerous = false;
 
-            materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Domain),
-                _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
-            );
+            if (_hasThemeData)
+            {
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Domain),
+                    _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
+                );
+            }
             CurrentState = BlockState.SuperShielded;
 
             SyncAOERegistryShieldState();
@@ -104,10 +113,13 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsShielded = true;
             prism.prismProperties.IsDangerous = false;
 
-            materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Domain),
-                _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
-            );
+            if (_hasThemeData)
+            {
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Domain),
+                    _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
+                );
+            }
             CurrentState = BlockState.Shielded;
 
             SyncAOERegistryShieldState();
@@ -118,10 +130,13 @@ namespace CosmicShore.Gameplay
         {
             var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
 
-            materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
-                _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
-            );
+            if (_hasThemeData)
+            {
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
+                    _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
+                );
+            }
 
             prism.prismProperties.IsShielded = false;
             prism.prismProperties.IsSuperShielded = false;
