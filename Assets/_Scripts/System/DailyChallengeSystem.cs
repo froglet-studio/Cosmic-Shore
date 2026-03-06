@@ -135,18 +135,28 @@ namespace CosmicShore.Core
 
         void SelectDailyGame()
         {
+            var challenge = FetchDailyChallenge();
+            if (challenge == null)
+                return;
+
             ChallengeDate = DateTime.UtcNow.Date;
             PlayerPrefs.SetString(InitializedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
             PlayerPrefs.Save();
 
-            dailyChallenge = FetchDailyChallenge();
+            dailyChallenge = challenge;
             DailyGame = Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
             ShipResources = LoadGameResourceCollection(DailyGame);
         }
 
         DailyChallenge FetchDailyChallenge()
         {
-            // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed 
+            if (Arcade.Instance == null || Arcade.Instance.TrainingGames == null || Arcade.Instance.TrainingGames.Games == null || Arcade.Instance.TrainingGames.Games.Count == 0)
+            {
+                Debug.LogWarning("DailyChallengeSystem: Arcade not ready, deferring daily challenge fetch.");
+                return null;
+            }
+
+            // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed
             DateTime currentDate = DateTime.UtcNow.Date;
             long dateTicks = currentDate.Ticks;
             var random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
