@@ -143,12 +143,12 @@ namespace CosmicShore.Core
             PlayerPrefs.SetString(InitializedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
             PlayerPrefs.Save();
 
-            dailyChallenge = challenge;
+            dailyChallenge = challenge.Value;
             DailyGame = Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
             ShipResources = LoadGameResourceCollection(DailyGame);
         }
 
-        DailyChallenge FetchDailyChallenge()
+        DailyChallenge? FetchDailyChallenge()
         {
             if (Arcade.Instance == null || Arcade.Instance.TrainingGames == null || Arcade.Instance.TrainingGames.Games == null || Arcade.Instance.TrainingGames.Games.Count == 0)
             {
