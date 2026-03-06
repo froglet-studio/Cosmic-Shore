@@ -47,6 +47,9 @@ namespace CosmicShore.App.UI
 
             // HANGAR MODALS
             HANGAR_TRAINING        = 9,
+
+            // ARCADE
+            ARCADE                 = 10,
         }
 
         [System.Serializable]
@@ -77,9 +80,8 @@ namespace CosmicShore.App.UI
         [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
         [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
 
-        [Header("Arcade Panel (separate)")]
-        [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
-        [SerializeField] private GameObject arcadePanelRoot;
+        [Header("Arcade Modal")]
+        [SerializeField] private ModalWindowManager ArcadeModal;
 
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
@@ -465,14 +467,14 @@ namespace CosmicShore.App.UI
 
         #endregion
 
-        #region Arcade Panel Logic
+        #region Arcade Modal Logic
 
-        private void OpenArcadePanel()
+        private void OpenArcadeModal()
         {
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
-            if (arcadePanelRoot)
+            if (ArcadeModal)
             {
-                arcadePanelRoot.SetActive(true);
+                ArcadeModal.ModalWindowIn();
             }
         }
 
@@ -515,7 +517,7 @@ namespace CosmicShore.App.UI
 
         public void OnClickArcadeNav()
         {
-            OpenArcadePanel();
+            OpenArcadeModal();
         }
 
         public void OnClickLeftArrow()
