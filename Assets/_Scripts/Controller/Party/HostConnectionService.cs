@@ -73,6 +73,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private bool _lobbyBusy;
 
+        /// <summary>
+        /// Suppresses all refresh activity while an invite acceptance is in
+        /// progress.  This prevents the SDK's WebSocket-driven LobbyPatcher
+        /// from applying stale player-index deltas that cause
+        /// ArgumentOutOfRangeException.
+        /// </summary>
+        private bool _suspendRefresh;
+
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY = "displayName";
         private const string AVATAR_ID_KEY = "avatarId";
@@ -153,7 +161,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_initialized || _presenceLobby == null || _lobbyBusy) return;
+            if (!_initialized || _presenceLobby == null || _lobbyBusy || _suspendRefresh) return;
             if (Time.time < _rateLimitBackoffUntil) return;
 
             _refreshTimer += Time.deltaTime;
@@ -310,6 +318,10 @@ namespace CosmicShore.Gameplay
 
         public async Task AcceptInviteAsync(PartyInviteData invite)
         {
+            // Suspend the refresh loop and WebSocket-driven lobby patching to
+            // avoid the SDK's LobbyPatcher hitting stale player indices while
+            // the local player transitions between sessions.
+            _suspendRefresh = true;
             try
             {
                 SyncLocalIdentity();
@@ -327,13 +339,25 @@ namespace CosmicShore.Gameplay
                 connectionData.PartyMembers?.Add(hostData);
                 connectionData.OnPartyMemberJoined?.Raise(hostData);
 
-                // Keep _lastFiredInvite set so the dedup guard prevents
-                // re-triggering if the host is slow to clear their properties.
+                // Reset dedup guard — we are now inside the party, so the
+                // original invite should not suppress future invites.
+                _lastFiredInvite = null;
+
                 Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
+
+                // Leave the stale presence lobby (kills WebSocket subscription
+                // that was delivering out-of-range index deltas) and rejoin
+                // with a fresh subscription and up-to-date player list.
+                await LeavePresenceLobbyAsync();
+                await JoinPresenceLobbyAsync();
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] AcceptInvite error: {e.Message}");
+            }
+            finally
+            {
+                _suspendRefresh = false;
             }
         }
 
@@ -445,9 +469,14 @@ namespace CosmicShore.Gameplay
                 connectionData.IsConnected = true;
                 connectionData.IsHost = _presenceLobby.IsHost;
 
-                // Seed party members with self
-                connectionData.PartyMembers?.Clear();
-                connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
+                // Seed party members with self — but only if we are not
+                // already in a party session (e.g. after AcceptInviteAsync
+                // rejoins the presence lobby, the party list is already correct).
+                if (_partySession == null)
+                {
+                    connectionData.PartyMembers?.Clear();
+                    connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
+                }
 
                 connectionData.OnHostConnectionEstablished?.Raise();
             }
@@ -605,7 +634,7 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid RefreshAsync()
         {
-            if (_presenceLobby == null || _lobbyBusy) return;
+            if (_presenceLobby == null || _lobbyBusy || _suspendRefresh) return;
 
             _lobbyBusy = true;
             bool shouldReconnect = false;
