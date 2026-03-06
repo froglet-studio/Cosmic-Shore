@@ -247,6 +247,15 @@ namespace CosmicShore.App.UI
         {
             if (Gamepad.current == null) return;
             if (HasActiveModal) return; // Don't switch screens while a modal is open
+
+            // Hardcoded: A (South) on HOME opens the Arcade modal
+            if (Gamepad.current.buttonSouth.wasPressedThisFrame &&
+                ScreenIsActive(MenuScreens.HOME))
+            {
+                OpenArcadeModal();
+                return;
+            }
+
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
             if (Gamepad.current.rightTrigger.wasPressedThisFrame)
