@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Soap;
 using UnityEngine;
 
@@ -25,6 +26,8 @@ namespace CosmicShore.Game
 
         private IVesselStatus _vesselStatusBase;
         private float _previousScore;
+        private int _previousIntScore;
+        private Action _unsubscribeScoreAction;
 
         // Game modes where the score popup should NOT appear
         static readonly System.Collections.Generic.HashSet<GameModes> _excludedModes = new()
@@ -115,20 +118,40 @@ namespace CosmicShore.Game
             if (domainColorPalette)
                 scorePopup.SetColor(domainColorPalette.Get(vesselStatus.Domain));
 
-            // Track score and subscribe
             var roundStats = vesselStatus.Player?.RoundStats;
-            if (roundStats != null)
+            if (roundStats == null) return;
+
+            // Subscribe to the correct stat event based on game mode
+            var mode = gameData ? gameData.GameMode : GameModes.None;
+
+            switch (mode)
             {
-                _previousScore = roundStats.Score;
-                roundStats.OnScoreChanged += HandleScoreChanged;
+                case GameModes.MultiplayerJoust:
+                    _previousIntScore = roundStats.JoustCollisions;
+                    Action<IRoundStats> onJoust = HandleJoustCollisionChanged;
+                    roundStats.OnJoustCollisionChanged += onJoust;
+                    _unsubscribeScoreAction = () => roundStats.OnJoustCollisionChanged -= onJoust;
+                    break;
+
+                case GameModes.HexRace:
+                    _previousIntScore = roundStats.OmniCrystalsCollected;
+                    Action<IRoundStats> onCrystal = HandleCrystalCollectedChanged;
+                    roundStats.OnOmniCrystalsCollectedChanged += onCrystal;
+                    _unsubscribeScoreAction = () => roundStats.OnOmniCrystalsCollectedChanged -= onCrystal;
+                    break;
+
+                default:
+                    _previousScore = roundStats.Score;
+                    roundStats.OnScoreChanged += HandleScoreChanged;
+                    _unsubscribeScoreAction = () => roundStats.OnScoreChanged -= HandleScoreChanged;
+                    break;
             }
         }
 
         private void UnsubscribeScorePopup()
         {
-            var roundStats = _vesselStatusBase?.Player?.RoundStats;
-            if (roundStats != null)
-                roundStats.OnScoreChanged -= HandleScoreChanged;
+            _unsubscribeScoreAction?.Invoke();
+            _unsubscribeScoreAction = null;
         }
 
         private void HandleScoreChanged()
@@ -144,6 +167,30 @@ namespace CosmicShore.Game
                 int points = Mathf.Max(1, Mathf.RoundToInt(delta));
                 scorePopup.ShowScorePoint(points);
             }
+        }
+
+        private void HandleJoustCollisionChanged(IRoundStats stats)
+        {
+            if (!scorePopup) return;
+
+            int current = stats.JoustCollisions;
+            int delta = current - _previousIntScore;
+            _previousIntScore = current;
+
+            if (delta > 0)
+                scorePopup.ShowScorePoint(delta);
+        }
+
+        private void HandleCrystalCollectedChanged(IRoundStats stats)
+        {
+            if (!scorePopup) return;
+
+            int current = stats.OmniCrystalsCollected;
+            int delta = current - _previousIntScore;
+            _previousIntScore = current;
+
+            if (delta > 0)
+                scorePopup.ShowScorePoint(delta);
         }
     }
 }
