@@ -123,7 +123,10 @@ namespace CosmicShore.Gameplay
         {
             if (!isInitialized)
                 return;
-            
+
+            if (skimmerImpactorDataContainer == null)
+                return;
+
             switch (impactee)
             {
                 case VesselImpactor shipImpactor:
@@ -131,6 +134,7 @@ namespace CosmicShore.Gameplay
                     if (!DoesEffectExist(evs)) return;
                     foreach (var effect in evs)
                     {
+                        if (effect == null) continue;
                         effect.Execute(shipImpactor, this);
                     }
 
@@ -145,6 +149,7 @@ namespace CosmicShore.Gameplay
 
                     foreach (var effect in esp)
                     {
+                        if (effect == null) continue;
                         effect.Execute(this, prismImpactor);
                     }
 
@@ -160,6 +165,7 @@ namespace CosmicShore.Gameplay
                     if (!DoesEffectExist(esc)) return;
                     foreach (var effect in esc)
                     {
+                        if (effect == null) continue;
                         effect.Execute(this, elementalCrystalImpactor);
                     }
 

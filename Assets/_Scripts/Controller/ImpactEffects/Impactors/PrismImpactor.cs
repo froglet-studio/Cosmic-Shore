@@ -25,38 +25,38 @@ namespace CosmicShore.Gameplay
         }
         
         protected override void AcceptImpactee(IImpactor impactee)
-        {    
+        {
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
-                    // ExecuteEffect(impactee, vesselPrismEffects);
                     if(!DoesEffectExist(vesselPrismEffects)) return;
                     foreach (var effect in vesselPrismEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(shipImpactee,this);
                     }
                     break;
                 case ProjectileImpactor projectileImpactee:
-                    // ExecuteEffect(impactee, projectilePrismEffects);
                     if(!DoesEffectExist(projectilePrismEffects)) return;
                     foreach (var effect in projectilePrismEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(projectileImpactee,this);
                     }
                     break;
                 case SkimmerImpactor skimmerImpactee:
-                    // ExecuteEffect(impactee, skimmerPrismEffects);
                     if(!DoesEffectExist(skimmerPrismEffects)) return;
                     foreach (var effect in skimmerPrismEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(skimmerImpactee,this);
                     }
                     break;
                 case ExplosionImpactor explosionImpactee:
-                    // ExecuteEffect(impactee, explosionPrismEffects);
                     if(!DoesEffectExist(explosionPrismEffects)) return;
                     foreach (var effect in explosionPrismEffects)
                     {
+                        if (effect == null) continue;
                         effect.Execute(explosionImpactee,this);
                     }
                     break;

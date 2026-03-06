@@ -27,13 +27,19 @@ namespace CosmicShore.Gameplay
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
+            if (vesselImpactorDataContainerSO == null)
+                return;
+
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
                     gameplaySFXEvent.Raise(GameplaySFXCategory.VesselImpact);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
+                    {
+                        if (effect == null) continue;
                         effect.Execute(this, prismImpactee);
+                    }
                     break;
 
                 case OmniCrystalImpactor omniCrystalImpactee:
@@ -62,20 +68,29 @@ namespace CosmicShore.Gameplay
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
                     gameplaySFXEvent.Raise(GameplaySFXCategory.VesselImpact);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)
+                    {
+                        if (effect == null) continue;
                         effect.Execute(this, skimmerImpactee);
+                    }
                     break;
             }
         }
 
         public void ExecuteOmniCrystalImpact(CrystalImpactData data)
         {
+            if (vesselImpactorDataContainerSO == null) return;
             if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
             foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
+            {
+                if (effect == null) continue;
                 effect.Execute(this, data);
+            }
         }
 
         public void ExecuteElementalCrystalImpact(CrystalImpactData data)
         {
+            if (vesselImpactorDataContainerSO == null) return;
+
             VesselCrystalEffectSO[] effects = data.Element switch
             {
                 Element.Mass   => vesselImpactorDataContainerSO.VesselMassCrystalEffects,
@@ -88,7 +103,10 @@ namespace CosmicShore.Gameplay
             if (!DoesEffectExist(effects)) return;
 
             foreach (var effect in effects)
+            {
+                if (effect == null) continue;
                 effect.Execute(this, data);
+            }
         }
 
 

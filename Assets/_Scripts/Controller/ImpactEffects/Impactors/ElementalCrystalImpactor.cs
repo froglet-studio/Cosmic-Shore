@@ -42,7 +42,10 @@ namespace CosmicShore.Gameplay
             {
                 var data = CrystalImpactData.FromCrystal(Crystal);
                 foreach (var effect in elementalCrystalShipEffects)
+                {
+                    if (effect == null) continue;
                     effect.Execute(skimmerImpactor, this);
+                }
             }
 
             HandleCrystalVisualAndLifetime(skimmerImpactor);
