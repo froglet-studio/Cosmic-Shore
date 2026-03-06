@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections;
 using System;
 using CosmicShore.Core;
+using Reflex.Attributes;
 
 namespace CosmicShore.Gameplay
 {
@@ -18,6 +19,8 @@ namespace CosmicShore.Gameplay
     {
         [Header("Data Containers")] [SerializeField]
         ThemeManagerDataContainerSO _themeManagerData;
+
+        [Inject] AudioSystem _audioSystem;
 
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
@@ -108,7 +111,7 @@ namespace CosmicShore.Gameplay
             CurrentState = BlockState.Shielded;
 
             SyncAOERegistryShieldState();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
+            _audioSystem.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
 
         private void ApplyNormalState()
@@ -127,7 +130,7 @@ namespace CosmicShore.Gameplay
             SyncAOERegistryShieldState();
 
             if (wasShielded)
-                AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
+                _audioSystem.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
         }
 
         private void SyncAOERegistryShieldState()

@@ -21,7 +21,7 @@ namespace CosmicShore.UI
 
         public void Play()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
             Arcade.Instance.LaunchMission(Mission.Mode, SquadSystem.SquadLeader?.Vessel, Intensity);
         }
 
