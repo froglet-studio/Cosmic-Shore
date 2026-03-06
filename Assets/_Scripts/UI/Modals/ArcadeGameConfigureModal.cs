@@ -664,6 +664,8 @@ namespace CosmicShore.UI
                 startGameButton.gameObject.SetActive(false);
             if (waitingForOthersLabel)
                 waitingForOthersLabel.SetActive(true);
+            else
+                Debug.LogWarning("[ArcadeConfigModal] waitingForOthersLabel is not assigned in the inspector.");
 
             // Tell the server this player is ready
             if (arcadeConfigSyncManager)

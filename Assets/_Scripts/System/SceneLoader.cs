@@ -319,6 +319,17 @@ namespace CosmicShore.Core
             gameData.SelectedIntensity.Value = intensity;
             gameData.SelectedPlayerCount.Value = playerCount;
             gameData.RequestedAIBackfillCount = aiBackfillCount;
+
+            // Mirror host-side LaunchGame() preparation on the client:
+            // transition app state and show splash overlay to hide Menu_Main UI
+            // during the incoming network scene load.
+            _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+            gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
+
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Client received config sync — " +
+                      $"Scene={sceneName}, Mode={(GameModes)gameMode}, " +
+                      $"AppState→LoadingGame, splash overlay active.</color>");
         }
 
         #endregion
