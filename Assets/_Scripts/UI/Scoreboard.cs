@@ -1,4 +1,5 @@
 // Scoreboard.cs — rematch panels auto-dismiss after 2s (except received panel)
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Core;
 using CosmicShore.Utility;

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CosmicShore.Core;
+using CosmicShore.Gameplay;
 using CosmicShore.UI;
 
 namespace CosmicShore.Core

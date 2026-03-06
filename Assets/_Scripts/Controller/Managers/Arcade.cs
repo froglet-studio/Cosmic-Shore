@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Gameplay;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;

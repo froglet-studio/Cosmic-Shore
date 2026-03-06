@@ -1,6 +1,8 @@
 ﻿using System;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using Unity.Services.Analytics;
 using Unity.Services.Leaderboards;
 using UnityEngine;

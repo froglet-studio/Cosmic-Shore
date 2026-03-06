@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;

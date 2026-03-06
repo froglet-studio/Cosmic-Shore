@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Gameplay;
 
 namespace CosmicShore.Core
 {
