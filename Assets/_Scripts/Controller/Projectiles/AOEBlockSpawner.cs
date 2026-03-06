@@ -16,6 +16,12 @@ namespace CosmicShore.Gameplay
         {
             try
             {
+                if (Vessel == null || spawnable == null)
+                {
+                    Debug.LogWarning($"[AOEBlockSpawner] ExplodeAsync aborted — Vessel:{Vessel != null}, spawnable:{spawnable != null}", this);
+                    return;
+                }
+
                 // AOEExplosion.Initialize() zeroes localScale to hide the explosion
                 // mesh during its delay. This subclass doesn't use the base explosion
                 // animation, so restore scale before spawning children.
