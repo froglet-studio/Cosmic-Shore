@@ -23,9 +23,13 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         [SerializeField, Tooltip("Label for the generated report.")]
         string _label = "Benchmark";
 
+        // ── Deterministic mode ─────────────────────────────────────────────
+        DeterministicBenchmarkController _deterministicController;
+
         // ── State ───────────────────────────────────────────────────────────
         bool _isWarming;
         bool _isSampling;
+        bool _waitingForDeterministicReady;
         float _warmupTimer;
         float _sampleTimer;
         int _gcCountAtStart;
@@ -68,9 +72,18 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             _sampleDurationSeconds = duration;
         }
 
+        /// <summary>
+        /// Links a deterministic controller. When set, warmup is handled by the
+        /// controller's frame-counted warmup instead of wall-clock time.
+        /// </summary>
+        public void SetDeterministicController(DeterministicBenchmarkController controller)
+        {
+            _deterministicController = controller;
+        }
+
         public void StartSampling()
         {
-            if (_isSampling || _isWarming) return;
+            if (_isSampling || _isWarming || _waitingForDeterministicReady) return;
 
             _frameTimesMs.Clear();
             _gpuTimesMs.Clear();
@@ -85,18 +98,29 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
             StartRecorders();
 
+            // In deterministic mode, wait for the controller to signal ready
+            // instead of using wall-clock warmup.
+            if (_deterministicController != null)
+            {
+                _waitingForDeterministicReady = true;
+                return;
+            }
+
             if (_warmupSeconds > 0f)
                 _isWarming = true;
             else
                 BeginCapture();
         }
 
+        public bool IsWaitingForDeterministic => _waitingForDeterministicReady;
+
         public BenchmarkReport StopSampling()
         {
-            if (!_isSampling && !_isWarming) return null;
+            if (!_isSampling && !_isWarming && !_waitingForDeterministicReady) return null;
 
             _isWarming = false;
             _isSampling = false;
+            _waitingForDeterministicReady = false;
             StopRecorders();
 
             return BuildReport();
@@ -116,6 +140,17 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
         void Update()
         {
+            // Deterministic warmup: wait for the controller's frame-counted warmup
+            if (_waitingForDeterministicReady)
+            {
+                if (_deterministicController != null && _deterministicController.IsReady)
+                {
+                    _waitingForDeterministicReady = false;
+                    BeginCapture();
+                }
+                return;
+            }
+
             if (_isWarming)
             {
                 _warmupTimer += Time.unscaledDeltaTime;
@@ -181,6 +216,9 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         BenchmarkReport BuildReport()
         {
             int gcCollections = GC.CollectionCount(0) - _gcCountAtStart;
+            bool isDeterministic = _deterministicController != null;
+            int seed = isDeterministic ? _deterministicController.Seed : 0;
+
             return BenchmarkReport.Build(
                 _label,
                 SceneManager.GetActiveScene().name,
@@ -193,7 +231,9 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                 _drawCalls,
                 _triangles,
                 _vertices,
-                _setPassCalls
+                _setPassCalls,
+                isDeterministic,
+                seed
             );
         }
 
