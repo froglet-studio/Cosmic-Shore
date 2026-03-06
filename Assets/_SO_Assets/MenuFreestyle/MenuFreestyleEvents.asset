@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00849a891a0a046448f0ee7359383514, type: 3}
+  m_Name: MenuFreestyleEvents
+  m_EditorClassIdentifier:
+  OnGameStateTransitionStart: {fileID: 11400000, guid: 3cc4efd422df4f8aa3e46eca90541351, type: 2}
+  OnGameStateTransitionEnd: {fileID: 11400000, guid: b233298c7a1a4bffa650dc0f2998bfae, type: 2}
+  OnMenuStateTransitionStart: {fileID: 11400000, guid: 2d60b2db995d4ba3b73d0266c9945551, type: 2}
+  OnMenuStateTransitionEnd: {fileID: 11400000, guid: 605c6b2327224f019eaf487171d497e3, type: 2}

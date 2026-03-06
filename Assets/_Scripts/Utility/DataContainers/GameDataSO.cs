@@ -1,50 +1,48 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
-using CosmicShore.Models.Enums;
+using CosmicShore.Gameplay;
+using CosmicShore.Data;
 using Obvious.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using IPlayer = CosmicShore.Game.IPlayer;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using IPlayer = CosmicShore.Gameplay.IPlayer;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Every MiniGame in the project should use the same asset of this SO.
-    /// It connects MiniGameBase with GameManager, StatsManager, TurnMonitor, Aracade, MultiplayerSetup and others.
+    /// It connects MiniGameBase with SceneLoader, StatsManager, TurnMonitor, Arcade, MultiplayerSetup and others.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "scriptable_variable_" + nameof(GameDataSO),
-        menuName = "ScriptableObjects/DataContainers/" + nameof(GameDataSO))]
+        fileName = "DataContainer_" + nameof(GameDataSO),
+        menuName = "ScriptableObjects/Data Containers/" + nameof(GameDataSO))]
     public class GameDataSO : ScriptableObject
     {
-        // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP 
-        public event Action OnLaunchGameScene;
-        public event Action OnSessionStarted;
-        public event Action OnInitializeGame;
+        // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP
+        public ScriptableEventNoParam OnLaunchGame;
+        public ScriptableEventBool OnSceneTransition;
+        public ScriptableEventNoParam OnSessionStarted;
+        public ScriptableEventNoParam OnInitializeGame;
         public ScriptableEventNoParam OnMiniGameRoundStarted;
-        public event Action OnClientReady;
+        public ScriptableEventNoParam OnClientReady;
         public ScriptableEventNoParam OnMiniGameTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
-        // DTFC
         public ScriptableEventNoParam OnMiniGameRoundEnd;
-        public event Action OnMiniGameEnd;
-        public event Action OnWinnerCalculated;
-        public event Action<string, Domains> OnPlayerAdded;
-
+        public ScriptableEventNoParam OnMiniGameEnd;
+        public ScriptableEventNoParam OnWinnerCalculated;
         public ScriptableEventNoParam OnResetForReplay;
+        public ScriptableEventNoParam OnSessionEnded;
+        public ScriptableEventUlong OnPlayerNetworkSpawnedUlong;
+        public ScriptableEventNoParam OnVesselNetworkSpawned;
+        public ScriptableEventUlong OnPlayerPairInitialized;
+        public event Action<string, Domains> OnPlayerAdded;
 
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
-        public event Action<GameModes> OnGameModeTurnEnd;
-        public event Action<GameModes> OnGameModeRoundEnd;
-        public event Action<GameModes> OnGameModeEnd;
-
-        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         
         // Local player config / state
         public VesselClassTypeVariable selectedVesselClass;
@@ -64,6 +62,50 @@ namespace CosmicShore.Soap
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;
+
+        /// <summary>
+        /// Number of AI players to backfill in multiplayer when not enough
+        /// human players are present.
+        /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
+        /// </summary>
+        public int RequestedAIBackfillCount;
+
+        /// <summary>
+        /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
+        /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
+        /// and ServerPlayerVesselInitializerWithAI see correct values.
+        /// </summary>
+        public void SyncFromArcadeGame(SO_ArcadeGame game)
+        {
+            if (game == null)
+            {
+                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame — game is NULL!</color>");
+                return;
+            }
+
+            SceneName = game.SceneName;
+            GameMode = game.Mode;
+            IsMultiplayerMode = game.IsMultiplayer;
+        }
+
+        /// <summary>
+        /// Single source of truth for player count configuration at game launch.
+        /// Computes and stores both SelectedPlayerCount and RequestedAIBackfillCount atomically.
+        /// Minimum player counts are enforced upstream by SO_ArcadeGame.MinPlayersAllowed via the UI.
+        /// </summary>
+        /// <param name="totalDesired">Total players the user selected (human + AI)</param>
+        /// <param name="humanCount">Number of human players in the party</param>
+        public void ConfigurePlayerCounts(int totalDesired, int humanCount)
+        {
+            int aiBackfill = Mathf.Max(0, totalDesired - humanCount);
+
+            SelectedPlayerCount.Value = totalDesired;
+            RequestedAIBackfillCount = aiBackfill;
+
+            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts — total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+        }
+
+
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();
@@ -88,7 +130,7 @@ namespace CosmicShore.Soap
             InvokeInitializeGame();
         }
 
-        public void SetupForMultiplayer()
+        public void DestroyPlayerAndVessel()
         {
             // Ensure the domain pool is fresh for the new session so every
             // player gets a unique domain.  Without this, leftover state from
@@ -111,14 +153,14 @@ namespace CosmicShore.Soap
         {
             IsTurnRunning = true;
             TurnStartTime = Time.time;
-
             InvokeTurnStarted();
         }
-        
-        public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
-        public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
-        public void InvokeInitializeGame() => OnInitializeGame?.Invoke();
-        public void InvokeClientReady() => OnClientReady?.Invoke();
+
+        public void InvokeGameLaunch() => OnLaunchGame?.Raise();
+        public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
+        public void InvokeSessionStarted() => OnSessionStarted?.Raise();
+        public void InvokeInitializeGame() => OnInitializeGame?.Raise();
+        public void InvokeClientReady() => OnClientReady?.Raise();
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
         public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
 
@@ -126,28 +168,17 @@ namespace CosmicShore.Soap
         {
             IsTurnRunning = false;
             OnMiniGameTurnEnd?.Raise();
-            
-            // Fire game mode-specific event
-            OnGameModeTurnEnd?.Invoke(GameMode);
         }
         
-        public void InvokeMiniGameRoundEnd() 
-        {
-            OnMiniGameRoundEnd?.Raise();
-            
-            // Fire game mode-specific event
-            OnGameModeRoundEnd?.Invoke(GameMode);
-        }
-        
-        public void InvokeMiniGameEnd() 
-        {
-            OnMiniGameEnd?.Invoke();
-            
-            // Fire game mode-specific event
-            OnGameModeEnd?.Invoke(GameMode);
-        }
-        
-        public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
+        public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
+        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Raise();
+        public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
+        public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
+        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
+
+        public void InvokePlayerNetworkSpawned(ulong ownerClientId) => OnPlayerNetworkSpawnedUlong.Raise(ownerClientId);
+        public void InvokeVesselNetworkSpawned() => OnVesselNetworkSpawned.Raise();
+        public void InvokePlayerPairInitialized(ulong playerNetObjId) => OnPlayerPairInitialized?.Raise(playerNetObjId);
 
         public void ResetForReplay()
         {
@@ -171,6 +202,11 @@ namespace CosmicShore.Soap
             _playerSpawnPoseList.Clear();
             LocalPlayer = null;
             LocalRoundStats = null;
+            // Note: RequestedAIBackfillCount is intentionally NOT reset here.
+            // It is a pre-launch config value set by ArcadeGameConfigureModal
+            // and must survive the ResetRuntimeData() call in SceneLoader.LoadSceneAsync()
+            // so ServerPlayerVesselInitializerWithAI can read it after the game scene loads.
+            // It is reset in ResetAllData() instead.
         }
 
         void ResetRuntimeDataForReplay()
@@ -203,9 +239,10 @@ namespace CosmicShore.Soap
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
-            
+            RequestedAIBackfillCount = 0;
+
             ResetRuntimeData();
-            
+            DestroyPlayerAndVessel();
             DomainAssigner.Initialize();
         }
 
@@ -377,7 +414,7 @@ namespace CosmicShore.Soap
                 .OrderByDescending(rs => rs.VolumeRemaining)
                 .FirstOrDefault();
 
-            return top is null ? (Domains.Jade, 0f) : (Team: top.Domain, top.VolumeRemaining);
+            return top is null ? (Domains.Jade, 0f) : (top.Domain, top.VolumeRemaining);
         }
         
         public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>
@@ -531,6 +568,31 @@ namespace CosmicShore.Soap
             return spawnPoint;
         }
         
+        // -----------------------------------------------------------------------------------------
+        // Team Balancing
+
+        /// <summary>
+        /// Counts how many players are on each team (Jade, Ruby, Gold).
+        /// Used by AI spawning to assign AI to the team with the fewest players.
+        /// </summary>
+        public Dictionary<Domains, int> BuildTeamCounts()
+        {
+            var counts = new Dictionary<Domains, int>
+            {
+                { Domains.Jade, 0 },
+                { Domains.Ruby, 0 },
+                { Domains.Gold, 0 }
+            };
+
+            foreach (var p in Players)
+            {
+                if (p is Player player && counts.ContainsKey(player.NetDomain.Value))
+                    counts[player.NetDomain.Value]++;
+            }
+
+            return counts;
+        }
+
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
 

@@ -1,0 +1,94 @@
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Core;
+using System.Collections.Generic;
+using Reflex.Attributes;
+using UnityEngine;
+
+namespace CosmicShore.UI
+{
+    public class PortSquadView : View
+    {
+        [Inject] CaptainManager _captainManager;
+        [SerializeField] PortSquadMemberConfigureView squadMemberConfigureView;
+
+        [SerializeField] SquadMemberCard PlayerCaptainButton;
+        [SerializeField] SquadMemberCard RogueOneCaptainButton;
+        [SerializeField] SquadMemberCard RogueTwoCaptainButton;
+
+        // TODO: Need to pull this from inventory
+        [SerializeField] SO_VesselList PlayerShips;
+        List<SO_Captain> AllCaptains = new();
+
+        public int ActiveSquadMember = 0;
+
+        void Start()
+        {
+            // TODO: Re-enable when PortSquadView is actively being worked on
+            // foreach (var ship in PlayerShips.ShipList)
+            //     foreach (var captain in ship.Captains)
+            //         AllCaptains.Add(captain);
+            //
+            // // Populate Squad Buttons
+            // SquadSystem.CaptainList = _captainManager.GetAllSOCaptains();
+            // SquadSystem.DefaultLeader = AllCaptains[0];
+            // SquadSystem.DefaultRogueOne = AllCaptains[0];
+            // SquadSystem.DefaultRogueTwo = AllCaptains[0];
+            //
+            // // Get player captain and set captain image for button. set player button active
+            // UpdateView();
+        }
+
+        public void AssignCaptain(SO_Captain captain)
+        {
+            switch (ActiveSquadMember)
+            {
+                case 0:
+                    SquadSystem.SetSquadLeader(captain);
+                    break;
+                case 1:
+                    SquadSystem.SetRogueOne(captain);
+                    break;
+                default:
+                    SquadSystem.SetRogueTwo(captain);
+                    break;
+            }
+
+            SquadSystem.SaveSquad();
+            UpdateView();
+        }
+
+        /// <summary>
+        /// Shows the captain select modal with the current squad member configuration set
+        /// </summary>
+        /// <param name="squadMember">0:leader, 1:Rogue One, 2: Rogue Two</param>
+        public void ShowCaptainSelectModal(int squadMember)
+        {
+            ActiveSquadMember = squadMember;
+            //squadMemberConfigureView.gameObject.SetActive(true);
+
+
+            switch (ActiveSquadMember)
+            {
+                case 0:
+                    squadMemberConfigureView.InitializeView(SquadSystem.SquadLeader, true);
+                    break;
+                case 1:
+                    squadMemberConfigureView.InitializeView(SquadSystem.RogueOne, false);
+                    break;
+                default:
+                    squadMemberConfigureView.InitializeView(SquadSystem.RogueTwo, false);
+                    break;
+            }
+
+            squadMemberConfigureView.ModalWindowIn();
+        }
+
+        public override void UpdateView()
+        {
+            SquadSystem.LoadSquad();
+            PlayerCaptainButton.Captain = SquadSystem.SquadLeader;
+            RogueOneCaptainButton.Captain = SquadSystem.RogueOne;
+            RogueTwoCaptainButton.Captain = SquadSystem.RogueTwo;
+        }
+    }
+}

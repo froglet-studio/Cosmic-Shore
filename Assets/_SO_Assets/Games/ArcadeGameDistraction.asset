@@ -25,8 +25,8 @@ MonoBehaviour:
   SceneName: MinigameDistraction
   Captains:
   - {fileID: 11400000, guid: 04c8c98493426fd409d20b7bc2396ed2, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 3
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 421

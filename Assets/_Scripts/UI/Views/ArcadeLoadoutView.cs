@@ -1,0 +1,271 @@
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Core;
+using CosmicShore.UI;
+using CosmicShore.Gameplay;
+using CosmicShore.Data;
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Utility;
+using Reflex.Attributes;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace CosmicShore.UI
+{
+    public class ArcadeLoadoutView : MonoBehaviour
+    {
+        [Inject] AudioSystem audioSystem;
+
+        [Inject] SO_GameList AllGames;
+        [SerializeField] SO_VesselList AllShips;
+        [SerializeField] List<LoadoutCard> CardList = new(4);
+        [SerializeField] Image[] GameModeImages = new Image[4];
+        [SerializeField] Image ShipClassImage;
+        [SerializeField] TMP_Text ShipTitle;
+        [SerializeField] TMP_Text GameTitle;
+        [SerializeField] Image[] PlayerCountOptions = new Image[4];
+        [SerializeField] Image[] PlayerCountBorders = new Image[4];
+        [SerializeField] Image[] IntensityOptions = new Image[4];
+        [SerializeField] Image[] IntensityBorders = new Image[4];
+        [SerializeField] Color SelectedColor;
+        [SerializeField] Color DisabledColor;
+
+        List<SO_Vessel> availableShips = new List<SO_Vessel>();
+
+        int selectedShipIndex;
+        int selectedGameIndex;
+
+        // Current Loadout Settings
+        int activeIntensity = 0;
+        int activePlayerCount = 0;
+        VesselClassType activeVesselType = 0;
+        GameModes activeGameMode = 0;
+
+        [Inject]
+        GameDataSO gameData;
+        
+        void Start()
+        {
+            LoadoutSystem.Init();
+            PopulateLoadoutCards();
+            CardList[0].Select();
+        }
+
+        // Populates the Loadout Card Containers with info from LoadoutSystem
+        void PopulateLoadoutCards()
+        {
+            for (int i = 0; i < CardList.Count; i++)
+            {
+                CardList[i].SetLoadoutCard(LoadoutSystem.GetLoadout(i));
+                CardList[i].SetLoadoutMenu(this);
+            }
+        }
+
+        public void SelectLoadout(int index)
+        {
+            for (int i = 0; i < CardList.Count; i++)
+                if (i != index) 
+                    CardList[i].Deselect();
+
+            var loadout = CardList[index].GetLoadout();
+
+            CSDebug.Log($"LoadoutMenu - SelectLoadout - loadout:{loadout}");
+
+            // Default load out for building a new one
+            if (!loadout.Initialized)
+                loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = GameModes.BlockBandit, VesselType = VesselClassType.Manta };
+
+            // Load values from loadout
+            activeIntensity = loadout.Intensity;
+            activePlayerCount = loadout.PlayerCount;
+            activeVesselType = loadout.VesselType;
+            activeGameMode = loadout.GameMode;
+
+            // Clear out player select and intensity selections
+            for (int i = 0; i < 4; i++)
+            {
+                PlayerCountOptions[i].color = Color.white;
+                PlayerCountBorders[i].color = Color.white;
+                IntensityOptions[i].color = Color.white;
+                IntensityBorders[i].color = Color.white;
+            }
+
+            // Highlight selected values for player count and intensity
+            PlayerCountOptions[activePlayerCount-1].color = SelectedColor;
+            PlayerCountBorders[activePlayerCount-1].color = SelectedColor;
+            IntensityOptions[activeIntensity-1].color = SelectedColor;
+            IntensityBorders[activeIntensity-1].color = SelectedColor;
+
+            // 
+            selectedGameIndex = AllGames.Games.IndexOf(AllGames.Games.Where(x => x.Mode == activeGameMode).FirstOrDefault());
+            UpdateGameMode();
+            selectedShipIndex = availableShips.IndexOf(AllShips.VesselList.Where(x => x.Class == activeVesselType).FirstOrDefault());
+            UpdateShipClass();
+
+            CSDebug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
+
+            LoadoutSystem.SetActiveLoadoutIndex(index);
+        }
+
+        //  Play Button press gets loadout and sends to game
+        public void OnClickPlayButton()
+        {
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            gameData.SyncFromArcadeGame(AllGames.Games[selectedGameIndex]);
+            gameData.InvokeGameLaunch();
+        }
+
+        // Sets ShipTypes
+        public void OnClickChangeClass(bool goingUp)
+        {
+            int iter = goingUp ? -1 : 1;
+
+            selectedShipIndex = selectedShipIndex + iter;
+            if (selectedShipIndex < 0) selectedShipIndex = availableShips.Count() - 1;
+            if (selectedShipIndex >= availableShips.Count()) selectedShipIndex = 0;
+
+            UpdateShipClass();
+            UpdateActiveLoadOut();
+        }
+
+        void UpdateShipClass()
+        {
+            CSDebug.Log("SelectedShipIndex is " + selectedShipIndex);
+
+            if (selectedShipIndex < 0) selectedShipIndex = availableShips.Count() - 1;
+            if (selectedShipIndex >= availableShips.Count()) selectedShipIndex = 0;
+
+            activeVesselType = availableShips[selectedShipIndex].Class;
+            ShipTitle.text = availableShips[selectedShipIndex].Name;
+            ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutteInactive;
+
+            CSDebug.Log("Active Vessel Type is " + activeVesselType);
+        }
+
+        // Sets MiniGames
+        public void OnClickChangeGameMode(bool goingUp)
+        {
+            int iter = goingUp ? -1 : 1;
+
+            selectedGameIndex = selectedGameIndex + iter;
+            if (selectedGameIndex < 0) selectedGameIndex = AllGames.Games.Count() - 1;
+            if (selectedGameIndex >= AllGames.Games.Count()) selectedGameIndex = 0;
+
+            UpdateGameMode();
+            UpdateActiveLoadOut();
+        }
+
+        void UpdateGameMode()
+        {
+            var selectedGame = AllGames.Games[selectedGameIndex];
+            activeGameMode = selectedGame.Mode;
+            GameTitle.text = selectedGame.DisplayName;
+            foreach (var image in GameModeImages)
+                image.sprite = selectedGame.CardBackground;
+
+            availableShips = new List<SO_Vessel>();
+            foreach (var vessel in selectedGame.Vessels)
+                if (vessel != null) availableShips.Add(vessel);
+
+            // If selected vessel is not available, fall back to zero
+            if (!availableShips.Contains(AllShips.VesselList.Where(x => x.Class == activeVesselType).FirstOrDefault()))
+            {
+                selectedShipIndex = 0;
+                UpdateShipClass();
+            }
+
+            UpdatePlayerCountColors();
+
+            CSDebug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
+        }
+
+        // Sets Intensity
+        public void OnClickedChangeActiveIntensity(int newIntensity)
+        {
+            CSDebug.Log("LoadoutMenu - OnClickedChangeActiveIntensity - Intensity changed to " + newIntensity);
+
+            activeIntensity = newIntensity;
+
+            for (var i = 0; i < 4; i++)
+            {
+                if (i != activeIntensity-1)
+                {
+                    IntensityOptions[i].color = Color.white;
+                    IntensityBorders[i].color = Color.white;
+                }
+                else
+                {
+                    IntensityOptions[i].color = SelectedColor;
+                    IntensityBorders[i].color = SelectedColor;
+                }
+            }
+
+            UpdateActiveLoadOut();
+        }
+
+        // Sets Player Count
+        public void OnClickChangeActivePlayerCount(int newPlayerCount)
+        {
+            CSDebug.Log("LoadoutMenu - OnClickChangeActivePlayerCount - PlayerCount changed to " + newPlayerCount);
+
+            activePlayerCount = newPlayerCount;
+
+            UpdatePlayerCountColors();
+            UpdateActiveLoadOut();
+        }
+
+        void UpdatePlayerCountColors()
+        {
+            var selectedGame = AllGames.Games[selectedGameIndex];
+
+            if (activePlayerCount < selectedGame.MinPlayersAllowed)
+                activePlayerCount = selectedGame.MinPlayersAllowed;
+
+            if (activePlayerCount > selectedGame.MaxPlayersAllowed)
+                activePlayerCount = selectedGame.MaxPlayersAllowed;
+
+            for (var i = 0; i < 4; i++)
+            {
+                PlayerCountOptions[i].GetComponent<Button>().enabled = true;
+                if (i != activePlayerCount - 1)
+                {
+                    PlayerCountOptions[i].color = Color.white;
+                    PlayerCountBorders[i].color = Color.white;
+                }
+                else
+                {
+                    PlayerCountOptions[i].color = SelectedColor;
+                    PlayerCountBorders[i].color = SelectedColor;
+                }
+            }
+            for (var i = selectedGame.MaxPlayersAllowed; i < 4; i++)
+            {
+                PlayerCountOptions[i].GetComponent<Button>().enabled = false;
+                PlayerCountOptions[i].color = DisabledColor;
+                PlayerCountBorders[i].color = DisabledColor;
+            }
+            for (var i = selectedGame.MinPlayersAllowed; i > 1; i--)
+            {
+                PlayerCountOptions[i-2].GetComponent<Button>().enabled = false;
+                PlayerCountOptions[i-2].color = DisabledColor;
+                PlayerCountBorders[i-2].color = DisabledColor;
+            }
+        }
+
+        void UpdateActiveLoadOut()
+        {
+            Loadout loadout = new Loadout();
+            loadout.Intensity = activeIntensity;
+            loadout.PlayerCount = activePlayerCount;
+            loadout.VesselType = activeVesselType;
+            loadout.GameMode = activeGameMode;
+
+            int idx = LoadoutSystem.GetActiveLoadoutIndex();
+
+            
+            LoadoutSystem.SetLoadout(loadout, idx);
+            CardList[idx].SetLoadoutCard(loadout);
+        }
+    }
+}

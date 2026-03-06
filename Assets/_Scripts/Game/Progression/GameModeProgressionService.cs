@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.App.Systems.CloudData;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.Models;
 using CosmicShore.Soap;
 using UnityEngine;
@@ -58,7 +59,7 @@ namespace CosmicShore.Game.Progression
                 Instance = null;
 
             if (gameData != null)
-                gameData.OnMiniGameEnd -= HandleGameEnd;
+                gameData.OnMiniGameEnd.OnRaised -= HandleGameEnd;
 
             var ds = UGSDataService.Instance;
             if (ds != null)
@@ -68,7 +69,7 @@ namespace CosmicShore.Game.Progression
         void Start()
         {
             if (gameData != null)
-                gameData.OnMiniGameEnd += HandleGameEnd;
+                gameData.OnMiniGameEnd.OnRaised += HandleGameEnd;
 
             var ds = UGSDataService.Instance;
             if (ds != null)

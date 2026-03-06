@@ -198,6 +198,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 0}
   _onTrailBlockDestroyedEventChannel: {fileID: 0}
   _onTrailBlockRestoredEventChannel: {fileID: 0}

@@ -1,10 +1,13 @@
-using CosmicShore.FTUE;
+using CosmicShore.Core;
 using System;
 using System.Collections;
 
-public interface ITutorialExecutor
+namespace CosmicShore.Core
 {
-    void SetupPreIntroUI();
-    void PrepareArcadeScreen();
-    IEnumerator ExecutePayload(TutorialStepPayload payload, Action onComplete);
+    public interface ITutorialExecutor
+    {
+        void SetupPreIntroUI();
+        void PrepareArcadeScreen();
+        IEnumerator ExecutePayload(TutorialStepPayload payload, Action onComplete);
+    }
 }

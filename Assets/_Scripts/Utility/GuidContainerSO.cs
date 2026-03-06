@@ -2,7 +2,7 @@
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// An abstract scriptable object class for the container of scriptable objects with Guid

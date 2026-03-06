@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Utility.Email
+namespace CosmicShore.Utility
 {
     public class ShareByEmail //: MonoBehaviour
     {

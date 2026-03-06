@@ -1,3 +1,5 @@
+using CosmicShore.Data;
+using CosmicShore.UI;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;

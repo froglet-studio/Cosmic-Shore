@@ -1,7 +1,8 @@
 ﻿using System;
 using UnityEngine;
+using CosmicShore.Data;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Utility
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public class ShowIfAttribute : PropertyAttribute

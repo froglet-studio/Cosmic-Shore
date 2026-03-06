@@ -352,22 +352,39 @@ Similarly, replace `CreateBlockCoroutine` with a delayed-activation manager that
 
 ---
 
+## Progress Update (March 2026)
+
+Since the original audit, the following optimizations have been implemented or are in active development:
+
+- **PrismTimerManager** — centralized timer system replacing per-prism coroutines (Recommendation 6)
+- **Per-frame explosion VFX cap** — limits concurrent explosion effects (Recommendation 5)
+- **EventListenerBase GC elimination** — reduced garbage collection from event listener allocations
+- **PrismAOEData** — cache-line-aware data layout with hot/cold splitting and bit-packed flags for AOE queries
+- **Burst-compiled spatial queries** — replaces Physics-based AOE prism damage (partial implementation of Recommendation 7)
+
+Recommendations 1-3 (Jobs-based explosion manager, GPU instanced rendering, full DOTS conversion) remain unimplemented.
+
+---
+
 ## Appendix: Key File Locations
+
+> **Note**: File paths updated March 2026 to reflect the `_Scripts/Game/` → `_Scripts/Controller/` reorganization. This audit document remains in the vestigial `_Scripts/Game/Prisms/` directory.
 
 | File | Path | Role |
 |---|---|---|
-| Prism.cs | `Assets/_Scripts/Game/Ship/Prism.cs` | Core prism lifecycle |
-| PrismFactory.cs | `Assets/_Scripts/Game/Prisms/PrismFactory.cs` | Spawning/pooling dispatch |
+| Prism.cs | `Assets/_Scripts/Controller/Vessel/Prism.cs` | Core prism lifecycle |
+| PrismFactory.cs | `Assets/_Scripts/Controller/Prisms/PrismFactory.cs` | Spawning/pooling dispatch |
 | PrismExplosion.cs | `Assets/_Scripts/Utility/Effects/PrismExplosion.cs` | Per-explosion UniTask animation |
 | PrismImplosion.cs | `Assets/_Scripts/Utility/Effects/PrismImplosion.cs` | Per-implosion UniTask animation |
-| PrismScaleManager.cs | `Assets/_Scripts/Game/Managers/PrismScaleManager.cs` | Burst-compiled scale batching |
-| MaterialStateManager.cs | `Assets/_Scripts/Game/Managers/MaterialStateManager.cs` | Burst-compiled material batching |
-| AdaptiveAnimationManager.cs | `Assets/_Scripts/Game/Managers/AdaptiveAnimationManager.cs` | Dynamic frame-skipping base |
+| PrismScaleManager.cs | `Assets/_Scripts/Controller/Managers/PrismScaleManager.cs` | Burst-compiled scale batching |
+| MaterialStateManager.cs | `Assets/_Scripts/Controller/Managers/MaterialStateManager.cs` | Burst-compiled material batching |
+| AdaptiveAnimationManager.cs | `Assets/_Scripts/Controller/Managers/AdaptiveAnimationManager.cs` | Dynamic frame-skipping base |
 | GenericPoolManager.cs | `Assets/_Scripts/Utility/PoolsAndBuffers/GenericPoolManager.cs` | Object pooling base |
-| PrismScaleAnimator.cs | `Assets/_Scripts/Game/Environment/Prisms/PrismScaleAnimator.cs` | Per-prism scale component |
-| MaterialPropertyAnimator.cs | `Assets/_Scripts/Game/Environment/Prisms/MaterialPropertyAnimator.cs` | Per-prism material component |
-| PrismStateManager.cs | `Assets/_Scripts/Game/Managers/PrismStateManager.cs` | Shield/danger state machine |
-| PrismTeamManager.cs | `Assets/_Scripts/Game/Managers/PrismTeamManager.cs` | Team ownership + material |
-| VesselPrismController.cs | `Assets/_Scripts/Game/Ship/VesselPrismController.cs` | Trail spawning loop |
-| Trail.cs | `Assets/_Scripts/Game/Ship/Trail.cs` | Unbounded prism list |
-| BlockDensityGrid.cs | `Assets/_Scripts/Game/Managers/BlockDensityGrid.cs` | Spatial density (Jobs-based) |
+| PrismScaleAnimator.cs | `Assets/_Scripts/Controller/Environment/Prisms/PrismScaleAnimator.cs` | Per-prism scale component |
+| MaterialPropertyAnimator.cs | `Assets/_Scripts/Controller/Environment/Prisms/MaterialPropertyAnimator.cs` | Per-prism material component |
+| PrismStateManager.cs | `Assets/_Scripts/Controller/Managers/PrismStateManager.cs` | Shield/danger state machine |
+| PrismTeamManager.cs | `Assets/_Scripts/Controller/Managers/PrismTeamManager.cs` | Team ownership + material |
+| PrismTimerManager.cs | `Assets/_Scripts/Controller/Managers/PrismTimerManager.cs` | Centralized timer system (replaces coroutines) |
+| VesselPrismController.cs | `Assets/_Scripts/Controller/Vessel/VesselPrismController.cs` | Trail spawning loop |
+| Trail.cs | `Assets/_Scripts/Controller/Vessel/Trail.cs` | Unbounded prism list |
+| BlockDensityGrid.cs | `Assets/_Scripts/Controller/Managers/BlockDensityGrid.cs` | Spatial density (Jobs-based) |

@@ -24,8 +24,8 @@ MonoBehaviour:
   SceneName: MinigameMazeRunner
   Captains:
   - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 1
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 1
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 426

@@ -1,10 +1,11 @@
 ﻿using System.Collections;
 using System.Linq;
 using CosmicShore.Game.Cinematics;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Utility
 {
     public class HexRaceEndGameController : EndGameCinematicController
     {
