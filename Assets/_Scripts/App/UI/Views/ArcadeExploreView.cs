@@ -15,6 +15,7 @@ using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
@@ -27,6 +28,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
         [SerializeField] DailyChallengeCard DailyChallengeCard;
+        [SerializeField] Button QuickPlayButton;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [Header("Test Settings")]
@@ -34,7 +36,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] bool RespectInventoryForGameSelection = false;
 
         [SerializeField] VesselClassTypeVariable selectedVesselClassType;
-        
+
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
 
@@ -57,6 +59,15 @@ namespace CosmicShore.App.UI.Views
         void Start()
         {
             LoadoutSystem.Init();
+
+            // Show Daily Challenge card but disable interaction
+            if (DailyChallengeCard != null)
+                DailyChallengeCard.SetComingSoon();
+
+            // Wire QuickPlay button
+            if (QuickPlayButton != null)
+                QuickPlayButton.onClick.AddListener(LaunchQuickPlay);
+
             PopulateGameSelectionList();
         }
 
@@ -64,7 +75,13 @@ namespace CosmicShore.App.UI.Views
         {
             GameCards = new List<GameCard>();
             ArcadeDPadNav.AddRow(new List<Button>());
-            ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
+
+            // Add top-row buttons to nav row 0
+            if (DailyChallengeCard != null && DailyChallengeCard.gameObject.activeSelf
+                && DailyChallengeCard.TryGetComponent<Button>(out var dcButton))
+                ArcadeDPadNav.AddButtonToRow(dcButton, 0);
+            if (QuickPlayButton != null)
+                ArcadeDPadNav.AddButtonToRow(QuickPlayButton, 0);
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
@@ -175,6 +192,45 @@ namespace CosmicShore.App.UI.Views
         {
             FavoriteSystem.ToggleFavorite(SelectedGame.Mode);
             PopulateGameSelectionList();
+        }
+
+        /// <summary>
+        /// Launches the latest unlocked game in the quest chain at the highest unlocked intensity.
+        /// Always single-player. Randomly selects from unlocked vessels only.
+        /// </summary>
+        void LaunchQuickPlay()
+        {
+            var progressionService = GameModeProgressionService.Instance;
+            if (progressionService == null || progressionService.QuestList == null) return;
+
+            var quests = progressionService.QuestList.Quests;
+            if (quests == null || quests.Count == 0) return;
+
+            // Walk the quest chain backwards to find the latest unlocked non-placeholder game mode
+            SO_ArcadeGame latestGame = null;
+            for (int i = quests.Count - 1; i >= 0; i--)
+            {
+                var quest = quests[i];
+                if (quest == null || quest.IsPlaceholder) continue;
+                if (!progressionService.IsGameModeUnlocked(quest.GameMode)) continue;
+
+                latestGame = GameList.Games.FirstOrDefault(g => g.Mode == quest.GameMode);
+                if (latestGame != null) break;
+            }
+
+            if (latestGame == null) return;
+
+            int maxIntensity = progressionService.GetMaxUnlockedIntensity(latestGame.Mode);
+            if (maxIntensity <= 0) maxIntensity = latestGame.MinIntensity;
+
+            // Collect only unlocked vessels and pick one at random
+            var unlockedVessels = latestGame.Vessels?.Where(v => v != null && !v.IsLocked).ToList();
+            if (unlockedVessels == null || unlockedVessels.Count == 0) return;
+
+            var vessel = unlockedVessels[UnityEngine.Random.Range(0, unlockedVessels.Count)];
+
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            Arcade.Instance.LaunchArcadeGame(latestGame.Mode, vessel.Class, vessel.InitialResourceLevels, maxIntensity, 1, false, false);
         }
     }
 }
