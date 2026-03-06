@@ -8,6 +8,9 @@ namespace CosmicShore.Game
     /// Displays a floating "+N" score popup on the vessel's 3D canvas.
     /// Consecutive scores within the combo window stack: +1, +2, +3, etc.
     /// The popup fades and floats upward over the display duration.
+    ///
+    /// Setup: Create a TextMeshProUGUI in the editor on your World Space Canvas,
+    /// then assign it to the <see cref="label"/> field.
     /// </summary>
     public class ScorePopup : MonoBehaviour
     {
@@ -15,11 +18,9 @@ namespace CosmicShore.Game
         [SerializeField] private ScorePopupSettingsSO settings;
 
         [Header("References")]
-        [Tooltip("The Vessel3DCanvas to parent the popup text under. " +
-                 "If null, will be looked up from VesselStatus.")]
-        [SerializeField] private Vessel3DCanvas vessel3DCanvas;
+        [Tooltip("Assign the TMP_Text you created on the World Space Canvas.")]
+        [SerializeField] private TMP_Text label;
 
-        TMP_Text _label;
         RectTransform _labelRT;
         CanvasGroup _canvasGroup;
 
@@ -40,16 +41,34 @@ namespace CosmicShore.Game
         float StartScale => settings ? settings.startScale : 0.5f;
         float PunchScale => settings ? settings.punchScale : 1.3f;
         float PunchDur => settings ? settings.punchDuration : 0.15f;
-        float FontSize => settings ? settings.fontSize : 5f;
-        Color TextColor => settings ? settings.textColor : Color.white;
 
         /// <summary>
-        /// Call once after Vessel3DCanvas.Initialize() has run.
+        /// Call once after the vessel is set up.
         /// </summary>
-        public void Initialize(Vessel3DCanvas canvas)
+        public void Initialize()
         {
-            vessel3DCanvas = canvas;
-            BuildLabel();
+            if (!label)
+            {
+                Debug.LogError($"[ScorePopup] No TMP_Text assigned on {gameObject.name}. " +
+                               "Create a TextMeshProUGUI in the editor and assign it.", this);
+                return;
+            }
+
+            _labelRT = label.rectTransform;
+            _canvasGroup = label.GetComponent<CanvasGroup>();
+            if (!_canvasGroup)
+                _canvasGroup = label.gameObject.AddComponent<CanvasGroup>();
+
+            _canvasGroup.alpha = 0f;
+            _baseLocalPosition = _labelRT.localPosition;
+        }
+
+        /// <summary>
+        /// Sets the text color — typically the player's domain color.
+        /// </summary>
+        public void SetColor(Color color)
+        {
+            if (label) label.color = color;
         }
 
         /// <summary>
@@ -58,7 +77,7 @@ namespace CosmicShore.Game
         /// </summary>
         public void ShowScorePoint(int points = 1)
         {
-            if (!_label) return;
+            if (!_labelRT) return;
 
             // Stack combo or reset
             if (_isShowing && _comboTimer > 0f)
@@ -69,7 +88,7 @@ namespace CosmicShore.Game
             _comboTimer = ComboWindow;
             _displayTimer = DisplayDuration;
 
-            _label.text = $"+{_comboCount}";
+            label.text = $"+{_comboCount}";
 
             PlayAnimation();
         }
@@ -95,32 +114,6 @@ namespace CosmicShore.Game
             {
                 _canvasGroup.alpha = Mathf.Clamp01(_displayTimer / fadeStart);
             }
-        }
-
-        void BuildLabel()
-        {
-            if (!vessel3DCanvas || !vessel3DCanvas.ContentRoot) return;
-
-            var go = new GameObject("ScorePopupLabel");
-            go.transform.SetParent(vessel3DCanvas.ContentRoot, false);
-
-            _canvasGroup = go.AddComponent<CanvasGroup>();
-            _canvasGroup.alpha = 0f;
-
-            _label = go.AddComponent<TextMeshProUGUI>();
-            _label.fontSize = FontSize;
-            _label.color = TextColor;
-            _label.alignment = TextAlignmentOptions.Center;
-            _label.enableWordWrapping = false;
-            _label.raycastTarget = false;
-
-            _labelRT = _label.rectTransform;
-            _labelRT.anchorMin = new Vector2(0.5f, 0.5f);
-            _labelRT.anchorMax = new Vector2(0.5f, 0.5f);
-            _labelRT.sizeDelta = new Vector2(200f, 50f);
-            _labelRT.anchoredPosition = Vector2.zero;
-
-            _baseLocalPosition = _labelRT.localPosition;
         }
 
         void PlayAnimation()

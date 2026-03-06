@@ -17,6 +17,9 @@ namespace CosmicShore.Game
         [Tooltip("Used to check the active game mode for score popup filtering.")]
         [SerializeField] private GameDataSO gameData;
 
+        [Tooltip("Domain color palette for score popup text color.")]
+        [SerializeField] private DomainColorPaletteSO domainColorPalette;
+
         protected R_VesselActionHandler Actions { get; private set; }
         protected VesselHUDView View => baseView;
 
@@ -106,10 +109,11 @@ namespace CosmicShore.Game
             if (gameData && _excludedModes.Contains(gameData.GameMode))
                 return;
 
-            var canvas = vesselStatus.Vessel3DCanvas;
-            if (!canvas) return;
+            scorePopup.Initialize();
 
-            scorePopup.Initialize(canvas);
+            // Set text color to the player's domain color
+            if (domainColorPalette)
+                scorePopup.SetColor(domainColorPalette.Get(vesselStatus.Domain));
 
             // Track score and subscribe
             var roundStats = vesselStatus.Player?.RoundStats;

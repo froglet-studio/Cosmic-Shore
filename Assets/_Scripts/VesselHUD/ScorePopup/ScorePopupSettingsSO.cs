@@ -27,9 +27,5 @@ namespace CosmicShore.Game
         [Tooltip("Duration of the scale punch in")]
         public float punchDuration = 0.15f;
 
-        [Header("Font")]
-        public float fontSize = 5f;
-
-        public Color textColor = Color.white;
     }
 }
