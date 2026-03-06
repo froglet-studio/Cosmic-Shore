@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,6 +11,8 @@ namespace CosmicShore.UI
 {
     public class EpisodeScreen : MonoBehaviour
     {
+        [Inject] IAPManager _iapManager;
+
         [Header("Data")]
         [SerializeField] private SO_EpisodeList episodeList;
 
@@ -146,7 +149,7 @@ namespace CosmicShore.UI
         void OnSupportUsClicked()
         {
             CSDebug.Log("[EpisodeScreen] Support Us clicked - IAP not yet configured.");
-            IAPManager.Instance?.InitiateSupportPurchase();
+            _iapManager?.InitiateSupportPurchase();
         }
     }
 }

@@ -8,6 +8,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -18,6 +19,7 @@ namespace CosmicShore.UI
 {
     public class ArcadeGameConfigureModal : ModalWindowManager
     {
+        [Inject] HostConnectionDataSO hostConnectionData;
         // TEMP for legacy systems (e.g. DailyChallengeSystem)
         public static ArcadeGameConfigureModal Instance { get; private set; }
 
@@ -365,6 +367,18 @@ namespace CosmicShore.UI
             RefreshShipSummaryView();
         }
 
+        void ShowVesselSelectionScreen()
+        {
+            // TODO: implement vessel selection screen when the UI is ready
+            ShowGameDetailScreen();
+        }
+
+        void ShowSquadMateSelectionScreen()
+        {
+            // TODO: implement squad mate selection screen when the UI is ready
+            ShowGameDetailScreen();
+        }
+
         #endregion
 
         #region Config change handlers
@@ -552,7 +566,7 @@ namespace CosmicShore.UI
         // Screen 1 → Screen 2
         public void OnConfirmConfiguration()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
             ShowGameDetailScreen();
 
             if (!IsClientMode && arcadeConfigSyncManager)

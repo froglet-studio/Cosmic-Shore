@@ -158,7 +158,7 @@ namespace CosmicShore.UI
 
         public void LaunchSelectedGame()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
             var shipResources = new ResourceCollection();
             if (SelectedGame.ElementOne.Element == Element.Charge || SelectedGame.ElementTwo.Element == Element.Charge)
                 shipResources.Charge = 1;
