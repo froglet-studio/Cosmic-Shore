@@ -195,6 +195,22 @@ namespace CosmicShore.UI
 
         #region Initialization helpers
 
+        int CurrentPartyHumanCount
+        {
+            get
+            {
+                // Prefer Netcode connected client count — it's the ground truth for
+                // human players and avoids stale PartyMembers (polled every 3s).
+                var nm = NetworkManager.Singleton;
+                if (nm != null && nm.IsServer)
+                    return Mathf.Max(1, nm.ConnectedClientsIds.Count);
+
+                return hostConnectionData != null && hostConnectionData.PartyMembers != null
+                    ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
+                    : 1;
+            }
+        }
+
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
             // Clamp default intensity to what the player has actually unlocked
@@ -650,9 +666,7 @@ namespace CosmicShore.UI
             var selectedGame = config.SelectedGame;
             gameData.SyncFromArcadeGame(selectedGame);
 
-            int humanCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
-                ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
-                : 1;
+            int humanCount = CurrentPartyHumanCount;
 
             // Single source of truth — GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);

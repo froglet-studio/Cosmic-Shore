@@ -3490,20 +3490,9 @@ PrefabInstance:
       objectReference: {fileID: 483927158}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
-      propertyPath: menuFreestyleEvents
-      value: 
-      objectReference: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622,
-        type: 2}
-    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
-        type: 3}
       propertyPath: postProcessingManager
       value: 
       objectReference: {fileID: 1922865233}
-    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
-        type: 3}
-      propertyPath: sceneTransitionManager
-      value: 
-      objectReference: {fileID: 8256122174668503709}
     - target: {fileID: 6778103901198434919, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
       propertyPath: m_Name
@@ -3564,18 +3553,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4eee63018bbefa743845cd8125957a2d, type: 3}
---- !u!114 &8256122174668503709 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 974600371733867531, guid: 4eee63018bbefa743845cd8125957a2d,
-    type: 3}
-  m_PrefabInstance: {fileID: 8256122174668503708}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 621b2788bb4141fa90f26bb44247998c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
