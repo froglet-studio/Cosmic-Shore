@@ -33,17 +33,17 @@ namespace CosmicShore.Game.IO
         EventSystem eventSystem;
         ScreenSwitcher screenSwitcher;
         Button button;
-        
+
         bool _wasCanvasGroupInteractableLastFrame;
-        
+
         void Start()
         {
             if (canvasGroup)
                 _wasCanvasGroupInteractableLastFrame = canvasGroup.interactable;
-            
+
             eventSystem = FindAnyObjectByType<EventSystem>();
-            screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             button = GetComponent<Button>();
+            screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
 
             if (!activationButtonImage)
                 return;
@@ -100,23 +100,26 @@ namespace CosmicShore.Game.IO
 
         void Update()
         {
+            if (Gamepad.current == null || !Gamepad.current[activationButton].wasPressedThisFrame)
+                return;
+
             // Remove the null check -> after making sure every place of ControllerButtonPress has a canvas group
             // reference added to them
-
             if (canvasGroup)
             {
                 bool wasInteractableLastFrame = _wasCanvasGroupInteractableLastFrame;
-                _wasCanvasGroupInteractableLastFrame = canvasGroup.interactable;    
-                
+                _wasCanvasGroupInteractableLastFrame = canvasGroup.interactable;
+
                 if (!wasInteractableLastFrame)
                     return;
             }
-            
+
+            // Lazy lookup: button's GO may have been inactive during Start()
+            if (screenSwitcher == null)
+                screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+
             if (screenSwitcher != null)
             {
-                if (Gamepad.current == null || !Gamepad.current[activationButton].wasPressedThisFrame)
-                    return;
-
                 // If any modal is open, only modal-scoped buttons may fire.
                 if (screenSwitcher.HasActiveModal)
                 {
@@ -124,8 +127,7 @@ namespace CosmicShore.Game.IO
                     {
                         if (screenSwitcher.ModalIsActive(modal))
                         {
-                            button.onClick.Invoke();
-                            button.OnDeselect(new BaseEventData(eventSystem));
+                            InvokeButton();
                             return;
                         }
                     }
@@ -137,22 +139,23 @@ namespace CosmicShore.Game.IO
                     {
                         if (screenSwitcher.ScreenIsActive(screen))
                         {
-                            button.onClick.Invoke();
-                            button.OnDeselect(new BaseEventData(eventSystem));
+                            InvokeButton();
                             return;
                         }
                     }
                 }
             }
-            // Kinda lame-o approach to keep in game UI working (which doesn't have nested modals or return to screens)
+            // In-game UI fallback: no ScreenSwitcher exists in this scene at all
             else
             {
-                if (Gamepad.current != null && Gamepad.current[activationButton].wasPressedThisFrame)
-                {
-                    button.onClick.Invoke();
-                    button.OnDeselect(new BaseEventData(eventSystem));
-                }
+                InvokeButton();
             }
+        }
+
+        void InvokeButton()
+        {
+            button.onClick.Invoke();
+            button.OnDeselect(new BaseEventData(eventSystem));
         }
     }
 }
