@@ -111,7 +111,7 @@ namespace CosmicShore.Gameplay
             CurrentState = BlockState.Shielded;
 
             SyncAOERegistryShieldState();
-            _audioSystem.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
+            _audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
 
         private void ApplyNormalState()
@@ -130,7 +130,7 @@ namespace CosmicShore.Gameplay
             SyncAOERegistryShieldState();
 
             if (wasShielded)
-                _audioSystem.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
+                _audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
         }
 
         private void SyncAOERegistryShieldState()
