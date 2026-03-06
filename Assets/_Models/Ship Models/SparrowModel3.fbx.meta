@@ -32,7 +32,7 @@ ModelImporter:
     clipAnimations:
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|Idle_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|Idle_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|Idle_SparrowAnim
       internalID: 1538366950322441532
       firstFrame: 0
       lastFrame: 1
@@ -61,7 +61,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|SpeedDown_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|SpeedDown_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|SpeedDown_SparrowAnim
       internalID: -7745171902883792618
       firstFrame: 0
       lastFrame: 1
@@ -90,7 +90,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|SpeedUp_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|SpeedUp_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|SpeedUp_SparrowAnim
       internalID: -8790746044482621832
       firstFrame: 0
       lastFrame: 1
@@ -119,7 +119,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|YawLeft_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|YawLeft_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|YawLeft_SparrowAnim
       internalID: 4688057880925959930
       firstFrame: 0
       lastFrame: 1
@@ -148,7 +148,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|YawRight_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|YawRight_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|YawRight_SparrowAnim
       internalID: 4977852477300310412
       firstFrame: 0
       lastFrame: 1
@@ -177,7 +177,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|PitchUp_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|PitchUp_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|PitchUp_SparrowAnim
       internalID: 4873371448912438895
       firstFrame: 0
       lastFrame: 1
@@ -206,7 +206,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|PitchDown_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|PitchDown_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|PitchDown_SparrowAnim
       internalID: -39112737550917836
       firstFrame: 0
       lastFrame: 1
@@ -235,7 +235,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|Speed+PitchDown_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|Speed+PitchDown_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|Speed+PitchDown_SparrowAnim
       internalID: 2854880104358996654
       firstFrame: 0
       lastFrame: 1
@@ -264,7 +264,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|Speed+PitchUp_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|Speed+PitchUp_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|Speed+PitchUp_SparrowAnim
       internalID: -788958886855914976
       firstFrame: 0
       lastFrame: 1
@@ -293,7 +293,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|Speed+TurnLeft_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|Speed+TurnLeft_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|Speed+TurnLeft_SparrowAnim
       internalID: -7939550155984146610
       firstFrame: 0
       lastFrame: 1
@@ -322,7 +322,7 @@ ModelImporter:
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
       name: Sparrow_Armature+Mesh|Speed+TurnRight_SparrowAnim
-      takeName: Sparrow_Armature+Mesh|Speed+TurnRight_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|Sparrow_Armature+Mesh|Speed+TurnRight_SparrowAnim
       internalID: -3453335285089842673
       firstFrame: 0
       lastFrame: 1
