@@ -104,7 +104,11 @@ namespace CosmicShore.Game
 
         private void HandleBoostChanged(BoostChangedPayload payload)
         {
-            if (!view) return;
+            if (!view || _vesselStatus == null) return;
+
+            // Only react when the payload matches the local player's boost state
+            if (!Mathf.Approximately(payload.BoostMultiplier, _vesselStatus.BoostMultiplier))
+                return;
 
             float baseMult = boostBaseMultiplier ? boostBaseMultiplier.Value : 1f;
             float maxMult = payload.MaxMultiplier;
@@ -150,6 +154,10 @@ namespace CosmicShore.Game
         private void HandleJoustCollision(string playerName)
         {
             if (!view) return;
+
+            // Only react when the local player is the one who got jousted
+            if (_vesselStatus == null || playerName != _vesselStatus.PlayerName)
+                return;
 
             // HUD icon juice
             _joustFlashTween?.Kill();
@@ -197,9 +205,12 @@ namespace CosmicShore.Game
         // ---------------------------------------------------------------
         private void HandleDriftStarted()
         {
-            if (!view) return;
+            if (!view || _vesselStatus == null) return;
 
-            bool isLeft = _vesselStatus?.InputStatus != null && _vesselStatus.InputStatus.XSum < 0f;
+            // Only react when the local player's vessel is actually drifting
+            if (!_vesselStatus.IsDrifting) return;
+
+            bool isLeft = _vesselStatus.InputStatus != null && _vesselStatus.InputStatus.XSum < 0f;
             _isDriftingLeft = isLeft;
 
             view.UpdateDriftIcon(true, false);
@@ -212,7 +223,10 @@ namespace CosmicShore.Game
         {
             if (!view || _vesselStatus == null) return;
 
-            bool isLeft = _vesselStatus?.InputStatus != null && _vesselStatus.InputStatus.XSum < 0f;
+            // Only react when the local player's vessel is actually drifting
+            if (!_vesselStatus.IsDrifting) return;
+
+            bool isLeft = _vesselStatus.InputStatus != null && _vesselStatus.InputStatus.XSum < 0f;
             _isDriftingLeft = isLeft;
 
             view.UpdateDriftIcon(true, true);
@@ -223,7 +237,10 @@ namespace CosmicShore.Game
 
         private void HandleDriftEnded()
         {
-            if (!view) return;
+            if (!view || _vesselStatus == null) return;
+
+            // Only react when the local player's vessel stopped drifting
+            if (_vesselStatus.IsDrifting) return;
 
             view.UpdateDriftIcon(false, false);
             view.JuiceDriftEnd();

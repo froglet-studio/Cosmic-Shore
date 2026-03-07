@@ -26,7 +26,7 @@ MonoBehaviour:
   scoreColorFlashDuration: 0.4
   countdownScaleEase: 6
   countdownFadeInDuration: 0.1
-  countdownUrgentColor: {r: 1, g: 0.6150805, b: 0.5613208, a: 1}
+  countdownUrgentColor: {r: 1, g: 1, b: 1, a: 1}
   countdownUrgentStartIndex: 2
   hudFadeDuration: 0.25
   hudFadeInEase: 6

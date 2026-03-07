@@ -1,4 +1,5 @@
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Game.UI
@@ -24,5 +25,15 @@ namespace CosmicShore.Game.UI
 
         [Header("Time")]
         public bool useUnscaledTime = true;
+
+        [Header("Text")]
+        [Tooltip("Font asset for feed entries. Assign Aldrich Regular SDF.")]
+        public TMP_FontAsset fontAsset;
+
+        [Tooltip("Minimum auto-size font size")]
+        public float fontSizeMin = 8f;
+
+        [Tooltip("Maximum auto-size font size")]
+        public float fontSizeMax = 14f;
     }
 }
