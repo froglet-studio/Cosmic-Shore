@@ -107,6 +107,10 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
+            // Freestyle is always available
+            if (mode == GameModes.Freestyle)
+                return true;
+
             // First quest mode is always unlocked
             if (questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
@@ -141,74 +145,57 @@ namespace CosmicShore.Game.Progression
         }
 
         /// <summary>
-        /// Returns true if the Vessel Hangar quest has been reached in the progression chain.
-        /// The hangar quest is identified by DisplayName "VESSEL HANGAR" and is unlocked when
-        /// every quest before it in the chain is completed.
+        /// Returns true if a feature (identified by its quest DisplayName) has been unlocked.
+        /// </summary>
+        public bool IsFeatureUnlocked(string featureName)
+        {
+            return ProgressionData.IsFeatureUnlocked(featureName);
+        }
+
+        /// <summary>
+        /// Returns true if the Vessel Hangar feature has been unlocked via the quest chain.
         /// </summary>
         public bool IsVesselHangarUnlocked()
         {
-            if (questList == null) return false;
-
-            int hangarIndex = -1;
-            for (int i = 0; i < questList.Quests.Count; i++)
-            {
-                if (questList.Quests[i] != null && questList.Quests[i].DisplayName == "VESSEL HANGAR")
-                {
-                    hangarIndex = i;
-                    break;
-                }
-            }
-
-            if (hangarIndex < 0) return false;
-
-            // All quests before the hangar must be completed
-            for (int i = 0; i < hangarIndex; i++)
-            {
-                var quest = questList.Quests[i];
-                if (quest == null || quest.IsPlaceholder) continue;
-                if (!ProgressionData.IsQuestCompleted(quest.GameMode.ToString()))
-                    return false;
-            }
-
-            return true;
+            return ProgressionData.IsFeatureUnlocked("VESSEL HANGAR");
         }
 
         /// <summary>
         /// Called from the Quest UI when the player taps the unlock button
-        /// after completing a quest. Unlocks the next game mode in the chain.
+        /// after completing a quest. Unlocks the next entry in the chain.
+        /// Uses quest index to avoid ambiguity when multiple quests share a GameMode.
         /// </summary>
-        public void ClaimQuestAndUnlockNext(GameModes completedMode)
+        public void ClaimQuestAndUnlockNext(int questIndex)
         {
-            if (questList == null) return;
+            if (questList == null || questIndex < 0 || questIndex >= questList.Quests.Count) return;
 
-            string modeName = completedMode.ToString();
-
-            // Find the completed quest's index
-            int questIndex = -1;
-            for (int i = 0; i < questList.Quests.Count; i++)
-            {
-                if (questList.Quests[i].GameMode == completedMode)
-                {
-                    questIndex = i;
-                    break;
-                }
-            }
-
-            if (questIndex < 0) return;
+            var quest = questList.Quests[questIndex];
 
             // Mark as claimed (remove from CompletedQuests — it's done)
-            ProgressionData.CompletedQuests.Remove(modeName);
-            questList.Quests[questIndex].IsCompleted = false;
+            if (!quest.IsPlaceholder)
+            {
+                ProgressionData.CompletedQuests.Remove(quest.GameMode.ToString());
+                quest.IsCompleted = false;
+            }
 
-            // Unlock the next mode in the chain and initialize its intensity to 2
+            // Unlock the next entry in the chain
             int nextIndex = questIndex + 1;
             if (nextIndex < questList.Quests.Count)
             {
                 var nextQuest = questList.Quests[nextIndex];
-                string nextModeName = nextQuest.GameMode.ToString();
-                ProgressionData.MarkUnlocked(nextModeName);
-                ProgressionData.EnsureIntensityInitialized(nextModeName);
-                CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
+
+                if (nextQuest.IsFeatureUnlock)
+                {
+                    ProgressionData.MarkFeatureUnlocked(nextQuest.DisplayName);
+                    CSDebug.Log($"[GameModeProgressionService] Unlocked feature: {nextQuest.DisplayName}");
+                }
+                else
+                {
+                    string nextModeName = nextQuest.GameMode.ToString();
+                    ProgressionData.MarkUnlocked(nextModeName);
+                    ProgressionData.EnsureIntensityInitialized(nextModeName);
+                    CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
+                }
             }
 
             OnProgressionChanged?.Invoke(ProgressionData);
@@ -265,7 +252,7 @@ namespace CosmicShore.Game.Progression
         }
 
         /// <summary>
-        /// Returns how many quests have been claimed (next mode unlocked).
+        /// Returns how many quests have been claimed (next entry unlocked).
         /// Used by the slider — only advances on claim, not on quest-target completion.
         /// </summary>
         public int GetClaimedQuestCount()
@@ -275,7 +262,12 @@ namespace CosmicShore.Game.Progression
             int count = 0;
             for (int i = 0; i + 1 < questList.Quests.Count; i++)
             {
-                if (ProgressionData.IsUnlocked(questList.Quests[i + 1].GameMode.ToString()))
+                var nextQuest = questList.Quests[i + 1];
+                bool nextUnlocked = nextQuest.IsFeatureUnlock
+                    ? ProgressionData.IsFeatureUnlocked(nextQuest.DisplayName)
+                    : ProgressionData.IsUnlocked(nextQuest.GameMode.ToString());
+
+                if (nextUnlocked)
                     count++;
             }
 
@@ -421,13 +413,20 @@ namespace CosmicShore.Game.Progression
             // Reset everything first
             ProgressionData = new GameModeProgressionData();
 
-            // Unlock modes 0..targetIndex-1
+            // Unlock entries 0..targetIndex-1
             for (int i = 0; i < targetIndex; i++)
             {
                 var quest = questList.Quests[i];
-                string modeName = quest.GameMode.ToString();
-                ProgressionData.MarkUnlocked(modeName);
-                ProgressionData.EnsureIntensityInitialized(modeName);
+                if (quest.IsFeatureUnlock)
+                {
+                    ProgressionData.MarkFeatureUnlocked(quest.DisplayName);
+                }
+                else
+                {
+                    string modeName = quest.GameMode.ToString();
+                    ProgressionData.MarkUnlocked(modeName);
+                    ProgressionData.EnsureIntensityInitialized(modeName);
+                }
                 quest.IsCompleted = false;
             }
 

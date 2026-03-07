@@ -61,6 +61,12 @@ namespace CosmicShore.App.UI.Modals
         [Tooltip("Optional icon in the game-detail view.")]
         [SerializeField] private Image iconInGameDetailView;
 
+        [Header("Vessel Navigation")]
+        [Tooltip("Button to cycle to the previous vessel. Disabled when only one vessel is available.")]
+        [SerializeField] private Button previousShipButton;
+        [Tooltip("Button to cycle to the next vessel. Disabled when only one vessel is available.")]
+        [SerializeField] private Button nextShipButton;
+
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
 
@@ -231,6 +237,19 @@ namespace CosmicShore.App.UI.Modals
             if (!game || game.Vessels == null) return;
 
             _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
+
+            UpdateShipNavigationButtons();
+        }
+
+        void UpdateShipNavigationButtons()
+        {
+            bool canCycle = _availableShips.Count > 1;
+
+            if (previousShipButton)
+                previousShipButton.gameObject.SetActive(canCycle);
+
+            if (nextShipButton)
+                nextShipButton.gameObject.SetActive(canCycle);
         }
         
         void InitializeDefaultShipFromAvailable()
@@ -305,7 +324,13 @@ namespace CosmicShore.App.UI.Modals
         {
             if (_selectedGame == null || config == null) return;
 
-            intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
+            intensity = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
+
+            // Guard: reject intensities the player hasn't unlocked yet
+            var progressionService = GameModeProgressionService.Instance;
+            if (progressionService != null && !progressionService.IsIntensityUnlocked(_selectedGame.Mode, intensity))
+                return;
+
             config.Intensity = intensity;
 
             foreach (var button in intensityButtons)

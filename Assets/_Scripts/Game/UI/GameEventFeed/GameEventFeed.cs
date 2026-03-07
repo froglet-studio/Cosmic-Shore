@@ -211,7 +211,7 @@ namespace CosmicShore.Game.UI
                 entry = GameFeedEntry.CreateEntry(contentContainer);
             }
 
-            entry.Setup(message, color, isRichText);
+            entry.Setup(message, color, isRichText, settings);
 
             // Rebuild layout BEFORE animation so entry gets correct Y from VerticalLayoutGroup
             LayoutRebuilder.ForceRebuildLayoutImmediate(contentContainer);

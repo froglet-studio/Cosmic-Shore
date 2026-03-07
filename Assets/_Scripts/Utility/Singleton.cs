@@ -21,15 +21,17 @@ namespace CosmicShore.Utilities
             if (Instance == null)
             {
                 Instance = this as T;
-
-                print("Instantiate Singleton : " + Instance);
             }
             else
             {
-                print("Destroy Singleton: " + gameObject.name);
-
                 Destroy(gameObject);
             }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
     }
 
@@ -43,15 +45,17 @@ namespace CosmicShore.Utilities
             {
                 Instance = this as T;
                 DontDestroyOnLoad(this);
-
-                print("Instantiate SingletonPersistent : " + Instance);
             }
             else
             {
-                print("Destroy SingletonPersistent: " + gameObject.name);
-
                 Destroy(gameObject);
             }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
     }
 
@@ -64,15 +68,18 @@ namespace CosmicShore.Utilities
             if (Instance == null)
             {
                 Instance = this as T;
-
-                print("Instantiate SingletonNetwork: " + Instance);
             }
             else
             {
-                print("Destroy SingletonNetwork: " + Instance);
-
                 Destroy(gameObject);
             }
+        }
+
+        public override void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+            base.OnDestroy();
         }
     }
 
@@ -86,15 +93,18 @@ namespace CosmicShore.Utilities
             {
                 Instance = this as T;
                 DontDestroyOnLoad(this);
-
-                print("Instantiate SingletonNetworkPersistent: " + Instance);
             }
             else
             {
-                print("Destroy SingletonNetworkPersistent: " + Instance);
-
                 Destroy(gameObject);
             }
+        }
+
+        public override void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+            base.OnDestroy();
         }
     }
 

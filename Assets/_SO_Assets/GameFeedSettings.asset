@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66e0283a295245a28744d5b76e853fcb, type: 3}
   m_Name: GameFeedSettings
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   slideInDuration: 0.25
   slideInOffset: 200
   slideInEase: 27
@@ -19,3 +19,6 @@ MonoBehaviour:
   fadeOutDuration: 0.5
   maxVisibleEntries: 6
   useUnscaledTime: 1
+  fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  fontSizeMin: 6
+  fontSizeMax: 14

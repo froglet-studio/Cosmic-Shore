@@ -97,12 +97,18 @@ namespace CosmicShore.Core
                 return;
             }
 
+            gameData.selectedVesselClass.Value = vessel;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.SelectedPlayerCount.Value = numberOfPlayers;
             gameData.ResourceCollection = shipResources;
             gameData.IsDailyChallenge = isDailyChallenge;
             gameData.IsTraining = false;
             gameData.IsMission = false;
             gameData.GameMode = gameMode;
-            
+            gameData.SelectedPlayerCount.Value = numberOfPlayers;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.selectedVesselClass.Value = vessel;
+
             // For multiplayer-capable games with only 1 human player, run locally with AI
             // instead of doing online matchmaking. Use gameData.SelectedPlayerCount (set by
             // the config modal) rather than the legacy numberOfPlayers parameter.
@@ -162,6 +168,10 @@ namespace CosmicShore.Core
             gameData.IsTraining = !isDailyChallenge;
             gameData.IsMission = false;
             gameData.IsMultiplayerMode = false;
+            gameData.GameMode = gameMode;
+            gameData.SelectedPlayerCount.Value = numberOfPlayers;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.selectedVesselClass.Value = vessel;
             gameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
             gameData.InvokeGameLaunch();
             

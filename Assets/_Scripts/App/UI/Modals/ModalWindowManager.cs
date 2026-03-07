@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.App.Systems.Audio;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using static CosmicShore.App.UI.ScreenSwitcher;
 
 namespace CosmicShore.App.UI.Modals
@@ -9,6 +10,10 @@ namespace CosmicShore.App.UI.Modals
     {
         [Header("Settings")]
         public bool sharpAnimations;
+
+        [Header("Controller")]
+        [Tooltip("When true, pressing gamepad B (East) will close this modal.")]
+        [SerializeField] private bool closeOnGamepadB = true;
 
         [SerializeField] public ModalWindows ModalType;
 
@@ -19,8 +24,15 @@ namespace CosmicShore.App.UI.Modals
         {
             if(windowAnimator == null)
                 windowAnimator = GetComponent<Animator>();
-                
-            //gameObject.SetActive(false);
+        }
+
+        protected virtual void Update()
+        {
+            if (!isOn || !closeOnGamepadB) return;
+            if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
+            {
+                ModalWindowOut();
+            }
         }
 
         public void ModalWindowIn()
