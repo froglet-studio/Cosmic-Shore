@@ -19,7 +19,7 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         // ── User Configuration ───────────────────────────────────────────────
         public string Label = "Session";
         public int Iterations = 3;
-        public float DurationSeconds = 15f;
+        public float DurationSeconds = 20f;
 
         // ── Game Launch Configuration ────────────────────────────────────────
         public GameModes GameMode = GameModes.Freestyle;
