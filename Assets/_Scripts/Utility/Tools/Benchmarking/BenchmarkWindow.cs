@@ -435,7 +435,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(12);
-                GUILayout.Label($"Mode: {_session.GameMode}   |   Vessel: {_session.Vessel}   |   Duration: {_session.DurationSeconds}s");
+                if (_session.Target == BenchmarkTarget.MainMenu)
+                    GUILayout.Label($"Target: Main Menu   |   Duration: {_session.DurationSeconds}s");
+                else
+                    GUILayout.Label($"Mode: {_session.GameMode}   |   Vessel: {_session.Vessel}   |   Duration: {_session.DurationSeconds}s");
                 EditorGUILayout.EndHorizontal();
 
                 // Overall progress bar
@@ -462,7 +465,17 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                 if (Application.isPlaying)
                 {
                     string phase;
-                    if (_waitingForGameScene)
+                    if (_session.Target == BenchmarkTarget.MainMenu)
+                    {
+                        if (_waitingForMenuInit)
+                        {
+                            float remaining = Mathf.Max(0f, (float)(_menuInitEndTime - EditorApplication.timeSinceStartup));
+                            phase = $"Waiting for menu initialization... {remaining:F1}s";
+                        }
+                        else
+                            phase = "Sampling Main Menu...";
+                    }
+                    else if (_waitingForGameScene)
                         phase = "Waiting for game scene to load via Arcade...";
                     else if (!_goButtonPressed && _sceneLoadedTime > 0)
                     {
@@ -505,68 +518,109 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             // ── Configuration ────────────────────────────────────────────────
             DrawSection("Automated Session");
 
-            EditorGUILayout.HelpBox(
-                "Run a benchmark multiple times through the Arcade bootstrap flow:\n" +
-                "1. Enter play mode (SceneBootstrapper loads Menu_Main)\n" +
-                "2. Arcade launches the selected game from OrganicRematchGames\n" +
-                "3. Once the game scene loads, the Go button is pressed automatically\n" +
-                "4. After the countdown, benchmark sampling captures 20s of gameplay\n" +
-                "5. After sampling, results are saved and play mode exits\n" +
-                "6. Repeat for N iterations, then generate reproducibility report",
-                MessageType.None);
+            // ── Benchmark Target ─────────────────────────────────────────────
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(12);
+            GUILayout.Label("Target", GUILayout.Width(100));
+            _session.Target = (BenchmarkTarget)EditorGUILayout.EnumPopup(_session.Target);
+            EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(4);
 
-            // Game mode from ArcadeGames SO
-            DrawSection("Game Configuration");
-
-            if (_selectableGames == null || _selectableGames.Length == 0)
-                RefreshArcadeGameList();
-
-            if (_selectableGames != null && _selectableGames.Length > 0)
+            if (_session.Target == BenchmarkTarget.MainMenu)
             {
-                int gameModeIdx = Array.FindIndex(_selectableGames, g => g.Mode == _session.GameMode);
-                if (gameModeIdx < 0) gameModeIdx = 0;
+                EditorGUILayout.HelpBox(
+                    "Benchmark the Main Menu scene directly:\n" +
+                    "1. Enter play mode (SceneBootstrapper loads Menu_Main)\n" +
+                    "2. Wait for the menu to fully initialize\n" +
+                    "3. Benchmark sampling captures performance of the menu UI\n" +
+                    "4. After sampling, results are saved and play mode exits\n" +
+                    "5. Repeat for N iterations, then generate reproducibility report",
+                    MessageType.None);
+
+                GUILayout.Space(4);
+                DrawSection("Menu Configuration");
 
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(12);
-                GUILayout.Label("Game Mode", GUILayout.Width(100));
-                int newGameModeIdx = EditorGUILayout.Popup(gameModeIdx, _gameDisplayNames);
-                if (newGameModeIdx != gameModeIdx || _session.GameMode != _selectableGames[newGameModeIdx].Mode)
-                    _session.GameMode = _selectableGames[newGameModeIdx].Mode;
+                GUILayout.Label("Init Delay (s)", GUILayout.Width(100));
+                _session.MenuInitDelaySeconds = EditorGUILayout.FloatField(_session.MenuInitDelaySeconds, GUILayout.Width(60));
+                _session.MenuInitDelaySeconds = Mathf.Clamp(_session.MenuInitDelaySeconds, 1f, 30f);
+                GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
 
-                // Show scene name for clarity
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(28);
-                var sceneStyle = new GUIStyle(EditorStyles.miniLabel);
-                sceneStyle.normal.textColor = TextMuted;
-                GUILayout.Label($"Scene: {_selectableGames[Mathf.Clamp(newGameModeIdx, 0, _selectableGames.Length - 1)].SceneName}", sceneStyle);
+                var noteStyle = new GUIStyle(EditorStyles.miniLabel);
+                noteStyle.normal.textColor = TextMuted;
+                GUILayout.Label("Time to wait for menu animations/loading before sampling begins", noteStyle);
                 EditorGUILayout.EndHorizontal();
             }
             else
             {
-                EditorGUILayout.HelpBox("Could not find ArcadeGames SO. Check Assets/_SO_Assets/Games/GameLists/.", MessageType.Warning);
+                EditorGUILayout.HelpBox(
+                    "Run a benchmark multiple times through the Arcade bootstrap flow:\n" +
+                    "1. Enter play mode (SceneBootstrapper loads Menu_Main)\n" +
+                    "2. Arcade launches the selected game from OrganicRematchGames\n" +
+                    "3. Once the game scene loads, the Go button is pressed automatically\n" +
+                    "4. After the countdown, benchmark sampling captures 20s of gameplay\n" +
+                    "5. After sampling, results are saved and play mode exits\n" +
+                    "6. Repeat for N iterations, then generate reproducibility report",
+                    MessageType.None);
+
+                GUILayout.Space(4);
+
+                // Game mode from ArcadeGames SO
+                DrawSection("Game Configuration");
+
+                if (_selectableGames == null || _selectableGames.Length == 0)
+                    RefreshArcadeGameList();
+
+                if (_selectableGames != null && _selectableGames.Length > 0)
+                {
+                    int gameModeIdx = Array.FindIndex(_selectableGames, g => g.Mode == _session.GameMode);
+                    if (gameModeIdx < 0) gameModeIdx = 0;
+
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(12);
+                    GUILayout.Label("Game Mode", GUILayout.Width(100));
+                    int newGameModeIdx = EditorGUILayout.Popup(gameModeIdx, _gameDisplayNames);
+                    if (newGameModeIdx != gameModeIdx || _session.GameMode != _selectableGames[newGameModeIdx].Mode)
+                        _session.GameMode = _selectableGames[newGameModeIdx].Mode;
+                    EditorGUILayout.EndHorizontal();
+
+                    // Show scene name for clarity
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(28);
+                    var sceneStyle = new GUIStyle(EditorStyles.miniLabel);
+                    sceneStyle.normal.textColor = TextMuted;
+                    GUILayout.Label($"Scene: {_selectableGames[Mathf.Clamp(newGameModeIdx, 0, _selectableGames.Length - 1)].SceneName}", sceneStyle);
+                    EditorGUILayout.EndHorizontal();
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Could not find ArcadeGames SO. Check Assets/_SO_Assets/Games/GameLists/.", MessageType.Warning);
+                }
+
+                // Vessel picker
+                int vesselIdx = Array.IndexOf(SelectableVessels, _session.Vessel);
+                if (vesselIdx < 0) vesselIdx = 0;
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(12);
+                GUILayout.Label("Vessel", GUILayout.Width(100));
+                int newVesselIdx = EditorGUILayout.Popup(vesselIdx, VesselNames);
+                if (newVesselIdx != vesselIdx)
+                    _session.Vessel = SelectableVessels[newVesselIdx];
+                EditorGUILayout.EndHorizontal();
+
+                // Intensity 1-4
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(12);
+                GUILayout.Label("Intensity", GUILayout.Width(100));
+                _session.Intensity = EditorGUILayout.IntSlider(_session.Intensity, 1, 4);
+                EditorGUILayout.EndHorizontal();
             }
-
-            // Vessel picker
-            int vesselIdx = Array.IndexOf(SelectableVessels, _session.Vessel);
-            if (vesselIdx < 0) vesselIdx = 0;
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(12);
-            GUILayout.Label("Vessel", GUILayout.Width(100));
-            int newVesselIdx = EditorGUILayout.Popup(vesselIdx, VesselNames);
-            if (newVesselIdx != vesselIdx)
-                _session.Vessel = SelectableVessels[newVesselIdx];
-            EditorGUILayout.EndHorizontal();
-
-            // Intensity 1-4
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(12);
-            GUILayout.Label("Intensity", GUILayout.Width(100));
-            _session.Intensity = EditorGUILayout.IntSlider(_session.Intensity, 1, 4);
-            EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(4);
 
@@ -1153,7 +1207,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             _sessionReports = null;
             _sessionSummary = null;
 
-            CSDebug.Log($"[Benchmark Session] Starting {_session.Iterations} iterations — {_session.GameMode} / {_session.Vessel}");
+            if (_session.Target == BenchmarkTarget.MainMenu)
+                CSDebug.Log($"[Benchmark Session] Starting {_session.Iterations} iterations — Main Menu");
+            else
+                CSDebug.Log($"[Benchmark Session] Starting {_session.Iterations} iterations — {_session.GameMode} / {_session.Vessel}");
 
             // Just enter play mode. SceneBootstrapper will redirect to Menu_Main (bootstrap).
             // Our playModeStateChanged callback handles the rest.
@@ -1189,10 +1246,21 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             switch (state)
             {
                 case PlayModeStateChange.EnteredPlayMode:
-                    // We're now in play mode (Menu_Main loaded by SceneBootstrapper).
-                    // Wait a frame for Arcade singleton to initialize, then launch the game.
-                    _waitingForGameScene = true;
-                    EditorApplication.delayCall += LaunchGameViaArcade;
+                    if (_session.Target == BenchmarkTarget.MainMenu)
+                    {
+                        // Menu_Main is already loaded by SceneBootstrapper.
+                        // Wait for menu to initialize, then sample directly.
+                        _waitingForMenuInit = true;
+                        _menuInitEndTime = EditorApplication.timeSinceStartup + _session.MenuInitDelaySeconds;
+                        EditorApplication.update += OnWaitForMenuReady;
+                    }
+                    else
+                    {
+                        // We're now in play mode (Menu_Main loaded by SceneBootstrapper).
+                        // Wait a frame for Arcade singleton to initialize, then launch the game.
+                        _waitingForGameScene = true;
+                        EditorApplication.delayCall += LaunchGameViaArcade;
+                    }
                     break;
 
                 case PlayModeStateChange.EnteredEditMode:
@@ -1258,6 +1326,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         [NonSerialized] bool _goButtonPressed;
         [NonSerialized] double _sceneLoadedTime;
 
+        // ── Main Menu benchmark state ────────────────────────────────────────
+        [NonSerialized] bool _waitingForMenuInit;
+        [NonSerialized] double _menuInitEndTime;
+
         void OnWaitForGameReady()
         {
             if (!Application.isPlaying)
@@ -1305,6 +1377,26 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             _waitingForCountdown = false;
 
             CSDebug.Log("[Benchmark Session] Countdown complete. Starting benchmark sampling...");
+            AutoStartSessionBenchmark();
+        }
+
+        void OnWaitForMenuReady()
+        {
+            if (!Application.isPlaying)
+            {
+                EditorApplication.update -= OnWaitForMenuReady;
+                _waitingForMenuInit = false;
+                return;
+            }
+
+            if (EditorApplication.timeSinceStartup < _menuInitEndTime)
+                return;
+
+            // Init delay complete — start sampling
+            EditorApplication.update -= OnWaitForMenuReady;
+            _waitingForMenuInit = false;
+
+            CSDebug.Log("[Benchmark Session] Menu initialization complete. Starting benchmark sampling...");
             AutoStartSessionBenchmark();
         }
 
@@ -1412,8 +1504,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             // Unsubscribe from scene loads and game-ready wait in case we're mid-wait
             SceneManager.sceneLoaded -= OnGameSceneLoaded;
             EditorApplication.update -= OnWaitForGameReady;
+            EditorApplication.update -= OnWaitForMenuReady;
             _waitingForGameScene = false;
             _waitingForCountdown = false;
+            _waitingForMenuInit = false;
 
             // Stop any active sampling
             if (_activeSampler != null)
