@@ -8,6 +8,17 @@ using UnityEngine;
 namespace CosmicShore.Utility.Tools.Benchmarking
 {
     /// <summary>
+    /// What scene/flow to benchmark in an automated session.
+    /// </summary>
+    public enum BenchmarkTarget
+    {
+        /// <summary>Benchmark a gameplay scene launched via the Arcade flow.</summary>
+        Game = 0,
+        /// <summary>Benchmark the Main Menu scene directly (no game launch).</summary>
+        MainMenu = 1,
+    }
+
+    /// <summary>
     /// Persists automated benchmark session state across play mode transitions
     /// and domain reloads via EditorPrefs JSON.
     /// </summary>
@@ -20,6 +31,13 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         public string Label = "Session";
         public int Iterations = 3;
         public float DurationSeconds = 20f;
+
+        // ── Benchmark Target ─────────────────────────────────────────────────
+        public BenchmarkTarget Target = BenchmarkTarget.Game;
+
+        // ── Main Menu Configuration ──────────────────────────────────────────
+        /// <summary>Seconds to wait for Menu_Main to fully initialize before sampling.</summary>
+        public float MenuInitDelaySeconds = 5f;
 
         // ── Game Launch Configuration ────────────────────────────────────────
         public GameModes GameMode = GameModes.Freestyle;
