@@ -53,8 +53,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         [NonSerialized] bool _waitingForCountdown;
         [NonSerialized] double _countdownWaitEndTime;
 
-        // Countdown is 4 sprites × 1s each; add 1s buffer for scene init before pressing Go
-        const float CountdownDurationSeconds = 5f;
+        // Countdown is 4 sprites × 1s each
+        const float CountdownDurationSeconds = 4f;
+        // Wait for scene to fully initialize (Start(), player spawning, etc.) before pressing Go
+        const float SceneInitDelaySeconds = 3f;
 
         // ── Session results (loaded after session completes) ────────────────
         [NonSerialized] List<BenchmarkReport> _sessionReports;
@@ -461,6 +463,11 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                     string phase;
                     if (_waitingForGameScene)
                         phase = "Waiting for game scene to load via Arcade...";
+                    else if (!_goButtonPressed && _sceneLoadedTime > 0)
+                    {
+                        float remaining = Mathf.Max(0f, SceneInitDelaySeconds - (float)(EditorApplication.timeSinceStartup - _sceneLoadedTime));
+                        phase = $"Waiting for scene initialization... {remaining:F1}s";
+                    }
                     else if (_waitingForCountdown)
                     {
                         float remaining = Mathf.Max(0f, (float)(_countdownWaitEndTime - EditorApplication.timeSinceStartup));
@@ -1237,48 +1244,62 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             SceneManager.sceneLoaded -= OnGameSceneLoaded;
             _waitingForGameScene = false;
 
-            CSDebug.Log($"[Benchmark Session] Game scene '{scene.name}' loaded. Pressing Go button...");
+            CSDebug.Log($"[Benchmark Session] Game scene '{scene.name}' loaded. Waiting {SceneInitDelaySeconds}s for initialization...");
 
-            // The game scene is loaded — wait a frame for initialization, then press Go
-            EditorApplication.delayCall += PressGoButton;
+            // Use EditorApplication.update with a timer to wait for full scene initialization
+            // (Start(), player spawning, etc.) before pressing Go. delayCall can fire before
+            // the game loop ticks, which breaks everything.
+            _goButtonPressed = false;
+            _sceneLoadedTime = EditorApplication.timeSinceStartup;
+            EditorApplication.update += OnWaitForGameReady;
         }
 
-        void PressGoButton()
-        {
-            if (!Application.isPlaying) return;
+        [NonSerialized] bool _goButtonPressed;
+        [NonSerialized] double _sceneLoadedTime;
 
-            // Find the MiniGameControllerBase in the scene and press Go
-            var controller = UnityEngine.Object.FindAnyObjectByType<MiniGameControllerBase>();
-            if (controller == null)
-            {
-                // Controller not ready yet — retry next frame
-                EditorApplication.delayCall += PressGoButton;
-                return;
-            }
-
-            controller.OnReadyClicked();
-            CSDebug.Log("[Benchmark Session] Go button pressed. Waiting for countdown to finish...");
-
-            // Wait for the countdown to complete before starting the benchmark sampler
-            _waitingForCountdown = true;
-            _countdownWaitEndTime = EditorApplication.timeSinceStartup + CountdownDurationSeconds;
-            EditorApplication.update += OnCountdownWaitUpdate;
-        }
-
-        void OnCountdownWaitUpdate()
+        void OnWaitForGameReady()
         {
             if (!Application.isPlaying)
             {
-                EditorApplication.update -= OnCountdownWaitUpdate;
+                EditorApplication.update -= OnWaitForGameReady;
                 _waitingForCountdown = false;
                 return;
             }
 
+            double elapsed = EditorApplication.timeSinceStartup - _sceneLoadedTime;
+
+            // Phase 1: Wait for scene to fully initialize before pressing Go
+            if (!_goButtonPressed)
+            {
+                if (elapsed < SceneInitDelaySeconds)
+                    return;
+
+                var controller = UnityEngine.Object.FindAnyObjectByType<MiniGameControllerBase>();
+                if (controller != null)
+                {
+                    controller.OnReadyClicked();
+                    _goButtonPressed = true;
+                    _waitingForCountdown = true;
+                    _countdownWaitEndTime = EditorApplication.timeSinceStartup + CountdownDurationSeconds;
+                    CSDebug.Log("[Benchmark Session] Go button pressed. Waiting for countdown...");
+                }
+                else
+                {
+                    // Controller not found — fall back to starting benchmark without Go
+                    CSDebug.Log("[Benchmark Session] No MiniGameControllerBase found. Starting benchmark without Go press.");
+                    EditorApplication.update -= OnWaitForGameReady;
+                    _waitingForCountdown = false;
+                    AutoStartSessionBenchmark();
+                }
+                return;
+            }
+
+            // Phase 2: Wait for countdown to finish
             if (EditorApplication.timeSinceStartup < _countdownWaitEndTime)
                 return;
 
-            // Countdown is over — start the benchmark sampler
-            EditorApplication.update -= OnCountdownWaitUpdate;
+            // Done — start the benchmark sampler
+            EditorApplication.update -= OnWaitForGameReady;
             _waitingForCountdown = false;
 
             CSDebug.Log("[Benchmark Session] Countdown complete. Starting benchmark sampling...");
@@ -1386,9 +1407,9 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         {
             CSDebug.Log("[Benchmark Session] Aborted by user.");
 
-            // Unsubscribe from scene loads and countdown wait in case we're mid-wait
+            // Unsubscribe from scene loads and game-ready wait in case we're mid-wait
             SceneManager.sceneLoaded -= OnGameSceneLoaded;
-            EditorApplication.update -= OnCountdownWaitUpdate;
+            EditorApplication.update -= OnWaitForGameReady;
             _waitingForGameScene = false;
             _waitingForCountdown = false;
 
