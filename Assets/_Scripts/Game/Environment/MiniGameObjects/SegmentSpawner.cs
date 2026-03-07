@@ -44,6 +44,14 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] public float RotationAmount;
     [HideInInspector] public int DifficultyAngle = 90;
 
+    [Header("Guaranteed Shape Layout")]
+    [Tooltip("Distance from origin to place the guaranteed shape cluster. " +
+             "Set just inside the membrane radius so players must fly to the edge to reach them.")]
+    [SerializeField] float guaranteedShapeDistance = 420f;
+
+    [Tooltip("Radius of the ring that the guaranteed shapes are arranged in at the cluster point.")]
+    [SerializeField] float guaranteedShapeClusterRadius = 80f;
+
     // Runtime state
     private GameObject SpawnedSegmentContainer;
     private List<Trail> trails = new();
@@ -143,17 +151,10 @@ public class SegmentSpawner : MonoBehaviour
             layoutIndex++;
         }
 
-        // Spawn guaranteed shapes (all of them, every time).
+        // Spawn guaranteed shapes in a cluster near the membrane edge.
         // These keep their inspector-configured domain — shape-drawing shapes
         // intentionally have per-shape domains set in the editor.
-        for (int i = 0; i < guaranteedSpawnables.Count; i++)
-        {
-            var spawnable = guaranteedSpawnables[i];
-            if (spawnable == null) continue;
-
-            SpawnAndLayout(spawnable, currentIntensity, layoutIndex);
-            layoutIndex++;
-        }
+        SpawnGuaranteedShapes(currentIntensity);
     }
 
     void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
@@ -171,7 +172,7 @@ public class SegmentSpawner : MonoBehaviour
     void LayoutSegment(Transform segment, int index)
     {
         var worldOrigin = origin + transform.position;
-        int totalCount = NumberOfSegments + guaranteedSpawnables.Count;
+        int totalCount = NumberOfSegments;
 
         if (totalCount <= 1)
         {
@@ -191,6 +192,50 @@ public class SegmentSpawner : MonoBehaviour
         else
         {
             segment.SetPositionAndRotation(worldOrigin, Quaternion.identity);
+        }
+    }
+
+    void SpawnGuaranteedShapes(int intensity)
+    {
+        if (guaranteedSpawnables == null || guaranteedSpawnables.Count == 0) return;
+
+        var worldOrigin = origin + transform.position;
+
+        // Pick a random direction from center for the cluster
+        var clusterDirection = Random.onUnitSphere;
+        var clusterCenter = worldOrigin + clusterDirection * guaranteedShapeDistance;
+
+        // Build a stable tangent frame at the cluster center for laying out shapes in a ring
+        var up = Mathf.Abs(Vector3.Dot(clusterDirection, Vector3.up)) < 0.99f
+            ? Vector3.up
+            : Vector3.right;
+        var tangent1 = Vector3.Cross(clusterDirection, up).normalized;
+        var tangent2 = Vector3.Cross(clusterDirection, tangent1).normalized;
+
+        int shapeCount = guaranteedSpawnables.Count;
+        float angleStep = 360f / shapeCount;
+
+        for (int i = 0; i < shapeCount; i++)
+        {
+            var spawnable = guaranteedSpawnables[i];
+            if (spawnable == null) continue;
+
+            if (Seed != 0) spawnable.SetSeed(Seed + 1000 + i);
+
+            var spawned = spawnable.Spawn(intensity);
+            if (!spawned) continue;
+
+            spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+
+            // Place in a ring around the cluster center on the tangent plane
+            float angle = i * angleStep * Mathf.Deg2Rad;
+            var offset = (tangent1 * Mathf.Cos(angle) + tangent2 * Mathf.Sin(angle)) * guaranteedShapeClusterRadius;
+            spawned.transform.position = clusterCenter + offset;
+
+            // Face inward toward the cell center so the shape is visible to approaching players
+            spawned.transform.rotation = Quaternion.LookRotation(worldOrigin - spawned.transform.position, clusterDirection);
+
+            trails.AddRange(spawnable.GetTrails());
         }
     }
 

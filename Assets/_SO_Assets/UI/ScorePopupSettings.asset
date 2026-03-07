@@ -9,9 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db5fb7a894f85c547b3e8688e4bd9563, type: 3}
-  m_Name: EpisodeList
+  m_Script: {fileID: 11500000, guid: 65fc10de3a31c1e4295428ce59045f70, type: 3}
+  m_Name: ScorePopupSettings
   m_EditorClassIdentifier: 
-  episodes:
-  - {fileID: 11400000, guid: cdafa6af6d9127e47b517e952e12cef8, type: 2}
-  - {fileID: 11400000, guid: fbd42f280bdf2e045a2554b8631aff48, type: 2}
+  displayDuration: 2
+  comboWindow: 2
+  floatDistance: 0.5
+  startScale: 0.5
+  punchScale: 1.3
+  punchDuration: 0.15
+  fontSize: 5
+  textColor: {r: 0.6009548, g: 1, b: 0.504717, a: 1}

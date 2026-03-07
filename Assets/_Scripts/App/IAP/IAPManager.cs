@@ -1,35 +1,37 @@
 using System;
 using UnityEngine;
+using UnityEngine.Purchasing;
+using UnityEngine.Purchasing.Extension;
 using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Screens
 {
     /// <summary>
-    /// Manages Unity IAP for the "Support Us" feature.
-    /// This is a stub that will be completed when Unity IAP is fully configured
-    /// with product IDs and store setup.
-    ///
-    /// To complete the integration:
-    /// 1. Import Unity IAP package via Package Manager
-    /// 2. Configure products in Unity Dashboard / App Store Connect / Google Play Console
-    /// 3. Implement IDetailedStoreListener interface
-    /// 4. Add product IDs and purchase flow
+    /// Manages Unity IAP for the "Support Us" consumable purchase.
+    /// Implements IDetailedStoreListener for Unity Purchasing 4.x.
     /// </summary>
-    public class IAPManager : MonoBehaviour
+    public class IAPManager : MonoBehaviour, IDetailedStoreListener
     {
         public static IAPManager Instance { get; private set; }
 
         [Header("IAP Configuration")]
-        [Tooltip("Product ID for the support/donation purchase")]
-        [SerializeField] private string supportProductId = "com.cosmicshore.support_tier1";
+        [Tooltip("Product ID for the support/donation purchase (must match UGS Dashboard)")]
+        [SerializeField] private string supportProductId = "com.cosmicshore.support_us";
 
-        [Tooltip("Whether IAP has been initialized")]
-        public bool IsInitialized { get; private set; }
+        private IStoreController _storeController;
+        private IExtensionProvider _extensionProvider;
+
+        public bool IsInitialized => _storeController != null && _extensionProvider != null;
 
         public event Action<bool> OnPurchaseComplete;
 
         void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             Instance = this;
         }
 
@@ -44,55 +46,66 @@ namespace CosmicShore.App.UI.Screens
             InitializeIAP();
         }
 
-        /// <summary>
-        /// Initialize Unity IAP.
-        /// TODO: Implement with UnityPurchasing.Initialize() when IAP package is imported.
-        /// </summary>
         void InitializeIAP()
         {
-            // Stub: Unity IAP initialization will go here
-            // var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
-            // builder.AddProduct(supportProductId, ProductType.Consumable);
-            // UnityPurchasing.Initialize(this, builder);
-
-            CSDebug.Log("[IAPManager] IAP stub initialized. Unity IAP package required for full implementation.");
-            IsInitialized = false;
+            var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
+            builder.AddProduct(supportProductId, ProductType.Consumable);
+            UnityPurchasing.Initialize(this, builder);
         }
 
-        /// <summary>
-        /// Initiates a support/donation purchase.
-        /// </summary>
+        // ── IDetailedStoreListener ──────────────────────────────────
+
+        public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
+        {
+            CSDebug.Log("[IAPManager] IAP initialized successfully.");
+            _storeController = controller;
+            _extensionProvider = extensions;
+        }
+
+        public void OnInitializeFailed(InitializationFailureReason error)
+        {
+            CSDebug.LogWarning($"[IAPManager] IAP init failed: {error}");
+        }
+
+        public void OnInitializeFailed(InitializationFailureReason error, string message)
+        {
+            CSDebug.LogWarning($"[IAPManager] IAP init failed: {error} — {message}");
+        }
+
+        public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
+        {
+            if (args.purchasedProduct.definition.id == supportProductId)
+            {
+                CSDebug.Log("[IAPManager] Support Us purchase successful. Thank you!");
+                OnPurchaseComplete?.Invoke(true);
+            }
+
+            return PurchaseProcessingResult.Complete;
+        }
+
+        public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
+        {
+            CSDebug.LogWarning($"[IAPManager] Purchase failed: {product.definition.id} — {failureReason}");
+            OnPurchaseComplete?.Invoke(false);
+        }
+
+        public void OnPurchaseFailed(Product product, PurchaseFailureDescription failureDescription)
+        {
+            CSDebug.LogWarning($"[IAPManager] Purchase failed: {product.definition.id} — {failureDescription.message}");
+            OnPurchaseComplete?.Invoke(false);
+        }
+
+        // ── Public API ──────────────────────────────────────────────
+
         public void InitiateSupportPurchase()
         {
             if (!IsInitialized)
             {
                 CSDebug.LogWarning("[IAPManager] IAP not initialized. Cannot process purchase.");
-                // TODO: Show UI message that purchases are not available yet
                 return;
             }
 
-            // TODO: Implement with m_StoreController.InitiatePurchase(supportProductId)
-            CSDebug.Log($"[IAPManager] Initiating purchase for: {supportProductId}");
-        }
-
-        /// <summary>
-        /// Called when a purchase completes successfully.
-        /// TODO: Implement IDetailedStoreListener.ProcessPurchase
-        /// </summary>
-        void HandlePurchaseSuccess(string productId)
-        {
-            CSDebug.Log($"[IAPManager] Purchase successful: {productId}");
-            OnPurchaseComplete?.Invoke(true);
-        }
-
-        /// <summary>
-        /// Called when a purchase fails.
-        /// TODO: Implement IDetailedStoreListener.OnPurchaseFailed
-        /// </summary>
-        void HandlePurchaseFailure(string productId, string reason)
-        {
-            CSDebug.LogWarning($"[IAPManager] Purchase failed: {productId} - {reason}");
-            OnPurchaseComplete?.Invoke(false);
+            _storeController.InitiatePurchase(supportProductId);
         }
     }
 }

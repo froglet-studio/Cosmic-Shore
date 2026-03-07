@@ -1,6 +1,6 @@
-using CosmicShore.Utilities;
 using UnityEngine;
-using UnityEngine.Rendering;
+using CosmicShore.Utilities;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Utility
 {
@@ -41,7 +41,7 @@ namespace CosmicShore.Utility
             QualitySettings.realtimeReflectionProbes = false;
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
 
-            CSDebug.Log($"[MobilePerformanceManager] Mobile settings applied: " +
+            CSDebug.Log("[MobilePerformanceManager] Mobile detected. Applied settings: " +
                         $"targetFrameRate=60, shadows=HardOnly, shadowResolution=Low, " +
                         $"particleRaycastBudget=16, softParticles=false, " +
                         $"realtimeReflectionProbes=false, anisotropicFiltering=Disable");

@@ -20,7 +20,7 @@ namespace CosmicShore.Game.UI
             _rect = GetComponent<RectTransform>();
         }
 
-        public void Setup(string message, Color color, bool isRichText = false)
+        public void Setup(string message, Color color, bool isRichText = false, GameFeedSettingsSO settings = null)
         {
             if (textComponent == null)
                 textComponent = GetComponentInChildren<TMP_Text>();
@@ -34,6 +34,17 @@ namespace CosmicShore.Game.UI
                 textComponent.color = color;
             else
                 textComponent.color = Color.white;
+
+            // Apply font and auto-size from settings
+            if (settings != null)
+            {
+                if (settings.fontAsset != null)
+                    textComponent.font = settings.fontAsset;
+
+                textComponent.enableAutoSizing = true;
+                textComponent.fontSizeMin = settings.fontSizeMin;
+                textComponent.fontSizeMax = settings.fontSizeMax;
+            }
         }
 
         /// <summary>
@@ -118,7 +129,9 @@ namespace CosmicShore.Game.UI
             tmp.fontSize = 14f;
             tmp.alignment = TextAlignmentOptions.Right;
             tmp.richText = true;
-            tmp.overflowMode = TextOverflowModes.Truncate;
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = 8f;
+            tmp.fontSizeMax = 14f;
             tmp.enableWordWrapping = true;
 
             var entry = go.GetComponent<GameFeedEntry>();
