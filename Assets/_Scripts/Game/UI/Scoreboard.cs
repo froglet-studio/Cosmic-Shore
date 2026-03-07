@@ -364,7 +364,7 @@ namespace CosmicShore.Game.UI
 
             if (!statsProvider || !statsContainer || !statRowPrefab)
             {
-                Debug.LogWarning($"[Scoreboard] PopulateDynamicStats skipped — " +
+                CSDebug.LogWarning($"[Scoreboard] PopulateDynamicStats skipped — " +
                     $"provider={(statsProvider != null ? "OK" : "NULL")}, " +
                     $"container={(statsContainer != null ? "OK" : "NULL")}, " +
                     $"rowPrefab={(statRowPrefab != null ? "OK" : "NULL")}");
@@ -372,7 +372,7 @@ namespace CosmicShore.Game.UI
             }
 
             var stats = statsProvider.GetStats();
-            Debug.Log($"[Scoreboard] Populating {stats.Count} dynamic stat row(s)");
+            CSDebug.Log($"[Scoreboard] Populating {stats.Count} dynamic stat row(s)");
 
             foreach (var stat in stats)
             {

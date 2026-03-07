@@ -58,7 +58,7 @@ namespace CosmicShore.Game.UI
             }
 
             var allStats = telemetry.GetAllStats();
-            Debug.Log($"[StatsProvider] Found {telemetry.GetType().Name} with {allStats.Count} stat(s)");
+            CSDebug.Log($"[StatsProvider] Found {telemetry.GetType().Name} with {allStats.Count} stat(s)");
 
             foreach (var stat in allStats)
             {
@@ -70,7 +70,7 @@ namespace CosmicShore.Game.UI
                 void Handler(float value) => _latestValues[stat] = value;
                 stat.OnRaised += Handler;
                 _subscriptions.Add((stat, Handler));
-                Debug.Log($"[StatsProvider] Subscribed to: '{stat.Label}'");
+                CSDebug.Log($"[StatsProvider] Subscribed to: '{stat.Label}'");
             }
 
             if (allStats.Count == 0)
@@ -102,9 +102,9 @@ namespace CosmicShore.Game.UI
                 });
             }
 
-            Debug.Log($"[StatsProvider] GetStats returning {result.Count} stat(s) for scoreboard");
+            CSDebug.Log($"[StatsProvider] GetStats returning {result.Count} stat(s) for scoreboard");
             foreach (var s in result)
-                Debug.Log($"[StatsProvider]   → {s.Label}: {s.Value}");
+                CSDebug.Log($"[StatsProvider]   → {s.Label}: {s.Value}");
 
             return result;
         }
