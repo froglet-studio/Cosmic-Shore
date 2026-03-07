@@ -55,8 +55,9 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
         // Countdown is 4 sprites × 1s each
         const float CountdownDurationSeconds = 4f;
-        // Wait for scene to fully initialize (Start(), player spawning, etc.) before pressing Go
-        const float SceneInitDelaySeconds = 3f;
+        // MiniGameHUD.minConnectingSeconds is 5s, then Ready button appears.
+        // Wait long enough for scene init + connecting panel + button appearance.
+        const float SceneInitDelaySeconds = 8f;
 
         // ── Session results (loaded after session completes) ────────────────
         [NonSerialized] List<BenchmarkReport> _sessionReports;
@@ -1283,14 +1284,15 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                     _countdownWaitEndTime = EditorApplication.timeSinceStartup + CountdownDurationSeconds;
                     CSDebug.Log("[Benchmark Session] Go button pressed. Waiting for countdown...");
                 }
-                else
+                else if (elapsed > SceneInitDelaySeconds + 10f)
                 {
-                    // Controller not found — fall back to starting benchmark without Go
-                    CSDebug.Log("[Benchmark Session] No MiniGameControllerBase found. Starting benchmark without Go press.");
+                    // Controller still not found after extended wait — fall back
+                    CSDebug.Log("[Benchmark Session] No MiniGameControllerBase found after extended wait. Starting benchmark without Go press.");
                     EditorApplication.update -= OnWaitForGameReady;
                     _waitingForCountdown = false;
                     AutoStartSessionBenchmark();
                 }
+                // else: keep polling each editor update until controller appears or timeout
                 return;
             }
 
