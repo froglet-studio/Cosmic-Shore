@@ -638,6 +638,37 @@ namespace CosmicShore.App.UI
 
         #endregion
 
+        #region Public UI Visibility
+
+        /// <summary>
+        /// Hides the NavBar and all screen content. Used by vessel tutorial and re-entry controllers.
+        /// </summary>
+        public void HideAllUI()
+        {
+            if (NavBar) NavBar.gameObject.SetActive(false);
+            for (int i = 0; i < GetScreenCount(); i++)
+            {
+                var rt = GetScreenRootRT(i);
+                if (rt != null) rt.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// Shows the NavBar and all screen content, navigating back to HOME.
+        /// </summary>
+        public void ShowAllUI()
+        {
+            if (NavBar) NavBar.gameObject.SetActive(true);
+            for (int i = 0; i < GetScreenCount(); i++)
+            {
+                var rt = GetScreenRootRT(i);
+                if (rt != null) rt.gameObject.SetActive(true);
+            }
+            NavigateTo(MenuScreens.HOME, false);
+        }
+
+        #endregion
+
         #region Helpers
 
         private IEnumerator SmoothMove(Vector3 startpos, Vector3 endpos, float seconds)
