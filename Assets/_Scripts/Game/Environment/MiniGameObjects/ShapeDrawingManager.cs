@@ -31,7 +31,7 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] LineRenderer guideLine;
         [SerializeField] LineRenderer ghostLine;
         [SerializeField] Camera revealCamera;
-        [SerializeField] float shapeScale = 10f;
+        [SerializeField] float shapeScale = 40f;
 
         [Header("Shape Orientation")]
         [Tooltip("Rotation applied to shape waypoints. Default (-90,0,0) rotates XY-defined shapes to the horizontal XZ plane.")]
@@ -124,6 +124,7 @@ namespace CosmicShore.Game.ShapeDrawing
         Vector3 GetWorldPlayerStart()
         {
             Vector3 wp0 = GetWorldWaypoint(0);
+            float startOffset = 30f * (shapeScale / 10f);
 
             if (_activeShape.waypoints.Count > 1)
             {
@@ -131,13 +132,13 @@ namespace CosmicShore.Game.ShapeDrawing
                 Vector3 wp1 = GetWorldWaypoint(1);
                 Vector3 pathDir = (wp0 - wp1).normalized;
                 if (pathDir.sqrMagnitude < 0.001f) pathDir = Vector3.back;
-                return wp0 + pathDir * 30f;
+                return wp0 + pathDir * startOffset;
             }
 
             // Fallback: offset from origin toward wp0
             Vector3 dir = (_shapeOrigin - wp0).normalized;
             if (dir.sqrMagnitude < 0.001f) dir = Vector3.back;
-            return wp0 + dir * 30f;
+            return wp0 + dir * startOffset;
         }
 
         /// <summary>
@@ -164,9 +165,10 @@ namespace CosmicShore.Game.ShapeDrawing
 
         Vector3 GetRevealCameraPosition()
         {
+            float scaledDistance = _activeShape.revealCameraDistance * (shapeScale / 10f);
             return _shapeOrigin +
                 Quaternion.Euler(_activeShape.revealCameraEuler) *
-                (Vector3.back * _activeShape.revealCameraDistance);
+                (Vector3.back * scaledDistance);
         }
 
         // ── Lifecycle ────────────────────────────────────────────────────────
