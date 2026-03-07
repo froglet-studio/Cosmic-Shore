@@ -15,6 +15,10 @@ namespace CosmicShore.Core
         [SerializeField] private int defaultCapacity = 10;
         [SerializeField] private int maxSize = 100;
 
+        [Header("Prewarm")]
+        [Tooltip("Max objects to instantiate synchronously in Awake. The rest are deferred to the maintenance loop.")]
+        [SerializeField] private int maxSyncPrewarm = 8;
+
         [Header("Buffer Maintenance (Optional)")]
         [SerializeField] private bool enableBufferMaintenance = true;
         [SerializeField] private int bufferSizeTarget = 20;
@@ -41,8 +45,9 @@ namespace CosmicShore.Core
                 maxSize
             );
 
-            if (defaultCapacity > 0)
-                Prewarm(Mathf.Max(defaultCapacity, bufferSizeTarget));
+            var target = Mathf.Max(defaultCapacity, bufferSizeTarget);
+            if (target > 0)
+                Prewarm(Mathf.Min(target, maxSyncPrewarm));
 
             if (enableBufferMaintenance)
             {
@@ -51,8 +56,17 @@ namespace CosmicShore.Core
             }
         }
 
-        protected virtual void OnDisable() => CancelMaintenance();
-        protected virtual void OnDestroy() => CancelMaintenance();
+        protected virtual void OnDisable()
+        {
+            CancelMaintenance();
+            _activeObjects.Clear();
+        }
+
+        protected virtual void OnDestroy()
+        {
+            CancelMaintenance();
+            _activeObjects.Clear();
+        }
 
         private void CancelMaintenance()
         {
