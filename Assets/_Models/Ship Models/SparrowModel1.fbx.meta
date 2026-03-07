@@ -162,8 +162,8 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: a_Sparrow_Mesh(MedPoly+Shapekeys)|Idle_SparrowAnim.006
-      takeName: a_Sparrow_Mesh(MedPoly+Shapekeys)|Idle_SparrowAnim.006
+      name: Sparrow_Armature+Mesh|YawRight_SparrowAnim
+      takeName: Sparrow_Armature+Mesh|YawRight_SparrowAnim
       internalID: 4977852477300310412
       firstFrame: 0
       lastFrame: 1

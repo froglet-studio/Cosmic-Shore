@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace CosmicShore.Game.Animation
@@ -6,6 +7,8 @@ namespace CosmicShore.Game.Animation
     {
         [SerializeField] Animator animator;
         [SerializeField] FireGunActionExecutor missileExecutor;
+
+        const int MissileLaunchLayer = 1;
 
         float currentPitch = 0;
         float currentYaw = 0;
@@ -28,8 +31,18 @@ namespace CosmicShore.Game.Animation
 
         void HandleMissileFired(float ammoBeforeFire, float ammoCost)
         {
-            var animName = ammoBeforeFire >= 2f * ammoCost ? "Missle Launch 1" : "Missle Launch 2";
-            animator.Play(animName);
+            var animName = ammoBeforeFire >= 2f * ammoCost ? "Launch Missile 1" : "Launch Missile 2";
+            animator.SetLayerWeight(MissileLaunchLayer, 1f);
+            animator.Play(animName, MissileLaunchLayer);
+            StartCoroutine(ResetMissileLaunchLayer());
+        }
+
+        IEnumerator ResetMissileLaunchLayer()
+        {
+            yield return null; // wait one frame for the animator to enter the new state
+            while (animator.GetCurrentAnimatorStateInfo(MissileLaunchLayer).normalizedTime < 1f)
+                yield return null;
+            animator.SetLayerWeight(MissileLaunchLayer, 0f);
         }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
