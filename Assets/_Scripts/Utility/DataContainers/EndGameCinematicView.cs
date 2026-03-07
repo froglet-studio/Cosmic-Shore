@@ -5,7 +5,9 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -34,6 +36,12 @@ namespace CosmicShore.Game.Cinematics
         [SerializeField] TMP_Text scoreRevealToastText;
         [SerializeField] CanvasGroup scoreRevealToastCanvasGroup;
 
+        [Header("Quest Completion")]
+        [Tooltip("Dialog object enabled when a quest goal is achieved during this match")]
+        [SerializeField] GameObject questTextDialogObject;
+        [Tooltip("Text inside the quest dialog to display the completion message")]
+        [SerializeField] TMP_Text questCompletionText;
+
         [Header("Vessel Podium Display")]
         [Tooltip("Manager for vessel icon displays")]
         [SerializeField] EndGameVesselDisplayManager vesselDisplayManager;
@@ -48,7 +56,7 @@ namespace CosmicShore.Game.Cinematics
         public void Initialize()
         {
             _cts = new CancellationTokenSource();
-            
+
             if (continueButton)
             {
                 continueButton.onClick.AddListener(HandleContinueButtonClicked);
@@ -56,6 +64,8 @@ namespace CosmicShore.Game.Cinematics
 
             if (scoreRevealPanel)
                 scoreRevealPanel.gameObject.SetActive(false);
+
+            HideQuestCompletion();
         }
 
         public void Cleanup()
@@ -69,6 +79,18 @@ namespace CosmicShore.Game.Cinematics
 
             if (continueButton)
                 continueButton.onClick.RemoveListener(HandleContinueButtonClicked);
+        }
+
+        private void Update()
+        {
+            if (Gamepad.current == null) return;
+
+            // A button presses the continue button when it's visible
+            if (Gamepad.current.buttonSouth.wasPressedThisFrame &&
+                continueButton != null && continueButton.gameObject.activeSelf)
+            {
+                HandleContinueButtonClicked();
+            }
         }
 
         #region Panel Visibility
@@ -106,6 +128,20 @@ namespace CosmicShore.Game.Cinematics
             if (connectingPanel)
                 connectingPanel.TransitionDoor(true);
         }
+
+        public void ShowQuestCompletion(string message)
+        {
+            if (questTextDialogObject)
+                questTextDialogObject.SetActive(true);
+            if (questCompletionText)
+                questCompletionText.text = message;
+        }
+
+        public void HideQuestCompletion()
+        {
+            if (questTextDialogObject)
+                questTextDialogObject.SetActive(false);
+        }
         #endregion
 
         #region Victory Toast Animation
@@ -118,7 +154,7 @@ namespace CosmicShore.Game.Cinematics
         {
             if (!scoreRevealToastText || !scoreRevealToastCanvasGroup)
             {
-                Debug.LogWarning("[EndGameView] Victory toast components not assigned!");
+                CSDebug.LogWarning("[EndGameView] Victory toast components not assigned!");
                 yield break;
             }
             
@@ -208,7 +244,7 @@ namespace CosmicShore.Game.Cinematics
 
             if (task.Status == UniTaskStatus.Faulted)
             {
-                Debug.LogError($"Casino counter animation failed: {task.AsTask().Exception}");
+                CSDebug.LogError($"Casino counter animation failed: {task.AsTask().Exception}");
             }
         }
 

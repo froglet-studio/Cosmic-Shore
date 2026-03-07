@@ -74,7 +74,7 @@ public class BoidSImulationController : MonoBehaviour
                     goalDirection = Vector3.zero,
                     team = (int)block.Domain
                 };
-                Debug.Log($"team {(int)block.Domain}");
+                CSDebug.Log($"team {(int)block.Domain}");
 
                 // Add blockEntity to the entities list
                 entities.Add(blockEntity);
@@ -93,7 +93,7 @@ public class BoidSImulationController : MonoBehaviour
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-            Debug.Log("Instantiating boid number: " + i);
+            CSDebug.Log("Instantiating boid number: " + i);
             Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
             newBoid.transform.SetParent(transform);
             newBoid.Initialize();
@@ -143,7 +143,7 @@ public class BoidSImulationController : MonoBehaviour
 
             if (entity.position == new Vector3(9999.0f, 9999.0f, 9999.0f))
             {
-                Debug.LogError("NaN detected by shader for entity at index: " + i);
+                CSDebug.LogError("NaN detected by shader for entity at index: " + i);
             }
 
             if (entity.type == Entity.ENTITY_TYPE_BOID)
@@ -176,7 +176,7 @@ public class BoidSImulationController : MonoBehaviour
                     Entity entity = entityArray[i];
                     entity.teamWeights = currentWeights;
                     entityArray[i] = entity;
-                    Debug.Log($"BoidManager.entityArray[{i}].position {entityArray[i].position}");
+                    CSDebug.Log($"BoidManager.entityArray[{i}].position {entityArray[i].position}");
                 }
             }
 

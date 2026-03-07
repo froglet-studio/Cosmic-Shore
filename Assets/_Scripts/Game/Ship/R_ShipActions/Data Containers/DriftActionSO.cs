@@ -7,7 +7,6 @@ using UnityEngine;
 public class DriftActionSO : ShipActionSO
 {
     [SerializeField] float Mult = 1.5f;
-    Vector3 savedRotations = Vector3.zero;
     [SerializeField] float driftDamping = 0f;
     [SerializeField] bool isSharpDrifting;
 
@@ -18,32 +17,23 @@ public class DriftActionSO : ShipActionSO
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
         var t = vesselStatus.VesselTransformer;
-        savedRotations = new Vector3(t.PitchScaler, t.YawScaler, t.RollScaler);
-        t.PitchScaler *= Mult;
-        t.YawScaler   *= Mult;
-        t.RollScaler  *= Mult;
-        t.DriftDamping = driftDamping;
+        t.BeginDrift(Mult, driftDamping, isSharpDrifting);
         vesselStatus.IsDrifting = true;
 
         AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
 
         if (isSharpDrifting)
-        {
             OnDoubleDriftingStarted.Raise();
-        }
         else
-        {
             OnDriftingStarted.Raise();
-        }
     }
 
     public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
         var t = vesselStatus.VesselTransformer;
-        t.PitchScaler = savedRotations.x;
-        t.YawScaler = savedRotations.y;
-        t.RollScaler = savedRotations.z;
-        vesselStatus.IsDrifting = false;
+        t.EndDrift(isSharpDrifting);
+        vesselStatus.IsDrifting = t.IsDriftActive;
+
         AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
         OnDriftEnded.Raise();
     }

@@ -19,6 +19,12 @@ namespace CosmicShore.Game
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
 
+        [Header("Device-specific action overrides")]
+        [Tooltip("Touch overrides take precedence over shared mappings for matching input events.")]
+        [SerializeField] List<InputEventShipActionMapping> _touchActionOverrides;
+        [Tooltip("Gamepad overrides take precedence over shared mappings for matching input events.")]
+        [SerializeField] List<InputEventShipActionMapping> _gamepadActionOverrides;
+
         [Header("Scriptable events")]
         [SerializeField] ScriptableEventInputEvents _onButtonPressed;
         [SerializeField] ScriptableEventInputEvents _onButtonReleased;
@@ -26,6 +32,8 @@ namespace CosmicShore.Game
         [SerializeField] private ScriptableEventInputEventBlock _onInputEventBlocked; 
         
         readonly Dictionary<InputEvents, List<ShipActionSO>> _shipControlActions = new();
+        readonly Dictionary<InputEvents, List<ShipActionSO>> _touchOverrideActions = new();
+        readonly Dictionary<InputEvents, List<ShipActionSO>> _gamepadOverrideActions = new();
         readonly Dictionary<ResourceEvents, List<ShipActionSO>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
@@ -38,6 +46,7 @@ namespace CosmicShore.Game
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
+        bool _subscribedToInputPaused;
 
         void SubscribeToInputEvents()
         {
@@ -55,12 +64,14 @@ namespace CosmicShore.Game
         {
             if (!IsSpawned) ShipHelper.DestroyRuntimeActions(_runtimeInstances);
             UnsubscribeFromInputEvents();
-            
-            // TODO - These are not static events, so unsubscribe is not necessary,
-            // but better to do it for safety. but not on OnDisable, as few references will be missing,
-            // better to do it earlier.
-            if (vesselStatus.IsLocalUser)
+
+            // During scene teardown the Player may already be destroyed.
+            // The event lives on the Player, so it's GC'd with it — skip the unsubscribe.
+            if (_subscribedToInputPaused && vesselStatus?.Player is UnityEngine.Object obj && obj != null)
+            {
                 vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
+                _subscribedToInputPaused = false;
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -82,10 +93,15 @@ namespace CosmicShore.Game
 
             _runtimeInstances.Clear();
             ShipHelper.InitializeShipControlActions(vesselStatus, _inputEventShipActions, _shipControlActions);
+            ShipHelper.InitializeShipControlActions(vesselStatus, _touchActionOverrides, _touchOverrideActions);
+            ShipHelper.InitializeShipControlActions(vesselStatus, _gamepadActionOverrides, _gamepadOverrideActions);
             ShipHelper.InitializeClassResourceActions(_resourceEventClassActions, _classResourceActions);
-            
+
             if (vesselStatus.IsLocalUser)
+            {
                 vesselStatus.InputStatus.OnToggleInputPaused += OnToggleInputPaused;
+                _subscribedToInputPaused = true;
+            }
         }
 
         public void PerformShipControllerActions(InputEvents controlType)
@@ -94,7 +110,7 @@ namespace CosmicShore.Game
             if (!HasAction(controlType)) return;
 
             _inputAbilityStartTimes[controlType] = Time.time;
-            var actions = _shipControlActions[controlType];
+            var actions = ResolveActions(controlType);
 
             foreach (var t in actions)
                 t.StartAction(_executors, vesselStatus);
@@ -115,16 +131,44 @@ namespace CosmicShore.Game
                 Duration    = duration
             });
 
-            var actions = _shipControlActions[controlType];
+            var actions = ResolveActions(controlType);
 
             for (int i = 0; i < actions.Count; i++)
                 actions[i].StopAction(_executors, vesselStatus);
         }
 
+        /// <summary>
+        /// Returns the action list for a given input event, checking device-specific
+        /// overrides first and falling back to the shared mapping.
+        /// </summary>
+        List<ShipActionSO> ResolveActions(InputEvents controlType)
+        {
+            var overrides = GetActiveOverrides();
+            if (overrides != null && overrides.TryGetValue(controlType, out var overrideList) && overrideList is { Count: > 0 })
+                return overrideList;
+            return _shipControlActions[controlType];
+        }
+
+        Dictionary<InputEvents, List<ShipActionSO>> GetActiveOverrides()
+        {
+            if (vesselStatus?.InputStatus == null) return null;
+            return vesselStatus.InputStatus.ActiveInputDevice switch
+            {
+                InputDeviceType.Touch   => _touchOverrideActions,
+                InputDeviceType.Gamepad => _gamepadOverrideActions,
+                _                       => null
+            };
+        }
+
         void OnToggleInputPaused(bool toggle) => ToggleSubscription(!toggle);
 
-        bool HasAction(InputEvents inputEvent) =>
-            _shipControlActions.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
+        bool HasAction(InputEvents inputEvent)
+        {
+            var overrides = GetActiveOverrides();
+            if (overrides != null && overrides.TryGetValue(inputEvent, out var overrideList) && overrideList is { Count: > 0 })
+                return true;
+            return _shipControlActions.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
+        }
 
         void OnButtonPressed(InputEvents ie)
         {

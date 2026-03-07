@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 /// <summary>
 /// This Class provides a way to serialize a Dictionary in Json by converting Key value pairs into Lists.
@@ -19,7 +20,7 @@ public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IS
 
         if(keys.Count != values.Count)
         {
-            Debug.LogError("Failed to deserialize a SerializableDictionary. Keys : " + keys.Count + " Values : " 
+            CSDebug.LogError("Failed to deserialize a SerializableDictionary. Keys : " + keys.Count + " Values : " 
                 + values.Count + " did not match.");
         }
 

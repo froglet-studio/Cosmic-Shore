@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -45,7 +46,7 @@ namespace CosmicShore
                 }
                 else
                 {
-                    Debug.LogWarning("Property not found: " + propertyName);
+                    CSDebug.LogWarning("Property not found: " + propertyName);
                 }
             }
         }

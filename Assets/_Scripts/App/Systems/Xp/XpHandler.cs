@@ -5,6 +5,7 @@ using CosmicShore.Models;
 using Newtonsoft.Json;
 using PlayFab.ClientModels;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.Systems.Xp
 {
@@ -73,17 +74,17 @@ namespace CosmicShore.App.Systems.Xp
 
         public static void IssueXP(Captain captain, int amount)
         {
-            Debug.Log($"XPHandler.IssueXP {captain.Name}, {amount}");
+            CSDebug.Log($"XPHandler.IssueXP {captain.Name}, {amount}");
 
-            if (!ClassXpData.ContainsKey(captain.Ship.Class))
-                ClassXpData.Add(captain.Ship.Class, new XpData (0, 0, 0, 0));
+            if (!ClassXpData.ContainsKey(captain.Vessel.Class))
+                ClassXpData.Add(captain.Vessel.Class, new XpData (0, 0, 0, 0));
 
-            var xpData = ClassXpData[captain.Ship.Class];
+            var xpData = ClassXpData[captain.Vessel.Class];
             xpData.Space += captain.PrimaryElement == Element.Space ? amount : 0;
             xpData.Time += captain.PrimaryElement == Element.Time ? amount : 0;
             xpData.Mass += captain.PrimaryElement == Element.Mass ? amount : 0;
             xpData.Charge += captain.PrimaryElement == Element.Charge ? amount : 0;
-            ClassXpData[captain.Ship.Class] = xpData;
+            ClassXpData[captain.Vessel.Class] = xpData;
 
             // TODO: Security - Move to cloud script and store in internal data
             var dataContent = new Dictionary<string, string>
@@ -93,20 +94,20 @@ namespace CosmicShore.App.Systems.Xp
 
             PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
-            Debug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
+            CSDebug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
         }
 
         public static void EncounterCaptain(Captain captain)
         {
-            if (EncounteredCaptainsData.ContainsKey(captain.Ship.Class))
+            if (EncounteredCaptainsData.ContainsKey(captain.Vessel.Class))
             {
-                if (EncounteredCaptainsData[captain.Ship.Class].Contains(captain.PrimaryElement)){ return; }
+                if (EncounteredCaptainsData[captain.Vessel.Class].Contains(captain.PrimaryElement)){ return; }
 
-                EncounteredCaptainsData[captain.Ship.Class].Add(captain.PrimaryElement);
+                EncounteredCaptainsData[captain.Vessel.Class].Add(captain.PrimaryElement);
             }
             else
             {
-                EncounteredCaptainsData[captain.Ship.Class] = new() { captain.PrimaryElement };
+                EncounteredCaptainsData[captain.Vessel.Class] = new() { captain.PrimaryElement };
             }
 
             // TODO: Security && Portability - Move to cloud script and store in internal data
@@ -117,20 +118,20 @@ namespace CosmicShore.App.Systems.Xp
 
             PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
-            Debug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
+            CSDebug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
         }
 
 
         public static int GetCaptainXP(Captain captain)
         {
-            if (!ClassXpData.ContainsKey(captain.Ship.Class))
+            if (!ClassXpData.ContainsKey(captain.Vessel.Class))
                 return 0;
 
             switch (captain.PrimaryElement) {
-                case Element.Space: return ClassXpData[captain.Ship.Class].Space;
-                case Element.Time: return ClassXpData[captain.Ship.Class].Time;
-                case Element.Mass: return ClassXpData[captain.Ship.Class].Mass;
-                case Element.Charge: return ClassXpData[captain.Ship.Class].Charge;
+                case Element.Space: return ClassXpData[captain.Vessel.Class].Space;
+                case Element.Time: return ClassXpData[captain.Vessel.Class].Time;
+                case Element.Mass: return ClassXpData[captain.Vessel.Class].Mass;
+                case Element.Charge: return ClassXpData[captain.Vessel.Class].Charge;
             }
 
             return 0;
@@ -146,9 +147,9 @@ namespace CosmicShore.App.Systems.Xp
             EncounteredCaptainsData = ConvertResultToEncounteredCaptainData(result);
 
             foreach (var key in ClassXpData.Keys)
-                Debug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
+                CSDebug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
             
-            Debug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
+            CSDebug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
 
             OnCaptainDataLoaded?.Invoke();
         }

@@ -15,7 +15,7 @@ namespace CosmicShore.Utility.ScreenShots
             if (Input.GetKeyUp(KeyCode.C))
             {
                 ScreenCapture.CaptureScreenshot($"Screenshot {screenShotIndex}.png", supersize);
-                Debug.Log($"Screenshot {screenShotIndex}.png hass been taken.");
+                CSDebug.Log($"Screenshot {screenShotIndex}.png hass been taken.");
                 
                 screenShotIndex++;
             }
@@ -25,7 +25,7 @@ namespace CosmicShore.Utility.ScreenShots
         public void CaptureScreenShotToDisk(string path)
         {
             ScreenCapture.CaptureScreenshot($"{path}Screenshot {screenShotIndex}.png", supersize);
-            Debug.Log($"CaptureScreenShot.CaptureScreenShotToDisk - {path}Screenshot {screenShotIndex}.png has been taken.");
+            CSDebug.Log($"CaptureScreenShot.CaptureScreenShotToDisk - {path}Screenshot {screenShotIndex}.png has been taken.");
 
             screenShotIndex++;
         }
@@ -33,14 +33,14 @@ namespace CosmicShore.Utility.ScreenShots
         public Texture CaptureScreenShotAsTexture(int superSize)
         {
             Texture screenshotTexture = ScreenCapture.CaptureScreenshotAsTexture(superSize);
-            Debug.Log($"CaptureScreenShot.CaptureScreenShotAsTexture superSize:{superSize}");
+            CSDebug.Log($"CaptureScreenShot.CaptureScreenShotAsTexture superSize:{superSize}");
             return screenshotTexture;
         }
 
         public void CaptureScreenShotIntoRenderTexture(RenderTexture renderTexture)
         {
             ScreenCapture.CaptureScreenshotIntoRenderTexture(renderTexture);
-            Debug.Log("Screenshot has been applied to RenderTexture.");
+            CSDebug.Log("Screenshot has been applied to RenderTexture.");
         }
     }
 }

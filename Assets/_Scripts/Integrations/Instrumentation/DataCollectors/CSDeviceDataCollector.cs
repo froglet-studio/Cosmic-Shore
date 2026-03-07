@@ -2,6 +2,7 @@
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using System.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Instrumentation.DataCollectors
 {
@@ -11,18 +12,18 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
         public async Task InitSDK()
         {
             await Task.Delay(1);    // Hide console warning until this is connected
-            Debug.Log("CSDeviceDataCollector - Initializing Arcade Data Collector.");
+            CSDebug.Log("CSDeviceDataCollector - Initializing Arcade Data Collector.");
         }
 
         public void LogEventAppOpen()
         {
-            Debug.Log("CSArcadeDataCollector - Triggering app open event.");
+            CSDebug.Log("CSArcadeDataCollector - Triggering app open event.");
             _deviceDataCollectorFirebase.LogEventAppOpen();
         }
 
         public void LogEventAppClose()
         {
-            Debug.Log("CSArcadeDataCollector - Triggering app close event.");
+            CSDebug.Log("CSArcadeDataCollector - Triggering app close event.");
             _deviceDataCollectorFirebase.LogEventAppClose();
         }
     }

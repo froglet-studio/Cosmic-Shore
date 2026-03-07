@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,7 +22,7 @@ namespace CosmicShore
     /// The helicoid is locally isometric to the catenoid via the Bonnet transformation;
     /// both are minimal surfaces (zero mean curvature everywhere).
     /// </summary>
-    public class SpawnableHelicoid : SpawnableAbstractBase
+    public class SpawnableHelicoid : SpawnableBase
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
@@ -60,26 +61,22 @@ namespace CosmicShore
             Domains.Jade,
         };
 
-        static int ObjectsSpawned = 0;
-
-        public override GameObject Spawn()
+        protected override SpawnTrailData[] GenerateTrailData()
         {
-            var container = new GameObject($"Helicoid{ObjectsSpawned++}");
-            int blockIndex = 0;
+            var trailDataList = new List<SpawnTrailData>();
 
             float pitch = height / (turns * 2f * Mathf.PI); // c in the parametrization
             int totalAngularSamples = Mathf.RoundToInt(turns * samplesPerTurn);
 
             for (int sheet = 0; sheet < sheets; sheet++)
             {
-                float sheetOffset = 2f * Mathf.PI * sheet / sheets;
+                float sheetOffset = .25f * Mathf.PI * sheet / sheets;
 
                 Domains sheetDomain = colorBySheet && sheetDomains.Length > 0
                     ? sheetDomains[sheet % sheetDomains.Length]
                     : domain;
 
-                var trail = new Trail();
-                trails.Add(trail);
+                var points = new List<SpawnPoint>();
 
                 for (int iu = 0; iu <= totalAngularSamples; iu++)
                 {
@@ -103,21 +100,28 @@ namespace CosmicShore
                             v * Mathf.Sin(uNext)
                         );
 
-                        CreateBlock(position, tangent,
-                            $"{container.name}::SHEET{sheet}::{blockIndex}",
-                            trail, blockScale, prism, container, sheetDomain);
+                        var rotation = SpawnPoint.LookRotation(tangent, position, Vector3.up);
 
-                        blockIndex++;
+                        points.Add(new SpawnPoint(position, rotation, blockScale));
                     }
                 }
+
+                trailDataList.Add(new SpawnTrailData(points.ToArray(), false, sheetDomain));
             }
 
-            return container;
+            return trailDataList.ToArray();
         }
 
-        public override GameObject Spawn(int intensityLevel)
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
-            return Spawn();
+            foreach (var td in trailData)
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+        }
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(turns, height, innerRadius, outerRadius,
+                System.HashCode.Combine(samplesPerTurn, radialSamples, sheets, blockScale, seed));
         }
     }
 }

@@ -2,6 +2,7 @@
 using CosmicShore.Game.UI;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -52,11 +53,14 @@ namespace CosmicShore.Game.UI
 
             if (telemetry == null)
             {
-                Debug.LogWarning("[EventDrivenStatsProvider] No VesselTelemetry found on local vessel.");
+                CSDebug.LogWarning("[EventDrivenStatsProvider] No VesselTelemetry found on local vessel.");
                 return;
             }
 
-            foreach (var stat in telemetry.GetAllStats())
+            var allStats = telemetry.GetAllStats();
+            CSDebug.Log($"[StatsProvider] Found {telemetry.GetType().Name} with {allStats.Count} stat(s)");
+
+            foreach (var stat in allStats)
             {
                 if (stat == null) continue;
 
@@ -66,7 +70,11 @@ namespace CosmicShore.Game.UI
                 void Handler(float value) => _latestValues[stat] = value;
                 stat.OnRaised += Handler;
                 _subscriptions.Add((stat, Handler));
+                CSDebug.Log($"[StatsProvider] Subscribed to: '{stat.Label}'");
             }
+
+            if (allStats.Count == 0)
+                Debug.LogWarning("[StatsProvider] Zero stats registered — scoreboard will be empty.");
         }
 
         private void Unsubscribe()
@@ -93,6 +101,10 @@ namespace CosmicShore.Game.UI
                     Icon  = stat.Icon
                 });
             }
+
+            CSDebug.Log($"[StatsProvider] GetStats returning {result.Count} stat(s) for scoreboard");
+            foreach (var s in result)
+                CSDebug.Log($"[StatsProvider]   → {s.Label}: {s.Value}");
 
             return result;
         }

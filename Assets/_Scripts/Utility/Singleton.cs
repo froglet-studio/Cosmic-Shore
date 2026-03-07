@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 /*
         Generic classes for the use of singleton
@@ -20,15 +21,17 @@ namespace CosmicShore.Utilities
             if (Instance == null)
             {
                 Instance = this as T;
-
-                print("Instantiate Singleton : " + Instance);
             }
             else
             {
-                print("Destroy Singleton: " + gameObject.name);
-
                 Destroy(gameObject);
             }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
     }
 
@@ -42,15 +45,17 @@ namespace CosmicShore.Utilities
             {
                 Instance = this as T;
                 DontDestroyOnLoad(this);
-
-                print("Instantiate SingletonPersistent : " + Instance);
             }
             else
             {
-                print("Destroy SingletonPersistent: " + gameObject.name);
-
                 Destroy(gameObject);
             }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
     }
 
@@ -63,15 +68,18 @@ namespace CosmicShore.Utilities
             if (Instance == null)
             {
                 Instance = this as T;
-
-                print("Instantiate SingletonNetwork: " + Instance);
             }
             else
             {
-                print("Destroy SingletonNetwork: " + Instance);
-
                 Destroy(gameObject);
             }
+        }
+
+        public override void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+            base.OnDestroy();
         }
     }
 
@@ -85,15 +93,18 @@ namespace CosmicShore.Utilities
             {
                 Instance = this as T;
                 DontDestroyOnLoad(this);
-
-                print("Instantiate SingletonNetworkPersistent: " + Instance);
             }
             else
             {
-                print("Destroy SingletonNetworkPersistent: " + Instance);
-
                 Destroy(gameObject);
             }
+        }
+
+        public override void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+            base.OnDestroy();
         }
     }
 
@@ -110,13 +121,13 @@ namespace CosmicShore.Utilities
                     T[] results = Resources.FindObjectsOfTypeAll<T>();
                     if (results.Length == 0)
                     {
-                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" + typeof(T).ToString() + ".");
+                        CSDebug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" + typeof(T).ToString() + ".");
                         return null;
 
                     }
                     if (results.Length > 1)
                     {
-                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is greater than for type" + typeof(T).ToString() + ".");
+                        CSDebug.LogError("SingletonScriptableObject -> Instance -> results length is greater than for type" + typeof(T).ToString() + ".");
                         return null;
 
                     }

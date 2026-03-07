@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
@@ -59,9 +59,9 @@ namespace CosmicShore.Game.UI
 
         protected override void OnMiniGameTurnStarted()
         {
-            // Note: We do NOT call base.OnMiniGameTurnStarted() here if we want to 
+            // Note: We do NOT call base.OnMiniGameTurnStarted() here if we want to
             // override the AI setup logic with full multiplayer card logic.
-            
+
             localRoundStats = gameData.LocalRoundStats;
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
@@ -82,20 +82,35 @@ namespace CosmicShore.Game.UI
         {
             view.ClearPlayerList();
             _playerCards.Clear();
+            AssignAIProfiles();
 
-            foreach (var stats in gameData.RoundStatsList)
+            for (int i = 0; i < gameData.RoundStatsList.Count; i++)
             {
-                CreateCardForPlayer(stats);
+                CreateCardForPlayer(gameData.RoundStatsList[i], i);
             }
         }
 
-        private void CreateCardForPlayer(IRoundStats stats)
+        private void CreateCardForPlayer(IRoundStats stats, int staggerIndex)
         {
             var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var isLocal = gameData.LocalPlayer != null && stats.Name == gameData.LocalPlayer.Name;
             var teamColor = view.GetColorForDomain(stats.Domain);
-            
-            card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal);
+
+            card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal, staggerIndex);
+
+            // Resolve avatar: for non-local players, try AI profile first
+            Sprite avatarSprite = null;
+            if (!isLocal)
+                avatarSprite = ResolveAIAvatarSprite(stats.Name);
+
+            if (avatarSprite == null)
+            {
+                var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
+                if (player != null)
+                    avatarSprite = ResolveAvatarSprite(player.AvatarId);
+            }
+            card.SetAvatar(avatarSprite);
+
             _playerCards[stats.Name] = card;
 
             SubscribeToPlayerStats(stats);

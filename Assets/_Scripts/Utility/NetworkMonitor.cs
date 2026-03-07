@@ -1,6 +1,8 @@
+using CosmicShore.App.UI.ToastNotification;
 using CosmicShore.Utilities;
 using System;
 using UnityEngine;
+using CosmicShore.Utility;
 
 
 public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
@@ -19,7 +21,8 @@ public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
             {
                 _connected = false;
                 OnNetworkConnectionLost?.Invoke();
-                Debug.Log("NetworkMonitor - Error. Check internet connection");
+                ToastNotificationAPI.Show("No network connection");
+                CSDebug.Log("NetworkMonitor - Error. Check internet connection");
             }
         }
         else
@@ -28,7 +31,7 @@ public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
             {
                 _connected = true;
                 OnNetworkConnectionFound?.Invoke();
-                Debug.Log("NetworkMonitor Success. Internet connection established");
+                CSDebug.Log("NetworkMonitor Success. Internet connection established");
             }
         }
     }
