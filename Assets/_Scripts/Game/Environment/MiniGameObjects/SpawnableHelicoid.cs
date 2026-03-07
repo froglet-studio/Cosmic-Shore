@@ -70,7 +70,7 @@ namespace CosmicShore
 
             for (int sheet = 0; sheet < sheets; sheet++)
             {
-                float sheetOffset = 2f * Mathf.PI * sheet / sheets;
+                float sheetOffset = .25f * Mathf.PI * sheet / sheets;
 
                 Domains sheetDomain = colorBySheet && sheetDomains.Length > 0
                     ? sheetDomains[sheet % sheetDomains.Length]

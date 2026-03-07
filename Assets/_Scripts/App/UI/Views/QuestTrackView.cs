@@ -179,11 +179,32 @@ namespace CosmicShore.App.UI.Views
         {
             var quest = questList.Quests[questIndex];
             var service = GameModeProgressionService.Instance;
-            bool isUnlocked = questIndex == 0 || (service != null && service.IsGameModeUnlocked(quest.GameMode));
+
+            // Determine if this quest's entry is unlocked
+            bool isUnlocked;
+            if (questIndex == 0)
+                isUnlocked = true;
+            else if (quest.IsFeatureUnlock)
+                isUnlocked = service != null && service.IsFeatureUnlocked(quest.DisplayName);
+            else
+                isUnlocked = service != null && service.IsGameModeUnlocked(quest.GameMode);
+
             if (!isUnlocked) return QuestItemState.Locked;
 
-            if (questIndex + 1 < questList.Quests.Count && service != null
-                && service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode))
+            // Check if the NEXT quest is already unlocked (meaning this one was claimed)
+            if (questIndex + 1 < questList.Quests.Count && service != null)
+            {
+                var nextQuest = questList.Quests[questIndex + 1];
+                bool nextUnlocked = nextQuest.IsFeatureUnlock
+                    ? service.IsFeatureUnlocked(nextQuest.DisplayName)
+                    : service.IsGameModeUnlocked(nextQuest.GameMode);
+
+                if (nextUnlocked)
+                    return QuestItemState.Claimed;
+            }
+
+            // Feature unlocks are terminal — once unlocked they're "claimed" (no further action)
+            if (quest.IsFeatureUnlock)
                 return QuestItemState.Claimed;
 
             if (quest.IsPlaceholder)
@@ -260,7 +281,7 @@ namespace CosmicShore.App.UI.Views
             _claimSequence?.Kill();
 
             // Commit the data change — OnProgressionChanged will be skipped due to the flag
-            GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(quest.GameMode);
+            GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(cardIndex);
 
             // Pre-compute slider targets from the now-updated data
             int newSliderVal = GetSliderValue();
@@ -378,7 +399,18 @@ namespace CosmicShore.App.UI.Views
             int count = 0;
             for (int i = 0; i < questList.Quests.Count; i++)
             {
-                if (i == 0 || service.IsGameModeUnlocked(questList.Quests[i].GameMode))
+                if (i == 0)
+                {
+                    count++;
+                    continue;
+                }
+
+                var quest = questList.Quests[i];
+                bool unlocked = quest.IsFeatureUnlock
+                    ? service.IsFeatureUnlocked(quest.DisplayName)
+                    : service.IsGameModeUnlocked(quest.GameMode);
+
+                if (unlocked)
                     count++;
                 else
                     break;

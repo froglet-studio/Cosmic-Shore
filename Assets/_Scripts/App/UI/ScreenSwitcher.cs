@@ -47,6 +47,9 @@ namespace CosmicShore.App.UI
 
             // HANGAR MODALS
             HANGAR_TRAINING        = 9,
+
+            // ARCADE
+            ARCADE                 = 10,
         }
 
         [System.Serializable]
@@ -77,9 +80,8 @@ namespace CosmicShore.App.UI
         [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
         [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
 
-        [Header("Arcade Panel (separate)")]
-        [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
-        [SerializeField] private GameObject arcadePanelRoot;
+        [Header("Arcade Modal")]
+        [SerializeField] private ModalWindowManager ArcadeModal;
 
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
@@ -161,6 +163,8 @@ namespace CosmicShore.App.UI
             PlayerPrefs.Save();
         }
         
+        public bool HasActiveModal => activeModalStack.Count > 0;
+
         public bool ScreenIsActive(MenuScreens screen)
         {
             return GetScreenIdForIndex(currentScreen) == screen;
@@ -242,6 +246,25 @@ namespace CosmicShore.App.UI
         private void Update()
         {
             if (Gamepad.current == null) return;
+            if (HasActiveModal) return; // Don't switch screens while a modal is open
+
+            if (ScreenIsActive(MenuScreens.HOME))
+            {
+                // A (South) on HOME opens the Arcade modal
+                if (Gamepad.current.buttonSouth.wasPressedThisFrame)
+                {
+                    OpenArcadeModal();
+                    return;
+                }
+
+                // X (West) on HOME opens the Settings modal
+                if (Gamepad.current.buttonWest.wasPressedThisFrame)
+                {
+                    OpenModalByType(ModalWindows.SETTINGS);
+                    return;
+                }
+            }
+
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
             if (Gamepad.current.rightTrigger.wasPressedThisFrame)
@@ -465,14 +488,26 @@ namespace CosmicShore.App.UI
 
         #endregion
 
-        #region Arcade Panel Logic
+        #region Modal Helpers
 
-        private void OpenArcadePanel()
+        private void OpenArcadeModal()
         {
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
-            if (arcadePanelRoot)
+            if (ArcadeModal)
             {
-                arcadePanelRoot.SetActive(true);
+                ArcadeModal.ModalWindowIn();
+            }
+        }
+
+        private void OpenModalByType(ModalWindows modalType)
+        {
+            foreach (var modal in Modals)
+            {
+                if (modal != null && modal.ModalType == modalType)
+                {
+                    modal.ModalWindowIn();
+                    return;
+                }
             }
         }
 
@@ -515,7 +550,7 @@ namespace CosmicShore.App.UI
 
         public void OnClickArcadeNav()
         {
-            OpenArcadePanel();
+            OpenArcadeModal();
         }
 
         public void OnClickLeftArrow()

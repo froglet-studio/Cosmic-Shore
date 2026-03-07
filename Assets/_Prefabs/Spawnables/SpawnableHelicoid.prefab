@@ -44,16 +44,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9bc148ff691c76488f95779065e7a61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  seed: 0
   domain: 3
-  intenstyLevel: 1
+  children: []
+  leafPrefab: {fileID: 0}
+  intensityLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   blockScale: {x: 1, y: 2, z: 4}
-  turns: 6
+  turns: 4
   height: 400
   innerRadius: 20
-  outerRadius: 500
-  samplesPerTurn: 40
-  radialSamples: 80
+  outerRadius: 400
+  samplesPerTurn: 30
+  radialSamples: 60
   sheets: 3
   colorBySheet: 1
-  sheetDomains: 030000000400000001000000
+  sheetDomains: 020000000400000001000000

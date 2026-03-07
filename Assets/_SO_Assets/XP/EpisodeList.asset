@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   episodes:
   - {fileID: 11400000, guid: cdafa6af6d9127e47b517e952e12cef8, type: 2}
+  - {fileID: 11400000, guid: fbd42f280bdf2e045a2554b8631aff48, type: 2}
