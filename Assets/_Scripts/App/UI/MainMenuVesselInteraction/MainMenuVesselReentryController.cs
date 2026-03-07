@@ -72,6 +72,12 @@ namespace CosmicShore.App.UI.MainMenuVesselInteraction
                 return;
             }
 
+            // Only detect re-entry when on HOME screen with no modals open
+            if (screenSwitcher != null
+                && (!screenSwitcher.ScreenIsActive(ScreenSwitcher.MenuScreens.HOME)
+                    || screenSwitcher.HasActiveModal))
+                return;
+
             // Detect double-tap to enter
             DetectDoubleTap();
             DetectGamepadEntry();
@@ -171,6 +177,8 @@ namespace CosmicShore.App.UI.MainMenuVesselInteraction
             // Stop AI, enable player input
             vessel.ToggleAIPilot(false);
             player.InputController.SetPause(false);
+            player.InputController.SetIdle(false);
+            vessel.VesselStatus.ActionHandler.ToggleSubscription(true);
 
             // Pan camera behind vessel
             yield return PanCameraBehindVessel();
@@ -186,7 +194,10 @@ namespace CosmicShore.App.UI.MainMenuVesselInteraction
             tutorialUI.HideAll();
 
             // Pause player input, re-enable AI
+            vessel.VesselStatus.ActionHandler.ToggleSubscription(false);
+            player.InputController.SetIdle(true);
             player.InputController.SetPause(true);
+            vessel.VesselStatus.VesselHUDController.HideHUD();
             vessel.ToggleAIPilot(true);
 
             // Pan camera back to menu

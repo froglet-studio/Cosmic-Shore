@@ -113,6 +113,8 @@ namespace CosmicShore.App.UI.MainMenuVesselInteraction
             // Stop AI and give control to player
             vessel.ToggleAIPilot(false);
             player.InputController.SetPause(false);
+            player.InputController.SetIdle(false);
+            vessel.VesselStatus.ActionHandler.ToggleSubscription(true);
 
             // Transition camera behind vessel
             yield return PanCameraBehindVessel();
@@ -253,7 +255,10 @@ namespace CosmicShore.App.UI.MainMenuVesselInteraction
             tutorialUI.HideAll();
 
             // Pause player input and re-enable AI
+            vessel.VesselStatus.ActionHandler.ToggleSubscription(false);
+            player.InputController.SetIdle(true);
             player.InputController.SetPause(true);
+            vessel.VesselStatus.VesselHUDController.HideHUD();
             vessel.ToggleAIPilot(true);
 
             // Pan camera back to menu
