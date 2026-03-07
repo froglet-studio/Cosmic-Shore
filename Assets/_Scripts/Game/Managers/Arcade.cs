@@ -97,6 +97,9 @@ namespace CosmicShore.Core
                 return;
             }
 
+            gameData.selectedVesselClass.Value = vessel;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.SelectedPlayerCount.Value = numberOfPlayers;
             gameData.ResourceCollection = shipResources;
             gameData.IsDailyChallenge = isDailyChallenge;
             gameData.IsTraining = false;
