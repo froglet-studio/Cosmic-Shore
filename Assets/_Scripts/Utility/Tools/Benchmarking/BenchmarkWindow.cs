@@ -5,6 +5,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Models.Enums;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -49,6 +50,11 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         [NonSerialized] BenchmarkSessionConfig _session;
         [NonSerialized] bool _sessionCallbackRegistered;
         [NonSerialized] bool _waitingForGameScene;
+        [NonSerialized] bool _waitingForCountdown;
+        [NonSerialized] double _countdownWaitEndTime;
+
+        // Countdown is 4 sprites × 1s each; add 1s buffer for scene init before pressing Go
+        const float CountdownDurationSeconds = 5f;
 
         // ── Session results (loaded after session completes) ────────────────
         [NonSerialized] List<BenchmarkReport> _sessionReports;
@@ -452,9 +458,17 @@ namespace CosmicShore.Utility.Tools.Benchmarking
 
                 if (Application.isPlaying)
                 {
-                    string phase = _waitingForGameScene
-                        ? "Waiting for game scene to load via Arcade..."
-                        : "Benchmark running...";
+                    string phase;
+                    if (_waitingForGameScene)
+                        phase = "Waiting for game scene to load via Arcade...";
+                    else if (_waitingForCountdown)
+                    {
+                        float remaining = Mathf.Max(0f, (float)(_countdownWaitEndTime - EditorApplication.timeSinceStartup));
+                        phase = $"Go button pressed — countdown {remaining:F1}s remaining...";
+                    }
+                    else
+                        phase = "Sampling gameplay...";
+
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Space(12);
                     GUILayout.Label(phase);
@@ -487,9 +501,10 @@ namespace CosmicShore.Utility.Tools.Benchmarking
                 "Run a benchmark multiple times through the Arcade bootstrap flow:\n" +
                 "1. Enter play mode (SceneBootstrapper loads Menu_Main)\n" +
                 "2. Arcade launches the selected game from OrganicRematchGames\n" +
-                "3. Once the game scene loads, benchmark sampling begins\n" +
-                "4. After sampling, results are saved and play mode exits\n" +
-                "5. Repeat for N iterations, then generate reproducibility report",
+                "3. Once the game scene loads, the Go button is pressed automatically\n" +
+                "4. After the countdown, benchmark sampling captures 20s of gameplay\n" +
+                "5. After sampling, results are saved and play mode exits\n" +
+                "6. Repeat for N iterations, then generate reproducibility report",
                 MessageType.None);
 
             GUILayout.Space(4);
@@ -1222,10 +1237,52 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             SceneManager.sceneLoaded -= OnGameSceneLoaded;
             _waitingForGameScene = false;
 
-            CSDebug.Log($"[Benchmark Session] Game scene '{scene.name}' loaded. Starting benchmark...");
+            CSDebug.Log($"[Benchmark Session] Game scene '{scene.name}' loaded. Pressing Go button...");
 
-            // The game scene is loaded — now start the benchmark sampler
-            EditorApplication.delayCall += AutoStartSessionBenchmark;
+            // The game scene is loaded — wait a frame for initialization, then press Go
+            EditorApplication.delayCall += PressGoButton;
+        }
+
+        void PressGoButton()
+        {
+            if (!Application.isPlaying) return;
+
+            // Find the MiniGameControllerBase in the scene and press Go
+            var controller = UnityEngine.Object.FindAnyObjectByType<MiniGameControllerBase>();
+            if (controller == null)
+            {
+                // Controller not ready yet — retry next frame
+                EditorApplication.delayCall += PressGoButton;
+                return;
+            }
+
+            controller.OnReadyClicked();
+            CSDebug.Log("[Benchmark Session] Go button pressed. Waiting for countdown to finish...");
+
+            // Wait for the countdown to complete before starting the benchmark sampler
+            _waitingForCountdown = true;
+            _countdownWaitEndTime = EditorApplication.timeSinceStartup + CountdownDurationSeconds;
+            EditorApplication.update += OnCountdownWaitUpdate;
+        }
+
+        void OnCountdownWaitUpdate()
+        {
+            if (!Application.isPlaying)
+            {
+                EditorApplication.update -= OnCountdownWaitUpdate;
+                _waitingForCountdown = false;
+                return;
+            }
+
+            if (EditorApplication.timeSinceStartup < _countdownWaitEndTime)
+                return;
+
+            // Countdown is over — start the benchmark sampler
+            EditorApplication.update -= OnCountdownWaitUpdate;
+            _waitingForCountdown = false;
+
+            CSDebug.Log("[Benchmark Session] Countdown complete. Starting benchmark sampling...");
+            AutoStartSessionBenchmark();
         }
 
         void AutoStartSessionBenchmark()
@@ -1252,7 +1309,9 @@ namespace CosmicShore.Utility.Tools.Benchmarking
             var go = new GameObject("[Benchmark Session Sampler]");
             go.hideFlags = HideFlags.DontSave;
             _activeSampler = go.AddComponent<PerformanceSampler>();
-            _activeSampler.Configure(iterLabel, 2f, _session.DurationSeconds);
+            // Gameplay is already running (Go button pressed, countdown finished).
+            // Use a short 1s warmup just for frame-timing stabilization.
+            _activeSampler.Configure(iterLabel, 1f, _session.DurationSeconds);
 
             if (_deterministicController != null)
                 _activeSampler.SetDeterministicController(_deterministicController);
@@ -1327,9 +1386,11 @@ namespace CosmicShore.Utility.Tools.Benchmarking
         {
             CSDebug.Log("[Benchmark Session] Aborted by user.");
 
-            // Unsubscribe from scene loads in case we're mid-wait
+            // Unsubscribe from scene loads and countdown wait in case we're mid-wait
             SceneManager.sceneLoaded -= OnGameSceneLoaded;
+            EditorApplication.update -= OnCountdownWaitUpdate;
             _waitingForGameScene = false;
+            _waitingForCountdown = false;
 
             // Stop any active sampling
             if (_activeSampler != null)
