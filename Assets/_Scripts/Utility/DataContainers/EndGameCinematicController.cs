@@ -26,8 +26,12 @@ namespace CosmicShore.Game.Cinematics
         [SerializeField] protected EndGameCinematicView view;
 
         [Header("Crystal Reward")]
-        [Tooltip("Amount of crystals awarded per game.")]
-        [SerializeField] private int crystalsPerGame = 5;
+        [Tooltip("Crystals awarded to 1st place in multiplayer, or flat reward in single-player.")]
+        [SerializeField] private int crystalsFirstPlace = 10;
+        [Tooltip("Crystals awarded to 2nd place in multiplayer.")]
+        [SerializeField] private int crystalsSecondPlace = 5;
+        [Tooltip("Crystals awarded to 3rd place in multiplayer.")]
+        [SerializeField] private int crystalsThirdPlace = 0;
         [Tooltip("Root GameObject to enable/disable for the crystal reward display.")]
         [SerializeField] private GameObject crystalRewardRoot;
         [Tooltip("Text showing how many crystals were earned.")]
@@ -305,18 +309,22 @@ namespace CosmicShore.Game.Cinematics
         
         protected virtual IEnumerator AwardCrystalReward()
         {
-            if (crystalsPerGame <= 0) yield break;
+            int placement = GetLocalPlayerPlacement();
+            int reward = placement >= 0 ? GetCrystalRewardForPlacement(placement) : 0;
 
-            var service = PlayerDataService.Instance;
-            if (service != null)
+            if (reward > 0)
             {
-                int newBalance = service.AddCrystals(crystalsPerGame);
-                CSDebug.Log($"[EndGameCinematic] Awarded {crystalsPerGame} crystals. New balance: {newBalance}");
+                var service = PlayerDataService.Instance;
+                if (service != null)
+                {
+                    int newBalance = service.AddCrystals(reward);
+                    CSDebug.Log($"[EndGameCinematic] Placement={placement + 1} Awarded {reward} crystals. New balance: {newBalance}");
+                }
             }
 
             if (crystalRewardRoot && crystalRewardText)
             {
-                crystalRewardText.text = $"+{crystalsPerGame}";
+                crystalRewardText.text = $"+{reward}";
                 crystalRewardRoot.SetActive(true);
 
                 var cg = crystalRewardRoot.GetComponent<CanvasGroup>();
@@ -414,6 +422,41 @@ namespace CosmicShore.Game.Cinematics
         protected virtual bool DetermineLocalPlayerWon()
         {
             return gameData != null && gameData.IsLocalDomainWinner(out _);
+        }
+
+        /// <summary>
+        /// Returns the 0-based placement index of the local player in the sorted RoundStatsList.
+        /// Returns -1 if the local player cannot be found (disconnect, missing data).
+        /// RoundStatsList is already sorted by the time AwardCrystalReward runs.
+        /// </summary>
+        private int GetLocalPlayerPlacement()
+        {
+            var localName = gameData.LocalPlayer?.Name;
+            if (string.IsNullOrEmpty(localName)) return -1;
+
+            for (int i = 0; i < gameData.RoundStatsList.Count; i++)
+            {
+                if (gameData.RoundStatsList[i].Name == localName)
+                    return i;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Maps a 0-based placement index to the crystal reward amount.
+        /// For single-player modes, returns crystalsFirstPlace as a flat reward (backward compatible).
+        /// </summary>
+        private int GetCrystalRewardForPlacement(int placement)
+        {
+            if (!gameData.IsMultiplayerMode)
+                return crystalsFirstPlace;
+
+            return placement switch
+            {
+                0 => crystalsFirstPlace,
+                1 => crystalsSecondPlace,
+                _ => crystalsThirdPlace
+            };
         }
 
         protected virtual CinematicDefinitionSO ResolveCinematicForThisScene()
