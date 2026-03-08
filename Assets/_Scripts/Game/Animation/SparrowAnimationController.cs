@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    class SparrowAnimationController : VesselAnimation
+    public class SparrowAnimationController : VesselAnimation
     {
         [SerializeField] Animator animator;
         [SerializeField] FireGunActionExecutor missileExecutor;
