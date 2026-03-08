@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
@@ -64,6 +64,18 @@ namespace CosmicShore.App.Systems.Audio
         [SerializeField] float musicVolume = .1f;
         [SerializeField] float sfxVolume = .1f;
 
+        [Header("Mixer Groups")]
+        [SerializeField] AudioMixerGroup musicMixerGroup;
+        [SerializeField] AudioMixerGroup sfxMixerGroup;
+
+        [Header("SFX Throttling")]
+        [SerializeField] float sfxCooldownSeconds = 0.05f;
+
+        [Header("Spatial Audio")]
+        [SerializeField] int spatialSourcePoolSize = 8;
+        [SerializeField] float spatialMaxDistance = 500f;
+        [SerializeField] float spatialMinDistance = 10f;
+
         [Header("Menu Audio")]
         [SerializeField] AudioClip OptionClickAudioClip;
         [SerializeField] AudioClip OpenViewAudioClip;
@@ -112,6 +124,10 @@ namespace CosmicShore.App.Systems.Audio
         Dictionary<MenuAudioCategory, AudioClip> MenuAudioClips;
         Dictionary<GameplaySFXCategory, AudioClip> GameplaySFXClips;
 
+        readonly Dictionary<int, float> _lastPlayTime = new();
+        AudioSource[] _spatialPool;
+        int _spatialPoolIndex;
+
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
         #endregion
@@ -120,12 +136,55 @@ namespace CosmicShore.App.Systems.Audio
         {
             InitializeMenuAudioClips();
             InitializeGameplaySFXClips();
+            InitializeAudioSourcePriorities();
+            InitializeMixerGroupRouting();
+            InitializeSpatialPool();
 
             musicEnabled = GameSetting.Instance.MusicEnabled;
             sfxEnabled = GameSetting.Instance.SFXEnabled;
             ChangeMusicLevel(GameSetting.Instance.MusicLevel);
             ChangeSFXLevel(GameSetting.Instance.SFXLevel);
             ChangeMusicEnabledStatus(musicEnabled);
+        }
+
+        void InitializeAudioSourcePriorities()
+        {
+            musicSource1.priority = 0;
+            musicSource2.priority = 0;
+            sfxSource.priority = 128;
+        }
+
+        void InitializeMixerGroupRouting()
+        {
+            if (musicMixerGroup != null)
+            {
+                musicSource1.outputAudioMixerGroup = musicMixerGroup;
+                musicSource2.outputAudioMixerGroup = musicMixerGroup;
+            }
+            if (sfxMixerGroup != null)
+            {
+                sfxSource.outputAudioMixerGroup = sfxMixerGroup;
+            }
+        }
+
+        void InitializeSpatialPool()
+        {
+            _spatialPool = new AudioSource[spatialSourcePoolSize];
+            for (int i = 0; i < spatialSourcePoolSize; i++)
+            {
+                var go = new GameObject($"SpatialSFX_{i}");
+                go.transform.SetParent(transform);
+                var src = go.AddComponent<AudioSource>();
+                src.spatialBlend = 1f;
+                src.rolloffMode = AudioRolloffMode.Logarithmic;
+                src.minDistance = spatialMinDistance;
+                src.maxDistance = spatialMaxDistance;
+                src.priority = 200;
+                src.playOnAwake = false;
+                if (sfxMixerGroup != null)
+                    src.outputAudioMixerGroup = sfxMixerGroup;
+                _spatialPool[i] = src;
+            }
         }
 
         void OnEnable()
@@ -146,7 +205,7 @@ namespace CosmicShore.App.Systems.Audio
         {
             CSDebug.Log($"AudioSystem.OnChangeAudioEnabledStatus - status: {status}");
 
-            musicEnabled = status;            
+            musicEnabled = status;
             SetMixerMusicVolume(musicEnabled ? musicVolume : 0);
         }
         void ChangeSFXEnabledStatus(bool status)
@@ -199,8 +258,8 @@ namespace CosmicShore.App.Systems.Audio
 
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                // Fade out original clip masterVolume
-                activeAudioSource.volume = SFXVolume * (1 - (t / transitionTime));
+                // Fade out original clip volume
+                activeAudioSource.volume = MusicVolume * (1 - (t / transitionTime));
                 yield return null;
             }
 
@@ -211,8 +270,8 @@ namespace CosmicShore.App.Systems.Audio
 
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                // Fade in new clip masterVolume
-                activeAudioSource.volume = SFXVolume * (t / transitionTime);
+                // Fade in new clip volume
+                activeAudioSource.volume = MusicVolume * (t / transitionTime);
                 yield return null;
             }
         }
@@ -239,8 +298,8 @@ namespace CosmicShore.App.Systems.Audio
         {
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                originalSource.volume = SFXVolume * (1 - (t / transitionTime));
-                newSource.volume = SFXVolume * (t / transitionTime);
+                originalSource.volume = MusicVolume * (1 - (t / transitionTime));
+                newSource.volume = MusicVolume * (t / transitionTime);
                 yield return null;
             }
 
@@ -271,6 +330,14 @@ namespace CosmicShore.App.Systems.Audio
                 Debug.LogWarning($"AudioSystem.PlayGameplaySFX: No audio clip assigned for {category}");
         }
 
+        public void PlayGameplaySFX(GameplaySFXCategory category, Vector3 worldPosition)
+        {
+            if (GameplaySFXClips.TryGetValue(category, out var clip) && clip != null)
+                PlaySpatialSFX(clip, worldPosition);
+            else
+                Debug.LogWarning($"AudioSystem.PlayGameplaySFX: No audio clip assigned for {category}");
+        }
+
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
             sfxSource.volume = SFXVolume;
@@ -279,9 +346,41 @@ namespace CosmicShore.App.Systems.Audio
 
         public void PlaySFXClip(AudioClip audioClip)
         {
+            if (audioClip == null || !sfxEnabled) return;
+
+            int clipId = audioClip.GetInstanceID();
+            float now = Time.unscaledTime;
+
+            if (_lastPlayTime.TryGetValue(clipId, out float lastTime)
+                && now - lastTime < sfxCooldownSeconds)
+                return;
+
+            _lastPlayTime[clipId] = now;
             sfxSource.volume = SFXVolume;
             sfxSource.PlayOneShot(audioClip);
         }
+
+        void PlaySpatialSFX(AudioClip clip, Vector3 worldPosition)
+        {
+            if (!sfxEnabled || clip == null) return;
+
+            int clipId = clip.GetInstanceID();
+            float now = Time.unscaledTime;
+
+            if (_lastPlayTime.TryGetValue(clipId, out float lastTime)
+                && now - lastTime < sfxCooldownSeconds)
+                return;
+
+            _lastPlayTime[clipId] = now;
+
+            var source = _spatialPool[_spatialPoolIndex];
+            _spatialPoolIndex = (_spatialPoolIndex + 1) % spatialSourcePoolSize;
+
+            source.transform.position = worldPosition;
+            source.volume = SFXVolume;
+            source.PlayOneShot(clip);
+        }
+
         #region Mixer Methods
 
         public void SetMixerMusicVolume(float value)
@@ -291,7 +390,8 @@ namespace CosmicShore.App.Systems.Audio
 
         public void SetMixerSFXVolume(float value)
         {
-            masterMixer.SetFloat("SFXVolume", value);
+            // The SFX group's exposed parameter in Main_AudioMixer is "EnvironmentVolume"
+            masterMixer.SetFloat("EnvironmentVolume", value);
         }
         #endregion
 

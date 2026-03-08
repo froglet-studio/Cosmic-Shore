@@ -175,7 +175,7 @@ namespace CosmicShore
         {
             if (isCleaningUp) return;
 
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CreatureDeath);
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CreatureDeath, transform.position);
 
             if (crystal && crystal.gameObject.activeInHierarchy && !isCleaningUp)
                 crystal.ActivateCrystal();

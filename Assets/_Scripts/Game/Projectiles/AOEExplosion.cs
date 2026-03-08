@@ -102,7 +102,7 @@ namespace CosmicShore.Game.Projectiles
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.Explosion);
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.Explosion, transform.position);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 
