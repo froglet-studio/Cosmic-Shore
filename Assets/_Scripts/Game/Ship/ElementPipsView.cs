@@ -31,6 +31,49 @@ namespace CosmicShore
         const int MinLevel = -5;
         const int MaxLevel = 15;
 
+        void OnEnable()
+        {
+            if (config) config.OnChanged += OnConfigChanged;
+        }
+
+        void OnDisable()
+        {
+            if (config) config.OnChanged -= OnConfigChanged;
+        }
+
+        void OnConfigChanged()
+        {
+            if (_built) Rebuild();
+        }
+
+        /// <summary>Destroys all children and rebuilds from the SO config.</summary>
+        public void Rebuild()
+        {
+            if (!config || !container) return;
+
+            // Preserve current levels
+            int[] prevLevels = _currentLevels;
+
+            for (int i = container.childCount - 1; i >= 0; i--)
+                DestroyImmediate(container.GetChild(i).gameObject);
+
+            _pips = null;
+            _labels = null;
+            _zeroLines = null;
+            _built = false;
+
+            Build();
+
+            // Restore levels
+            if (prevLevels != null && _currentLevels != null)
+            {
+                int count = Mathf.Min(prevLevels.Length, _currentLevels.Length);
+                for (int i = 0; i < count; i++)
+                    _currentLevels[i] = prevLevels[i];
+                RefreshAllColumns();
+            }
+        }
+
         /// <summary>
         /// Build the pip UI. Call once after the config is assigned.
         /// </summary>
