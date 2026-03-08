@@ -50,7 +50,10 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private float parallaxFalloff = 400f;
 
         private readonly List<QuestItemCard> _cards = new();
+        private readonly List<RectTransform> _cardRects = new();
+        private readonly List<CanvasGroup> _cardCanvasGroups = new();
         private readonly List<CanvasGroup> _descriptionLabels = new();
+        private RectTransform _viewportRect;
         private Tween _sliderTween;
         private Tween _ghostSliderTween;
         private Tween _descFadeTween;
@@ -58,14 +61,22 @@ namespace CosmicShore.App.UI.Views
         private Tween _snapTween;
         private bool _wasMoving;
         private bool _isSnapping;
+        private bool _parallaxDirty;
+        private bool _cardsSpawned;
         private bool _isPlayingClaimSequence;
         private int _lastActiveDescIndex = -1;
 
         void OnEnable()
         {
             EnsureSliderIgnoresLayout();
-            SpawnCards();
-            SpawnDescriptionLabels();
+
+            if (!_cardsSpawned)
+            {
+                SpawnCards();
+                SpawnDescriptionLabels();
+                _cardsSpawned = true;
+            }
+
             ConfigureSlider();
             ConfigureGhostSlider();
             RefreshAllCards();
@@ -84,6 +95,12 @@ namespace CosmicShore.App.UI.Views
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
             KillAllTweens();
+        }
+
+        void OnDestroy()
+        {
+            _cardsSpawned = false;
+            ClearSpawned();
             ClearDescriptionLabels();
         }
 
@@ -132,14 +149,18 @@ namespace CosmicShore.App.UI.Views
             ClearSpawned();
             if (questList == null || questList.Quests == null || questItemPrefab == null) return;
 
+            // Cache viewport reference for parallax
+            if (scrollRect != null)
+                _viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
+
             for (int i = 0; i < questList.Quests.Count; i++)
             {
                 var go = Instantiate(questItemPrefab, questItemContainer);
                 if (!go.TryGetComponent<QuestItemCard>(out var card)) { Destroy(go); continue; }
 
                 // Ensure CanvasGroup exists for parallax alpha
-                if (!go.TryGetComponent<CanvasGroup>(out _))
-                    go.AddComponent<CanvasGroup>();
+                if (!go.TryGetComponent<CanvasGroup>(out var cg))
+                    cg = go.AddComponent<CanvasGroup>();
 
                 card.Configure(questList.Quests[i]);
                 card.SetState(GetCardState(i));
@@ -147,6 +168,8 @@ namespace CosmicShore.App.UI.Views
                 int cardIndex = i;
                 card.BindClaimAction(() => HandleClaimPressed(cardIndex));
                 _cards.Add(card);
+                _cardRects.Add(go.GetComponent<RectTransform>());
+                _cardCanvasGroups.Add(cg);
             }
         }
 
@@ -586,16 +609,17 @@ namespace CosmicShore.App.UI.Views
         {
             if (scrollRect == null || _cards.Count == 0) return -1;
 
-            var viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
-            Vector3 viewportCenter = viewportRect.TransformPoint(viewportRect.rect.center);
+            if (_viewportRect == null)
+                _viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
+
+            Vector3 viewportCenter = _viewportRect.TransformPoint(_viewportRect.rect.center);
 
             int nearest = 0;
             float minDist = float.MaxValue;
 
-            for (int i = 0; i < _cards.Count; i++)
+            for (int i = 0; i < _cardRects.Count; i++)
             {
-                var cardRect = _cards[i].GetComponent<RectTransform>();
-                Vector3 cardCenter = cardRect.TransformPoint(cardRect.rect.center);
+                Vector3 cardCenter = _cardRects[i].TransformPoint(_cardRects[i].rect.center);
                 float dist = Mathf.Abs(cardCenter.x - viewportCenter.x);
 
                 if (dist < minDist)
@@ -614,22 +638,29 @@ namespace CosmicShore.App.UI.Views
         {
             if (scrollRect == null || _cards.Count == 0 || parallaxFalloff <= 0f) return;
 
-            var viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
-            Vector3 viewportCenter = viewportRect.TransformPoint(viewportRect.rect.center);
+            // Skip parallax when scroll is idle and not snapping
+            bool isMoving = _isSnapping || scrollRect.velocity.sqrMagnitude >= 1f;
+            if (!isMoving && !_parallaxDirty) return;
+            _parallaxDirty = isMoving; // run one final frame after motion stops
+
+            if (_viewportRect == null)
+                _viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
+
+            Vector3 viewportCenter = _viewportRect.TransformPoint(_viewportRect.rect.center);
 
             for (int i = 0; i < _cards.Count; i++)
             {
                 var card = _cards[i];
                 if (card == null || card.IsAnimating) continue;
 
-                var cardRect = card.GetComponent<RectTransform>();
-                Vector3 cardCenter = cardRect.TransformPoint(cardRect.rect.center);
+                Vector3 cardCenter = _cardRects[i].TransformPoint(_cardRects[i].rect.center);
                 float distance = Mathf.Abs(cardCenter.x - viewportCenter.x);
                 float t = Mathf.Clamp01(distance / parallaxFalloff);
 
                 card.transform.localScale = Vector3.one * Mathf.Lerp(1f, minCardScale, t);
 
-                if (card.TryGetComponent<CanvasGroup>(out var cg))
+                var cg = _cardCanvasGroups[i];
+                if (cg != null)
                     cg.alpha = Mathf.Lerp(1f, minCardAlpha, t);
             }
         }
@@ -641,6 +672,8 @@ namespace CosmicShore.App.UI.Views
             foreach (var card in _cards)
                 if (card != null) Destroy(card.gameObject);
             _cards.Clear();
+            _cardRects.Clear();
+            _cardCanvasGroups.Clear();
         }
 
         void KillAllTweens()

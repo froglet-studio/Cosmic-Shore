@@ -92,20 +92,34 @@ namespace CosmicShore.App.UI.Screens
 
         void PopulateGrid()
         {
-            _gridCards.Clear();
-            for (int i = gridContainer.childCount - 1; i >= 0; i--)
-                Destroy(gridContainer.GetChild(i).gameObject);
-
             // Sort: unlocked vessels first, then locked
             var sorted = Ships.OrderBy(s => s.IsLocked ? 1 : 0).ToList();
 
-            foreach (var ship in sorted)
+            // Remove excess cards
+            while (_gridCards.Count > sorted.Count)
             {
-                var card = Instantiate(gridCardPrefab, gridContainer);
-                card.name = $"GridCard_{ship.Name}";
-                card.Configure(ship, this);
-                card.SetNameVisible(_namesVisible);
-                _gridCards.Add(card);
+                var last = _gridCards[^1];
+                _gridCards.RemoveAt(_gridCards.Count - 1);
+                Destroy(last.gameObject);
+            }
+
+            // Reuse existing cards and create new ones as needed
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                if (i < _gridCards.Count)
+                {
+                    _gridCards[i].name = $"GridCard_{sorted[i].Name}";
+                    _gridCards[i].Configure(sorted[i], this);
+                    _gridCards[i].SetNameVisible(_namesVisible);
+                }
+                else
+                {
+                    var card = Instantiate(gridCardPrefab, gridContainer);
+                    card.name = $"GridCard_{sorted[i].Name}";
+                    card.Configure(sorted[i], this);
+                    card.SetNameVisible(_namesVisible);
+                    _gridCards.Add(card);
+                }
             }
         }
 

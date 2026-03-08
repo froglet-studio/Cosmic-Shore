@@ -19,11 +19,13 @@ namespace CosmicShore.App.UI.Modals
 
         [SerializeField] Animator windowAnimator;
         bool isOn;
+        ScreenSwitcher _cachedScreenSwitcher;
 
         protected virtual void Start()
         {
             if(windowAnimator == null)
                 windowAnimator = GetComponent<Animator>();
+            _cachedScreenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
         }
 
         protected virtual void Update()
@@ -41,9 +43,8 @@ namespace CosmicShore.App.UI.Modals
 
             if (isOn == false)
             {
-                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
-                if (screenSwitcher != null)
-                    screenSwitcher.PushModal(ModalType);
+                if (_cachedScreenSwitcher != null)
+                    _cachedScreenSwitcher.PushModal(ModalType);
 
                 if (sharpAnimations == false)
                     windowAnimator.CrossFade("Window In", 0.1f);
@@ -59,9 +60,8 @@ namespace CosmicShore.App.UI.Modals
         {
             if (isOn)
             {
-                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
-                if (screenSwitcher)
-                    screenSwitcher.PopModal();
+                if (_cachedScreenSwitcher != null)
+                    _cachedScreenSwitcher.PopModal();
 
                 if (sharpAnimations == false)
                     windowAnimator.CrossFade("Window Out", 0.1f);

@@ -15,6 +15,7 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] TMP_Text TicketBalance;
         GameModes GameMode;
+        float _timerAccumulator;
 
         void OnEnable()
         {
@@ -41,8 +42,14 @@ namespace CosmicShore.App.UI.Modals
             TicketBalance.text = CatalogManager.Instance.GetDailyChallengeTicketBalance().ToString();
         }
 
-        void Update()
+        protected override void Update()
         {
+            base.Update();
+
+            _timerAccumulator += Time.unscaledDeltaTime;
+            if (_timerAccumulator < 1f) return;
+            _timerAccumulator = 0f;
+
             if (GameMode == GameModes.Random)
                 AssignGameMode();
 

@@ -108,7 +108,7 @@ namespace CosmicShore.App.UI
                     snapPosition,
                     contentPanelTransform.localPosition.z);
 
-                Canvas.ForceUpdateCanvases();
+                LayoutRebuilder.ForceRebuildLayoutImmediate(contentPanelTransform);
                 checkForSnap = false;
             }
         }
