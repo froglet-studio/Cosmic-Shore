@@ -1298,7 +1298,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 8279817603024118164}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f949662b0a749b409c5d7d5d89e0913, type: 3}
+  m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 0}
@@ -1307,8 +1307,8 @@ MonoBehaviour:
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
-  animator: {fileID: 8796843700321160693}
-  missileExecutor: {fileID: 4658886838346608747}
+  animator: {fileID: 0}
+  hasBoost: 1
 --- !u!114 &838706159439259027
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1326,7 +1326,6 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
   energyResourceIndex: 0
   view: {fileID: 7416581124810081342}
-  elementPips: {fileID: 2233445566778899003}
 --- !u!114 &4780908095115307824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1388,7 +1387,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipGeometries:
-  - {fileID: 2117239821978650842}
+  - {fileID: 0}
 --- !u!114 &1427785718439944555
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2018,12 +2017,6 @@ PrefabInstance:
 --- !u!4 &1597127269370368608 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 1b0725c5c79aad145835d47b9ecfa510,
-    type: 3}
-  m_PrefabInstance: {fileID: 1270186306832725387}
-  m_PrefabAsset: {fileID: 0}
---- !u!95 &8796843700321160693 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 1b0725c5c79aad145835d47b9ecfa510,
     type: 3}
   m_PrefabInstance: {fileID: 1270186306832725387}
   m_PrefabAsset: {fileID: 0}
@@ -2724,10 +2717,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8096229903681595441}
-    - targetCorrespondingSourceObject: {fileID: 5869258085133397042, guid: f0a24806a0485254389f97d4c93f7615,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2233445566778899002}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2707401190942586943, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
@@ -2764,56 +2753,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 6302028140178659755}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &2233445566778899001
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2233445566778899002}
-  - component: {fileID: 2233445566778899003}
-  m_Layer: 5
-  m_Name: ElementPips
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &2233445566778899002
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2233445566778899001}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 434181841133139353}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 20, y: 20}
-  m_SizeDelta: {x: 120, y: 200}
-  m_Pivot: {x: 0, y: 0}
---- !u!114 &2233445566778899003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2233445566778899001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  config: {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
-  container: {fileID: 2233445566778899002}
 --- !u!114 &7416581124810081342
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2824,8 +2763,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 47e75593b0dd60a4f8eeade919affa5b, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   trailDisplayContainer: {fileID: 4625218033296401838}
   blockPrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
     type: 3}
@@ -2928,22 +2867,3 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 6723389074232520642}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4851397628510934721
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8279817603024118164}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 44c3e2acbdc04a0a85d4d697c657eea4, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  longestDriftStat: {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
-  maxBoostTimeStat: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
-  prismsDamagedStat: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
-  prismBlocksShotStat: {fileID: 11400000, guid: d6fe01bc7c9e42e083e467411228bbff, type: 2}
-  skyburstMissilesShotStat: {fileID: 11400000, guid: 2d9e8d918051444ba4a28e9506eff2e4, type: 2}
-  dangerBlocksSpawnedStat: {fileID: 11400000, guid: 2a796726f5a4448cbb76a0275666cafb, type: 2}
