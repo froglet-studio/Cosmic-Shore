@@ -89,6 +89,7 @@ namespace CosmicShore.Core
             gameData.IsTraining = false;
             gameData.IsMission = false;
             gameData.GameMode = gameMode;
+            gameData.selectedVesselClass.Value = vessel;
             
             // For multiplayer-capable games with only 1 human player, run locally with AI
             // instead of doing online matchmaking. Use gameData.SelectedPlayerCount (set by
@@ -143,6 +144,8 @@ namespace CosmicShore.Core
             gameData.IsTraining = !isDailyChallenge;
             gameData.IsMission = false;
             gameData.IsMultiplayerMode = false;
+            gameData.GameMode = gameMode;
+            gameData.selectedVesselClass.Value = vessel;
             gameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
             gameData.InvokeGameLaunch();
             
