@@ -1298,17 +1298,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 8279817603024118164}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Script: {fileID: 11500000, guid: 2f949662b0a749b409c5d7d5d89e0913, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
   SkinnedMeshRenderer: {fileID: 0}
   SaveNewPositions: 1
   UseShapeKeys: 1
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
-  animator: {fileID: 0}
-  hasBoost: 1
+  animator: {fileID: 8796843700321160693}
+  missileExecutor: {fileID: 4658886838346608747}
 --- !u!114 &838706159439259027
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1388,7 +1388,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipGeometries:
-  - {fileID: 0}
+  - {fileID: 2117239821978650842}
 --- !u!114 &1427785718439944555
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2018,6 +2018,12 @@ PrefabInstance:
 --- !u!4 &1597127269370368608 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 1b0725c5c79aad145835d47b9ecfa510,
+    type: 3}
+  m_PrefabInstance: {fileID: 1270186306832725387}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &8796843700321160693 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 1b0725c5c79aad145835d47b9ecfa510,
     type: 3}
   m_PrefabInstance: {fileID: 1270186306832725387}
   m_PrefabAsset: {fileID: 0}
