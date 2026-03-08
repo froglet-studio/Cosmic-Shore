@@ -8,6 +8,7 @@ using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.InputSystem.XInput;
 using UnityEngine.UI;
 using static CosmicShore.App.UI.ScreenSwitcher;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.IO
 {
@@ -32,17 +33,17 @@ namespace CosmicShore.Game.IO
         EventSystem eventSystem;
         ScreenSwitcher screenSwitcher;
         Button button;
-        
+
         bool _wasCanvasGroupInteractableLastFrame;
-        
+
         void Start()
         {
             if (canvasGroup)
                 _wasCanvasGroupInteractableLastFrame = canvasGroup.interactable;
-            
+
             eventSystem = FindAnyObjectByType<EventSystem>();
-            screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             button = GetComponent<Button>();
+            screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
 
             if (!activationButtonImage)
                 return;
@@ -67,7 +68,7 @@ namespace CosmicShore.Game.IO
                         activationButtonImage.gameObject.SetActive(false);
                         break;
                 }
-                Debug.Log("A DualShock controller is connected.");
+                CSDebug.Log("A DualShock controller is connected.");
             }
             else if (Gamepad.current is XInputController)
             {
@@ -89,7 +90,7 @@ namespace CosmicShore.Game.IO
                         activationButtonImage.gameObject.SetActive(false);
                         break;
                 }
-                Debug.Log("An Xbox controller is connected.");
+                CSDebug.Log("An Xbox controller is connected.");
             }
             else
             {
@@ -99,57 +100,69 @@ namespace CosmicShore.Game.IO
 
         void Update()
         {
+            if (Gamepad.current == null || !Gamepad.current[activationButton].wasPressedThisFrame)
+                return;
+
             // Remove the null check -> after making sure every place of ControllerButtonPress has a canvas group
             // reference added to them
-
             if (canvasGroup)
             {
                 bool wasInteractableLastFrame = _wasCanvasGroupInteractableLastFrame;
-                _wasCanvasGroupInteractableLastFrame = canvasGroup.interactable;    
-                
+                _wasCanvasGroupInteractableLastFrame = canvasGroup.interactable;
+
                 if (!wasInteractableLastFrame)
                     return;
             }
-            
+
+            // Lazy lookup: button's GO may have been inactive during Start()
+            if (screenSwitcher == null)
+                screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+
             if (screenSwitcher != null)
             {
-                // If the screen context is active do the action
-                foreach (var screen in ActiveMenuScreens)
+                // If any modal is open, only modal-scoped buttons may fire.
+                if (screenSwitcher.HasActiveModal)
                 {
-                    if (screenSwitcher.ScreenIsActive(screen))
+                    foreach (var modal in ActiveModalWindows)
                     {
-                        if (Gamepad.current != null && Gamepad.current[activationButton].wasPressedThisFrame)
+                        if (screenSwitcher.ModalIsActive(modal))
                         {
-                            button.onClick.Invoke();
-                            button.OnDeselect(new BaseEventData(eventSystem));
+                            InvokeButton();
                             return;
                         }
                     }
                 }
-
-                // If the modal context is active do the action
-                foreach (var modal in ActiveModalWindows)
+                else
                 {
-                    if (screenSwitcher.ModalIsActive(modal))
+                    // No modal open — screen-scoped buttons may fire.
+                    foreach (var screen in ActiveMenuScreens)
                     {
-                        if (Gamepad.current != null && Gamepad.current[activationButton].wasPressedThisFrame)
+                        if (screenSwitcher.ScreenIsActive(screen))
                         {
-                            button.onClick.Invoke();
-                            button.OnDeselect(new BaseEventData(eventSystem));
+                            InvokeButton();
                             return;
                         }
                     }
                 }
             }
-            // Kinda lame-o approach to keep in game UI working (which doesn't have nested modals or return to screens)
+            // In-game UI fallback: no ScreenSwitcher exists in this scene at all
             else
             {
-                if (Gamepad.current != null && Gamepad.current[activationButton].wasPressedThisFrame)
-                {
-                    button.onClick.Invoke();
-                    button.OnDeselect(new BaseEventData(eventSystem));
-                }
+                InvokeButton();
             }
+        }
+
+        void InvokeButton()
+        {
+            if (!button.interactable || !button.isActiveAndEnabled)
+                return;
+
+            // Skip if a parent CanvasGroup is blocking raycasts (hidden panel)
+            if (!button.IsInteractable())
+                return;
+
+            button.onClick.Invoke();
+            button.OnDeselect(new BaseEventData(eventSystem));
         }
     }
 }
