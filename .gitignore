@@ -79,3 +79,6 @@ crashlytics-build.properties
 /ProjectSettings/BurstAotSettings_StandaloneLinux64.json
 /.utmp/
 /.editorconfig
+
+# Benchmark tool output
+/BenchmarkReports/
