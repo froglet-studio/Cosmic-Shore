@@ -383,6 +383,18 @@ namespace CosmicShore.Game.UI
 
         #endregion
 
+        #region Return to Main Menu
+
+        public void OnReturnToMainMenuButtonPressed()
+        {
+            if (multiplayerController != null)
+                multiplayerController.LeaveSessionAndReturnToMenu();
+            else
+                CSDebug.LogWarning("[Scoreboard] No multiplayerController — cannot leave session.");
+        }
+
+        #endregion
+
         #region Play Again / Rematch
 
         public void OnPlayAgainButtonPressed()

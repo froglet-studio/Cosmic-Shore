@@ -157,6 +157,12 @@ namespace CosmicShore.Game.UI
 
         private void OnFeedEvent(GameFeedPayload payload)
         {
+            // Only show joust hit notifications when playing the Joust game mode
+            if (payload.Type == GameFeedType.JoustHit &&
+                gameData != null &&
+                gameData.GameMode != GameModes.MultiplayerJoust)
+                return;
+
             bool isRichText = payload.Type == GameFeedType.JoustHit;
             var color = isRichText ? Color.white : GetColorForDomain(payload.Domain);
 
