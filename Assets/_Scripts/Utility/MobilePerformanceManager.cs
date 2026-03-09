@@ -1,3 +1,4 @@
+using System.Runtime;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -109,12 +110,8 @@ namespace CosmicShore.Utility
             urpAsset.supportsCameraDepthTexture = false;
             urpAsset.supportsCameraOpaqueTexture = false;
 
-            // Disable additional lights shadow casting
-            urpAsset.supportsAdditionalLightShadows = false;
+            // Zero out additional lights — no per-pixel extra lights on mobile
             urpAsset.maxAdditionalLightsCount = 0;
-
-            // Disable soft shadows
-            urpAsset.supportsSoftShadows = false;
         }
 
         static void ThrottlePhysics()
