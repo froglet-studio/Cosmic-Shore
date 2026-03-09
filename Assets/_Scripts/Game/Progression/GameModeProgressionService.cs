@@ -105,8 +105,14 @@ namespace CosmicShore.Game.Progression
 
         void CaptureIntensityOnLaunch()
         {
-            // Snapshot the intensity NOW, while SelectedIntensity still has the correct value.
-            // After the scene loads, Soap's ScriptableVariable resets it to 1.
+            // Only override if the configure modal hasn't already set a valid value.
+            // The launch flow can reset SelectedIntensity before this callback fires.
+            if (_cachedPlayedIntensity > 1)
+            {
+                Debug.Log($"[GameModeProgressionService] Captured intensity on launch: keeping cached value {_cachedPlayedIntensity}");
+                return;
+            }
+
             if (gameData != null && gameData.SelectedIntensity != null)
             {
                 _cachedPlayedIntensity = gameData.SelectedIntensity.Value;
@@ -555,6 +561,7 @@ namespace CosmicShore.Game.Progression
             if (quest.TargetType == QuestTargetType.IntensityUnlocked)
             {
                 int playedIntensity = _cachedPlayedIntensity;
+                _cachedPlayedIntensity = 1; // Reset so it doesn't leak into the next game
                 float statValue = ExtractStatForIntensityGoal(quest);
                 RecordIntensityPlay(mode, quest, playedIntensity, statValue);
                 return;
