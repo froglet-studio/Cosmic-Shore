@@ -388,6 +388,17 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public int GetCachedPlayedIntensity() => _cachedPlayedIntensity;
 
+        /// <summary>
+        /// Called by UI (configure modal) when the player selects an intensity.
+        /// Stores the value on this DontDestroyOnLoad singleton so it survives
+        /// scene loads regardless of which launch path the game takes.
+        /// </summary>
+        public void SetCachedPlayedIntensity(int intensity)
+        {
+            _cachedPlayedIntensity = Mathf.Max(1, intensity);
+            Debug.Log($"[GameModeProgressionService] Cached intensity set to {_cachedPlayedIntensity}");
+        }
+
         // ── Intensity Progression Public API ─────────────────────────────────
 
         /// <summary>

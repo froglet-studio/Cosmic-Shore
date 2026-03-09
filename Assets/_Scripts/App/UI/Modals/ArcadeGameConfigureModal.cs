@@ -571,6 +571,9 @@ namespace CosmicShore.App.UI.Modals
                 gameData.SelectedIntensity.Value = config.Intensity;
             gameData.PlayedIntensity = config.Intensity;
 
+            // Store on the DontDestroyOnLoad singleton — immune to Soap resets and scene loads
+            GameModeProgressionService.Instance?.SetCachedPlayedIntensity(config.Intensity);
+
             if (gameData.SelectedPlayerCount)
                 gameData.SelectedPlayerCount.Value = config.PlayerCount;
         }
