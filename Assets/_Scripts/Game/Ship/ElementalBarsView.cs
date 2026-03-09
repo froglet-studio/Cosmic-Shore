@@ -332,6 +332,7 @@ namespace CosmicShore
 
                     var rt = pip.rectTransform;
                     float delay = removedPipIndex * debuffStaggerDelay;
+                    var inactiveSpr = bar.inactiveSprite;
 
                     _pipTweens[idx][p] = rt
                         .DOScale(Vector3.zero, debuffShrinkDuration)
@@ -339,7 +340,7 @@ namespace CosmicShore
                         .SetEase(Ease.InBack)
                         .OnComplete(() =>
                         {
-                            if (bar.inactiveSprite) pip.sprite = bar.inactiveSprite;
+                            if (inactiveSpr) pip.sprite = inactiveSpr;
                             pip.gameObject.SetActive(false);
                             rt.localScale = Vector3.one;
                         });
