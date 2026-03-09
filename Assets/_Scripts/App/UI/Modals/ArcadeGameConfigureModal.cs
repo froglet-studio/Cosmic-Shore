@@ -100,6 +100,13 @@ namespace CosmicShore.App.UI.Modals
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
+
+            var progressionService = GameModeProgressionService.Instance;
+            if (progressionService != null)
+                progressionService.OnProgressionChanged += HandleProgressionChanged;
+
+            // Refresh intensity lock states in case progression changed while modal was inactive
+            RefreshIntensityLockStates();
         }
 
         void OnDisable()
@@ -115,6 +122,10 @@ namespace CosmicShore.App.UI.Modals
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
+
+            var progressionService = GameModeProgressionService.Instance;
+            if (progressionService != null)
+                progressionService.OnProgressionChanged -= HandleProgressionChanged;
         }
 
         #endregion
@@ -377,6 +388,32 @@ namespace CosmicShore.App.UI.Modals
                 : quest.Intensity4GoalDescription;
 
             ToastNotificationAPI.Show(goalDescription);
+        }
+
+        void HandleProgressionChanged(GameModeProgressionData _)
+        {
+            RefreshIntensityLockStates();
+        }
+
+        void RefreshIntensityLockStates()
+        {
+            if (_selectedGame == null) return;
+
+            var progressionService = GameModeProgressionService.Instance;
+            if (progressionService == null) return;
+
+            for (int i = 0; i < intensityButtons.Count; i++)
+            {
+                var button = intensityButtons[i];
+                if (!button) continue;
+
+                int level = i + 1;
+                bool active = level >= _selectedGame.MinIntensity && level <= _selectedGame.MaxIntensity;
+                if (!active) continue;
+
+                bool unlocked = progressionService.IsIntensityUnlocked(_selectedGame.Mode, level);
+                button.SetLocked(!unlocked);
+            }
         }
 
         void HandleConfigChangedExternal()
