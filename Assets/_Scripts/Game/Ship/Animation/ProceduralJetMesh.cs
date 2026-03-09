@@ -10,18 +10,32 @@ public class ProceduralJetMesh : MonoBehaviour
     public float uvScrollSpeed = 1f;
 
     private Mesh mesh;
-    private Vector3[] vertices;
-    private Vector2[] uv;
-    private int[] triangles;
+    private Material _material;
+    private static readonly int UVOffsetID = Shader.PropertyToID("_UVOffset");
+    private bool _shaderSupportsOffset;
 
     void Start()
     {
         GenerateMesh();
+
+        // Try shader-driven UV scroll first (zero CPU cost per frame)
+        var renderer = GetComponent<MeshRenderer>();
+        if (renderer) _material = renderer.material;
+        _shaderSupportsOffset = _material != null && _material.HasProperty(UVOffsetID);
     }
 
     void Update()
     {
-        UpdateUVs();
+        if (_shaderSupportsOffset)
+        {
+            // GPU-driven UV scroll — no mesh upload, no CPU cost
+            _material.SetFloat(UVOffsetID, Time.time * uvScrollSpeed);
+        }
+        else
+        {
+            // Fallback: update UVs on mesh but reuse the existing array (no allocation)
+            UpdateUVs();
+        }
     }
 
     void GenerateMesh()
@@ -29,9 +43,9 @@ public class ProceduralJetMesh : MonoBehaviour
         mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
 
-        vertices = new Vector3[(segments + 1) * 2];
-        uv = new Vector2[(segments + 1) * 2];
-        triangles = new int[segments * 6];
+        var vertices = new Vector3[(segments + 1) * 2];
+        var uv = new Vector2[(segments + 1) * 2];
+        var triangles = new int[segments * 6];
 
         for (int i = 0; i <= segments; i++)
         {
@@ -63,15 +77,21 @@ public class ProceduralJetMesh : MonoBehaviour
         mesh.RecalculateNormals();
     }
 
+    // Cached array — reuse to avoid allocation. Set once from mesh data.
+    private Vector2[] _uvCache;
+
     void UpdateUVs()
     {
+        if (_uvCache == null)
+            _uvCache = mesh.uv;
+
         float offset = Time.time * uvScrollSpeed;
         for (int i = 0; i <= segments; i++)
         {
             float t = (float)i / segments;
-            uv[i * 2].x = (t * uvScale) + offset;
-            uv[i * 2 + 1].x = (t * uvScale) + offset;
+            _uvCache[i * 2].x = (t * uvScale) + offset;
+            _uvCache[i * 2 + 1].x = (t * uvScale) + offset;
         }
-        mesh.uv = uv;
+        mesh.uv = _uvCache;
     }
 }

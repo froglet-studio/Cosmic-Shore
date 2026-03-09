@@ -18,8 +18,11 @@ public class LightFauna : Fauna
 
     [HideInInspector] public float Phase;
 
+    // Pre-allocated buffer — zero allocations per behavior update
+    static readonly Collider[] _overlapBuffer = new Collider[48];
+
     public LightFaunaManager LightFaunaManager { get; set; }
-    
+
     public override void Initialize(Cell cell)
     {
         if (!data)
@@ -68,10 +71,11 @@ public class LightFauna : Fauna
         float separationRadius = Mathf.Max(0f, data.separationRadius);
         float consumeRadius = Mathf.Max(0f, data.consumeRadius);
 
-        var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _overlapBuffer);
 
-        foreach (var collider in nearbyColliders)
+        for (int i = 0; i < hitCount; i++)
         {
+            var collider = _overlapBuffer[i];
             if (!collider || collider.gameObject == gameObject) continue;
 
             Vector3 diff = transform.position - collider.transform.position;
@@ -87,8 +91,7 @@ public class LightFauna : Fauna
             }
 
             // Handle other FaunaPrefab/health prisms
-            var otherHealthBlock = collider.GetComponent<HealthPrism>();
-            if (otherHealthBlock)
+            if (collider.TryGetComponent(out HealthPrism otherHealthBlock))
             {
                 if (otherHealthBlock.LifeForm == this) continue;
 
@@ -104,8 +107,7 @@ public class LightFauna : Fauna
             }
 
             // Handle blocks
-            Prism block = collider.GetComponent<Prism>();
-            if (block && block.Domain != domain && distance < consumeRadius)
+            if (collider.TryGetComponent(out Prism block) && block.Domain != domain && distance < consumeRadius)
                 block.Consume(transform, domain, PLAYER_NAME, true);
         }
 

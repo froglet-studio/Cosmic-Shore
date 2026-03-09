@@ -86,6 +86,13 @@ namespace CosmicShore.Game
         {
             isMobile = MobilePerformanceManager.IsMobile;
 
+            // On mobile, skip the membrane entirely — it's cosmetic and expensive
+            if (isMobile)
+            {
+                enabled = false;
+                return;
+            }
+
             int effectiveSubdivisions = subdivisions;
             if (isMobile && mobileSubdivisionOverride >= 0)
                 effectiveSubdivisions = mobileSubdivisionOverride;

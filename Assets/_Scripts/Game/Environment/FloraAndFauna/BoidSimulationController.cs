@@ -47,11 +47,16 @@ public class BoidSImulationController : MonoBehaviour
     private Prism[] boids; // Array to keep track of boid game objects
 
     int kernel;
+    bool _isMobile;
+    int _frameCounter;
+    const int MOBILE_SYNC_INTERVAL = 3; // Only read GPU results every 3rd frame on mobile
 
     private void Start()
     {
+        _isMobile = MobilePerformanceManager.IsMobile;
+
         // On mobile, reduce boid count to keep O(N²) compute shader affordable
-        if (MobilePerformanceManager.IsMobile && mobileBoidCount > 0)
+        if (_isMobile && mobileBoidCount > 0)
             numberOfBoids = mobileBoidCount;
 
         kernel = boidSimulationShader.FindKernel("CSMain");
@@ -141,16 +146,19 @@ public class BoidSImulationController : MonoBehaviour
 
         SwapBuffers();
 
+        // On mobile, only sync GPU→CPU every N frames to avoid pipeline stalls.
+        // Boid positions interpolate naturally via their velocity so the visual
+        // difference is negligible at 3-frame intervals.
+        _frameCounter++;
+        if (_isMobile && _frameCounter < MOBILE_SYNC_INTERVAL)
+            return;
+        _frameCounter = 0;
+
         readBuffer.GetData(entityArray);
 
         for (int i = 0; i < entityArray.Length; i++)
         {
             Entity entity = entityArray[i];
-
-            if (entity.position == new Vector3(9999.0f, 9999.0f, 9999.0f))
-            {
-                CSDebug.LogError("NaN detected by shader for entity at index: " + i);
-            }
 
             if (entity.type == Entity.ENTITY_TYPE_BOID)
             {

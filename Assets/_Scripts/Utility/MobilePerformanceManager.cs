@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using CosmicShore.Utilities;
 using CosmicShore.Utility;
 
@@ -33,40 +35,86 @@ namespace CosmicShore.Utility
 
         void ApplyMobileSettings()
         {
-            // Uncap or target max refresh rate — 120 on modern devices, no lower than 60
+            // ── Frame Rate ──────────────────────────────────────────────
             Application.targetFrameRate = 120;
             QualitySettings.vSyncCount = 0;
-
-            // Prevent OS from throttling the display
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
-            // Shadows off entirely — the URP asset already has shadows disabled,
-            // but belt-and-suspenders in case a quality level override sneaks in
+            // ── Shadows: completely off ─────────────────────────────────
             QualitySettings.shadows = ShadowQuality.Disable;
             QualitySettings.shadowResolution = ShadowResolution.Low;
+            QualitySettings.shadowDistance = 0f;
 
-            // Particle / reflection budget
-            QualitySettings.particleRaycastBudget = 16;
-            QualitySettings.softParticles = false;
+            // ── Lighting: minimum ───────────────────────────────────────
+            QualitySettings.pixelLightCount = 1;
             QualitySettings.realtimeReflectionProbes = false;
+
+            // ── Textures / Filtering ────────────────────────────────────
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
+            QualitySettings.globalTextureMipmapLimit = 1; // half-res textures
 
-            // Skin weights — two bones is plenty for mobile
-            QualitySettings.skinWeights = SkinWeights.TwoBones;
+            // ── Particles ───────────────────────────────────────────────
+            QualitySettings.particleRaycastBudget = 4;
+            QualitySettings.softParticles = false;
 
-            // LOD bias — push LOD transitions closer to save polys
-            QualitySettings.lodBias = 0.7f;
+            // ── Geometry ────────────────────────────────────────────────
+            QualitySettings.skinWeights = SkinWeights.OneBone;
+            QualitySettings.lodBias = 0.5f;
             QualitySettings.maximumLODLevel = 0;
 
-            // Select lower shader LOD on mobile so the HyperSeaSkybox (and any
-            // future shaders with mobile SubShaders) automatically pick the
-            // reduced-quality variant.
+            // ── Shader LOD: force mobile SubShaders ─────────────────────
             Shader.globalMaximumLOD = 150;
 
-            CSDebug.Log("[MobilePerformanceManager] Mobile optimized: " +
-                        $"targetFrameRate=120, vSync=0, shadows=Disable, " +
-                        $"sleepTimeout=NeverSleep, skinWeights=TwoBones, lodBias=0.7, " +
-                        $"globalMaximumLOD=150");
+            // ── URP runtime overrides ───────────────────────────────────
+            StripURPAtRuntime();
+
+            // ── Kill bloom and vignette via Volume system ───────────────
+            DisablePostProcessing();
+
+            CSDebug.Log("[MobilePerformanceManager] MAXIMUM PERFORMANCE: " +
+                        "targetFPS=120, shadows=OFF, MSAA=OFF, bloom=OFF, " +
+                        "renderScale=0.75, texMip=1, skinWeights=1bone, " +
+                        "pixelLights=1, lodBias=0.5");
+        }
+
+        static void StripURPAtRuntime()
+        {
+            var urpAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            if (urpAsset == null) return;
+
+            // Kill MSAA entirely — biggest single bandwidth win on tiled GPUs
+            urpAsset.msaaSampleCount = 1;
+
+            // Render at 75% resolution — massive fill rate savings
+            urpAsset.renderScale = 0.75f;
+
+            // HDR off (already in asset, belt-and-suspenders)
+            urpAsset.supportsHDR = false;
+
+            // Disable LOD cross-fade (shader variant + alpha cost)
+            urpAsset.enableLODCrossFade = false;
+        }
+
+        static void DisablePostProcessing()
+        {
+            // Find all active Volume components and disable bloom/vignette
+            var volumes = FindObjectsByType<Volume>(FindObjectsSortMode.None);
+            foreach (var vol in volumes)
+            {
+                if (vol.profile == null) continue;
+
+                if (vol.profile.TryGet<Bloom>(out var bloom))
+                    bloom.active = false;
+
+                if (vol.profile.TryGet<Vignette>(out var vignette))
+                    vignette.active = false;
+
+                if (vol.profile.TryGet<MotionBlur>(out var motionBlur))
+                    motionBlur.active = false;
+
+                if (vol.profile.TryGet<ChromaticAberration>(out var chromatic))
+                    chromatic.active = false;
+            }
         }
     }
 }

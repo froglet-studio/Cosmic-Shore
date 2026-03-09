@@ -38,7 +38,7 @@ public class Boid : Fauna
 
     [Header("Mound Settings")]
     public Transform Mound;
-    
+
     [SerializeField]
     Prism healthPrism;
 
@@ -56,7 +56,14 @@ public class Boid : Fauna
 
     List<Collider> separatedBoids = new List<Collider>();
     HealthPrism embeddedHealthPrism;
-    
+
+    // Pre-allocated buffer for OverlapSphereNonAlloc — zero allocations per behavior update
+    static readonly Collider[] _overlapBuffer = new Collider[64];
+
+    // Cache component lookups to avoid GetComponent in hot loop
+    readonly Dictionary<Collider, Boid> _boidCache = new(32);
+    readonly Dictionary<Collider, Prism> _prismCache = new(64);
+
     public BoidManager BoidManager { get; set; }
     public BoidController BoidController { get; set; }
 
@@ -80,20 +87,22 @@ public class Boid : Fauna
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
     }
 
+    WaitForSeconds _behaviorWait;
+
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)
     {
         if (initialDelay > 0f)
             yield return new WaitForSeconds(initialDelay);
 
+        _behaviorWait = new WaitForSeconds(behaviorUpdateRate);
+
         while (true)
         {
             if (!isAttached)
-            {
-                target = Goal;      // Check it later
-            }
+                target = Goal;
 
             CalculateBehavior();
-            yield return new WaitForSeconds(behaviorUpdateRate);
+            yield return _behaviorWait;
         }
     }
 
@@ -121,19 +130,27 @@ public class Boid : Fauna
         float averageSpeed = 0.0f;
         separatedBoids.Clear();
 
-        var boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
-        int colliderCount = boidsInVicinity.Length;
+        // NonAlloc: zero heap allocation per call
+        int colliderCount = Physics.OverlapSphereNonAlloc(transform.position, cohesionRadius, _overlapBuffer);
 
         for (int i = 0; i < colliderCount; i++)
         {
-            Collider collider = boidsInVicinity[i];
+            Collider collider = _overlapBuffer[i];
             if (!collider) continue;
-
-            // Ignore our own collider (if present)
             if (blockCollider && collider.gameObject == blockCollider.gameObject) continue;
 
-            Boid otherBoid = collider.GetComponentInParent<Boid>();
-            Prism otherPrism = collider.GetComponent<Prism>();
+            // Cached component lookups — avoid GetComponent every behavior tick
+            if (!_boidCache.TryGetValue(collider, out var otherBoid))
+            {
+                otherBoid = collider.GetComponentInParent<Boid>();
+                _boidCache[collider] = otherBoid;
+            }
+
+            if (!_prismCache.TryGetValue(collider, out var otherPrism))
+            {
+                collider.TryGetComponent(out otherPrism);
+                _prismCache[collider] = otherPrism;
+            }
 
             Vector3 diff = transform.position - collider.transform.position;
             float distance = diff.magnitude;
@@ -187,7 +204,7 @@ public class Boid : Fauna
             }
         }
 
-        int totalBoids = boidsInVicinity.Length - 1;
+        int totalBoids = colliderCount - 1;
 
         if (totalBoids > 0)
         {
@@ -214,6 +231,8 @@ public class Boid : Fauna
         throw new System.NotImplementedException();
     }
 
+    static readonly Collider[] _moundBuffer = new Collider[32];
+
     IEnumerator AddToMoundCoroutine()
     {
         isAttached = false;
@@ -223,16 +242,17 @@ public class Boid : Fauna
 
         float scanRadius = 30f;
 
-        Collider[] colliders = new Collider[0];
-        while (colliders.Length == 0)
+        int hitCount = 0;
+        while (hitCount == 0)
         {
             int layerIndex = LayerMask.NameToLayer("Mound");
             int layerMask = 1 << layerIndex;
-            colliders = Physics.OverlapSphere(transform.position, scanRadius, layerMask);
+            hitCount = Physics.OverlapSphereNonAlloc(transform.position, scanRadius, _moundBuffer, layerMask);
 
             GyroidAssembler nakedEdge = null;
-            foreach (var collider in colliders)
+            for (int i = 0; i < hitCount; i++)
             {
+                var collider = _moundBuffer[i];
                 nakedEdge = collider.GetComponent<GyroidAssembler>();
                 if (nakedEdge && !nakedEdge.IsFullyBonded() && nakedEdge.preferedBlocks.Count == 0 && (nakedEdge.IsBonded() || nakedEdge.isSeed))
                 {
@@ -246,7 +266,7 @@ public class Boid : Fauna
                 }
             }
 
-            if (!nakedEdge) colliders = new Collider[0];
+            if (!nakedEdge) hitCount = 0;
             yield return null;
         }
 
