@@ -33,18 +33,36 @@ namespace CosmicShore.Utility
 
         void ApplyMobileSettings()
         {
-            Application.targetFrameRate = 60;
-            QualitySettings.shadows = ShadowQuality.HardOnly;
+            // Uncap or target max refresh rate — 120 on modern devices, no lower than 60
+            Application.targetFrameRate = 120;
+            QualitySettings.vSyncCount = 0;
+
+            // Prevent OS from throttling the display
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+
+            // Shadows off entirely — the URP asset already has shadows disabled,
+            // but belt-and-suspenders in case a quality level override sneaks in
+            QualitySettings.shadows = ShadowQuality.Disable;
             QualitySettings.shadowResolution = ShadowResolution.Low;
+
+            // Particle / reflection budget
             QualitySettings.particleRaycastBudget = 16;
             QualitySettings.softParticles = false;
             QualitySettings.realtimeReflectionProbes = false;
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
 
-            CSDebug.Log("[MobilePerformanceManager] Mobile detected. Applied settings: " +
-                        $"targetFrameRate=60, shadows=HardOnly, shadowResolution=Low, " +
-                        $"particleRaycastBudget=16, softParticles=false, " +
-                        $"realtimeReflectionProbes=false, anisotropicFiltering=Disable");
+            // Skin weights — two bones is plenty for mobile
+            QualitySettings.skinWeights = SkinWeights.TwoBones;
+
+            // LOD bias — push LOD transitions closer to save polys
+            QualitySettings.lodBias = 0.7f;
+
+            // Reduce max LOD level (0 = use all LODs including highest detail)
+            QualitySettings.maximumLODLevel = 0;
+
+            CSDebug.Log("[MobilePerformanceManager] Mobile optimized: " +
+                        $"targetFrameRate=120, vSync=0, shadows=Disable, " +
+                        $"sleepTimeout=NeverSleep, skinWeights=TwoBones, lodBias=0.7");
         }
     }
 }
