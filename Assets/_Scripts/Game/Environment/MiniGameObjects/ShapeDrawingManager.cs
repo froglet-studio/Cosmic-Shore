@@ -201,6 +201,15 @@ namespace CosmicShore.Game.ShapeDrawing
             }
         }
 
+        void OnDestroy()
+        {
+            // Clean up runtime-created materials to prevent leaks
+            if (guideLine && guideLine.material)
+                Destroy(guideLine.material);
+            if (ghostLine && ghostLine.material)
+                Destroy(ghostLine.material);
+        }
+
         void Update()
         {
             if (Keyboard.current != null && Keyboard.current[screenshotKey].wasPressedThisFrame)

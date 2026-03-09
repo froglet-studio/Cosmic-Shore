@@ -680,7 +680,7 @@ Shader "CosmicShore/HyperSeaSkybox"
     }
 
     // ================================================================
-    // SHARED FRAGMENT
+    // SHARED FRAGMENT (full quality)
     // ================================================================
 
     half4 hyperSeaFrag(float3 viewDir)
@@ -718,10 +718,77 @@ Shader "CosmicShore/HyperSeaSkybox"
         return half4(color, 1.0);
     }
 
+    // ================================================================
+    // MOBILE FRAGMENT (reduced quality)
+    // Skips: nebulae (3x fbm4), dust lanes (fbm3), Voronoi cells (27-tap),
+    // Andromeda (spiral arms). Keeps: atmosphere, galactic plane, stars, core.
+    // ================================================================
+
+    half4 hyperSeaFragMobile(float3 viewDir)
+    {
+        float3 dir = normalize(viewDir);
+        float time = _Time.y;
+
+        half3 color = computeAmbient(dir, time);
+        color += computeGalacticPlane(dir, time);
+        color += computeStars(dir, time);
+        color += computeCore(dir);
+        color += computeAtmosphereBridge(dir);
+
+        return half4(color, 1.0);
+    }
+
     ENDCG
 
     // ================================================================
-    // SUBSHADER 1: Unity Skybox (RenderSettings.skybox)
+    // SUBSHADER 1: Mobile (reduced quality)
+    // Selected first on mobile GPUs (OpenGL ES 3.0 / Vulkan mobile).
+    // Drops nebulae, dust, Voronoi, Andromeda to save ALU.
+    // ================================================================
+
+    SubShader
+    {
+        Tags
+        {
+            "Queue"="Background"
+            "RenderType"="Background"
+            "PreviewType"="Skybox"
+            "RenderPipeline"="UniversalPipeline"
+        }
+
+        // LOD 100 ensures desktop (LOD 200+) prefers the full SubShader below
+        LOD 100
+
+        Cull Off
+        ZWrite Off
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma target 3.0
+            #pragma only_renderers gles3 vulkan
+
+            v2f vert(appdata v)
+            {
+                v2f o;
+                o.pos = UnityObjectToClipPos(v.vertex);
+                o.viewDir = v.vertex.xyz;
+                return o;
+            }
+
+            half4 frag(v2f i) : SV_Target
+            {
+                return hyperSeaFragMobile(i.viewDir);
+            }
+
+            ENDCG
+        }
+    }
+
+    // ================================================================
+    // SUBSHADER 2: Desktop / Full Quality
     // Used when assigned as a skybox material in Lighting settings.
     // Vertex positions ARE the view directions.
     // ================================================================
@@ -735,6 +802,8 @@ Shader "CosmicShore/HyperSeaSkybox"
             "PreviewType"="Skybox"
             "RenderPipeline"="UniversalPipeline"
         }
+
+        LOD 200
 
         Cull Off
         ZWrite Off
