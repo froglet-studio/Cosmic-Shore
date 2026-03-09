@@ -172,6 +172,13 @@ namespace CosmicShore.Utility
 
             cam.layerCullDistances = distances;
             cam.layerCullSpherical = true; // spherical culling is cheaper for moving cameras
+
+            // ── FXAA: cheapest AA — single post-process pass, no bandwidth cost ──
+            if (cam.TryGetComponent<UniversalAdditionalCameraData>(out var camData))
+            {
+                camData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
+                camData.antialiasingQuality = AntialiasingQuality.High;
+            }
         }
 
         static void DisablePostProcessing()

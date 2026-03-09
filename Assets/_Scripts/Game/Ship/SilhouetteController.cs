@@ -35,6 +35,10 @@ namespace CosmicShore
 
         void OnEnable()
         {
+            // Disable silhouette trail and elemental bars UI for GDC demo
+            if (view) view.gameObject.SetActive(false);
+            if (elementBars) elementBars.gameObject.SetActive(false);
+
             if (vesselPrismController)
             {
                 vesselPrismController.OnBlockCreated += OnBlockCreated;
