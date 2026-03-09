@@ -51,6 +51,19 @@ namespace CosmicShore.App.UI.Modals
                 _disableCoroutine = null;
             }
 
+            // Detect external deactivation (e.g. a button calling SetActive(false) directly
+            // instead of ModalWindowOut). Reset state so the modal can reopen properly.
+            bool wasExternallyDeactivated = isOn && !gameObject.activeSelf;
+            if (wasExternallyDeactivated)
+            {
+                isOn = false;
+
+                // Clean up the modal stack entry that was never popped
+                var switcher = FindAnyObjectByType<ScreenSwitcher>();
+                if (switcher != null)
+                    switcher.PopModal();
+            }
+
             gameObject.SetActive(true);
 
             if (isOn == false)
