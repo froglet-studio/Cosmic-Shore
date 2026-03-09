@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using CosmicShore.Utilities;
 using CosmicShore.Utility;
@@ -41,8 +40,8 @@ namespace CosmicShore.Utility
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
             // ── Shadows: completely off ─────────────────────────────────
-            QualitySettings.shadows = ShadowQuality.Disable;
-            QualitySettings.shadowResolution = ShadowResolution.Low;
+            QualitySettings.shadows = UnityEngine.ShadowQuality.Disable;
+            QualitySettings.shadowResolution = UnityEngine.ShadowResolution.Low;
             QualitySettings.shadowDistance = 0f;
 
             // ── Lighting: minimum ───────────────────────────────────────
@@ -90,9 +89,6 @@ namespace CosmicShore.Utility
 
             // HDR off (already in asset, belt-and-suspenders)
             urpAsset.supportsHDR = false;
-
-            // Disable LOD cross-fade (shader variant + alpha cost)
-            urpAsset.enableLODCrossFade = false;
         }
 
         static void DisablePostProcessing()
