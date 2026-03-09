@@ -190,7 +190,6 @@ namespace CosmicShore.Utility
                 if (vol.profile.TryGet<Bloom>(out var bloom))
                 {
                     bloom.active = true;
-                    bloom.skipIterations.Override(3);
                     bloom.maxIterations.Override(3);
                     bloom.highQualityFiltering.Override(false);
                     bloom.threshold.Override(0.9f);
