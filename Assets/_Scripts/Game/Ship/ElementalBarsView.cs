@@ -9,8 +9,10 @@ namespace CosmicShore
 {
     /// <summary>
     /// Displays 4 element columns, each with 15 discrete pip images.
-    /// Fill pips start disabled. On Build(), first zeroLineIndex (5) are enabled as level-0 baseline.
-    /// Buffs enable pips upward with staggered scale punch. Debuffs disable pips with shake + haptics.
+    /// All pips start inactive. Buffs enable pips upward through 3 color zones:
+    /// normal (first 5), domain (next 5), and super (last 5).
+    /// Debuffs animate reverse deactivation with red coloring, then recover
+    /// through baseline with red before swapping sprites and resuming normal fill.
     /// </summary>
     public class ElementalBarsView : MonoBehaviour
     {
@@ -31,21 +33,26 @@ namespace CosmicShore
 
             [Tooltip("Normal sprite for the label (restored after drift)")]
             public Sprite normalLabelSprite;
+
+            [Tooltip("Sprite shown when pip is inactive")]
+            public Sprite inactiveSprite;
+
+            [Tooltip("Active sprites (5 fill stages, cycled per color zone)")]
+            public Sprite[] activeSprites;
         }
 
         [Header("Bar Bindings")]
         [SerializeField] private ElementBarBinding[] bars = new ElementBarBinding[0];
 
-        [Header("Range")]
-        [Tooltip("Pip index that represents level 0 (e.g. 5 means first 5 pips are negative territory)")]
-        [SerializeField] private int zeroLineIndex = 5;
+        [Header("Color Zones")]
+        [Tooltip("Color for pips in the normal zone (levels 1-5, normalized 0.0-0.5)")]
+        [SerializeField] private Color normalZoneColor = Color.white;
+        [Tooltip("Color for pips in the super zone (levels 11-15, normalized 1.0-1.5)")]
+        [SerializeField] private Color superZoneColor = new(0.3f, 0.6f, 1f, 1f);
+        [Tooltip("Color applied to pips during debuff/overtake recovery")]
+        [SerializeField] private Color debuffColor = new(1f, 0.2f, 0.2f, 1f);
 
-        [Header("Colors")]
-        [SerializeField] private Color filledColor = Color.white;
-        [Tooltip("Fill color when level is below zero")]
-        [SerializeField] private Color negativeFillColor = new(1f, 0.3f, 0.3f, 0.8f);
-        [Tooltip("Color flash on debuff pips before they disappear")]
-        [SerializeField] private Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
+        const int PipsPerZone = 5;
 
         [Header("Juice — Pip Transitions")]
         [Tooltip("Scale multiplier when a pip appears (buff)")]
@@ -54,10 +61,10 @@ namespace CosmicShore
         [SerializeField] private float buffPopDuration = 0.18f;
         [Tooltip("Stagger delay between each pip appearing")]
         [SerializeField] private float buffStaggerDelay = 0.04f;
-        [Tooltip("Duration of the shake-out tween per pip on debuff")]
-        [SerializeField] private float debuffShakeDuration = 0.15f;
-        [Tooltip("Shake strength on debuff pip removal")]
-        [SerializeField] private float debuffShakeStrength = 8f;
+        [Tooltip("Duration of the shrink-out tween per pip on debuff")]
+        [SerializeField] private float debuffShrinkDuration = 0.12f;
+        [Tooltip("Stagger delay between each pip disappearing on debuff")]
+        [SerializeField] private float debuffStaggerDelay = 0.03f;
 
         [Header("Juice — Haptics")]
         [Tooltip("Fire haptic on debuff (element level decrease)")]
@@ -100,8 +107,6 @@ namespace CosmicShore
 
         void Start()
         {
-            // Self-initialize so the baseline pips show even if the controller
-            // chain hasn't called Build() yet (e.g. elementBars not wired on SilhouetteController).
             Build();
         }
 
@@ -138,25 +143,25 @@ namespace CosmicShore
                 int pipCount = bar.fillPips != null ? bar.fillPips.Length : 0;
                 _pipTweens[i] = new Tween[pipCount];
 
-                // Fill pips: first zeroLineIndex enabled (level 0 baseline), rest disabled
+                // All pips start inactive
                 if (bar.fillPips != null)
                 {
                     for (int p = 0; p < bar.fillPips.Length; p++)
                     {
                         var pip = bar.fillPips[p];
                         if (!pip) continue;
-                        pip.gameObject.SetActive(p < zeroLineIndex);
-                        pip.color = filledColor;
+                        pip.gameObject.SetActive(false);
+                        if (bar.inactiveSprite) pip.sprite = bar.inactiveSprite;
+                        pip.color = Color.white;
                         pip.rectTransform.localScale = Vector3.one;
                     }
                 }
 
                 _currentLevels[i] = 0;
-                _barDomainColors[i] = filledColor;
+                _barDomainColors[i] = normalZoneColor;
             }
 
             _built = true;
-            RefreshAllBars();
         }
 
         // ---------------------------------------------------------------
@@ -200,7 +205,8 @@ namespace CosmicShore
         // ---------------------------------------------------------------
 
         /// <summary>
-        /// Set the level for an element. Level is floored at 0 (baseline 5 pips always stay on).
+        /// Set the level for an element with a domain color override.
+        /// Level 0 = all pips inactive. Levels 1-15 activate pips through 3 color zones.
         /// Only overtake penalty can push below zero.
         /// </summary>
         public void SetLevel(Element element, int level, Color domainColor)
@@ -208,7 +214,7 @@ namespace CosmicShore
             int idx = GetBarIndex(element);
             if (idx < 0 || !_built) return;
 
-            // Floor at 0 unless overtake is active — baseline pips never decrease from normal gameplay
+            // Floor at 0 unless overtake is active
             int clamped = _overtakeActive ? level : Mathf.Max(0, level);
 
             _barDomainColors[idx] = domainColor;
@@ -218,13 +224,34 @@ namespace CosmicShore
             RefreshBar(idx, prev);
         }
 
+        /// <summary>
+        /// Set the level for an element, preserving the current domain color.
+        /// </summary>
         public void SetLevel(Element element, int level)
         {
-            SetLevel(element, level, filledColor);
+            int idx = GetBarIndex(element);
+            if (idx < 0 || !_built) return;
+
+            int clamped = _overtakeActive ? level : Mathf.Max(0, level);
+            int prev = _currentLevels[idx];
+            _currentLevels[idx] = clamped;
+
+            RefreshBar(idx, prev);
         }
 
         /// <summary>
-        /// Enter overtake mode — allows levels to go negative (below baseline 5 pips).
+        /// Set the domain color for an element bar (used in the domain zone, pips 5-9).
+        /// </summary>
+        public void SetDomainColor(Element element, Color color)
+        {
+            int idx = GetBarIndex(element);
+            if (idx < 0) return;
+            _barDomainColors[idx] = color;
+            if (_built) RefreshBar(idx, _currentLevels[idx]);
+        }
+
+        /// <summary>
+        /// Enter overtake mode — allows levels to go negative.
         /// Call EndOvertake() when recovery is complete.
         /// </summary>
         public void BeginOvertake()
@@ -233,11 +260,31 @@ namespace CosmicShore
         }
 
         /// <summary>
-        /// Exit overtake mode — levels are floored at 0 again.
+        /// Exit overtake mode — transitions red recovery pips out, resumes normal fill.
         /// </summary>
         public void EndOvertake()
         {
             _overtakeActive = false;
+
+            // Deactivate any remaining recovery pips (swap sprite, clear color)
+            for (int i = 0; i < bars.Length; i++)
+            {
+                ref var bar = ref bars[i];
+                if (bar.fillPips == null) continue;
+
+                for (int p = 0; p < bar.fillPips.Length; p++)
+                {
+                    var pip = bar.fillPips[p];
+                    if (!pip || !pip.gameObject.activeSelf) continue;
+
+                    _pipTweens[i][p]?.Kill();
+
+                    if (bar.inactiveSprite) pip.sprite = bar.inactiveSprite;
+                    pip.color = Color.white;
+                    pip.gameObject.SetActive(false);
+                    pip.rectTransform.localScale = Vector3.one;
+                }
+            }
         }
 
         public void RefreshAllBars()
@@ -254,11 +301,15 @@ namespace CosmicShore
             if (bar.fillPips == null) return;
 
             int pipCount = bar.fillPips.Length;
-            int enabledCount = Mathf.Clamp(level + zeroLineIndex, 0, pipCount);
-            int prevEnabledCount = Mathf.Clamp(previousLevel + zeroLineIndex, 0, pipCount);
-            bool isNegative = level < 0;
-            bool isIncreasing = level > previousLevel;
-            bool isDecreasing = level < previousLevel;
+            bool isRecovering = _overtakeActive && level <= 0;
+            bool wasRecovering = _overtakeActive && previousLevel <= 0;
+
+            // Calculate enabled pip count based on mode
+            int enabledCount = CalculateEnabledCount(level, isRecovering, pipCount);
+            int prevEnabledCount = CalculateEnabledCount(previousLevel, wasRecovering, pipCount);
+
+            bool isIncreasing = enabledCount > prevEnabledCount;
+            bool isDecreasing = enabledCount < prevEnabledCount;
 
             // Haptic on debuff
             if (isDecreasing && hapticOnDebuff)
@@ -266,8 +317,38 @@ namespace CosmicShore
                 HapticController.PlayConstant(debuffHapticAmplitude, debuffHapticFrequency, debuffHapticDuration);
             }
 
-            int newPipIndex = 0; // counter for stagger delay on buff
+            // Handle decreasing pips — reverse stagger from top down
+            if (isDecreasing)
+            {
+                int removedPipIndex = 0;
+                for (int p = prevEnabledCount - 1; p >= enabledCount; p--)
+                {
+                    if (p < 0 || p >= pipCount) continue;
+                    var pip = bar.fillPips[p];
+                    if (!pip) continue;
 
+                    _pipTweens[idx][p]?.Kill();
+                    pip.color = debuffColor;
+
+                    var rt = pip.rectTransform;
+                    float delay = removedPipIndex * debuffStaggerDelay;
+
+                    _pipTweens[idx][p] = rt
+                        .DOScale(Vector3.zero, debuffShrinkDuration)
+                        .SetDelay(delay)
+                        .SetEase(Ease.InBack)
+                        .OnComplete(() =>
+                        {
+                            if (bar.inactiveSprite) pip.sprite = bar.inactiveSprite;
+                            pip.gameObject.SetActive(false);
+                            rt.localScale = Vector3.one;
+                        });
+                    removedPipIndex++;
+                }
+            }
+
+            // Handle increasing and steady-state pips
+            int newPipIndex = 0;
             for (int p = 0; p < pipCount; p++)
             {
                 var pip = bar.fillPips[p];
@@ -276,24 +357,32 @@ namespace CosmicShore
                 bool shouldBeOn = p < enabledCount;
                 bool wasOn = p < prevEnabledCount;
 
-                _pipTweens[idx][p]?.Kill();
-
                 if (shouldBeOn)
                 {
-                    pip.gameObject.SetActive(true);
-                    pip.rectTransform.localScale = Vector3.one;
+                    Color pipColor = isRecovering ? debuffColor : GetZoneColor(p, idx);
 
-                    // Color: negative territory pips get negativeFillColor
-                    pip.color = (p < zeroLineIndex && isNegative)
-                        ? negativeFillColor
-                        : _barDomainColors[idx];
-
-                    // Staggered pop-in for newly enabled pips (buff)
-                    if (isIncreasing && !wasOn)
+                    // Set sprite
+                    if (isRecovering)
                     {
+                        if (bar.inactiveSprite) pip.sprite = bar.inactiveSprite;
+                    }
+                    else if (bar.activeSprites is { Length: > 0 })
+                    {
+                        int spriteIdx = p % Mathf.Min(bar.activeSprites.Length, PipsPerZone);
+                        pip.sprite = bar.activeSprites[spriteIdx];
+                    }
+
+                    if (!wasOn && isIncreasing)
+                    {
+                        // Newly activated pip — staggered pop-in
+                        _pipTweens[idx][p]?.Kill();
+                        pip.gameObject.SetActive(true);
+                        pip.color = pipColor;
+
                         var rt = pip.rectTransform;
                         rt.localScale = Vector3.zero;
                         float delay = newPipIndex * buffStaggerDelay;
+
                         _pipTweens[idx][p] = rt
                             .DOScale(Vector3.one * buffPopScale, buffPopDuration * 0.4f)
                             .SetDelay(delay)
@@ -305,36 +394,43 @@ namespace CosmicShore
                             });
                         newPipIndex++;
                     }
-                }
-                else
-                {
-                    // Shake + flash + shrink-out for newly disabled pips (debuff)
-                    if (isDecreasing && wasOn)
+                    else if (wasOn)
                     {
-                        var rt = pip.rectTransform;
-                        pip.color = debuffFlashColor;
-
-                        // Shake then shrink to zero, then deactivate
-                        _pipTweens[idx][p] = rt
-                            .DOShakePosition(debuffShakeDuration, debuffShakeStrength, 20, 90f, false, false)
-                            .OnComplete(() =>
-                            {
-                                rt.DOScale(Vector3.zero, 0.08f)
-                                    .SetEase(Ease.InBack)
-                                    .OnComplete(() =>
-                                    {
-                                        pip.gameObject.SetActive(false);
-                                        rt.localScale = Vector3.one;
-                                    });
-                            });
-                    }
-                    else
-                    {
-                        pip.gameObject.SetActive(false);
+                        // Already active — update color and sprite only
+                        pip.gameObject.SetActive(true);
+                        pip.color = pipColor;
                         pip.rectTransform.localScale = Vector3.one;
                     }
                 }
+                else if (!shouldBeOn && !wasOn)
+                {
+                    // Was off and should stay off
+                    pip.gameObject.SetActive(false);
+                    pip.rectTransform.localScale = Vector3.one;
+                }
+                // shouldBeOn=false, wasOn=true is handled by the decreasing loop above
             }
+        }
+
+        int CalculateEnabledCount(int level, bool recovering, int pipCount)
+        {
+            if (recovering)
+            {
+                // During overtake recovery: levels -5..0 map to 0..5 pips
+                return Mathf.Clamp(level + PipsPerZone, 0, PipsPerZone);
+            }
+
+            // Normal: levels 0..15 map to 0..15 pips
+            return Mathf.Clamp(level, 0, pipCount);
+        }
+
+        Color GetZoneColor(int pipIndex, int barIdx)
+        {
+            if (pipIndex < PipsPerZone)
+                return normalZoneColor;
+            if (pipIndex < PipsPerZone * 2)
+                return _barDomainColors[barIdx];
+            return superZoneColor;
         }
 
         // ---------------------------------------------------------------
@@ -421,30 +517,9 @@ namespace CosmicShore
             if (hapticOnDebuff)
                 HapticController.PlayConstant(0.8f, 0.7f, 0.25f);
 
+            // Label shake for visual feedback
             for (int i = 0; i < bars.Length; i++)
             {
-                // Flash + shake all active fill pips
-                ref var bar = ref bars[i];
-                if (bar.fillPips != null)
-                {
-                    int enabledCount = Mathf.Clamp(_currentLevels[i] + zeroLineIndex, 0, bar.fillPips.Length);
-                    for (int p = 0; p < enabledCount; p++)
-                    {
-                        var pip = bar.fillPips[p];
-                        if (!pip || !pip.gameObject.activeSelf) continue;
-
-                        _pipTweens[i][p]?.Kill();
-                        pip.color = Color.red;
-                        var origColor = _barDomainColors[i];
-
-                        var rt = pip.rectTransform;
-                        // Shake then color-recover
-                        _pipTweens[i][p] = DOTween.Sequence()
-                            .Append(rt.DOShakePosition(0.3f, 6f, 15, 90f, false, false))
-                            .Join(pip.DOColor(origColor, 0.5f).SetEase(Ease.OutQuad));
-                    }
-                }
-
                 var label = bars[i].labelIcon;
                 if (label)
                 {
