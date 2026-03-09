@@ -218,6 +218,13 @@ namespace CosmicShore
             if (!elementBars) return;
             elementBars.Build();
 
+            // Set domain color so the domain zone (pips 5-9) uses the palette color
+            Color domainColor = ResolveDomainColor();
+            elementBars.SetDomainColor(Element.Charge, domainColor);
+            elementBars.SetDomainColor(Element.Mass, domainColor);
+            elementBars.SetDomainColor(Element.Space, domainColor);
+            elementBars.SetDomainColor(Element.Time, domainColor);
+
             if (_resources != null)
             {
                 _resources.OnElementLevelChange += HandleElementLevelChanged;
@@ -232,6 +239,16 @@ namespace CosmicShore
         void HandleElementLevelChanged(Element element, int level)
         {
             elementBars?.SetLevel(element, level);
+        }
+
+        Color ResolveDomainColor()
+        {
+            if (config && config.useDomainPaletteColors && config.domainPalette)
+            {
+                var dom = _vessel?.VesselStatus?.Domain ?? Domains.Unassigned;
+                return config.domainPalette.Get(dom);
+            }
+            return Color.white;
         }
 
         /// <summary>
