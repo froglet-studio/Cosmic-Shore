@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using CosmicShore.Utilities;
 using CosmicShore.Utility;
