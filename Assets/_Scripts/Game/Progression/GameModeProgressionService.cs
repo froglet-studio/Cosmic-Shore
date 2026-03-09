@@ -577,6 +577,8 @@ namespace CosmicShore.Game.Progression
             switch (quest.IntensityUnlockStatType)
             {
                 case QuestTargetType.CrystalsCollected:
+                    return localStats?.CrystalsCollected ?? 0;
+
                 case QuestTargetType.ScoreAbove:
                 case QuestTargetType.SurvivalTime:
                     return localStats?.Score ?? 0f;
@@ -644,7 +646,7 @@ namespace CosmicShore.Game.Progression
             switch (quest.TargetType)
             {
                 case QuestTargetType.CrystalsCollected:
-                    return localStats?.Score ?? 0f;
+                    return localStats?.CrystalsCollected ?? 0;
 
                 case QuestTargetType.ScoreAbove:
                     return localStats?.Score ?? 0f;
