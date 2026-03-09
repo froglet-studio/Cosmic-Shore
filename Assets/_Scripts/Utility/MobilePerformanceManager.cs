@@ -63,9 +63,6 @@ namespace CosmicShore.Utility
             QualitySettings.lodBias = 0.3f; // aggressive LOD — pop-in is acceptable
             QualitySettings.maximumLODLevel = 0;
 
-            // ── Shader LOD: use standard SubShaders (150 can break post-processing)
-            Shader.globalMaximumLOD = 300;
-
             // ── Physics: reduce simulation overhead ─────────────────────
             ThrottlePhysics();
 
