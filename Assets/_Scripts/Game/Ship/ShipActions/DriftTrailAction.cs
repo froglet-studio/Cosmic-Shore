@@ -9,6 +9,8 @@ public class DriftTrailAction : ShipAction
     public event ChangeDriftAltitude OnChangeDriftAltitude;
     #endregion
 
+    private static readonly WaitForSeconds DotProductInterval = new(0.05f);
+
     VesselPrismController VesselPrismController => VesselStatus.VesselPrismController;
 
     public override void Initialize(IVessel vessel)
@@ -36,7 +38,7 @@ public class DriftTrailAction : ShipAction
             var driftAltitude = Vector3.Dot(Vessel.VesselStatus.Course, Vessel.Transform.forward);
             if (!Vessel.VesselStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
             VesselPrismController.SetDotProduct(driftAltitude);
-            yield return new WaitForSeconds(.05f);
+            yield return DotProductInterval;
         }
     }
 }

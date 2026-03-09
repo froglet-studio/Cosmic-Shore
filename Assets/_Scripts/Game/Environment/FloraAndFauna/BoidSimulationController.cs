@@ -217,13 +217,13 @@ public class BoidSImulationController : MonoBehaviour
 
         foreach (var item in cellItems)
         {
-            if (item.GetComponent<Prism>() && !item.CompareTag("FaunaPrefab"))
+            if (item.TryGetComponent<Prism>(out var prism) && !item.CompareTag("FaunaPrefab"))
             {
                 float distance = Vector3.Distance(position, item.transform.position);
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
-                    closestBlock = item.GetComponent<Prism>();
+                    closestBlock = prism;
                 }
             }
         }
@@ -249,7 +249,14 @@ public class BoidSImulationController : MonoBehaviour
         };
 
         entities.Add(newEntity);
-        boids = new List<Prism>(boids) { newBoid }.ToArray();
+
+        // Resize boids array without triple-allocation
+        var newBoids = new Prism[boids.Length + 1];
+        System.Array.Copy(boids, newBoids, boids.Length);
+        newBoids[boids.Length] = newBoid;
+        boids = newBoids;
+
+        entityArray = entities.ToArray();
 
         readBuffer.Release();
         writeBuffer.Release();

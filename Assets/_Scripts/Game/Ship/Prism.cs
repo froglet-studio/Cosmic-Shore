@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
 using CosmicShore.App.Systems.Audio;
@@ -45,6 +46,9 @@ namespace CosmicShore.Core
         public Action<Prism> OnReturnToPool;
         private bool _initialized;
         private Vector3 _lastDestructionScale = Vector3.one;
+
+        // Cache LayerMask.NameToLayer results to avoid repeated string lookups
+        private static readonly Dictionary<string, int> _layerCache = new(4);
 
         /// <summary>
         /// Index into PrismAOERegistry's contiguous NativeArray.
@@ -185,7 +189,7 @@ namespace CosmicShore.Core
             prismProperties.prism = this;
             prismProperties.Trail = Trail;
             prismProperties.TimeCreated = Time.time;
-            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            gameObject.layer = GetCachedLayer(prismProperties.DefaultLayerName);
 
             prismProperties.volume = 1f;
         }
@@ -361,7 +365,7 @@ namespace CosmicShore.Core
             prismProperties.TimeCreated = Time.time;
             prismProperties.volume   = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
-            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            gameObject.layer = GetCachedLayer(prismProperties.DefaultLayerName);
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,
@@ -388,6 +392,16 @@ namespace CosmicShore.Core
                 meshRenderer.enabled = true;
                 destroyed = false;
             }
+        }
+
+        private static int GetCachedLayer(string layerName)
+        {
+            if (!_layerCache.TryGetValue(layerName, out int layer))
+            {
+                layer = LayerMask.NameToLayer(layerName);
+                _layerCache[layerName] = layer;
+            }
+            return layer;
         }
 
         private void OnDestroy()

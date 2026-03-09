@@ -6,7 +6,6 @@ using CosmicShore.Utilities;
 using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;
@@ -200,12 +199,17 @@ namespace CosmicShore.Core
 
         public SO_TrainingGame GetTrainingGameByMode(GameModes gameMode)
         {
-            return TrainingGames.Games.Where(x => x.Game.Mode == gameMode).FirstOrDefault();
+            return TrainingGameLookup.TryGetValue(gameMode, out var game) ? game : null;
         }
 
         public SO_ArcadeGame GetArcadeGameSOByName(string displayName)
         {
-            return ArcadeGames.Games.Where(x => x.DisplayName == displayName).FirstOrDefault();
+            // Linear scan only when called — these are infrequent UI lookups
+            foreach (var game in ArcadeGames.Games)
+            {
+                if (game.DisplayName == displayName) return game;
+            }
+            return null;
         }
     }
 }

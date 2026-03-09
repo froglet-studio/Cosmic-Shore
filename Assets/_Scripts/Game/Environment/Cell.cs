@@ -1,6 +1,5 @@
 ﻿// Cell.cs
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Soap;
 using UnityEngine;
@@ -320,8 +319,8 @@ namespace CosmicShore.Game
         internal Domains GetHostileDomainToLocalLegacy()
         {
             var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
-            var candidates = new[] { Domains.Ruby, Domains.Gold, Domains.Blue, Domains.Jade };
-            return candidates.First(d => d != local);
+            if (local != Domains.Ruby) return Domains.Ruby;
+            return Domains.Gold;
         }
     }
 }

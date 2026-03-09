@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Core.Visuals;
 using Cysharp.Threading.Tasks;
@@ -113,15 +112,16 @@ namespace CosmicShore.Game
             BlowUpPrismsOverTime(impactor, hitSet, status).Forget();
         }
 
+        private static readonly int TrailBlockLayerMask = LayerMask.GetMask("TrailBlocks");
+
         void RecursiveRaycastDestruction(Prism prism, IVesselStatus status)
         {
             var shipPos = status.ShipTransform.position;
             var dir = shipPos - prism.transform.position;
-            var damage = dir * explosionSpeed; //TODO: use mult
-            if (Physics.Raycast(prism.transform.position, dir, out var hitInfo, dir.magnitude, LayerMask.GetMask("TrailBlocks")))
+            var damage = dir * explosionSpeed;
+            if (Physics.Raycast(prism.transform.position, dir, out var hitInfo, dir.magnitude, TrailBlockLayerMask))
             {
-                Prism hitPrism;
-                if (hitInfo.collider.gameObject.TryGetComponent<Prism>(out hitPrism))
+                if (hitInfo.collider.gameObject.TryGetComponent<Prism>(out var hitPrism))
                 {
                     RecursiveRaycastDestruction(hitPrism, status);
                 }
@@ -129,23 +129,31 @@ namespace CosmicShore.Game
             prism.Damage(damage, Domains.None, status.PlayerName, devastate: true);
         }
 
+        private static readonly List<PrismImpactor> _sortBuffer = new(64);
+
         private async UniTaskVoid BlowUpPrismsOverTime(
-            SkimmerImpactor impactor, 
-            HashSet<PrismImpactor> hitSet, 
+            SkimmerImpactor impactor,
+            HashSet<PrismImpactor> hitSet,
             IVesselStatus status)
         {
             var shipPos = status.ShipTransform ? status.ShipTransform.position : impactor.transform.position;
-            var speed   = Mathf.Max(minBlastSpeed, status.Speed);
 
-            var orderedPrisms = hitSet
-                .Where(p => p && p.Prism)
-                .OrderBy(p => Vector3.Distance(shipPos, p.transform.position));
-
-            foreach (var i in orderedPrisms)
+            // Filter and sort without LINQ allocations
+            _sortBuffer.Clear();
+            foreach (var p in hitSet)
             {
-                RecursiveRaycastDestruction(i.Prism, status);
+                if (p && p.Prism) _sortBuffer.Add(p);
+            }
+            _sortBuffer.Sort((a, b) =>
+            {
+                float da = (shipPos - a.transform.position).sqrMagnitude;
+                float db = (shipPos - b.transform.position).sqrMagnitude;
+                return da.CompareTo(db);
+            });
 
-                // Async delay before hitting the next prism
+            for (int i = 0; i < _sortBuffer.Count; i++)
+            {
+                RecursiveRaycastDestruction(_sortBuffer[i].Prism, status);
                 await UniTask.Delay(TimeSpan.FromSeconds(0.1f));
             }
 

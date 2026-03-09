@@ -39,6 +39,7 @@ namespace CosmicShore
 
         bool firing = false;
         public float firingRate = 1f;
+        private WaitForSeconds _fireWait;
 
         Coroutine fireGunsCoroutine = null;
 
@@ -63,7 +64,8 @@ namespace CosmicShore
         public override void StartAction()
         {
             firing = true;
-            OnFullAutoStarted?.Invoke();   
+            _fireWait = new WaitForSeconds(1f / firingRate);
+            OnFullAutoStarted?.Invoke();
             fireGunsCoroutine = StartCoroutine(FireGunsCoroutine());
         }
 
@@ -94,7 +96,7 @@ namespace CosmicShore
                     ResourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
                     OnVolleyFired?.Invoke(VesselStatus.PlayerName);
                 }
-                yield return new WaitForSeconds(1/firingRate);
+                yield return _fireWait;
             }
         }
     }

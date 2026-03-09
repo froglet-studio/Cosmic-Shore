@@ -19,6 +19,7 @@ public class OverheatingAction : ShipAction
 
     Resource heatResource;
     bool isOverheating = false;
+    private static readonly WaitForSeconds HeatTickWait = new(0.1f);
     
     public float Heat01
     {
@@ -65,7 +66,7 @@ public class OverheatingAction : ShipAction
         while (heatResource.CurrentAmount < heatResource.MaxAmount)
         {
             ResourceSystem.ChangeResourceAmount(heatResourceIndex, heatBuildRate);
-            yield return new WaitForSeconds(0.1f);
+            yield return HeatTickWait;
         }
 
         isOverheating = true;
@@ -87,7 +88,7 @@ public class OverheatingAction : ShipAction
         while (heatResource.CurrentAmount > 0)
         {
             ResourceSystem.ChangeResourceAmount(heatResourceIndex, -heatDecayRate.Value);
-            yield return new WaitForSeconds(0.1f);
+            yield return HeatTickWait;
         }
         OnHeatDecayCompleted?.Invoke();
         heatResource.CurrentAmount = 0;

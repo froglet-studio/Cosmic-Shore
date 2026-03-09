@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Core
@@ -122,11 +121,13 @@ namespace CosmicShore.Core
 
 
             // Validate all remaining active animators are actually animating
-            foreach (var animator in activeAnimators.ToArray())
+            // Use reverse-index loop to safely remove during iteration without ToArray() allocation
+            for (int idx = activeAnimatorsList.Count - 1; idx >= 0; idx--)
             {
-                if (!animator.IsAnimating)
+                var anim = activeAnimatorsList[idx];
+                if (anim != null && !anim.IsAnimating)
                 {
-                    activeAnimators.Remove(animator);
+                    activeAnimators.Remove(anim);
                 }
             }
 

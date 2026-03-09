@@ -19,7 +19,10 @@ public class LightFauna : Fauna
     [HideInInspector] public float Phase;
 
     public LightFaunaManager LightFaunaManager { get; set; }
-    
+
+    // Cached physics buffer to avoid per-call allocations
+    private static readonly Collider[] _overlapBuffer = new Collider[32];
+
     public override void Initialize(Cell cell)
     {
         if (!data)
@@ -42,7 +45,8 @@ public class LightFauna : Fauna
             if (!data)
                 yield break;
 
-            yield return new WaitForSeconds(Mathf.Max(0f, data.behaviorUpdateRate + Phase));
+            float waitTime = Mathf.Max(0f, data.behaviorUpdateRate + Phase);
+            yield return new WaitForSeconds(waitTime);
             UpdateBehavior();
         }
     }
@@ -68,10 +72,11 @@ public class LightFauna : Fauna
         float separationRadius = Mathf.Max(0f, data.separationRadius);
         float consumeRadius = Mathf.Max(0f, data.consumeRadius);
 
-        var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, _overlapBuffer);
 
-        foreach (var collider in nearbyColliders)
+        for (int i = 0; i < hitCount; i++)
         {
+            var collider = _overlapBuffer[i];
             if (!collider || collider.gameObject == gameObject) continue;
 
             Vector3 diff = transform.position - collider.transform.position;

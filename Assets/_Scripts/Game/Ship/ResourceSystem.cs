@@ -11,8 +11,10 @@ namespace CosmicShore.Core
     public class ResourceSystem : ElementalShipComponent
     {
         [SerializeField] public List<Resource> Resources;
-        public event Action<int, float, float> OnResourceChanged; 
+        public event Action<int, float, float> OnResourceChanged;
         public static readonly float OneFuelUnit = 1 / 10f;
+
+        private static readonly WaitForSeconds WaitOneSecond = new(1f);
 
         private void Awake()
         {
@@ -50,7 +52,7 @@ namespace CosmicShore.Core
                     if (!Mathf.Approximately(prev, r.CurrentAmount))
                         EmitResourceChanged(i);
                 }
-                yield return new WaitForSeconds(1);
+                yield return WaitOneSecond;
             }
         }
 

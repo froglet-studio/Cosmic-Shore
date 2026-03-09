@@ -64,6 +64,9 @@ namespace CosmicShore
         [SerializeField] float radius = 40f;
         bool isStopped = true;
 
+        // Cached physics buffer to avoid per-call allocations
+        private static readonly Collider[] _overlapBuffer = new Collider[64];
+
         int depth = -1;
 
         public override int Depth
@@ -376,10 +379,11 @@ namespace CosmicShore
             float closestDistance = float.MaxValue;
             WallAssembler closest = null;
             SiteType bondee = SiteType.Right;
-            var colliders = Physics.OverlapSphere(bondSite, radius); // Adjust radius as needed
-            if (colliders.Length < colliderTheshold) return new BondMate { Mate = null };
-            foreach (var potentialMate in colliders) // Adjust radius as needed
+            int hitCount = Physics.OverlapSphereNonAlloc(bondSite, radius, _overlapBuffer);
+            if (hitCount < colliderTheshold) return new BondMate { Mate = null };
+            for (int idx = 0; idx < hitCount; idx++)
             {
+                var potentialMate = _overlapBuffer[idx];
                 WallAssembler mateComponent = potentialMate.GetComponent<WallAssembler>();
                 if (mateComponent == null)
                 {

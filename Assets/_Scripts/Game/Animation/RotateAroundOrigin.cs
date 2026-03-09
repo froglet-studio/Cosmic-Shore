@@ -10,7 +10,8 @@ namespace CosmicShore.Game.Animation
         void Update()
         {
             float speedT = speed * Time.deltaTime;
-            transform.position = Quaternion.Euler(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT) * transform.position;
+            var rotation = Quaternion.Euler(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT);
+            transform.position = rotation * transform.position;
         }
     }
 }

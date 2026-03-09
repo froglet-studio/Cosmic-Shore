@@ -38,7 +38,7 @@ public class Boid : Fauna
 
     [Header("Mound Settings")]
     public Transform Mound;
-    
+
     [SerializeField]
     Prism healthPrism;
 
@@ -56,9 +56,27 @@ public class Boid : Fauna
 
     List<Collider> separatedBoids = new List<Collider>();
     HealthPrism embeddedHealthPrism;
-    
+
+    // Cached physics buffers to avoid per-call allocations
+    private static readonly Collider[] _overlapBuffer = new Collider[64];
+    private static readonly Collider[] _moundOverlapBuffer = new Collider[16];
+    private static int _moundLayerMask = -1;
+    private static int _moundLayerIndex = -1;
+
+    // Cached WaitForSeconds to avoid per-yield allocations
+    private WaitForSeconds _behaviorWait;
+
     public BoidManager BoidManager { get; set; }
     public BoidController BoidController { get; set; }
+
+    private static void EnsureMoundLayerCached()
+    {
+        if (_moundLayerIndex < 0)
+        {
+            _moundLayerIndex = LayerMask.NameToLayer("Mound");
+            _moundLayerMask = 1 << _moundLayerIndex;
+        }
+    }
 
     public override void Initialize(Cell cell)
     {
@@ -76,6 +94,7 @@ public class Boid : Fauna
         embeddedHealthPrism.ChangeTeam(domain);
 
         currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
+        _behaviorWait = new WaitForSeconds(behaviorUpdateRate);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
     }
@@ -89,11 +108,11 @@ public class Boid : Fauna
         {
             if (!isAttached)
             {
-                target = Goal;      // Check it later
+                target = Goal;
             }
 
             CalculateBehavior();
-            yield return new WaitForSeconds(behaviorUpdateRate);
+            yield return _behaviorWait;
         }
     }
 
@@ -121,12 +140,11 @@ public class Boid : Fauna
         float averageSpeed = 0.0f;
         separatedBoids.Clear();
 
-        var boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
-        int colliderCount = boidsInVicinity.Length;
+        int colliderCount = Physics.OverlapSphereNonAlloc(transform.position, cohesionRadius, _overlapBuffer);
 
         for (int i = 0; i < colliderCount; i++)
         {
-            Collider collider = boidsInVicinity[i];
+            Collider collider = _overlapBuffer[i];
             if (!collider) continue;
 
             // Ignore our own collider (if present)
@@ -187,7 +205,7 @@ public class Boid : Fauna
             }
         }
 
-        int totalBoids = boidsInVicinity.Length - 1;
+        int totalBoids = colliderCount - 1;
 
         if (totalBoids > 0)
         {
@@ -222,18 +240,17 @@ public class Boid : Fauna
         if (Mound) target = Mound.position;
 
         float scanRadius = 30f;
+        EnsureMoundLayerCached();
 
-        Collider[] colliders = new Collider[0];
-        while (colliders.Length == 0)
+        bool foundMate = false;
+        while (!foundMate)
         {
-            int layerIndex = LayerMask.NameToLayer("Mound");
-            int layerMask = 1 << layerIndex;
-            colliders = Physics.OverlapSphere(transform.position, scanRadius, layerMask);
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, scanRadius, _moundOverlapBuffer, _moundLayerMask);
 
             GyroidAssembler nakedEdge = null;
-            foreach (var collider in colliders)
+            for (int i = 0; i < hitCount; i++)
             {
-                nakedEdge = collider.GetComponent<GyroidAssembler>();
+                nakedEdge = _moundOverlapBuffer[i].GetComponent<GyroidAssembler>();
                 if (nakedEdge && !nakedEdge.IsFullyBonded() && nakedEdge.preferedBlocks.Count == 0 && (nakedEdge.IsBonded() || nakedEdge.isSeed))
                 {
                     (var newBlock1, var gyroidBlock1) = NewBlock();
@@ -242,12 +259,13 @@ public class Boid : Fauna
 
                     nakedEdge.Depth = 1;
                     nakedEdge.StartBonding();
+                    foundMate = true;
                     break;
                 }
             }
 
-            if (!nakedEdge) colliders = new Collider[0];
-            yield return null;
+            if (!foundMate)
+                yield return null;
         }
 
         isTraveling = false;
@@ -260,9 +278,10 @@ public class Boid : Fauna
 
     private (Prism, GyroidAssembler) NewBlock()
     {
+        EnsureMoundLayerCached();
         var newBlock = Instantiate(healthPrism, transform.position, transform.rotation, transform);
         newBlock.ChangeTeam(domain);
-        newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
+        newBlock.gameObject.layer = _moundLayerIndex;
         newBlock.prismProperties = new() { prism = newBlock };
         var gyroidBlock = newBlock.gameObject.AddComponent<GyroidAssembler>();
         return (newBlock, gyroidBlock);

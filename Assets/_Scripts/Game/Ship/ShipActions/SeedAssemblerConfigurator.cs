@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
@@ -44,7 +43,8 @@ namespace CosmicShore
 
             rs.ChangeResourceAmount(shieldResourceIndex, -cost);
 
-            var trailBlockGO = controller?.Trail?.TrailList?.LastOrDefault()?.gameObject;
+            var trailList = controller?.Trail?.TrailList;
+            var trailBlockGO = (trailList != null && trailList.Count > 0) ? trailList[trailList.Count - 1]?.gameObject : null;
             if (trailBlockGO == null || assemblerPrefab == null) return false;
 
             _activeSeedBlock = trailBlockGO.GetComponent<Prism>();

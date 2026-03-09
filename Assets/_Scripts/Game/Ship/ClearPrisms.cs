@@ -24,8 +24,12 @@ namespace CosmicShore
 
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
-        
+
         bool isInitialized;
+
+        // Cached to avoid per-frame allocations in OnTriggerStay
+        private static readonly int AlphaPropertyID = Shader.PropertyToID("_Alpha");
+        private readonly MaterialPropertyBlock _mpb = new();
 
 
         private void OnEnable()
@@ -101,9 +105,11 @@ namespace CosmicShore
 
         private void OnTriggerStay(Collider other)
         {
-            Renderer renderer = other.GetComponent<Renderer>();
-            if (renderer != null)
-                renderer.material.SetFloat("_Alpha", scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData)/ capsuleRadius));
+            if (!other.TryGetComponent<Renderer>(out var renderer)) return;
+            float alpha = scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData) / capsuleRadius);
+            renderer.GetPropertyBlock(_mpb);
+            _mpb.SetFloat(AlphaPropertyID, alpha);
+            renderer.SetPropertyBlock(_mpb);
         }
 
         void OnTriggerExit(Collider other)

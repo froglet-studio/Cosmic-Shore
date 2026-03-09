@@ -17,6 +17,8 @@ public class ChargedFireGunAction : ShipAction
 
     public float ProjectileScale = 1f;
 
+    private static readonly WaitForSeconds ChargeWait = new(0.1f);
+
     Coroutine gainEnergy;
 
     public override void Initialize(IVessel vessel)
@@ -35,7 +37,7 @@ public class ChargedFireGunAction : ShipAction
         var chargePeriod = .1f;
         while (ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount < ResourceSystem.Resources[EnergyResourceIndex].MaxAmount)
         {
-            yield return new WaitForSeconds(chargePeriod);
+            yield return ChargeWait;
             ResourceSystem.ChangeResourceAmount(EnergyResourceIndex, chargePerSecond * chargePeriod);
         }
     }
@@ -44,7 +46,7 @@ public class ChargedFireGunAction : ShipAction
 
     IEnumerator CheckProjectiles()
     {
-        while (projectileContainer.GetComponentsInChildren<Projectile>().Length > 0)
+        while (projectileContainer.GetComponentInChildren<Projectile>() != null)
         {
             VesselStatus.HasLiveProjectiles = true;
             yield return null;

@@ -29,6 +29,7 @@ public class ChargeBoostAction : ShipAction
     bool resourceStoresNormalized = true;
     private bool  _charging;
     private float _cooldownUntilUtc;
+    private WaitForSeconds _tickWait;
 
     public event Action<float> OnChargeStarted, OnChargeProgress, OnDischargeStarted, OnDischargeProgress;
     public event Action OnChargeEnded, OnDischargeEnded;
@@ -55,6 +56,7 @@ public class ChargeBoostAction : ShipAction
         }
 
         _charging = true;
+        _tickWait ??= new WaitForSeconds(tickSeconds);
 
         // preview multiplier (optional), but vessel speed shouldn’t use it yet
         var start = GetUnits();
@@ -99,7 +101,7 @@ public class ChargeBoostAction : ShipAction
 
             if (v >= maxNormalizedCharge - 1e-4f) break;
 
-            yield return new WaitForSeconds(tickSeconds);
+            yield return _tickWait;
         }
 
         _charging = false;
@@ -124,7 +126,7 @@ public class ChargeBoostAction : ShipAction
 
             AddUnits(-perTick);
 
-            yield return new WaitForSeconds(tickSeconds);
+            yield return _tickWait;
         }
 
         SetUnits(0f);

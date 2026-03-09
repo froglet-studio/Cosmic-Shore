@@ -12,6 +12,10 @@ namespace CosmicShore.Core.Visuals
     {
         private static readonly Dictionary<Renderer, Coroutine> BlendMap = new();
 
+        // Cached shader property IDs — avoids string hashing every frame in BlendRoutine
+        private static readonly int ColorID = Shader.PropertyToID("_Color");
+        private static readonly int EmissionColorID = Shader.PropertyToID("_EmissionColor");
+
         // Runner component used to host coroutines without scene dependencies
         private sealed class BlendRunner : MonoBehaviour { }
 
@@ -80,15 +84,13 @@ namespace CosmicShore.Core.Visuals
 
             // property block fallback
             var mpb = new MaterialPropertyBlock();
-            int colorID = Shader.PropertyToID("_Color");
-            int emisID = Shader.PropertyToID("_EmissionColor");
-            bool hasColor = fromMat.HasProperty(colorID) && toMat.HasProperty(colorID);
-            bool hasEmis = fromMat.HasProperty(emisID) && toMat.HasProperty(emisID);
+            bool hasColor = fromMat.HasProperty(ColorID) && toMat.HasProperty(ColorID);
+            bool hasEmis = fromMat.HasProperty(EmissionColorID) && toMat.HasProperty(EmissionColorID);
 
-            Color fromColor = hasColor ? fromMat.GetColor(colorID) : Color.white;
-            Color toColor   = hasColor ? toMat.GetColor(colorID)   : Color.white;
-            Color fromEmis  = hasEmis  ? fromMat.GetColor(emisID)  : Color.black;
-            Color toEmis    = hasEmis  ? toMat.GetColor(emisID)    : Color.black;
+            Color fromColor = hasColor ? fromMat.GetColor(ColorID) : Color.white;
+            Color toColor   = hasColor ? toMat.GetColor(ColorID)   : Color.white;
+            Color fromEmis  = hasEmis  ? fromMat.GetColor(EmissionColorID)  : Color.black;
+            Color toEmis    = hasEmis  ? toMat.GetColor(EmissionColorID)    : Color.black;
 
             while (t < duration)
             {
@@ -101,8 +103,8 @@ namespace CosmicShore.Core.Visuals
                 else
                 {
                     renderer.GetPropertyBlock(mpb);
-                    if (hasColor) mpb.SetColor(colorID, Color.Lerp(fromColor, toColor, a));
-                    if (hasEmis)  mpb.SetColor(emisID,  Color.Lerp(fromEmis,  toEmis,  a));
+                    if (hasColor) mpb.SetColor(ColorID, Color.Lerp(fromColor, toColor, a));
+                    if (hasEmis)  mpb.SetColor(EmissionColorID,  Color.Lerp(fromEmis,  toEmis,  a));
                     renderer.SetPropertyBlock(mpb);
                 }
 
@@ -118,8 +120,8 @@ namespace CosmicShore.Core.Visuals
             else
             {
                 renderer.GetPropertyBlock(mpb);
-                if (hasColor) mpb.SetColor(colorID, toColor);
-                if (hasEmis)  mpb.SetColor(emisID,  toEmis);
+                if (hasColor) mpb.SetColor(ColorID, toColor);
+                if (hasEmis)  mpb.SetColor(EmissionColorID,  toEmis);
                 renderer.SetPropertyBlock(mpb);
             }
 

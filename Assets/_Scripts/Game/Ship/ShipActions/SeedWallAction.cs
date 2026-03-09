@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Game;
 
@@ -27,7 +26,8 @@ namespace CosmicShore
             if (ResourceSystem.Resources[resourceIndex].CurrentAmount > resourceCost)
             {
                 ResourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
-                var BlockObject = controller.Trail.TrailList.Last().gameObject;
+                var trailList = controller.Trail.TrailList;
+                var BlockObject = trailList[trailList.Count - 1].gameObject;
                 BlockObject.GetComponent<Prism>().ActivateSuperShield();
                 var assembler = BlockObject.AddComponent<GyroidAssembler>();
                 assembler.Depth = 50;

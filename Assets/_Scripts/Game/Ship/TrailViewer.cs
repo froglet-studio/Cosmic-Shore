@@ -1,8 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore.Core;
-using System;
-using System.Linq;
 using CosmicShore.Utility;
 
 
@@ -16,9 +14,10 @@ public class TrailViewer : MonoBehaviour
     private Trail attachedTrail;
 
     List<Prism> transparentBlocks = new();
-    //List<Material> savedMaterials = new();
     Dictionary<Prism, Material> originalMaterials = new Dictionary<Prism, Material>();
 
+    // Cache renderers to avoid repeated GetComponent calls every frame
+    Dictionary<Prism, Renderer> rendererCache = new Dictionary<Prism, Renderer>();
 
     void Start()
     {
@@ -28,18 +27,26 @@ public class TrailViewer : MonoBehaviour
         lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
     }
 
+    Renderer GetCachedRenderer(Prism block)
+    {
+        if (!rendererCache.TryGetValue(block, out var rend))
+        {
+            rend = block.GetComponent<Renderer>();
+            if (rend) rendererCache[block] = rend;
+        }
+        return rend;
+    }
 
     void Update()
     {
         if (transparentBlocks != null)
         {
-            CSDebug.Log("Number of entries in originalMaterials: " + originalMaterials.Count);
             foreach (Prism block in transparentBlocks)
             {
-                if (block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+                var rend = GetCachedRenderer(block);
+                if (rend && rend.sharedMaterial.Equals(TransparentMaterial))
                 {
-                    CSDebug.Log("restoring material");
-                    block.GetComponent<Renderer>().sharedMaterial = originalMaterials[block];  // Retrieve the original material
+                    rend.sharedMaterial = originalMaterials[block];
                 }
             }
             transparentBlocks.Clear();
@@ -57,26 +64,24 @@ public class TrailViewer : MonoBehaviour
         // Set materials of blocks in view distance
         for (int i = attachedBlockIndex - radiusInBlocks; i < attachedBlockIndex + radiusInBlocks; i++)
         {
-            Material tempMaterial;
             if (i >= attachedTrail.TrailList.Count - 1 || i <= 0) continue;
             var block = attachedTrail.TrailList[i];
-            if (!block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+            var rend = GetCachedRenderer(block);
+            if (rend && !rend.sharedMaterial.Equals(TransparentMaterial))
             {
-                CSDebug.Log("set material");
-                tempMaterial = (block.GetComponent<Renderer>().material);
-                block.GetComponent<Renderer>().sharedMaterial = TransparentMaterial;
+                var tempMaterial = rend.material;
+                rend.sharedMaterial = TransparentMaterial;
                 transparentBlocks.Add(block);
                 originalMaterials[block] = tempMaterial;
             }
         }
 
-        // Draw line
+        // Draw line — use indexed loop instead of IndexOf which is O(n) per call
         lineRenderer.positionCount = transparentBlocks.Count;
-        foreach (Prism block in transparentBlocks)
+        for (int i = 0; i < transparentBlocks.Count; i++)
         {
-            lineRenderer.SetPosition(transparentBlocks.IndexOf(block), block.transform.position);
+            lineRenderer.SetPosition(i, transparentBlocks[i].transform.position);
         }
         lineRenderer.enabled = true;
-
     }
 }
