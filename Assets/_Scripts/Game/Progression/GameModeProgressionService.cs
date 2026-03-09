@@ -107,8 +107,8 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
-            // Freestyle is always available
-            if (mode == GameModes.Freestyle)
+            // Freestyle and HexRace are always available for first-time users
+            if (mode == GameModes.Freestyle || mode == GameModes.HexRace)
                 return true;
 
             // First quest mode is always unlocked
@@ -711,6 +711,11 @@ namespace CosmicShore.Game.Progression
             string firstMode = questList.Quests[0].GameMode.ToString();
             ProgressionData.MarkUnlocked(firstMode);
             ProgressionData.EnsureIntensityInitialized(firstMode);
+
+            // HexRace is always available for first-time users
+            string hexRace = GameModes.HexRace.ToString();
+            ProgressionData.MarkUnlocked(hexRace);
+            ProgressionData.EnsureIntensityInitialized(hexRace);
         }
 
         /// <summary>
