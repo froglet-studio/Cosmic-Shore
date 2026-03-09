@@ -514,7 +514,7 @@ namespace CosmicShore.Game.Progression
             // Intensity-based quests: track play counts and unlock tiers
             if (quest.TargetType == QuestTargetType.IntensityUnlocked)
             {
-                int playedIntensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
+                int playedIntensity = gameData.PlayedIntensity;
                 float statValue = ExtractStatForIntensityGoal(quest);
                 RecordIntensityPlay(mode, quest, playedIntensity, statValue);
                 return;

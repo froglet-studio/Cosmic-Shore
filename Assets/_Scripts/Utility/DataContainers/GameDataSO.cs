@@ -58,6 +58,11 @@ namespace CosmicShore.Soap
         // Game Config / State
         public string SceneName;
         public GameModes GameMode;
+        /// <summary>
+        /// Plain int copy of SelectedIntensity that survives Soap's scene-load reset.
+        /// Set by Arcade.cs alongside SelectedIntensity.Value. Read at game end.
+        /// </summary>
+        public int PlayedIntensity = 1;
         public string LocalPlayerDisplayName;
         public int LocalPlayerAvatarId;
         public bool IsDailyChallenge;
@@ -203,7 +208,8 @@ namespace CosmicShore.Soap
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
-            
+            PlayedIntensity = 1;
+
             ResetRuntimeData();
             
             DomainAssigner.Initialize();

@@ -569,6 +569,7 @@ namespace CosmicShore.App.UI.Modals
 
             if (gameData.SelectedIntensity)
                 gameData.SelectedIntensity.Value = config.Intensity;
+            gameData.PlayedIntensity = config.Intensity;
 
             if (gameData.SelectedPlayerCount)
                 gameData.SelectedPlayerCount.Value = config.PlayerCount;

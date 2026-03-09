@@ -69,6 +69,7 @@ namespace CosmicShore.Core
             gameData.GameMode = gameMode;
             gameData.SelectedPlayerCount.Value = 1;
             gameData.SelectedIntensity.Value = intensity;
+            gameData.PlayedIntensity = intensity;
             gameData.SceneName = MissionLookup[gameMode].SceneName;
             gameData.InvokeGameLaunch();
             
@@ -107,6 +108,7 @@ namespace CosmicShore.Core
             gameData.GameMode = gameMode;
             gameData.SelectedPlayerCount.Value = numberOfPlayers;
             gameData.SelectedIntensity.Value = intensity;
+            gameData.PlayedIntensity = intensity;
             gameData.selectedVesselClass.Value = vessel;
 
             // For multiplayer-capable games with only 1 human player, run locally with AI
@@ -171,6 +173,7 @@ namespace CosmicShore.Core
             gameData.GameMode = gameMode;
             gameData.SelectedPlayerCount.Value = numberOfPlayers;
             gameData.SelectedIntensity.Value = intensity;
+            gameData.PlayedIntensity = intensity;
             gameData.selectedVesselClass.Value = vessel;
             gameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
             gameData.InvokeGameLaunch();
