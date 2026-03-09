@@ -17,7 +17,10 @@ namespace CosmicShore.App.Systems.CloudData
         {
             data.UnlockedModes ??= new List<string>();
             data.CompletedQuests ??= new List<string>();
+            data.UnlockedFeatures ??= new List<string>();
             data.BestStats ??= new Dictionary<string, float>();
+            data.MaxUnlockedIntensity ??= new Dictionary<string, int>();
+            data.IntensityPlayCounts ??= new Dictionary<string, int>();
         }
     }
 }
