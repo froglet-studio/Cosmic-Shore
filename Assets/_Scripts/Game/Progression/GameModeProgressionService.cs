@@ -123,8 +123,17 @@ namespace CosmicShore.Game.Progression
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             // Re-validate subscription after scene transitions.
-            // ScriptableObject events can silently break if the SO is reloaded.
             SubscribeToGameEnd();
+
+            // Soap's ScriptableVariable resets SelectedIntensity to 1 on scene load.
+            // Restore the correct value so ALL game systems (environment, AI, cells, etc.)
+            // read the right intensity. This fires after Soap's reset but before Start().
+            if (_cachedPlayedIntensity > 1 && gameData != null && gameData.SelectedIntensity != null)
+            {
+                gameData.SelectedIntensity.Value = _cachedPlayedIntensity;
+                gameData.PlayedIntensity = _cachedPlayedIntensity;
+                Debug.Log($"[GameModeProgressionService] Restored SelectedIntensity to {_cachedPlayedIntensity} after scene load");
+            }
         }
 
         void SubscribeToGameEnd()
