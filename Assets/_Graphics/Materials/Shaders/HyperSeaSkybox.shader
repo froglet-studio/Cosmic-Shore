@@ -768,7 +768,7 @@ Shader "CosmicShore/HyperSeaSkybox"
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 3.0
-            #pragma only_renderers gles3 vulkan
+            #pragma only_renderers gles3 vulkan metal
 
             v2f vert(appdata v)
             {
