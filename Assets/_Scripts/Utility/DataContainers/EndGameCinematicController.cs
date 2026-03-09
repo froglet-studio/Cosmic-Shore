@@ -356,7 +356,7 @@ namespace CosmicShore.Game.Cinematics
                 var service = GameModeProgressionService.Instance;
                 if (service != null)
                 {
-                    int playedIntensity = gameData.PlayedIntensity;
+                    int playedIntensity = service.GetCachedPlayedIntensity();
                     int maxUnlocked = service.GetMaxUnlockedIntensity(gameData.GameMode);
 
                     // If the player just played at intensity N and N+1 is now unlocked, they unlocked it this game

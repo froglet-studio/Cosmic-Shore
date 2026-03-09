@@ -33,6 +33,11 @@ namespace CosmicShore.Game.Arcade
 
         protected override void OnReadyClicked_()
         {
+            if (gameData.LocalPlayer == null)
+            {
+                Debug.LogWarning("[MultiplayerDomainGamesController] OnReadyClicked_ skipped — LocalPlayer is null.");
+                return;
+            }
             RaiseToggleReadyButtonEvent(false);
             OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
         }

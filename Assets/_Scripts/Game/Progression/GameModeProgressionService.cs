@@ -41,6 +41,12 @@ namespace CosmicShore.Game.Progression
         /// <summary>Tracks whether we have an active subscription to OnMiniGameEnd.</summary>
         private bool _subscribedToGameEnd;
 
+        /// <summary>
+        /// Cached intensity from game launch. SelectedIntensity (Soap IntVariable) resets
+        /// on scene load, so we snapshot it here before the scene transition wipes it.
+        /// </summary>
+        private int _cachedPlayedIntensity = 1;
+
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -59,6 +65,10 @@ namespace CosmicShore.Game.Progression
             // for DontDestroyOnLoad singletons that must survive scene transitions.
             SubscribeToGameEnd();
 
+            // Snapshot intensity at launch time, before Soap resets SelectedIntensity on scene load.
+            if (gameData != null)
+                gameData.OnLaunchGameScene += CaptureIntensityOnLaunch;
+
             // Re-validate subscription after every scene load (defensive).
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -70,6 +80,8 @@ namespace CosmicShore.Game.Progression
 
             SceneManager.sceneLoaded -= OnSceneLoaded;
             UnsubscribeFromGameEnd();
+            if (gameData != null)
+                gameData.OnLaunchGameScene -= CaptureIntensityOnLaunch;
 
             var ds = UGSDataService.Instance;
             if (ds != null)
@@ -88,6 +100,17 @@ namespace CosmicShore.Game.Progression
                     HandleDataServiceReady();
                 else
                     ds.OnInitialized += HandleDataServiceReady;
+            }
+        }
+
+        void CaptureIntensityOnLaunch()
+        {
+            // Snapshot the intensity NOW, while SelectedIntensity still has the correct value.
+            // After the scene loads, Soap's ScriptableVariable resets it to 1.
+            if (gameData != null && gameData.SelectedIntensity != null)
+            {
+                _cachedPlayedIntensity = gameData.SelectedIntensity.Value;
+                Debug.Log($"[GameModeProgressionService] Captured intensity on launch: {_cachedPlayedIntensity}");
             }
         }
 
@@ -359,6 +382,12 @@ namespace CosmicShore.Game.Progression
             CSDebug.Log($"[GameModeProgressionService] Debug: Set {mode} max intensity to {maxIntensity}.");
         }
 
+        /// <summary>
+        /// Returns the intensity level captured at game launch time.
+        /// Use this instead of gameData.SelectedIntensity which gets reset by Soap on scene load.
+        /// </summary>
+        public int GetCachedPlayedIntensity() => _cachedPlayedIntensity;
+
         // ── Intensity Progression Public API ─────────────────────────────────
 
         /// <summary>
@@ -514,7 +543,7 @@ namespace CosmicShore.Game.Progression
             // Intensity-based quests: track play counts and unlock tiers
             if (quest.TargetType == QuestTargetType.IntensityUnlocked)
             {
-                int playedIntensity = gameData.PlayedIntensity;
+                int playedIntensity = _cachedPlayedIntensity;
                 float statValue = ExtractStatForIntensityGoal(quest);
                 RecordIntensityPlay(mode, quest, playedIntensity, statValue);
                 return;
