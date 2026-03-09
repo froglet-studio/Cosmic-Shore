@@ -85,10 +85,10 @@ namespace CosmicShore.Utility
             DisablePostProcessing();
 
             CSDebug.Log("[MobilePerformanceManager] BRUTAL PERFORMANCE: " +
-                        "targetFPS=120, shadows=OFF, MSAA=OFF, HDR=OFF, " +
-                        "renderScale=0.7, texMip=1, skinWeights=1bone, " +
-                        "pixelLights=1, lodBias=0.3, farClip=300, " +
-                        "fixedDT=0.02, physics3D-autoSync=OFF, " +
+                        "targetFPS=120, shadows=OFF, MSAA=OFF, HDR=ON, " +
+                        "bloom=ON(mobile), renderScale=0.7, texMip=1, " +
+                        "skinWeights=1bone, pixelLights=1, lodBias=0.3, " +
+                        "farClip=300, fixedDT=0.02, physics3D-autoSync=OFF, " +
                         "audioVoices=16, incrementalGC=ON");
         }
 
@@ -103,8 +103,8 @@ namespace CosmicShore.Utility
             // Render at 70% resolution — aggressive fill rate savings
             urpAsset.renderScale = 0.7f;
 
-            // HDR off — saves bandwidth on tiled GPUs
-            urpAsset.supportsHDR = false;
+            // HDR stays ON — required for bloom which provides cheap edge softening
+            // The bandwidth cost is offset by the AA benefit without needing MSAA
 
             // Disable depth & opaque textures — avoids extra full-screen copies
             urpAsset.supportsCameraDepthTexture = false;
@@ -179,14 +179,24 @@ namespace CosmicShore.Utility
 
         static void DisablePostProcessing()
         {
-            // Find all active Volume components and disable everything expensive
+            // Find all active Volume components — keep bloom for cheap AA, kill everything else
             var volumes = FindObjectsByType<Volume>(FindObjectsSortMode.None);
             foreach (var vol in volumes)
             {
                 if (vol.profile == null) continue;
 
+                // Bloom stays active — provides edge softening (cheap AA substitute)
+                // Tune it down for mobile: fewer iterations, higher threshold
                 if (vol.profile.TryGet<Bloom>(out var bloom))
-                    bloom.active = false;
+                {
+                    bloom.active = true;
+                    bloom.skipIterations.Override(3);
+                    bloom.maxIterations.Override(3);
+                    bloom.highQualityFiltering.Override(false);
+                    bloom.threshold.Override(0.9f);
+                    bloom.intensity.Override(0.8f);
+                    bloom.scatter.Override(0.6f);
+                }
 
                 if (vol.profile.TryGet<Vignette>(out var vignette))
                     vignette.active = false;
