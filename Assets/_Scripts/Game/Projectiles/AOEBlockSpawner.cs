@@ -16,6 +16,11 @@ namespace CosmicShore.Game.Projectiles
         {
             try
             {
+                // AOEExplosion.Initialize() zeroes localScale to hide the explosion
+                // mesh during its delay. This subclass doesn't use the base explosion
+                // animation, so restore scale before spawning children.
+                transform.localScale = Vector3.one;
+
                 for (int i = 0; i < repetitions; i++)
                 {
                     var position = Vessel.Transform.position;

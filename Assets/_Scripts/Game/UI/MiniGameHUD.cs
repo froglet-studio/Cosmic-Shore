@@ -39,6 +39,8 @@ namespace CosmicShore.Game.UI
         [SerializeField] private PreGameCinematicController preGameCinematic;
         [SerializeField] private Vector3 cinematicLookAtCenter = Vector3.zero;
         [SerializeField] private bool enablePreGameCinematic = true;
+        [Tooltip("Maps game modes to pre-game cinematic camera setups. If assigned, overrides default orbit.")]
+        [SerializeField] private PreGameCinematicLibrarySO preGameCinematicLibrary;
 
         [Header("AI Tracking")]
         [SerializeField] protected bool isAIAvailable;
@@ -358,7 +360,7 @@ namespace CosmicShore.Game.UI
             UpdateLifeformCounterDisplay("0");
             view.UpdateScoreUI("0");
 
-            view.ToggleConnectingPanel(true);
+            view.ToggleConnectingPanel(true, gameData != null ? gameData.GameMode : GameModes.Random);
             ToggleReadyButton(false);
 
             RunConnectingMinimum().Forget();
@@ -390,6 +392,8 @@ namespace CosmicShore.Game.UI
                     Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
                     if (playerTarget != null)
                     {
+                        ConfigureCinematicForGameMode();
+
                         bool cinematicDone = false;
                         preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
                         preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
@@ -402,6 +406,29 @@ namespace CosmicShore.Game.UI
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException) { }
+        }
+
+        private void ConfigureCinematicForGameMode()
+        {
+            if (preGameCinematicLibrary == null || gameData == null) return;
+
+            var setup = preGameCinematicLibrary.GetSetup(gameData.GameMode);
+            if (setup == null) return;
+
+            preGameCinematic.SetSetup(setup);
+
+            // Collect all player vessel transforms for PlayerShowcase mode
+            if (setup.cinematicType == PreGameCinematicType.PlayerShowcase && gameData.Players != null)
+            {
+                var transforms = new List<Transform>();
+                foreach (var player in gameData.Players)
+                {
+                    var vesselTransform = player.Vessel?.Transform;
+                    if (vesselTransform != null)
+                        transforms.Add(vesselTransform);
+                }
+                preGameCinematic.SetPlayerTransforms(transforms);
+            }
         }
 
         private void OnMoundDroneSpawned(int count)

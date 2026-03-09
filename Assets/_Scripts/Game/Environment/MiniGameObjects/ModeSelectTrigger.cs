@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Utility;
+using UnityEngine;
 using UnityEngine.Events;
 
 namespace CosmicShore.Game.ShapeDrawing
@@ -40,7 +41,7 @@ namespace CosmicShore.Game.ShapeDrawing
         void ActivateTrigger()
         {
             _triggered = true;
-            Debug.Log($"[ModeSelectTrigger] Selected: {(ShapeToLoad ? ShapeToLoad.shapeName : "Freestyle")}");
+            CSDebug.Log($"[ModeSelectTrigger] Selected: {(ShapeToLoad ? ShapeToLoad.shapeName : "Freestyle")}");
             
             // Visual feedback: Shrink or explode the text
             // [Visual Note] Play a "Selection" sound here

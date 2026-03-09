@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe7d6a5883b5da642ae25062d6cbbda1, type: 3}
+  m_Name: SO_GameTipsList
+  m_EditorClassIdentifier: 
+  gameModeTips:
+  - GameMode: 33
+    Tips:
+    - Skim closer to prisms to get boost
+    - Go after your team crystal
+    - Use your triggers to drift around corners
+    - Dont worry if you fall behind, the comeback system has got you
+  - GameMode: 35
+    Tips:
+    - Collect as many crystals possible before time runs out
+    - Do not collide with prism, it resets your boost
+    - Use drifting to get a wide view of the arena
+  - GameMode: 34
+    Tips:
+    - Overtake closely your opponents to joust them
+    - The faster gets the joust point
+  - GameMode: 7
+    Tips:
+    - Collide with shapes to create shapes
+    - Brake efficiently to get higher accuracy
+    - Just have fun, its freestyle
+  generalTips: []

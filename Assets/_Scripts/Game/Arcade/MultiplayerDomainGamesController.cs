@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Linq;
 using CosmicShore.Game.UI;
-using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -14,7 +13,7 @@ namespace CosmicShore.Game.Arcade
 
         public void OnClickReturnToMainMenu()
         {
-            CloseSession_ServerRpc();
+            LeaveSessionAndReturnToMenu();
         }
 
         protected override void OnCountdownTimerEnded()
@@ -30,12 +29,6 @@ namespace CosmicShore.Game.Arcade
         {
             gameData.SetPlayersActive();
             gameData.StartTurn();
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void CloseSession_ServerRpc()
-        {
-            multiplayerSetup.LeaveSession().Forget();
         }
 
         protected override void OnReadyClicked_()

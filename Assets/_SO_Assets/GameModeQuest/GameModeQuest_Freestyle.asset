@@ -18,6 +18,9 @@ MonoBehaviour:
   Icon: {fileID: 21300000, guid: 88a9b4cf2dc46a74a8f85cba135a5352, type: 3}
   TargetType: 6
   TargetValue: 4
+  IntensityUnlockStatType: 99
+  Intensity3StatTarget: 0
+  Intensity4StatTarget: 0
   PlaysToUnlockIntensity3: 10
   PlaysToUnlockIntensity4: 10
   Intensity3GoalDescription: Play Intensity 2 10 times

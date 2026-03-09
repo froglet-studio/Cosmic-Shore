@@ -107,6 +107,10 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
+            // Freestyle is always available
+            if (mode == GameModes.Freestyle)
+                return true;
+
             // First quest mode is always unlocked
             if (questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
@@ -141,74 +145,57 @@ namespace CosmicShore.Game.Progression
         }
 
         /// <summary>
-        /// Returns true if the Vessel Hangar quest has been reached in the progression chain.
-        /// The hangar quest is identified by DisplayName "VESSEL HANGAR" and is unlocked when
-        /// every quest before it in the chain is completed.
+        /// Returns true if a feature (identified by its quest DisplayName) has been unlocked.
+        /// </summary>
+        public bool IsFeatureUnlocked(string featureName)
+        {
+            return ProgressionData.IsFeatureUnlocked(featureName);
+        }
+
+        /// <summary>
+        /// Returns true if the Vessel Hangar feature has been unlocked via the quest chain.
         /// </summary>
         public bool IsVesselHangarUnlocked()
         {
-            if (questList == null) return false;
-
-            int hangarIndex = -1;
-            for (int i = 0; i < questList.Quests.Count; i++)
-            {
-                if (questList.Quests[i] != null && questList.Quests[i].DisplayName == "VESSEL HANGAR")
-                {
-                    hangarIndex = i;
-                    break;
-                }
-            }
-
-            if (hangarIndex < 0) return false;
-
-            // All quests before the hangar must be completed
-            for (int i = 0; i < hangarIndex; i++)
-            {
-                var quest = questList.Quests[i];
-                if (quest == null || quest.IsPlaceholder) continue;
-                if (!ProgressionData.IsQuestCompleted(quest.GameMode.ToString()))
-                    return false;
-            }
-
-            return true;
+            return ProgressionData.IsFeatureUnlocked("VESSEL HANGAR");
         }
 
         /// <summary>
         /// Called from the Quest UI when the player taps the unlock button
-        /// after completing a quest. Unlocks the next game mode in the chain.
+        /// after completing a quest. Unlocks the next entry in the chain.
+        /// Uses quest index to avoid ambiguity when multiple quests share a GameMode.
         /// </summary>
-        public void ClaimQuestAndUnlockNext(GameModes completedMode)
+        public void ClaimQuestAndUnlockNext(int questIndex)
         {
-            if (questList == null) return;
+            if (questList == null || questIndex < 0 || questIndex >= questList.Quests.Count) return;
 
-            string modeName = completedMode.ToString();
-
-            // Find the completed quest's index
-            int questIndex = -1;
-            for (int i = 0; i < questList.Quests.Count; i++)
-            {
-                if (questList.Quests[i].GameMode == completedMode)
-                {
-                    questIndex = i;
-                    break;
-                }
-            }
-
-            if (questIndex < 0) return;
+            var quest = questList.Quests[questIndex];
 
             // Mark as claimed (remove from CompletedQuests — it's done)
-            ProgressionData.CompletedQuests.Remove(modeName);
-            questList.Quests[questIndex].IsCompleted = false;
+            if (!quest.IsPlaceholder)
+            {
+                ProgressionData.CompletedQuests.Remove(quest.GameMode.ToString());
+                quest.IsCompleted = false;
+            }
 
-            // Unlock the next mode in the chain and initialize its intensity to 2
+            // Unlock the next entry in the chain
             int nextIndex = questIndex + 1;
             if (nextIndex < questList.Quests.Count)
             {
                 var nextQuest = questList.Quests[nextIndex];
-                string nextModeName = nextQuest.GameMode.ToString();
-                ProgressionData.MarkUnlocked(nextModeName);
-                ProgressionData.EnsureIntensityInitialized(nextModeName);
-                CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
+
+                if (nextQuest.IsFeatureUnlock)
+                {
+                    ProgressionData.MarkFeatureUnlocked(nextQuest.DisplayName);
+                    CSDebug.Log($"[GameModeProgressionService] Unlocked feature: {nextQuest.DisplayName}");
+                }
+                else
+                {
+                    string nextModeName = nextQuest.GameMode.ToString();
+                    ProgressionData.MarkUnlocked(nextModeName);
+                    ProgressionData.EnsureIntensityInitialized(nextModeName);
+                    CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
+                }
             }
 
             OnProgressionChanged?.Invoke(ProgressionData);
@@ -265,7 +252,7 @@ namespace CosmicShore.Game.Progression
         }
 
         /// <summary>
-        /// Returns how many quests have been claimed (next mode unlocked).
+        /// Returns how many quests have been claimed (next entry unlocked).
         /// Used by the slider — only advances on claim, not on quest-target completion.
         /// </summary>
         public int GetClaimedQuestCount()
@@ -275,7 +262,12 @@ namespace CosmicShore.Game.Progression
             int count = 0;
             for (int i = 0; i + 1 < questList.Quests.Count; i++)
             {
-                if (ProgressionData.IsUnlocked(questList.Quests[i + 1].GameMode.ToString()))
+                var nextQuest = questList.Quests[i + 1];
+                bool nextUnlocked = nextQuest.IsFeatureUnlock
+                    ? ProgressionData.IsFeatureUnlocked(nextQuest.DisplayName)
+                    : ProgressionData.IsUnlocked(nextQuest.GameMode.ToString());
+
+                if (nextUnlocked)
                     count++;
             }
 
@@ -421,13 +413,20 @@ namespace CosmicShore.Game.Progression
             // Reset everything first
             ProgressionData = new GameModeProgressionData();
 
-            // Unlock modes 0..targetIndex-1
+            // Unlock entries 0..targetIndex-1
             for (int i = 0; i < targetIndex; i++)
             {
                 var quest = questList.Quests[i];
-                string modeName = quest.GameMode.ToString();
-                ProgressionData.MarkUnlocked(modeName);
-                ProgressionData.EnsureIntensityInitialized(modeName);
+                if (quest.IsFeatureUnlock)
+                {
+                    ProgressionData.MarkFeatureUnlocked(quest.DisplayName);
+                }
+                else
+                {
+                    string modeName = quest.GameMode.ToString();
+                    ProgressionData.MarkUnlocked(modeName);
+                    ProgressionData.EnsureIntensityInitialized(modeName);
+                }
                 quest.IsCompleted = false;
             }
 
@@ -468,17 +467,18 @@ namespace CosmicShore.Game.Progression
             if (quest.TargetType == QuestTargetType.IntensityUnlocked)
             {
                 int playedIntensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
-                RecordIntensityPlay(mode, quest, playedIntensity);
+                float statValue = ExtractStatForIntensityGoal(quest);
+                RecordIntensityPlay(mode, quest, playedIntensity, statValue);
                 return;
             }
 
             // Legacy stat-based quest evaluation
-            float statValue = ExtractStatForQuest(quest);
+            float legacyStatValue = ExtractStatForQuest(quest);
             CSDebug.Log($"[GameModeProgressionService] HandleGameEnd — mode:{mode}, targetType:{quest.TargetType}, " +
-                       $"targetValue:{quest.TargetValue}, extractedStat:{statValue}");
+                       $"targetValue:{quest.TargetValue}, extractedStat:{legacyStatValue}");
 
-            if (statValue > 0f)
-                ReportQuestStat(mode, statValue);
+            if (legacyStatValue > 0f)
+                ReportQuestStat(mode, legacyStatValue);
             else
                 CSDebug.LogWarning($"[GameModeProgressionService] Extracted stat is 0 for {mode}. " +
                                   $"RoundStatsList count: {gameData.RoundStatsList?.Count ?? 0}, " +
@@ -487,49 +487,140 @@ namespace CosmicShore.Game.Progression
 
         /// <summary>
         /// Records a completed game at the given intensity and checks whether a new intensity tier should unlock.
+        /// Uses stat-based checks when IntensityUnlockStatType is configured, otherwise falls back to play counts.
         /// When intensity 4 is unlocked, the quest is marked as completed.
         /// </summary>
-        void RecordIntensityPlay(GameModes mode, SO_GameModeQuestData quest, int playedIntensity)
+        void RecordIntensityPlay(GameModes mode, SO_GameModeQuestData quest, int playedIntensity, float statValue)
         {
             string modeName = mode.ToString();
             ProgressionData.EnsureIntensityInitialized(modeName);
 
             int newCount = ProgressionData.IncrementIntensityPlayCount(modeName, playedIntensity);
             int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName);
+            bool useStatBased = quest.IntensityUnlockStatType != QuestTargetType.Placeholder;
 
             CSDebug.Log($"[GameModeProgressionService] RecordIntensityPlay — mode:{mode}, " +
-                       $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}");
+                       $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
+                       $"statBased:{useStatBased}, statValue:{statValue}");
 
             // Check if playing at intensity 2 should unlock intensity 3
-            if (maxUnlocked == 2 && playedIntensity == 2 && newCount >= quest.PlaysToUnlockIntensity3)
+            if (maxUnlocked == 2 && playedIntensity == 2)
             {
-                ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
-                CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
-                OnIntensityUnlocked?.Invoke(mode, 3);
-                OnProgressionChanged?.Invoke(ProgressionData);
-                ScheduleDebouncedSave();
-                return;
+                bool shouldUnlock = useStatBased
+                    ? EvaluateIntensityStat(quest, statValue, 3)
+                    : newCount >= quest.PlaysToUnlockIntensity3;
+
+                if (shouldUnlock)
+                {
+                    ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
+                    CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
+                    OnIntensityUnlocked?.Invoke(mode, 3);
+                    OnProgressionChanged?.Invoke(ProgressionData);
+                    SaveImmediateAsync();
+                    return;
+                }
             }
 
-            // Check if playing at intensity 3 should unlock intensity 4
-            if (maxUnlocked == 3 && playedIntensity == 3 && newCount >= quest.PlaysToUnlockIntensity4)
+            // Check if playing at intensity 3 should unlock intensity 4 + quest complete
+            if (maxUnlocked == 3 && playedIntensity == 3)
             {
-                ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
-                CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
-                OnIntensityUnlocked?.Invoke(mode, 4);
+                bool shouldUnlock = useStatBased
+                    ? EvaluateIntensityStat(quest, statValue, 4)
+                    : newCount >= quest.PlaysToUnlockIntensity4;
 
-                // Intensity 4 unlocked = quest completed
-                ProgressionData.MarkQuestCompleted(modeName);
-                quest.IsCompleted = true;
-                OnQuestCompleted?.Invoke(quest);
-                OnProgressionChanged?.Invoke(ProgressionData);
-                SaveImmediateAsync();
-                return;
+                if (shouldUnlock)
+                {
+                    ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
+                    CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
+                    OnIntensityUnlocked?.Invoke(mode, 4);
+
+                    // Intensity 4 unlocked = quest completed
+                    ProgressionData.MarkQuestCompleted(modeName);
+                    quest.IsCompleted = true;
+                    OnQuestCompleted?.Invoke(quest);
+                    OnProgressionChanged?.Invoke(ProgressionData);
+                    SaveImmediateAsync();
+                    return;
+                }
             }
 
             // No tier unlock — just save the updated play count
             OnProgressionChanged?.Invoke(ProgressionData);
             ScheduleDebouncedSave();
+        }
+
+        /// <summary>
+        /// Extracts the relevant stat from the game data for intensity unlock evaluation.
+        /// Uses the quest's IntensityUnlockStatType to determine which stat to read.
+        /// </summary>
+        float ExtractStatForIntensityGoal(SO_GameModeQuestData quest)
+        {
+            if (quest.IntensityUnlockStatType == QuestTargetType.Placeholder)
+                return 0f;
+
+            if (gameData.LocalPlayer == null) return 0f;
+
+            var localName = gameData.LocalPlayer.Name;
+            IRoundStats localStats = null;
+            if (gameData.RoundStatsList != null)
+            {
+                foreach (var stats in gameData.RoundStatsList)
+                {
+                    if (stats.Name == localName)
+                    {
+                        localStats = stats;
+                        break;
+                    }
+                }
+            }
+
+            switch (quest.IntensityUnlockStatType)
+            {
+                case QuestTargetType.CrystalsCollected:
+                case QuestTargetType.ScoreAbove:
+                case QuestTargetType.SurvivalTime:
+                    return localStats?.Score ?? 0f;
+
+                case QuestTargetType.JoustsWon:
+                    return localStats?.JoustCollisions ?? 0;
+
+                case QuestTargetType.RaceTimeUnder:
+                    float time = localStats?.Score ?? 10000f;
+                    return time < 10000f ? time : 0f;
+
+                case QuestTargetType.WinMatch:
+                    if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
+                        gameData.RoundStatsList[0].Name == localName)
+                        return 1f;
+                    return 0f;
+
+                default:
+                    return 0f;
+            }
+        }
+
+        /// <summary>
+        /// Evaluates whether the given stat value meets the intensity unlock target.
+        /// </summary>
+        bool EvaluateIntensityStat(SO_GameModeQuestData quest, float value, int targetIntensity)
+        {
+            float target = targetIntensity == 3 ? quest.Intensity3StatTarget : quest.Intensity4StatTarget;
+
+            switch (quest.IntensityUnlockStatType)
+            {
+                case QuestTargetType.CrystalsCollected:
+                case QuestTargetType.ScoreAbove:
+                case QuestTargetType.JoustsWon:
+                case QuestTargetType.SurvivalTime:
+                case QuestTargetType.WinMatch:
+                    return value >= target;
+
+                case QuestTargetType.RaceTimeUnder:
+                    return value > 0f && value <= target;
+
+                default:
+                    return false;
+            }
         }
 
         float ExtractStatForQuest(SO_GameModeQuestData quest)
@@ -565,7 +656,7 @@ namespace CosmicShore.Game.Progression
                     return time < 10000f ? time : 0f;
 
                 case QuestTargetType.JoustsWon:
-                    return localStats?.Score ?? 0f;
+                    return localStats?.JoustCollisions ?? 0;
 
                 case QuestTargetType.WinMatch:
                     // Check if the local player is first in the sorted round stats

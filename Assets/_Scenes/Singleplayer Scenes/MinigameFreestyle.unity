@@ -1535,6 +1535,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
+      propertyPath: animSettings
+      value: 
+      objectReference: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d,
+        type: 2}
+    - target: {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
       propertyPath: connectingPanel
       value: 
       objectReference: {fileID: 547474319}
@@ -1996,6 +2002,12 @@ PrefabInstance:
       propertyPath: canvasGroup
       value: 
       objectReference: {fileID: 1675941807}
+    - target: {fileID: 5497835174634480091, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: preGameCinematicLibrary
+      value: 
+      objectReference: {fileID: 11400000, guid: 9bdbedab8ee0d9c4eb564f4a1352b177,
+        type: 2}
     - target: {fileID: 5497835174634480093, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -2159,7 +2171,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 547474316}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ab5bb3a7e3f94a54c9f2436c5d375c16, type: 3}
   m_Name: 
@@ -4035,6 +4047,8 @@ MonoBehaviour:
   - {fileID: 721738475}
   - {fileID: 822875535}
   spawnableByIntensity: []
+  spawnableSegments: []
+  spawnSegmentWeights: []
   Seed: 0
   parent: {fileID: 0}
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}

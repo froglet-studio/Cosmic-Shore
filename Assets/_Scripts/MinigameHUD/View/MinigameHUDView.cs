@@ -1,6 +1,7 @@
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
@@ -61,6 +62,19 @@ namespace CosmicShore.Game.UI
             }
         }
 
+        private void Update()
+        {
+            // Gamepad A presses the Ready button when it's visible
+            if (Gamepad.current != null &&
+                Gamepad.current.buttonSouth.wasPressedThisFrame &&
+                readyButton != null &&
+                readyButton.gameObject.activeSelf &&
+                readyButton.interactable)
+            {
+                readyButton.onClick.Invoke();
+            }
+        }
+
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
         public void UpdateLifeFormCounter(string message) 
@@ -95,7 +109,7 @@ namespace CosmicShore.Game.UI
             }
         }
 
-        public void ToggleConnectingPanel(bool active)
+        public void ToggleConnectingPanel(bool active, GameModes gameMode = GameModes.Random)
         {
             if (!connectingPanelCanvasGroup) return;
 
@@ -108,7 +122,10 @@ namespace CosmicShore.Game.UI
             {
                 // Enable/disable the ConnectingPanel component so OnEnable picks a random sprite
                 if (connectingPanel != null)
+                {
                     connectingPanel.enabled = true;
+                    connectingPanel.StartTips(gameMode);
+                }
 
                 connectingPanelCanvasGroup.interactable = true;
                 connectingPanelCanvasGroup.blocksRaycasts = true;
@@ -119,6 +136,9 @@ namespace CosmicShore.Game.UI
             else
             {
                 StopConnectingAnimations();
+
+                if (connectingPanel != null)
+                    connectingPanel.StopTips();
 
                 _connectingFadeTween = connectingPanelCanvasGroup.DOFade(0f, duration).SetUpdate(unscaled)
                     .OnComplete(() =>

@@ -12,15 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a269e1ecd2eaa6046b40062d218ad974, type: 3}
   m_Name: GameModeQuest_PartyGame
   m_EditorClassIdentifier: 
-  GameMode: 35
+  GameMode: 7
   DisplayName: PARTY GAME
   Description: 
   Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
   TargetType: 99
   TargetValue: 30
+  IntensityUnlockStatType: 99
+  Intensity3StatTarget: 0
+  Intensity4StatTarget: 0
   PlaysToUnlockIntensity3: 3
   PlaysToUnlockIntensity4: 3
   Intensity3GoalDescription: Play Intensity 2 to unlock
   Intensity4GoalDescription: Play Intensity 3 to unlock
   Order: 5
   IsPlaceholder: 1
+  IsFeatureUnlock: 0

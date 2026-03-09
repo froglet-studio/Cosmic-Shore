@@ -26,7 +26,6 @@ namespace CosmicShore.Core
                 }
             }
 
-            mainCamera.clearFlags = CameraClearFlags.SolidColor;
             mainCamera.backgroundColor = ColorSet.EnvironmentColors.SkyColor;
         }
 

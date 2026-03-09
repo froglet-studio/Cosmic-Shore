@@ -35,11 +35,20 @@ namespace CosmicShore.Models
         public float TargetValue;
 
         [Header("Intensity Unlock (when TargetType = IntensityUnlocked)")]
-        [Tooltip("Number of games at intensity 2 required to unlock intensity 3")]
+        [Tooltip("What stat type to evaluate for unlocking intensity tiers. Set to Placeholder for play-count-based unlocking.")]
+        public QuestTargetType IntensityUnlockStatType = QuestTargetType.Placeholder;
+
+        [Tooltip("Stat threshold at intensity 2 to unlock intensity 3 (e.g., 30 crystals, or 215 seconds for race time)")]
+        public float Intensity3StatTarget;
+
+        [Tooltip("Stat threshold at intensity 3 to unlock intensity 4 and complete quest (e.g., 25 crystals)")]
+        public float Intensity4StatTarget;
+
+        [Tooltip("Number of games at intensity 2 required to unlock intensity 3 (used when IntensityUnlockStatType = Placeholder)")]
         [Min(1)]
         public int PlaysToUnlockIntensity3 = 3;
 
-        [Tooltip("Number of games at intensity 3 required to unlock intensity 4")]
+        [Tooltip("Number of games at intensity 3 required to unlock intensity 4 (used when IntensityUnlockStatType = Placeholder)")]
         [Min(1)]
         public int PlaysToUnlockIntensity4 = 3;
 
@@ -58,6 +67,10 @@ namespace CosmicShore.Models
         [Header("Flags")]
         [Tooltip("If true, this quest is a placeholder for a mode not yet implemented")]
         public bool IsPlaceholder;
+
+        [Tooltip("If true, this quest unlocks a feature (e.g. Vessel Hangar) rather than a game mode. " +
+                 "The DisplayName is used as the feature key for persistence.")]
+        public bool IsFeatureUnlock;
 
         /// <summary>
         /// Runtime flag set when the quest goal is achieved during gameplay.
