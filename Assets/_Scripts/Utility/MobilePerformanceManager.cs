@@ -63,8 +63,8 @@ namespace CosmicShore.Utility
             QualitySettings.lodBias = 0.3f; // aggressive LOD — pop-in is acceptable
             QualitySettings.maximumLODLevel = 0;
 
-            // ── Shader LOD: force mobile SubShaders ─────────────────────
-            Shader.globalMaximumLOD = 150;
+            // ── Shader LOD: use standard SubShaders (150 can break post-processing)
+            Shader.globalMaximumLOD = 300;
 
             // ── Physics: reduce simulation overhead ─────────────────────
             ThrottlePhysics();
@@ -192,9 +192,9 @@ namespace CosmicShore.Utility
                     bloom.active = true;
                     bloom.maxIterations.Override(3);
                     bloom.highQualityFiltering.Override(false);
-                    bloom.threshold.Override(0.9f);
-                    bloom.intensity.Override(0.8f);
-                    bloom.scatter.Override(0.6f);
+                    bloom.threshold.Override(0.5f);
+                    bloom.intensity.Override(1.2f);
+                    bloom.scatter.Override(0.7f);
                 }
 
                 if (vol.profile.TryGet<Vignette>(out var vignette))
@@ -215,8 +215,7 @@ namespace CosmicShore.Utility
                 if (vol.profile.TryGet<LensDistortion>(out var lens))
                     lens.active = false;
 
-                if (vol.profile.TryGet<ColorAdjustments>(out var color))
-                    color.active = false;
+                // ColorAdjustments left active — disabling it kills scene color grading
             }
         }
     }

@@ -30,11 +30,16 @@ namespace CosmicShore
 
         // Cached to avoid per-frame allocations in OnTriggerStay
         private static readonly int AlphaPropertyID = Shader.PropertyToID("_Alpha");
-        private readonly MaterialPropertyBlock _mpb = new();
+        private MaterialPropertyBlock _mpb;
 
         // Cache Renderer lookups — OnTriggerStay fires hundreds of times per frame
         private readonly Dictionary<Collider, Renderer> _rendererCache = new(128);
 
+
+        private void Awake()
+        {
+            _mpb = new MaterialPropertyBlock();
+        }
 
         private void OnEnable()
         {

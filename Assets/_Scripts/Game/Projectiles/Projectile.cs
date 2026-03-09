@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Projectiles
 
         // MaterialPropertyBlock for per-instance opacity (avoids material cloning)
         private static readonly int OpacityPropertyID = Shader.PropertyToID("_Opacity");
-        private readonly MaterialPropertyBlock _mpb = new();
+        private MaterialPropertyBlock _mpb;
 
         // NEW: remember pooled parent so we can restore it
         private Transform _pooledParent;
@@ -60,6 +60,7 @@ namespace CosmicShore.Game.Projectiles
         
         private void Awake()
         {
+            _mpb = new MaterialPropertyBlock();
             InitialScale = transform.localScale;
 
             // cache whatever parent it has in the pool (ship container or pool root)
