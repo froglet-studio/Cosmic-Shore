@@ -343,17 +343,35 @@ namespace CosmicShore.Game.Cinematics
         /// <summary>
         /// Checks whether the just-finished game unlocked a new intensity level (3 or 4).
         /// If so, shows a brief message via the quest-completion text panel before moving on.
-        /// Uses the _intensityUnlockedThisGame field set by the OnIntensityUnlocked event.
+        /// Checks both the event-driven field and the service directly as a fallback,
+        /// since the event may fire during the same frame as the coroutine start.
         /// </summary>
         protected virtual IEnumerator ShowIntensityUnlockSequence()
         {
-            if (_intensityUnlockedThisGame <= 0) yield break;
+            int unlockedIntensity = _intensityUnlockedThisGame;
 
-            var service = GameModeProgressionService.Instance;
-            var quest = service?.GetQuestForMode(gameData.GameMode);
+            // Fallback: check service directly in case the event was missed or not yet handled
+            if (unlockedIntensity <= 0 && gameData != null)
+            {
+                var service = GameModeProgressionService.Instance;
+                if (service != null)
+                {
+                    int playedIntensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
+                    int maxUnlocked = service.GetMaxUnlockedIntensity(gameData.GameMode);
+
+                    // If the player just played at intensity N and N+1 is now unlocked, they unlocked it this game
+                    if (maxUnlocked > playedIntensity && maxUnlocked >= 3)
+                        unlockedIntensity = maxUnlocked;
+                }
+            }
+
+            if (unlockedIntensity <= 0) yield break;
+
+            var progressionService = GameModeProgressionService.Instance;
+            var quest = progressionService?.GetQuestForMode(gameData.GameMode);
             string displayName = quest != null ? quest.DisplayName : gameData.GameMode.ToString();
 
-            ToastNotificationAPI.Show($"{displayName} Intensity {_intensityUnlockedThisGame} Unlocked!");
+            ToastNotificationAPI.Show($"{displayName} Intensity {unlockedIntensity} Unlocked!");
             yield return new WaitForSeconds(1f);
         }
 

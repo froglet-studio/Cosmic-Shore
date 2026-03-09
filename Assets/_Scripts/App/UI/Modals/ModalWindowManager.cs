@@ -19,6 +19,7 @@ namespace CosmicShore.App.UI.Modals
 
         [SerializeField] Animator windowAnimator;
         bool isOn;
+        Coroutine _disableCoroutine;
 
         protected virtual void Start()
         {
@@ -37,6 +38,13 @@ namespace CosmicShore.App.UI.Modals
 
         public void ModalWindowIn()
         {
+            // Cancel any pending disable from a previous ModalWindowOut
+            if (_disableCoroutine != null)
+            {
+                StopCoroutine(_disableCoroutine);
+                _disableCoroutine = null;
+            }
+
             gameObject.SetActive(true);
 
             if (isOn == false)
@@ -72,12 +80,13 @@ namespace CosmicShore.App.UI.Modals
                 isOn = false;
             }
             if(ModalType == ModalWindows.SETTINGS) return;
-            StartCoroutine(DisableWindow());
+            _disableCoroutine = StartCoroutine(DisableWindow());
         }
 
         IEnumerator DisableWindow()
         {
             yield return new WaitForSeconds(0.5f);
+            _disableCoroutine = null;
             gameObject.SetActive(false);
         }
     }
