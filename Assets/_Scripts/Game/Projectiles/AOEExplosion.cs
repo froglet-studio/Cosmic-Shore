@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Projectiles
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
 
-        private ExplosionImpactor _explosionImpactor;
+        protected ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
         private MaterialPropertyBlock _mpb;
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");

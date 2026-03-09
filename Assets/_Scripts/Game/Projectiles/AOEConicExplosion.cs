@@ -56,41 +56,71 @@ namespace CosmicShore.Game.Projectiles
 
         protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
+            var impactor = _explosionImpactor;
             try
             {
+                impactor?.BeginBatchProcessing();
+
                 await UniTask.Delay(
                     System.TimeSpan.FromSeconds(ExplosionDelay),
                     DelayType.DeltaTime,
                     PlayerLoopTiming.Update,
                     ct);
 
+                if (!this || ct.IsCancellationRequested)
+                {
+                    impactor?.EndBatchProcessing();
+                    return;
+                }
+
                 if (TryGetComponent<MeshRenderer>(out var meshRenderer))
                     meshRenderer.material = Material;
 
                 float elapsed = 0f;
-
-                var sphereCol = GetComponent<SphereCollider>();
+                var containerTransform = coneContainer.transform;
 
                 while (elapsed < ExplosionDuration)
                 {
                     ct.ThrowIfCancellationRequested();
+                    if (!this || containerTransform == null)
+                    {
+                        impactor?.EndBatchProcessing();
+                        return;
+                    }
 
                     elapsed += Time.deltaTime;
                     float t = elapsed / ExplosionDuration;
                     float lerp = Mathf.Sin(t * PI_OVER_TWO);
 
                     // Scale cone
-                    coneContainer.transform.localScale =
+                    containerTransform.localScale =
                         Vector3.Lerp(Vector3.zero, MaxScaleVector, lerp);
 
-                    // Dynamic collider radius update
-                    float z = Mathf.Clamp(coneContainer.transform.localScale.z, 0.01f, Mathf.Infinity);
-                    sphereCol.radius = coneContainer.transform.localScale.x / (z * 2f);
+                    // Batch AOE damage — use a bounding sphere that encompasses the cone.
+                    // Center is offset along the cone's forward axis (half the current height),
+                    // radius covers from that center to the apex and the base edge.
+                    float currentHeight = height * lerp;
+                    float currentWidth = MaxScale * lerp;
+                    float halfHeight = currentHeight * 0.5f;
+                    Vector3 batchCenter = containerTransform.position
+                        + containerTransform.forward * halfHeight;
+                    float batchRadius = Mathf.Sqrt(halfHeight * halfHeight + currentWidth * currentWidth);
+
+                    bool shouldContinue = impactor?.ProcessBatchFrame(
+                        batchCenter, batchRadius, speed, Inertia) ?? true;
+
+                    if (!shouldContinue)
+                    {
+                        impactor?.EndBatchProcessing();
+                        DestroyContainer();
+                        if (this) Destroy(gameObject);
+                        return;
+                    }
 
                     // Opacity fade
                     float opacity =
                         Mathf.Clamp(
-                            (MaxScaleVector - coneContainer.transform.localScale).magnitude
+                            (MaxScaleVector - containerTransform.localScale).magnitude
                              / MaxScaleVector.magnitude,
                             0f,
                             1f);
@@ -100,12 +130,20 @@ namespace CosmicShore.Game.Projectiles
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
-                // Clean up when the animation finishes
+                impactor?.EndBatchProcessing();
                 DestroyContainer();
                 if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException)
             {
+                impactor?.EndBatchProcessing();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+                impactor?.EndBatchProcessing();
+                DestroyContainer();
+                if (this) Destroy(gameObject);
             }
         }
 
