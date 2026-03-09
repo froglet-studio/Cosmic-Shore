@@ -56,13 +56,17 @@ namespace CosmicShore.Utility
 
             // LOD bias — push LOD transitions closer to save polys
             QualitySettings.lodBias = 0.7f;
-
-            // Reduce max LOD level (0 = use all LODs including highest detail)
             QualitySettings.maximumLODLevel = 0;
+
+            // Select lower shader LOD on mobile so the HyperSeaSkybox (and any
+            // future shaders with mobile SubShaders) automatically pick the
+            // reduced-quality variant.
+            Shader.globalMaximumLOD = 150;
 
             CSDebug.Log("[MobilePerformanceManager] Mobile optimized: " +
                         $"targetFrameRate=120, vSync=0, shadows=Disable, " +
-                        $"sleepTimeout=NeverSleep, skinWeights=TwoBones, lodBias=0.7");
+                        $"sleepTimeout=NeverSleep, skinWeights=TwoBones, lodBias=0.7, " +
+                        $"globalMaximumLOD=150");
         }
     }
 }

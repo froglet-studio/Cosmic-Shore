@@ -201,6 +201,15 @@ namespace CosmicShore.Game.ShapeDrawing
             }
         }
 
+        void OnDestroy()
+        {
+            // Clean up runtime-created materials to prevent leaks
+            if (guideLine && guideLine.material)
+                Destroy(guideLine.material);
+            if (ghostLine && ghostLine.material)
+                Destroy(ghostLine.material);
+        }
+
         void Update()
         {
             if (Keyboard.current != null && Keyboard.current[screenshotKey].wasPressedThisFrame)
@@ -915,8 +924,15 @@ namespace CosmicShore.Game.ShapeDrawing
             if (uiLayer >= 0)
                 cam.cullingMask &= ~(1 << uiLayer);
 
-            // Create temporary render texture matching screen resolution
-            var rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24);
+            // Create temporary render texture — half resolution on mobile to reduce GPU stall
+            int w = Screen.width;
+            int h = Screen.height;
+            if (MobilePerformanceManager.IsMobile)
+            {
+                w /= 2;
+                h /= 2;
+            }
+            var rt = RenderTexture.GetTemporary(w, h, 24);
             cam.targetTexture = rt;
             cam.Render();
             cam.targetTexture = null;
@@ -926,8 +942,8 @@ namespace CosmicShore.Game.ShapeDrawing
 
             // Read pixels from render texture
             RenderTexture.active = rt;
-            var screenshot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
-            screenshot.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+            var screenshot = new Texture2D(w, h, TextureFormat.RGB24, false);
+            screenshot.ReadPixels(new Rect(0, 0, w, h), 0, 0);
             screenshot.Apply();
             RenderTexture.active = null;
             RenderTexture.ReleaseTemporary(rt);

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -20,6 +21,10 @@ namespace CosmicShore.Game
         [Tooltip("Subdivision level. 0=12, 1=42, 2=162, 3=642 capsules.")]
         [Range(0, 4)]
         [SerializeField] int subdivisions = 2;
+
+        [Tooltip("Override subdivision level on mobile (lower = fewer capsules). -1 uses default.")]
+        [Range(-1, 3)]
+        [SerializeField] int mobileSubdivisionOverride = 1;
 
         [Tooltip("Radius of the membrane sphere.")]
         [SerializeField] float radius = 500f;
@@ -59,6 +64,10 @@ namespace CosmicShore.Game
         [Tooltip("Rendering layer mask for the instanced draw.")]
         [SerializeField] uint renderingLayerMask = 1;
 
+        [Header("Mobile Performance")]
+        [Tooltip("How many frames between full noise updates on mobile. 1 = every frame, 3 = every 3rd frame.")]
+        [SerializeField] int mobileUpdateInterval = 3;
+
         Matrix4x4[] matrices;
         RenderParams renderParams;
         Mesh meshToRender;
@@ -70,13 +79,22 @@ namespace CosmicShore.Game
         // Noise sampling coordinates (one per capsule, derived from jittered position)
         Vector3[] noiseCoords;
 
+        bool isMobile;
+        int updateCounter;
+
         void Awake()
         {
+            isMobile = MobilePerformanceManager.IsMobile;
+
+            int effectiveSubdivisions = subdivisions;
+            if (isMobile && mobileSubdivisionOverride >= 0)
+                effectiveSubdivisions = mobileSubdivisionOverride;
+
             meshToRender = capsuleMesh;
             if (meshToRender == null)
                 meshToRender = GetBuiltinCapsuleMesh();
 
-            BuildBaseData();
+            BuildBaseData(effectiveSubdivisions);
             matrices = new Matrix4x4[baseDirections.Length];
             UpdateMatrices();
 
@@ -93,14 +111,23 @@ namespace CosmicShore.Game
         {
             if (meshToRender == null || membraneMaterial == null) return;
 
-            UpdateMatrices();
-            renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f));
+            // On mobile, only recompute noise every N frames — the visual difference is negligible
+            // but saves hundreds of Perlin samples per skipped frame.
+            updateCounter++;
+            bool shouldUpdate = !isMobile || updateCounter >= mobileUpdateInterval;
+            if (shouldUpdate)
+            {
+                updateCounter = 0;
+                UpdateMatrices();
+                renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f));
+            }
+
             Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
         }
 
-        void BuildBaseData()
+        void BuildBaseData(int effectiveSubdivisions)
         {
-            var vertices = GenerateIcosphereVertices(subdivisions);
+            var vertices = GenerateIcosphereVertices(effectiveSubdivisions);
             int count = vertices.Count;
             baseDirections = new Vector3[count];
             baseRadii = new float[count];

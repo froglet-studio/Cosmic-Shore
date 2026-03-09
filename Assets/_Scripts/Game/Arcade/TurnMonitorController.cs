@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Soap;
 using Unity.Netcode;
 using UnityEngine;
@@ -81,6 +80,14 @@ namespace CosmicShore.Game.Arcade
                 m.StopMonitor();
         }
 
-        bool CheckEndOfTurn() => monitors.Any(m => m.CheckForEndOfTurn());
+        bool CheckEndOfTurn()
+        {
+            for (int i = 0, count = monitors.Count; i < count; i++)
+            {
+                if (monitors[i].CheckForEndOfTurn())
+                    return true;
+            }
+            return false;
+        }
     }
 }

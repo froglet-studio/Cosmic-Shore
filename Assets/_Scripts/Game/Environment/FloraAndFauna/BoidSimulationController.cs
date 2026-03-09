@@ -35,6 +35,8 @@ public class BoidSImulationController : MonoBehaviour
     public ComputeShader boidSimulationShader;
     public Prism boidPrefab;
     public int numberOfBoids = 100;
+    [Tooltip("Override boid count on mobile. O(N²) compute shader makes this critical.")]
+    public int mobileBoidCount = 30;
     public float spawnRadius = 50.0f;
     public Transform globalGoal;
 
@@ -48,6 +50,10 @@ public class BoidSImulationController : MonoBehaviour
 
     private void Start()
     {
+        // On mobile, reduce boid count to keep O(N²) compute shader affordable
+        if (MobilePerformanceManager.IsMobile && mobileBoidCount > 0)
+            numberOfBoids = mobileBoidCount;
+
         kernel = boidSimulationShader.FindKernel("CSMain");
 
         InitializeEntities();

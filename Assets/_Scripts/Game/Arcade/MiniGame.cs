@@ -73,6 +73,7 @@ namespace CosmicShore.Game.Arcade
         int activePlayerId;
         protected List<int> RemainingPlayers = new();
         protected bool gameRunning;
+        private WaitForSeconds _endOfTurnWait;
 
         public IPlayer ActivePlayer { get; protected set; }
 
@@ -140,9 +141,11 @@ namespace CosmicShore.Game.Arcade
             StartCoroutine(StartNewGameCoroutine());
         }
 
+        private static readonly WaitForSeconds StartGameDelay = new(0.2f);
+
         IEnumerator StartNewGameCoroutine()
         {
-            yield return new WaitForSeconds(.2f);
+            yield return StartGameDelay;
 
             StartNewGame();
         }
@@ -269,7 +272,8 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.InputController.InputStatus.Paused = true;
             // ActivePlayer.Vessel.VesselStatus.VesselPrismController.StopSpawn();
 
-            yield return new WaitForSeconds(EndOfTurnDelay);
+            _endOfTurnWait ??= new WaitForSeconds(EndOfTurnDelay);
+            yield return _endOfTurnWait;
 
             TurnsTakenThisRound++;
 
@@ -457,7 +461,7 @@ namespace CosmicShore.Game.Arcade
 
         IEnumerator TimedCallbackCoroutine(float invokeAfterSeconds, Action callback)
         {
-            yield return new WaitForSeconds(invokeAfterSeconds);
+            yield return new WaitForSeconds(invokeAfterSeconds); // variable duration, cannot cache
 
             callback?.Invoke();
         }

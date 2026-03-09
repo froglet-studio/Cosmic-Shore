@@ -128,6 +128,8 @@ namespace CosmicShore.Game
         {
             if (!boostFill || !boostFill.enabled) return;
 
+            Color previousColor = _currentBoostColor;
+
             if (_flashTimer > 0f)
             {
                 _flashTimer -= Time.deltaTime;
@@ -141,7 +143,10 @@ namespace CosmicShore.Game
                     colorLerpSpeed * Time.deltaTime);
             }
 
-            boostFill.color = _currentBoostColor;
+            // Only assign color (which dirties the Canvas) when the value actually changed.
+            // Color32 comparison avoids dirtying on sub-pixel color differences.
+            if ((Color32)_currentBoostColor != (Color32)previousColor)
+                boostFill.color = _currentBoostColor;
         }
 
         // ---------------------------------------------------------------

@@ -108,11 +108,16 @@ namespace CosmicShore.Game
                 return;
             }
 
-            // Fade out over the last 40% of display duration
+            // Fade out over the last 40% of display duration.
+            // Only assign alpha when the quantized value changes to avoid dirtying the canvas every frame.
             float fadeStart = DisplayDuration * 0.6f;
             if (_displayTimer < fadeStart && _canvasGroup)
             {
-                _canvasGroup.alpha = Mathf.Clamp01(_displayTimer / fadeStart);
+                float newAlpha = Mathf.Clamp01(_displayTimer / fadeStart);
+                byte quantized = (byte)(newAlpha * 255f);
+                byte current = (byte)(_canvasGroup.alpha * 255f);
+                if (quantized != current)
+                    _canvasGroup.alpha = newAlpha;
             }
         }
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,8 +26,18 @@ namespace CosmicShore.Game.UI
         [Header("Domain Styling")]
         [SerializeField] private List<DomainColorDef> domainColors;
 
+        private Dictionary<Domains, Color> _domainColorCache;
+
         private void Awake()
         {
+            // Build lookup dictionary once to avoid LINQ FirstOrDefault per event
+            _domainColorCache = new Dictionary<Domains, Color>();
+            if (domainColors != null)
+            {
+                foreach (var def in domainColors)
+                    _domainColorCache[def.Domain] = def.Color;
+            }
+
             // Disable the Image component for transparent background
             var image = GetComponent<Image>();
             if (image != null)
@@ -239,8 +248,9 @@ namespace CosmicShore.Game.UI
 
         public Color GetColorForDomain(Domains domain)
         {
-            var def = domainColors.FirstOrDefault(d => d.Domain == domain);
-            return def.Equals(default(DomainColorDef)) ? Color.white : def.Color;
+            if (_domainColorCache != null && _domainColorCache.TryGetValue(domain, out var color))
+                return color;
+            return Color.white;
         }
 
         [Serializable]

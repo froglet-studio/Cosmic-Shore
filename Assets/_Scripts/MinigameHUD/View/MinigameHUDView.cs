@@ -5,7 +5,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Game.UI
@@ -202,8 +201,12 @@ namespace CosmicShore.Game.UI
 
         public Color GetColorForDomain(Domains domain)
         {
-            var def = domainColors.FirstOrDefault(d => d.Domain == domain);
-            return def.Equals(default(DomainColorDef)) ? Color.white : def.Color;
+            for (int i = 0, count = domainColors.Count; i < count; i++)
+            {
+                if (domainColors[i].Domain == domain)
+                    return domainColors[i].Color;
+            }
+            return Color.white;
         }
 
         [Serializable]

@@ -32,6 +32,10 @@ namespace CosmicShore.Game.Projectiles
 
         private MeshRenderer meshRenderer;
 
+        // MaterialPropertyBlock for per-instance opacity (avoids material cloning)
+        private static readonly int OpacityPropertyID = Shader.PropertyToID("_Opacity");
+        private readonly MaterialPropertyBlock _mpb = new();
+
         // NEW: remember pooled parent so we can restore it
         private Transform _pooledParent;
 
@@ -67,8 +71,9 @@ namespace CosmicShore.Game.Projectiles
             if (spike)
             {
                 meshRenderer = GetComponent<MeshRenderer>();
-                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(OwnDomain);
-                meshRenderer.material.SetFloat("_Opacity", 0.5f);
+                meshRenderer.sharedMaterial = _themeManagerData.GetTeamSpikeMaterial(OwnDomain);
+                _mpb.SetFloat(OpacityPropertyID, 0.5f);
+                meshRenderer.SetPropertyBlock(_mpb);
             }
         }
 
@@ -125,7 +130,8 @@ namespace CosmicShore.Game.Projectiles
             if (spike)
             {
                 transform.localScale = new Vector3(0.4f, 0.4f, 2f);
-                meshRenderer.material.SetFloat("_Opacity", 0.5f);
+                _mpb.SetFloat(OpacityPropertyID, 0.5f);
+                meshRenderer.SetPropertyBlock(_mpb);
             }
 
             Stop(); // Stop any running movement before starting a new one
@@ -162,7 +168,6 @@ namespace CosmicShore.Game.Projectiles
             float elapsedTime = 0f;
             var t = transform; // cache
             var useSpike = spike && meshRenderer;
-            var mat = useSpike ? meshRenderer.material : null;
 
             try
             {
@@ -176,7 +181,10 @@ namespace CosmicShore.Game.Projectiles
                     {
                         float percentRemaining = elapsedTime / projectileTime;
                         if (percentRemaining > 0.9f)
-                            mat.SetFloat("_Opacity", 1f - Mathf.Pow(percentRemaining, 4f));
+                        {
+                            _mpb.SetFloat(OpacityPropertyID, 1f - Mathf.Pow(percentRemaining, 4f));
+                            meshRenderer.SetPropertyBlock(_mpb);
+                        }
                     }
 
                     elapsedTime += deltaTime;

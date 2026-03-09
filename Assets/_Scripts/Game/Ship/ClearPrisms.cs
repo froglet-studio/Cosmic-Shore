@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
@@ -24,8 +25,15 @@ namespace CosmicShore
 
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
-        
+
         bool isInitialized;
+
+        // Cached to avoid per-frame allocations in OnTriggerStay
+        private static readonly int AlphaPropertyID = Shader.PropertyToID("_Alpha");
+        private readonly MaterialPropertyBlock _mpb = new();
+
+        // Cache Renderer lookups — OnTriggerStay fires hundreds of times per frame
+        private readonly Dictionary<Collider, Renderer> _rendererCache = new(128);
 
 
         private void OnEnable()
@@ -59,7 +67,7 @@ namespace CosmicShore
                 CSDebug.LogError("Close main camera not found! This should not happen!");
                 return;
             }
-            
+
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
             transform.SetParent(visibilityCapsuleTransform);
             visibilityCapsule = gameObject.AddComponent<CapsuleCollider>();
@@ -94,22 +102,27 @@ namespace CosmicShore
 
         void OnTriggerEnter(Collider other)
         {
-            Prism prism = other.GetComponent<Prism>();
-            if (prism != null)
+            if (other.TryGetComponent<Prism>(out var prism))
                 prism.SetTransparency(true);
         }
 
         private void OnTriggerStay(Collider other)
         {
-            Renderer renderer = other.GetComponent<Renderer>();
-            if (renderer != null)
-                renderer.material.SetFloat("_Alpha", scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData)/ capsuleRadius));
+            if (!_rendererCache.TryGetValue(other, out var renderer))
+            {
+                if (!other.TryGetComponent(out renderer)) return;
+                _rendererCache[other] = renderer;
+            }
+            float alpha = scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData) / capsuleRadius);
+            renderer.GetPropertyBlock(_mpb);
+            _mpb.SetFloat(AlphaPropertyID, alpha);
+            renderer.SetPropertyBlock(_mpb);
         }
 
         void OnTriggerExit(Collider other)
         {
-            Prism prism = other.GetComponent<Prism>();
-            if (prism != null)
+            _rendererCache.Remove(other);
+            if (other.TryGetComponent<Prism>(out var prism))
                 prism.SetTransparency(false);
         }
     }
