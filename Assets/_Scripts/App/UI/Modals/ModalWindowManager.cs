@@ -32,6 +32,12 @@ namespace CosmicShore.App.UI.Modals
             if (!isOn || !closeOnGamepadB) return;
             if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
             {
+                // Only the topmost modal should handle gamepad B to prevent
+                // closing multiple nested modals in a single press
+                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+                if (screenSwitcher != null && !screenSwitcher.ModalIsActive(ModalType))
+                    return;
+
                 ModalWindowOut();
             }
         }
@@ -65,21 +71,21 @@ namespace CosmicShore.App.UI.Modals
 
         public void ModalWindowOut()
         {
-            if (isOn)
-            {
-                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
-                if (screenSwitcher)
-                    screenSwitcher.PopModal();
+            if (!isOn) return;
 
-                if (sharpAnimations == false)
-                    windowAnimator.CrossFade("Window Out", 0.1f);
-                else
-                    windowAnimator.Play("Window Out");
+            var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+            if (screenSwitcher)
+                screenSwitcher.PopModal();
 
-                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.CloseView);
-                isOn = false;
-            }
-            if(ModalType == ModalWindows.SETTINGS) return;
+            if (sharpAnimations == false)
+                windowAnimator.CrossFade("Window Out", 0.1f);
+            else
+                windowAnimator.Play("Window Out");
+
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.CloseView);
+            isOn = false;
+
+            if (ModalType == ModalWindows.SETTINGS) return;
             _disableCoroutine = StartCoroutine(DisableWindow());
         }
 
