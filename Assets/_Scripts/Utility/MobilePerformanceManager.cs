@@ -179,23 +179,13 @@ namespace CosmicShore.Utility
 
         static void DisablePostProcessing()
         {
-            // Find all active Volume components — keep bloom for cheap AA, kill everything else
+            // Find all active Volume components — disable expensive effects, leave bloom & color as authored
             var volumes = FindObjectsByType<Volume>(FindObjectsSortMode.None);
             foreach (var vol in volumes)
             {
                 if (vol.profile == null) continue;
 
-                // Bloom stays active — provides edge softening (cheap AA substitute)
-                // Tune it down for mobile: fewer iterations, higher threshold
-                if (vol.profile.TryGet<Bloom>(out var bloom))
-                {
-                    bloom.active = true;
-                    bloom.maxIterations.Override(3);
-                    bloom.highQualityFiltering.Override(false);
-                    bloom.threshold.Override(0.5f);
-                    bloom.intensity.Override(1.2f);
-                    bloom.scatter.Override(0.7f);
-                }
+                // Bloom & ColorAdjustments: left untouched — use scene-authored values
 
                 if (vol.profile.TryGet<Vignette>(out var vignette))
                     vignette.active = false;
@@ -214,8 +204,6 @@ namespace CosmicShore.Utility
 
                 if (vol.profile.TryGet<LensDistortion>(out var lens))
                     lens.active = false;
-
-                // ColorAdjustments left active — disabling it kills scene color grading
             }
         }
     }
