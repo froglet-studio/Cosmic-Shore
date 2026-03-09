@@ -145,7 +145,7 @@ namespace CosmicShore.Game
 
             // Only assign color (which dirties the Canvas) when the value actually changed.
             // Color32 comparison avoids dirtying on sub-pixel color differences.
-            if ((Color32)_currentBoostColor != (Color32)previousColor)
+            if (!((Color32)_currentBoostColor).Equals((Color32)previousColor))
                 boostFill.color = _currentBoostColor;
         }
 
