@@ -123,6 +123,9 @@ namespace CosmicShore.Game.AI
         }
         #endregion
 
+        private WaitForSeconds _playerSeekWait;
+        private static readonly WaitForSeconds AbilityStartDelay = new(3);
+
         public bool AutoPilotEnabled { get; private set; }
 
         private void OnEnable()
@@ -201,7 +204,8 @@ namespace CosmicShore.Game.AI
                     _targetPosition = bestPos;
                 }
 
-                yield return new WaitForSeconds(playerSeekUpdateInterval);
+                _playerSeekWait ??= new WaitForSeconds(playerSeekUpdateInterval);
+                yield return _playerSeekWait;
             }
         }
 
@@ -312,15 +316,17 @@ namespace CosmicShore.Game.AI
             throttle += throttleIncrease * Time.deltaTime;
         }
         
-        IEnumerator UseAbilityCoroutine(AIAbility action) 
+        IEnumerator UseAbilityCoroutine(AIAbility action)
         {
-            yield return new WaitForSeconds(3);
+            yield return AbilityStartDelay;
+            var durationWait = new WaitForSeconds(action.Duration);
+            var cooldownWait = new WaitForSeconds(action.Cooldown);
             while (AutoPilotEnabled)
             {
                 action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
-                yield return new WaitForSeconds(action.Duration);
+                yield return durationWait;
                 action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
-                yield return new WaitForSeconds(action.Cooldown);
+                yield return cooldownWait;
             }
         }
         
