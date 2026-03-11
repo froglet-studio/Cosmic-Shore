@@ -144,5 +144,42 @@ namespace CosmicShore.Game.Progression
             if (!MaxUnlockedIntensity.ContainsKey(modeName))
                 MaxUnlockedIntensity[modeName] = 2;
         }
+
+        /// <summary>
+        /// Merges data from another instance into this one, keeping the higher/newer values.
+        /// Used when local ProgressionData diverges from the repo's data object
+        /// (e.g., game ended before cloud data finished loading).
+        /// </summary>
+        public void MergeFrom(GameModeProgressionData other)
+        {
+            if (other == null) return;
+
+            foreach (var mode in other.UnlockedModes)
+                MarkUnlocked(mode);
+
+            foreach (var quest in other.CompletedQuests)
+                MarkQuestCompleted(quest);
+
+            foreach (var feature in other.UnlockedFeatures)
+                MarkFeatureUnlocked(feature);
+
+            foreach (var kvp in other.BestStats)
+            {
+                if (!BestStats.TryGetValue(kvp.Key, out var existing) || kvp.Value > existing)
+                    BestStats[kvp.Key] = kvp.Value;
+            }
+
+            foreach (var kvp in other.MaxUnlockedIntensity)
+            {
+                if (!MaxUnlockedIntensity.TryGetValue(kvp.Key, out var existing) || kvp.Value > existing)
+                    MaxUnlockedIntensity[kvp.Key] = kvp.Value;
+            }
+
+            foreach (var kvp in other.IntensityPlayCounts)
+            {
+                if (!IntensityPlayCounts.TryGetValue(kvp.Key, out var existing) || kvp.Value > existing)
+                    IntensityPlayCounts[kvp.Key] = kvp.Value;
+            }
+        }
     }
 }

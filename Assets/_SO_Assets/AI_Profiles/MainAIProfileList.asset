@@ -21,12 +21,10 @@ MonoBehaviour:
     AvatarSprite: {fileID: 21300000, guid: 1dcc01f1e8aa76f488ccfd0541d8ce8d, type: 3}
   - Name: FriendlyAI
     AvatarSprite: {fileID: 21300000, guid: 4ea3e5980c37961468e849a9691ecd58, type: 3}
-  - Name: EccentricYash
+  - Name: Yash
     AvatarSprite: {fileID: 21300000, guid: 49ce90fcabce082488bb900105e718de, type: 3}
-  - Name: Barrett
+  - Name: Garrett
     AvatarSprite: {fileID: 21300000, guid: 03720279c080e854b9e257e15cd2a330, type: 3}
-  - Name: Shomboss
-    AvatarSprite: {fileID: 21300000, guid: 9f7930f2665d1fc459ac3d8d9a39a3c4, type: 3}
   - Name: PlanetDestroyer6
     AvatarSprite: {fileID: 21300000, guid: eec265dfa9b67ce428e7fc1f5c206bca, type: 3}
   - Name: TheRealCaleb

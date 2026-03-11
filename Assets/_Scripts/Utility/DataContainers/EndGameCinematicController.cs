@@ -26,8 +26,12 @@ namespace CosmicShore.Game.Cinematics
         [SerializeField] protected EndGameCinematicView view;
 
         [Header("Crystal Reward")]
-        [Tooltip("Amount of crystals awarded per game.")]
-        [SerializeField] private int crystalsPerGame = 5;
+        [Tooltip("Crystals awarded to 1st place in multiplayer, or flat reward in single-player.")]
+        [SerializeField] private int crystalsFirstPlace = 10;
+        [Tooltip("Crystals awarded to 2nd place in multiplayer.")]
+        [SerializeField] private int crystalsSecondPlace = 5;
+        [Tooltip("Crystals awarded to 3rd place in multiplayer.")]
+        [SerializeField] private int crystalsThirdPlace = 0;
         [Tooltip("Root GameObject to enable/disable for the crystal reward display.")]
         [SerializeField] private GameObject crystalRewardRoot;
         [Tooltip("Text showing how many crystals were earned.")]
@@ -305,18 +309,22 @@ namespace CosmicShore.Game.Cinematics
         
         protected virtual IEnumerator AwardCrystalReward()
         {
-            if (crystalsPerGame <= 0) yield break;
+            int placement = GetLocalPlayerPlacement();
+            int reward = placement >= 0 ? GetCrystalRewardForPlacement(placement) : 0;
 
-            var service = PlayerDataService.Instance;
-            if (service != null)
+            if (reward > 0)
             {
-                int newBalance = service.AddCrystals(crystalsPerGame);
-                CSDebug.Log($"[EndGameCinematic] Awarded {crystalsPerGame} crystals. New balance: {newBalance}");
+                var service = PlayerDataService.Instance;
+                if (service != null)
+                {
+                    int newBalance = service.AddCrystals(reward);
+                    CSDebug.Log($"[EndGameCinematic] Placement={placement + 1} Awarded {reward} crystals. New balance: {newBalance}");
+                }
             }
 
             if (crystalRewardRoot && crystalRewardText)
             {
-                crystalRewardText.text = $"+{crystalsPerGame}";
+                crystalRewardText.text = $"+{reward}";
                 crystalRewardRoot.SetActive(true);
 
                 var cg = crystalRewardRoot.GetComponent<CanvasGroup>();
@@ -335,17 +343,35 @@ namespace CosmicShore.Game.Cinematics
         /// <summary>
         /// Checks whether the just-finished game unlocked a new intensity level (3 or 4).
         /// If so, shows a brief message via the quest-completion text panel before moving on.
-        /// Uses the _intensityUnlockedThisGame field set by the OnIntensityUnlocked event.
+        /// Checks both the event-driven field and the service directly as a fallback,
+        /// since the event may fire during the same frame as the coroutine start.
         /// </summary>
         protected virtual IEnumerator ShowIntensityUnlockSequence()
         {
-            if (_intensityUnlockedThisGame <= 0) yield break;
+            int unlockedIntensity = _intensityUnlockedThisGame;
 
-            var service = GameModeProgressionService.Instance;
-            var quest = service?.GetQuestForMode(gameData.GameMode);
+            // Fallback: check service directly in case the event was missed or not yet handled
+            if (unlockedIntensity <= 0 && gameData != null)
+            {
+                var service = GameModeProgressionService.Instance;
+                if (service != null)
+                {
+                    int playedIntensity = service.GetCachedPlayedIntensity();
+                    int maxUnlocked = service.GetMaxUnlockedIntensity(gameData.GameMode);
+
+                    // If the player just played at intensity N and N+1 is now unlocked, they unlocked it this game
+                    if (maxUnlocked > playedIntensity && maxUnlocked >= 3)
+                        unlockedIntensity = maxUnlocked;
+                }
+            }
+
+            if (unlockedIntensity <= 0) yield break;
+
+            var progressionService = GameModeProgressionService.Instance;
+            var quest = progressionService?.GetQuestForMode(gameData.GameMode);
             string displayName = quest != null ? quest.DisplayName : gameData.GameMode.ToString();
 
-            ToastNotificationAPI.Show($"{displayName} Intensity {_intensityUnlockedThisGame} Unlocked!");
+            ToastNotificationAPI.Show($"{displayName} Intensity {unlockedIntensity} Unlocked!");
             yield return new WaitForSeconds(1f);
         }
 
@@ -414,6 +440,41 @@ namespace CosmicShore.Game.Cinematics
         protected virtual bool DetermineLocalPlayerWon()
         {
             return gameData != null && gameData.IsLocalDomainWinner(out _);
+        }
+
+        /// <summary>
+        /// Returns the 0-based placement index of the local player in the sorted RoundStatsList.
+        /// Returns -1 if the local player cannot be found (disconnect, missing data).
+        /// RoundStatsList is already sorted by the time AwardCrystalReward runs.
+        /// </summary>
+        private int GetLocalPlayerPlacement()
+        {
+            var localName = gameData.LocalPlayer?.Name;
+            if (string.IsNullOrEmpty(localName)) return -1;
+
+            for (int i = 0; i < gameData.RoundStatsList.Count; i++)
+            {
+                if (gameData.RoundStatsList[i].Name == localName)
+                    return i;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Maps a 0-based placement index to the crystal reward amount.
+        /// For single-player modes, returns crystalsFirstPlace as a flat reward (backward compatible).
+        /// </summary>
+        private int GetCrystalRewardForPlacement(int placement)
+        {
+            if (!gameData.IsMultiplayerMode)
+                return crystalsFirstPlace;
+
+            return placement switch
+            {
+                0 => crystalsFirstPlace,
+                1 => crystalsSecondPlace,
+                _ => crystalsThirdPlace
+            };
         }
 
         protected virtual CinematicDefinitionSO ResolveCinematicForThisScene()

@@ -100985,7 +100985,7 @@ MonoBehaviour:
     AvatarId: 0
     IsAI: 1
     AllowSpawning: 0
-  - vesselClass: 3
+  - vesselClass: 6
     domain: 2
     PlayerName: Hostile3
     AvatarId: 0

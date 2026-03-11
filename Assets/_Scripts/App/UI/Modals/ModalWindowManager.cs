@@ -19,6 +19,7 @@ namespace CosmicShore.App.UI.Modals
 
         [SerializeField] Animator windowAnimator;
         bool isOn;
+        Coroutine _disableCoroutine;
 
         protected virtual void Start()
         {
@@ -31,12 +32,38 @@ namespace CosmicShore.App.UI.Modals
             if (!isOn || !closeOnGamepadB) return;
             if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
             {
+                // Only the topmost modal should handle gamepad B to prevent
+                // closing multiple nested modals in a single press
+                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+                if (screenSwitcher != null && !screenSwitcher.ModalIsActive(ModalType))
+                    return;
+
                 ModalWindowOut();
             }
         }
 
         public void ModalWindowIn()
         {
+            // Cancel any pending disable from a previous ModalWindowOut
+            if (_disableCoroutine != null)
+            {
+                StopCoroutine(_disableCoroutine);
+                _disableCoroutine = null;
+            }
+
+            // Detect external deactivation (e.g. a button calling SetActive(false) directly
+            // instead of ModalWindowOut). Reset state so the modal can reopen properly.
+            bool wasExternallyDeactivated = isOn && !gameObject.activeSelf;
+            if (wasExternallyDeactivated)
+            {
+                isOn = false;
+
+                // Clean up the modal stack entry that was never popped
+                var switcher = FindAnyObjectByType<ScreenSwitcher>();
+                if (switcher != null)
+                    switcher.PopModal();
+            }
+
             gameObject.SetActive(true);
 
             if (isOn == false)
@@ -57,27 +84,28 @@ namespace CosmicShore.App.UI.Modals
 
         public void ModalWindowOut()
         {
-            if (isOn)
-            {
-                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
-                if (screenSwitcher)
-                    screenSwitcher.PopModal();
+            if (!isOn) return;
 
-                if (sharpAnimations == false)
-                    windowAnimator.CrossFade("Window Out", 0.1f);
-                else
-                    windowAnimator.Play("Window Out");
+            var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+            if (screenSwitcher)
+                screenSwitcher.PopModal();
 
-                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.CloseView);
-                isOn = false;
-            }
-            if(ModalType == ModalWindows.SETTINGS) return;
-            StartCoroutine(DisableWindow());
+            if (sharpAnimations == false)
+                windowAnimator.CrossFade("Window Out", 0.1f);
+            else
+                windowAnimator.Play("Window Out");
+
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.CloseView);
+            isOn = false;
+
+            if (ModalType == ModalWindows.SETTINGS) return;
+            _disableCoroutine = StartCoroutine(DisableWindow());
         }
 
         IEnumerator DisableWindow()
         {
             yield return new WaitForSeconds(0.5f);
+            _disableCoroutine = null;
             gameObject.SetActive(false);
         }
     }

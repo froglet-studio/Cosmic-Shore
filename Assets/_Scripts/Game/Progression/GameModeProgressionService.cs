@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using CosmicShore.Models;
 using CosmicShore.Soap;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Progression
@@ -37,6 +38,15 @@ namespace CosmicShore.Game.Progression
         /// <summary>Fired when an intensity level is newly unlocked for a game mode. Args: (mode, newlyUnlockedIntensity)</summary>
         public event Action<GameModes, int> OnIntensityUnlocked;
 
+        /// <summary>Tracks whether we have an active subscription to OnMiniGameEnd.</summary>
+        private bool _subscribedToGameEnd;
+
+        /// <summary>
+        /// Cached intensity from game launch. SelectedIntensity (Soap IntVariable) resets
+        /// on scene load, so we snapshot it here before the scene transition wipes it.
+        /// </summary>
+        private int _cachedPlayedIntensity = 1;
+
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -50,6 +60,17 @@ namespace CosmicShore.Game.Progression
             DontDestroyOnLoad(gameObject);
 
             EnsureFirstModeUnlocked();
+
+            // Subscribe as early as possible — Awake is more reliable than Start
+            // for DontDestroyOnLoad singletons that must survive scene transitions.
+            SubscribeToGameEnd();
+
+            // Snapshot intensity at launch time, before Soap resets SelectedIntensity on scene load.
+            if (gameData != null)
+                gameData.OnLaunchGameScene += CaptureIntensityOnLaunch;
+
+            // Re-validate subscription after every scene load (defensive).
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         void OnDestroy()
@@ -57,8 +78,10 @@ namespace CosmicShore.Game.Progression
             if (Instance == this)
                 Instance = null;
 
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            UnsubscribeFromGameEnd();
             if (gameData != null)
-                gameData.OnMiniGameEnd -= HandleGameEnd;
+                gameData.OnLaunchGameScene -= CaptureIntensityOnLaunch;
 
             var ds = UGSDataService.Instance;
             if (ds != null)
@@ -67,8 +90,8 @@ namespace CosmicShore.Game.Progression
 
         void Start()
         {
-            if (gameData != null)
-                gameData.OnMiniGameEnd += HandleGameEnd;
+            // Ensure subscription exists (defensive — Awake should have done this)
+            SubscribeToGameEnd();
 
             var ds = UGSDataService.Instance;
             if (ds != null)
@@ -80,15 +103,72 @@ namespace CosmicShore.Game.Progression
             }
         }
 
+        void CaptureIntensityOnLaunch()
+        {
+            // Only override if the configure modal hasn't already set a valid value.
+            // The launch flow can reset SelectedIntensity before this callback fires.
+            if (_cachedPlayedIntensity > 1)
+            {
+                Debug.Log($"[GameModeProgressionService] Captured intensity on launch: keeping cached value {_cachedPlayedIntensity}");
+                return;
+            }
+
+            if (gameData != null && gameData.SelectedIntensity != null)
+            {
+                _cachedPlayedIntensity = gameData.SelectedIntensity.Value;
+                Debug.Log($"[GameModeProgressionService] Captured intensity on launch: {_cachedPlayedIntensity}");
+            }
+        }
+
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // Re-validate subscription after scene transitions.
+            SubscribeToGameEnd();
+
+            // Soap's ScriptableVariable resets SelectedIntensity to 1 on scene load.
+            // Restore the correct value so ALL game systems (environment, AI, cells, etc.)
+            // read the right intensity. This fires after Soap's reset but before Start().
+            if (_cachedPlayedIntensity > 1 && gameData != null && gameData.SelectedIntensity != null)
+            {
+                gameData.SelectedIntensity.Value = _cachedPlayedIntensity;
+                gameData.PlayedIntensity = _cachedPlayedIntensity;
+                Debug.Log($"[GameModeProgressionService] Restored SelectedIntensity to {_cachedPlayedIntensity} after scene load");
+            }
+        }
+
+        void SubscribeToGameEnd()
+        {
+            if (_subscribedToGameEnd || gameData == null) return;
+            gameData.OnMiniGameEnd += HandleGameEnd;
+            _subscribedToGameEnd = true;
+            Debug.Log($"[GameModeProgressionService] Subscribed to OnMiniGameEnd (gameData={gameData.name})");
+        }
+
+        void UnsubscribeFromGameEnd()
+        {
+            if (!_subscribedToGameEnd || gameData == null) return;
+            gameData.OnMiniGameEnd -= HandleGameEnd;
+            _subscribedToGameEnd = false;
+            Debug.Log("[GameModeProgressionService] Unsubscribed from OnMiniGameEnd");
+        }
+
         void HandleDataServiceReady()
         {
             var ds = UGSDataService.Instance;
             if (ds != null)
                 ds.OnInitialized -= HandleDataServiceReady;
 
-            // Use the repo's data directly
+            // Point to the repo's data. If we accumulated any local changes before
+            // cloud data loaded (unlikely but possible), merge them into the repo first.
             if (ds?.ProgressionRepo != null)
-                ProgressionData = ds.ProgressionRepo.Data;
+            {
+                var repoData = ds.ProgressionRepo.Data;
+                if (!ReferenceEquals(ProgressionData, repoData))
+                {
+                    repoData.MergeFrom(ProgressionData);
+                    ProgressionData = repoData;
+                }
+            }
 
             EnsureFirstModeUnlocked();
             SyncSOCompletedFlags();
@@ -317,6 +397,23 @@ namespace CosmicShore.Game.Progression
             CSDebug.Log($"[GameModeProgressionService] Debug: Set {mode} max intensity to {maxIntensity}.");
         }
 
+        /// <summary>
+        /// Returns the intensity level captured at game launch time.
+        /// Use this instead of gameData.SelectedIntensity which gets reset by Soap on scene load.
+        /// </summary>
+        public int GetCachedPlayedIntensity() => _cachedPlayedIntensity;
+
+        /// <summary>
+        /// Called by UI (configure modal) when the player selects an intensity.
+        /// Stores the value on this DontDestroyOnLoad singleton so it survives
+        /// scene loads regardless of which launch path the game takes.
+        /// </summary>
+        public void SetCachedPlayedIntensity(int intensity)
+        {
+            _cachedPlayedIntensity = Mathf.Max(1, intensity);
+            Debug.Log($"[GameModeProgressionService] Cached intensity set to {_cachedPlayedIntensity}");
+        }
+
         // ── Intensity Progression Public API ─────────────────────────────────
 
         /// <summary>
@@ -443,9 +540,15 @@ namespace CosmicShore.Game.Progression
 
         void HandleGameEnd()
         {
+            // Use Debug.LogWarning (not CSDebug) so this ALWAYS appears in console,
+            // even in builds where CSDebug may be compiled out.
+            Debug.LogWarning($"[GameModeProgressionService] HandleGameEnd fired. " +
+                           $"mode={gameData?.GameMode}, localPlayer={gameData?.LocalPlayer?.Name ?? "null"}, " +
+                           $"statsCount={gameData?.RoundStatsList?.Count ?? 0}");
+
             if (gameData == null || gameData.LocalPlayer == null)
             {
-                CSDebug.LogWarning("[GameModeProgressionService] HandleGameEnd skipped — gameData or LocalPlayer is null.");
+                Debug.LogWarning("[GameModeProgressionService] HandleGameEnd skipped — gameData or LocalPlayer is null.");
                 return;
             }
 
@@ -453,20 +556,21 @@ namespace CosmicShore.Game.Progression
             var quest = GetQuestForMode(mode);
             if (quest == null || quest.IsPlaceholder)
             {
-                CSDebug.Log($"[GameModeProgressionService] No quest found for mode {mode}, skipping.");
+                Debug.LogWarning($"[GameModeProgressionService] No quest found for mode {mode}, skipping.");
                 return;
             }
 
             if (ProgressionData.IsQuestCompleted(mode.ToString()))
             {
-                CSDebug.Log($"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
+                Debug.Log($"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
                 return;
             }
 
             // Intensity-based quests: track play counts and unlock tiers
             if (quest.TargetType == QuestTargetType.IntensityUnlocked)
             {
-                int playedIntensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
+                int playedIntensity = _cachedPlayedIntensity;
+                _cachedPlayedIntensity = 1; // Reset so it doesn't leak into the next game
                 float statValue = ExtractStatForIntensityGoal(quest);
                 RecordIntensityPlay(mode, quest, playedIntensity, statValue);
                 return;
@@ -499,9 +603,9 @@ namespace CosmicShore.Game.Progression
             int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName);
             bool useStatBased = quest.IntensityUnlockStatType != QuestTargetType.Placeholder;
 
-            CSDebug.Log($"[GameModeProgressionService] RecordIntensityPlay — mode:{mode}, " +
-                       $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
-                       $"statBased:{useStatBased}, statValue:{statValue}");
+            Debug.LogWarning($"[GameModeProgressionService] RecordIntensityPlay — mode:{mode}, " +
+                           $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
+                           $"statBased:{useStatBased}, statValue:{statValue}");
 
             // Check if playing at intensity 2 should unlock intensity 3
             if (maxUnlocked == 2 && playedIntensity == 2)
@@ -513,7 +617,7 @@ namespace CosmicShore.Game.Progression
                 if (shouldUnlock)
                 {
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
-                    CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
+                    Debug.LogWarning($"[GameModeProgressionService] Intensity 3 UNLOCKED for {mode}!");
                     OnIntensityUnlocked?.Invoke(mode, 3);
                     OnProgressionChanged?.Invoke(ProgressionData);
                     SaveImmediateAsync();
@@ -531,7 +635,7 @@ namespace CosmicShore.Game.Progression
                 if (shouldUnlock)
                 {
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
-                    CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
+                    Debug.LogWarning($"[GameModeProgressionService] Intensity 4 UNLOCKED for {mode}! Quest complete.");
                     OnIntensityUnlocked?.Invoke(mode, 4);
 
                     // Intensity 4 unlocked = quest completed
@@ -577,6 +681,8 @@ namespace CosmicShore.Game.Progression
             switch (quest.IntensityUnlockStatType)
             {
                 case QuestTargetType.CrystalsCollected:
+                    return localStats?.CrystalsCollected ?? 0;
+
                 case QuestTargetType.ScoreAbove:
                 case QuestTargetType.SurvivalTime:
                     return localStats?.Score ?? 0f;
@@ -644,7 +750,7 @@ namespace CosmicShore.Game.Progression
             switch (quest.TargetType)
             {
                 case QuestTargetType.CrystalsCollected:
-                    return localStats?.Score ?? 0f;
+                    return localStats?.CrystalsCollected ?? 0;
 
                 case QuestTargetType.ScoreAbove:
                     return localStats?.Score ?? 0f;
@@ -731,18 +837,28 @@ namespace CosmicShore.Game.Progression
             var repo = UGSDataService.Instance?.ProgressionRepo;
             if (repo == null)
             {
-                CSDebug.LogWarning("[GameModeProgressionService] ProgressionRepo not available, cannot save.");
+                Debug.LogWarning("[GameModeProgressionService] ProgressionRepo not available, cannot save.");
                 return;
+            }
+
+            // If ProgressionData is a different object than the repo's data
+            // (can happen if game ended before cloud data loaded), copy our
+            // local modifications into the repo's data so they get persisted.
+            if (ProgressionData != null && !ReferenceEquals(ProgressionData, repo.Data))
+            {
+                Debug.LogWarning("[GameModeProgressionService] ProgressionData is not the repo's data — syncing local → repo before save.");
+                repo.Data.MergeFrom(ProgressionData);
+                ProgressionData = repo.Data;
             }
 
             try
             {
                 await repo.SaveAsync();
-                CSDebug.Log("[GameModeProgressionService] Saved progression data immediately.");
+                Debug.Log("[GameModeProgressionService] Saved progression data immediately.");
             }
             catch (Exception e)
             {
-                CSDebug.LogWarning($"[GameModeProgressionService] Immediate save failed: {e.Message}. Queuing debounced save.");
+                Debug.LogWarning($"[GameModeProgressionService] Immediate save failed: {e.Message}. Queuing debounced save.");
                 ScheduleDebouncedSave();
             }
         }
