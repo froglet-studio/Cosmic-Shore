@@ -431,6 +431,10 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public bool IsIntensityUnlocked(GameModes mode, int intensity)
         {
+            // Freestyle has all intensities available from the start
+            if (mode == GameModes.Freestyle)
+                return true;
+
             return intensity <= GetMaxUnlockedIntensity(mode);
         }
 
