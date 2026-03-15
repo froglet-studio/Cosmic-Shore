@@ -122,7 +122,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 434181841133139353}
-  - {fileID: 1597127269370368608}
   m_Father: {fileID: 4853044355858455827}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -955,6 +954,7 @@ Transform:
   - {fileID: 7660753406630777482}
   - {fileID: 2285003040825308999}
   - {fileID: 2643841253389033401}
+  - {fileID: 1597127269370368608}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2386735669300085014
@@ -1301,13 +1301,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkinnedMeshRenderer: {fileID: 0}
+  SkinnedMeshRenderer: {fileID: 3818739590635575348}
   SaveNewPositions: 1
   UseShapeKeys: 1
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
-  animator: {fileID: 0}
+  animator: {fileID: 4668559488328189978}
   hasBoost: 1
 --- !u!114 &838706159439259027
 MonoBehaviour:
@@ -1326,6 +1326,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
   energyResourceIndex: 0
   view: {fileID: 7416581124810081342}
+  elementBars: {fileID: 0}
 --- !u!114 &4780908095115307824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1369,6 +1370,8 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 11400000, guid: af52deeb6df808440a057ec5db100610, type: 2}
   _resourceEventClassActions: []
+  _touchActionOverrides: []
+  _gamepadActionOverrides: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -1387,7 +1390,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipGeometries:
-  - {fileID: 0}
+  - {fileID: 2117239821978650842}
 --- !u!114 &1427785718439944555
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1430,6 +1433,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseView: {fileID: 4159619328234506921}
   silhouette: {fileID: 838706159439259027}
+  scorePopup: {fileID: 0}
+  gameData: {fileID: 0}
+  domainColorPalette: {fileID: 0}
   view: {fileID: 4159619328234506921}
   fireGunExecutor: {fileID: 4658886838346608747}
   overheatingExecutor: {fileID: 9221702416238991819}
@@ -1924,22 +1930,22 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 2285003040825308999}
+    m_TransformParent: {fileID: 4853044355858455827}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 2.3946784
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 2.3946784
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 2.3946784
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
@@ -1991,10 +1997,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
       propertyPath: m_Name
       value: SparrowModel3
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2692722512241470911, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
@@ -2060,6 +2081,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   impactorObject: {fileID: 3026918495431464708}
+--- !u!137 &3818739590635575348 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2692722512241470911, guid: 1b0725c5c79aad145835d47b9ecfa510,
+    type: 3}
+  m_PrefabInstance: {fileID: 1270186306832725387}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &4668559488328189978 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 1b0725c5c79aad145835d47b9ecfa510,
+    type: 3}
+  m_PrefabInstance: {fileID: 1270186306832725387}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &4424850287908281928
 PrefabInstance:
   m_ObjectHideFlags: 0

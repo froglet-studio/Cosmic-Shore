@@ -700,7 +700,7 @@ Animator:
   m_GameObject: {fileID: 1379066679125974031}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 77a38b23d33b195469fe407e2207bbdf, type: 3}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: f922b4ddeaa211f498ff3a539e6ce230, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
@@ -1008,7 +1008,7 @@ Transform:
   m_GameObject: {fileID: 1815102489639903026}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: -0.41024145, w: 0.91197693}
-  m_LocalPosition: {x: 7.468421e-11, y: 0.010075154, z: -7.686296e-14}
+  m_LocalPosition: {x: 0, y: 0.010075154, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1682,7 +1682,7 @@ Animator:
   m_GameObject: {fileID: 5463806614364299302}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 7c324ef5b6621f84b894d9474c05ec3b, type: 3}
-  m_Controller: {fileID: 9100000, guid: f922b4ddeaa211f498ff3a539e6ce230, type: 2}
+  m_Controller: {fileID: 9100000, guid: 344fde8b5b4da2f48837e87ffc9ce64a, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
@@ -2009,7 +2009,7 @@ GameObject:
   - component: {fileID: 6733957700513663958}
   - component: {fileID: 7965853245772039612}
   - component: {fileID: 3064061082551029771}
-  - component: {fileID: 9678703874602163012}
+  - component: {fileID: 9223372036854775807}
   m_Layer: 0
   m_Name: Manta
   m_TagString: Player_Ship
@@ -2383,6 +2383,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: e2b6ec3dc3232114cb1376a276d772a1, type: 2}
   energyResourceIndex: 0
   view: {fileID: 397713304832229907}
+  elementBars: {fileID: 0}
 --- !u!114 &3882236086036410899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2437,6 +2438,8 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   _resourceEventClassActions: []
+  _touchActionOverrides: []
+  _gamepadActionOverrides: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -2503,6 +2506,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseView: {fileID: 2835891913121360755}
   silhouette: {fileID: 2731003324702047408}
+  scorePopup: {fileID: 0}
+  gameData: {fileID: 0}
+  domainColorPalette: {fileID: 0}
   view: {fileID: 2835891913121360755}
   overchargeSO: {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
   skimmer: {fileID: 8469300474470268824}
@@ -2538,6 +2544,19 @@ MonoBehaviour:
   overrideDetectionLayers:
     serializedVersion: 2
     m_Bits: 2048
+--- !u!114 &9223372036854775807
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &6427700898264204751
 GameObject:
   m_ObjectHideFlags: 0
@@ -4174,6 +4193,7 @@ MonoBehaviour:
   highlights:
   - input: 2
     image: {fileID: 7069206601941259528}
+  animSettings: {fileID: 0}
   countText: {fileID: 1233584866538271001}
   fillImage: {fileID: 4296652247721588461}
   overchargePrismCount: {fileID: 4338819628229389481}
@@ -4787,19 +4807,6 @@ Camera:
     type: 3}
   m_PrefabInstance: {fileID: 8546359282292252367}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &9678703874602163012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!4 &8650884460702527226 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
