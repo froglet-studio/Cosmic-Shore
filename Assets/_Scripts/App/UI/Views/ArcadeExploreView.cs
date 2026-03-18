@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems.Audio;
+using CosmicShore.Soap;
 using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
@@ -36,6 +37,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] bool RespectInventoryForGameSelection = false;
 
         [SerializeField] VesselClassTypeVariable selectedVesselClassType;
+        [SerializeField] GameDataSO gameData;
 
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
@@ -201,9 +203,13 @@ namespace CosmicShore.App.UI.Views
                 resources  = matchedVessel.InitialResourceLevels;
             }
 
+            int playerCount = gameData && gameData.SelectedPlayerCount ? gameData.SelectedPlayerCount.Value : 1;
+            int intensity = gameData && gameData.SelectedIntensity ? gameData.SelectedIntensity.Value : 1;
+            bool isMultiplayer = SelectedGame.IsMultiplayer && playerCount > 1;
+
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
-            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, vesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
-            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, vesselType, resources, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
+            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(intensity, playerCount, vesselType, SelectedGame.Mode, isMultiplayer));
+            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, vesselType, resources, intensity, playerCount, isMultiplayer, false);
         }
 
         public void ToggleFavorite()
