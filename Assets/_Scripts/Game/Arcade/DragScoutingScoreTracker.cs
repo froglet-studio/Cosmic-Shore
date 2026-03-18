@@ -101,23 +101,32 @@ namespace CosmicShore.Game.Arcade
 
             if (isWinner)
             {
-                if (UGSStatsManager.Instance && _vesselTelemetry != null)
-                {
-                    UGSStatsManager.Instance.ReportHexRaceStats(
-                        GameModes.DragScouting,
-                        gameData.SelectedIntensity.Value,
-                        0, // No clean streak tracking for Manta
-                        _vesselTelemetry.MaxDriftTime,
-                        0, // No joust tracking for this mode
-                        finalScore
-                    );
-                }
-
-                // Report per-vessel telemetry to UGS
-                if (UGSStatsManager.Instance && _vesselTelemetry != null && _observedVessel != null)
-                    UGSStatsManager.Instance.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
-
+                // Report finish FIRST — this triggers the authoritative game-end flow
+                // (SyncFinalScores_ClientRpc sets RaceResultsReady and WinnerName).
+                // Telemetry must never block the critical path.
                 if (controller) controller.ReportLocalPlayerFinished(finalScore);
+
+                try
+                {
+                    if (UGSStatsManager.Instance && _vesselTelemetry != null)
+                    {
+                        UGSStatsManager.Instance.ReportHexRaceStats(
+                            GameModes.DragScouting,
+                            gameData.SelectedIntensity.Value,
+                            0, // No clean streak tracking for Manta
+                            _vesselTelemetry.MaxDriftTime,
+                            0, // No joust tracking for this mode
+                            finalScore
+                        );
+                    }
+
+                    if (UGSStatsManager.Instance && _vesselTelemetry != null && _observedVessel != null)
+                        UGSStatsManager.Instance.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
+                }
+                catch (System.Exception ex)
+                {
+                    CSDebug.LogError($"[DragScoutingTracker] Telemetry reporting failed: {ex.Message}");
+                }
             }
 
             if (controller == null)
