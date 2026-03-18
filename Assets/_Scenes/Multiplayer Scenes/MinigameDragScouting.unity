@@ -858,7 +858,7 @@ GameObject:
   - component: {fileID: 1078953705}
   - component: {fileID: 1078953712}
   - component: {fileID: 1078953723}
-  - component: {fileID: 1078953729}
+  - component: {fileID: 1078953732}
   - component: {fileID: 1078953731}
   - component: {fileID: 1078953715}
   - component: {fileID: 1078953720}
@@ -867,7 +867,7 @@ GameObject:
   - component: {fileID: 1078953725}
   - component: {fileID: 1078953724}
   - component: {fileID: 1078953726}
-  - component: {fileID: 1078953732}
+  - component: {fileID: 1078953733}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -903,7 +903,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3352592793
+  GlobalObjectIdHash: 3937652339
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -949,8 +949,9 @@ MonoBehaviour:
     Response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 1078953729}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController, Assembly-CSharp
+        - m_Target: {fileID: 1078953732}
+          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.DragScoutingController,
+            Assembly-CSharp
           m_MethodName: OnClickReturnToMainMenu
           m_Mode: 1
           m_Arguments:
@@ -1110,37 +1111,7 @@ MonoBehaviour:
   CrystalCollisions: 2
   optionalEnvironment: {fileID: 1899528610}
   optionalLaps: 4
-  controller: {fileID: 1078953729}
---- !u!114 &1078953729
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c31e7782a274137a50ffa78479c4a35, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  numberOfRounds: 1
-  numberOfTurnsPerRound: 1
-  countdownTimer: {fileID: 1556114764}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
-    type: 2}
-  multiplayerSetup: {fileID: 1300603919}
-  localScoreboard: {fileID: 1897523411}
-  segmentSpawner: {fileID: 1881177335}
-  baseNumberOfSegments: 1
-  baseStraightLineLength: 1
-  scaleNumberOfSegmentsWithIntensity: 0
-  scaleLengthWithIntensity: 0
-  helix: {fileID: 0}
-  helixIntensityScaling: 4
-  seed: 0
-  crystalsToFinishOverride: 0
+  controllerBehaviour: {fileID: 1078953732}
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1237,7 +1208,37 @@ MonoBehaviour:
   m_GameObject: {fileID: 1078953702}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48eb9115d054423495d5d00514ebc40e, type: 3}
+  m_Script: {fileID: 11500000, guid: 956ee94448bebe545aa0e00e65c8cb34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  numberOfRounds: 1
+  numberOfTurnsPerRound: 1
+  countdownTimer: {fileID: 1556114764}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
+    type: 2}
+  multiplayerSetup: {fileID: 1300603919}
+  localScoreboard: {fileID: 1897523411}
+  segmentSpawner: {fileID: 1881177335}
+  baseNumberOfSegments: 1
+  baseStraightLineLength: 1
+  scaleNumberOfSegmentsWithIntensity: 0
+  scaleLengthWithIntensity: 0
+  helix: {fileID: 0}
+  helixIntensityScaling: 4
+  seed: 0
+  crystalsToFinishOverride: 0
+--- !u!114 &1078953733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cf770fdab25790409ab5f5e490c2f0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -1248,7 +1249,7 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
-  controller: {fileID: 1078953729}
+  controller: {fileID: 1078953732}
   penaltyScoreBase: 10000
   showDebugLogs: 1
 --- !u!1 &1194123992
@@ -2158,7 +2159,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1078953729}
+      objectReference: {fileID: 1078953732}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
@@ -2187,7 +2188,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.HexRaceController, Assembly-CSharp
+      value: CosmicShore.Game.Arcade.DragScoutingController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2359,10 +2360,30 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8474059545068889059, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 31.128784
+      objectReference: {fileID: 0}
     - target: {fileID: 8540960622779608551, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: activationButton
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8771538072255463314, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8771538072255463314, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1897523408}
+    - target: {fileID: 8771538072255463314, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 8809936571624528161, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2406,7 +2427,7 @@ PrefabInstance:
       addedObject: {fileID: 1556114780}
     - targetCorrespondingSourceObject: {fileID: 1259559001432499751, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
-      insertIndex: 4
+      insertIndex: -1
       addedObject: {fileID: 1897523412}
     - targetCorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2984,6 +3005,8 @@ MonoBehaviour:
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
+  guaranteedShapeDistance: 420
+  guaranteedShapeClusterRadius: 80
 --- !u!1 &1897523407 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -3034,7 +3057,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  multiplayerController: {fileID: 1078953729}
+  multiplayerController: {fileID: 1078953732}
   endGameObject: {fileID: 154101607}
   scoreboardPanel: {fileID: 1556114763}
   statsContainer: {fileID: 708648002}
@@ -3066,7 +3089,7 @@ MonoBehaviour:
   rematchDeniedText: {fileID: 154101603}
   playAgainButton: {fileID: 154101605}
   rematchPanelAutoDismissSeconds: 2
-  animSettings: {fileID: 0}
+  animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
 --- !u!114 &1897523412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3076,7 +3099,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1897523408}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe458c43469c4d6ba3ba2a646751a3fc, type: 3}
+  m_Script: {fileID: 11500000, guid: a5c58f064197c884ba56a75b2f5a0b74, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -3084,11 +3107,13 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 1897523409}
   view: {fileID: 1897523410}
-  crystalsPerGame: 5
+  crystalsFirstPlace: 10
+  crystalsSecondPlace: 5
+  crystalsThirdPlace: 0
   crystalRewardRoot: {fileID: 629718971}
   crystalRewardText: {fileID: 731378239}
   crystalFadeDuration: 0.5
-  hexRaceController: {fileID: 1078953729}
+  dragScoutingController: {fileID: 1078953732}
 --- !u!114 &1897523413
 MonoBehaviour:
   m_ObjectHideFlags: 0

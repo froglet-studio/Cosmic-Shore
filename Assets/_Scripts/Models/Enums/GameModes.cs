@@ -38,4 +38,5 @@ public enum GameModes
     MultiplayerJoust = 34,
     MultiplayerCrystalCapture = 35,
     MultiplayerExplosiveJoust = 36,
+    DragScouting = 37,
 }

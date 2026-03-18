@@ -44,6 +44,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity
     guid: afd466f7acf11f448a75b084e3045691
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDragScouting.unity
+    guid: 331919abb01177f42ad4edb23679246b
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}

@@ -8,15 +8,14 @@ using CosmicShore.Utility;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>
-    /// Handles scoring logic for HexRace (single and multiplayer).
-    /// Vessel telemetry (drift, boost, streak, jousts) is owned by the vessel's
-    /// VesselTelemetry subclass — this tracker only reads final values for UGS reporting.
+    /// Handles scoring logic for Drag Scouting (multiplayer crystal race with Manta).
+    /// Same end-game logic as HexRace — first to collect all crystals wins.
     /// </summary>
-    public class HexRaceScoreTracker : BaseScoreTracker, IStatExposable
+    public class DragScoutingScoreTracker : BaseScoreTracker, IStatExposable
     {
         [Header("Dependencies")]
         [SerializeField] CrystalCollisionTurnMonitor turnMonitor;
-        [SerializeField] private HexRaceController controller;
+        [SerializeField] private DragScoutingController controller;
 
         [Header("Settings")]
         [SerializeField] float penaltyScoreBase = 10000f;
@@ -63,7 +62,7 @@ namespace CosmicShore.Game.Arcade
                 _vesselTelemetry = vesselComponent.GetComponent<VesselTelemetry>();
 
             if (_vesselTelemetry == null)
-                CSDebug.LogWarning("[HexRaceScoreTracker] No VesselTelemetry found on local vessel.");
+                CSDebug.LogWarning("[DragScoutingScoreTracker] No VesselTelemetry found on local vessel.");
 
             _isTracking = true;
         }
@@ -98,7 +97,7 @@ namespace CosmicShore.Game.Arcade
             gameData.LocalRoundStats.Score = finalScore;
 
             if (showDebugLogs)
-                CSDebug.Log($"<color=yellow>[HexRaceTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
+                CSDebug.Log($"<color=yellow>[DragScoutingTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
 
             if (isWinner)
             {
@@ -109,16 +108,14 @@ namespace CosmicShore.Game.Arcade
 
                 try
                 {
-                    var squirrelTelemetry = _vesselTelemetry as SquirrelVesselTelemetry;
-
                     if (UGSStatsManager.Instance && _vesselTelemetry != null)
                     {
                         UGSStatsManager.Instance.ReportHexRaceStats(
-                            GameModes.HexRace,
+                            GameModes.DragScouting,
                             gameData.SelectedIntensity.Value,
-                            squirrelTelemetry?.MaxCleanStreak ?? 0,
+                            0, // No clean streak tracking for Manta
                             _vesselTelemetry.MaxDriftTime,
-                            squirrelTelemetry?.JoustsWon ?? 0,
+                            0, // No joust tracking for this mode
                             finalScore
                         );
                     }
@@ -128,7 +125,7 @@ namespace CosmicShore.Game.Arcade
                 }
                 catch (System.Exception ex)
                 {
-                    CSDebug.LogError($"[HexRaceTracker] Telemetry reporting failed: {ex.Message}");
+                    CSDebug.LogError($"[DragScoutingTracker] Telemetry reporting failed: {ex.Message}");
                 }
             }
 
@@ -141,23 +138,18 @@ namespace CosmicShore.Game.Arcade
             // Not used — HandleGameEnd drives the flow
         }
 
-        // Temporary — logs telemetry values for verification.
-        // Remove once EventDrivenStatsProvider is confirmed working.
         public Dictionary<string, object> GetExposedStats()
         {
             if (_vesselTelemetry == null) return new Dictionary<string, object>();
 
-            var squirrel = _vesselTelemetry as SquirrelVesselTelemetry;
             var stats = new Dictionary<string, object>
             {
-                { "Longest Drift",    _vesselTelemetry.MaxDriftTime           },
-                { "Max Boost Time",   _vesselTelemetry.MaxBoostTime           },
-                { "Max Clean Streak", squirrel?.MaxCleanStreak ?? 0           },
-                { "Jousts Won",       squirrel?.JoustsWon      ?? 0           }
+                { "Longest Drift",  _vesselTelemetry.MaxDriftTime  },
+                { "Max Boost Time", _vesselTelemetry.MaxBoostTime  }
             };
 
             foreach (var kvp in stats)
-                CSDebug.Log($"[HexRaceScoreTracker] {kvp.Key}: {kvp.Value}");
+                CSDebug.Log($"[DragScoutingScoreTracker] {kvp.Key}: {kvp.Value}");
 
             return stats;
         }

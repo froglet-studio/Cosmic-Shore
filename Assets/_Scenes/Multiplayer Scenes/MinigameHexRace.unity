@@ -1110,7 +1110,7 @@ MonoBehaviour:
   CrystalCollisions: 2
   optionalEnvironment: {fileID: 1899528610}
   optionalLaps: 4
-  controller: {fileID: 1078953729}
+  controllerBehaviour: {fileID: 1078953729}
 --- !u!114 &1078953729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2984,6 +2984,8 @@ MonoBehaviour:
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
+  guaranteedShapeDistance: 420
+  guaranteedShapeClusterRadius: 80
 --- !u!1 &1897523407 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -3084,7 +3086,9 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 1897523409}
   view: {fileID: 1897523410}
-  crystalsPerGame: 5
+  crystalsFirstPlace: 10
+  crystalsSecondPlace: 5
+  crystalsThirdPlace: 0
   crystalRewardRoot: {fileID: 629718971}
   crystalRewardText: {fileID: 731378239}
   crystalFadeDuration: 0.5

@@ -41,6 +41,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
   - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}
+  - {fileID: 11400000, guid: cf3e596b690022949856f2e4827430c7, type: 2}
   TrainingGames:
   - {fileID: 11400000, guid: 90452e7bccc992c458a9b701346fc9ad, type: 2}
   - {fileID: 11400000, guid: 90452e7bccc992c458a9b701346fc9ad, type: 2}
