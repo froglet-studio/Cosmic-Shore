@@ -12,6 +12,10 @@ namespace CosmicShore.Game.UI
         [Header("References")]
         [SerializeField] private MultiplayerJoustController joustController;
 
+        [Header("Display")]
+        [Tooltip("Noun used in loser row (e.g. Joust, Hit)")]
+        [SerializeField] string scoreNoun = "Joust";
+
         protected override void ShowMultiplayerView()
         {
             // Use the authoritative WinnerName from the joust controller
@@ -71,9 +75,9 @@ namespace CosmicShore.Game.UI
                 }
                 else
                 {
-                    // Loser row shows jousts remaining
+                    // Loser row shows remaining count
                     string plural = joustsLeft == 1 ? "" : "s";
-                    PlayerScoreTextFields[i].text = $"{joustsLeft} Joust{plural} Left";
+                    PlayerScoreTextFields[i].text = $"{joustsLeft} {scoreNoun}{plural} Left";
                 }
             }
 

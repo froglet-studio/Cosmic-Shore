@@ -19,11 +19,11 @@ MonoBehaviour:
     enhanceTrail: 1
     fadeLoserTrail: 1
   victoryToastStrings:
-  - JOUSTED THE OPPONENT!
-  - YOU WERE FAST AF BOI
+  - SHOTS FIRED!
+  - TARGET ELIMINATED!
   - THAT WAS...WOW!
   defeatToastStrings:
-  - GOT JOUSTED
+  - SHOT DOWN
   - GET BETTER
   - ABSOLUTELY BOTTLED IT
   showVictoryToast: 1

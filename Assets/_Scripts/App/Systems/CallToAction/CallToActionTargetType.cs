@@ -56,6 +56,9 @@ namespace CosmicShore.App.Systems.CTA
         PlayGameHexRace = 431,
         PlayGameDragScouting = 432,
 
+        PlayGameMultiplayerDogFight = 433,
+        PlayGameMultiplayerMissileDogFight = 434,
+
         /*********** ADDED BY WILL *************/
 
     }

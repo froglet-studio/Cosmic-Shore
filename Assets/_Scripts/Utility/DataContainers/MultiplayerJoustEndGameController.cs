@@ -12,6 +12,10 @@ namespace CosmicShore.Game.Arcade
         [Header("References")]
         [SerializeField] private MultiplayerJoustController joustController;
 
+        [Header("Display")]
+        [Tooltip("Noun used in score labels (e.g. Joust, Hit)")]
+        [SerializeField] string scoreNoun = "Joust";
+
         protected override bool DetermineLocalPlayerWon()
         {
             var localName = gameData.LocalPlayer?.Name;
@@ -51,14 +55,16 @@ namespace CosmicShore.Game.Arcade
 
             if (didWin)
             {
-                label        = $"WON BY {joustDifference} JOUST{(joustDifference != 1 ? "S" : "")}";
+                string nounUpper = scoreNoun.ToUpper();
+                label        = $"WON BY {joustDifference} {nounUpper}{(joustDifference != 1 ? "S" : "")}";
                 displayValue = Mathf.FloorToInt(localStats.Score); // seconds → int, same as HexRace
                 formatAsTime = true;
             }
             else
             {
                 int joustsLeft = Mathf.Max(0, needed - myJousts);
-                label        = $"LOST BY {joustDifference} JOUST{(joustDifference != 1 ? "S" : "")}";
+                string nounUpper = scoreNoun.ToUpper();
+                label        = $"LOST BY {joustDifference} {nounUpper}{(joustDifference != 1 ? "S" : "")}";
                 displayValue = joustsLeft;
                 formatAsTime = false;
             }
