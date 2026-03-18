@@ -24,7 +24,7 @@ MonoBehaviour:
   GolfScoring: 0
   SceneName: MinigameMissileDogFight
   Vessels:
-  - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
+  - {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1
