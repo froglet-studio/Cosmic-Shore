@@ -187,8 +187,8 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
-            // Freestyle is always available
-            if (mode == GameModes.Freestyle)
+            // Freestyle and Explosive Joust are always available
+            if (mode == GameModes.Freestyle || mode == GameModes.MultiplayerJoust)
                 return true;
 
             // First quest mode is always unlocked
@@ -431,8 +431,8 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public bool IsIntensityUnlocked(GameModes mode, int intensity)
         {
-            // Freestyle has all intensities available from the start
-            if (mode == GameModes.Freestyle)
+            // Freestyle and Explosive Joust have all intensities available from the start
+            if (mode == GameModes.Freestyle || mode == GameModes.MultiplayerJoust)
                 return true;
 
             return intensity <= GetMaxUnlockedIntensity(mode);
