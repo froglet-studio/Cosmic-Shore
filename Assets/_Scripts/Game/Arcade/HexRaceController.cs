@@ -7,7 +7,7 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class HexRaceController : MultiplayerDomainGamesController
+    public class HexRaceController : MultiplayerDomainGamesController, ICrystalRaceController
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
