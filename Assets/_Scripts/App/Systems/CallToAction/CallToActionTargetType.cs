@@ -55,6 +55,8 @@ namespace CosmicShore.App.Systems.CTA
         PlayGameMultiplayerWildlifeBlitzGame = 430,
         PlayGameHexRace = 431,
 
+        PlayGameMultiplayerExplosiveJoust = 432,
+
         /*********** ADDED BY WILL *************/
 
     }
