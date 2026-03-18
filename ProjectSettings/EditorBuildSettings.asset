@@ -44,6 +44,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDragScouting.unity
     guid: 331919abb01177f42ad4edb23679246b
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity
+    guid: 7c099aeae3c98e4489c0b7d9b4dec9bb
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameMissileDogFight.unity
+    guid: 0e448e96a3c945e48a17aab0396a40e0
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}
