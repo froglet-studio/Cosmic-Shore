@@ -25,7 +25,7 @@ MonoBehaviour:
   GolfScoring: 1
   SceneName: MinigameDragScouting
   Vessels:
-  - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
+  - {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1
