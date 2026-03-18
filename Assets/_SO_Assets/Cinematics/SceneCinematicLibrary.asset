@@ -23,3 +23,5 @@ MonoBehaviour:
     cinematic: {fileID: 11400000, guid: ef65347ab0f9f884bb5b09e4504bfd04, type: 2}
   - sceneName: MinigameDragScouting
     cinematic: {fileID: 11400000, guid: 6b53ca3d49e107944b5f7873372a4793, type: 2}
+  - sceneName: MinigameExplosiveJoust
+    cinematic: {fileID: 11400000, guid: 9f21dbcbb5b2cc04ca505057f4523b7e, type: 2}
