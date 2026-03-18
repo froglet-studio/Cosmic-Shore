@@ -260,7 +260,7 @@ namespace CosmicShore.App.UI.Views
             loadout.PlayerCount = activePlayerCount;
             loadout.VesselType = activeVesselType;
             loadout.GameMode = activeGameMode;
-            loadout.IsMultiplayer = AllGames.Games[selectedGameIndex].IsMultiplayer;
+            loadout.IsMultiplayer = AllGames.Games[selectedGameIndex].IsMultiplayer && activePlayerCount > 1;
 
             int idx = LoadoutSystem.GetActiveLoadoutIndex();
 
