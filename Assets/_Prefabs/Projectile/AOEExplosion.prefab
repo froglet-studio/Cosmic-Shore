@@ -167,10 +167,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  explosionShipEffectsSO: []
-  explosionPrismEffectsSO: []
+  m_Name:
+  m_EditorClassIdentifier:
+  explosionImpactorDataContainer: {fileID: 11400000, guid: a7dec8824a05483791e7ec0af1ff057d,
+    type: 2}
   affectSelf: 0
   destructive: 1
   devastating: 0

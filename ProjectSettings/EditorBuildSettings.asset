@@ -39,6 +39,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity
     guid: 0bac4466932e424478d8d413a6096e06
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameExplosiveJoust.unity
+    guid: e0b5d953e6fa11b4d8a25b36aaf11128
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity
     guid: afd466f7acf11f448a75b084e3045691
   - enabled: 1
