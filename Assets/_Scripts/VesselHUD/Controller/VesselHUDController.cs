@@ -133,6 +133,14 @@ namespace CosmicShore.Game
                     _unsubscribeScoreAction = () => roundStats.OnJoustCollisionChanged -= onJoust;
                     break;
 
+                case GameModes.MultiplayerDogFight:
+                case GameModes.MultiplayerMissileDogFight:
+                    _previousIntScore = roundStats.JoustCollisions;
+                    Action<IRoundStats> onDogFightHit = HandleJoustCollisionChanged;
+                    roundStats.OnJoustCollisionChanged += onDogFightHit;
+                    _unsubscribeScoreAction = () => roundStats.OnJoustCollisionChanged -= onDogFightHit;
+                    break;
+
                 case GameModes.HexRace:
                     _previousIntScore = roundStats.OmniCrystalsCollected;
                     Action<IRoundStats> onCrystal = HandleCrystalCollectedChanged;

@@ -1,4 +1,3 @@
-﻿// MultiplayerJoustScoreboard.cs
 using System;
 using System.Linq;
 using CosmicShore.Game.Arcade;
@@ -7,20 +6,17 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
-    public class MultiplayerJoustScoreboard : Scoreboard
+    public class DogFightScoreboard : Scoreboard
     {
         [Header("References")]
-        [SerializeField] private MultiplayerJoustController joustController;
+        [SerializeField] private DogFightController dogFightController;
 
         protected override void ShowMultiplayerView()
         {
-            // Use the authoritative WinnerName from the joust controller
-            // instead of sorting by score, which can be unreliable if
-            // scores are reset before the scoreboard displays.
-            if (joustController != null && joustController.ResultsReady)
+            if (dogFightController != null && dogFightController.ResultsReady)
             {
                 var winnerStats = gameData.RoundStatsList
-                    .FirstOrDefault(s => s.Name == joustController.WinnerName);
+                    .FirstOrDefault(s => s.Name == dogFightController.WinnerName);
                 if (winnerStats != null)
                     SetBannerForDomain(winnerStats.Domain);
                 else if (BannerText) BannerText.text = "GAME OVER";
@@ -32,25 +28,24 @@ namespace CosmicShore.Game.UI
             }
             else if (BannerText) BannerText.text = "GAME OVER";
 
-            FormatMultiplayerJoustScores();
+            FormatDogFightScores();
 
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView)  MultiplayerView.gameObject.SetActive(true);
         }
 
-        void FormatMultiplayerJoustScores()
+        void FormatDogFightScores()
         {
-            if (!joustController || !joustController.joustTurnMonitor)
+            if (!dogFightController || !dogFightController.dogFightTurnMonitor)
             {
-                CSDebug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
+                CSDebug.LogError("[DogFightScoreboard] DogFightController or TurnMonitor is null!");
                 return;
             }
 
             var playerScores = gameData.RoundStatsList;
-            int needed = joustController.joustTurnMonitor.CollisionsNeeded;
+            int needed = dogFightController.dogFightTurnMonitor.HitsNeeded;
 
-            // Use the authoritative WinnerName to determine who won
-            string winnerName = joustController.ResultsReady ? joustController.WinnerName : "";
+            string winnerName = dogFightController.ResultsReady ? dogFightController.WinnerName : "";
 
             for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
             {
@@ -60,24 +55,21 @@ namespace CosmicShore.Game.UI
                 if (!PlayerScoreTextFields[i]) continue;
 
                 var stats = playerScores[i];
-                int joustsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
+                int hitsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
                 bool thisPlayerWon = stats.Name == winnerName;
 
                 if (thisPlayerWon)
                 {
-                    // Winner row shows finish time
                     TimeSpan t = TimeSpan.FromSeconds(stats.Score);
                     PlayerScoreTextFields[i].text = $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
                 }
                 else
                 {
-                    // Loser row shows jousts remaining
-                    string plural = joustsLeft == 1 ? "" : "s";
-                    PlayerScoreTextFields[i].text = $"{joustsLeft} Joust{plural} Left";
+                    string plural = hitsLeft == 1 ? "" : "s";
+                    PlayerScoreTextFields[i].text = $"{hitsLeft} Hit{plural} Left";
                 }
             }
 
-            // Clear unused slots
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
                 if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";

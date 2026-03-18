@@ -6,14 +6,10 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MultiplayerDogFightEndGameController : EndGameCinematicController
+    public class DogFightEndGameController : EndGameCinematicController
     {
         [Header("References")]
-        [SerializeField] private MultiplayerDogFightController dogFightController;
-
-        [Header("Display")]
-        [Tooltip("Noun used in score display (e.g. Hit, Joust)")]
-        [SerializeField] string scoreNoun = "Hit";
+        [SerializeField] private DogFightController dogFightController;
 
         protected override bool DetermineLocalPlayerWon()
         {
@@ -30,23 +26,22 @@ namespace CosmicShore.Game.Arcade
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
 
-            if (!dogFightController || !dogFightController.joustTurnMonitor) yield break;
+            if (!dogFightController || !dogFightController.dogFightTurnMonitor) yield break;
 
             var localName = gameData.LocalPlayer?.Name;
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) yield break;
 
-            int needed = dogFightController.joustTurnMonitor.CollisionsNeeded;
+            int needed = dogFightController.dogFightTurnMonitor.HitsNeeded;
             int myHits = localStats.JoustCollisions;
 
             bool didWin = dogFightController.ResultsReady &&
                           dogFightController.WinnerName == localName;
 
-            var opponentStats   = gameData.RoundStatsList.FirstOrDefault(s => s.Name != localName);
-            int opponentHits    = opponentStats?.JoustCollisions ?? 0;
-            int hitDifference   = Mathf.Abs(myHits - opponentHits);
+            var opponentStats  = gameData.RoundStatsList.FirstOrDefault(s => s.Name != localName);
+            int opponentHits   = opponentStats?.JoustCollisions ?? 0;
+            int hitDifference  = Mathf.Abs(myHits - opponentHits);
 
-            string nounUpper = scoreNoun.ToUpper();
             string headerText = didWin ? "VICTORY" : "DEFEAT";
             string label;
             int displayValue;
@@ -54,16 +49,14 @@ namespace CosmicShore.Game.Arcade
 
             if (didWin)
             {
-                string plural = hitDifference != 1 ? "S" : "";
-                label        = $"WON BY {hitDifference} {nounUpper}{plural}";
+                label        = $"WON BY {hitDifference} HIT{(hitDifference != 1 ? "S" : "")}";
                 displayValue = Mathf.FloorToInt(localStats.Score);
                 formatAsTime = true;
             }
             else
             {
                 int hitsLeft = Mathf.Max(0, needed - myHits);
-                string plural = hitDifference != 1 ? "S" : "";
-                label        = $"LOST BY {hitDifference} {nounUpper}{plural}";
+                label        = $"LOST BY {hitDifference} HIT{(hitDifference != 1 ? "S" : "")}";
                 displayValue = hitsLeft;
                 formatAsTime = false;
             }
