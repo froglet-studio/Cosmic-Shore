@@ -50,12 +50,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3aee2172b77b5524797b5b5f0a9d1efe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 0}
   ExplosionDuration: 3
   ExplosionDelay: 0.2
-  affectSelf: 0
-  destructive: 1
-  devastating: 0
-  shielding: 0
+  meshRenderer: {fileID: 0}
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -169,8 +167,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosionShipEffectsSO: []
-  explosionPrismEffectsSO: []
+  explosionImpactorDataContainer: {fileID: 11400000, guid: a3f64dd6747a11e4194d119d615b29cf,
+    type: 2}
   affectSelf: 0
   destructive: 1
   devastating: 0
