@@ -3121,9 +3121,11 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   multiplayerSetup: {fileID: 1429934008}
-  localScoreboard: {fileID: 0}
+  localScoreboard: {fileID: 1604234837}
   dogFightTurnMonitor: {fileID: 1628508343}
-  baseHitsNeeded: 20
+  missileAmmoIndex: 2
+  missileRechargeRate: 0
+  initialMissileAmmo: 0
 --- !u!114 &1628508343
 MonoBehaviour:
   m_ObjectHideFlags: 0
