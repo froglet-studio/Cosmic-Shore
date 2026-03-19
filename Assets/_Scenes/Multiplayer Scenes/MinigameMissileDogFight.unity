@@ -3123,7 +3123,7 @@ MonoBehaviour:
   multiplayerSetup: {fileID: 1429934008}
   localScoreboard: {fileID: 1604234837}
   dogFightTurnMonitor: {fileID: 1628508345}
-  missileAmmoIndex: 2
+  missileAmmoIndex: 0
   missileRechargeRate: 0.2
   initialMissileAmmo: 1
 --- !u!114 &1628508344
