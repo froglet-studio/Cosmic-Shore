@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -11,14 +12,20 @@ namespace CosmicShore.Game.Arcade
         [Header("Dog Fight")]
         [SerializeField] public DogFightCollisionTurnMonitor dogFightTurnMonitor;
 
-        [Tooltip("Base hits needed at Intensity 1. Multiplied by intensity level at runtime.")]
-        [SerializeField] int baseHitsNeeded = 100;
+        [Header("Missile Configuration")]
+        [Tooltip("Index of the missile resource in the vessel's ResourceSystem.")]
+        [SerializeField] int missileAmmoIndex = 2;
+
+        [Tooltip("Set to 0 to disable missiles entirely (Dog Fight). Set > 0 for recharge rate per second (Missile Dog Fight).")]
+        [SerializeField] float missileRechargeRate = 0f;
+
+        [Tooltip("Initial missile ammo (0-1 normalized). 0 = empty, 1 = full.")]
+        [SerializeField, Range(0f, 1f)] float initialMissileAmmo = 0f;
 
         private bool _finalResultsSent;
 
         public string WinnerName { get; private set; } = "";
         public bool ResultsReady { get; private set; } = false;
-        public int BaseHitsNeeded => baseHitsNeeded;
 
         protected override bool UseGolfRules => true;
 
@@ -29,11 +36,24 @@ namespace CosmicShore.Game.Arcade
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
 
-            int intensity = Mathf.Max(1, gameData.SelectedIntensity.Value);
-            int scaledHits = baseHitsNeeded * intensity;
-            dogFightTurnMonitor.SetHitsNeeded(scaledHits);
+            CSDebug.Log($"[DogFightController] HitsNeeded={dogFightTurnMonitor.HitsNeeded} " +
+                      $"MissileRecharge={missileRechargeRate} InitialAmmo={initialMissileAmmo}");
+        }
 
-            CSDebug.Log($"[DogFightController] Intensity={intensity} HitsNeeded={scaledHits} (base={baseHitsNeeded})");
+        /// <summary>
+        /// Called after vessels are spawned to configure missile resources per game mode.
+        /// Invoke from the scene setup or override OnTurnStartedCustom.
+        /// </summary>
+        public void ConfigureMissiles(ResourceSystem resourceSystem)
+        {
+            if (resourceSystem == null || missileAmmoIndex >= resourceSystem.Resources.Count) return;
+
+            var missileResource = resourceSystem.Resources[missileAmmoIndex];
+            missileResource.resourceGainRate = missileRechargeRate;
+            resourceSystem.SetResourceAmount(missileAmmoIndex, initialMissileAmmo);
+
+            CSDebug.Log($"[DogFightController] Configured missiles: index={missileAmmoIndex} " +
+                      $"rechargeRate={missileRechargeRate}/s initialAmmo={initialMissileAmmo}");
         }
 
         public void NotifyHit(string playerName, int hitCount)
@@ -161,9 +181,9 @@ namespace CosmicShore.Game.Arcade
                                    $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                     continue;
                 }
-                stat.Score           = scores[i];
+                stat.Score        = scores[i];
                 stat.DogFightHits = collisions[i];
-                stat.Domain          = (Domains)domains[i];
+                stat.Domain       = (Domains)domains[i];
             }
 
             WinnerName   = winnerName.ToString();

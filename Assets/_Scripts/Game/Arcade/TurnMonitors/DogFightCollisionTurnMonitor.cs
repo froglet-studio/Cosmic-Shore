@@ -8,8 +8,6 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int hitsNeeded;
         public int HitsNeeded => hitsNeeded;
 
-        public void SetHitsNeeded(int value) => hitsNeeded = value;
-
         IRoundStats ownStats;
 
         public override void StartMonitor()
