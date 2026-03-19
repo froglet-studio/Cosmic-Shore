@@ -3123,7 +3123,7 @@ MonoBehaviour:
   multiplayerSetup: {fileID: 1429934008}
   localScoreboard: {fileID: 1604234837}
   dogFightTurnMonitor: {fileID: 1628508343}
-  missileAmmoIndex: 2
+  missileAmmoIndex: 0
   missileRechargeRate: 0
   initialMissileAmmo: 0
 --- !u!114 &1628508343
@@ -3362,10 +3362,31 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 546690708871217584, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
+      propertyPath: _eventResponses.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 546690708871217584, guid: 8373d81418838f64c97155119a29e98c,
+        type: 3}
       propertyPath: _eventResponses.Array.data[1]._scriptableEvent
       value: 
       objectReference: {fileID: 11400000, guid: 45c2c6e55c4ddad4290feb26964044ce,
         type: 2}
+    - target: {fileID: 546690708871217584, guid: 8373d81418838f64c97155119a29e98c,
+        type: 3}
+      propertyPath: _eventResponses.Array.data[2]._scriptableEvent
+      value: 
+      objectReference: {fileID: 11400000, guid: 46878604521e1c84f9c2576784453a77,
+        type: 2}
+    - target: {fileID: 546690708871217584, guid: 8373d81418838f64c97155119a29e98c,
+        type: 3}
+      propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 546690708871217584, guid: 8373d81418838f64c97155119a29e98c,
+        type: 3}
+      propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ExecuteDogFightHit
+      objectReference: {fileID: 0}
     - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
       propertyPath: m_LocalPosition.x
