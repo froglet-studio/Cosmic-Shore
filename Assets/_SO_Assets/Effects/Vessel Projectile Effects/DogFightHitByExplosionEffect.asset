@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bba2ecf20e1db544d9aea12ebf00b100, type: 3}
-  m_Name: DogFightHitByProjectileEffect
+  m_Script: {fileID: 11500000, guid: 375f42cbf2c5d684b84ddf82881fa139, type: 3}
+  m_Name: DogFightHitByExplosionEffect
   m_EditorClassIdentifier: 
-  vesselTypesToImpact: 0b000000
   OnDogFightHit: {fileID: 11400000, guid: 46878604521e1c84f9c2576784453a77, type: 2}
+  hitCooldown: 0.5
