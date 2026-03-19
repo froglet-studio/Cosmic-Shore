@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
@@ -58,9 +59,24 @@ namespace CosmicShore.Game.Arcade
             if (_missilesConfigured) return;
             _missilesConfigured = true;
 
+            // Delay 2 frames so ResourceSystem.Start() finishes resetting to prefab defaults first
+            StartCoroutine(ConfigureMissilesDelayed());
+        }
+
+        IEnumerator ConfigureMissilesDelayed()
+        {
+            yield return null;
+            yield return null;
+
+            CSDebug.Log($"[DogFightController] ConfigureMissilesDelayed — Players={gameData.Players.Count}");
+
             foreach (var player in gameData.Players)
             {
-                if (player?.Vessel == null) continue;
+                if (player?.Vessel == null)
+                {
+                    CSDebug.Log($"[DogFightController] Player '{player?.Name}' has no vessel, skipping");
+                    continue;
+                }
                 var resourceSystem = player.Vessel.VesselStatus?.ResourceSystem;
                 ConfigureMissiles(resourceSystem);
             }
@@ -68,14 +84,28 @@ namespace CosmicShore.Game.Arcade
 
         void ConfigureMissiles(ResourceSystem resourceSystem)
         {
-            if (resourceSystem == null || missileAmmoIndex >= resourceSystem.Resources.Count) return;
+            if (resourceSystem == null)
+            {
+                CSDebug.LogWarning("[DogFightController] ConfigureMissiles: resourceSystem is null");
+                return;
+            }
+            if (missileAmmoIndex >= resourceSystem.Resources.Count)
+            {
+                CSDebug.LogWarning($"[DogFightController] ConfigureMissiles: ammoIndex {missileAmmoIndex} >= Resources.Count {resourceSystem.Resources.Count}");
+                return;
+            }
 
             var missileResource = resourceSystem.Resources[missileAmmoIndex];
+            float prevAmount = missileResource.CurrentAmount;
+            float prevGainRate = missileResource.resourceGainRate;
+
             missileResource.resourceGainRate = missileRechargeRate;
             resourceSystem.SetResourceAmount(missileAmmoIndex, initialMissileAmmo);
 
             CSDebug.Log($"[DogFightController] Configured missiles: index={missileAmmoIndex} " +
-                      $"rechargeRate={missileRechargeRate}/s initialAmmo={initialMissileAmmo}");
+                      $"ammo {prevAmount:F2}→{initialMissileAmmo:F2} " +
+                      $"gainRate {prevGainRate:F3}→{missileRechargeRate:F3}/s " +
+                      $"(resource='{missileResource.Name}')");
         }
 
         public void NotifyHit(string playerName, int hitCount)
@@ -237,14 +267,8 @@ namespace CosmicShore.Game.Arcade
                 s.Score = 0f;
             }
 
-            // Re-configure missiles for replay
-            foreach (var player in gameData.Players)
-            {
-                if (player?.Vessel == null) continue;
-                var resourceSystem = player.Vessel.VesselStatus?.ResourceSystem;
-                ConfigureMissiles(resourceSystem);
-            }
-            _missilesConfigured = true;
+            // Re-configure missiles for replay (delayed to run after ResourceSystem.Reset)
+            StartCoroutine(ConfigureMissilesDelayed());
 
             gameData.InvokeTurnStarted();
         }
