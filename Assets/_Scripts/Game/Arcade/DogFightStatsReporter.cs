@@ -42,7 +42,7 @@ namespace CosmicShore.Game.Arcade
             UGSStatsManager.Instance.ReportJoustStats(
                 gameMode,
                 gameData.SelectedIntensity.Value,
-                localStats.JoustCollisions,
+                localStats.DogFightHits,
                 finishTime
             );
 
@@ -53,7 +53,7 @@ namespace CosmicShore.Game.Arcade
                     vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
             }
 
-            CSDebug.Log($"[DogFightStats] Reported Win - Time: {finishTime:F2}s Hits: {localStats.JoustCollisions}");
+            CSDebug.Log($"[DogFightStats] Reported Win - Time: {finishTime:F2}s Hits: {localStats.DogFightHits}");
         }
     }
 }

@@ -135,10 +135,10 @@ namespace CosmicShore.Game
 
                 case GameModes.MultiplayerDogFight:
                 case GameModes.MultiplayerMissileDogFight:
-                    _previousIntScore = roundStats.JoustCollisions;
-                    Action<IRoundStats> onDogFightHit = HandleJoustCollisionChanged;
-                    roundStats.OnJoustCollisionChanged += onDogFightHit;
-                    _unsubscribeScoreAction = () => roundStats.OnJoustCollisionChanged -= onDogFightHit;
+                    _previousIntScore = roundStats.DogFightHits;
+                    Action<IRoundStats> onDogFightHit = HandleDogFightHitChanged;
+                    roundStats.OnDogFightHitChanged += onDogFightHit;
+                    _unsubscribeScoreAction = () => roundStats.OnDogFightHitChanged -= onDogFightHit;
                     break;
 
                 case GameModes.HexRace:
@@ -182,6 +182,18 @@ namespace CosmicShore.Game
             if (!scorePopup) return;
 
             int current = stats.JoustCollisions;
+            int delta = current - _previousIntScore;
+            _previousIntScore = current;
+
+            if (delta > 0)
+                scorePopup.ShowScorePoint(delta);
+        }
+
+        private void HandleDogFightHitChanged(IRoundStats stats)
+        {
+            if (!scorePopup) return;
+
+            int current = stats.DogFightHits;
             int delta = current - _previousIntScore;
             _previousIntScore = current;
 

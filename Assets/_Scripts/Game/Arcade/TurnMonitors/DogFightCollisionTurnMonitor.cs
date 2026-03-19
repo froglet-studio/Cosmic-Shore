@@ -18,7 +18,7 @@ namespace CosmicShore.Game.Arcade
 
             if (ownStats != null)
             {
-                ownStats.OnJoustCollisionChanged += OnHitChanged;
+                ownStats.OnDogFightHitChanged += OnHitChanged;
                 UpdateUI();
             }
 
@@ -30,13 +30,13 @@ namespace CosmicShore.Game.Arcade
             base.StopMonitor();
 
             if (ownStats != null)
-                ownStats.OnJoustCollisionChanged -= OnHitChanged;
+                ownStats.OnDogFightHitChanged -= OnHitChanged;
         }
 
         public override bool CheckForEndOfTurn()
         {
             InitializeOwnStats();
-            return ownStats != null && ownStats.JoustCollisions >= hitsNeeded;
+            return ownStats != null && ownStats.DogFightHits >= hitsNeeded;
         }
 
         void OnHitChanged(IRoundStats stats) => UpdateUI();
@@ -46,7 +46,7 @@ namespace CosmicShore.Game.Arcade
             InitializeOwnStats();
             if (ownStats == null) return;
 
-            int remaining = Mathf.Max(0, hitsNeeded - ownStats.JoustCollisions);
+            int remaining = Mathf.Max(0, hitsNeeded - ownStats.DogFightHits);
             onUpdateTurnMonitorDisplay?.Raise(remaining.ToString());
         }
 

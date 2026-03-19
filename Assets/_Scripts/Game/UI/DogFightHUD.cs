@@ -4,14 +4,14 @@ namespace CosmicShore.Game.UI
     {
         protected override int GetInitialCardValue(IRoundStats stats)
         {
-            return stats.JoustCollisions;
+            return stats.DogFightHits;
         }
 
         protected override void SubscribeToPlayerStats(IRoundStats stats)
         {
             if (stats != null)
             {
-                stats.OnJoustCollisionChanged += HandleHitStatChanged;
+                stats.OnDogFightHitChanged += HandleHitStatChanged;
             }
         }
 
@@ -19,7 +19,7 @@ namespace CosmicShore.Game.UI
         {
             if (stats != null)
             {
-                stats.OnJoustCollisionChanged -= HandleHitStatChanged;
+                stats.OnDogFightHitChanged -= HandleHitStatChanged;
             }
         }
 
@@ -27,7 +27,7 @@ namespace CosmicShore.Game.UI
         {
             if (updatedStats != null)
             {
-                UpdatePlayerCard(updatedStats.Name, updatedStats.JoustCollisions);
+                UpdatePlayerCard(updatedStats.Name, updatedStats.DogFightHits);
             }
         }
     }

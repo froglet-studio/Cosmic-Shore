@@ -40,7 +40,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsServer) return;
             var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (stats != null) stats.JoustCollisions = hitCount;
+            if (stats != null) stats.DogFightHits = hitCount;
             NotifyHit_ClientRpc(playerName, hitCount);
         }
 
@@ -58,8 +58,8 @@ namespace CosmicShore.Game.Arcade
                 CSDebug.LogError($"[DogFightController] ServerRpc: no stats for '{playerName}'");
                 return;
             }
-            if (hitCount <= stats.JoustCollisions) return;
-            stats.JoustCollisions = hitCount;
+            if (hitCount <= stats.DogFightHits) return;
+            stats.DogFightHits = hitCount;
             NotifyHit_ClientRpc(playerName, hitCount);
         }
 
@@ -67,7 +67,7 @@ namespace CosmicShore.Game.Arcade
         void NotifyHit_ClientRpc(string playerName, int hitCount)
         {
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
-            stats.JoustCollisions = hitCount;
+            stats.DogFightHits = hitCount;
         }
 
         protected override void OnTurnEndedCustom()
@@ -95,7 +95,7 @@ namespace CosmicShore.Game.Arcade
             string winnerName = "";
             foreach (var stats in gameData.RoundStatsList)
             {
-                if (stats.JoustCollisions >= hitsNeeded)
+                if (stats.DogFightHits >= hitsNeeded)
                 {
                     winnerName = stats.Name;
                     break;
@@ -103,7 +103,7 @@ namespace CosmicShore.Game.Arcade
             }
 
             CSDebug.Log($"[DogFightController] Calculating scores. Winner='{winnerName}' Time={currentTime:F2}s " +
-                      $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.JoustCollisions}h"))}]");
+                      $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.DogFightHits}h"))}]");
 
             foreach (var stats in gameData.RoundStatsList)
             {
@@ -135,7 +135,7 @@ namespace CosmicShore.Game.Arcade
             {
                 names[i]      = new FixedString64Bytes(list[i].Name);
                 scores[i]     = list[i].Score;
-                collisions[i] = list[i].JoustCollisions;
+                collisions[i] = list[i].DogFightHits;
                 domains[i]    = (int)list[i].Domain;
             }
 
@@ -162,7 +162,7 @@ namespace CosmicShore.Game.Arcade
                     continue;
                 }
                 stat.Score           = scores[i];
-                stat.JoustCollisions = collisions[i];
+                stat.DogFightHits = collisions[i];
                 stat.Domain          = (Domains)domains[i];
             }
 
@@ -190,7 +190,7 @@ namespace CosmicShore.Game.Arcade
 
             foreach (var s in gameData.RoundStatsList)
             {
-                s.JoustCollisions = 0;
+                s.DogFightHits = 0;
                 s.Score = 0f;
             }
 

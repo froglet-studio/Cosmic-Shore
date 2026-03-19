@@ -12,7 +12,7 @@ namespace CosmicShore.Game.Arcade
             base.StartMonitor();
 
             foreach (var stat in gameData.RoundStatsList)
-                stat.OnJoustCollisionChanged += OnHitChanged;
+                stat.OnDogFightHitChanged += OnHitChanged;
         }
 
         public override void StopMonitor()
@@ -20,18 +20,18 @@ namespace CosmicShore.Game.Arcade
             base.StopMonitor();
 
             foreach (var stat in gameData.RoundStatsList)
-                stat.OnJoustCollisionChanged -= OnHitChanged;
+                stat.OnDogFightHitChanged -= OnHitChanged;
         }
 
         void OnHitChanged(IRoundStats stats)
         {
             if (IsServer)
             {
-                controller?.NotifyHit(stats.Name, stats.JoustCollisions);
+                controller?.NotifyHit(stats.Name, stats.DogFightHits);
             }
             else
             {
-                controller?.ReportHitToServer(stats.Name, stats.JoustCollisions);
+                controller?.ReportHitToServer(stats.Name, stats.DogFightHits);
             }
         }
 
@@ -40,7 +40,7 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer) return false;
 
             return gameData.RoundStatsList
-                .Any(stats => stats.JoustCollisions >= HitsNeeded);
+                .Any(stats => stats.DogFightHits >= HitsNeeded);
         }
     }
 }

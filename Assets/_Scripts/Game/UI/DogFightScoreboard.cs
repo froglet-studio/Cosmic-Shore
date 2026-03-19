@@ -55,7 +55,7 @@ namespace CosmicShore.Game.UI
                 if (!PlayerScoreTextFields[i]) continue;
 
                 var stats = playerScores[i];
-                int hitsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
+                int hitsLeft = Mathf.Max(0, needed - stats.DogFightHits);
                 bool thisPlayerWon = stats.Name == winnerName;
 
                 if (thisPlayerWon)
