@@ -1537,6 +1537,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1716607888102834236}
   - component: {fileID: 7385827388877614041}
+  - component: {fileID: 2468013579246801357}
   m_Layer: 0
   m_Name: YawsteryActionExecutor
   m_TagString: Untagged
@@ -1574,6 +1575,25 @@ MonoBehaviour:
   vesselTransformer: {fileID: 7686683633640807837}
   shipAnimator: {fileID: 5658933110804061391}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+--- !u!114 &2468013579246801357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4912294615010770138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  maxYawDegPerSec: 120
+  speedExp: 0.25
+  speedScale: 1
+  rampInSeconds: 0.25
+  rampOutSeconds: 0.2
+  boostMultiplierOverride: 0
+  vesselTransformer: {fileID: 7686683633640807837}
 --- !u!1 &5022817358293899131
 GameObject:
   m_ObjectHideFlags: 0
@@ -2437,6 +2457,17 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   _resourceEventClassActions: []
+  _touchActionOverrides: []
+  _gamepadActionOverrides:
+  - InputEvent: 11
+    ShipActions:
+    - {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
+  - InputEvent: 12
+    ShipActions:
+    - {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
+  - InputEvent: 13
+    ShipActions:
+    - {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -3221,6 +3252,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _executors:
   - {fileID: 7385827388877614041}
+  - {fileID: 2468013579246801357}
 --- !u!1 &7953374546544284131
 GameObject:
   m_ObjectHideFlags: 0
