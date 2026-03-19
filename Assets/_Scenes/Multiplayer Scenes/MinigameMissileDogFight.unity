@@ -430,7 +430,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1604234835}
+      objectReference: {fileID: 0}
     - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
@@ -490,7 +490,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 400393584}
+      objectReference: {fileID: 400393586}
     - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -499,7 +499,7 @@ PrefabInstance:
     - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.Game.UI.DogFightHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 1660010304379541001, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -565,7 +565,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 400393584}
+      objectReference: {fileID: 400393586}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -574,7 +574,7 @@ PrefabInstance:
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.Game.UI.DogFightHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 3397639301264078971, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -630,7 +630,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1604234835}
+      objectReference: {fileID: 0}
     - target: {fileID: 5054612726792906818, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -881,7 +881,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 400393584}
+      objectReference: {fileID: 400393586}
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -890,7 +890,7 @@ PrefabInstance:
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.Game.UI.DogFightHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5866792526080073927, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -956,7 +956,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1628508346}
+      objectReference: {fileID: 1628508342}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
@@ -970,7 +970,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerJoustController, Assembly-CSharp
+      value: CosmicShore.Game.Arcade.DogFightController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1096,7 +1096,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1604234835}
+      objectReference: {fileID: 0}
     - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
@@ -1141,7 +1141,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1604234835}
+      objectReference: {fileID: 0}
     - target: {fileID: 7966497549685602406, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -1260,7 +1260,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5497835174634480093, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: 2
-      addedObject: {fileID: 400393584}
+      addedObject: {fileID: 400393586}
     - targetCorrespondingSourceObject: {fileID: 1259559001432499751, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: -1
@@ -1268,11 +1268,11 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1604234835}
+      addedObject: {fileID: 1604234836}
     - targetCorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1604234836}
+      addedObject: {fileID: 1604234837}
   m_SourcePrefab: {fileID: 100100000, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
 --- !u!114 &400393570 stripped
 MonoBehaviour:
@@ -1406,40 +1406,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 400393569}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &400393584
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 400393583}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 670b03f25915442489323d24fc99160e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  view: {fileID: 400393585}
-  scoreboard: {fileID: 1604234835}
-  onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
-    type: 2}
-  onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
-    type: 2}
-  onSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
-    type: 2}
-  onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
-    type: 2}
-  OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  minConnectingSeconds: 5
-  preGameCinematic: {fileID: 0}
-  cinematicLookAtCenter: {x: 0, y: 0, z: 0}
-  enablePreGameCinematic: 1
-  preGameCinematicLibrary: {fileID: 11400000, guid: 9bdbedab8ee0d9c4eb564f4a1352b177,
-    type: 2}
-  isAIAvailable: 0
-  profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
-  aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
-  multiplayerView: {fileID: 400393585}
 --- !u!114 &400393585
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1480,6 +1446,40 @@ MonoBehaviour:
   - Domain: 4
     Color: {r: 1, g: 0.62498116, b: 0, a: 1}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
+--- !u!114 &400393586
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 400393583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c52067c72c0d0b4284db081a9de094c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  view: {fileID: 400393585}
+  scoreboard: {fileID: 0}
+  onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
+    type: 2}
+  onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
+    type: 2}
+  onSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
+    type: 2}
+  onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
+    type: 2}
+  OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  minConnectingSeconds: 5
+  preGameCinematic: {fileID: 0}
+  cinematicLookAtCenter: {x: 0, y: 0, z: 0}
+  enablePreGameCinematic: 1
+  preGameCinematicLibrary: {fileID: 11400000, guid: 9bdbedab8ee0d9c4eb564f4a1352b177,
+    type: 2}
+  isAIAvailable: 0
+  profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
+  aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
+  multiplayerView: {fileID: 400393585}
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
@@ -1676,6 +1676,8 @@ MonoBehaviour:
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
+  guaranteedShapeDistance: 420
+  guaranteedShapeClusterRadius: 80
 --- !u!1 &835643674 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7071078697595455670, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -1912,7 +1914,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1046768872}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e315539ec049484c8f222457b1cc475a, type: 3}
+  m_Script: {fileID: 11500000, guid: ddf753c80dcbb494abd0c8f4103c109c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -1920,11 +1922,13 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 1046768873}
   view: {fileID: 1046768874}
-  crystalsPerGame: 5
+  crystalsFirstPlace: 10
+  crystalsSecondPlace: 5
+  crystalsThirdPlace: 0
   crystalRewardRoot: {fileID: 1673232261}
   crystalRewardText: {fileID: 2087070029}
   crystalFadeDuration: 0.5
-  joustController: {fileID: 1628508346}
+  dogFightController: {fileID: 1628508342}
 --- !u!1 &1074736316
 GameObject:
   m_ObjectHideFlags: 0
@@ -2759,7 +2763,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1604234835
+--- !u!114 &1604234836
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2768,12 +2772,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 1046768871}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2cdde73f4ffc47a7b21fd84d0ebda4e7, type: 3}
+  m_Script: {fileID: 11500000, guid: 87e6ed750945438e9e08f918293fefd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+--- !u!114 &1604234837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1046768871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a4ce9dc38c22df43928367d5c49271e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  multiplayerController: {fileID: 1628508346}
+  multiplayerController: {fileID: 1628508342}
   endGameObject: {fileID: 2046067873}
   scoreboardPanel: {fileID: 1597585026}
   statsContainer: {fileID: 1597585027}
@@ -2806,22 +2823,9 @@ MonoBehaviour:
   rematchDeniedPanel: {fileID: 2118304769}
   rematchDeniedText: {fileID: 2118304768}
   playAgainButton: {fileID: 1315164671}
-  rematchPanelAutoDismissSeconds: 3
-  animSettings: {fileID: 0}
-  joustController: {fileID: 1628508346}
---- !u!114 &1604234836
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046768871}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 87e6ed750945438e9e08f918293fefd6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  rematchPanelAutoDismissSeconds: 2
+  animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
+  dogFightController: {fileID: 1628508342}
 --- !u!225 &1617932949 stripped
 CanvasGroup:
   m_CorrespondingSourceObject: {fileID: 6286389942094070827, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -2839,6 +2843,7 @@ GameObject:
   - component: {fileID: 1628508330}
   - component: {fileID: 1628508332}
   - component: {fileID: 1628508335}
+  - component: {fileID: 1628508342}
   - component: {fileID: 1628508336}
   - component: {fileID: 1628508341}
   - component: {fileID: 1628508345}
@@ -2847,8 +2852,7 @@ GameObject:
   - component: {fileID: 1628508338}
   - component: {fileID: 1628508339}
   - component: {fileID: 1628508340}
-  - component: {fileID: 1628508346}
-  - component: {fileID: 1628508347}
+  - component: {fileID: 1628508344}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -2884,7 +2888,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1734984430
+  GlobalObjectIdHash: 3940956954
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -3092,7 +3096,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   monitors:
   - {fileID: 1628508345}
---- !u!114 &1628508345
+--- !u!114 &1628508342
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3101,26 +3105,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1628508325}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 36bc626bcc8040db85e1eda4fee7d4f0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  _updateInterval: 1
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
-    type: 2}
-  collisionsNeeded: 3
-  controller: {fileID: 1628508346}
---- !u!114 &1628508346
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628508325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5b354f3f479d46be81f54e32d8da1345, type: 3}
+  m_Script: {fileID: 11500000, guid: 200067e5b928d0249aedc48f42fc35e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -3131,9 +3116,10 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   multiplayerSetup: {fileID: 1429934008}
-  localScoreboard: {fileID: 1604234835}
-  joustTurnMonitor: {fileID: 1628508345}
---- !u!114 &1628508347
+  localScoreboard: {fileID: 0}
+  dogFightTurnMonitor: {fileID: 1628508345}
+  baseHitsNeeded: 3
+--- !u!114 &1628508344
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3142,12 +3128,31 @@ MonoBehaviour:
   m_GameObject: {fileID: 1628508325}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60dbfd5669784e648b0dda5d84fdf41d, type: 3}
+  m_Script: {fileID: 11500000, guid: ff65da3d1590a31439225674fb5e8b82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  joustController: {fileID: 1628508346}
-  gameMode: 34
+  dogFightController: {fileID: 1628508342}
+  gameMode: 37
+--- !u!114 &1628508345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1628508325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 151099af961ba4e4bad335b82ef1ea74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  _updateInterval: 1
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
+    type: 2}
+  hitsNeeded: 3
+  controller: {fileID: 1628508342}
 --- !u!1001 &1655328213
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3349,6 +3354,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 546690708871217584, guid: 8373d81418838f64c97155119a29e98c,
+        type: 3}
+      propertyPath: _eventResponses.Array.data[1]._scriptableEvent
+      value: 
+      objectReference: {fileID: 11400000, guid: 46878604521e1c84f9c2576784453a77,
+        type: 2}
     - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -3404,6 +3415,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: NetworkStatsManager
       objectReference: {fileID: 0}
+    - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
+        type: 3}
+      propertyPath: cellData
+      value: 
+      objectReference: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b,
+        type: 2}
     - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
       propertyPath: _netcodeHooks
