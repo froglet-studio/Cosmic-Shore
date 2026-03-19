@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Game.UI;
 using CosmicShore.Soap;
-using CosmicShore.Utility;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -61,11 +60,7 @@ namespace CosmicShore.Game
 
             // Directly increment DogFightHits on the shooter's stats
             if (gameData && gameData.TryGetRoundStats(shooterName, out var roundStats))
-            {
                 roundStats.DogFightHits++;
-                CSDebug.Log($"[DogFightExplosion] HIT! {shooterName} → {victimVessel.VesselStatus.PlayerName} " +
-                          $"(DogFightHits={roundStats.DogFightHits})");
-            }
 
             if (OnDogFightHit)
                 OnDogFightHit.Raise(shooterName);

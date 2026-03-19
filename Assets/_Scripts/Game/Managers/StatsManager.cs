@@ -4,7 +4,6 @@ using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
-using CosmicShore.Utility;
 
 
 namespace CosmicShore.Core
@@ -154,12 +153,8 @@ namespace CosmicShore.Core
         public void ExecuteDogFightHit(string shooterPlayerName)
         {
             if (!gameData.TryGetRoundStats(shooterPlayerName, out var roundStats))
-            {
-                CSDebug.LogWarning($"[StatsManager] ExecuteDogFightHit: no stats for '{shooterPlayerName}'");
                 return;
-            }
             roundStats.DogFightHits++;
-            CSDebug.Log($"[StatsManager] DogFightHit: '{shooterPlayerName}' now has {roundStats.DogFightHits} hits");
         }
 
         public void PrismCreated(PrismStats prismStats)
