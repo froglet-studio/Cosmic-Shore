@@ -11,6 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bba2ecf20e1db544d9aea12ebf00b100, type: 3}
   m_Name: DogFightHitByProjectileEffect
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   vesselTypesToImpact: 0b000000
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnDogFightHit: {fileID: 11400000, guid: 46878604521e1c84f9c2576784453a77, type: 2}
