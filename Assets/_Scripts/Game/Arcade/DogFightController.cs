@@ -23,6 +23,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField, Range(0f, 1f)] float initialMissileAmmo = 0f;
 
         private bool _finalResultsSent;
+        private bool _missilesConfigured;
 
         public string WinnerName { get; private set; } = "";
         public bool ResultsReady { get; private set; } = false;
@@ -35,16 +36,37 @@ namespace CosmicShore.Game.Arcade
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
+            _missilesConfigured = false;
+
+            if (gameData.OnMiniGameTurnStarted)
+                gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStartedConfigureMissiles;
 
             CSDebug.Log($"[DogFightController] HitsNeeded={dogFightTurnMonitor.HitsNeeded} " +
                       $"MissileRecharge={missileRechargeRate} InitialAmmo={initialMissileAmmo}");
         }
 
-        /// <summary>
-        /// Called after vessels are spawned to configure missile resources per game mode.
-        /// Invoke from the scene setup or override OnTurnStartedCustom.
-        /// </summary>
-        public void ConfigureMissiles(ResourceSystem resourceSystem)
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+
+            if (gameData.OnMiniGameTurnStarted)
+                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStartedConfigureMissiles;
+        }
+
+        void OnTurnStartedConfigureMissiles()
+        {
+            if (_missilesConfigured) return;
+            _missilesConfigured = true;
+
+            foreach (var player in gameData.Players)
+            {
+                if (player?.Vessel == null) continue;
+                var resourceSystem = player.Vessel.VesselStatus?.ResourceSystem;
+                ConfigureMissiles(resourceSystem);
+            }
+        }
+
+        void ConfigureMissiles(ResourceSystem resourceSystem)
         {
             if (resourceSystem == null || missileAmmoIndex >= resourceSystem.Resources.Count) return;
 
@@ -203,6 +225,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.OnResetForReplayCustom();
             _finalResultsSent = false;
+            _missilesConfigured = false;
             WinnerName   = "";
             ResultsReady = false;
 
@@ -213,6 +236,15 @@ namespace CosmicShore.Game.Arcade
                 s.DogFightHits = 0;
                 s.Score = 0f;
             }
+
+            // Re-configure missiles for replay
+            foreach (var player in gameData.Players)
+            {
+                if (player?.Vessel == null) continue;
+                var resourceSystem = player.Vessel.VesselStatus?.ResourceSystem;
+                ConfigureMissiles(resourceSystem);
+            }
+            _missilesConfigured = true;
 
             gameData.InvokeTurnStarted();
         }
