@@ -1187,6 +1187,11 @@ PrefabInstance:
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
       objectReference: {fileID: 0}
+    - target: {fileID: 8474059545068889059, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 31.128784
+      objectReference: {fileID: 0}
     - target: {fileID: 8540960622779608551, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: activationButton
@@ -3116,9 +3121,11 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   multiplayerSetup: {fileID: 1429934008}
-  localScoreboard: {fileID: 0}
+  localScoreboard: {fileID: 1604234837}
   dogFightTurnMonitor: {fileID: 1628508345}
-  baseHitsNeeded: 3
+  missileAmmoIndex: 2
+  missileRechargeRate: 0.2
+  initialMissileAmmo: 1
 --- !u!114 &1628508344
 MonoBehaviour:
   m_ObjectHideFlags: 0
