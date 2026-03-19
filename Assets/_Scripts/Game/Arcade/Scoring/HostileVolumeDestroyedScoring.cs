@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         void UpdateScore(IRoundStats roundStats)
         {
             // Reward destroying enemy volume
-            Score = roundStats.HostileVolumeDestroyed * scoreMultiplier;
+            SetScoreForPlayer(roundStats.Name, roundStats.HostileVolumeDestroyed * scoreMultiplier);
             ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }

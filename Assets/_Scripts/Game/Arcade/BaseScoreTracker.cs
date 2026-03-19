@@ -106,7 +106,7 @@ namespace CosmicShore.Game.Arcade
             if (!gameData.TryGetRoundStats(playerName, out var roundStats))
                 return;
 
-            float totalScore = scoringArray.Sum(scoring => scoring.Score);
+            float totalScore = scoringArray.Sum(scoring => scoring.GetScoreForPlayer(playerName));
 
             roundStats.Score = totalScore;
         }

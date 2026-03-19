@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Arcade
         void UpdateScore(IRoundStats roundStats)
         {
             // Score for this scoring rule = hostile prisms destroyed * multiplier
-            Score = roundStats.HostilePrismsDestroyed * scoreMultiplier;
+            SetScoreForPlayer(roundStats.Name, roundStats.HostilePrismsDestroyed * scoreMultiplier);
 
             // Recompute total across all scoring rules for this player
             ScoreTracker.CalculateTotalScore(roundStats.Name);

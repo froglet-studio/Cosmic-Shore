@@ -58,7 +58,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                 _ => 0
             };*/
             
-            Score = roundStats.CrystalsCollected * scoreMultiplier;
+            SetScoreForPlayer(roundStats.Name, roundStats.CrystalsCollected * scoreMultiplier);
             ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }

@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         void UpdateScore(IRoundStats roundStats)
         {
             // Positive score for volume created
-            Score = roundStats.VolumeCreated * scoreMultiplier;
+            SetScoreForPlayer(roundStats.Name, roundStats.VolumeCreated * scoreMultiplier);
             ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }

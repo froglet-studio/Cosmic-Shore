@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade
 
         void UpdateScore(IRoundStats roundStats)
         {
-            Score = roundStats.BlocksCreated * scoreMultiplier;
+            SetScoreForPlayer(roundStats.Name, roundStats.BlocksCreated * scoreMultiplier);
             ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }
