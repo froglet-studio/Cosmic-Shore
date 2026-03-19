@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using CosmicShore.Game.Arcade;
 using UnityEngine;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -36,11 +35,7 @@ namespace CosmicShore.Game.UI
 
         void FormatDogFightScores()
         {
-            if (!dogFightController || !dogFightController.dogFightTurnMonitor)
-            {
-                CSDebug.LogError("[DogFightScoreboard] DogFightController or TurnMonitor is null!");
-                return;
-            }
+            if (!dogFightController || !dogFightController.dogFightTurnMonitor) return;
 
             var playerScores = gameData.RoundStatsList;
             int needed = dogFightController.dogFightTurnMonitor.HitsNeeded;

@@ -3,7 +3,6 @@ using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Utility;
 using CosmicShore.Core;
 
 namespace CosmicShore.Game.Arcade
@@ -41,9 +40,6 @@ namespace CosmicShore.Game.Arcade
 
             if (gameData.OnMiniGameTurnStarted)
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStartedConfigureMissiles;
-
-            CSDebug.Log($"[DogFightController] HitsNeeded={dogFightTurnMonitor.HitsNeeded} " +
-                      $"MissileRecharge={missileRechargeRate} InitialAmmo={initialMissileAmmo}");
         }
 
         public override void OnNetworkDespawn()
@@ -68,15 +64,9 @@ namespace CosmicShore.Game.Arcade
             yield return null;
             yield return null;
 
-            CSDebug.Log($"[DogFightController] ConfigureMissilesDelayed — Players={gameData.Players.Count}");
-
             foreach (var player in gameData.Players)
             {
-                if (player?.Vessel == null)
-                {
-                    CSDebug.Log($"[DogFightController] Player '{player?.Name}' has no vessel, skipping");
-                    continue;
-                }
+                if (player?.Vessel == null) continue;
                 var resourceSystem = player.Vessel.VesselStatus?.ResourceSystem;
                 ConfigureMissiles(resourceSystem);
             }
@@ -84,28 +74,11 @@ namespace CosmicShore.Game.Arcade
 
         void ConfigureMissiles(ResourceSystem resourceSystem)
         {
-            if (resourceSystem == null)
-            {
-                CSDebug.LogWarning("[DogFightController] ConfigureMissiles: resourceSystem is null");
-                return;
-            }
-            if (missileAmmoIndex >= resourceSystem.Resources.Count)
-            {
-                CSDebug.LogWarning($"[DogFightController] ConfigureMissiles: ammoIndex {missileAmmoIndex} >= Resources.Count {resourceSystem.Resources.Count}");
-                return;
-            }
+            if (resourceSystem == null || missileAmmoIndex >= resourceSystem.Resources.Count) return;
 
             var missileResource = resourceSystem.Resources[missileAmmoIndex];
-            float prevAmount = missileResource.CurrentAmount;
-            float prevGainRate = missileResource.resourceGainRate;
-
             missileResource.resourceGainRate = missileRechargeRate;
             resourceSystem.SetResourceAmount(missileAmmoIndex, initialMissileAmmo);
-
-            CSDebug.Log($"[DogFightController] Configured missiles: index={missileAmmoIndex} " +
-                      $"ammo {prevAmount:F2}→{initialMissileAmmo:F2} " +
-                      $"gainRate {prevGainRate:F3}→{missileRechargeRate:F3}/s " +
-                      $"(resource='{missileResource.Name}')");
         }
 
         public void NotifyHit(string playerName, int hitCount)
@@ -125,11 +98,7 @@ namespace CosmicShore.Game.Arcade
         void ReportHit_ServerRpc(string playerName, int hitCount)
         {
             var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (stats == null)
-            {
-                CSDebug.LogError($"[DogFightController] ServerRpc: no stats for '{playerName}'");
-                return;
-            }
+            if (stats == null) return;
             if (hitCount <= stats.DogFightHits) return;
             stats.DogFightHits = hitCount;
             NotifyHit_ClientRpc(playerName, hitCount);
@@ -155,11 +124,7 @@ namespace CosmicShore.Game.Arcade
 
         void CalculateDogFightScores_Server()
         {
-            if (!dogFightTurnMonitor)
-            {
-                CSDebug.LogError("[DogFightController] DogFightTurnMonitor is null!");
-                return;
-            }
+            if (!dogFightTurnMonitor) return;
 
             int hitsNeeded = dogFightTurnMonitor.HitsNeeded;
             float currentTime = Time.time - gameData.TurnStartTime;
@@ -173,9 +138,6 @@ namespace CosmicShore.Game.Arcade
                     break;
                 }
             }
-
-            CSDebug.Log($"[DogFightController] Calculating scores. Winner='{winnerName}' Time={currentTime:F2}s " +
-                      $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.DogFightHits}h"))}]");
 
             foreach (var stats in gameData.RoundStatsList)
             {
@@ -227,12 +189,7 @@ namespace CosmicShore.Game.Arcade
             {
                 string n = names[i].ToString();
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == n);
-                if (stat == null)
-                {
-                    CSDebug.LogError($"[DogFightController] Client could not match '{n}'. " +
-                                   $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
-                    continue;
-                }
+                if (stat == null) continue;
                 stat.Score        = scores[i];
                 stat.DogFightHits = collisions[i];
                 stat.Domain       = (Domains)domains[i];
@@ -243,9 +200,6 @@ namespace CosmicShore.Game.Arcade
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
-
-            CSDebug.Log($"[DogFightController] Client synced. Winner='{WinnerName}' " +
-                      $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F1}"))}]");
 
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();

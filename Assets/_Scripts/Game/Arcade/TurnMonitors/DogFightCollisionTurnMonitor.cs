@@ -1,5 +1,4 @@
 using UnityEngine;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -52,8 +51,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (ownStats != null) return;
 
-            if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats))
-                CSDebug.LogWarning("[DogFightCollisionTurnMonitor] No round stats found for local player");
+            gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats);
         }
     }
 }

@@ -2,7 +2,6 @@ using System.Collections;
 using System.Linq;
 using CosmicShore.Game.Cinematics;
 using UnityEngine;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -60,11 +59,6 @@ namespace CosmicShore.Game.Arcade
                 displayValue = hitsLeft;
                 formatAsTime = false;
             }
-
-            CSDebug.Log($"[DogFightEndGame] Local='{localName}' Hits={myHits}/{needed} " +
-                      $"didWin={didWin} WinnerName='{dogFightController.WinnerName}' " +
-                      $"diff={hitDifference} RawScore={localStats.Score:F2} DisplayValue={displayValue} " +
-                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F2}({s.DogFightHits}h)"))}]");
 
             yield return view.PlayScoreRevealAnimation(
                 headerText + $"\n<size=60%>{label}</size>",

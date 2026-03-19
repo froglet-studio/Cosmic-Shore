@@ -2,7 +2,6 @@ using System.Linq;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
 using UnityEngine;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -52,8 +51,6 @@ namespace CosmicShore.Game.Arcade
                 UGSStatsManager.Instance.ReportVesselTelemetry(
                     vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
             }
-
-            CSDebug.Log($"[DogFightStats] Reported Win - Time: {finishTime:F2}s Hits: {localStats.DogFightHits}");
         }
     }
 }
