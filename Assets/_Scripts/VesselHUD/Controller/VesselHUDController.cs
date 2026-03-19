@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         [SerializeField] private ScorePopup scorePopup;
 
         [Tooltip("Used to check the active game mode for score popup filtering.")]
-        [SerializeField] private GameDataSO gameData;
+        [SerializeField] protected GameDataSO gameData;
 
         [Tooltip("Domain color palette for score popup text color.")]
         [SerializeField] private DomainColorPaletteSO domainColorPalette;

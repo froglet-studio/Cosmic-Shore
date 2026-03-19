@@ -67,6 +67,12 @@ namespace CosmicShore.Game
             missileIcon.enabled = true;
         }
 
+        public void HideMissileIcon()
+        {
+            if (missileIcon)
+                missileIcon.enabled = false;
+        }
+
         public void SetMissilesFromAmmo01(float ammo01)
         {
             if (!missileIcon || missileIcons == null || missileIcons.Length == 0)
