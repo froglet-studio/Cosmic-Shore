@@ -430,7 +430,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1604234835}
+      objectReference: {fileID: 0}
     - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
@@ -630,7 +630,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1604234835}
+      objectReference: {fileID: 0}
     - target: {fileID: 5054612726792906818, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -1096,7 +1096,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1604234835}
+      objectReference: {fileID: 0}
     - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
@@ -1141,7 +1141,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1604234835}
+      objectReference: {fileID: 0}
     - target: {fileID: 7966497549685602406, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -1186,6 +1186,11 @@ PrefabInstance:
         type: 3}
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
+      objectReference: {fileID: 0}
+    - target: {fileID: 8474059545068889059, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 31.128784
       objectReference: {fileID: 0}
     - target: {fileID: 8540960622779608551, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1268,11 +1273,11 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1604234835}
+      addedObject: {fileID: 1604234836}
     - targetCorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1604234836}
+      addedObject: {fileID: 1604234837}
   m_SourcePrefab: {fileID: 100100000, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
 --- !u!114 &400393570 stripped
 MonoBehaviour:
@@ -1460,7 +1465,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   view: {fileID: 400393585}
-  scoreboard: {fileID: 1604234835}
+  scoreboard: {fileID: 0}
   onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
     type: 2}
   onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
@@ -2763,7 +2768,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1604234835
+--- !u!114 &1604234836
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2772,12 +2777,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 1046768871}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2cdde73f4ffc47a7b21fd84d0ebda4e7, type: 3}
+  m_Script: {fileID: 11500000, guid: 87e6ed750945438e9e08f918293fefd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+--- !u!114 &1604234837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1046768871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a4ce9dc38c22df43928367d5c49271e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  multiplayerController: {fileID: 0}
+  multiplayerController: {fileID: 1628508342}
   endGameObject: {fileID: 2046067873}
   scoreboardPanel: {fileID: 1597585026}
   statsContainer: {fileID: 1597585027}
@@ -2810,22 +2828,9 @@ MonoBehaviour:
   rematchDeniedPanel: {fileID: 2118304769}
   rematchDeniedText: {fileID: 2118304768}
   playAgainButton: {fileID: 1315164671}
-  rematchPanelAutoDismissSeconds: 3
-  animSettings: {fileID: 0}
-  joustController: {fileID: 0}
---- !u!114 &1604234836
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046768871}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 87e6ed750945438e9e08f918293fefd6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  rematchPanelAutoDismissSeconds: 2
+  animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
+  dogFightController: {fileID: 1628508342}
 --- !u!225 &1617932949 stripped
 CanvasGroup:
   m_CorrespondingSourceObject: {fileID: 6286389942094070827, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -3116,7 +3121,7 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   multiplayerSetup: {fileID: 1429934008}
-  localScoreboard: {fileID: 1604234835}
+  localScoreboard: {fileID: 0}
   dogFightTurnMonitor: {fileID: 1628508343}
   baseHitsNeeded: 20
 --- !u!114 &1628508343
@@ -3353,6 +3358,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 546690708871217584, guid: 8373d81418838f64c97155119a29e98c,
+        type: 3}
+      propertyPath: _eventResponses.Array.data[1]._scriptableEvent
+      value: 
+      objectReference: {fileID: 11400000, guid: 45c2c6e55c4ddad4290feb26964044ce,
+        type: 2}
     - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
       propertyPath: m_LocalPosition.x
