@@ -1,6 +1,7 @@
 using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
 
