@@ -69,13 +69,10 @@ public sealed class MantaAnalogTurnBoostExecutor : ShipActionExecutorBase
         // Boost intensity: overlap of both triggers
         float boostIntensity = Mathf.Min(lt, rt);
 
-        // Smooth the turn value with ramp in/out
-        _smoothedTurn = Mathf.Lerp(_smoothedTurn, rawTurn, lerpSpeed * Time.deltaTime);
-
         // Apply yaw
-        if (Mathf.Abs(_smoothedTurn) > 0.001f && !_status.IsTranslationRestricted)
+        if (Mathf.Abs(rawTurn) > 0.001f && !_status.IsTranslationRestricted)
         {
-            float yawDeg = _smoothedTurn * maxYawDegPerSec * Time.deltaTime;
+            float yawDeg = rawTurn * maxYawDegPerSec * Time.deltaTime;
             vesselTransformer.ApplyRotation(yawDeg, _status.Transform.up);
         }
 
