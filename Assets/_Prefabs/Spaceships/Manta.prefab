@@ -1574,10 +1574,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxYawDegPerSec: 60
-  speedExp: 0.25
-  speedScale: 1
-  rampInSeconds: 0.25
-  rampOutSeconds: 0.2
+  lerpSpeed: 10
   boostMultiplierOverride: 0
   vesselTransformer: {fileID: 7686683633640807837}
 --- !u!114 &7385827388877614041
