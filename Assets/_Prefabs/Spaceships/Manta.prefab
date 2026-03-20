@@ -1536,6 +1536,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1716607888102834236}
+  - component: {fileID: 8330421448144737181}
   - component: {fileID: 7385827388877614041}
   - component: {fileID: 2468013579246801357}
   m_Layer: 0
@@ -1560,6 +1561,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8075578658670966254}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8330421448144737181
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4912294615010770138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 162f126c6ad394744bc7fe4882d78ef6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxYawDegPerSec: 60
+  speedExp: 0.25
+  speedScale: 1
+  rampInSeconds: 0.25
+  rampOutSeconds: 0.2
+  boostMultiplierOverride: 0
+  vesselTransformer: {fileID: 7686683633640807837}
 --- !u!114 &7385827388877614041
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1585,15 +1605,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  maxYawDegPerSec: 120
-  speedExp: 0.25
-  speedScale: 1
-  rampInSeconds: 0.25
-  rampOutSeconds: 0.2
-  boostMultiplierOverride: 0
-  vesselTransformer: {fileID: 7686683633640807837}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 0}
+  container: {fileID: 0}
 --- !u!1 &5022817358293899131
 GameObject:
   m_ObjectHideFlags: 0
@@ -2029,7 +2044,7 @@ GameObject:
   - component: {fileID: 6733957700513663958}
   - component: {fileID: 7965853245772039612}
   - component: {fileID: 3064061082551029771}
-  - component: {fileID: 9678703874602163012}
+  - component: {fileID: 9223372036854775807}
   m_Layer: 0
   m_Name: Manta
   m_TagString: Player_Ship
@@ -2403,6 +2418,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: e2b6ec3dc3232114cb1376a276d772a1, type: 2}
   energyResourceIndex: 0
   view: {fileID: 397713304832229907}
+  elementBars: {fileID: 0}
 --- !u!114 &3882236086036410899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2450,24 +2466,27 @@ MonoBehaviour:
   - InputEvent: 11
     ShipActions:
     - {fileID: 11400000, guid: 84774ce2f6617b54c8fd2d4acdd26a43, type: 2}
+    - {fileID: 11400000, guid: 770acf1d8205c7b4e993b35820742690, type: 2}
   - InputEvent: 12
     ShipActions:
     - {fileID: 11400000, guid: 9959da05222d3d546934b4c1cc1a64d0, type: 2}
+    - {fileID: 11400000, guid: 770acf1d8205c7b4e993b35820742690, type: 2}
   - InputEvent: 13
     ShipActions:
     - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
+    - {fileID: 11400000, guid: 770acf1d8205c7b4e993b35820742690, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides:
   - InputEvent: 11
     ShipActions:
-    - {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
+    - {fileID: 0}
   - InputEvent: 12
     ShipActions:
-    - {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
+    - {fileID: 0}
   - InputEvent: 13
     ShipActions:
-    - {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
+    - {fileID: 0}
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -2534,6 +2553,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseView: {fileID: 2835891913121360755}
   silhouette: {fileID: 2731003324702047408}
+  scorePopup: {fileID: 0}
+  gameData: {fileID: 0}
+  domainColorPalette: {fileID: 0}
   view: {fileID: 2835891913121360755}
   overchargeSO: {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
   skimmer: {fileID: 8469300474470268824}
@@ -2569,6 +2591,19 @@ MonoBehaviour:
   overrideDetectionLayers:
     serializedVersion: 2
     m_Bits: 2048
+--- !u!114 &9223372036854775807
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &6427700898264204751
 GameObject:
   m_ObjectHideFlags: 0
@@ -3252,7 +3287,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _executors:
   - {fileID: 7385827388877614041}
-  - {fileID: 2468013579246801357}
+  - {fileID: 8330421448144737181}
 --- !u!1 &7953374546544284131
 GameObject:
   m_ObjectHideFlags: 0
@@ -4206,6 +4241,7 @@ MonoBehaviour:
   highlights:
   - input: 2
     image: {fileID: 7069206601941259528}
+  animSettings: {fileID: 0}
   countText: {fileID: 1233584866538271001}
   fillImage: {fileID: 4296652247721588461}
   overchargePrismCount: {fileID: 4338819628229389481}
@@ -4819,19 +4855,6 @@ Camera:
     type: 3}
   m_PrefabInstance: {fileID: 8546359282292252367}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &9678703874602163012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!4 &8650884460702527226 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
