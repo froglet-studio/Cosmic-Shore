@@ -19,19 +19,10 @@ public sealed class MantaAnalogTurnBoostExecutor : ShipActionExecutorBase
 {
     [Header("Yaw Response")]
     [Tooltip("Max yaw speed (deg/sec) at full net trigger pull.")]
-    [SerializeField] private float maxYawDegPerSec = 120f;
-
-    [Tooltip("Exponent for speed-coupled yaw scaling.")]
-    [SerializeField, Range(0f, 2f)] private float speedExp = 0.25f;
-
-    [Tooltip("Multiplier for speed-coupled yaw scaling.")]
-    [SerializeField] private float speedScale = 1.0f;
+    [SerializeField] private float maxYawDegPerSec = 60f;
 
     [Tooltip("Time (sec) for yaw intensity to ramp from 0 to 1.")]
-    [SerializeField] private float rampInSeconds = 0.25f;
-
-    [Tooltip("Time (sec) for yaw intensity to ramp from 1 to 0 after release.")]
-    [SerializeField] private float rampOutSeconds = 0.2f;
+    [SerializeField] private float lerpSpeed = 0.25f;
 
     [Header("Boost")]
     [Tooltip("If > 0, overrides VesselStatus.BoostMultiplier as the base value.")]
@@ -79,18 +70,12 @@ public sealed class MantaAnalogTurnBoostExecutor : ShipActionExecutorBase
         float boostIntensity = Mathf.Min(lt, rt);
 
         // Smooth the turn value with ramp in/out
-        float rampSpeed = Mathf.Abs(rawTurn) >= Mathf.Abs(_smoothedTurn)
-            ? (rampInSeconds > 0.001f ? 1f / rampInSeconds : 100f)
-            : (rampOutSeconds > 0.001f ? 1f / rampOutSeconds : 100f);
-        _smoothedTurn = Mathf.MoveTowards(_smoothedTurn, rawTurn, rampSpeed * Time.deltaTime);
+        _smoothedTurn = Mathf.Lerp(_smoothedTurn, rawTurn, lerpSpeed * Time.deltaTime);
 
         // Apply yaw
         if (Mathf.Abs(_smoothedTurn) > 0.001f && !_status.IsTranslationRestricted)
         {
-            float speedFactor = Mathf.Pow(
-                1f + Mathf.Max(0f, _status.Speed) * 0.01f,
-                speedExp);
-            float yawDeg = _smoothedTurn * maxYawDegPerSec * speedScale * speedFactor * Time.deltaTime;
+            float yawDeg = _smoothedTurn * maxYawDegPerSec * Time.deltaTime;
             vesselTransformer.ApplyRotation(yawDeg, _status.Transform.up);
         }
 
