@@ -4,6 +4,7 @@ using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game
@@ -46,7 +47,7 @@ namespace CosmicShore.Game
 
             if (!gameData.TryGetPlayerByOwnerClientId(newJoinedClientId, out var player))
             {
-                Debug.LogError($"No player found for client Id: {player.PlayerNetId}");
+                CSDebug.LogError($"No player found for client Id: {player.PlayerNetId}");
                 return;
             }
                 

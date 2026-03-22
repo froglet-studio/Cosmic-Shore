@@ -4,6 +4,7 @@ using CosmicShore.Utilities;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.PlayFab.Utility
 {
@@ -30,7 +31,7 @@ namespace CosmicShore.Integrations.PlayFab.Utility
             if (result == null) return;
 
             ServerTime = result.Time;
-            Debug.Log($"Catalog manager - OnGettingCurrentTime() - The time is: {result.Time}");
+            CSDebug.Log($"Catalog manager - OnGettingCurrentTime() - The time is: {result.Time}");
         }
         
         #region Situation Handling
@@ -43,7 +44,7 @@ namespace CosmicShore.Integrations.PlayFab.Utility
         {
             GettingPlayFabErrors?.Invoke(error);
             // Keep the error message here if there will be unit tests.
-            Debug.LogErrorFormat("PlayFabUtility - error code: {0} message: {1}", error.Error, error.ErrorMessage);
+            CSDebug.LogErrorFormat("PlayFabUtility - error code: {0} message: {1}", error.Error, error.ErrorMessage);
         }
         #endregion
     }

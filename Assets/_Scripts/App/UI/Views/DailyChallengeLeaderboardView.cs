@@ -6,6 +6,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -30,7 +31,7 @@ namespace CosmicShore.App.UI.Views
 
         void FetchLeaderboard()
         {
-            Debug.Log("DailyChallengeLeaderboardView.FetchLeaderboard");
+            CSDebug.Log("DailyChallengeLeaderboardView.FetchLeaderboard");
             LeaderboardManager.Instance.FetchLeaderboard(
                 LeaderboardManager.DailyChallengeStatisticName,
                 new() { { "", "" } },
@@ -39,10 +40,10 @@ namespace CosmicShore.App.UI.Views
 
         void OnFetchLeaderboard(List<LeaderboardManager.LeaderboardEntry> results)
         {
-            Debug.Log("OnFetchLeaderboard");
+            CSDebug.Log("OnFetchLeaderboard");
             foreach (var result in results)
             {
-                Debug.Log($"Leaderboard Result - {result.Position} | {result.DisplayName} | {result.Score}");
+                CSDebug.Log($"Leaderboard Result - {result.Position} | {result.DisplayName} | {result.Score}");
             }
 
             LeaderboardEntries = results;
@@ -51,12 +52,12 @@ namespace CosmicShore.App.UI.Views
 
         void PopulateGameHighScores()
         {
-            Debug.Log($"PopulateGameHighScores: Daily Challenge");
+            CSDebug.Log($"PopulateGameHighScores: Daily Challenge");
 
             // High Scores Container null check
             if (HighScoresContainer == null)
             {
-                Debug.LogWarning($"{nameof(HighScoresContainer)} game object destroyed.");
+                CSDebug.LogWarning($"{nameof(HighScoresContainer)} game object destroyed.");
                 return;
             }
 

@@ -2,12 +2,13 @@ using System;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using CosmicShore.Game.Spawning;
 
 namespace CosmicShore.Game.Projectiles
 {
     public class AOEBlockSpawner : AOEBlockCreation
     {
-        [SerializeField] private SpawnableAbstractBase spawnable;
+        [SerializeField] private SpawnableBase spawnable;
         [SerializeField] int repetitions = 1;
         [SerializeField] float delayBetweenSpawns = 0.3f;
 
@@ -15,6 +16,11 @@ namespace CosmicShore.Game.Projectiles
         {
             try
             {
+                // AOEExplosion.Initialize() zeroes localScale to hide the explosion
+                // mesh during its delay. This subclass doesn't use the base explosion
+                // animation, so restore scale before spawning children.
+                transform.localScale = Vector3.one;
+
                 for (int i = 0; i < repetitions; i++)
                 {
                     var position = Vessel.Transform.position;

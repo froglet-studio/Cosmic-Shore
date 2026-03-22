@@ -3,10 +3,12 @@ using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Events;
 using CosmicShore.FTUE;
+using CosmicShore.Game.Progression;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Elements
 {
@@ -23,6 +25,15 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] Image BackgroundImage;
         [SerializeField] Image StarImage;
         [SerializeField] int Index;
+
+        [Header("Lock State")]
+        [Tooltip("Overlay shown when the game mode is locked")]
+        [SerializeField] private GameObject lockOverlay;
+        [Tooltip("Tint color applied to the card background when locked")]
+        [SerializeField] private Color lockedTintColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+
+        private bool _isLocked;
+        private Color _originalBgColor = Color.white;
 
         bool favorited;
         [SerializeField] public bool Favorited
@@ -81,8 +92,32 @@ namespace CosmicShore.App.UI.Elements
 
         public void OnCardClicked()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
-            Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+            CSDebug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+        }
+
+        /// <summary>
+        /// Sets the visual locked state of this card.
+        /// Locked cards are greyed out with a lock icon overlay and non-interactable.
+        /// </summary>
+        public void SetLocked(bool locked)
+        {
+            if (lockOverlay != null)
+                lockOverlay.SetActive(locked);
+
+            if (BackgroundImage != null)
+            {
+                // Only save the original color when transitioning from unlocked → locked
+                // to avoid overwriting it with the tinted color on repeated SetLocked(true) calls
+                if (locked && !_isLocked)
+                    _originalBgColor = BackgroundImage.color;
+
+                BackgroundImage.color = locked ? lockedTintColor : _originalBgColor;
+            }
+
+            _isLocked = locked;
+
+            if (TryGetComponent<Button>(out var btn))
+                btn.interactable = !locked;
         }
     }
 }

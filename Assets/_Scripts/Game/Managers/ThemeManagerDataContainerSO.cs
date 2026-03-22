@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Core
@@ -20,12 +21,11 @@ namespace CosmicShore.Core
                 mainCamera = Camera.main;
                 if (mainCamera == null)
                 {
-                    Debug.LogError("No camera found in the scene!");
+                    CSDebug.LogError("No camera found in the scene!");
                     return;
                 }
             }
 
-            mainCamera.clearFlags = CameraClearFlags.SolidColor;
             mainCamera.backgroundColor = ColorSet.EnvironmentColors.SkyColor;
         }
 
@@ -48,7 +48,7 @@ namespace CosmicShore.Core
                 case 2: return TeamMaterialSets[domain].CrystalMaterial2;
                 case 3: return TeamMaterialSets[domain].CrystalMaterial3;
                 default:
-                    Debug.LogWarning($"Invalid crystal material index {index} for domain {domain}. Returning default crystal material.");
+                    CSDebug.LogWarning($"Invalid crystal material index {index} for domain {domain}. Returning default crystal material.");
                     break;
             }
             return TeamMaterialSets[domain].CrystalMaterial;

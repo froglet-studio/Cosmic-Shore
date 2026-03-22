@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.DialogueSystem.Editor
 {
@@ -35,7 +36,7 @@ namespace CosmicShore.DialogueSystem.Editor
         // Your DialogueSet folder path (update as needed)
         private static readonly string DialogueSetFolder = "Assets/_Scripts/DialogueSystem/SO";
 
-        [MenuItem("FrogletTools/Dialogue Editor")]
+        [MenuItem("FrogletTools/Legacy/Dialogue Editor")]
         public static void Open()
         {
             GetWindow<DialogueEditorWindow>("Dialogue Editor");
@@ -644,7 +645,7 @@ namespace CosmicShore.DialogueSystem.Editor
         {
             AssetDatabase.SaveAssets();
             _hasUnsavedChanges = false;
-            Debug.Log("[Dialogue Editor] All changes saved.");
+            CSDebug.Log("[Dialogue Editor] All changes saved.");
         }
 
         private T DrawColoredEnumPopup<T>(string label, T value, Color bgColor, params GUILayoutOption[] options) where T : Enum

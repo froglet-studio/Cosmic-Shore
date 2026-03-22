@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -118,7 +119,7 @@ namespace CosmicShore.Game.UI
                 fuelLevelText.text = (normalizedLevel * 100f).ToString("F0");
 
             if (verboseLogging)
-                Debug.Log($"[ResourceDisplay] Legacy: idx={idx}, normalized={normalizedLevel}");
+                CSDebug.Log($"[ResourceDisplay] Legacy: idx={idx}, normalized={normalizedLevel}");
         }
 
         private void UpdateSliderDisplay(float normalizedLevel, bool shouldChangeColor)
@@ -146,7 +147,7 @@ namespace CosmicShore.Game.UI
             }
 
             if (verboseLogging)
-                Debug.Log($"[ResourceDisplay] SegmentedSlider: fill={normalizedLevel}");
+                CSDebug.Log($"[ResourceDisplay] SegmentedSlider: fill={normalizedLevel}");
         }
 
         private void UpdateSpriteSwapDisplay(float normalizedLevel)
@@ -157,7 +158,7 @@ namespace CosmicShore.Game.UI
             spriteSwapImage.sprite = spriteSwapSprites[Mathf.Clamp(idx, 0, maxIndex)];
 
             if (verboseLogging)
-                Debug.Log($"[ResourceDisplay] SpriteSwap: idx={idx}, normalized={normalizedLevel}");
+                CSDebug.Log($"[ResourceDisplay] SpriteSwap: idx={idx}, normalized={normalizedLevel}");
         }
 
         #endregion

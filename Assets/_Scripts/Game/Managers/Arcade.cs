@@ -3,6 +3,7 @@ using CosmicShore.Game.Arcade;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utilities;
+using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace CosmicShore.Core
         [field: SerializeField] public SO_MissionList MissionGames { get; private set; }
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
+        [field: SerializeField] SO_VesselList VesselList { get; set; }
 
         [FormerlySerializedAs("miniGameData")] [SerializeField] private GameDataSO gameData;
         
@@ -51,10 +53,15 @@ namespace CosmicShore.Core
                 MissionLookup.Add(game.Mode, game);
         }
 
-        public void LaunchMission(GameModes gameMode, SO_Captain captain, int intensity)
+        public void LaunchMission(GameModes gameMode, SO_Vessel vessel, int intensity)
         {
-            gameData.PlayerCaptain = captain;
-            gameData.ResourceCollection = CaptainManager.Instance.GetCaptainByName(captain.Name).ResourceLevels;
+            if (vessel != null && vessel.IsLocked)
+            {
+                CSDebug.LogWarning($"Arcade: Blocked launch with locked vessel {vessel.Name}");
+                return;
+            }
+
+            gameData.ResourceCollection = vessel != null ? vessel.InitialResourceLevels : new ResourceCollection(.5f, .5f, .5f, .5f);
             gameData.IsDailyChallenge = false;
             gameData.IsTraining = false;
             gameData.IsMission = true;
@@ -84,12 +91,24 @@ namespace CosmicShore.Core
 
         public void LaunchArcadeGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isMultiplayer, bool isDailyChallenge = false)
         {
+            if (VesselList && VesselList.TryGetVesselByClass(vessel, out var vesselSO) && vesselSO.IsLocked)
+            {
+                CSDebug.LogWarning($"Arcade: Blocked launch with locked vessel {vessel}");
+                return;
+            }
+
+            gameData.selectedVesselClass.Value = vessel;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.SelectedPlayerCount.Value = numberOfPlayers;
             gameData.ResourceCollection = shipResources;
             gameData.IsDailyChallenge = isDailyChallenge;
             gameData.IsTraining = false;
             gameData.IsMission = false;
             gameData.GameMode = gameMode;
-            
+            gameData.SelectedPlayerCount.Value = numberOfPlayers;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.selectedVesselClass.Value = vessel;
+
             // For multiplayer-capable games with only 1 human player, run locally with AI
             // instead of doing online matchmaking. Use gameData.SelectedPlayerCount (set by
             // the config modal) rather than the legacy numberOfPlayers parameter.
@@ -138,11 +157,21 @@ namespace CosmicShore.Core
 
         public void LaunchTrainingGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
+            if (VesselList && VesselList.TryGetVesselByClass(vessel, out var vesselSO) && vesselSO.IsLocked)
+            {
+                CSDebug.LogWarning($"Arcade: Blocked launch with locked vessel {vessel}");
+                return;
+            }
+
             gameData.ResourceCollection = shipResources;
             gameData.IsDailyChallenge = isDailyChallenge;
             gameData.IsTraining = !isDailyChallenge;
             gameData.IsMission = false;
             gameData.IsMultiplayerMode = false;
+            gameData.GameMode = gameMode;
+            gameData.SelectedPlayerCount.Value = numberOfPlayers;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.selectedVesselClass.Value = vessel;
             gameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
             gameData.InvokeGameLaunch();
             

@@ -48,7 +48,7 @@ namespace CosmicShore.App.Systems.Squads
                 if (Squad.Equals(default(Squad)))
                     Init();
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Ship.Class == Squad.SquadLeaderClass).FirstOrDefault(); 
+                return CaptainList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Vessel.Class == Squad.SquadLeaderClass).FirstOrDefault(); 
             }
         }
 
@@ -59,7 +59,7 @@ namespace CosmicShore.App.Systems.Squads
                 if (Squad.Equals(default(Squad)))
                     Init();
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueOneElement && x.Ship.Class == Squad.RogueOneClass).FirstOrDefault(); 
+                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueOneElement && x.Vessel.Class == Squad.RogueOneClass).FirstOrDefault(); 
             }
         }
 
@@ -70,7 +70,7 @@ namespace CosmicShore.App.Systems.Squads
                 if (Squad.Equals(default(Squad)))
                     Init();
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueTwoElement && x.Ship.Class == Squad.RogueTwoClass).FirstOrDefault(); 
+                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueTwoElement && x.Vessel.Class == Squad.RogueTwoClass).FirstOrDefault(); 
             }
         }
 
@@ -83,7 +83,7 @@ namespace CosmicShore.App.Systems.Squads
         public static void SetSquadLeader(SO_Captain captain)
         {
             Squad.SquadLeaderElement = captain.PrimaryElement;
-            Squad.SquadLeaderClass = captain.Ship.Class;
+            Squad.SquadLeaderClass = captain.Vessel.Class;
         }
 
         public static void SetRogueOne(VesselClassType vesselClass, Element element)
@@ -95,7 +95,7 @@ namespace CosmicShore.App.Systems.Squads
         public static void SetRogueOne(SO_Captain captain)
         {
             Squad.RogueOneElement = captain.PrimaryElement;
-            Squad.RogueOneClass = captain.Ship.Class;
+            Squad.RogueOneClass = captain.Vessel.Class;
         }
 
         public static void SetRogueTwo(VesselClassType vesselClass, Element element)
@@ -107,7 +107,7 @@ namespace CosmicShore.App.Systems.Squads
         public static void SetRogueTwo(SO_Captain captain)
         {
             Squad.RogueTwoElement = captain.PrimaryElement;
-            Squad.RogueTwoClass = captain.Ship.Class;
+            Squad.RogueTwoClass = captain.Vessel.Class;
         }
     }
 }

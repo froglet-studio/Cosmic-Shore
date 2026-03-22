@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.Systems.UserActions
 {
@@ -18,7 +19,7 @@ namespace CosmicShore.App.Systems.UserActions
 
         public static string GetGameplayUserActionLabel(GameModes gameMode, VesselClassType vesselType, int intensity)
         {
-            Debug.Log($"GetGameplayUserActionLabel: {gameMode}_{vesselType}_{intensity}");
+            CSDebug.Log($"GetGameplayUserActionLabel: {gameMode}_{vesselType}_{intensity}");
             return $"{gameMode}_{vesselType}_{intensity}";
         }
     }

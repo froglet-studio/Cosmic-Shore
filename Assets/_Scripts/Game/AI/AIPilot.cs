@@ -141,7 +141,11 @@ namespace CosmicShore.Game.AI
             // When seeking players (Joust mode), ignore cell item updates
             if (seekPlayers) return;
 
+            // Guard against early calls before vessel is assigned or cell is ready
+            if (vessel == null || VesselStatus == null) return;
+
             var activeCell = cellData.Cell;
+            if (activeCell == null) return;
             var cellItems = cellData.CellItems;
             float MinDistance = Mathf.Infinity;
             CellItem closestItem = null;
@@ -212,10 +216,10 @@ namespace CosmicShore.Game.AI
 
                 var inst = Instantiate(asset);
                 inst.name = $"{asset.name} [AI:{vessel.VesselStatus.PlayerName}]";
-                inst.Initialize(VesselStatus);             
+                inst.Initialize(VesselStatus);
                 ability.Ability = inst;
             }
-            
+
             _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -226,6 +230,9 @@ namespace CosmicShore.Game.AI
                 { Corner.BottomLeft, new AvoidanceBehavior (-raycastWidth, -raycastHeight, Clockwise, Vector3.zero ) },
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
+
+            // Pick up any crystals that were spawned before this AI was initialized
+            UpdateCellContent();
         }
 
         public void StartAIPilot()

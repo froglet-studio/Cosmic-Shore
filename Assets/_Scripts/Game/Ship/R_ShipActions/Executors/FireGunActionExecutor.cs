@@ -8,8 +8,12 @@ using UnityEngine;
 
 public class FireGunActionExecutor : ShipActionExecutorBase
 {
+    /// <summary>Static event: each time a gun fires a single shot. Param = player name.</summary>
+    public static event Action<string> OnShotFired;
+
     public event Action OnGunFired;
     public event Action<float> OnAmmoChanged;
+    public event Action<float, float> OnMissileFired; // (ammoBeforeFire, ammoCost)
 
     [Header("Scene Refs")]
     [SerializeField] Gun gun;
@@ -100,10 +104,12 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
     public void Fire(FireGunActionSO so, IVesselStatus status)
     {
-        if (_resources.Resources[so.AmmoIndex].CurrentAmount < so.AmmoCost)
+        var currentAmmo = _resources.Resources[so.AmmoIndex].CurrentAmount;
+        if (currentAmmo < so.AmmoCost)
             return;
 
         _soRef = so;
+        OnMissileFired?.Invoke(currentAmmo, so.AmmoCost);
         _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
 
         OnAmmoChanged?.Invoke(Ammo01);
@@ -115,6 +121,7 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
         AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GunFire);
         OnGunFired?.Invoke();
+        OnShotFired?.Invoke(_status?.PlayerName);
 
         gun.FireGun(
             _worldMuzzleAnchor,

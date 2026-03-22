@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.UI;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -13,7 +14,7 @@ namespace CosmicShore.Game
     {
         [SerializeField]
         ScriptableEventString OnJoustCollision;
-        
+
         [Header("Explosion Settings")]
         [SerializeField] private AOEExplosion[] _aoePrefabs;
         [SerializeField] private float _minExplosionScale;
@@ -65,8 +66,15 @@ namespace CosmicShore.Game
                 _aoeExplosionMaterial,
                 _resourceIndex,
                 _spawnOffset);
-            
+
             OnJoustCollision.Raise(impacteeVessel.VesselStatus.PlayerName);
+
+            // Post two-tone joust notification to the game feed
+            GameFeedAPI.PostJoust(
+                impacteeVessel.VesselStatus.PlayerName,
+                impacteeVessel.VesselStatus.Domain,
+                impactorVessel.VesselStatus.PlayerName,
+                impactorVessel.VesselStatus.Domain);
         }
     }
 }

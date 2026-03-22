@@ -69,7 +69,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!_lastProjectile)
             {
-                Debug.LogError("Last projectile not found!");
+                CSDebug.LogError("Last projectile not found!");
                 return;
             }
             _lastProjectile.ReturnToFactory();
@@ -77,7 +77,7 @@ namespace CosmicShore.Game.Projectiles
 
         public void DetonateProjectile()
         {
-            Debug.Log("Gun DetonateProjectile called");
+            CSDebug.Log("Gun DetonateProjectile called");
             // Example: if (_lastProjectile is ExplodableProjectile ep) ep.Detonate();
         }
         #endregion
@@ -148,7 +148,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (_vesselStatus == null)
             {
-                Debug.LogError("Gun.FireSingle - VesselStatus is null!");
+                CSDebug.LogError("Gun.FireSingle - VesselStatus is null!");
                 return;
             }
 
@@ -162,7 +162,7 @@ namespace CosmicShore.Game.Projectiles
 
             if (!projectile)
             {
-                Debug.LogError($"Gun.FireSingle - Failed to spawn projectile of charge {energy}");
+                CSDebug.LogError($"Gun.FireSingle - Failed to spawn projectile of charge {energy}");
                 return;
             }
 

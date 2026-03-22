@@ -24,7 +24,7 @@ MonoBehaviour:
   thicknessMultiplier: 100
   lengthMultiplier: 100
   gapMultiplier: 3
-  columnGapMultiplier: 18
+  columnGapMultiplier: 10
   useDomainPaletteColors: 1
   domainPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   enableDangerVisual: 1

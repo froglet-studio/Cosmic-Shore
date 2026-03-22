@@ -2,6 +2,7 @@
 using System.Linq;
 using CosmicShore.Game.Cinematics;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -9,6 +10,14 @@ namespace CosmicShore.Game.Arcade
     {
         [Header("Hex Race")]
         [SerializeField] private HexRaceController hexRaceController;
+
+        protected override bool DetermineLocalPlayerWon()
+        {
+            var localName = gameData.LocalPlayer?.Name;
+            return hexRaceController != null
+                && hexRaceController.RaceResultsReady
+                && hexRaceController.WinnerName == localName;
+        }
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
@@ -20,14 +29,14 @@ namespace CosmicShore.Game.Arcade
             var localName = gameData.LocalPlayer?.Name;
             if (string.IsNullOrEmpty(localName))
             {
-                Debug.LogError("[HexRaceEndGame] LocalPlayer.Name is null or empty.");
+                CSDebug.LogError("[HexRaceEndGame] LocalPlayer.Name is null or empty.");
                 yield break;
             }
 
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null)
             {
-                Debug.LogError($"[HexRaceEndGame] Could not find RoundStats for '{localName}'. " +
+                CSDebug.LogError($"[HexRaceEndGame] Could not find RoundStats for '{localName}'. " +
                                $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                 yield break;
             }
@@ -55,7 +64,7 @@ namespace CosmicShore.Game.Arcade
                 formatAsTime = false;
             }
 
-            Debug.Log($"[HexRaceEndGame] Local='{localName}' Score={localStats.Score} didWin={didWin} " +
+            CSDebug.Log($"[HexRaceEndGame] Local='{localName}' Score={localStats.Score} didWin={didWin} " +
                       $"WinnerName='{hexRaceController?.WinnerName}' " +
                       $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 
