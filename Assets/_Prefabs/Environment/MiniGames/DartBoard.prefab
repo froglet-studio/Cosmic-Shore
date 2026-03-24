@@ -44,6 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 591e5a01275ccbc4f954ac32954da18b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailBlock: {fileID: 4563009547826722997, guid: 34146ee2267ac224da1df0d1326f4563,
+  greenPrism: {fileID: 4563009547826722997, guid: 8503108e8786e1a4caa36ddb1a58f00e,
+    type: 3}
+  redPrism: {fileID: 4563009547826722997, guid: 34146ee2267ac224da1df0d1326f4563,
     type: 3}
   difficultyAngle: 180
