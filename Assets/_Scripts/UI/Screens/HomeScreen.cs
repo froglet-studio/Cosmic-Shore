@@ -86,7 +86,7 @@ namespace CosmicShore.UI
                 userNameText.text = profile.displayName;
         }
 
-        void OnDestroy()
+        void OnDisable()
         {
             if (playerDataService != null)
                 playerDataService.OnProfileChanged -= OnProfileChanged;
