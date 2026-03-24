@@ -380,6 +380,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c84cc795715b8664aa69c3c613612a4f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  musicEnabled: 1
+  sfxEnabled: 1
+  hapticsEnabled: 1
+  invertYEnabled: 0
+  invertThrottleEnabled: 0
+  joystickVisualsEnabled: 1
+  musicLevel: 1
+  sfxLevel: 1
+  hapticsLevel: 1
 --- !u!114 &207728441
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -706,8 +715,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f37a582dc454f99851c1fdfec05d974, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cloudSaveProfileKey: player_profile
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
+  gameData: {fileID: 0}
 --- !u!114 &483927159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -837,6 +846,7 @@ GameObject:
   - component: {fileID: 684811274}
   - component: {fileID: 684811275}
   - component: {fileID: 684811276}
+  - component: {fileID: 684811277}
   m_Layer: 0
   m_Name: UGSStatsManager
   m_TagString: Untagged
@@ -872,8 +882,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   leaderboardConfig: {fileID: 11400000, guid: e04a023aee5d41345a2d6026306bb0ef, type: 2}
-  authenticationDataVariable: {fileID: 11400000, guid: 875bcedfcf3335047b416297732cba15,
-    type: 2}
 --- !u!114 &684811276
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -886,6 +894,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &684811277
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 684811273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1388a31365c5664478b51def3a79f0c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vesselList: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
 --- !u!1 &760981915
 GameObject:
   m_ObjectHideFlags: 0
@@ -3473,6 +3494,11 @@ PrefabInstance:
       propertyPath: captainManager
       value: 
       objectReference: {fileID: 2100000003}
+    - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
+        type: 3}
+      propertyPath: ugsDataService
+      value: 
+      objectReference: {fileID: 684811277}
     - target: {fileID: 2108845819244561836, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
       propertyPath: ugsStatsManager

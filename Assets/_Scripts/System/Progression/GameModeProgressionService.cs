@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -22,6 +23,8 @@ namespace CosmicShore.Core
 
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
+
+        [Inject] UGSDataService _ugsDataService;
 
         public GameModeProgressionData ProgressionData { get; private set; } = new();
         public SO_GameModeQuestList QuestList => questList;
@@ -59,9 +62,8 @@ namespace CosmicShore.Core
             if (gameData != null)
                 gameData.OnMiniGameEnd.OnRaised -= HandleGameEnd;
 
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-                ds.OnInitialized -= HandleDataServiceReady;
+            if (_ugsDataService != null)
+                _ugsDataService.OnInitialized -= HandleDataServiceReady;
         }
 
         void Start()
@@ -69,25 +71,19 @@ namespace CosmicShore.Core
             if (gameData != null)
                 gameData.OnMiniGameEnd.OnRaised += HandleGameEnd;
 
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-            {
-                if (ds.IsInitialized)
-                    HandleDataServiceReady();
-                else
-                    ds.OnInitialized += HandleDataServiceReady;
-            }
+            if (_ugsDataService.IsInitialized)
+                HandleDataServiceReady();
+            else
+                _ugsDataService.OnInitialized += HandleDataServiceReady;
         }
 
         void HandleDataServiceReady()
         {
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-                ds.OnInitialized -= HandleDataServiceReady;
+            _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
             // Use the repo's data directly
-            if (ds?.ProgressionRepo != null)
-                ProgressionData = ds.ProgressionRepo.Data;
+            if (_ugsDataService.ProgressionRepo != null)
+                ProgressionData = _ugsDataService.ProgressionRepo.Data;
 
             EnsureFirstModeUnlocked();
             SyncSOCompletedFlags();
@@ -728,7 +724,7 @@ namespace CosmicShore.Core
 
         async void SaveImmediateAsync()
         {
-            var repo = UGSDataService.Instance?.ProgressionRepo;
+            var repo = _ugsDataService?.ProgressionRepo;
             if (repo == null)
             {
                 CSDebug.LogWarning("[GameModeProgressionService] ProgressionRepo not available, cannot save.");
@@ -749,7 +745,7 @@ namespace CosmicShore.Core
 
         void ScheduleDebouncedSave()
         {
-            UGSDataService.Instance?.ProgressionRepo?.MarkDirty();
+            _ugsDataService?.ProgressionRepo?.MarkDirty();
         }
     }
 }

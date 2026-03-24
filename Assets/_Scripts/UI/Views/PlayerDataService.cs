@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
@@ -24,6 +25,8 @@ namespace CosmicShore.UI
 
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
+
+        [Inject] UGSDataService _ugsDataService;
 
         public PlayerProfileData CurrentProfile { get; private set; }
         public bool              IsInitialized  { get; private set; }
@@ -49,7 +52,7 @@ namespace CosmicShore.UI
             if (Instance == this)
                 Instance = null;
 
-            var ds = UGSDataService.Instance;
+            var ds = _ugsDataService;
             if (ds != null)
                 ds.OnInitialized -= HandleDataServiceReady;
 
@@ -60,21 +63,15 @@ namespace CosmicShore.UI
         {
             OnProfileChanged += SyncProfileToGameData;
 
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-            {
-                if (ds.IsInitialized)
-                    HandleDataServiceReady();
-                else
-                    ds.OnInitialized += HandleDataServiceReady;
-            }
+            if (_ugsDataService.IsInitialized)
+                HandleDataServiceReady();
+            else
+                _ugsDataService.OnInitialized += HandleDataServiceReady;
         }
 
         void HandleDataServiceReady()
         {
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-                ds.OnInitialized -= HandleDataServiceReady;
+            _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
             MergeCloudProfile();
 
@@ -90,7 +87,7 @@ namespace CosmicShore.UI
         /// </summary>
         void MergeCloudProfile()
         {
-            var ds = UGSDataService.Instance;
+            var ds = _ugsDataService;
             if (ds?.ProfileRepo == null) return;
 
             var cloudData = ds.ProfileRepo.Data;
@@ -165,7 +162,7 @@ namespace CosmicShore.UI
         /// </summary>
         void SyncCurrentProfileToRepo()
         {
-            var ds = UGSDataService.Instance;
+            var ds = _ugsDataService;
             if (ds?.ProfileRepo == null || CurrentProfile == null) return;
 
             var repoData = ds.ProfileRepo.Data;

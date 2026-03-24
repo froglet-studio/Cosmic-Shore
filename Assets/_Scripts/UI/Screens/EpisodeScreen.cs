@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,6 +11,8 @@ namespace CosmicShore.UI
 {
     public class EpisodeScreen : MonoBehaviour
     {
+        [Inject] UGSDataService _ugsDataService;
+
         [Header("Data")]
         [SerializeField] private SO_EpisodeList episodeList;
 
@@ -67,8 +70,7 @@ namespace CosmicShore.UI
 
         EpisodeProgressCloudData GetCloudProgress()
         {
-            var ds = UGSDataService.Instance;
-            return ds is { IsInitialized: true } ? ds.Episodes?.Data : null;
+            return _ugsDataService is { IsInitialized: true } ? _ugsDataService.Episodes?.Data : null;
         }
 
         void PopulateEpisodeCards()
