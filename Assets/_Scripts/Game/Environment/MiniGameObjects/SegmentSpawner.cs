@@ -264,35 +264,39 @@ public class SegmentSpawner : MonoBehaviour
     void SpawnGuaranteedAlongTrack(int intensity)
     {
         var worldOrigin = origin + transform.position;
-        int totalSlots = NumberOfSegments * _guaranteedRepeatCount;
 
-        for (int slot = 0; slot < totalSlots; slot++)
+        foreach (var spawnablePrefab in guaranteedSpawnables)
         {
-            var spawnable = guaranteedSpawnables[slot % guaranteedSpawnables.Count];
-            if (spawnable == null) continue;
+            if (spawnablePrefab == null) continue;
 
-            if (Seed != 0) spawnable.SetSeed(Seed + 2000 + slot);
+            for (int seg = 0; seg < NumberOfSegments; seg++)
+            {
+                // Instantiate an independent copy of the spawnable so each
+                // Spawn() call has its own cache/state — avoids issues with
+                // repeated Spawn() on the same prefab reference.
+                var spawnableInstance = Instantiate(spawnablePrefab);
+                spawnableInstance.gameObject.SetActive(false);
 
-            spawnable.InvalidateCache();
-            var spawned = spawnable.Spawn(intensity);
-            if (!spawned) continue;
+                if (Seed != 0) spawnableInstance.SetSeed(Seed + 2000 + seg);
 
-            spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+                var spawned = spawnableInstance.Spawn(intensity);
 
-            // Position at each segment along the track with a lateral offset so it doesn't overlap crystals
-            float z = slot * StraightLineLength + StraightLineLength * 0.5f;
-            float lateralOffset = guaranteedShapeClusterRadius;
-            // Alternate sides of the track
-            float side = (slot % 2 == 0) ? 1f : -1f;
-            spawned.transform.position = worldOrigin + new Vector3(side * lateralOffset, 0f, z);
+                // Grab trails before destroying the temporary spawnable
+                trails.AddRange(spawnableInstance.GetTrails());
+                Destroy(spawnableInstance.gameObject);
 
-            // Face along the track
-            spawned.transform.rotation = Quaternion.LookRotation(Vector3.forward);
+                if (!spawned) continue;
 
-            if (_guaranteedScaleFactor != 1f)
-                spawned.transform.localScale *= _guaranteedScaleFactor;
+                spawned.transform.SetParent(SpawnedSegmentContainer.transform);
 
-            trails.AddRange(spawnable.GetTrails());
+                float z = seg * StraightLineLength + StraightLineLength * 0.5f;
+                float side = (seg % 2 == 0) ? 1f : -1f;
+                spawned.transform.position = worldOrigin + new Vector3(side * guaranteedShapeClusterRadius, 0f, z);
+                spawned.transform.rotation = Quaternion.LookRotation(Vector3.forward);
+
+                if (_guaranteedScaleFactor != 1f)
+                    spawned.transform.localScale = Vector3.one * _guaranteedScaleFactor;
+            }
         }
     }
 
