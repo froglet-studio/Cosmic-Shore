@@ -7,8 +7,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using CosmicShore.Utility;
-using Unity.Services.Authentication;
-using Unity.Services.Core;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -20,15 +19,22 @@ namespace CosmicShore.Core
     /// Dependency Inversion: depends on ICloudSaveProvider and ICloudDataRepository
     ///                       interfaces, not concrete UGS types.
     ///
-    /// Auto-creates itself at runtime if no scene instance exists.
+    /// Registered in AppManager DI as a lazy MonoBehaviour singleton.
+    /// Subscribes to SOAP OnSignedIn event for auth-driven initialization.
     /// </summary>
     public class UGSDataService : MonoBehaviour, IUGSDataService
     {
-        public static UGSDataService Instance { get; private set; }
+        /// <summary>
+        /// Static accessor for non-DI contexts (editor tools, static utility classes).
+        /// Runtime MonoBehaviours must use [Inject] instead.
+        /// </summary>
+        internal static UGSDataService Instance { get; private set; }
 
         [Header("Hangar Sync")]
         [Tooltip("Vessel list to sync unlock state with cloud on initialization.")]
         [SerializeField] SO_VesselList vesselList;
+
+        [Inject] AuthenticationDataVariable _authData;
 
         // ── Repositories ──
         PlayerProfileRepository _profile;
@@ -46,14 +52,6 @@ namespace CosmicShore.Core
 
         public bool IsInitialized { get; private set; }
         public event Action OnInitialized;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void AutoCreate()
-        {
-            if (Instance != null) return;
-            var go = new GameObject("[UGSDataService]");
-            go.AddComponent<UGSDataService>();
-        }
 
         // Read-only accessors (for UI / query-only consumers)
         public ICloudDataReader<PlayerProfileData> Profile => _profile;
@@ -75,16 +73,9 @@ namespace CosmicShore.Core
 
         void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
             Instance = this;
-            transform.SetParent(null);
-            DontDestroyOnLoad(gameObject);
 
-            // Resolve vesselList at runtime if not assigned via inspector (e.g. auto-created)
+            // Resolve vesselList at runtime if not assigned via inspector
             if (vesselList == null)
                 vesselList = Resources.FindObjectsOfTypeAll<SO_VesselList>().FirstOrDefault();
 
@@ -92,37 +83,25 @@ namespace CosmicShore.Core
             CreateRepositories();
         }
 
+        void Start()
+        {
+            _authData.Value.OnSignedIn.OnRaised += HandleSignedIn;
+
+            if (_authData.Value.IsSignedIn)
+                HandleSignedIn();
+        }
+
+        void OnDisable()
+        {
+            if (_authData != null)
+                _authData.Value.OnSignedIn.OnRaised -= HandleSignedIn;
+        }
+
         void OnDestroy()
         {
             if (Instance == this)
                 Instance = null;
-
-            if (UnityServices.State == ServicesInitializationState.Initialized &&
-                AuthenticationService.Instance != null)
-                AuthenticationService.Instance.SignedIn -= HandleSignedInEvent;
         }
-
-        async void Start()
-        {
-            try
-            {
-                // UGS singletons (AuthenticationService.Instance) are only available
-                // after UnityServices.InitializeAsync() completes. Wait if needed.
-                while (UnityServices.State != ServicesInitializationState.Initialized)
-                    await Task.Yield();
-
-                AuthenticationService.Instance.SignedIn += HandleSignedInEvent;
-
-                if (AuthenticationService.Instance.IsSignedIn)
-                    await InitializeAsync();
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogError($"[UGSDataService] Start failed: {e.Message}");
-            }
-        }
-
-        void HandleSignedInEvent() => HandleSignedIn();
 
         async void HandleSignedIn()
         {

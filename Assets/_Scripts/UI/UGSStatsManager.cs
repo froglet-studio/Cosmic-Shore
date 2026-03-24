@@ -7,6 +7,7 @@ using Unity.Services.Analytics;
 using Unity.Services.Leaderboards;
 using UnityEngine;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.Core
 {
@@ -22,6 +23,8 @@ namespace CosmicShore.Core
         [Header("Dependencies")]
         [SerializeField] LeaderboardConfigSO leaderboardConfig;
 
+        [Inject] UGSDataService _ugsDataService;
+
         private PlayerStatsProfile _cachedProfile = new();
         private VesselStatsCloudData _vesselStats = new();
         private bool _isReady;
@@ -35,14 +38,10 @@ namespace CosmicShore.Core
 
         void Start()
         {
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-            {
-                if (ds.IsInitialized)
-                    HandleDataServiceReady();
-                else
-                    ds.OnInitialized += HandleDataServiceReady;
-            }
+            if (_ugsDataService.IsInitialized)
+                HandleDataServiceReady();
+            else
+                _ugsDataService.OnInitialized += HandleDataServiceReady;
         }
 
         void OnDestroy()
@@ -50,22 +49,19 @@ namespace CosmicShore.Core
             if (Instance == this)
                 Instance = null;
 
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-                ds.OnInitialized -= HandleDataServiceReady;
+            if (_ugsDataService != null)
+                _ugsDataService.OnInitialized -= HandleDataServiceReady;
         }
 
         void HandleDataServiceReady()
         {
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-                ds.OnInitialized -= HandleDataServiceReady;
+            _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
             // Use the repo's data directly — no separate cloud load needed
-            if (ds?.StatsRepo != null)
-                _cachedProfile = ds.StatsRepo.Data;
-            if (ds?.VesselStatsRepo != null)
-                _vesselStats = ds.VesselStatsRepo.Data;
+            if (_ugsDataService.StatsRepo != null)
+                _cachedProfile = _ugsDataService.StatsRepo.Data;
+            if (_ugsDataService.VesselStatsRepo != null)
+                _vesselStats = _ugsDataService.VesselStatsRepo.Data;
 
             _isReady = true;
             CSDebug.Log("[UGSStats] Initialized from UGSDataService repositories.");
@@ -258,12 +254,12 @@ namespace CosmicShore.Core
         void SaveProfile()
         {
             _cachedProfile.LastLoginTick = DateTime.UtcNow.Ticks;
-            UGSDataService.Instance?.StatsRepo?.MarkDirty();
+            _ugsDataService?.StatsRepo?.MarkDirty();
         }
 
         void SaveVesselStats()
         {
-            UGSDataService.Instance?.VesselStatsRepo?.MarkDirty();
+            _ugsDataService?.VesselStatsRepo?.MarkDirty();
         }
 
         #endregion

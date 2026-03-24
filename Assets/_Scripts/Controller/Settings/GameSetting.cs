@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -7,6 +8,8 @@ namespace CosmicShore.Core
 {
     public class GameSetting : SingletonPersistent<GameSetting>
     {
+        [Inject] UGSDataService _ugsDataService;
+
         public delegate void OnChangeMusicEnabledStatusEvent(bool status);
         public static event OnChangeMusicEnabledStatusEvent OnChangeMusicEnabledStatus;
 
@@ -102,30 +105,22 @@ namespace CosmicShore.Core
             hapticsLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.HapticsLevel));
 
             // Subscribe to cloud data ready event to apply cloud settings on top of local
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-            {
-                if (ds.IsInitialized)
-                    ApplyCloudSettings(ds.Settings?.Data);
-                else
-                    ds.OnInitialized += HandleCloudDataReady;
-            }
+            if (_ugsDataService.IsInitialized)
+                ApplyCloudSettings(_ugsDataService.Settings?.Data);
+            else
+                _ugsDataService.OnInitialized += HandleCloudDataReady;
         }
 
         void OnDestroy()
         {
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-                ds.OnInitialized -= HandleCloudDataReady;
+            if (_ugsDataService != null)
+                _ugsDataService.OnInitialized -= HandleCloudDataReady;
         }
 
         void HandleCloudDataReady()
         {
-            var ds = UGSDataService.Instance;
-            if (ds != null)
-                ds.OnInitialized -= HandleCloudDataReady;
-
-            ApplyCloudSettings(UGSDataService.Instance?.Settings?.Data);
+            _ugsDataService.OnInitialized -= HandleCloudDataReady;
+            ApplyCloudSettings(_ugsDataService.Settings?.Data);
         }
 
         /// <summary>
@@ -262,7 +257,7 @@ namespace CosmicShore.Core
         /// </summary>
         void SyncToCloud()
         {
-            var ds = UGSDataService.Instance;
+            var ds = _ugsDataService;
             if (ds?.SettingsRepo == null) return;
 
             var cloud = ds.SettingsRepo.Data;
