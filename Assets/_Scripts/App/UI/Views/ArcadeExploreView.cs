@@ -187,8 +187,9 @@ namespace CosmicShore.App.UI.Views
         {
             if (SelectedGame == null) return;
 
-            var vesselType = MiniGame.PlayerVesselType;
-            var resources  = MiniGame.ResourceCollection;
+            var vesselType = gameData && gameData.selectedVesselClass
+                ? gameData.selectedVesselClass.Value
+                : VesselClassType.Dolphin;
 
             // Validate vessel: must exist in the game's vessel list and be unlocked
             var validVessels = SelectedGame.Vessels?.Where(v => v != null && !v.IsLocked).ToList();
@@ -200,8 +201,9 @@ namespace CosmicShore.App.UI.Views
                 // Selected vessel not available for this game mode — fall back to first unlocked
                 matchedVessel = validVessels[0];
                 vesselType = matchedVessel.Class;
-                resources  = matchedVessel.InitialResourceLevels;
             }
+
+            var resources = matchedVessel.InitialResourceLevels;
 
             int playerCount = gameData && gameData.SelectedPlayerCount ? gameData.SelectedPlayerCount.Value : 1;
             int intensity = gameData && gameData.SelectedIntensity ? gameData.SelectedIntensity.Value : 1;
