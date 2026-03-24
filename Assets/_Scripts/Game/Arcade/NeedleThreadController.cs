@@ -23,6 +23,10 @@ namespace CosmicShore.Game.Arcade
         [Header("Seed")]
         [SerializeField] int seed = 0;
 
+        [Header("DartBoard Distribution")]
+        [Tooltip("Scale factor for DartBoards spawned along the track (1 = full size).")]
+        [SerializeField] float dartBoardScaleFactor = 0.2f;
+
         [Header("Race Rules")]
         [Tooltip("Volume of hostile prisms that must be destroyed to win. If 0, uses networked value.")]
         [SerializeField] float volumeToFinishOverride = 0f;
@@ -101,6 +105,13 @@ namespace CosmicShore.Game.Arcade
             segmentSpawner.StraightLineLength = scaleLengthWithIntensity
                 ? baseStraightLineLength / Intensity
                 : baseStraightLineLength;
+
+            // Distribute DartBoards along the track at each segment, scaled down
+            segmentSpawner.ConfigureGuaranteedDistribution(
+                alongTrack: true,
+                repeatCount: 1,
+                scaleFactor: dartBoardScaleFactor);
+
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
             _trackSpawned = true;

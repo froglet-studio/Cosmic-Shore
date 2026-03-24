@@ -48,4 +48,5 @@ MonoBehaviour:
     type: 3}
   redPrism: {fileID: 4563009547826722997, guid: 34146ee2267ac224da1df0d1326f4563,
     type: 3}
+  hostileToAll: 1
   difficultyAngle: 180

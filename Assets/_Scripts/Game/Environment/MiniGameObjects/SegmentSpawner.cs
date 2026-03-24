@@ -52,10 +52,26 @@ public class SegmentSpawner : MonoBehaviour
     [Tooltip("Radius of the ring that the guaranteed shapes are arranged in at the cluster point.")]
     [SerializeField] float guaranteedShapeClusterRadius = 80f;
 
+    // Runtime — distribution overrides (set via ConfigureGuaranteedDistribution before Initialize)
+    private bool _distributeAlongTrack;
+    private int _guaranteedRepeatCount = 1;
+    private float _guaranteedScaleFactor = 1f;
+
     // Runtime state
     private GameObject SpawnedSegmentContainer;
     private List<Trail> trails = new();
     private float[] _normalizedWeights;
+
+    /// <summary>
+    /// Configure guaranteed shape distribution along the track instead of in a single cluster.
+    /// Call before Initialize().
+    /// </summary>
+    public void ConfigureGuaranteedDistribution(bool alongTrack, int repeatCount = 1, float scaleFactor = 1f)
+    {
+        _distributeAlongTrack = alongTrack;
+        _guaranteedRepeatCount = Mathf.Max(1, repeatCount);
+        _guaranteedScaleFactor = scaleFactor;
+    }
 
     void Start()
     {
@@ -199,6 +215,12 @@ public class SegmentSpawner : MonoBehaviour
     {
         if (guaranteedSpawnables == null || guaranteedSpawnables.Count == 0) return;
 
+        if (_distributeAlongTrack && StraightLineLength > 0)
+        {
+            SpawnGuaranteedAlongTrack(intensity);
+            return;
+        }
+
         var worldOrigin = origin + transform.position;
 
         // Pick a random direction from center for the cluster
@@ -234,6 +256,41 @@ public class SegmentSpawner : MonoBehaviour
 
             // Face inward toward the cell center so the shape is visible to approaching players
             spawned.transform.rotation = Quaternion.LookRotation(worldOrigin - spawned.transform.position, clusterDirection);
+
+            trails.AddRange(spawnable.GetTrails());
+        }
+    }
+
+    void SpawnGuaranteedAlongTrack(int intensity)
+    {
+        var worldOrigin = origin + transform.position;
+        int totalSlots = NumberOfSegments * _guaranteedRepeatCount;
+
+        for (int slot = 0; slot < totalSlots; slot++)
+        {
+            var spawnable = guaranteedSpawnables[slot % guaranteedSpawnables.Count];
+            if (spawnable == null) continue;
+
+            if (Seed != 0) spawnable.SetSeed(Seed + 2000 + slot);
+
+            spawnable.InvalidateCache();
+            var spawned = spawnable.Spawn(intensity);
+            if (!spawned) continue;
+
+            spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+
+            // Position at each segment along the track with a lateral offset so it doesn't overlap crystals
+            float z = slot * StraightLineLength + StraightLineLength * 0.5f;
+            float lateralOffset = guaranteedShapeClusterRadius;
+            // Alternate sides of the track
+            float side = (slot % 2 == 0) ? 1f : -1f;
+            spawned.transform.position = worldOrigin + new Vector3(side * lateralOffset, 0f, z);
+
+            // Face along the track
+            spawned.transform.rotation = Quaternion.LookRotation(Vector3.forward);
+
+            if (_guaranteedScaleFactor != 1f)
+                spawned.transform.localScale *= _guaranteedScaleFactor;
 
             trails.AddRange(spawnable.GetTrails());
         }
