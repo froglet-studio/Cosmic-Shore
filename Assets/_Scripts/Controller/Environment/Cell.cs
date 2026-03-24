@@ -228,14 +228,6 @@ namespace CosmicShore.Gameplay
             nucleus.transform.localScale *= nucleusScaleMultiplier;
         }
 
-        void SpawnCytoplasm()
-        {
-            if (cellConfigData.CytoplasmPrefab == null) return;
-
-            var snowChanger = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
-            snowChanger.Initialize();
-        }
-
         void ResetVolumes()
         {
             teamVolumes[Domains.Jade] = 0;
