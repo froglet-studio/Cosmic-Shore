@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
