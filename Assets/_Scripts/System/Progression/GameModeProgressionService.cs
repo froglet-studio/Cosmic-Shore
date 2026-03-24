@@ -57,7 +57,7 @@ namespace CosmicShore.Core
                 Instance = null;
 
             if (gameData != null)
-                gameData.OnMiniGameEnd -= HandleGameEnd;
+                gameData.OnMiniGameEnd.OnRaised -= HandleGameEnd;
 
             var ds = UGSDataService.Instance;
             if (ds != null)
@@ -67,7 +67,7 @@ namespace CosmicShore.Core
         void Start()
         {
             if (gameData != null)
-                gameData.OnMiniGameEnd += HandleGameEnd;
+                gameData.OnMiniGameEnd.OnRaised += HandleGameEnd;
 
             var ds = UGSDataService.Instance;
             if (ds != null)

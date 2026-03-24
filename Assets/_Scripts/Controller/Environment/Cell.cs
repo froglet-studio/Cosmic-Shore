@@ -1,12 +1,13 @@
 // Cell.cs
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Data;
+using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
 using Random = UnityEngine.Random;
-using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     public class Cell : MonoBehaviour
