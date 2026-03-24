@@ -32,6 +32,16 @@ namespace CosmicShore.DialogueSystem.Models
         [Tooltip("Optional audio clip to play during this instruction.")]
         public AudioClip audioClip;
 
+        [Header("Text Presentation")]
+        [Tooltip("How the dialogue text animates in.")]
+        public TextAnimationType textAnimationType = TextAnimationType.Typewriter;
+
+        [Tooltip("Speed multiplier for the text animation.")]
+        [Min(0.1f)] public float textAnimationSpeed = 1f;
+
+        [Tooltip("Color of the dialogue text.")]
+        public Color textColor = Color.white;
+
         [Header("Flow Control")]
         [Tooltip("If true, automatically advance after text finishes instead of waiting for Next.")]
         public bool autoAdvance;

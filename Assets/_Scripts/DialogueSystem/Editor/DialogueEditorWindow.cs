@@ -17,6 +17,8 @@ namespace CosmicShore.DialogueSystem.Editor
         private Vector2 _centerScroll;
         private Vector2 _flowScroll;
         private bool _hasUnsavedChanges;
+        private bool _showInstructionPreview; // false = Sequence Flow, true = Instruction Preview
+        private Vector2 _previewScroll;
 
         // Layout
         private const float LEFT_PANEL_WIDTH = 200f;
@@ -28,37 +30,39 @@ namespace CosmicShore.DialogueSystem.Editor
         private static readonly string SequenceFolder = "Assets/_Scripts/DialogueSystem/SO";
 
         // -------------------------------------------------------------------
-        // Pastel Color Palette
+        // Dark Pastel Color Palette (Unity dark-theme friendly)
         // -------------------------------------------------------------------
-        private static readonly Color BgLight = new(0.96f, 0.95f, 0.98f, 1f);
-        private static readonly Color BgMedium = new(0.91f, 0.90f, 0.95f, 1f);
-        private static readonly Color CardBg = new(0.98f, 0.97f, 1.00f, 1f);
-        private static readonly Color CardBorder = new(0.85f, 0.84f, 0.90f, 1f);
-        private static readonly Color CardSelected = new(0.88f, 0.91f, 1.00f, 1f);
+        private static readonly Color BgLight = new(0.22f, 0.22f, 0.25f, 1f);
+        private static readonly Color BgMedium = new(0.19f, 0.19f, 0.22f, 1f);
+        private static readonly Color CardBg = new(0.24f, 0.24f, 0.28f, 1f);
+        private static readonly Color CardBorder = new(0.30f, 0.30f, 0.35f, 1f);
+        private static readonly Color CardSelected = new(0.26f, 0.28f, 0.36f, 1f);
 
-        private static readonly Color PastelBlue = new(0.60f, 0.76f, 0.92f, 1f);
-        private static readonly Color PastelMint = new(0.68f, 0.91f, 0.83f, 1f);
-        private static readonly Color PastelPeach = new(0.98f, 0.80f, 0.73f, 1f);
-        private static readonly Color PastelLavender = new(0.80f, 0.72f, 0.93f, 1f);
-        private static readonly Color PastelPink = new(0.95f, 0.75f, 0.80f, 1f);
-        private static readonly Color PastelYellow = new(1.00f, 0.94f, 0.70f, 1f);
+        private static readonly Color PastelBlue = new(0.35f, 0.50f, 0.70f, 1f);
+        private static readonly Color PastelMint = new(0.30f, 0.55f, 0.45f, 1f);
+        private static readonly Color PastelPeach = new(0.65f, 0.45f, 0.35f, 1f);
+        private static readonly Color PastelLavender = new(0.42f, 0.36f, 0.58f, 1f);
+        private static readonly Color PastelPink = new(0.60f, 0.38f, 0.42f, 1f);
+        private static readonly Color PastelYellow = new(0.60f, 0.55f, 0.32f, 1f);
 
-        private static readonly Color TextDark = new(0.25f, 0.25f, 0.30f, 1f);
-        private static readonly Color TextMuted = new(0.50f, 0.50f, 0.55f, 1f);
-        private static readonly Color TextWhite = new(1f, 1f, 1f, 1f);
+        private static readonly Color TextLight = new(0.85f, 0.85f, 0.88f, 1f);
+        private static readonly Color TextMuted = new(0.60f, 0.60f, 0.65f, 1f);
+        private static readonly Color TextWhite = new(0.95f, 0.95f, 0.97f, 1f);
 
-        private static readonly Color RowDefault = new(0.94f, 0.93f, 0.97f, 1f);
-        private static readonly Color RowHover = new(0.90f, 0.92f, 0.98f, 1f);
-        private static readonly Color RowSelected = new(0.75f, 0.84f, 0.98f, 1f);
-        private static readonly Color SeparatorColor = new(0.85f, 0.84f, 0.88f, 1f);
+        private static readonly Color RowDefault = new(0.24f, 0.24f, 0.28f, 1f);
+        private static readonly Color RowSelected = new(0.30f, 0.38f, 0.52f, 1f);
+        private static readonly Color SeparatorColor = new(0.32f, 0.32f, 0.36f, 1f);
 
         // Flowchart
-        private static readonly Color FlowNodeAuto = new(0.68f, 0.91f, 0.83f, 1f);
-        private static readonly Color FlowNodeEvent = new(0.98f, 0.80f, 0.73f, 1f);
-        private static readonly Color FlowNodeSelected = new(0.75f, 0.84f, 0.98f, 1f);
-        private static readonly Color FlowStartNode = new(0.80f, 0.72f, 0.93f, 1f);
-        private static readonly Color FlowEndNode = new(0.95f, 0.75f, 0.80f, 1f);
-        private static readonly Color FlowLine = new(0.65f, 0.65f, 0.72f, 1f);
+        private static readonly Color FlowNodeAuto = new(0.28f, 0.45f, 0.38f, 1f);
+        private static readonly Color FlowNodeEvent = new(0.52f, 0.38f, 0.30f, 1f);
+        private static readonly Color FlowNodeSelected = new(0.32f, 0.42f, 0.58f, 1f);
+        private static readonly Color FlowStartNode = new(0.38f, 0.32f, 0.52f, 1f);
+        private static readonly Color FlowEndNode = new(0.50f, 0.34f, 0.38f, 1f);
+        private static readonly Color FlowLine = new(0.45f, 0.45f, 0.50f, 1f);
+
+        // Badge text (lighter for readability on dark badge backgrounds)
+        private static readonly Color BadgeText = new(0.90f, 0.90f, 0.92f, 1f);
 
         // Cached styles
         private GUIStyle _headerStyle;
@@ -86,7 +90,7 @@ namespace CosmicShore.DialogueSystem.Editor
             {
                 fontSize = 13,
                 alignment = TextAnchor.MiddleLeft,
-                normal = { textColor = TextDark },
+                normal = { textColor = TextWhite },
                 padding = new RectOffset(8, 8, 4, 4)
             };
 
@@ -108,7 +112,7 @@ namespace CosmicShore.DialogueSystem.Editor
                 fontSize = 9,
                 alignment = TextAnchor.MiddleCenter,
                 fontStyle = FontStyle.Bold,
-                normal = { textColor = TextDark },
+                normal = { textColor = TextLight },
                 padding = new RectOffset(6, 6, 2, 2)
             };
 
@@ -118,7 +122,7 @@ namespace CosmicShore.DialogueSystem.Editor
                 alignment = TextAnchor.MiddleCenter,
                 wordWrap = true,
                 padding = new RectOffset(4, 4, 4, 4),
-                normal = { textColor = TextDark }
+                normal = { textColor = TextLight }
             };
 
             _flowLabelStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -162,7 +166,7 @@ namespace CosmicShore.DialogueSystem.Editor
             float rightX = position.width - RIGHT_PANEL_WIDTH;
             Rect rightRect = new(rightX, 0, RIGHT_PANEL_WIDTH, bottomY);
             GUILayout.BeginArea(rightRect);
-            DrawFlowchartPanel(rightRect);
+            DrawRightPanel(rightRect);
             GUILayout.EndArea();
 
             // Right separator
@@ -198,7 +202,8 @@ namespace CosmicShore.DialogueSystem.Editor
                 new Rect(0, 0, panelRect.width - 16, GetSequenceListHeight()));
 
             var guids = AssetDatabase.FindAssets("t:TutorialSequence", new[] { SequenceFolder });
-            float y = 2;
+            float y = 4;
+            float rowW = panelRect.width - 32;
             foreach (var guid in guids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
@@ -206,34 +211,41 @@ namespace CosmicShore.DialogueSystem.Editor
                 if (seq == null) continue;
 
                 bool isSelected = _selectedSequence == seq;
-                float rowH = 36f;
-                Rect rowRect = new(4, y, panelRect.width - 24, rowH);
+                float rowH = 32f;
+                Rect rowRect = new(8, y, rowW, rowH);
 
                 // Row background
                 Color rowBg = isSelected ? RowSelected : RowDefault;
                 DrawRoundedRect(rowRect, rowBg, 4);
 
-                // Sequence label
-                string displayName = string.IsNullOrEmpty(seq.sequenceId) ? seq.name : seq.sequenceId;
-                var labelStyle = new GUIStyle(EditorStyles.label)
-                {
-                    fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
-                    normal = { textColor = TextDark },
-                    fontSize = 11
-                };
-                Rect labelRect = new(rowRect.x + 8, rowRect.y + 2, rowRect.width - 52, rowH - 4);
-                if (GUI.Button(labelRect, displayName, labelStyle))
+                // Click the whole row to select
+                if (GUI.Button(rowRect, GUIContent.none, GUIStyle.none))
                 {
                     SelectSequence(seq);
                 }
 
-                // Instruction count badge
+                // Sequence label — vertically centered
+                string displayName = string.IsNullOrEmpty(seq.sequenceId) ? seq.name : seq.sequenceId;
+                var labelStyle = new GUIStyle(EditorStyles.label)
+                {
+                    fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
+                    normal = { textColor = TextLight },
+                    fontSize = 11,
+                    alignment = TextAnchor.MiddleLeft,
+                    clipping = TextClipping.Clip
+                };
+                float badgeW = 28;
+                float badgePad = 8;
+                Rect labelRect = new(rowRect.x + 10, rowRect.y, rowRect.width - badgeW - badgePad - 14, rowH);
+                GUI.Label(labelRect, displayName, labelStyle);
+
+                // Instruction count badge — vertically centered
                 int count = seq.instructions?.Count ?? 0;
-                Rect badgeRect = new(rowRect.xMax - 36, rowRect.y + (rowH - 18) / 2, 28, 18);
+                Rect badgeRect = new(rowRect.xMax - badgeW - 6, rowRect.y + (rowH - 18) / 2, badgeW, 18);
                 DrawRoundedRect(badgeRect, PastelBlue, 9);
                 GUI.Label(badgeRect, count.ToString(), _badgeStyle);
 
-                y += rowH + 3;
+                y += rowH + 4;
             }
 
             GUI.EndScrollView();
@@ -252,7 +264,7 @@ namespace CosmicShore.DialogueSystem.Editor
         private float GetSequenceListHeight()
         {
             var guids = AssetDatabase.FindAssets("t:TutorialSequence", new[] { SequenceFolder });
-            return guids.Length * 39f + 10;
+            return guids.Length * 36f + 10;
         }
 
         private void SelectSequence(TutorialSequence seq)
@@ -295,7 +307,7 @@ namespace CosmicShore.DialogueSystem.Editor
             // Header
             Rect headerRect = new(0, 0, panelWidth, 32);
             EditorGUI.DrawRect(headerRect, PastelBlue);
-            var titleStyle = new GUIStyle(_headerStyle) { normal = { textColor = TextDark } };
+            var titleStyle = new GUIStyle(_headerStyle) { normal = { textColor = TextLight } };
             GUI.Label(new Rect(8, 4, panelWidth - 16, 24), "Instruction Editor", titleStyle);
 
             if (_selectedSequence == null)
@@ -435,11 +447,12 @@ namespace CosmicShore.DialogueSystem.Editor
                 DrawRoundedRect(new Rect(cardRect.x - 1, cardRect.y - 1, cardRect.width + 2, cardRect.height + 2), CardBorder, 6);
                 DrawRoundedRect(cardRect, isSelected ? CardSelected : CardBg, 5);
 
-                // Click to select
+                // Select card on mouse down — but only during Layout/Repaint to avoid
+                // consuming events that EditorGUI controls need (TextArea, ObjectField, etc.)
                 if (Event.current.type == EventType.MouseDown && cardRect.Contains(Event.current.mousePosition))
                 {
                     _selectedInstructionIndex = i;
-                    Event.current.Use();
+                    // Do NOT call Event.current.Use() — let child controls handle input
                     Repaint();
                 }
 
@@ -627,15 +640,16 @@ namespace CosmicShore.DialogueSystem.Editor
         }
 
         // -------------------------------------------------------------------
-        // Right Panel — Flowchart Preview
+        // Right Panel — Flowchart Preview / Instruction Preview
         // -------------------------------------------------------------------
-        private void DrawFlowchartPanel(Rect panelRect)
+        private void DrawRightPanel(Rect panelRect)
         {
             // Header
             Rect headerRect = new(0, 0, panelRect.width, 32);
             EditorGUI.DrawRect(headerRect, PastelLavender);
-            var titleStyle = new GUIStyle(_headerStyle) { normal = { textColor = TextDark } };
-            GUI.Label(new Rect(8, 4, panelRect.width - 16, 24), "Sequence Flow", titleStyle);
+            string title = _showInstructionPreview ? "Instruction Preview" : "Sequence Flow";
+            var titleStyle = new GUIStyle(_headerStyle) { normal = { textColor = TextWhite } };
+            GUI.Label(new Rect(8, 4, panelRect.width - 16, 24), title, titleStyle);
 
             if (_selectedSequence == null)
             {
@@ -647,16 +661,155 @@ namespace CosmicShore.DialogueSystem.Editor
                 return;
             }
 
+            // Mode toggle button at bottom
+            float toggleBtnH = 26;
+            float toggleBtnY = panelRect.height - toggleBtnH - 6;
+            Rect toggleBtnRect = new(8, toggleBtnY, panelRect.width - 16, toggleBtnH);
+            var prevBg = GUI.backgroundColor;
+            GUI.backgroundColor = _showInstructionPreview ? PastelBlue : PastelLavender;
+            string toggleLabel = _showInstructionPreview ? "Back to Sequence Flow" : "Switch to Preview";
+            if (GUI.Button(toggleBtnRect, toggleLabel, _buttonStyle))
+            {
+                _showInstructionPreview = !_showInstructionPreview;
+                Repaint();
+            }
+            GUI.backgroundColor = prevBg;
+
+            // Content area (between header and toggle button)
+            float contentTop = 36;
+            float contentHeight = toggleBtnY - contentTop - 4;
+
+            if (_showInstructionPreview)
+                DrawInstructionPreview(panelRect.width, contentTop, contentHeight);
+            else
+                DrawFlowchartContent(panelRect, contentTop, contentHeight);
+        }
+
+        private void DrawInstructionPreview(float panelWidth, float top, float height)
+        {
+            if (_selectedInstructionIndex < 0 || _selectedInstructionIndex >= _selectedSequence.instructions.Count)
+            {
+                var centeredStyle = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
+                {
+                    fontSize = 11,
+                    normal = { textColor = TextMuted }
+                };
+                GUI.Label(new Rect(0, top + 40, panelWidth, 20), "Select an instruction to preview", centeredStyle);
+                return;
+            }
+
+            var inst = _selectedSequence.instructions[_selectedInstructionIndex];
+            float pad = 10;
+            float fieldW = panelWidth - pad * 2;
+            float lineH = EditorGUIUtility.singleLineHeight;
+
+            // Calculate content height for scroll
+            float contentH = 420;
+            Rect scrollArea = new(0, top, panelWidth, height);
+            Rect contentArea = new(0, 0, panelWidth - 16, contentH);
+            _previewScroll = GUI.BeginScrollView(scrollArea, _previewScroll, contentArea);
+
+            float y = 8;
+
+            // Step badge
+            Rect stepBadge = new(pad, y, 60, 20);
+            DrawRoundedRect(stepBadge, PastelBlue, 10);
+            var stepStyle = new GUIStyle(_badgeStyle) { normal = { textColor = TextWhite }, fontStyle = FontStyle.Bold };
+            GUI.Label(stepBadge, $"Step {_selectedInstructionIndex + 1}", stepStyle);
+            y += 28;
+
+            // Avatar preview
+            GUI.Label(new Rect(pad, y, fieldW, 14), "Avatar Icon", _cardLabelStyle);
+            y += 16;
+            if (inst.avatarIcon != null)
+            {
+                float previewSize = Mathf.Min(fieldW, 80);
+                Rect previewRect = new(pad, y, previewSize, previewSize);
+                DrawRoundedRect(new Rect(previewRect.x - 1, previewRect.y - 1, previewSize + 2, previewSize + 2), CardBorder, 4);
+                GUI.DrawTexture(previewRect, inst.avatarIcon.texture, ScaleMode.ScaleToFit);
+                y += previewSize + 6;
+            }
+            else
+            {
+                Rect placeholderRect = new(pad, y, 80, 80);
+                DrawRoundedRect(placeholderRect, CardBorder, 4);
+                var placeholderStyle = new GUIStyle(EditorStyles.centeredGreyMiniLabel) { normal = { textColor = TextMuted } };
+                GUI.Label(placeholderRect, "No Avatar", placeholderStyle);
+                y += 86;
+            }
+
+            // Dialogue text preview
+            GUI.Label(new Rect(pad, y, fieldW, 14), "Dialogue Text", _cardLabelStyle);
+            y += 16;
+            Rect textBgRect = new(pad, y, fieldW, 50);
+            DrawRoundedRect(textBgRect, new Color(0.18f, 0.18f, 0.21f, 1f), 4);
+            var textStyle = new GUIStyle(EditorStyles.wordWrappedLabel)
+            {
+                normal = { textColor = inst.textColor },
+                padding = new RectOffset(6, 6, 4, 4),
+                fontSize = 11
+            };
+            string displayText = string.IsNullOrEmpty(inst.dialogueText) ? "(empty)" : inst.dialogueText;
+            GUI.Label(new Rect(pad + 2, y + 2, fieldW - 4, 46), displayText, textStyle);
+            y += 56;
+
+            // Separator
+            EditorGUI.DrawRect(new Rect(pad, y, fieldW, 1), SeparatorColor);
+            y += 8;
+
+            // Text Animation Type
+            GUI.Label(new Rect(pad, y, fieldW, 14), "Text Animation", _cardLabelStyle);
+            y += 16;
+            EditorGUI.BeginChangeCheck();
+            var newAnimType = (TextAnimationType)EditorGUI.EnumPopup(
+                new Rect(pad, y, fieldW, lineH), inst.textAnimationType);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_selectedSequence, "Change Text Animation Type");
+                inst.textAnimationType = newAnimType;
+                MarkDirty(_selectedSequence);
+            }
+            y += lineH + 6;
+
+            // Text Animation Speed
+            GUI.Label(new Rect(pad, y, fieldW, 14), "Animation Speed", _cardLabelStyle);
+            y += 16;
+            EditorGUI.BeginChangeCheck();
+            float newSpeed = EditorGUI.Slider(new Rect(pad, y, fieldW, lineH), inst.textAnimationSpeed, 0.1f, 10f);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_selectedSequence, "Change Text Animation Speed");
+                inst.textAnimationSpeed = newSpeed;
+                MarkDirty(_selectedSequence);
+            }
+            y += lineH + 6;
+
+            // Text Color
+            GUI.Label(new Rect(pad, y, fieldW, 14), "Text Color", _cardLabelStyle);
+            y += 16;
+            EditorGUI.BeginChangeCheck();
+            Color newColor = EditorGUI.ColorField(new Rect(pad, y, fieldW, lineH), inst.textColor);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_selectedSequence, "Change Text Color");
+                inst.textColor = newColor;
+                MarkDirty(_selectedSequence);
+            }
+
+            GUI.EndScrollView();
+        }
+
+        private void DrawFlowchartContent(Rect panelRect, float top, float height)
+        {
             float nodeW = panelRect.width - 40;
             float nodeH = 44;
             float nodeGap = 12;
             float arrowH = 16;
             int count = _selectedSequence.instructions.Count;
 
-            // +2 for START/END nodes
             float totalHeight = (count + 2) * (nodeH + arrowH + nodeGap) + 20;
 
-            Rect scrollArea = new(0, 36, panelRect.width, panelRect.height - 36);
+            Rect scrollArea = new(0, top, panelRect.width, height);
             Rect contentArea = new(0, 0, panelRect.width - 16, totalHeight);
             _flowScroll = GUI.BeginScrollView(scrollArea, _flowScroll, contentArea);
 
@@ -672,11 +825,9 @@ namespace CosmicShore.DialogueSystem.Editor
             GUI.Label(startRect, startLabel, _flowNodeStyle);
             y += 30;
 
-            // Arrow from START
             DrawFlowArrow(x + nodeW / 2, y, arrowH);
             y += arrowH + 4;
 
-            // Instruction nodes
             for (int i = 0; i < count; i++)
             {
                 var inst = _selectedSequence.instructions[i];
@@ -685,28 +836,25 @@ namespace CosmicShore.DialogueSystem.Editor
 
                 Rect nodeRect = new(x, y, nodeW, nodeH);
 
-                // Node background
                 Color nodeBg = isSelected ? FlowNodeSelected : (hasEvent ? FlowNodeEvent : FlowNodeAuto);
                 DrawRoundedRect(nodeRect, nodeBg, 4);
 
-                // Click to select
+                // Click to select + auto-switch to preview
                 if (Event.current.type == EventType.MouseDown && nodeRect.Contains(Event.current.mousePosition))
                 {
                     _selectedInstructionIndex = i;
-                    // Scroll center panel to this card
+                    _showInstructionPreview = true;
                     _centerScroll.y = i * (210f + CARD_GAP);
                     Event.current.Use();
                     Repaint();
                 }
 
-                // Step number
                 Rect numRect = new(x + 4, y + 2, nodeW - 8, 14);
-                var numStyle = new GUIStyle(_flowLabelStyle) { fontStyle = FontStyle.Bold, normal = { textColor = TextDark } };
+                var numStyle = new GUIStyle(_flowLabelStyle) { fontStyle = FontStyle.Bold, normal = { textColor = TextWhite } };
                 string stepNum = $"Step {i + 1}";
                 if (hasEvent) stepNum += " \u23F3";
                 GUI.Label(numRect, stepNum, numStyle);
 
-                // Editable step label
                 string currentLabel = inst.stepLabel;
                 if (string.IsNullOrEmpty(currentLabel))
                 {
@@ -725,7 +873,6 @@ namespace CosmicShore.DialogueSystem.Editor
                     MarkDirty(_selectedSequence);
                 }
 
-                // Show auto-generated text if stepLabel is empty
                 if (string.IsNullOrEmpty(inst.stepLabel))
                 {
                     var placeholderStyle = new GUIStyle(_flowNodeStyle)
@@ -733,25 +880,22 @@ namespace CosmicShore.DialogueSystem.Editor
                         normal = { textColor = TextMuted },
                         fontStyle = FontStyle.Italic
                     };
-                    // Draw placeholder over the text field (won't interfere since empty field is transparent)
                     GUI.Label(labelRect, currentLabel, placeholderStyle);
                 }
 
-                // Event indicator below node
                 if (hasEvent)
                 {
                     Rect evtRect = new(x, y + nodeH - 12, nodeW, 12);
                     var evtStyle = new GUIStyle(_flowLabelStyle)
                     {
                         fontSize = 8,
-                        normal = { textColor = new Color(0.6f, 0.35f, 0.2f) }
+                        normal = { textColor = new Color(0.75f, 0.50f, 0.35f) }
                     };
                     GUI.Label(evtRect, $"waits: {inst.waitForEvent.name}", evtStyle);
                 }
 
                 y += nodeH;
 
-                // Arrow between nodes (not after last)
                 if (i < count - 1)
                 {
                     DrawFlowArrow(x + nodeW / 2, y, arrowH);
@@ -763,11 +907,9 @@ namespace CosmicShore.DialogueSystem.Editor
                 }
             }
 
-            // Arrow to END
             DrawFlowArrow(x + nodeW / 2, y, arrowH);
             y += arrowH + 4;
 
-            // END node
             Rect endRect = new(x, y, nodeW, 30);
             DrawRoundedRect(endRect, FlowEndNode, 4);
             string endLabel = _selectedSequence.completionEvent != null
