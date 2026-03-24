@@ -12,6 +12,7 @@ namespace CosmicShore.DialogueSystem.Controller
     /// <summary>
     /// Plays tutorial sequences linearly. Subscribes to SOAP trigger events
     /// and drives the UI — typewriter text, avatar, arrows, Next button.
+    /// Each instruction can optionally wait for its own SOAP event before showing.
     /// </summary>
     public class TutorialSequencePlayer : MonoBehaviour
     {
@@ -39,6 +40,8 @@ namespace CosmicShore.DialogueSystem.Controller
         private string _fullText;
         private CanvasGroup _canvasGroup;
         private readonly Dictionary<ScriptableEventNoParam, Action> _eventBindings = new();
+        private Action _pendingInstructionHandler;
+        private ScriptableEventNoParam _pendingEvent;
 
         [Serializable]
         public class ArrowMapping
@@ -77,6 +80,7 @@ namespace CosmicShore.DialogueSystem.Controller
             foreach (var kvp in _eventBindings)
                 kvp.Key.OnRaised -= kvp.Value;
             _eventBindings.Clear();
+            CleanupPendingEvent();
         }
 
         /// <summary>
@@ -113,6 +117,32 @@ namespace CosmicShore.DialogueSystem.Controller
 
             var instruction = _activeSequence.instructions[_currentIndex];
 
+            // Check if this instruction waits for a SOAP event
+            if (instruction.waitForEvent != null)
+            {
+                // Hide canvas while waiting
+                SetCanvasVisible(false);
+                HideAllArrows();
+
+                // Subscribe to the event
+                CleanupPendingEvent();
+                _pendingEvent = instruction.waitForEvent;
+                _pendingInstructionHandler = () =>
+                {
+                    CleanupPendingEvent();
+                    DisplayInstruction(instruction);
+                };
+                _pendingEvent.OnRaised += _pendingInstructionHandler;
+                return;
+            }
+
+            DisplayInstruction(instruction);
+        }
+
+        private void DisplayInstruction(TutorialInstruction instruction)
+        {
+            SetCanvasVisible(true);
+
             // Avatar
             if (avatarImage != null)
             {
@@ -142,6 +172,16 @@ namespace CosmicShore.DialogueSystem.Controller
             if (_typewriterCoroutine != null)
                 StopCoroutine(_typewriterCoroutine);
             _typewriterCoroutine = StartCoroutine(TypewriterRoutine(instruction));
+        }
+
+        private void CleanupPendingEvent()
+        {
+            if (_pendingEvent != null && _pendingInstructionHandler != null)
+            {
+                _pendingEvent.OnRaised -= _pendingInstructionHandler;
+            }
+            _pendingEvent = null;
+            _pendingInstructionHandler = null;
         }
 
         private IEnumerator TypewriterRoutine(TutorialInstruction instruction)
@@ -197,12 +237,13 @@ namespace CosmicShore.DialogueSystem.Controller
         {
             SetCanvasVisible(false);
             HideAllArrows();
+            CleanupPendingEvent();
 
             if (audioSource != null && audioSource.isPlaying)
                 audioSource.Stop();
 
             // Raise completion event for chaining
-            if (_activeSequence.autoPlayNext && _activeSequence.completionEvent != null)
+            if (_activeSequence.completionEvent != null)
                 _activeSequence.completionEvent.Raise();
 
             _activeSequence = null;

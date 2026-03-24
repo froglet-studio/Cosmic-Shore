@@ -25,10 +25,7 @@ namespace CosmicShore.DialogueSystem.Models
         [Tooltip("The SOAP event that triggers this sequence to play.")]
         public ScriptableEventNoParam triggerEvent;
 
-        [Tooltip("If true, raises the completion event when this sequence finishes, allowing chaining.")]
-        public bool autoPlayNext;
-
-        [Tooltip("SOAP event raised when this sequence completes (used for chaining).")]
+        [Tooltip("SOAP event raised when this sequence completes (used for chaining or external systems).")]
         public ScriptableEventNoParam completionEvent;
 
         [Header("Instructions")]

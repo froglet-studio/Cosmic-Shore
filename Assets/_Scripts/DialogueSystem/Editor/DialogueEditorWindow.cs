@@ -1,9 +1,7 @@
 #if !LINUX_BUILD
 using CosmicShore.DialogueSystem.Models;
-using System.Collections.Generic;
 using Obvious.Soap;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace CosmicShore.DialogueSystem.Editor
@@ -16,36 +14,125 @@ namespace CosmicShore.DialogueSystem.Editor
         private TutorialSequence _selectedSequence;
         private int _selectedInstructionIndex = -1;
         private Vector2 _leftScroll;
-        private Vector2 _mainScroll;
+        private Vector2 _centerScroll;
+        private Vector2 _flowScroll;
         private bool _hasUnsavedChanges;
-        private ReorderableList _instructionsList;
-        private TutorialSequence _listTarget;
-        private readonly HashSet<int> _collapsedCards = new();
 
         // Layout
-        private const float LEFT_PANEL_WIDTH = 260f;
-        private const float BOTTOM_BAR_HEIGHT = 38f;
-        private const string DELETE_GLYPH = "\u2716";
+        private const float LEFT_PANEL_WIDTH = 200f;
+        private const float RIGHT_PANEL_WIDTH = 250f;
+        private const float BOTTOM_BAR_HEIGHT = 36f;
+        private const float CARD_PADDING = 10f;
+        private const float CARD_GAP = 8f;
 
         private static readonly string SequenceFolder = "Assets/_Scripts/DialogueSystem/SO";
 
-        // Colors
-        private static readonly Color HeaderBg = new(0.14f, 0.14f, 0.18f, 1f);
-        private static readonly Color AccentTeal = new(0.18f, 0.78f, 0.78f, 1f);
-        private static readonly Color AccentGreen = new(0.24f, 1f, 0.71f, 0.25f);
-        private static readonly Color CardBgEven = new(0.20f, 0.22f, 0.28f, 1f);
-        private static readonly Color CardBgOdd = new(0.17f, 0.19f, 0.24f, 1f);
-        private static readonly Color CardBgSelected = new(0.28f, 0.34f, 0.52f, 1f);
-        private static readonly Color RowDefault = new(0.22f, 0.24f, 0.30f, 1f);
-        private static readonly Color RowSelected = new(0.30f, 0.50f, 0.70f, 1f);
-        private static readonly Color DeleteRed = new(0.93f, 0.36f, 0.36f, 1f);
-        private static readonly Color SeparatorColor = new(0.3f, 0.3f, 0.3f, 1f);
+        // -------------------------------------------------------------------
+        // Pastel Color Palette
+        // -------------------------------------------------------------------
+        private static readonly Color BgLight = new(0.96f, 0.95f, 0.98f, 1f);
+        private static readonly Color BgMedium = new(0.91f, 0.90f, 0.95f, 1f);
+        private static readonly Color CardBg = new(0.98f, 0.97f, 1.00f, 1f);
+        private static readonly Color CardBorder = new(0.85f, 0.84f, 0.90f, 1f);
+        private static readonly Color CardSelected = new(0.88f, 0.91f, 1.00f, 1f);
+
+        private static readonly Color PastelBlue = new(0.60f, 0.76f, 0.92f, 1f);
+        private static readonly Color PastelMint = new(0.68f, 0.91f, 0.83f, 1f);
+        private static readonly Color PastelPeach = new(0.98f, 0.80f, 0.73f, 1f);
+        private static readonly Color PastelLavender = new(0.80f, 0.72f, 0.93f, 1f);
+        private static readonly Color PastelPink = new(0.95f, 0.75f, 0.80f, 1f);
+        private static readonly Color PastelYellow = new(1.00f, 0.94f, 0.70f, 1f);
+
+        private static readonly Color TextDark = new(0.25f, 0.25f, 0.30f, 1f);
+        private static readonly Color TextMuted = new(0.50f, 0.50f, 0.55f, 1f);
+        private static readonly Color TextWhite = new(1f, 1f, 1f, 1f);
+
+        private static readonly Color RowDefault = new(0.94f, 0.93f, 0.97f, 1f);
+        private static readonly Color RowHover = new(0.90f, 0.92f, 0.98f, 1f);
+        private static readonly Color RowSelected = new(0.75f, 0.84f, 0.98f, 1f);
+        private static readonly Color SeparatorColor = new(0.85f, 0.84f, 0.88f, 1f);
+
+        // Flowchart
+        private static readonly Color FlowNodeAuto = new(0.68f, 0.91f, 0.83f, 1f);
+        private static readonly Color FlowNodeEvent = new(0.98f, 0.80f, 0.73f, 1f);
+        private static readonly Color FlowNodeSelected = new(0.75f, 0.84f, 0.98f, 1f);
+        private static readonly Color FlowStartNode = new(0.80f, 0.72f, 0.93f, 1f);
+        private static readonly Color FlowEndNode = new(0.95f, 0.75f, 0.80f, 1f);
+        private static readonly Color FlowLine = new(0.65f, 0.65f, 0.72f, 1f);
+
+        // Cached styles
+        private GUIStyle _headerStyle;
+        private GUIStyle _sectionStyle;
+        private GUIStyle _cardLabelStyle;
+        private GUIStyle _badgeStyle;
+        private GUIStyle _flowNodeStyle;
+        private GUIStyle _flowLabelStyle;
+        private GUIStyle _buttonStyle;
+        private bool _stylesInitialized;
 
         [MenuItem("FrogletTools/Tutorial Sequence Editor")]
         public static void Open()
         {
             var window = GetWindow<DialogueEditorWindow>("Tutorial Sequence Editor");
-            window.minSize = new Vector2(800, 500);
+            window.minSize = new Vector2(900, 500);
+        }
+
+        private void InitStyles()
+        {
+            if (_stylesInitialized) return;
+            _stylesInitialized = true;
+
+            _headerStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 13,
+                alignment = TextAnchor.MiddleLeft,
+                normal = { textColor = TextDark },
+                padding = new RectOffset(8, 8, 4, 4)
+            };
+
+            _sectionStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 11,
+                normal = { textColor = TextMuted },
+                padding = new RectOffset(4, 4, 2, 2)
+            };
+
+            _cardLabelStyle = new GUIStyle(EditorStyles.label)
+            {
+                fontSize = 10,
+                normal = { textColor = TextMuted }
+            };
+
+            _badgeStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 9,
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = TextDark },
+                padding = new RectOffset(6, 6, 2, 2)
+            };
+
+            _flowNodeStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                fontSize = 9,
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = true,
+                padding = new RectOffset(4, 4, 4, 4),
+                normal = { textColor = TextDark }
+            };
+
+            _flowLabelStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 8,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = TextMuted }
+            };
+
+            _buttonStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 10,
+                padding = new RectOffset(6, 6, 3, 3)
+            };
         }
 
         // -------------------------------------------------------------------
@@ -53,51 +140,65 @@ namespace CosmicShore.DialogueSystem.Editor
         // -------------------------------------------------------------------
         private void OnGUI()
         {
-            GUILayout.Space(4);
+            InitStyles();
+
+            // Full window background
+            EditorGUI.DrawRect(new Rect(0, 0, position.width, position.height), BgLight);
+
+            float bottomY = position.height - BOTTOM_BAR_HEIGHT;
+
             EditorGUILayout.BeginHorizontal(GUILayout.ExpandHeight(true));
 
             // Left Panel
-            EditorGUILayout.BeginVertical(GUILayout.Width(LEFT_PANEL_WIDTH));
-            DrawLeftPanel();
-            EditorGUILayout.EndVertical();
+            Rect leftRect = new(0, 0, LEFT_PANEL_WIDTH, bottomY);
+            GUILayout.BeginArea(leftRect);
+            DrawLeftPanel(leftRect);
+            GUILayout.EndArea();
 
-            // Separator
-            Rect sep = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
-                GUILayout.Width(1), GUILayout.ExpandHeight(true));
-            EditorGUI.DrawRect(sep, SeparatorColor);
-            GUILayout.Space(8);
+            // Left separator
+            EditorGUI.DrawRect(new Rect(LEFT_PANEL_WIDTH, 0, 1, bottomY), SeparatorColor);
 
-            // Main Panel
-            EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
-            DrawMainPanel();
-            EditorGUILayout.EndVertical();
+            // Right Panel (flowchart)
+            float rightX = position.width - RIGHT_PANEL_WIDTH;
+            Rect rightRect = new(rightX, 0, RIGHT_PANEL_WIDTH, bottomY);
+            GUILayout.BeginArea(rightRect);
+            DrawFlowchartPanel(rightRect);
+            GUILayout.EndArea();
+
+            // Right separator
+            EditorGUI.DrawRect(new Rect(rightX - 1, 0, 1, bottomY), SeparatorColor);
+
+            // Center Panel
+            float centerX = LEFT_PANEL_WIDTH + 1;
+            float centerW = rightX - centerX - 1;
+            Rect centerRect = new(centerX, 0, centerW, bottomY);
+            GUILayout.BeginArea(centerRect);
+            DrawCenterPanel(centerW);
+            GUILayout.EndArea();
 
             EditorGUILayout.EndHorizontal();
 
-            GUILayout.FlexibleSpace();
-            DrawBottomBar();
+            // Bottom bar
+            DrawBottomBar(bottomY);
         }
 
         // -------------------------------------------------------------------
         // Left Panel — Sequence List
         // -------------------------------------------------------------------
-        private void DrawLeftPanel()
+        private void DrawLeftPanel(Rect panelRect)
         {
             // Header
-            Rect headerRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.boldLabel,
-                GUILayout.Height(28), GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(headerRect, HeaderBg);
-            var headerStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 13,
-                normal = { textColor = AccentTeal }
-            };
-            EditorGUI.LabelField(headerRect, "  Tutorial Sequences", headerStyle);
+            Rect headerRect = new(0, 0, panelRect.width, 32);
+            EditorGUI.DrawRect(headerRect, PastelLavender);
+            GUI.Label(new Rect(8, 4, panelRect.width - 16, 24), "Sequences", _headerStyle);
 
-            GUILayout.Space(6);
-            _leftScroll = EditorGUILayout.BeginScrollView(_leftScroll);
+            // Scroll area
+            Rect scrollArea = new(0, 34, panelRect.width, panelRect.height - 34 - 38);
+            _leftScroll = GUI.BeginScrollView(scrollArea, _leftScroll,
+                new Rect(0, 0, panelRect.width - 16, GetSequenceListHeight()));
 
             var guids = AssetDatabase.FindAssets("t:TutorialSequence", new[] { SequenceFolder });
+            float y = 2;
             foreach (var guid in guids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
@@ -105,80 +206,60 @@ namespace CosmicShore.DialogueSystem.Editor
                 if (seq == null) continue;
 
                 bool isSelected = _selectedSequence == seq;
-                float rowHeight = 32f;
-                Rect rowRect = GUILayoutUtility.GetRect(1, rowHeight, GUILayout.ExpandWidth(true));
-                EditorGUI.DrawRect(rowRect, isSelected ? RowSelected : RowDefault);
+                float rowH = 36f;
+                Rect rowRect = new(4, y, panelRect.width - 24, rowH);
 
-                // Delete button
-                float iconSize = 18f;
-                float pad = 6f;
-                Rect deleteRect = new(rowRect.x + pad, rowRect.y + (rowHeight - iconSize) / 2, iconSize, iconSize);
-                var deleteStyle = new GUIStyle(GUI.skin.button)
-                {
-                    fontSize = 12,
-                    alignment = TextAnchor.MiddleCenter,
-                    normal = { textColor = DeleteRed }
-                };
-                if (GUI.Button(deleteRect, DELETE_GLYPH, deleteStyle))
-                {
-                    if (EditorUtility.DisplayDialog("Delete Tutorial Sequence",
-                        $"Delete '{seq.sequenceId}'?\n\nThis cannot be undone.", "Delete", "Cancel"))
-                    {
-                        AssetDatabase.DeleteAsset(path);
-                        AssetDatabase.SaveAssets();
-                        if (_selectedSequence == seq)
-                        {
-                            _selectedSequence = null;
-                            _instructionsList = null;
-                        }
-                        GUIUtility.ExitGUI();
-                    }
-                }
+                // Row background
+                Color rowBg = isSelected ? RowSelected : RowDefault;
+                DrawRoundedRect(rowRect, rowBg, 4);
 
-                // Label with instruction count badge
-                float labelX = deleteRect.xMax + pad;
-                float badgeWidth = 28f;
-                float labelWidth = rowRect.xMax - labelX - badgeWidth - pad * 2;
-                Rect labelRect = new(labelX, rowRect.y + 2, labelWidth, rowHeight - 4);
-
+                // Sequence label
                 string displayName = string.IsNullOrEmpty(seq.sequenceId) ? seq.name : seq.sequenceId;
                 var labelStyle = new GUIStyle(EditorStyles.label)
                 {
-                    alignment = TextAnchor.MiddleLeft,
                     fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
-                    normal = { textColor = isSelected ? Color.white : new Color(0.8f, 0.8f, 0.85f) }
+                    normal = { textColor = TextDark },
+                    fontSize = 11
                 };
+                Rect labelRect = new(rowRect.x + 8, rowRect.y + 2, rowRect.width - 52, rowH - 4);
                 if (GUI.Button(labelRect, displayName, labelStyle))
                 {
-                    _selectedSequence = seq;
-                    _selectedInstructionIndex = -1;
-                    _instructionsList = null;
-                    _collapsedCards.Clear();
-                    GUIUtility.ExitGUI();
+                    SelectSequence(seq);
                 }
 
                 // Instruction count badge
                 int count = seq.instructions?.Count ?? 0;
-                Rect badgeRect = new(rowRect.xMax - badgeWidth - pad, rowRect.y + (rowHeight - 18) / 2, badgeWidth, 18);
-                EditorGUI.DrawRect(badgeRect, new Color(0.1f, 0.1f, 0.14f, 0.8f));
-                var badgeStyle = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
-                {
-                    normal = { textColor = AccentTeal },
-                    fontSize = 10
-                };
-                EditorGUI.LabelField(badgeRect, count.ToString(), badgeStyle);
+                Rect badgeRect = new(rowRect.xMax - 36, rowRect.y + (rowH - 18) / 2, 28, 18);
+                DrawRoundedRect(badgeRect, PastelBlue, 9);
+                GUI.Label(badgeRect, count.ToString(), _badgeStyle);
 
-                GUILayout.Space(1);
+                y += rowH + 3;
             }
 
-            EditorGUILayout.EndScrollView();
+            GUI.EndScrollView();
 
-            GUILayout.Space(4);
-            if (GUILayout.Button("+ New Sequence", GUILayout.Height(28)))
+            // New Sequence button
+            Rect btnRect = new(8, panelRect.height - 34, panelRect.width - 16, 28);
+            var prevBg = GUI.backgroundColor;
+            GUI.backgroundColor = PastelMint;
+            if (GUI.Button(btnRect, "+ New Sequence", _buttonStyle))
             {
                 CreateNewSequence();
             }
-            GUILayout.Space(4);
+            GUI.backgroundColor = prevBg;
+        }
+
+        private float GetSequenceListHeight()
+        {
+            var guids = AssetDatabase.FindAssets("t:TutorialSequence", new[] { SequenceFolder });
+            return guids.Length * 39f + 10;
+        }
+
+        private void SelectSequence(TutorialSequence seq)
+        {
+            _selectedSequence = seq;
+            _selectedInstructionIndex = -1;
+            Repaint();
         }
 
         private void CreateNewSequence()
@@ -202,359 +283,543 @@ namespace CosmicShore.DialogueSystem.Editor
             seq.sequenceId = System.IO.Path.GetFileNameWithoutExtension(assetPath);
             AssetDatabase.CreateAsset(seq, assetPath);
             AssetDatabase.SaveAssets();
-            _selectedSequence = seq;
-            _selectedInstructionIndex = -1;
-            _instructionsList = null;
-            _collapsedCards.Clear();
+            SelectSequence(seq);
             _hasUnsavedChanges = true;
-            GUIUtility.ExitGUI();
         }
 
         // -------------------------------------------------------------------
-        // Main Panel — Sequence Editor
+        // Center Panel — Instruction Editor
         // -------------------------------------------------------------------
-        private void DrawMainPanel()
+        private void DrawCenterPanel(float panelWidth)
         {
             // Header
-            Rect headerRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.boldLabel,
-                GUILayout.Height(28), GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(headerRect, AccentGreen);
-            var headerStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 13 };
-            EditorGUI.LabelField(headerRect, "  Sequence Editor", headerStyle);
-
-            GUILayout.Space(6);
+            Rect headerRect = new(0, 0, panelWidth, 32);
+            EditorGUI.DrawRect(headerRect, PastelBlue);
+            var titleStyle = new GUIStyle(_headerStyle) { normal = { textColor = TextDark } };
+            GUI.Label(new Rect(8, 4, panelWidth - 16, 24), "Instruction Editor", titleStyle);
 
             if (_selectedSequence == null)
             {
-                EditorGUILayout.LabelField("Select a tutorial sequence to begin editing.",
-                    EditorStyles.centeredGreyMiniLabel, GUILayout.ExpandHeight(true));
+                var centeredStyle = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
+                {
+                    fontSize = 12,
+                    normal = { textColor = TextMuted }
+                };
+                GUI.Label(new Rect(0, 100, panelWidth, 30), "Select a sequence to begin editing", centeredStyle);
                 return;
             }
 
-            _mainScroll = EditorGUILayout.BeginScrollView(_mainScroll);
-
-            DrawSequenceHeader();
-            GUILayout.Space(10);
-            DrawInstructionsList();
-
-            EditorGUILayout.EndScrollView();
-        }
-
-        private void DrawSequenceHeader()
-        {
-            var seq = _selectedSequence;
+            // Sequence metadata
+            float metaY = 38;
+            float metaX = 12;
+            float fieldW = panelWidth - 24;
 
             // Sequence ID
+            GUI.Label(new Rect(metaX, metaY, 80, 18), "Sequence ID", _cardLabelStyle);
+            metaY += 16;
             EditorGUI.BeginChangeCheck();
-            string newId = EditorGUILayout.TextField("Sequence ID", seq.sequenceId);
+            string newId = EditorGUI.TextField(new Rect(metaX, metaY, fieldW, 20), _selectedSequence.sequenceId);
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(seq, "Edit Sequence ID");
-                seq.sequenceId = newId;
-                MarkDirty(seq);
+                Undo.RecordObject(_selectedSequence, "Edit Sequence ID");
+                _selectedSequence.sequenceId = newId;
+                MarkDirty(_selectedSequence);
             }
+            metaY += 24;
 
             // Description
+            GUI.Label(new Rect(metaX, metaY, 120, 18), "Description", _cardLabelStyle);
+            metaY += 16;
             EditorGUI.BeginChangeCheck();
-            string newDesc = EditorGUILayout.TextField("Description (Designer Notes)", seq.description);
+            string newDesc = EditorGUI.TextField(new Rect(metaX, metaY, fieldW, 20), _selectedSequence.description);
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(seq, "Edit Sequence Description");
-                seq.description = newDesc;
-                MarkDirty(seq);
+                Undo.RecordObject(_selectedSequence, "Edit Description");
+                _selectedSequence.description = newDesc;
+                MarkDirty(_selectedSequence);
             }
+            metaY += 24;
 
-            GUILayout.Space(6);
-
-            // SOAP Events section
-            DrawSectionLabel("SOAP Event Triggers");
-
+            // Trigger Event
+            GUI.Label(new Rect(metaX, metaY, 120, 18), "Sequence Trigger Event", _cardLabelStyle);
+            metaY += 16;
             EditorGUI.BeginChangeCheck();
-            var newTrigger = (ScriptableEventNoParam)EditorGUILayout.ObjectField(
-                "Trigger Event", seq.triggerEvent, typeof(ScriptableEventNoParam), false);
+            var newTrigger = (ScriptableEventNoParam)EditorGUI.ObjectField(
+                new Rect(metaX, metaY, fieldW, 18),
+                _selectedSequence.triggerEvent, typeof(ScriptableEventNoParam), false);
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(seq, "Change Trigger Event");
-                seq.triggerEvent = newTrigger;
-                MarkDirty(seq);
+                Undo.RecordObject(_selectedSequence, "Change Trigger Event");
+                _selectedSequence.triggerEvent = newTrigger;
+                MarkDirty(_selectedSequence);
             }
+            metaY += 22;
 
+            // Completion Event
+            GUI.Label(new Rect(metaX, metaY, 120, 18), "Completion Event", _cardLabelStyle);
+            metaY += 16;
             EditorGUI.BeginChangeCheck();
-            bool newAutoPlay = EditorGUILayout.Toggle("Auto-Play Next Sequence", seq.autoPlayNext);
+            var newCompletion = (ScriptableEventNoParam)EditorGUI.ObjectField(
+                new Rect(metaX, metaY, fieldW, 18),
+                _selectedSequence.completionEvent, typeof(ScriptableEventNoParam), false);
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(seq, "Toggle Auto-Play Next");
-                seq.autoPlayNext = newAutoPlay;
-                MarkDirty(seq);
+                Undo.RecordObject(_selectedSequence, "Change Completion Event");
+                _selectedSequence.completionEvent = newCompletion;
+                MarkDirty(_selectedSequence);
             }
+            metaY += 26;
 
-            if (seq.autoPlayNext)
+            // Separator
+            EditorGUI.DrawRect(new Rect(metaX, metaY, fieldW, 1), SeparatorColor);
+            metaY += 6;
+
+            // Section label
+            GUI.Label(new Rect(metaX, metaY, 200, 20), "Instructions", _sectionStyle);
+            metaY += 22;
+
+            // Instructions scroll area
+            float scrollTop = metaY;
+            float scrollHeight = position.height - BOTTOM_BAR_HEIGHT - scrollTop - 40;
+            float contentHeight = GetInstructionsContentHeight(panelWidth);
+
+            Rect scrollViewRect = new(0, scrollTop, panelWidth, scrollHeight);
+            Rect contentRect = new(0, 0, panelWidth - 20, contentHeight);
+            _centerScroll = GUI.BeginScrollView(scrollViewRect, _centerScroll, contentRect);
+
+            DrawInstructionCards(panelWidth - 20);
+
+            GUI.EndScrollView();
+
+            // Add instruction button
+            float addBtnY = scrollTop + scrollHeight + 6;
+            Rect addBtnRect = new(12, addBtnY, panelWidth - 24, 26);
+            var prevBg = GUI.backgroundColor;
+            GUI.backgroundColor = PastelMint;
+            if (GUI.Button(addBtnRect, "+ Add Instruction", _buttonStyle))
             {
-                EditorGUI.indentLevel++;
-                EditorGUI.BeginChangeCheck();
-                var newCompletion = (ScriptableEventNoParam)EditorGUILayout.ObjectField(
-                    "Completion Event", seq.completionEvent, typeof(ScriptableEventNoParam), false);
-                if (EditorGUI.EndChangeCheck())
+                Undo.RecordObject(_selectedSequence, "Add Instruction");
+                _selectedSequence.instructions.Add(new TutorialInstruction());
+                MarkDirty(_selectedSequence);
+            }
+            GUI.backgroundColor = prevBg;
+        }
+
+        private float GetInstructionsContentHeight(float panelWidth)
+        {
+            if (_selectedSequence == null) return 100;
+            int count = _selectedSequence.instructions.Count;
+            // Each card is approximately 220px tall + gap
+            return count * (220f + CARD_GAP) + 10;
+        }
+
+        private void DrawInstructionCards(float availableWidth)
+        {
+            if (_selectedSequence == null) return;
+
+            float y = 4;
+            float cardWidth = availableWidth - 24;
+            int deleteIndex = -1;
+            int moveUpIndex = -1;
+            int moveDownIndex = -1;
+
+            for (int i = 0; i < _selectedSequence.instructions.Count; i++)
+            {
+                var inst = _selectedSequence.instructions[i];
+                bool isSelected = i == _selectedInstructionIndex;
+
+                float cardHeight = 210f;
+                Rect cardRect = new(12, y, cardWidth, cardHeight);
+
+                // Card background with border
+                DrawRoundedRect(new Rect(cardRect.x - 1, cardRect.y - 1, cardRect.width + 2, cardRect.height + 2), CardBorder, 6);
+                DrawRoundedRect(cardRect, isSelected ? CardSelected : CardBg, 5);
+
+                // Click to select
+                if (Event.current.type == EventType.MouseDown && cardRect.Contains(Event.current.mousePosition))
                 {
-                    Undo.RecordObject(seq, "Change Completion Event");
-                    seq.completionEvent = newCompletion;
-                    MarkDirty(seq);
+                    _selectedInstructionIndex = i;
+                    Event.current.Use();
+                    Repaint();
                 }
-                EditorGUI.indentLevel--;
-            }
-        }
 
-        // -------------------------------------------------------------------
-        // Instructions List — ReorderableList with card-style elements
-        // -------------------------------------------------------------------
-        private void DrawInstructionsList()
-        {
-            var seq = _selectedSequence;
-            if (seq == null) return;
+                float cx = cardRect.x + CARD_PADDING;
+                float cy = cardRect.y + CARD_PADDING;
+                float cw = cardRect.width - CARD_PADDING * 2;
+                float lineH = EditorGUIUtility.singleLineHeight;
 
-            if (_instructionsList == null || _listTarget != seq)
-            {
-                _listTarget = seq;
-                BuildReorderableList(seq);
-            }
+                // --- Row 1: Step badge + SOAP event badge + Move/Delete ---
+                // Step number circle
+                Rect stepBadge = new(cx, cy, 28, 20);
+                DrawRoundedRect(stepBadge, PastelBlue, 10);
+                var stepStyle = new GUIStyle(_badgeStyle) { normal = { textColor = TextWhite }, fontStyle = FontStyle.Bold };
+                GUI.Label(stepBadge, $"#{i + 1}", stepStyle);
 
-            DrawSectionLabel("Instructions (Linear Flow)");
-            GUILayout.Space(4);
-
-            float listHeight = _instructionsList.GetHeight();
-            Rect listRect = EditorGUILayout.GetControlRect(false, listHeight);
-            _instructionsList.DoList(listRect);
-        }
-
-        private void BuildReorderableList(TutorialSequence seq)
-        {
-            _instructionsList = new ReorderableList(seq.instructions, typeof(TutorialInstruction),
-                true, true, true, true);
-
-            // Header
-            _instructionsList.drawHeaderCallback = rect =>
-            {
-                EditorGUI.DrawRect(new Rect(rect.x - 4, rect.y, rect.width + 8, rect.height),
-                    new Color(0.12f, 0.14f, 0.18f, 0.9f));
-                int count = seq.instructions.Count;
-                EditorGUI.LabelField(rect,
-                    $"  {count} Instruction{(count != 1 ? "s" : "")} — drag to reorder",
-                    EditorStyles.boldLabel);
-            };
-
-            // Element height (dynamic based on collapse state)
-            _instructionsList.elementHeightCallback = idx =>
-            {
-                if (_collapsedCards.Contains(idx))
-                    return 28f;
-                return 160f;
-            };
-
-            // Background
-            _instructionsList.drawElementBackgroundCallback = (rect, idx, isActive, isFocused) =>
-            {
-                if (idx < 0) return;
-                Color bg;
-                if (idx == _instructionsList.index)
-                    bg = CardBgSelected;
+                // SOAP event badge
+                float badgeX = cx + 34;
+                if (inst.waitForEvent != null)
+                {
+                    string evtName = inst.waitForEvent.name;
+                    if (evtName.Length > 18) evtName = evtName[..18] + "..";
+                    Rect evtBadge = new(badgeX, cy, 140, 20);
+                    DrawRoundedRect(evtBadge, PastelPeach, 10);
+                    GUI.Label(evtBadge, $"\u23F3 {evtName}", _badgeStyle);
+                }
                 else
-                    bg = idx % 2 == 0 ? CardBgEven : CardBgOdd;
-                EditorGUI.DrawRect(rect, bg);
-            };
-
-            // Draw each instruction card
-            _instructionsList.drawElementCallback = (rect, idx, isActive, isFocused) =>
-            {
-                if (idx < 0 || idx >= seq.instructions.Count) return;
-                var inst = seq.instructions[idx];
-                rect.y += 2;
-                rect.height -= 4;
-                float h = EditorGUIUtility.singleLineHeight;
-                float pad = 4f;
-
-                // --- Step number badge + collapse toggle ---
-                bool collapsed = _collapsedCards.Contains(idx);
-                Rect foldRect = new(rect.x, rect.y, 20, h);
-                string foldIcon = collapsed ? "\u25B6" : "\u25BC"; // right/down triangle
-                if (GUI.Button(foldRect, foldIcon, EditorStyles.miniLabel))
                 {
-                    if (collapsed) _collapsedCards.Remove(idx);
-                    else _collapsedCards.Add(idx);
+                    Rect autoBadge = new(badgeX, cy, 80, 20);
+                    DrawRoundedRect(autoBadge, PastelMint, 10);
+                    GUI.Label(autoBadge, "AUTO-PLAY", _badgeStyle);
                 }
 
-                Rect badgeRect = new(rect.x + 22, rect.y, 40, h);
-                var badgeStyle = new GUIStyle(EditorStyles.boldLabel)
-                {
-                    normal = { textColor = AccentTeal },
-                    fontSize = 12
-                };
-                EditorGUI.LabelField(badgeRect, $"#{idx + 1}", badgeStyle);
+                // Move Up / Move Down / Delete buttons
+                float btnW = 22;
+                float btnY = cy;
+                float btnX = cx + cw - btnW;
 
-                // Preview text on collapsed line
-                if (collapsed)
-                {
-                    string preview = inst.dialogueText ?? "(empty)";
-                    if (preview.Length > 60) preview = preview[..60] + "...";
-                    Rect previewRect = new(rect.x + 66, rect.y, rect.width - 70, h);
-                    EditorGUI.LabelField(previewRect, preview, EditorStyles.miniLabel);
-                    return;
-                }
+                // Delete
+                var prevBg2 = GUI.backgroundColor;
+                GUI.backgroundColor = PastelPink;
+                if (GUI.Button(new Rect(btnX, btnY, btnW, 20), "\u2716", _buttonStyle))
+                    deleteIndex = i;
+                GUI.backgroundColor = prevBg2;
+                btnX -= btnW + 2;
 
-                float y = rect.y + h + pad;
-                float fieldWidth = rect.width - 10;
+                // Move Down
+                GUI.enabled = i < _selectedSequence.instructions.Count - 1;
+                if (GUI.Button(new Rect(btnX, btnY, btnW, 20), "\u25BC", _buttonStyle))
+                    moveDownIndex = i;
+                GUI.enabled = true;
+                btnX -= btnW + 2;
 
-                // --- Dialogue Text (TextArea) ---
-                Rect textLabelRect = new(rect.x + 4, y, 90, h);
-                EditorGUI.LabelField(textLabelRect, "Dialogue Text", EditorStyles.miniLabel);
-                y += h;
-                Rect textRect = new(rect.x + 4, y, fieldWidth, h * 2.5f);
+                // Move Up
+                GUI.enabled = i > 0;
+                if (GUI.Button(new Rect(btnX, btnY, btnW, 20), "\u25B2", _buttonStyle))
+                    moveUpIndex = i;
+                GUI.enabled = true;
+
+                cy += 26;
+
+                // --- Row 2: SOAP Event field ---
+                GUI.Label(new Rect(cx, cy, 100, 14), "Wait for Event", _cardLabelStyle);
+                cy += 14;
                 EditorGUI.BeginChangeCheck();
-                string newText = EditorGUI.TextArea(textRect, inst.dialogueText);
+                var newEvent = (ScriptableEventNoParam)EditorGUI.ObjectField(
+                    new Rect(cx, cy, cw, lineH),
+                    inst.waitForEvent, typeof(ScriptableEventNoParam), false);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(seq, "Edit Instruction Text");
+                    Undo.RecordObject(_selectedSequence, "Change Instruction Event");
+                    inst.waitForEvent = newEvent;
+                    MarkDirty(_selectedSequence);
+                }
+                cy += lineH + 4;
+
+                // --- Row 3: Dialogue Text ---
+                GUI.Label(new Rect(cx, cy, 100, 14), "Dialogue Text", _cardLabelStyle);
+                cy += 14;
+                EditorGUI.BeginChangeCheck();
+                string newText = EditorGUI.TextArea(new Rect(cx, cy, cw, lineH * 2), inst.dialogueText);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(_selectedSequence, "Edit Dialogue Text");
                     inst.dialogueText = newText;
-                    MarkDirty(seq);
+                    MarkDirty(_selectedSequence);
                 }
-                y += h * 2.5f + pad;
+                cy += lineH * 2 + 4;
 
-                // --- Row: Avatar Icon | Arrow Targets ---
-                float halfWidth = (fieldWidth - 10) / 2;
+                // --- Row 4: Avatar + Arrow Targets (two columns) ---
+                float halfW = (cw - 8) / 2;
 
-                // Avatar Icon
-                Rect avatarLabelRect = new(rect.x + 4, y, halfWidth, h);
-                EditorGUI.LabelField(avatarLabelRect, "Avatar Icon", EditorStyles.miniLabel);
-                Rect arrowLabelRect = new(rect.x + halfWidth + 14, y, halfWidth, h);
-                EditorGUI.LabelField(arrowLabelRect, "Arrow Targets", EditorStyles.miniLabel);
-                y += h;
+                GUI.Label(new Rect(cx, cy, halfW, 14), "Avatar Icon", _cardLabelStyle);
+                GUI.Label(new Rect(cx + halfW + 8, cy, halfW, 14), "Arrow Targets", _cardLabelStyle);
+                cy += 14;
 
-                Rect avatarRect = new(rect.x + 4, y, halfWidth, h);
                 EditorGUI.BeginChangeCheck();
-                var newAvatar = (Sprite)EditorGUI.ObjectField(avatarRect, inst.avatarIcon, typeof(Sprite), false);
+                var newAvatar = (Sprite)EditorGUI.ObjectField(
+                    new Rect(cx, cy, halfW, lineH), inst.avatarIcon, typeof(Sprite), false);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(seq, "Change Avatar Icon");
+                    Undo.RecordObject(_selectedSequence, "Change Avatar");
                     inst.avatarIcon = newAvatar;
-                    MarkDirty(seq);
+                    MarkDirty(_selectedSequence);
                 }
 
-                // Arrow Targets (flags enum)
-                Rect arrowRect = new(rect.x + halfWidth + 14, y, halfWidth, h);
                 EditorGUI.BeginChangeCheck();
-                var newArrows = (ArrowTarget)EditorGUI.EnumFlagsField(arrowRect, inst.arrowTargets);
+                var newArrows = (ArrowTarget)EditorGUI.EnumFlagsField(
+                    new Rect(cx + halfW + 8, cy, halfW, lineH), inst.arrowTargets);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(seq, "Change Arrow Targets");
+                    Undo.RecordObject(_selectedSequence, "Change Arrows");
                     inst.arrowTargets = newArrows;
-                    MarkDirty(seq);
+                    MarkDirty(_selectedSequence);
                 }
-                y += h + pad;
+                cy += lineH + 4;
 
-                // --- Row: Audio Clip | Auto-Advance + Delay ---
-                Rect audioLabelRect = new(rect.x + 4, y, halfWidth, h);
-                EditorGUI.LabelField(audioLabelRect, "Audio Clip", EditorStyles.miniLabel);
-                Rect flowLabelRect = new(rect.x + halfWidth + 14, y, halfWidth, h);
-                EditorGUI.LabelField(flowLabelRect, "Flow Control", EditorStyles.miniLabel);
-                y += h;
+                // --- Row 5: Audio + Auto-Advance ---
+                GUI.Label(new Rect(cx, cy, halfW, 14), "Audio Clip", _cardLabelStyle);
+                GUI.Label(new Rect(cx + halfW + 8, cy, halfW, 14), "Flow Control", _cardLabelStyle);
+                cy += 14;
 
-                Rect audioRect = new(rect.x + 4, y, halfWidth, h);
                 EditorGUI.BeginChangeCheck();
-                var newClip = (AudioClip)EditorGUI.ObjectField(audioRect, inst.audioClip, typeof(AudioClip), false);
+                var newClip = (AudioClip)EditorGUI.ObjectField(
+                    new Rect(cx, cy, halfW, lineH), inst.audioClip, typeof(AudioClip), false);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(seq, "Change Audio Clip");
+                    Undo.RecordObject(_selectedSequence, "Change Audio");
                     inst.audioClip = newClip;
-                    MarkDirty(seq);
+                    MarkDirty(_selectedSequence);
                 }
 
                 // Auto-advance toggle
-                Rect autoRect = new(rect.x + halfWidth + 14, y, 100, h);
                 EditorGUI.BeginChangeCheck();
-                bool newAuto = EditorGUI.ToggleLeft(autoRect, "Auto-Advance", inst.autoAdvance);
+                bool newAuto = EditorGUI.ToggleLeft(
+                    new Rect(cx + halfW + 8, cy, 110, lineH), "Auto-Advance", inst.autoAdvance);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(seq, "Toggle Auto-Advance");
+                    Undo.RecordObject(_selectedSequence, "Toggle Auto-Advance");
                     inst.autoAdvance = newAuto;
-                    MarkDirty(seq);
+                    MarkDirty(_selectedSequence);
                 }
 
-                // Delay field (only when auto-advance is on)
                 if (inst.autoAdvance)
                 {
-                    Rect delayRect = new(rect.x + halfWidth + 120, y, halfWidth - 110, h);
                     EditorGUI.BeginChangeCheck();
-                    float newDelay = EditorGUI.FloatField(delayRect, inst.delayBeforeNext);
+                    float newDelay = EditorGUI.FloatField(
+                        new Rect(cx + halfW + 124, cy, halfW - 130, lineH), inst.delayBeforeNext);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(seq, "Change Auto-Advance Delay");
+                        Undo.RecordObject(_selectedSequence, "Change Delay");
                         inst.delayBeforeNext = Mathf.Max(0f, newDelay);
-                        MarkDirty(seq);
+                        MarkDirty(_selectedSequence);
                     }
-                    Rect delayLabel = new(delayRect.xMax + 2, y, 20, h);
-                    EditorGUI.LabelField(delayLabel, "s", EditorStyles.miniLabel);
+                    GUI.Label(new Rect(cx + cw - 10, cy, 14, lineH), "s", _cardLabelStyle);
                 }
-            };
 
-            // Selection callback
-            _instructionsList.onSelectCallback = list =>
-            {
-                _selectedInstructionIndex = list.index;
-            };
+                y += cardHeight + CARD_GAP;
+            }
 
-            // Add callback — insert a new empty instruction
-            _instructionsList.onAddCallback = list =>
+            // Process deferred actions
+            if (deleteIndex >= 0)
             {
-                Undo.RecordObject(seq, "Add Instruction");
-                seq.instructions.Add(new TutorialInstruction());
-                MarkDirty(seq);
-            };
+                Undo.RecordObject(_selectedSequence, "Delete Instruction");
+                _selectedSequence.instructions.RemoveAt(deleteIndex);
+                if (_selectedInstructionIndex >= _selectedSequence.instructions.Count)
+                    _selectedInstructionIndex = _selectedSequence.instructions.Count - 1;
+                MarkDirty(_selectedSequence);
+            }
+            if (moveUpIndex > 0)
+            {
+                Undo.RecordObject(_selectedSequence, "Move Instruction Up");
+                (_selectedSequence.instructions[moveUpIndex], _selectedSequence.instructions[moveUpIndex - 1]) =
+                    (_selectedSequence.instructions[moveUpIndex - 1], _selectedSequence.instructions[moveUpIndex]);
+                _selectedInstructionIndex = moveUpIndex - 1;
+                MarkDirty(_selectedSequence);
+            }
+            if (moveDownIndex >= 0 && moveDownIndex < _selectedSequence.instructions.Count - 1)
+            {
+                Undo.RecordObject(_selectedSequence, "Move Instruction Down");
+                (_selectedSequence.instructions[moveDownIndex], _selectedSequence.instructions[moveDownIndex + 1]) =
+                    (_selectedSequence.instructions[moveDownIndex + 1], _selectedSequence.instructions[moveDownIndex]);
+                _selectedInstructionIndex = moveDownIndex + 1;
+                MarkDirty(_selectedSequence);
+            }
+        }
 
-            // Remove callback
-            _instructionsList.onRemoveCallback = list =>
+        // -------------------------------------------------------------------
+        // Right Panel — Flowchart Preview
+        // -------------------------------------------------------------------
+        private void DrawFlowchartPanel(Rect panelRect)
+        {
+            // Header
+            Rect headerRect = new(0, 0, panelRect.width, 32);
+            EditorGUI.DrawRect(headerRect, PastelLavender);
+            var titleStyle = new GUIStyle(_headerStyle) { normal = { textColor = TextDark } };
+            GUI.Label(new Rect(8, 4, panelRect.width - 16, 24), "Sequence Flow", titleStyle);
+
+            if (_selectedSequence == null)
             {
-                if (list.index >= 0 && list.index < seq.instructions.Count)
+                var centeredStyle = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
                 {
-                    Undo.RecordObject(seq, "Remove Instruction");
-                    seq.instructions.RemoveAt(list.index);
-                    _collapsedCards.Remove(list.index);
-                    MarkDirty(seq);
-                }
-            };
+                    normal = { textColor = TextMuted }
+                };
+                GUI.Label(new Rect(0, 80, panelRect.width, 20), "No sequence selected", centeredStyle);
+                return;
+            }
 
-            // Reorder callback
-            _instructionsList.onReorderCallback = list =>
+            float nodeW = panelRect.width - 40;
+            float nodeH = 44;
+            float nodeGap = 12;
+            float arrowH = 16;
+            int count = _selectedSequence.instructions.Count;
+
+            // +2 for START/END nodes
+            float totalHeight = (count + 2) * (nodeH + arrowH + nodeGap) + 20;
+
+            Rect scrollArea = new(0, 36, panelRect.width, panelRect.height - 36);
+            Rect contentArea = new(0, 0, panelRect.width - 16, totalHeight);
+            _flowScroll = GUI.BeginScrollView(scrollArea, _flowScroll, contentArea);
+
+            float x = 20;
+            float y = 10;
+
+            // START node
+            Rect startRect = new(x, y, nodeW, 30);
+            DrawRoundedRect(startRect, FlowStartNode, 4);
+            string startLabel = _selectedSequence.triggerEvent != null
+                ? $"START: {_selectedSequence.triggerEvent.name}"
+                : "START (no trigger)";
+            GUI.Label(startRect, startLabel, _flowNodeStyle);
+            y += 30;
+
+            // Arrow from START
+            DrawFlowArrow(x + nodeW / 2, y, arrowH);
+            y += arrowH + 4;
+
+            // Instruction nodes
+            for (int i = 0; i < count; i++)
             {
-                Undo.RecordObject(seq, "Reorder Instructions");
-                _collapsedCards.Clear();
-                MarkDirty(seq);
-            };
+                var inst = _selectedSequence.instructions[i];
+                bool isSelected = i == _selectedInstructionIndex;
+                bool hasEvent = inst.waitForEvent != null;
+
+                Rect nodeRect = new(x, y, nodeW, nodeH);
+
+                // Node background
+                Color nodeBg = isSelected ? FlowNodeSelected : (hasEvent ? FlowNodeEvent : FlowNodeAuto);
+                DrawRoundedRect(nodeRect, nodeBg, 4);
+
+                // Click to select
+                if (Event.current.type == EventType.MouseDown && nodeRect.Contains(Event.current.mousePosition))
+                {
+                    _selectedInstructionIndex = i;
+                    // Scroll center panel to this card
+                    _centerScroll.y = i * (210f + CARD_GAP);
+                    Event.current.Use();
+                    Repaint();
+                }
+
+                // Step number
+                Rect numRect = new(x + 4, y + 2, nodeW - 8, 14);
+                var numStyle = new GUIStyle(_flowLabelStyle) { fontStyle = FontStyle.Bold, normal = { textColor = TextDark } };
+                string stepNum = $"Step {i + 1}";
+                if (hasEvent) stepNum += " \u23F3";
+                GUI.Label(numRect, stepNum, numStyle);
+
+                // Editable step label
+                string currentLabel = inst.stepLabel;
+                if (string.IsNullOrEmpty(currentLabel))
+                {
+                    currentLabel = !string.IsNullOrEmpty(inst.dialogueText)
+                        ? (inst.dialogueText.Length > 25 ? inst.dialogueText[..25] + ".." : inst.dialogueText)
+                        : "(empty)";
+                }
+
+                Rect labelRect = new(x + 4, y + 16, nodeW - 8, 16);
+                EditorGUI.BeginChangeCheck();
+                string newLabel = EditorGUI.TextField(labelRect, inst.stepLabel, _flowNodeStyle);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(_selectedSequence, "Edit Step Label");
+                    inst.stepLabel = newLabel;
+                    MarkDirty(_selectedSequence);
+                }
+
+                // Show auto-generated text if stepLabel is empty
+                if (string.IsNullOrEmpty(inst.stepLabel))
+                {
+                    var placeholderStyle = new GUIStyle(_flowNodeStyle)
+                    {
+                        normal = { textColor = TextMuted },
+                        fontStyle = FontStyle.Italic
+                    };
+                    // Draw placeholder over the text field (won't interfere since empty field is transparent)
+                    GUI.Label(labelRect, currentLabel, placeholderStyle);
+                }
+
+                // Event indicator below node
+                if (hasEvent)
+                {
+                    Rect evtRect = new(x, y + nodeH - 12, nodeW, 12);
+                    var evtStyle = new GUIStyle(_flowLabelStyle)
+                    {
+                        fontSize = 8,
+                        normal = { textColor = new Color(0.6f, 0.35f, 0.2f) }
+                    };
+                    GUI.Label(evtRect, $"waits: {inst.waitForEvent.name}", evtStyle);
+                }
+
+                y += nodeH;
+
+                // Arrow between nodes (not after last)
+                if (i < count - 1)
+                {
+                    DrawFlowArrow(x + nodeW / 2, y, arrowH);
+                    y += arrowH + nodeGap;
+                }
+                else
+                {
+                    y += 4;
+                }
+            }
+
+            // Arrow to END
+            DrawFlowArrow(x + nodeW / 2, y, arrowH);
+            y += arrowH + 4;
+
+            // END node
+            Rect endRect = new(x, y, nodeW, 30);
+            DrawRoundedRect(endRect, FlowEndNode, 4);
+            string endLabel = _selectedSequence.completionEvent != null
+                ? $"END: {_selectedSequence.completionEvent.name}"
+                : "END";
+            GUI.Label(endRect, endLabel, _flowNodeStyle);
+
+            GUI.EndScrollView();
+        }
+
+        private void DrawFlowArrow(float centerX, float topY, float height)
+        {
+            // Vertical line
+            float lineW = 2;
+            EditorGUI.DrawRect(new Rect(centerX - lineW / 2, topY, lineW, height - 4), FlowLine);
+
+            // Arrowhead (small triangle)
+            float arrowSize = 6;
+            float arrowY = topY + height - 4;
+
+            // Draw arrowhead as 3 small rects approximating a triangle
+            for (int j = 0; j < 3; j++)
+            {
+                float w = arrowSize - j * 2;
+                EditorGUI.DrawRect(new Rect(centerX - w / 2, arrowY + j * 2, w, 2), FlowLine);
+            }
         }
 
         // -------------------------------------------------------------------
         // Bottom Bar
         // -------------------------------------------------------------------
-        private void DrawBottomBar()
+        private void DrawBottomBar(float topY)
         {
-            GUILayout.Space(2);
-            EditorGUILayout.BeginHorizontal(GUILayout.Height(BOTTOM_BAR_HEIGHT));
-            GUILayout.Space(8);
+            Rect barRect = new(0, topY, position.width, BOTTOM_BAR_HEIGHT);
+            EditorGUI.DrawRect(barRect, BgMedium);
+            EditorGUI.DrawRect(new Rect(0, topY, position.width, 1), SeparatorColor);
 
-            // Info label
+            // Status text
             if (_selectedSequence != null)
             {
                 int count = _selectedSequence.instructions?.Count ?? 0;
                 string info = $"{_selectedSequence.sequenceId}  |  {count} instruction{(count != 1 ? "s" : "")}";
-                EditorGUILayout.LabelField(info, EditorStyles.miniLabel, GUILayout.Width(300));
+                var infoStyle = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = TextMuted } };
+                GUI.Label(new Rect(12, topY + 8, 300, 20), info, infoStyle);
             }
-
-            GUILayout.FlexibleSpace();
 
             // Save button
             if (_hasUnsavedChanges)
             {
                 var prevBg = GUI.backgroundColor;
-                GUI.backgroundColor = new Color(0.2f, 0.7f, 0.3f);
-                if (GUILayout.Button("Save All", GUILayout.Width(100), GUILayout.Height(26)))
+                GUI.backgroundColor = PastelMint;
+                if (GUI.Button(new Rect(position.width - 112, topY + 5, 100, 26), "Save All", _buttonStyle))
                 {
                     AssetDatabase.SaveAssets();
                     _hasUnsavedChanges = false;
@@ -562,9 +827,26 @@ namespace CosmicShore.DialogueSystem.Editor
                 GUI.backgroundColor = prevBg;
             }
 
-            GUILayout.Space(8);
-            EditorGUILayout.EndHorizontal();
-            GUILayout.Space(4);
+            // Delete sequence button
+            if (_selectedSequence != null)
+            {
+                var prevBg = GUI.backgroundColor;
+                GUI.backgroundColor = PastelPink;
+                if (GUI.Button(new Rect(position.width - 230, topY + 5, 110, 26), "Delete Sequence", _buttonStyle))
+                {
+                    string path = AssetDatabase.GetAssetPath(_selectedSequence);
+                    if (EditorUtility.DisplayDialog("Delete Sequence",
+                        $"Delete '{_selectedSequence.sequenceId}'?\n\nThis cannot be undone.", "Delete", "Cancel"))
+                    {
+                        AssetDatabase.DeleteAsset(path);
+                        AssetDatabase.SaveAssets();
+                        _selectedSequence = null;
+                        _selectedInstructionIndex = -1;
+                        Repaint();
+                    }
+                }
+                GUI.backgroundColor = prevBg;
+            }
         }
 
         // -------------------------------------------------------------------
@@ -574,20 +856,22 @@ namespace CosmicShore.DialogueSystem.Editor
         {
             EditorUtility.SetDirty(obj);
             _hasUnsavedChanges = true;
+            Repaint();
         }
 
-        private static void DrawSectionLabel(string text)
+        private static void DrawRoundedRect(Rect rect, Color color, float radius)
         {
-            GUILayout.Space(4);
-            Rect r = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.boldLabel,
-                GUILayout.Height(22), GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(r, new Color(0.16f, 0.18f, 0.22f, 0.8f));
-            var style = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 11,
-                normal = { textColor = new Color(0.7f, 0.8f, 0.9f) }
-            };
-            EditorGUI.LabelField(new Rect(r.x + 8, r.y, r.width - 8, r.height), text, style);
+            // IMGUI doesn't have built-in rounded rects, so we approximate
+            // Main body
+            EditorGUI.DrawRect(new Rect(rect.x + radius, rect.y, rect.width - radius * 2, rect.height), color);
+            // Left/right strips
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y + radius, radius, rect.height - radius * 2), color);
+            EditorGUI.DrawRect(new Rect(rect.xMax - radius, rect.y + radius, radius, rect.height - radius * 2), color);
+            // Corner fills (small squares — not truly rounded but close enough for editor UI)
+            EditorGUI.DrawRect(new Rect(rect.x + 1, rect.y + 1, radius - 1, radius - 1), color);
+            EditorGUI.DrawRect(new Rect(rect.xMax - radius, rect.y + 1, radius - 1, radius - 1), color);
+            EditorGUI.DrawRect(new Rect(rect.x + 1, rect.yMax - radius, radius - 1, radius - 1), color);
+            EditorGUI.DrawRect(new Rect(rect.xMax - radius, rect.yMax - radius, radius - 1, radius - 1), color);
         }
     }
 }

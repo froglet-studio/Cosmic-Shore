@@ -1,3 +1,4 @@
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.DialogueSystem.Models
@@ -9,6 +10,13 @@ namespace CosmicShore.DialogueSystem.Models
     [System.Serializable]
     public class TutorialInstruction
     {
+        [Header("Trigger")]
+        [Tooltip("If set, this instruction waits for this SOAP event before displaying. If null, auto-plays after previous.")]
+        public ScriptableEventNoParam waitForEvent;
+
+        [Tooltip("Short label shown in the flowchart preview.")]
+        public string stepLabel;
+
         [Header("Dialogue")]
         [Tooltip("Text shown to the player, animated as a typewriter.")]
         [TextArea(2, 5)] public string dialogueText;
