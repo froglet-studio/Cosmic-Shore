@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
-            gameData.OnMiniGameEnd += OnGameEnded;
+            gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
 
             if (debugLogging)
                 CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
@@ -76,7 +76,7 @@ namespace CosmicShore.Gameplay
             if (gameData == null) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
-            gameData.OnMiniGameEnd -= OnGameEnded;
+            gameData.OnMiniGameEnd.OnRaised -= OnGameEnded;
         }
 
         void OnTurnStarted()

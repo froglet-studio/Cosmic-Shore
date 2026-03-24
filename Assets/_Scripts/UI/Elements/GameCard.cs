@@ -72,7 +72,7 @@ namespace CosmicShore.UI
 
             FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType);
 
-            if (game.CallToActionTargetType == Systems.CTA.CallToActionTargetType.PlayGameFreestyle)
+            if (game.CallToActionTargetType == CallToActionTargetType.PlayGameFreestyle)
             {
                 GetComponent<Button>().onClick.AddListener(delegate { FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType); });
             }

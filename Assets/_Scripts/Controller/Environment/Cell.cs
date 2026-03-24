@@ -1,12 +1,13 @@
 // Cell.cs
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Data;
+using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
 using Random = UnityEngine.Random;
-using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     public class Cell : MonoBehaviour
@@ -226,14 +227,6 @@ namespace CosmicShore.Gameplay
             if (cellConfigData.NucleusPrefab == null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
-        }
-
-        void SpawnCytoplasm()
-        {
-            if (cellConfigData.CytoplasmPrefab == null) return;
-
-            var snowChanger = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
-            snowChanger.Initialize();
         }
 
         void ResetVolumes()

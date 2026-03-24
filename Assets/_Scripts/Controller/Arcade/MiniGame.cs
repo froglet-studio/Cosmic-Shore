@@ -202,9 +202,7 @@ namespace CosmicShore.Gameplay
                 IPlayer.InitializeData data = new()
                 {
                     vesselClass = playerShipTypeInitialized ? PlayerVesselType : defaultPlayerVesselType,
-                    domain = PlayerTeams[i],
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
-                    // PlayerUUID = PlayerNames[i]
                 };
                 
                 // TODO - Player spawning and initializations are done using PlayerSpawner now!

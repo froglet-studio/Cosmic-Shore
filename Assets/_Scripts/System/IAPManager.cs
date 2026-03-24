@@ -17,6 +17,8 @@ namespace CosmicShore.Core
     /// </summary>
     public class IAPManager : MonoBehaviour
     {
+        public static IAPManager Instance { get; private set; }
+
         [Header("IAP Configuration")]
         [Tooltip("Product ID for the support/donation purchase")]
         [SerializeField] private string supportProductId = "com.cosmicshore.support_tier1";
@@ -25,6 +27,16 @@ namespace CosmicShore.Core
         public bool IsInitialized { get; private set; }
 
         public event Action<bool> OnPurchaseComplete;
+
+        void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         void Start()
         {

@@ -198,11 +198,11 @@ namespace CosmicShore.Gameplay
             if (gameList != null)
             {
                 var game = FindGameByMode(gameData.GameMode);
-                if (game != null && game.Captains is { Count: > 0 })
+                if (game != null && game.Vessels is { Count: > 0 })
                 {
-                    var captain = game.Captains[Random.Range(0, game.Captains.Count)];
-                    if (captain?.Ship != null && vesselPrefabContainer.TryGetShipPrefab(captain.Ship.Class, out _))
-                        return captain.Ship.Class;
+                    var vessel = game.Vessels[Random.Range(0, game.Vessels.Count)];
+                    if (vessel != null && vesselPrefabContainer.TryGetShipPrefab(vessel.Class, out _))
+                        return vessel.Class;
                 }
             }
             return VesselClassType.Sparrow;

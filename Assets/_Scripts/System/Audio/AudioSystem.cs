@@ -56,6 +56,8 @@ namespace CosmicShore.Core
     [DefaultExecutionOrder(-1)]
     public class AudioSystem : MonoBehaviour
     {
+        public static AudioSystem Instance { get; private set; }
+
         #region Fields
         [Inject] GameSetting gameSetting;
 
@@ -117,6 +119,16 @@ namespace CosmicShore.Core
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
         #endregion
+
+        void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         void Start()
         {

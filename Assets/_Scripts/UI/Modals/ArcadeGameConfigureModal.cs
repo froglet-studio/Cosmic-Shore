@@ -30,6 +30,9 @@ namespace CosmicShore.UI
         [SerializeField] private GameDataSO gameData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
+        [Header("Host / Party Data")]
+        [SerializeField] private HostConnectionDataSO hostConnectionData;
+
         [Header("External Views")]
         [SerializeField] private ArcadeExploreView arcadeExploreView;
 
@@ -363,6 +366,16 @@ namespace CosmicShore.UI
         {
             SetScreenActive(null, gameDetailView);
             RefreshShipSummaryView();
+        }
+
+        void ShowVesselSelectionScreen()
+        {
+            ShowGameDetailScreen();
+        }
+
+        void ShowSquadMateSelectionScreen()
+        {
+            ShowGameDetailScreen();
         }
 
         #endregion

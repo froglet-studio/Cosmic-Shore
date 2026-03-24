@@ -8,7 +8,6 @@ using CosmicShore.Utility;
 public class PlayFabProductGenerator : EditorWindow
 {
     SO_Vessel selectedShip;
-    SO_Captain selectedCaptain;
     static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
     //static readonly string TitleId = "5B7B3";
