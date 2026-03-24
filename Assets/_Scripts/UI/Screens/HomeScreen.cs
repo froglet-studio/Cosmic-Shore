@@ -1,5 +1,3 @@
-using CosmicShore.ScriptableObjects;
-using CosmicShore.UI;
 using TMPro;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -9,7 +7,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Provides high level functionality to panels in the main menu scene.
-    /// Profile display is handled by a ProfileDisplayWidget component on the same or child GameObject.
+    /// Player name display driven by PlayerDataService.OnProfileChanged.
     /// </summary>
     public class HomeScreen : MonoBehaviour
     {
@@ -18,7 +16,7 @@ namespace CosmicShore.UI
         [SerializeField] GameObject NavBar;
         [SerializeField] TMP_Text userNameText;
 
-        [Inject] AuthenticationDataVariable authenticationDataVariable;
+        [Inject] private PlayerDataService playerDataService;
 
         enum PlayerPrefKeys
         {
@@ -29,11 +27,12 @@ namespace CosmicShore.UI
         {
             CSDebug.Log("MainMenu.cs start");
 
-            if (authenticationDataVariable != null)
+            if (playerDataService != null)
             {
-                var userName = authenticationDataVariable.Value.UserName;
-                userName.OnValueChanged += OnUserNameChanged;
-                OnUserNameChanged(userName.Value);
+                playerDataService.OnProfileChanged += OnProfileChanged;
+
+                if (playerDataService.CurrentProfile != null)
+                    OnProfileChanged(playerDataService.CurrentProfile);
             }
 
             if (FirstAppLaunchExperience())
@@ -81,16 +80,16 @@ namespace CosmicShore.UI
             return false;
         }
 
-        void OnUserNameChanged(string newName)
+        void OnProfileChanged(PlayerProfileData profile)
         {
-            if (userNameText != null)
-                userNameText.text = newName;
+            if (userNameText != null && profile != null)
+                userNameText.text = profile.displayName;
         }
 
-        void OnDestroy()
+        void OnDisable()
         {
-            if (authenticationDataVariable != null)
-                authenticationDataVariable.Value.UserName.OnValueChanged -= OnUserNameChanged;
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= OnProfileChanged;
         }
     }
 }
