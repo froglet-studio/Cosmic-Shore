@@ -107,7 +107,7 @@ namespace CosmicShore.App.UI.Views
         {
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             Loadout loadout = LoadoutSystem.GetActiveLoadout();
-            Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
+            Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, loadout.IsMultiplayer, false);
         }
 
         // Sets ShipTypes
@@ -260,6 +260,7 @@ namespace CosmicShore.App.UI.Views
             loadout.PlayerCount = activePlayerCount;
             loadout.VesselType = activeVesselType;
             loadout.GameMode = activeGameMode;
+            loadout.IsMultiplayer = AllGames.Games[selectedGameIndex].IsMultiplayer && activePlayerCount > 1;
 
             int idx = LoadoutSystem.GetActiveLoadoutIndex();
 

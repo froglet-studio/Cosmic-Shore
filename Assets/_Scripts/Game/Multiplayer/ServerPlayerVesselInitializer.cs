@@ -279,8 +279,10 @@ namespace CosmicShore.Game
             if (aiPilot == null)
                 return;
 
-            // Determine if this game mode needs player-seeking behavior (Joust)
-            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
+            // Determine if this game mode needs player-seeking behavior
+            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust
+                                  || gameData.GameMode == GameModes.MultiplayerDogFight
+                                  || gameData.GameMode == GameModes.MultiplayerMissileDogFight;
 
             // Scale AI skill with intensity (0.25 per intensity level, capped at 1)
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);

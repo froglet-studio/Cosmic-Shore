@@ -21,3 +21,9 @@ MonoBehaviour:
     cinematic: {fileID: 11400000, guid: e64c16178285c594793e4e2fc140b0b9, type: 2}
   - sceneName: MinigameCrystalCaptureMultiplayer_Gameplay
     cinematic: {fileID: 11400000, guid: ef65347ab0f9f884bb5b09e4504bfd04, type: 2}
+  - sceneName: MinigameDragScouting
+    cinematic: {fileID: 11400000, guid: 6b53ca3d49e107944b5f7873372a4793, type: 2}
+  - sceneName: MinigameDogFight
+    cinematic: {fileID: 11400000, guid: 3abcd251f99e8c74dbb1289c3e8128de, type: 2}
+  - sceneName: MinigameMissileDogFight
+    cinematic: {fileID: 11400000, guid: 42d7d54a75507d84ba7496756033e7fe, type: 2}

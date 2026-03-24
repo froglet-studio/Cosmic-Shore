@@ -187,8 +187,9 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
-            // Freestyle is always available
-            if (mode == GameModes.Freestyle)
+            // Freestyle, Drag Scouting, and Dog Fight modes are always available
+            if (mode == GameModes.Freestyle || mode == GameModes.DragScouting
+                || mode == GameModes.MultiplayerDogFight || mode == GameModes.MultiplayerMissileDogFight)
                 return true;
 
             // First quest mode is always unlocked
@@ -431,6 +432,11 @@ namespace CosmicShore.Game.Progression
         /// </summary>
         public bool IsIntensityUnlocked(GameModes mode, int intensity)
         {
+            // Freestyle, Drag Scouting, and Dog Fight modes have all intensities available from the start
+            if (mode == GameModes.Freestyle || mode == GameModes.DragScouting
+                || mode == GameModes.MultiplayerDogFight || mode == GameModes.MultiplayerMissileDogFight)
+                return true;
+
             return intensity <= GetMaxUnlockedIntensity(mode);
         }
 

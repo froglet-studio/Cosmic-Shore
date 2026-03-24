@@ -299,6 +299,40 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+  - Delay: 0
+    _scriptableEvent: {fileID: 11400000, guid: 45c2c6e55c4ddad4290feb26964044ce, type: 2}
+    _response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Game.NetworkStatsManager, Assembly-CSharp
+          m_MethodName: ExecuteDogFightHit
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument:
+            m_BoolArgument: 0
+          m_CallState: 2
+  - Delay: 0
+    _scriptableEvent: {fileID: 11400000, guid: 46878604521e1c84f9c2576784453a77, type: 2}
+    _response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Game.NetworkStatsManager, Assembly-CSharp
+          m_MethodName: ExecuteDogFightHit
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument:
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!114 &8036904541987693016
 MonoBehaviour:
   m_ObjectHideFlags: 0

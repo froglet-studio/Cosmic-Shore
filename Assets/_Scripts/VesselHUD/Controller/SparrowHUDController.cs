@@ -58,6 +58,14 @@ namespace CosmicShore.Game
             }
 
             if (fireGunExecutor == null) return;
+
+            // In Dog Fight mode, missiles are disabled — hide the icon entirely
+            if (gameData && gameData.GameMode == GameModes.MultiplayerDogFight)
+            {
+                view.HideMissileIcon();
+                return;
+            }
+
             fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
             _initialAmmoRoutine = StartCoroutine(InitialAmmoPaintRoutine());
         }

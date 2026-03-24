@@ -8,6 +8,8 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int collisionsNeeded;
         public int CollisionsNeeded => collisionsNeeded;
 
+        public void SetCollisionsNeeded(int value) => collisionsNeeded = value;
+
         IRoundStats ownStats;
 
         public override void StartMonitor()

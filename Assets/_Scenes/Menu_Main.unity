@@ -14559,7 +14559,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
       propertyPath: _items.Array.size
-      value: 6
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
       propertyPath: '_items.Array.data[3]'
@@ -14575,6 +14575,11 @@ PrefabInstance:
       propertyPath: '_items.Array.data[5]'
       value: 
       objectReference: {fileID: 1962929663241759852, guid: bd0ed2313b0c31841835230bedeaa90d,
+        type: 3}
+    - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
+      propertyPath: '_items.Array.data[6]'
+      value: 
+      objectReference: {fileID: 2173894828075591833, guid: 52d52803d2bd0384093e4705bcf57ed1,
         type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -94149,6 +94154,7 @@ MonoBehaviour:
   RespectInventoryForGameSelection: 0
   selectedVesselClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!224 &175867981159570580
 RectTransform:
   m_ObjectHideFlags: 0

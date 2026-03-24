@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         [SerializeField] private ScorePopup scorePopup;
 
         [Tooltip("Used to check the active game mode for score popup filtering.")]
-        [SerializeField] private GameDataSO gameData;
+        [SerializeField] protected GameDataSO gameData;
 
         [Tooltip("Domain color palette for score popup text color.")]
         [SerializeField] private DomainColorPaletteSO domainColorPalette;
@@ -133,6 +133,14 @@ namespace CosmicShore.Game
                     _unsubscribeScoreAction = () => roundStats.OnJoustCollisionChanged -= onJoust;
                     break;
 
+                case GameModes.MultiplayerDogFight:
+                case GameModes.MultiplayerMissileDogFight:
+                    _previousIntScore = roundStats.DogFightHits;
+                    Action<IRoundStats> onDogFightHit = HandleDogFightHitChanged;
+                    roundStats.OnDogFightHitChanged += onDogFightHit;
+                    _unsubscribeScoreAction = () => roundStats.OnDogFightHitChanged -= onDogFightHit;
+                    break;
+
                 case GameModes.HexRace:
                     _previousIntScore = roundStats.OmniCrystalsCollected;
                     Action<IRoundStats> onCrystal = HandleCrystalCollectedChanged;
@@ -174,6 +182,18 @@ namespace CosmicShore.Game
             if (!scorePopup) return;
 
             int current = stats.JoustCollisions;
+            int delta = current - _previousIntScore;
+            _previousIntScore = current;
+
+            if (delta > 0)
+                scorePopup.ShowScorePoint(delta);
+        }
+
+        private void HandleDogFightHitChanged(IRoundStats stats)
+        {
+            if (!scorePopup) return;
+
+            int current = stats.DogFightHits;
             int delta = current - _previousIntScore;
             _previousIntScore = current;
 
