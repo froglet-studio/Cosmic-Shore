@@ -97,7 +97,8 @@ namespace CosmicShore.Core
             if (Instance == this)
                 Instance = null;
 
-            if (AuthenticationService.Instance != null)
+            if (UnityServices.State == ServicesInitializationState.Initialized &&
+                AuthenticationService.Instance != null)
                 AuthenticationService.Instance.SignedIn -= HandleSignedInEvent;
         }
 
@@ -105,13 +106,14 @@ namespace CosmicShore.Core
         {
             try
             {
-                if (AuthenticationService.Instance != null)
-                    AuthenticationService.Instance.SignedIn += HandleSignedInEvent;
+                // UGS singletons (AuthenticationService.Instance) are only available
+                // after UnityServices.InitializeAsync() completes. Wait if needed.
+                while (UnityServices.State != ServicesInitializationState.Initialized)
+                    await Task.Yield();
 
-                // Only initialize eagerly if Unity Services are fully ready
-                if (AuthenticationService.Instance != null &&
-                    AuthenticationService.Instance.IsSignedIn &&
-                    UnityServices.State == ServicesInitializationState.Initialized)
+                AuthenticationService.Instance.SignedIn += HandleSignedInEvent;
+
+                if (AuthenticationService.Instance.IsSignedIn)
                     await InitializeAsync();
             }
             catch (Exception e)
