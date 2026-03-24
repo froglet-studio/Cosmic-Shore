@@ -237,6 +237,11 @@ namespace CosmicShore.UI
             return CurrentProfile?.crystalBalance ?? 0;
         }
 
+        public int GetXP()
+        {
+            return CurrentProfile?.xp ?? 0;
+        }
+
         public int AddCrystals(int amount)
         {
             if (CurrentProfile == null || amount <= 0) return GetCrystalBalance();
@@ -310,7 +315,7 @@ namespace CosmicShore.UI
         void ApplyPendingDebugCrystals()
         {
 #if UNITY_EDITOR
-            int pending = Utility.Tools.LogControlWindow.ConsumePendingDebugCrystals();
+            int pending = LogControlWindow.ConsumePendingDebugCrystals();
             if (pending > 0 && CurrentProfile != null)
             {
                 CurrentProfile.crystalBalance += pending;

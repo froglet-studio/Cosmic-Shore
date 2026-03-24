@@ -44,7 +44,7 @@ namespace CosmicShore.Utility
         protected virtual void OnEnable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated += OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
 
             if (crystalRewardRoot)
                 crystalRewardRoot.SetActive(false);
@@ -61,7 +61,7 @@ namespace CosmicShore.Utility
         protected virtual void OnDisable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnIntensityUnlocked -= HandleIntensityUnlocked;

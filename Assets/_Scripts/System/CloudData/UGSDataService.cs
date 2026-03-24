@@ -7,6 +7,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using CosmicShore.Utility;
+using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
 
@@ -96,21 +97,20 @@ namespace CosmicShore.Core
             if (Instance == this)
                 Instance = null;
 
-            var auth = AuthenticationController.Instance;
-            if (auth != null)
-                auth.OnSignedIn -= HandleSignedIn;
+            if (AuthenticationService.Instance != null)
+                AuthenticationService.Instance.SignedIn -= HandleSignedInEvent;
         }
 
         async void Start()
         {
             try
             {
-                var auth = AuthenticationController.Instance;
-                if (auth != null)
-                    auth.OnSignedIn += HandleSignedIn;
+                if (AuthenticationService.Instance != null)
+                    AuthenticationService.Instance.SignedIn += HandleSignedInEvent;
 
                 // Only initialize eagerly if Unity Services are fully ready
-                if (auth != null && auth.IsSignedIn &&
+                if (AuthenticationService.Instance != null &&
+                    AuthenticationService.Instance.IsSignedIn &&
                     UnityServices.State == ServicesInitializationState.Initialized)
                     await InitializeAsync();
             }
@@ -120,7 +120,9 @@ namespace CosmicShore.Core
             }
         }
 
-        async void HandleSignedIn(string playerId)
+        void HandleSignedInEvent() => HandleSignedIn();
+
+        async void HandleSignedIn()
         {
             try
             {

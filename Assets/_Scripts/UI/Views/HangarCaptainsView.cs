@@ -56,14 +56,12 @@ namespace CosmicShore.UI
 
         void Start()
         {
-            if (_captainManager != null)
-                _captainManager.OnLoadCaptainData += NewCaptainData;
+            CaptainManager.OnLoadCaptainData += NewCaptainData;
         }
 
         void OnDisable()
         {
-            if (_captainManager != null)
-                _captainManager.OnLoadCaptainData -= NewCaptainData;
+            CaptainManager.OnLoadCaptainData -= NewCaptainData;
         }
 
         void NewCaptainData()
