@@ -25,7 +25,7 @@ namespace CosmicShore.Game.Arcade
 
         [Header("DartBoard Distribution")]
         [Tooltip("Scale factor for DartBoards spawned along the track (1 = full size).")]
-        [SerializeField] float dartBoardScaleFactor = 0.2f;
+        [SerializeField] float dartBoardScaleFactor = 0.5f;
 
         [Header("Race Rules")]
         [Tooltip("Volume of hostile prisms that must be destroyed to win. If 0, uses networked value.")]
