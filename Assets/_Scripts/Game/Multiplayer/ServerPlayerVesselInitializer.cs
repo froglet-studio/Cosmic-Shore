@@ -378,7 +378,8 @@ namespace CosmicShore.Game
                 return;
             }
 
-            player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+            // Use the player's preferred domain (from UI selection) if set, otherwise random
+            player.NetDomain.Value = DomainAssigner.GetPreferredDomain(gameData.PreferredDomain, gameData.GameMode);
             player.NetIsAI.Value = false;
 
             // Spawn initial vessel if type already chosen

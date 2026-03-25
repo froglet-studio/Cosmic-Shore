@@ -58,6 +58,12 @@ namespace CosmicShore.Soap
         // Game Config / State
         public string SceneName;
         public GameModes GameMode;
+
+        /// <summary>
+        /// Domain the local player chose from the config UI.
+        /// Domains.Unassigned means "random" (use DomainAssigner as before).
+        /// </summary>
+        public Domains PreferredDomain = Domains.Unassigned;
         /// <summary>
         /// Plain int copy of SelectedIntensity that survives Soap's scene-load reset.
         /// Set by Arcade.cs alongside SelectedIntensity.Value. Read at game end.
@@ -209,9 +215,10 @@ namespace CosmicShore.Soap
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             PlayedIntensity = 1;
+            PreferredDomain = Domains.Unassigned;
 
             ResetRuntimeData();
-            
+
             DomainAssigner.Initialize();
         }
 

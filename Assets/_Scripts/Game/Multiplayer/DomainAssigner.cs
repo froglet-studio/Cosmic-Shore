@@ -47,6 +47,29 @@ public static class DomainAssigner
     }
 
     /// <summary>
+    /// Assigns a specific preferred domain to a player, removing it from the
+    /// available pool so no other player receives the same domain.
+    /// Returns the preferred domain on success, or falls back to a random
+    /// available domain if the preferred one was already taken.
+    /// </summary>
+    public static Domains GetPreferredDomain(Domains preferred, GameModes gameMode)
+    {
+        if (preferred == Domains.Unassigned || preferred == Domains.None)
+            return GetDomainsByGameModes(gameMode);
+
+        int idx = availableDomains.IndexOf(preferred);
+        if (idx >= 0)
+        {
+            availableDomains.RemoveAt(idx);
+            return preferred;
+        }
+
+        // Preferred domain was already taken — fall back to random
+        CSDebug.LogWarning($"[DomainAssigner] Preferred domain {preferred} unavailable, assigning random.");
+        return GetDomainsByGameModes(gameMode);
+    }
+
+    /// <summary>
     /// Clears all assigned teams (use when restarting or resetting game).
     /// </summary>
     public static void Initialize()

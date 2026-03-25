@@ -44,9 +44,15 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private GameObject configurationDetailView; // Screen 1
         [SerializeField] private GameObject gameDetailView;          // Screen 2
 
-        [Header("Screen 1 – Configuration Controls")]
-        [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
-        [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
+        [Header("Screen 1 – Intensity Controls")]
+        [SerializeField] private List<IntensitySelectButton> intensityButtons = new(4);
+
+        [Header("Screen 1 – Player Count Stepper")]
+        [SerializeField] private Button playerCountDecrementButton;
+        [SerializeField] private Button playerCountIncrementButton;
+        [SerializeField] private TMP_Text playerCountValueText;
+
+        [Header("Screen 1 – Teams")]
         [SerializeField] private TMP_Text teamsValueText;
 
         [Header("Screen 2 – Selected Vessel Summary")]
@@ -67,8 +73,22 @@ namespace CosmicShore.App.UI.Modals
         [Tooltip("Button to cycle to the next vessel. Disabled when only one vessel is available.")]
         [SerializeField] private Button nextShipButton;
 
+        [Header("Screen 2 – Domain (Team) Selection")]
+        [SerializeField] private Button domainRandomButton;
+        [SerializeField] private Button domainGoldButton;
+        [SerializeField] private Button domainJadeButton;
+        [SerializeField] private Button domainRubyButton;
+
+        [Tooltip("Normal color for unselected domain buttons.")]
+        [SerializeField] private Color domainNormalColor = Color.white;
+        [Tooltip("Highlight color for the selected domain button.")]
+        [SerializeField] private Color domainSelectedColor = new(0f, 0.9f, 0.9f, 1f);
+
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
+
+        // Hard cap — the game does not support 4 players yet
+        const int MaxSupportedPlayers = 3;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
@@ -95,8 +115,16 @@ namespace CosmicShore.App.UI.Modals
                 intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
             }
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect += HandlePlayerCountSelected;
+            if (playerCountDecrementButton)
+                playerCountDecrementButton.onClick.AddListener(OnPlayerCountDecrement);
+            if (playerCountIncrementButton)
+                playerCountIncrementButton.onClick.AddListener(OnPlayerCountIncrement);
+
+            // Domain buttons
+            if (domainRandomButton) domainRandomButton.onClick.AddListener(() => HandleDomainSelected(Domains.Unassigned));
+            if (domainGoldButton)   domainGoldButton.onClick.AddListener(() => HandleDomainSelected(Domains.Gold));
+            if (domainJadeButton)   domainJadeButton.onClick.AddListener(() => HandleDomainSelected(Domains.Jade));
+            if (domainRubyButton)   domainRubyButton.onClick.AddListener(() => HandleDomainSelected(Domains.Ruby));
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
@@ -117,8 +145,15 @@ namespace CosmicShore.App.UI.Modals
                 intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
             }
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect -= HandlePlayerCountSelected;
+            if (playerCountDecrementButton)
+                playerCountDecrementButton.onClick.RemoveListener(OnPlayerCountDecrement);
+            if (playerCountIncrementButton)
+                playerCountIncrementButton.onClick.RemoveListener(OnPlayerCountIncrement);
+
+            if (domainRandomButton) domainRandomButton.onClick.RemoveAllListeners();
+            if (domainGoldButton)   domainGoldButton.onClick.RemoveAllListeners();
+            if (domainJadeButton)   domainJadeButton.onClick.RemoveAllListeners();
+            if (domainRubyButton)   domainRubyButton.onClick.RemoveAllListeners();
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -148,6 +183,7 @@ namespace CosmicShore.App.UI.Modals
             InitializeGameMetaView(selectedGame);
             InitializeScreen1Controls(selectedGame);
             InitializeDefaultShipFromAvailable();
+            InitializeDomainSelection();
 
             ShowConfigurationScreen();
             RaiseConfigChanged();
@@ -223,22 +259,17 @@ namespace CosmicShore.App.UI.Modals
                 button.SetSelected(active && level == config.Intensity);
             }
 
-            // Player count
-            for (int i = 0; i < playerCountButtons.Count; i++)
-            {
-                var button = playerCountButtons[i];
-                if (!button) continue;
-
-                int count = i + 1;
-                button.SetPlayerCount(count);
-
-                bool active = count >= game.MinPlayers && count <= game.MaxPlayers;
-                button.SetActive(active);
-                button.SetSelected(count == config.PlayerCount);
-            }
+            // Player count stepper
+            RefreshPlayerCountStepper();
 
             if (teamsValueText)
                 teamsValueText.text = "1";
+        }
+
+        void InitializeDomainSelection()
+        {
+            config.SelectedDomain = Domains.Unassigned;
+            RefreshDomainButtons();
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -262,7 +293,7 @@ namespace CosmicShore.App.UI.Modals
             if (nextShipButton)
                 nextShipButton.gameObject.SetActive(canCycle);
         }
-        
+
         void InitializeDefaultShipFromAvailable()
         {
             if (_availableShips.Count == 0)
@@ -354,23 +385,6 @@ namespace CosmicShore.App.UI.Modals
             RaiseConfigChanged();
         }
 
-        void HandlePlayerCountSelected(int playerCount)
-        {
-            if (_selectedGame == null || config == null) return;
-
-            playerCount        = Mathf.Clamp(playerCount, _selectedGame.MinPlayers, _selectedGame.MaxPlayers);
-            config.PlayerCount = playerCount;
-
-            foreach (var button in playerCountButtons)
-            {
-                if (!button) continue;
-                button.SetSelected(button.Count == playerCount);
-            }
-
-            SyncGameDataConfig();
-            RaiseConfigChanged();
-        }
-
         void HandleLockedIntensitySelected(int intensity)
         {
             OnLockedIntensityClicked?.Invoke(intensity);
@@ -427,6 +441,93 @@ namespace CosmicShore.App.UI.Modals
         void RaiseConfigChanged()
         {
             configChangedEvent?.Raise();
+        }
+
+        #endregion
+
+        #region Player count stepper
+
+        public void OnPlayerCountIncrement()
+        {
+            if (_selectedGame == null || config == null) return;
+
+            int max = Mathf.Min(_selectedGame.MaxPlayers, MaxSupportedPlayers);
+            int next = Mathf.Min(config.PlayerCount + 1, max);
+            SetPlayerCount(next);
+        }
+
+        public void OnPlayerCountDecrement()
+        {
+            if (_selectedGame == null || config == null) return;
+
+            int next = Mathf.Max(config.PlayerCount - 1, _selectedGame.MinPlayers);
+            SetPlayerCount(next);
+        }
+
+        void SetPlayerCount(int playerCount)
+        {
+            if (config.PlayerCount == playerCount) return;
+
+            config.PlayerCount = playerCount;
+            RefreshPlayerCountStepper();
+            SyncGameDataConfig();
+            RaiseConfigChanged();
+        }
+
+        void RefreshPlayerCountStepper()
+        {
+            if (playerCountValueText)
+                playerCountValueText.text = config.PlayerCount.ToString();
+
+            if (_selectedGame == null) return;
+
+            int max = Mathf.Min(_selectedGame.MaxPlayers, MaxSupportedPlayers);
+
+            if (playerCountDecrementButton)
+                playerCountDecrementButton.interactable = config.PlayerCount > _selectedGame.MinPlayers;
+
+            if (playerCountIncrementButton)
+                playerCountIncrementButton.interactable = config.PlayerCount < max;
+        }
+
+        #endregion
+
+        #region Domain (team) selection
+
+        void HandleDomainSelected(Domains domain)
+        {
+            if (config == null) return;
+
+            config.SelectedDomain = domain;
+            SyncGameDataDomain();
+            RefreshDomainButtons();
+            RaiseConfigChanged();
+        }
+
+        void RefreshDomainButtons()
+        {
+            var selected = config ? config.SelectedDomain : Domains.Unassigned;
+
+            SetDomainButtonColor(domainRandomButton, selected == Domains.Unassigned);
+            SetDomainButtonColor(domainGoldButton,   selected == Domains.Gold);
+            SetDomainButtonColor(domainJadeButton,    selected == Domains.Jade);
+            SetDomainButtonColor(domainRubyButton,    selected == Domains.Ruby);
+        }
+
+        void SetDomainButtonColor(Button button, bool isSelected)
+        {
+            if (!button) return;
+
+            var colors = button.colors;
+            colors.normalColor = isSelected ? domainSelectedColor : domainNormalColor;
+            colors.selectedColor = isSelected ? domainSelectedColor : domainNormalColor;
+            button.colors = colors;
+        }
+
+        void SyncGameDataDomain()
+        {
+            if (!gameData) return;
+            gameData.PreferredDomain = config ? config.SelectedDomain : Domains.Unassigned;
         }
 
         #endregion
