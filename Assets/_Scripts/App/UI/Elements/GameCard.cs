@@ -68,6 +68,8 @@ namespace CosmicShore.App.UI.Elements
         void UpdateCardView()
         {
             SO_ArcadeGame game = AllGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
+            if (game == null) return;
+
             GameTitle.text = game.DisplayName;
             BackgroundImage.sprite = game.CardBackground;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
@@ -78,7 +80,6 @@ namespace CosmicShore.App.UI.Elements
             {
                 GetComponent<Button>().onClick.AddListener(delegate { FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType); });
             }
-
         }
 
         public void ToggleFavorite()

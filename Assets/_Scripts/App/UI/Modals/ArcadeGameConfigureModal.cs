@@ -4,6 +4,8 @@ using System.Linq;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
+using CosmicShore.App.Profile;
+using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.ToastNotification;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Game.Progression;
@@ -74,15 +76,8 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private Button nextShipButton;
 
         [Header("Screen 2 – Domain (Team) Selection")]
-        [SerializeField] private Button domainRandomButton;
-        [SerializeField] private Button domainGoldButton;
-        [SerializeField] private Button domainJadeButton;
-        [SerializeField] private Button domainRubyButton;
-
-        [Tooltip("Normal color for unselected domain buttons.")]
-        [SerializeField] private Color domainNormalColor = Color.white;
-        [Tooltip("Highlight color for the selected domain button.")]
-        [SerializeField] private Color domainSelectedColor = new(0f, 0.9f, 0.9f, 1f);
+        [Tooltip("One TeamInfoData per selectable team. First entry should be the RANDOM option (Domain = Unassigned).")]
+        [SerializeField] private List<TeamInfoData> teamInfoItems = new();
 
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
@@ -120,11 +115,13 @@ namespace CosmicShore.App.UI.Modals
             if (playerCountIncrementButton)
                 playerCountIncrementButton.onClick.AddListener(OnPlayerCountIncrement);
 
-            // Domain buttons
-            if (domainRandomButton) domainRandomButton.onClick.AddListener(() => HandleDomainSelected(Domains.Unassigned));
-            if (domainGoldButton)   domainGoldButton.onClick.AddListener(() => HandleDomainSelected(Domains.Gold));
-            if (domainJadeButton)   domainJadeButton.onClick.AddListener(() => HandleDomainSelected(Domains.Jade));
-            if (domainRubyButton)   domainRubyButton.onClick.AddListener(() => HandleDomainSelected(Domains.Ruby));
+            // Domain / team buttons
+            foreach (var item in teamInfoItems)
+            {
+                if (!item || !item.Button) continue;
+                var captured = item.Domain;
+                item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
+            }
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
@@ -150,10 +147,11 @@ namespace CosmicShore.App.UI.Modals
             if (playerCountIncrementButton)
                 playerCountIncrementButton.onClick.RemoveListener(OnPlayerCountIncrement);
 
-            if (domainRandomButton) domainRandomButton.onClick.RemoveAllListeners();
-            if (domainGoldButton)   domainGoldButton.onClick.RemoveAllListeners();
-            if (domainJadeButton)   domainJadeButton.onClick.RemoveAllListeners();
-            if (domainRubyButton)   domainRubyButton.onClick.RemoveAllListeners();
+            foreach (var item in teamInfoItems)
+            {
+                if (item && item.Button)
+                    item.Button.onClick.RemoveAllListeners();
+            }
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -508,20 +506,18 @@ namespace CosmicShore.App.UI.Modals
         {
             var selected = config ? config.SelectedDomain : Domains.Unassigned;
 
-            SetDomainButtonColor(domainRandomButton, selected == Domains.Unassigned);
-            SetDomainButtonColor(domainGoldButton,   selected == Domains.Gold);
-            SetDomainButtonColor(domainJadeButton,    selected == Domains.Jade);
-            SetDomainButtonColor(domainRubyButton,    selected == Domains.Ruby);
-        }
+            // Resolve the player's current avatar sprite once
+            Sprite avatarSprite = null;
+            var dataService = PlayerDataService.Instance;
+            if (dataService != null)
+                avatarSprite = dataService.GetAvatarSprite(dataService.CurrentProfile.avatarId);
 
-        void SetDomainButtonColor(Button button, bool isSelected)
-        {
-            if (!button) return;
-
-            var colors = button.colors;
-            colors.normalColor = isSelected ? domainSelectedColor : domainNormalColor;
-            colors.selectedColor = isSelected ? domainSelectedColor : domainNormalColor;
-            button.colors = colors;
+            foreach (var item in teamInfoItems)
+            {
+                if (!item) continue;
+                item.SetSelected(item.Domain == selected);
+                item.SetAvatarSprite(avatarSprite);
+            }
         }
 
         void SyncGameDataDomain()
