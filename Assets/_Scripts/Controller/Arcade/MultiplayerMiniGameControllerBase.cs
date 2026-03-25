@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
 using Unity.Collections;
@@ -28,6 +29,19 @@ namespace CosmicShore.Gameplay
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised += SubscribeToSessionEvents;
+
+                // Sync game config to all clients now that we're in the game scene.
+                // Previously this was done by SceneLoader via ClientRpc before scene load,
+                // but SceneLoader is now a plain MonoBehaviour (no RPCs).
+                SyncGameConfigToClients_ClientRpc(
+                    gameData.SceneName,
+                    (int)gameData.GameMode,
+                    gameData.IsMultiplayerMode,
+                    (int)gameData.selectedVesselClass.Value,
+                    gameData.SelectedIntensity.Value,
+                    gameData.SelectedPlayerCount.Value,
+                    gameData.RequestedAIBackfillCount
+                );
             }
 
             InitializeAfterDelay().Forget();
@@ -361,6 +375,29 @@ namespace CosmicShore.Gameplay
                 localScoreboard.ShowRematchDeclined(name);
             else
                 CSDebug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch declined.");
+        }
+
+        // ---------------- Game Config Sync ----------------
+
+        /// <summary>
+        /// Syncs the host's game configuration to all clients in the game scene.
+        /// Called by OnNetworkSpawn on the server so clients have correct GameDataSO
+        /// values (intensity, player count, AI backfill, etc.) before initialization.
+        /// </summary>
+        [ClientRpc]
+        void SyncGameConfigToClients_ClientRpc(
+            string sceneName, int gameMode, bool isMultiplayer,
+            int vesselClass, int intensity, int playerCount, int aiBackfillCount)
+        {
+            if (IsServer) return;
+
+            gameData.SceneName = sceneName;
+            gameData.GameMode = (GameModes)gameMode;
+            gameData.IsMultiplayerMode = isMultiplayer;
+            gameData.selectedVesselClass.Value = (VesselClassType)vesselClass;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.SelectedPlayerCount.Value = playerCount;
+            gameData.RequestedAIBackfillCount = aiBackfillCount;
         }
     }
 }
