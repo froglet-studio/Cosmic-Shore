@@ -42,17 +42,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff4ad87cf2ae84a48a72dfbaf3ee9269, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   subdivisions: 4
   radius: 4000
   capsuleMesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
   capsuleScale: {x: 48, y: 120, z: 48}
   membraneMaterial: {fileID: 2100000, guid: 4f44fa5c7514a2c45b5af7f45bc51acd, type: 2}
   renderingLayerMask: 1
-  placementJitter: 0.15
-  radialJitter: 0.05
-  seed: 42
-  noiseFrequency: 0.6
-  noiseAmplitude: 160
-  pulseSpeed: 0.4
