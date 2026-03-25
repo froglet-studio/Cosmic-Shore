@@ -51,7 +51,6 @@ namespace CosmicShore.Soap
         public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
-        public SO_Captain PlayerCaptain;
         public ResourceCollection ResourceCollection;
         public ThemeManagerDataContainerSO ThemeManagerData;
         
@@ -59,9 +58,13 @@ namespace CosmicShore.Soap
         // Game Config / State
         public string SceneName;
         public GameModes GameMode;
+        /// <summary>
+        /// Plain int copy of SelectedIntensity that survives Soap's scene-load reset.
+        /// Set by Arcade.cs alongside SelectedIntensity.Value. Read at game end.
+        /// </summary>
+        public int PlayedIntensity = 1;
         public string LocalPlayerDisplayName;
         public int LocalPlayerAvatarId;
-        public int LocalPlayerXP;
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
@@ -205,7 +208,8 @@ namespace CosmicShore.Soap
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
-            
+            PlayedIntensity = 1;
+
             ResetRuntimeData();
             
             DomainAssigner.Initialize();
@@ -518,10 +522,15 @@ namespace CosmicShore.Soap
         {
             if (_playerSpawnPoseList == null || _playerSpawnPoseList.Count == 0)
             {
+                if (SpawnPoses == null || SpawnPoses.Length == 0)
+                {
+                    CSDebug.LogError("[GameDataSO] SpawnPoses is null or empty — returning default pose at origin.");
+                    return new Pose(Vector3.zero, Quaternion.identity);
+                }
                 _playerSpawnPoseList = new List<Pose>(SpawnPoses.Length);
                 _playerSpawnPoseList = SpawnPoses.ToList();
             }
-            
+
             int index = UnityEngine.Random.Range(0, _playerSpawnPoseList.Count);
             var spawnPoint = _playerSpawnPoseList[index];
             _playerSpawnPoseList.RemoveAt(index);

@@ -28,12 +28,26 @@ namespace CosmicShore.Game
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
         GameObject membrane;
+        GameObject nucleus;
+
+        public float NucleusRadius => nucleus ? nucleus.transform.localScale.x : 0f;
+        public float MembraneRadius
+        {
+            get
+            {
+                if (!membrane) return 0f;
+                if (membrane.TryGetComponent<CapsuleMembrane>(out var cm))
+                    return cm.Radius;
+                return membrane.transform.localScale.x;
+            }
+        }
 
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
         readonly Dictionary<Domains, float> teamVolumes = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
+        SnowChanger spawnedCytoplasm;
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
@@ -69,6 +83,12 @@ namespace CosmicShore.Game
                     runtime.OnResetForReplay.OnRaised -= ResetCell;
             }
 
+            if (spawnedCytoplasm)
+            {
+                Destroy(spawnedCytoplasm.gameObject);
+                spawnedCytoplasm = null;
+            }
+
             StopSpawner();
             runtime?.ResetRuntimeData();
         }
@@ -81,6 +101,12 @@ namespace CosmicShore.Game
                 if (spawnedLifeForms[i]) Destroy(spawnedLifeForms[i]);
             }
             spawnedLifeForms.Clear();
+
+            if (spawnedCytoplasm)
+            {
+                Destroy(spawnedCytoplasm.gameObject);
+                spawnedCytoplasm = null;
+            }
 
             StopSpawner();
             AssignConfig();
@@ -97,6 +123,19 @@ namespace CosmicShore.Game
             runtime.EnsureCellStats(ID);
             var cs = runtime.CellStatsList[ID];
             cs.LifeFormsInCell = spawnedLifeForms.Count;
+        }
+
+        /// <summary>
+        /// Toggles visibility of all spawned lifeforms (flora/fauna).
+        /// Used to hide flora during shape drawing mode and restore after.
+        /// </summary>
+        public void SetLifeFormsActive(bool active)
+        {
+            for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
+            {
+                if (spawnedLifeForms[i])
+                    spawnedLifeForms[i].SetActive(active);
+            }
         }
 
         public void RegisterSpawnedObject(GameObject obj)
@@ -139,6 +178,7 @@ namespace CosmicShore.Game
             }
 
             ApplyModifiers();
+            SpawnCytoplasm();
             StartSpawnerForMode();
         }
 
@@ -183,7 +223,7 @@ namespace CosmicShore.Game
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
 
             if (cellConfigData.NucleusPrefab == null) return;
-            var nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
+            nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
         }
 
@@ -202,6 +242,15 @@ namespace CosmicShore.Game
 
             foreach (var modifier in cfg.CellModifiers)
                 modifier.Apply(this);
+        }
+
+        void SpawnCytoplasm()
+        {
+            if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
+
+            spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
+            spawnedCytoplasm.SetOrigin(transform.position);
+            spawnedCytoplasm.Initialize();
         }
 
         void StartSpawnerForMode()

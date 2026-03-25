@@ -1,5 +1,7 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
@@ -36,8 +38,14 @@ namespace CosmicShore.Game.UI
         [SerializeField] private PlayerScoreCard playerScoreCardPrefab;
         [SerializeField] private List<DomainColorDef> domainColors;
 
+        [Header("Animation (optional)")]
+        [SerializeField] private HUDAnimationSettingsSO animSettings;
+
         public Transform PlayerScoreContainer => playerScoreContainer;
         public PlayerScoreCard PlayerScoreCardPrefab => playerScoreCardPrefab;
+
+        private Tween _viewFadeTween;
+        private Tween _connectingFadeTween;
 
         private void Awake()
         {
@@ -54,6 +62,19 @@ namespace CosmicShore.Game.UI
             }
         }
 
+        private void Update()
+        {
+            // Gamepad A presses the Ready button when it's visible
+            if (Gamepad.current != null &&
+                Gamepad.current.buttonSouth.wasPressedThisFrame &&
+                readyButton != null &&
+                readyButton.gameObject.activeSelf &&
+                readyButton.interactable)
+            {
+                readyButton.onClick.Invoke();
+            }
+        }
+
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
         public void UpdateLifeFormCounter(string message) 
@@ -64,25 +85,71 @@ namespace CosmicShore.Game.UI
         
         public void ToggleView(bool active)
         {
-            canvasGroup.alpha = active ? 1 : 0;
-            canvasGroup.interactable = active;
-            canvasGroup.blocksRaycasts = active;
-        }
+            _viewFadeTween?.Kill();
 
-        public void ToggleConnectingPanel(bool active)
-        {
-            connectingPanelCanvasGroup.alpha = active ? 1 : 0;
-            connectingPanelCanvasGroup.interactable = active;
-            connectingPanelCanvasGroup.blocksRaycasts = active;
-
-            // Enable/disable the ConnectingPanel component so OnEnable picks a random sprite
-            if (connectingPanel != null)
-                connectingPanel.enabled = active;
+            float duration = animSettings ? animSettings.hudFadeDuration : 0.25f;
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
 
             if (active)
-                StartConnectingAnimations();
+            {
+                canvasGroup.interactable = true;
+                canvasGroup.blocksRaycasts = true;
+                var ease = animSettings ? animSettings.hudFadeInEase : Ease.OutQuad;
+                _viewFadeTween = canvasGroup.DOFade(1f, duration).SetEase(ease).SetUpdate(unscaled);
+            }
             else
+            {
+                var ease = animSettings ? animSettings.hudFadeOutEase : Ease.InQuad;
+                _viewFadeTween = canvasGroup.DOFade(0f, duration).SetEase(ease).SetUpdate(unscaled)
+                    .OnComplete(() =>
+                    {
+                        canvasGroup.interactable = false;
+                        canvasGroup.blocksRaycasts = false;
+                    });
+            }
+        }
+
+        public void ToggleConnectingPanel(bool active, GameModes gameMode = GameModes.Random)
+        {
+            if (!connectingPanelCanvasGroup) return;
+
+            _connectingFadeTween?.Kill();
+
+            float duration = animSettings ? animSettings.connectingFadeDuration : 0.3f;
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+
+            if (active)
+            {
+                // Enable/disable the ConnectingPanel component so OnEnable picks a random sprite
+                if (connectingPanel != null)
+                {
+                    connectingPanel.enabled = true;
+                    connectingPanel.StartTips(gameMode);
+                }
+
+                connectingPanelCanvasGroup.interactable = true;
+                connectingPanelCanvasGroup.blocksRaycasts = true;
+                _connectingFadeTween = connectingPanelCanvasGroup.DOFade(1f, duration).SetUpdate(unscaled);
+
+                StartConnectingAnimations();
+            }
+            else
+            {
                 StopConnectingAnimations();
+
+                if (connectingPanel != null)
+                    connectingPanel.StopTips();
+
+                _connectingFadeTween = connectingPanelCanvasGroup.DOFade(0f, duration).SetUpdate(unscaled)
+                    .OnComplete(() =>
+                    {
+                        connectingPanelCanvasGroup.interactable = false;
+                        connectingPanelCanvasGroup.blocksRaycasts = false;
+
+                        if (connectingPanel != null)
+                            connectingPanel.enabled = false;
+                    });
+            }
         }
 
         private System.Threading.CancellationTokenSource _hackerCts;
@@ -125,6 +192,8 @@ namespace CosmicShore.Game.UI
 
         public void ClearPlayerList()
         {
+            if (playerScoreContainer == null) return;
+
             foreach (Transform child in playerScoreContainer)
             {
                 Destroy(child.gameObject);
@@ -153,6 +222,8 @@ namespace CosmicShore.Game.UI
 
         private void OnDestroy()
         {
+            _viewFadeTween?.Kill();
+            _connectingFadeTween?.Kill();
             _hackerCts?.Cancel();
             _hackerCts?.Dispose();
             _hackerCts = null;

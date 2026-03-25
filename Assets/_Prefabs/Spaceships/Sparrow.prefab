@@ -169,7 +169,7 @@ MonoBehaviour:
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 1
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -273,6 +273,56 @@ MonoBehaviour:
   firePeriod: 0.2
   sideLength: 2
   projectileFactory: {fileID: 6530681738383227403}
+--- !u!1 &2233445566778899001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2233445566778899002}
+  - component: {fileID: 2233445566778899003}
+  m_Layer: 5
+  m_Name: ElementPips
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2233445566778899002
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2233445566778899001}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 434181841133139353}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 20, y: 20}
+  m_SizeDelta: {x: 120, y: 200}
+  m_Pivot: {x: 0, y: 0}
+--- !u!114 &2233445566778899003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2233445566778899001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
+  container: {fileID: 2233445566778899002}
 --- !u!1 &2241439963300921865
 GameObject:
   m_ObjectHideFlags: 0
@@ -1126,6 +1176,7 @@ MonoBehaviour:
   _shipInstance: {fileID: 5625026016231715243}
   vesselHUDController: {fileID: 223934081028988333}
   boostMultiplier: 4
+  inertia: 1
   _name: Sparrow
   vesselType: 11
   _nearFieldSkimmer: {fileID: 6062314127581257774}
@@ -1193,6 +1244,8 @@ MonoBehaviour:
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
   startDelay: 0.2
+  Trail:
+    TrailRenderer: {fileID: 0}
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -1268,6 +1321,9 @@ MonoBehaviour:
   raycastWidth: 2
   ram: 0
   drift: 0
+  seekPlayers: 0
+  gameData: {fileID: 0}
+  playerSeekUpdateInterval: 0.5
   abilities:
   - Ability: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
     Duration: 2
@@ -1320,6 +1376,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
   energyResourceIndex: 0
   view: {fileID: 7416581124810081342}
+  elementBars: {fileID: 0}
 --- !u!114 &4780908095115307824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1363,6 +1420,8 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 11400000, guid: af52deeb6df808440a057ec5db100610, type: 2}
   _resourceEventClassActions: []
+  _touchActionOverrides: []
+  _gamepadActionOverrides: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -1424,6 +1483,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseView: {fileID: 4159619328234506921}
   silhouette: {fileID: 838706159439259027}
+  scorePopup: {fileID: 0}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  domainColorPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   view: {fileID: 4159619328234506921}
   fireGunExecutor: {fileID: 4658886838346608747}
   overheatingExecutor: {fileID: 9221702416238991819}
@@ -1460,6 +1522,28 @@ MonoBehaviour:
   forwardSpeed: 20
   loopRadius: 15
   loopSpeed: 2
+--- !u!114 &4851397628510934721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44c3e2acbdc04a0a85d4d697c657eea4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  longestDriftStat: {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
+  maxBoostTimeStat: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
+  prismsDamagedStat: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
+  prismBlocksShotStat: {fileID: 11400000, guid: d6fe01bc7c9e42e083e467411228bbff,
+    type: 2}
+  skyburstMissilesShotStat: {fileID: 11400000, guid: 2d9e8d918051444ba4a28e9506eff2e4,
+    type: 2}
+  dangerBlocksSpawnedStat: {fileID: 11400000, guid: 2a796726f5a4448cbb76a0275666cafb,
+    type: 2}
 --- !u!1 &8788541063350086745
 GameObject:
   m_ObjectHideFlags: 0
@@ -3102,6 +3186,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8096229903681595441}
+    - targetCorrespondingSourceObject: {fileID: 5869258085133397042, guid: f0a24806a0485254389f97d4c93f7615,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2233445566778899002}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2707401190942586943, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
@@ -3252,22 +3340,3 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 6723389074232520642}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4851397628510934721
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8279817603024118164}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 44c3e2acbdc04a0a85d4d697c657eea4, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  longestDriftStat: {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
-  maxBoostTimeStat: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
-  prismsDamagedStat: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
-  prismBlocksShotStat: {fileID: 11400000, guid: d6fe01bc7c9e42e083e467411228bbff, type: 2}
-  skyburstMissilesShotStat: {fileID: 11400000, guid: 2d9e8d918051444ba4a28e9506eff2e4, type: 2}
-  dangerBlocksSpawnedStat: {fileID: 11400000, guid: 2a796726f5a4448cbb76a0275666cafb, type: 2}

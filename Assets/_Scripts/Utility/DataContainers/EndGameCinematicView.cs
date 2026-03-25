@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Threading;
-using CosmicShore.Game.XP;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
@@ -36,14 +36,15 @@ namespace CosmicShore.Game.Cinematics
         [SerializeField] TMP_Text scoreRevealToastText;
         [SerializeField] CanvasGroup scoreRevealToastCanvasGroup;
 
+        [Header("Quest Completion")]
+        [Tooltip("Dialog object enabled when a quest goal is achieved during this match")]
+        [SerializeField] GameObject questTextDialogObject;
+        [Tooltip("Text inside the quest dialog to display the completion message")]
+        [SerializeField] TMP_Text questCompletionText;
+
         [Header("Vessel Podium Display")]
         [Tooltip("Manager for vessel icon displays")]
         [SerializeField] EndGameVesselDisplayManager vesselDisplayManager;
-
-        [Header("XP Display")]
-        [Tooltip("Text element to show XP earned (e.g. '+20 XP')")]
-        [SerializeField] TMP_Text xpEarnedText;
-        [SerializeField] CanvasGroup xpEarnedCanvasGroup;
 
         [Header("Connecting Panel")]
         [SerializeField] SceneTransitionModal connectingPanel;
@@ -55,7 +56,7 @@ namespace CosmicShore.Game.Cinematics
         public void Initialize()
         {
             _cts = new CancellationTokenSource();
-            
+
             if (continueButton)
             {
                 continueButton.onClick.AddListener(HandleContinueButtonClicked);
@@ -63,6 +64,8 @@ namespace CosmicShore.Game.Cinematics
 
             if (scoreRevealPanel)
                 scoreRevealPanel.gameObject.SetActive(false);
+
+            HideQuestCompletion();
         }
 
         public void Cleanup()
@@ -76,6 +79,18 @@ namespace CosmicShore.Game.Cinematics
 
             if (continueButton)
                 continueButton.onClick.RemoveListener(HandleContinueButtonClicked);
+        }
+
+        private void Update()
+        {
+            if (Gamepad.current == null) return;
+
+            // A button presses the continue button when it's visible
+            if (Gamepad.current.buttonSouth.wasPressedThisFrame &&
+                continueButton != null && continueButton.gameObject.activeSelf)
+            {
+                HandleContinueButtonClicked();
+            }
         }
 
         #region Panel Visibility
@@ -112,6 +127,20 @@ namespace CosmicShore.Game.Cinematics
         {
             if (connectingPanel)
                 connectingPanel.TransitionDoor(true);
+        }
+
+        public void ShowQuestCompletion(string message)
+        {
+            if (questTextDialogObject)
+                questTextDialogObject.SetActive(true);
+            if (questCompletionText)
+                questCompletionText.text = message;
+        }
+
+        public void HideQuestCompletion()
+        {
+            if (questTextDialogObject)
+                questTextDialogObject.SetActive(false);
         }
         #endregion
 
@@ -253,52 +282,6 @@ namespace CosmicShore.Game.Cinematics
         void DisplayVesselImages()
         {
             vesselDisplayManager?.DisplayVessels();
-        }
-
-        /// <summary>
-        /// Shows XP earned with a fade-in animation after the score reveal.
-        /// </summary>
-        public void ShowXPEarned()
-        {
-            if (XPRewardService.Instance == null) return;
-
-            int xpAmount = XPRewardService.Instance.LastXPEarned;
-            if (xpAmount <= 0) return;
-
-            if (xpEarnedText != null)
-            {
-                xpEarnedText.text = $"+{xpAmount} XP";
-                xpEarnedText.gameObject.SetActive(true);
-            }
-
-            if (xpEarnedCanvasGroup != null)
-            {
-                xpEarnedCanvasGroup.alpha = 0f;
-                xpEarnedCanvasGroup.gameObject.SetActive(true);
-
-                var sequence = DOTween.Sequence();
-                sequence.Append(xpEarnedCanvasGroup.DOFade(1f, 0.4f).SetEase(Ease.OutQuad));
-
-                var rectTransform = xpEarnedCanvasGroup.GetComponent<RectTransform>();
-                if (rectTransform != null)
-                {
-                    sequence.Join(rectTransform.DOScale(1.15f, 0.3f).SetEase(Ease.OutBack));
-                    sequence.Append(rectTransform.DOScale(1f, 0.2f).SetEase(Ease.InOutQuad));
-                }
-
-                sequence.Play();
-            }
-        }
-
-        /// <summary>
-        /// Hides the XP earned display.
-        /// </summary>
-        public void HideXPEarned()
-        {
-            if (xpEarnedText != null)
-                xpEarnedText.gameObject.SetActive(false);
-            if (xpEarnedCanvasGroup != null)
-                xpEarnedCanvasGroup.gameObject.SetActive(false);
         }
 
         /// <summary>

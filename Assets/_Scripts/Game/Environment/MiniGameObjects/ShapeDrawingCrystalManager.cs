@@ -44,6 +44,19 @@ namespace CosmicShore.Game.ShapeDrawing
         }
 
         /// <summary>
+        /// Shape drawing crystals do NOT respawn. The sequence manager handles spawning
+        /// the next crystal. This prevents the base LocalCrystalManager from trying to
+        /// calculate a new position (which fails when Cell is disabled).
+        /// </summary>
+        public override void RespawnCrystal(int crystalId)
+        {
+            // Just destroy the crystal — ShapeDrawingManager.HandleCrystalHit
+            // will spawn the next waypoint crystal.
+            if (cellData.TryGetCrystalById(crystalId, out var crystal) && crystal)
+                crystal.DestroyCrystal();
+        }
+
+        /// <summary>
         /// Public helper: spawn a crystal at an exact world position with a known ID.
         /// Used by ShapeDrawingManager to place waypoint crystals precisely.
         /// </summary>

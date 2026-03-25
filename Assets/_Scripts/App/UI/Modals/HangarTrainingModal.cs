@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
@@ -159,6 +160,7 @@ namespace CosmicShore
 
         public void LaunchSelectedGame()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             var shipResources = new ResourceCollection();
             if (SelectedGame.ElementOne.Element == Element.Charge || SelectedGame.ElementTwo.Element == Element.Charge)
                 shipResources.Charge = 1;
@@ -172,7 +174,7 @@ namespace CosmicShore
             if (SelectedGame.ElementOne.Element == Element.Time || SelectedGame.ElementTwo.Element == Element.Time )
                 shipResources.Time = 1;
             
-            Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame._SO_Ship.Class, shipResources, Intensity, 1, false);
+            Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame._SO_Vessel.Class, shipResources, Intensity, 1, false);
         }
     }
 }

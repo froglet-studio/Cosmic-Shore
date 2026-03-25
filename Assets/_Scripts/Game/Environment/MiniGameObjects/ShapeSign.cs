@@ -1,22 +1,13 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Game.ShapeDrawing
 {
     /// <summary>
-    /// Floating sign in the Freestyle world advertising a drawable shape.
-    ///
-    /// Selection is driven by a Unity UI Button on a child World Space Canvas —
-    /// no trigger collider needed.
-    ///
-    /// Prefab structure:
-    ///   ShapeSign (this script)
-    ///   ├── SignMesh          (your 3D art / quad)
-    ///   └── Canvas            (Render Mode: World Space, scale 0.1)
-    ///         └── Button      (calls OnSignButtonPressed via OnClick())
-    ///               ├── NameLabel    (TMP_Text)
-    ///               └── Description (TMP_Text, optional)
+    /// Trigger sign that starts shape-drawing mode when the vessel flies through its collider.
+    /// Position, rotation, and scale are set in the editor — this script never touches them.
     /// </summary>
+    [RequireComponent(typeof(Collider))]
     public class ShapeSign : MonoBehaviour
     {
         [Header("Shape")]
@@ -26,33 +17,32 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] TMP_Text nameLabel;
         [SerializeField] TMP_Text descriptionLabel;
 
-        [Header("Bob & Rotate Animation")]
-        [SerializeField] float bobAmplitude = 3f;
-        [SerializeField] float bobFrequency = 0.5f;
-        [SerializeField] float spinSpeedDeg = 15f;
+        bool _triggered;
 
-        Vector3 _basePosition;
-        bool    _selected;
-        float   _time;
-
-        void Awake()
+        void Start()
         {
-            _basePosition = transform.position;
+            GetComponent<Collider>().isTrigger = true;
             ApplyDisplayData();
         }
 
-        void Update()
+        void OnEnable()
         {
-            if (_selected) return;
+            _triggered = false;
+        }
 
-            _time += Time.deltaTime;
+        void OnTriggerEnter(Collider other)
+        {
+            if (_triggered) return;
 
-            // Bob up and down
-            transform.position = _basePosition +
-                Vector3.up * (Mathf.Sin(_time * bobFrequency * Mathf.PI * 2f) * bobAmplitude);
+            if (other.GetComponentInParent<VesselStatus>())
+                Activate();
+        }
 
-            // Gentle spin
-            transform.Rotate(Vector3.up, spinSpeedDeg * Time.deltaTime, Space.World);
+        void Activate()
+        {
+            _triggered = true;
+            gameObject.SetActive(false);
+            ShapeSignEvents.RaiseShapeSelected(shapeDefinition, transform.position);
         }
 
         /// <summary>Called by SpawnableShapeSign immediately after instantiation.</summary>
@@ -62,19 +52,10 @@ namespace CosmicShore.Game.ShapeDrawing
             ApplyDisplayData();
         }
 
-        /// <summary>
-        /// Wire this to the Button's OnClick() event in the prefab.
-        /// </summary>
-        public void OnSignButtonPressed()
+        public void ResetTrigger()
         {
-            if (_selected) return;
-            _selected = true;
-
-            ShapeSignEvents.RaiseShapeSelected(shapeDefinition, transform.position);
-
-            // Disable the button so it can't fire again
-            var btn = GetComponentInChildren<UnityEngine.UI.Button>();
-            if (btn) btn.interactable = false;
+            _triggered = false;
+            gameObject.SetActive(true);
         }
 
         void ApplyDisplayData()
@@ -90,12 +71,11 @@ namespace CosmicShore.Game.ShapeDrawing
     /// </summary>
     public static class ShapeSignEvents
     {
-        /// <summary>Fired when a player presses a shape sign button.</summary>
-        public static event System.Action<ShapeDefinition, Vector3> OnShapeSelected;
+        public static event System.Action<ShapeDefinition, Vector3, Domains> OnShapeSelected;
 
-        public static void RaiseShapeSelected(ShapeDefinition def, Vector3 worldPos)
+        public static void RaiseShapeSelected(ShapeDefinition def, Vector3 worldPos, Domains shapeDomain = Domains.Blue)
         {
-            OnShapeSelected?.Invoke(def, worldPos);
+            OnShapeSelected?.Invoke(def, worldPos, shapeDomain);
         }
     }
 }

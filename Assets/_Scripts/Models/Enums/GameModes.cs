@@ -37,4 +37,7 @@ public enum GameModes
     HexRace = 33,
     MultiplayerJoust = 34,
     MultiplayerCrystalCapture = 35,
+    DragScouting = 36,
+    MultiplayerDogFight = 37,
+    MultiplayerMissileDogFight = 38,
 }

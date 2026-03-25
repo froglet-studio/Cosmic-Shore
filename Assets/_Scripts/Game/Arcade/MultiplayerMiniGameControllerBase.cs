@@ -233,6 +233,19 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnResetForReplayCustom() { }
 
+        // ---------------- Leave Session ----------------
+
+        public void LeaveSessionAndReturnToMenu()
+        {
+            LeaveSession_ServerRpc();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void LeaveSession_ServerRpc()
+        {
+            multiplayerSetup.LeaveSession().Forget();
+        }
+
         // ---------------- Rematch ----------------
 
         /// <summary>

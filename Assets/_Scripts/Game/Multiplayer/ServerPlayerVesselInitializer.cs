@@ -238,20 +238,18 @@ namespace CosmicShore.Game
 
         protected VesselClassType PickAIVesselType()
         {
-            // Try to pick a random ship from the game's available captains
             if (gameList != null)
             {
                 var game = FindGameByMode(gameData.GameMode);
-                if (game != null && game.Captains != null && game.Captains.Count > 0)
+                if (game != null && game.Vessels is { Count: > 0 })
                 {
-                    var captain = game.Captains[UnityEngine.Random.Range(0, game.Captains.Count)];
-                    if (captain != null && captain.Ship != null)
+                    var vessel = game.Vessels[UnityEngine.Random.Range(0, game.Vessels.Count)];
+                    if (vessel != null)
                     {
-                        var shipType = captain.Ship.Class;
-                        // Validate the prefab container can spawn this type
+                        var shipType = vessel.Class;
                         if (vesselPrefabContainer.TryGetShipPrefab(shipType, out _))
                         {
-                            CSDebug.Log($"[ServerPlayerVesselInitializer] AI picking ship {shipType} from captain {captain.Name}");
+                            CSDebug.Log($"[ServerPlayerVesselInitializer] AI picking vessel {shipType}");
                             return shipType;
                         }
                         CSDebug.LogWarning($"[ServerPlayerVesselInitializer] No prefab for {shipType}, falling back to Sparrow");
@@ -281,8 +279,10 @@ namespace CosmicShore.Game
             if (aiPilot == null)
                 return;
 
-            // Determine if this game mode needs player-seeking behavior (Joust)
-            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
+            // Determine if this game mode needs player-seeking behavior
+            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust
+                                  || gameData.GameMode == GameModes.MultiplayerDogFight
+                                  || gameData.GameMode == GameModes.MultiplayerMissileDogFight;
 
             // Scale AI skill with intensity (0.25 per intensity level, capped at 1)
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);

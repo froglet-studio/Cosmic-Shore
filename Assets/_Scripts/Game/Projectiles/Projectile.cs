@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using UnityEngine;
+using CosmicShore.App.Systems.Audio;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Utility;
@@ -100,7 +101,8 @@ namespace CosmicShore.Game.Projectiles
             {
                 CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
             }
-            
+
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch);
             ProjectileTime = projectileTime;
 
             if (_detachOnLaunch && transform.parent)

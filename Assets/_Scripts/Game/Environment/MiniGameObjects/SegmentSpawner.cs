@@ -10,15 +10,27 @@ public class SegmentSpawner : MonoBehaviour
 {
     [Header("Dependencies")]
     [SerializeField] private GameDataSO gameData;
-    [SerializeField] List<SpawnableBase> spawnableSegments;
+
+    [Header("Weighted Segments")]
+    [Tooltip("Segments selected randomly by weight for each NumberOfSegments slot.")]
+    [SerializeField] List<WeightedSpawnable> weightedSegments = new();
+
+    [Header("Guaranteed Shapes")]
+    [Tooltip("These always spawn every time, in addition to the weighted segments. " +
+             "Use for shape spawnables that must always be present.")]
+    [SerializeField] List<SpawnableBase> guaranteedSpawnables = new();
 
     [Header("Intensity-Mapped Spawning")]
     [Tooltip("Optional: map specific spawnables to intensity levels (index 0 = intensity 1). " +
              "When set, overrides random selection for that intensity.")]
     [SerializeField] SpawnableBase[] spawnableByIntensity;
 
+    // Legacy fields — kept for backward compatibility with scenes serialized before
+    // the WeightedSpawnable refactor. Migrated to weightedSegments at startup.
+    [SerializeField, HideInInspector] List<SpawnableBase> spawnableSegments;
+    [SerializeField, HideInInspector] List<float> spawnSegmentWeights;
+
     [Header("Configuration")]
-    [SerializeField] List<float> spawnSegmentWeights;
     [SerializeField] public int Seed;
     [SerializeField] Transform parent;
     [SerializeField] IntVariable intensityLevelData;
@@ -32,16 +44,48 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] public float RotationAmount;
     [HideInInspector] public int DifficultyAngle = 90;
 
+    [Header("Guaranteed Shape Layout")]
+    [Tooltip("Distance from origin to place the guaranteed shape cluster. " +
+             "Set just inside the membrane radius so players must fly to the edge to reach them.")]
+    [SerializeField] float guaranteedShapeDistance = 420f;
+
+    [Tooltip("Radius of the ring that the guaranteed shapes are arranged in at the cluster point.")]
+    [SerializeField] float guaranteedShapeClusterRadius = 80f;
+
     // Runtime state
     private GameObject SpawnedSegmentContainer;
     private List<Trail> trails = new();
+    private float[] _normalizedWeights;
 
     void Start()
     {
+        MigrateLegacyFields();
+
         if (SpawnedSegmentContainer == null) CreateContainer();
 
         if (InitializeOnStart)
             Initialize();
+    }
+
+    void MigrateLegacyFields()
+    {
+        if (spawnableSegments is not { Count: > 0 }) return;
+        if (weightedSegments is { Count: > 0 }) return;
+
+        for (int i = 0; i < spawnableSegments.Count; i++)
+        {
+            float w = (spawnSegmentWeights != null && i < spawnSegmentWeights.Count)
+                ? spawnSegmentWeights[i]
+                : 1f;
+            weightedSegments.Add(new WeightedSpawnable
+            {
+                spawnable = spawnableSegments[i],
+                weight = w
+            });
+        }
+
+        spawnableSegments = null;
+        spawnSegmentWeights = null;
     }
 
     private void OnEnable()
@@ -89,37 +133,49 @@ public class SegmentSpawner : MonoBehaviour
 
         // Collect active player domains so spawned segments cycle through them
         var playerDomains = GetActivePlayerDomains();
+        int layoutIndex = 0;
 
+        // Spawn weighted segments (random selection per slot)
         for (int i = 0; i < NumberOfSegments; i++)
         {
-            // Cycle through player domains for visual variety
             if (playerDomains.Count > 0)
             {
-                var segmentDomain = playerDomains[i % playerDomains.Count];
-                SetDomainOnSpawnables(segmentDomain);
+                var segmentDomain = playerDomains[layoutIndex % playerDomains.Count];
+                SetDomainOnWeighted(segmentDomain);
             }
 
             var spawnable = SelectSpawnable(currentIntensity);
             if (spawnable == null) continue;
 
-            if (Seed != 0) spawnable.SetSeed(Seed + i);
-
-            var spawned = spawnable.Spawn(currentIntensity);
-            if (!spawned) continue;
-
-            spawned.transform.SetParent(SpawnedSegmentContainer.transform);
-            LayoutSegment(spawned.transform, i);
-            trails.AddRange(spawnable.GetTrails());
+            SpawnAndLayout(spawnable, currentIntensity, layoutIndex);
+            layoutIndex++;
         }
+
+        // Spawn guaranteed shapes in a cluster near the membrane edge.
+        // These keep their inspector-configured domain — shape-drawing shapes
+        // intentionally have per-shape domains set in the editor.
+        SpawnGuaranteedShapes(currentIntensity);
+    }
+
+    void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
+    {
+        if (Seed != 0) spawnable.SetSeed(Seed + layoutIndex);
+
+        var spawned = spawnable.Spawn(intensity);
+        if (!spawned) return;
+
+        spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+        LayoutSegment(spawned.transform, layoutIndex);
+        trails.AddRange(spawnable.GetTrails());
     }
 
     void LayoutSegment(Transform segment, int index)
     {
         var worldOrigin = origin + transform.position;
+        int totalCount = NumberOfSegments;
 
-        if (NumberOfSegments <= 1)
+        if (totalCount <= 1)
         {
-            // Single segment: place at origin, no extra rotation.
             segment.SetPositionAndRotation(worldOrigin, Quaternion.identity);
         }
         else if (Radius > 0 && StraightLineLength == 0)
@@ -136,6 +192,50 @@ public class SegmentSpawner : MonoBehaviour
         else
         {
             segment.SetPositionAndRotation(worldOrigin, Quaternion.identity);
+        }
+    }
+
+    void SpawnGuaranteedShapes(int intensity)
+    {
+        if (guaranteedSpawnables == null || guaranteedSpawnables.Count == 0) return;
+
+        var worldOrigin = origin + transform.position;
+
+        // Pick a random direction from center for the cluster
+        var clusterDirection = Random.onUnitSphere;
+        var clusterCenter = worldOrigin + clusterDirection * guaranteedShapeDistance;
+
+        // Build a stable tangent frame at the cluster center for laying out shapes in a ring
+        var up = Mathf.Abs(Vector3.Dot(clusterDirection, Vector3.up)) < 0.99f
+            ? Vector3.up
+            : Vector3.right;
+        var tangent1 = Vector3.Cross(clusterDirection, up).normalized;
+        var tangent2 = Vector3.Cross(clusterDirection, tangent1).normalized;
+
+        int shapeCount = guaranteedSpawnables.Count;
+        float angleStep = 360f / shapeCount;
+
+        for (int i = 0; i < shapeCount; i++)
+        {
+            var spawnable = guaranteedSpawnables[i];
+            if (spawnable == null) continue;
+
+            if (Seed != 0) spawnable.SetSeed(Seed + 1000 + i);
+
+            var spawned = spawnable.Spawn(intensity);
+            if (!spawned) continue;
+
+            spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+
+            // Place in a ring around the cluster center on the tangent plane
+            float angle = i * angleStep * Mathf.Deg2Rad;
+            var offset = (tangent1 * Mathf.Cos(angle) + tangent2 * Mathf.Sin(angle)) * guaranteedShapeClusterRadius;
+            spawned.transform.position = clusterCenter + offset;
+
+            // Face inward toward the cell center so the shape is visible to approaching players
+            spawned.transform.rotation = Quaternion.LookRotation(worldOrigin - spawned.transform.position, clusterDirection);
+
+            trails.AddRange(spawnable.GetTrails());
         }
     }
 
@@ -161,41 +261,49 @@ public class SegmentSpawner : MonoBehaviour
         }
 
         // Fall back to weighted random selection
-        if (spawnableSegments == null || spawnableSegments.Count == 0) return null;
+        if (weightedSegments == null || weightedSegments.Count == 0) return null;
 
-        var spawnWeight = Random.value;
-        var spawnIndex = 0;
-        var totalWeight = 0f;
+        var roll = Random.value;
+        var accumulated = 0f;
 
-        for (int i = 0; i < spawnSegmentWeights.Count; i++)
+        for (int i = 0; i < weightedSegments.Count; i++)
         {
-            totalWeight += spawnSegmentWeights[i];
-            if (!(totalWeight >= spawnWeight)) continue;
-            spawnIndex = i;
-            break;
+            accumulated += _normalizedWeights[i];
+            if (accumulated >= roll)
+                return weightedSegments[i].spawnable;
         }
 
-        return spawnableSegments[spawnIndex];
+        // Fallback to last entry
+        return weightedSegments[^1].spawnable;
     }
 
     void NormalizeWeights()
     {
-        if (spawnSegmentWeights == null || spawnSegmentWeights.Count == 0) return;
+        if (weightedSegments == null || weightedSegments.Count == 0)
+        {
+            _normalizedWeights = System.Array.Empty<float>();
+            return;
+        }
 
-        float totalWeight = 0;
-        foreach (var weight in spawnSegmentWeights)
-            totalWeight += weight;
+        _normalizedWeights = new float[weightedSegments.Count];
+        float total = 0f;
 
-        if (totalWeight <= 0) return;
+        for (int i = 0; i < weightedSegments.Count; i++)
+            total += weightedSegments[i].weight;
 
-        for (int i = 0; i < spawnSegmentWeights.Count; i++)
-            spawnSegmentWeights[i] = spawnSegmentWeights[i] * (1 / totalWeight);
+        // If all weights are 0, distribute equally
+        if (total <= 0f)
+        {
+            float equal = 1f / weightedSegments.Count;
+            for (int i = 0; i < _normalizedWeights.Length; i++)
+                _normalizedWeights[i] = equal;
+            return;
+        }
+
+        for (int i = 0; i < weightedSegments.Count; i++)
+            _normalizedWeights[i] = weightedSegments[i].weight / total;
     }
 
-    /// <summary>
-    /// Returns the list of unique player domains from current game data.
-    /// Falls back to {Jade, Ruby, Gold} if no players are available yet.
-    /// </summary>
     List<Domains> GetActivePlayerDomains()
     {
         if (gameData != null && gameData.Players != null && gameData.Players.Count > 0)
@@ -210,22 +318,26 @@ public class SegmentSpawner : MonoBehaviour
                 return domains;
         }
 
-        // Fallback: use the three assignable domains
         return new List<Domains> { Domains.Jade, Domains.Ruby, Domains.Gold };
     }
 
-    void SetDomainOnSpawnables(Domains domain)
+    void SetDomainOnWeighted(Domains domain)
     {
-        if (spawnableSegments != null)
-        {
-            foreach (var s in spawnableSegments)
-                if (s != null) s.domain = domain;
-        }
+        foreach (var entry in weightedSegments)
+            if (entry.spawnable != null) entry.spawnable.domain = domain;
 
         if (spawnableByIntensity != null)
-        {
             foreach (var s in spawnableByIntensity)
                 if (s != null) s.domain = domain;
-        }
+    }
+
+    [System.Serializable]
+    public struct WeightedSpawnable
+    {
+        [Tooltip("The spawnable to instantiate.")]
+        public SpawnableBase spawnable;
+
+        [Tooltip("Relative weight for random selection. Higher = more likely.")]
+        public float weight;
     }
 }

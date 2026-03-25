@@ -39,6 +39,8 @@ namespace CosmicShore.Game.UI
         [SerializeField] private PreGameCinematicController preGameCinematic;
         [SerializeField] private Vector3 cinematicLookAtCenter = Vector3.zero;
         [SerializeField] private bool enablePreGameCinematic = true;
+        [Tooltip("Maps game modes to pre-game cinematic camera setups. If assigned, overrides default orbit.")]
+        [SerializeField] private PreGameCinematicLibrarySO preGameCinematicLibrary;
 
         [Header("AI Tracking")]
         [SerializeField] protected bool isAIAvailable;
@@ -213,10 +215,14 @@ namespace CosmicShore.Game.UI
             if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null)
                 return;
 
+            // Avoid duplicate — reuse existing card if already created
+            if (_localPlayerCard != null)
+                return;
+
             var localPlayer = gameData.LocalPlayer;
             var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
-            card.Setup(localPlayer.Name, 0, teamColor, true);
+            card.Setup(localPlayer.Name, 0, teamColor, true, 0);
 
             var sprite = ResolveAvatarSprite(localPlayer.AvatarId);
             card.SetAvatar(sprite);
@@ -235,17 +241,21 @@ namespace CosmicShore.Game.UI
 
         private void SetupAICards()
         {
-            _aiCards.Clear();
+            // Avoid duplicates — skip if cards already exist
+            if (_aiCards.Count > 0)
+                return;
+
             _aiScoreHandlers.Clear();
             AssignAIProfiles();
 
+            int staggerIdx = 1; // 0 is the local player card
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (stats == localRoundStats) continue;
 
                 var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
                 var teamColor = view.GetColorForDomain(stats.Domain);
-                card.Setup(stats.Name, (int)stats.Score, teamColor, false);
+                card.Setup(stats.Name, (int)stats.Score, teamColor, false, staggerIdx++);
 
                 // Resolve avatar: try AI profile first, then fall back to player AvatarId
                 var avatarSprite = ResolveAIAvatarSprite(stats.Name);
@@ -350,7 +360,7 @@ namespace CosmicShore.Game.UI
             UpdateLifeformCounterDisplay("0");
             view.UpdateScoreUI("0");
 
-            view.ToggleConnectingPanel(true);
+            view.ToggleConnectingPanel(true, gameData != null ? gameData.GameMode : GameModes.Random);
             ToggleReadyButton(false);
 
             RunConnectingMinimum().Forget();
@@ -382,6 +392,8 @@ namespace CosmicShore.Game.UI
                     Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
                     if (playerTarget != null)
                     {
+                        ConfigureCinematicForGameMode();
+
                         bool cinematicDone = false;
                         preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
                         preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
@@ -394,6 +406,29 @@ namespace CosmicShore.Game.UI
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException) { }
+        }
+
+        private void ConfigureCinematicForGameMode()
+        {
+            if (preGameCinematicLibrary == null || gameData == null) return;
+
+            var setup = preGameCinematicLibrary.GetSetup(gameData.GameMode);
+            if (setup == null) return;
+
+            preGameCinematic.SetSetup(setup);
+
+            // Collect all player vessel transforms for PlayerShowcase mode
+            if (setup.cinematicType == PreGameCinematicType.PlayerShowcase && gameData.Players != null)
+            {
+                var transforms = new List<Transform>();
+                foreach (var player in gameData.Players)
+                {
+                    var vesselTransform = player.Vessel?.Transform;
+                    if (vesselTransform != null)
+                        transforms.Add(vesselTransform);
+                }
+                preGameCinematic.SetPlayerTransforms(transforms);
+            }
         }
 
         private void OnMoundDroneSpawned(int count)
@@ -466,6 +501,12 @@ namespace CosmicShore.Game.UI
         public void Show() => view.ToggleView(true);
         public void Hide() => view.ToggleView(false);
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
+
+        /// <summary>
+        /// Shows the connecting panel flow (connecting → wait → ready button).
+        /// Called externally when re-entering the game flow after shape drawing.
+        /// </summary>
+        public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
 

@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using CosmicShore.Game.ShapeDrawing;
 using UnityEditor;
 using UnityEngine;
@@ -21,14 +21,25 @@ public class ShapeDefinitionEditor : Editor
             MessageType.Info);
 
         EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("⭐ Star")) GeneratePreset(def, ShapeDefinition.ShapePreset.Star);
-        if (GUILayout.Button("⬤ Circle")) GeneratePreset(def, ShapeDefinition.ShapePreset.Circle);
-        if (GUILayout.Button("☺ Smiley")) GeneratePreset(def, ShapeDefinition.ShapePreset.Smiley);
+        if (GUILayout.Button("Star")) GeneratePreset(def, ShapePreset.Star);
+        if (GUILayout.Button("Circle")) GeneratePreset(def, ShapePreset.Circle);
+        if (GUILayout.Button("Smiley")) GeneratePreset(def, ShapePreset.Smiley);
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("♥ Heart")) GeneratePreset(def, ShapeDefinition.ShapePreset.Heart);
-        if (GUILayout.Button("⚡ Lightning")) GeneratePreset(def, ShapeDefinition.ShapePreset.Lightning);
+        if (GUILayout.Button("Heart")) GeneratePreset(def, ShapePreset.Heart);
+        if (GUILayout.Button("Lightning")) GeneratePreset(def, ShapePreset.Lightning);
+        if (GUILayout.Button("Diamond")) GeneratePreset(def, ShapePreset.Diamond);
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Spiral")) GeneratePreset(def, ShapePreset.Spiral);
+        if (GUILayout.Button("Infinity")) GeneratePreset(def, ShapePreset.Infinity);
+        if (GUILayout.Button("Arrow")) GeneratePreset(def, ShapePreset.Arrow);
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Wave")) GeneratePreset(def, ShapePreset.Wave);
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space(4);
@@ -36,7 +47,7 @@ public class ShapeDefinitionEditor : Editor
             EditorStyles.miniLabel);
     }
 
-    void GeneratePreset(ShapeDefinition def, ShapeDefinition.ShapePreset preset)
+    void GeneratePreset(ShapeDefinition def, ShapePreset preset)
     {
         Undo.RecordObject(def, $"Generate {preset} waypoints");
         def.GeneratePreset(preset, 100f);

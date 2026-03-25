@@ -45,6 +45,17 @@ namespace CosmicShore.Game.UI
             Post(message, Domains.Unassigned, GameFeedType.JoustHit);
         }
 
+        public static void PostDogFightHit(string shooterName, Domains shooterDomain,
+                                            string victimName, Domains victimDomain)
+        {
+            var atkHex = ColorUtility.ToHtmlStringRGB(GetDomainColor(shooterDomain));
+            var defHex = ColorUtility.ToHtmlStringRGB(GetDomainColor(victimDomain));
+
+            var message = $"<color=#{atkHex}><b>{shooterName}</b></color> hit <color=#{defHex}><b>{victimName}</b></color>";
+
+            Post(message, Domains.Unassigned, GameFeedType.JoustHit);
+        }
+
         public static Color GetDomainColor(Domains domain)
         {
             return DomainColors.TryGetValue(domain, out var color) ? color : Color.white;

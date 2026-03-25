@@ -11,12 +11,12 @@ using UnityEngine;
 ///   - signPrefab      : your ShapeSign prefab
 ///   - shapeDefinition : one of the 5 ShapeDefinition SO assets
 /// </summary>
-public class SpawnableShapeSign : SpawnableAbstractBase
+public class SpawnableShapeSign : MonoBehaviour
 {
     [SerializeField] GameObject signPrefab;
     [SerializeField] ShapeDefinition shapeDefinition;
 
-    public override GameObject Spawn()
+    public GameObject Spawn()
     {
         if (!signPrefab)
         {
