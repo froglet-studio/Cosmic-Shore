@@ -11,10 +11,14 @@ public class SpawnableHeart : SpawnableShapeBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
 
+    [Header("Heart Size")]
+    [Tooltip("Uniform scale applied to the heart shape. 1 = default parametric size.")]
+    [SerializeField] float sizeScale = 1f;
+
     protected override SpawnPoint[] GeneratePoints()
     {
         int blockCount = GetScaledBlockCount();
-        float sizeMul = GetIntensitySizeMultiplier();
+        float sizeMul = GetIntensitySizeMultiplier() * sizeScale;
         var points = new SpawnPoint[blockCount];
         for (int block = 0; block < blockCount; block++)
         {
