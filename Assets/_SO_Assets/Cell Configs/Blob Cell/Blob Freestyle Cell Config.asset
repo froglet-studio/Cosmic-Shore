@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
   m_Name: Blob Freestyle Cell Config
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   CellName: Blob Freestyle
   Description: Freestyle blob cell with expanded membrane
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
