@@ -506,7 +506,7 @@ namespace CosmicShore.Core
         {
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
 
-            if (_sceneTransitionManager != null && !_sceneTransitionManager.IsTransitioning)
+            if ((object)_sceneTransitionManager != null && _sceneTransitionManager && !_sceneTransitionManager.IsTransitioning)
             {
                 _sceneTransitionManager.LoadSceneAsync(menuScene).Forget();
             }

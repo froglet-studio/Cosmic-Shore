@@ -94,6 +94,12 @@ namespace CosmicShore.Core
                 return;
             }
 
+            if (_cts == null)
+            {
+                Debug.LogWarning($"[SceneTransition] Manager has been destroyed. Ignoring request for '{sceneName}'.");
+                return;
+            }
+
             _isTransitioning = true;
 
             try
@@ -135,6 +141,12 @@ namespace CosmicShore.Core
             if (_isTransitioning)
             {
                 Debug.LogWarning($"[SceneTransition] Already transitioning. Ignoring request for '{sceneName}'.");
+                return;
+            }
+
+            if (_cts == null)
+            {
+                Debug.LogWarning($"[SceneTransition] Manager has been destroyed. Ignoring request for '{sceneName}'.");
                 return;
             }
 
