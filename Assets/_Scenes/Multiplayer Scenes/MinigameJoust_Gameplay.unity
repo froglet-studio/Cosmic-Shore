@@ -444,7 +444,7 @@ PrefabInstance:
     - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustScoreboard, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerJoustScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -499,7 +499,7 @@ PrefabInstance:
     - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerJoustHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 1660010304379541001, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -574,7 +574,7 @@ PrefabInstance:
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerJoustHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 3397639301264078971, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -639,7 +639,7 @@ PrefabInstance:
     - target: {fileID: 5054612726792906818, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustScoreboard, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerJoustScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5054612726792906828, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -890,7 +890,7 @@ PrefabInstance:
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerJoustHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5866792526080073927, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -970,7 +970,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerJoustController, Assembly-CSharp
+      value: CosmicShore.Gameplay.MultiplayerJoustController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1110,7 +1110,7 @@ PrefabInstance:
     - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustScoreboard, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerJoustScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1150,7 +1150,7 @@ PrefabInstance:
     - target: {fileID: 7966497549685602406, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerJoustScoreboard, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerJoustScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 8004287346060025796, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}

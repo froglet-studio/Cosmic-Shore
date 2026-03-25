@@ -42,6 +42,12 @@ namespace CosmicShore.Gameplay
 
         protected override bool UseGolfRules => true;
 
+        // HexRace handles end-game entirely through ReportPlayerFinished_ServerRpc →
+        // SyncFinalScores_ClientRpc, which calls InvokeMiniGameEnd(). Override EndGame()
+        // to prevent the base controller's turn→round→game flow from also firing
+        // InvokeMiniGameEnd() (which would double-fire the event).
+        protected override void EndGame() { }
+
         public override void OnNetworkSpawn()
         {
             Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn — IsServer={IsServer}, Intensity={Intensity}</color>");

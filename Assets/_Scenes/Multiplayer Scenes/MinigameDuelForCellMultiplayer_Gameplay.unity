@@ -1184,7 +1184,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MiniGameControllerBase, Assembly-CSharp
+      value: CosmicShore.Gameplay.MiniGameControllerBase, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2434,7 +2434,7 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 1628508331}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.MultipalyerMiniGameControllerBase,
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.MultiplayerMiniGameControllerBase,
             Assembly-CSharp
           m_MethodName: OnClickReturnToMainMenu
           m_Mode: 1

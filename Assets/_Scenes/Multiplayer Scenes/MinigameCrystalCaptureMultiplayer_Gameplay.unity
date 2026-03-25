@@ -608,7 +608,7 @@ PrefabInstance:
     - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
+      value: CosmicShore.Gameplay.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -688,7 +688,7 @@ PrefabInstance:
     - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerCrystalCaptureHUD, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerCrystalCaptureHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 1676280671763232012, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -943,7 +943,7 @@ PrefabInstance:
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerCrystalCaptureHUD, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerCrystalCaptureHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 3397639301264078971, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1113,7 +1113,7 @@ PrefabInstance:
     - target: {fileID: 5054612726792906818, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
+      value: CosmicShore.Gameplay.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5054612726792906828, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1494,7 +1494,7 @@ PrefabInstance:
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerCrystalCaptureHUD, Assembly-CSharp
+      value: CosmicShore.UI.MultiplayerCrystalCaptureHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5851382977735569218, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1724,7 +1724,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerCrystalCaptureController, Assembly-CSharp
+      value: CosmicShore.Gameplay.MultiplayerCrystalCaptureController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1874,7 +1874,7 @@ PrefabInstance:
     - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
+      value: CosmicShore.Gameplay.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1924,7 +1924,7 @@ PrefabInstance:
     - target: {fileID: 7966497549685602406, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
+      value: CosmicShore.Gameplay.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 7971134363089883436, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
