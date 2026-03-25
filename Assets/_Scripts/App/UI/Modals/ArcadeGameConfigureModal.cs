@@ -82,8 +82,8 @@ namespace CosmicShore.App.UI.Modals
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
 
-        // Hard cap — the game does not support 4 players yet
-        const int MaxSupportedPlayers = 3;
+        // Hard cap on the number of players the game supports
+        const int MaxSupportedPlayers = 4;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;

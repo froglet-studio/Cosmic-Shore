@@ -45,6 +45,8 @@ namespace CosmicShore.Game
 
         public Action OnAllPlayersSpawned;
 
+        const int MaxTotalPlayers = 4;
+
         bool IsSoloWithAI => !gameData.IsMultiplayerMode;
 
         protected virtual void Awake()
@@ -172,11 +174,8 @@ namespace CosmicShore.Game
                 return;
             }
 
-            // Determine how many AI opponents to spawn (fill remaining slots up to MaxPlayers)
-            int aiCount = 1;
-            var game = FindGameByMode(gameData.GameMode);
-            if (game != null && game.MaxPlayers > 1)
-                aiCount = game.MaxPlayers - 1;
+            // Always fill to 4 total players — AI takes the remaining slots
+            int aiCount = MaxTotalPlayers - 1;
 
             // Pick AI profiles for unique names
             var pickedProfiles = aiProfileList != null ? aiProfileList.PickRandom(aiCount) : null;

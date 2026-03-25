@@ -10,7 +10,7 @@ public static class DomainAssigner
     private static Dictionary<Domains, int> availableDomainsCount = new();
 
     /// <summary>
-    /// Picks a unique random team from all Domains (excluding None, Unassigned, Blue).
+    /// Picks a random team from the available domain pool.
     /// If all are already assigned, logs an error and returns Domains.Unassigned.
     /// </summary>
     static Domains GetAvailableDomain()
@@ -75,11 +75,14 @@ public static class DomainAssigner
     public static void Initialize()
     {
         availableDomains.Clear();
-        // Get all valid teams (excluding reserved ones)
-        availableDomains = Enum.GetValues(typeof(Domains))
+        // Get all valid teams (excluding reserved ones), added twice each to
+        // support up to 6 players with duplicate domain assignments (2v2 style).
+        var validDomains = Enum.GetValues(typeof(Domains))
             .Cast<Domains>()
             .Where(t => t is not (Domains.None or Domains.Unassigned or Domains.Blue))
             .ToList();
+        availableDomains.AddRange(validDomains);
+        availableDomains.AddRange(validDomains);
         CSDebug.Log("[DomainAssigner] 🔄 Cleared assigned domains cache.");
     }
 }
