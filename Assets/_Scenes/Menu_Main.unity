@@ -78913,6 +78913,8 @@ MonoBehaviour:
   selectedVesselClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
+    type: 2}
 --- !u!224 &175867981159570580
 RectTransform:
   m_ObjectHideFlags: 0
