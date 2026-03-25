@@ -88,6 +88,13 @@ namespace CosmicShore.Core
         /// </summary>
         public async UniTask LoadSceneAsync(string sceneName, bool fadeOut = true, bool fadeIn = true)
         {
+            if (_cts == null)
+            {
+                Debug.LogWarning($"[SceneTransition] Manager destroyed. Falling back to direct load for '{sceneName}'.");
+                SceneManager.LoadScene(sceneName);
+                return;
+            }
+
             if (_isTransitioning)
             {
                 Debug.LogWarning($"[SceneTransition] Already transitioning. Ignoring request for '{sceneName}'.");
