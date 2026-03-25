@@ -23,7 +23,11 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] private Color unselectedTextColor = Color.gray;
 
         [Header("Avatar Icon")]
-        [SerializeField] private Image avatarIcon;
+        [Tooltip("The AvatarIcon container GameObject. Enabled only on the selected team.")]
+        [SerializeField] private GameObject avatarIconContainer;
+
+        [Tooltip("The child Image inside avatarIconContainer that displays the avatar sprite.")]
+        [SerializeField] private Image avatarIconImage;
 
         public Domains Domain => domain;
         public Button Button => button;
@@ -35,20 +39,23 @@ namespace CosmicShore.App.UI.Elements
 
             if (labelText)
                 labelText.color = selected ? selectedTextColor : unselectedTextColor;
+
+            if (avatarIconContainer)
+                avatarIconContainer.SetActive(selected);
         }
 
         public void SetAvatarSprite(Sprite sprite)
         {
-            if (!avatarIcon) return;
+            if (!avatarIconImage) return;
 
             if (sprite != null)
             {
-                avatarIcon.sprite = sprite;
-                avatarIcon.enabled = true;
+                avatarIconImage.sprite = sprite;
+                avatarIconImage.enabled = true;
             }
             else
             {
-                avatarIcon.enabled = false;
+                avatarIconImage.enabled = false;
             }
         }
     }
