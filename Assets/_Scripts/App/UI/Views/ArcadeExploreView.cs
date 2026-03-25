@@ -39,6 +39,10 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] VesselClassTypeVariable selectedVesselClassType;
         [SerializeField] GameDataSO gameData;
 
+        [Header("Events")]
+        [Tooltip("Raised by ArcadeGameConfigureModal when the player clicks START GAME.")]
+        [SerializeField] private ScriptableEventNoParam startGameRequestedEvent;
+
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
 
@@ -48,6 +52,9 @@ namespace CosmicShore.App.UI.Views
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+
+            if (startGameRequestedEvent != null)
+                startGameRequestedEvent.OnRaised += PlaySelectedGame;
         }
 
         void OnDisable()
@@ -56,6 +63,9 @@ namespace CosmicShore.App.UI.Views
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
+
+            if (startGameRequestedEvent != null)
+                startGameRequestedEvent.OnRaised -= PlaySelectedGame;
         }
 
         void Start()
