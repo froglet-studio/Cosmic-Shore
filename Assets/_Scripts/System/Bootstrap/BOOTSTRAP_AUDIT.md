@@ -25,7 +25,7 @@ These two classes shared the same lifecycle (bootstrap scene, build index 0) wit
 
 | # | File | Issue | Fix |
 |---|---|---|---|
-| 1 | `SceneLoader.cs` | Extended `MonoBehaviour` but used `[ServerRpc]` (requires `NetworkBehaviour`) | Changed base class to `NetworkBehaviour` |
+| 1 | `SceneLoader.cs` | Extended `MonoBehaviour` but used `[ServerRpc]` (requires `NetworkBehaviour`) | Reverted to `MonoBehaviour`. RPCs moved to `MultiplayerMiniGameControllerBase`. SceneLoader now lives in Bootstrap (DontDestroyOnLoad), subscribes to SOAP events in code. |
 | 2 | `BootstrapController.cs` | Unused `using DG.Tweening` | Removed (file now deleted — merged into AppManager) |
 | 3 | `GameSetting.cs` | `PlayerPrefs.Save()` in `Awake()` — sync disk I/O blocking bootstrap | Removed (in-memory reads work immediately without explicit Save) |
 | 4 | `Singleton.cs` | `print()` calls (unfiltered, GC-heavy); no app-quit guard on `Destroy()` | Replaced with `CSDebug.Log`; added `ApplicationLifecycleManager.IsQuitting` guard |
@@ -203,7 +203,7 @@ Auto-wired SOAP transitions:
 | SplashScreen | Splash visual | Fade-out during async bootstrap |
 | DirectionalLight | Light | Scene lighting |
 | Camera | Main Camera | Bootstrap camera |
-| SceneLoader | `SceneLoader` | Network scene loading (extends NetworkBehaviour) |
+| SceneLoader | `SceneLoader` | Persistent scene loading (extends MonoBehaviour, DontDestroyOnLoad). Subscribes to SOAP events in code (`OnLaunchGame`, `OnClickToMainMenuButton`, `OnActiveSessionEnd`, `OnClickToRestartButton`). |
 
 ---
 
@@ -235,7 +235,7 @@ Assets/_Scripts/System/ApplicationStateMachine.cs           ← app state machin
 Assets/_Scripts/System/AuthenticationServiceFacade.cs       ← auth facade (single-writer)
 Assets/_Scripts/System/AuthenticationSceneController.cs     ← auth scene UI controller
 Assets/_Scripts/System/SplashToAuthFlow.cs                  ← splash → auth routing
-Assets/_Scripts/System/SceneLoader.cs                       ← persistent scene loading (NetworkBehaviour)
+Assets/_Scripts/System/SceneLoader.cs                       ← persistent scene loading (MonoBehaviour, DontDestroyOnLoad)
 Assets/_Scripts/System/NetworkMonitor.cs                    ← network connectivity monitor
 Assets/_Scripts/System/FriendsServiceFacade.cs              ← friends service facade
 Assets/_Scripts/System/MainMenuController.cs                ← Menu_Main scene controller

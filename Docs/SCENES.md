@@ -85,17 +85,18 @@ Menu_Main Scene (networked)
   │       └─ OnStartGameClicked() → gameData.InvokeGameLaunch()
   │
   ▼
-SceneLoader.LaunchGame()
+SceneLoader.LaunchGame()  [MonoBehaviour, Bootstrap DontDestroyOnLoad]
   │
   ├─ ApplicationStateMachine → LoadingGame
   ├─ SetFadeImmediate(1f) — black screen
-  ├─ SyncGameConfigToClients_ClientRpc (multiplayer)
   ├─ gameData.ResetRuntimeData()
   └─ Load game scene (network or local)
   │
   ▼
 Game Scene (e.g., MinigameHexRace)
   │
+  ├─ MultiplayerMiniGameControllerBase.OnNetworkSpawn()
+  │   └─ [Server] SyncGameConfigToClients_ClientRpc — syncs game config to clients
   ├─ Controller.OnNetworkSpawn() / Start()
   ├─ InitializeGame() → spawn players + vessels
   ├─ ApplicationStateMachine → InGame
@@ -420,7 +421,7 @@ Co-op wildlife blitz with its own ready synchronization pattern.
 1. **`SO_ArcadeGame` asset** — static config: mode, scene name, multiplayer flag, captains, min/max players/intensity, scoring rules
 2. **`ArcadeGameConfigSO`** — ephemeral runtime state: player's chosen game + intensity + player count + vessel
 3. **`GameDataSO`** — shared SOAP runtime state: scene name, game mode, vessel class, player count, AI backfill, intensity, all SOAP events
-4. **`SceneLoader`** — subscribes to `GameDataSO.OnLaunchGame`, handles scene transition
+4. **`SceneLoader`** — MonoBehaviour singleton in Bootstrap (DontDestroyOnLoad). Subscribes to `OnLaunchGame`, `OnClickToMainMenuButton`, `OnActiveSessionEnd`, `OnClickToRestartButton` via SOAP code subscriptions. Game config sync to clients handled by `MultiplayerMiniGameControllerBase.OnNetworkSpawn()`
 5. **Game controller** — scene-placed `MiniGameControllerBase` subclass drives the turn/round/game lifecycle
 
 ### SO_ArcadeGame Configuration
@@ -459,12 +460,13 @@ Player configures and clicks "Start Game"
       │   └─ gameData.ActiveSession = HostConnectionService.PartySession
       └─ gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
 
-SceneLoader.LaunchGame() [subscribed to OnLaunchGame]
+SceneLoader.LaunchGame() [MonoBehaviour, Bootstrap DontDestroyOnLoad, subscribed to OnLaunchGame]
   ├─ PauseSystem.TogglePauseGame(false)
   ├─ ApplicationStateMachine → LoadingGame
   ├─ SceneTransitionManager.SetFadeImmediate(1f) — black screen
-  ├─ [Server] SyncGameConfigToClients_ClientRpc(all game params)
   └─ LoadSceneAsync(sceneName)
+      Note: Game config sync to clients now handled by
+      MultiplayerMiniGameControllerBase.OnNetworkSpawn() in the game scene
       ├─ gameData.ResetRuntimeData()
       ├─ Wait 0.5s for RPC delivery
       └─ Network or local scene load
@@ -474,7 +476,7 @@ SceneLoader.LaunchGame() [subscribed to OnLaunchGame]
 
 ## Turn Monitor System
 
-Turn monitors determine when a turn ends. They are scene-placed components managed by `TurnMonitorController` (or `NetworkTurnMonitorController` for multiplayer).
+Turn monitors determine when a turn ends. They are scene-placed components managed by `TurnMonitorController` (unified class — handles both singleplayer via `OnEnable` and multiplayer via `OnNetworkSpawn`).
 
 | Monitor | File | Trigger Condition |
 |---|---|---|
