@@ -6,6 +6,7 @@ using CosmicShore.Soap;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using CosmicShore.Utility;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
@@ -16,7 +17,8 @@ namespace CosmicShore.Game
         [SerializeField] public int ID;
 
         [Header("Cell Config Selection")]
-        [SerializeField] List<CellConfigDataSO> CellConfigs;   // NEW (replaces CellTypes)
+        [FormerlySerializedAs("CellTypes")]
+        [SerializeField] List<CellConfigDataSO> CellConfigs;
         [SerializeField] CellTypeChoiceOptions cellTypeChoiceOptions = CellTypeChoiceOptions.Random;
 
         [Header("Runtime Data")]
