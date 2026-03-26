@@ -166,8 +166,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d50c8fe93514b6da4c03b2a947bff62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
   waitBeforeLoading: 0.5
+  _onClickToMainMenuButton: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e,
+    type: 2}
+  _onActiveSessionEnd: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a,
+    type: 2}
+  _onClickToRestartButton: {fileID: 11400000, guid: 0066317e1b0d3f64baeead3311cd4970,
+    type: 2}
 --- !u!114 &7845464
 MonoBehaviour:
   m_ObjectHideFlags: 0
