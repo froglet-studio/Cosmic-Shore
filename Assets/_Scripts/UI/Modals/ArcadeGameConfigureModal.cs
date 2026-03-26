@@ -8,6 +8,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -27,11 +28,11 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventNoParam startGameRequestedEvent;
 
         [Header("Shared Game Data")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
         [Header("Host / Party Data")]
-        [SerializeField] private HostConnectionDataSO hostConnectionData;
+        [Inject] private HostConnectionDataSO hostConnectionData;
 
         [Header("External Views")]
         [SerializeField] private ArcadeExploreView arcadeExploreView;
