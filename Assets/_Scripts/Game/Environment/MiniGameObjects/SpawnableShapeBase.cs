@@ -88,6 +88,10 @@ public abstract class SpawnableShapeBase : SpawnableBase
             var prismPrefab = GetPrismPrefab();
             if (prismPrefab == null) continue;
 
+            // Treat SpawnPoint.Scale as a multiplier on the prefab's authored scale
+            // so Vector3.one means "100% of prefab size" rather than absolute (1,1,1).
+            var prefabScale = prismPrefab.transform.localScale;
+
             var trail = new Trail(td.IsLoop);
             var actualDomain = td.Domain;
 
@@ -101,7 +105,7 @@ public abstract class SpawnableShapeBase : SpawnableBase
                 block.ownerID = $"{container.name}::{i}";
                 block.transform.localPosition = point.Position;
                 block.transform.localRotation = point.Rotation;
-                block.TargetScale = point.Scale;
+                block.TargetScale = Vector3.Scale(point.Scale, prefabScale);
                 block.Trail = trail;
                 block.Initialize();
                 trail.Add(block);
