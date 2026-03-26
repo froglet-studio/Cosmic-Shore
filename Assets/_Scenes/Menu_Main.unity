@@ -76741,10 +76741,8 @@ MonoBehaviour:
   configChangedEvent: {fileID: 11400000, guid: be9184fc21a77ea49b462437de5232b7, type: 2}
   startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
     type: 2}
-  gameData: {fileID: 0}
   shipClassTypeVariable: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
     type: 2}
-  hostConnectionData: {fileID: 0}
   arcadeExploreView: {fileID: 149703240736415088}
   selectedGameName: {fileID: 4125016652399188270}
   selectedGameDescription: {fileID: 4125016652004098476}

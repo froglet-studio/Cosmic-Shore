@@ -1110,7 +1110,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerDomainGamesController, Assembly-CSharp
+      value: CosmicShore.Gameplay.MultiplayerDomainGamesController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2269,7 +2269,7 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 1628508346}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.MultiplayerDomainGamesController,
+          m_TargetAssemblyTypeName: CosmicShore.Gameplay.MultiplayerDomainGamesController,
             Assembly-CSharp
           m_MethodName: OnClickReturnToMainMenu
           m_Mode: 1
@@ -2336,7 +2336,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1628508325}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49778cb82884486fbf383c2ff2625238, type: 3}
+  m_Script: {fileID: 11500000, guid: 5d1250cee23043d4affa7a4a1e734646, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1

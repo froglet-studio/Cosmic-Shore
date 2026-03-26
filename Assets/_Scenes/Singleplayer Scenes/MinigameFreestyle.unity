@@ -1353,7 +1353,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1092805374, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+      value: CosmicShore.UI.MiniGameHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 1092805374, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -1878,7 +1878,7 @@ PrefabInstance:
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+      value: CosmicShore.UI.MiniGameHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2008,7 +2008,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.R_MiniGameBase, Assembly-CSharp
+      value: CosmicShore.Gameplay.R_MiniGameBase, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -5859,7 +5859,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 646541528}
-        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+        m_TargetAssemblyTypeName: CosmicShore.UI.MiniGameHUD, Assembly-CSharp
         m_MethodName: Show
         m_Mode: 1
         m_Arguments:

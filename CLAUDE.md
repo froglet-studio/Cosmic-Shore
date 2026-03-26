@@ -225,7 +225,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 1. **`SO_ArcadeGame` asset** — static config (mode, scene, captains, player/intensity ranges, scoring)
 2. **`ArcadeGameConfigSO`** — ephemeral UI state (selected game + intensity + players + vessel)
 3. **`GameDataSO`** — shared SOAP runtime state (all game params + SOAP events)
-4. **`SceneLoader.LaunchGame()`** — subscribes to `OnLaunchGame`, syncs config via ClientRpc, loads scene
+4. **`SceneLoader.LaunchGame()`** — subscribes to `OnLaunchGame`, loads scene. Game config is synced to clients by `MultiplayerMiniGameControllerBase.OnNetworkSpawn()` in the game scene
 5. **Game controller** — scene-placed `MiniGameControllerBase` subclass drives turn/round/game lifecycle
 
 ### Documentation Index
@@ -311,7 +311,7 @@ The application uses a unified bootstrap pattern centered on `AppManager`, with 
 Key classes:
 - `AppManager` (`_Scripts/System/AppManager.cs`) — top-level orchestrator and Reflex DI root (`[DefaultExecutionOrder(-100)]`, implements `IInstaller`). Handles platform configuration, DI registration of all persistent managers and SO assets, auth/network startup, splash fade, and scene transition. Lives on a `DontDestroyOnLoad` root.
 - `ApplicationStateMachine` (`_Scripts/System/ApplicationStateMachine.cs`) — pure C# class (DI lazy singleton). Single-writer to `ApplicationStateDataVariable` (SOAP). Validates transitions via a table-driven state graph. Auto-subscribes to gameplay SOAP events (`OnSessionStarted`, `OnMiniGameEnd`) and lifecycle events (pause, quit, network loss) for automatic phase transitions. States: `None(0)`, `Bootstrapping(1)`, `Authenticating(2)`, `MainMenu(3)`, `LoadingGame(4)`, `InGame(5)`, `GameOver(6)`, `Paused(7)`, `Disconnected(8)`, `ShuttingDown(9)`.
-- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading and game-restart service. Extends `NetworkBehaviour` for multiplayer-aware scene loading. Handles launching gameplay scenes (local + network), restart/replay, and returning to main menu. Registered as a DI singleton via AppManager. Transitions app state to `LoadingGame` / `MainMenu` on scene changes.
+- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading service. Extends `MonoBehaviour` (DontDestroyOnLoad). Lives in the Bootstrap scene and persists across all scene transitions. Subscribes to SOAP events in code (`OnLaunchGame`, `OnClickToMainMenuButton`, `OnActiveSessionEnd`, `OnClickToRestartButton`) — no per-scene EventListenerNoParam wiring needed. Handles launching gameplay scenes (auto-selects local vs network loading), returning to main menu, and local restart. Registered as a DI singleton via AppManager. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in the game scene.
 - `SceneNameListSO` (`_Scripts/Utility/DataContainers/SceneNameListSO.cs`) — centralized scene name registry (Bootstrap, Authentication, Menu_Main, Multiplayer). Registered in DI and injected where scene names are needed, replacing hardcoded strings.
 - `SceneTransitionManager` — unified scene loading with fade transitions (`[DefaultExecutionOrder(-50)]`), creates its own full-screen fade overlay programmatically. Registered as a DI singleton.
 - `ApplicationLifecycleManager` — application lifecycle events, bridges both static C# events (legacy) and SOAP events via `ApplicationLifecycleEventsContainerSO`
@@ -604,7 +604,7 @@ The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
 - `DomainAssigner` — static team pool manager. `Initialize()` fills pool with `[Jade, Ruby, Gold]` (excludes None, Unassigned, Blue). `GetDomainsByGameModes()` picks a random unique domain per player (returns `Domains.Jade` for co-op modes). **Must** be called per session start to prevent duplicate/swapped domains.
 
-Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `NetworkBehaviour` and auto-selects local vs network scene loading based on whether a host/server is running.
+Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `MonoBehaviour` and auto-selects local vs network scene loading based on whether a host/server is running. `SceneLoader` lives in Bootstrap (DontDestroyOnLoad) and subscribes to SOAP events in code. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in `OnNetworkSpawn()`.
 
 `VesselStatus` extends `NetworkBehaviour`. Multiplayer game modes can also run solo with AI opponents via the AI Profile system.
 
@@ -1154,7 +1154,10 @@ gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
        │
        ▼
 SceneLoader.LaunchGame()
-       │ Syncs SelectedPlayerCount + RequestedAIBackfillCount via ClientRpc
+       │ AppState → LoadingGame, network scene load
+       ▼
+MultiplayerMiniGameControllerBase.OnNetworkSpawn() [game scene]
+       │ [Server] SyncGameConfigToClients_ClientRpc (intensity, player count, AI backfill, etc.)
        ▼
 ServerPlayerVesselInitializerWithAI.OnNetworkSpawn() [game scene]
        │ SpawnAIs():
@@ -1247,7 +1250,8 @@ ArcadeGameConfigureModal.OnStartGameClicked()
   └─ gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
       └─ SceneLoader.LaunchGame()
           ├─ AppState → LoadingGame
-          └─ Network scene load (host always active from Menu_Main)
+          ├─ Network scene load (host always active from Menu_Main)
+          └─ Game config synced to clients by MultiplayerMiniGameControllerBase.OnNetworkSpawn()
 ```
 
 #### Player Count & AI Backfill
@@ -1655,7 +1659,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
 | Bootstrap / DI | `AppManager` (orchestrator + IInstaller), `BootstrapConfigSO`, `SceneTransitionManager`, `ApplicationLifecycleManager`, `ApplicationLifecycleEventsContainerSO` | `_Scripts/System/`, `_Scripts/System/Bootstrap/`, `_Scripts/ScriptableObjects/` |
 | App state machine | `ApplicationStateMachine` (single-writer phase tracker), `ApplicationStateData` / `ApplicationStateDataVariable` (SOAP state), `ApplicationState` enum | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/`, `_Scripts/Data/Enums/` |
-| Scene management | `SceneLoader` (NetworkBehaviour, game launch + restart + return-to-menu), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
+| Scene management | `SceneLoader` (MonoBehaviour, DontDestroyOnLoad in Bootstrap, game launch + restart + return-to-menu, SOAP code subscriptions), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Friends | `FriendsServiceFacade` (facade/single-writer for UGS Friends SDK), `FriendsInitializer` (MonoBehaviour bridge + presence), `FriendsDataSO` (SOAP container: 4 lists + 4 events), `FriendData`/`FriendPresenceActivity` (SOAP data types) | `_Scripts/System/`, `_Scripts/Controller/Party/`, `_Scripts/Utility/DataContainers/`, `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
 | Friends UI | `FriendsPanel` (tabbed: list + requests + add), `FriendEntryView` (friend row with invite/remove), `FriendRequestEntryView` (accept/decline/cancel), `AddFriendPanel` (name input) | `_Scripts/UI/Views/` |

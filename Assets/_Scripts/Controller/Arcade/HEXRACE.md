@@ -29,7 +29,7 @@ User selects HexRace from the Arcade screen. `ArcadeGameConfigureModal` opens wi
 
 - **Player Count** (1-4): Constrained by `SO_ArcadeGame.MinPlayers` (1) and `MaxPlayers` (4)
 - **Intensity** (1-4): Constrained by `SO_ArcadeGame.MinIntensity` (1) and `MaxIntensity` (4)
-- **Vessel Selection**: From `SO_ArcadeGame.Captains` list (Dolphin, Squirrel, Sparrow, Rhino, etc.)
+- **Vessel Selection**: From `SO_ArcadeGame.Vessels` list (Squirrel, Manta, Sparrow)
 
 ### 2. Player Count & AI Backfill Decision
 
@@ -66,7 +66,9 @@ Then `gameData.InvokeGameLaunch()` raises the `OnLaunchGame` SOAP event.
 
 ### 3. Scene Loading
 
-`SceneLoader.LaunchGame()` (listens to `OnLaunchGame`):
+`SceneLoader.LaunchGame()` (listens to `OnLaunchGame` via SOAP code subscription):
+
+`SceneLoader` is a `MonoBehaviour` singleton living in Bootstrap (DontDestroyOnLoad). It subscribes to SOAP events in code — no per-scene `EventListenerNoParam` wiring.
 
 ```csharp
 var nm = NetworkManager.Singleton;
@@ -80,6 +82,8 @@ LoadSceneAsync(gameData.SceneName, useNetworkSceneLoading).Forget();
 | No NetworkManager | Local scene load (`SceneManager.LoadScene`) | Edge case / fallback |
 
 The application state transitions to `LoadingGame` before scene load begins.
+
+Game config (intensity, player count, AI backfill, etc.) is synced to clients by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in the game scene's `OnNetworkSpawn()`, not by SceneLoader.
 
 ### 4. HexRace Scene Initialization
 
@@ -98,6 +102,10 @@ Scene Load Complete
 │   ├─ [Server] SpawnAIs()  — pre-spawns AI players based on RequestedAIBackfillCount
 │   ├─ Mark all AI in _processedPlayers set
 │   └─ base.OnNetworkSpawn()  — subscribe to OnPlayerNetworkSpawnedUlong for humans
+│
+├─ MultiplayerMiniGameControllerBase.OnNetworkSpawn()
+│   ├─ [Server] SyncGameConfigToClients_ClientRpc()  — syncs intensity, player count, AI backfill to clients
+│   └─ InitializeAfterDelay().Forget()
 │
 ├─ MultiplayerMiniGameControllerBase.InitializeAfterDelay()
 │   ├─ await UniTask.Delay(1000ms)
@@ -373,7 +381,7 @@ ugsStatsManager.ReportHexRaceStats(
 
 | Asset | Type | Key Values |
 |---|---|---|
-| HexRace game config | `SO_ArcadeGame` | `Mode=HexRace`, `IsMultiplayer=true`, `MinPlayers=1`, `MaxPlayers=4`, `GolfScoring=true` |
+| HexRace game config | `SO_ArcadeGame` | `Mode=HexRace`, `IsMultiplayer=true`, `MinPlayers=1`, `MaxPlayers=12`, `GolfScoring=true`, `Vessels=[Squirrel, Manta, Sparrow]` |
 | Arcade config runtime | `ArcadeGameConfigSO` | `Intensity`, `PlayerCount`, `SelectedShip` (runtime state) |
 
 ## Design Notes
@@ -387,5 +395,11 @@ ugsStatsManager.ReportHexRaceStats(
 4. **Crystal count default**: 39 crystals comes from the track's `SpawnableWaypointTrack` waypoint count. This can be overridden via `crystalsToFinishOverride` (inspector) or `_netCrystalsToFinish` (NetworkVariable, set by turn monitor).
 
 5. **Comeback mechanics**: The `ElementalComebackSystem` is critical for competitive balance — it buffs losing players proportionally to their crystal deficit, preventing runaway victories.
+
+6. **EndGame override**: `HexRaceController` overrides `EndGame()` as a no-op to prevent double `InvokeMiniGameEnd()`. HexRace handles end-game entirely through its own `ReportPlayerFinished_ServerRpc()` → `SyncFinalScores_ClientRpc()` path, which calls `InvokeMiniGameEnd()` directly.
+
+7. **Unified TurnMonitorController**: The scene uses `TurnMonitorController` (single class, no separate `NetworkTurnMonitorController`). It handles both singleplayer (`OnEnable`) and multiplayer (`OnNetworkSpawn`) lifecycle automatically.
+
+8. **DI-injected config**: `ArcadeGameConfigureModal` uses `[Inject]` for `GameDataSO` and `HostConnectionDataSO` (not `[SerializeField]`). Both are DI-registered in `AppManager`.
 
 6. **Vessel flexibility**: While Squirrel is the primary racing vessel, HexRace supports multiple vessel types via `SO_ArcadeGame.Captains`. Players can select any available vessel.

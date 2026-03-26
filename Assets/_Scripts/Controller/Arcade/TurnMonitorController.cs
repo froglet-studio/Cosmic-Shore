@@ -4,82 +4,107 @@ using CosmicShore.Utility;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Gameplay;
+
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Single responsibility: own a list of TurnMonitor and expose a clean API.
+    /// Owns a list of TurnMonitor, checks for end-of-turn each frame, and
+    /// fires InvokeGameTurnConditionsMet when any monitor triggers.
+    ///
+    /// Works in both singleplayer and multiplayer:
+    ///   - Multiplayer: subscribes in OnNetworkSpawn / unsubscribes in OnNetworkDespawn
+    ///   - Singleplayer: falls back to OnEnable / OnDisable (OnNetworkSpawn never fires)
     /// </summary>
-    public class TurnMonitorController : NetworkBehaviour 
+    public class TurnMonitorController : NetworkBehaviour
     {
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
-        
-        [SerializeField] 
+
+        [SerializeField]
         List<TurnMonitor> monitors;
 
-        bool isRunning;
-        
-        protected virtual void OnEnable()
+        bool _isRunning;
+        bool _subscribedViaNetwork;
+
+        // ── Network lifecycle (multiplayer) ──────────────────────────────
+
+        public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
+            _subscribedViaNetwork = true;
             SubscribeToEvents();
         }
 
-        void Update()
+        public override void OnNetworkDespawn()
         {
-            if (!isRunning)
-                return;
-
-            if (!CheckEndOfTurn())
-                return;
-
-            OnTurnEnded();
+            if (_subscribedViaNetwork)
+            {
+                UnsubscribeFromEvents();
+                _subscribedViaNetwork = false;
+            }
+            base.OnNetworkDespawn();
         }
 
-        void OnTurnEnded()
+        // ── MonoBehaviour lifecycle (singleplayer fallback) ──────────────
+
+        void OnEnable()
         {
-            isRunning = false;
+            // In multiplayer, OnNetworkSpawn handles subscription.
+            // In singleplayer, OnNetworkSpawn never fires so we subscribe here.
+            if (!_subscribedViaNetwork)
+                SubscribeToEvents();
+        }
+
+        void OnDisable()
+        {
+            if (!_subscribedViaNetwork)
+                UnsubscribeFromEvents();
+
+            StopMonitors();
+        }
+
+        // ── Core loop ────────────────────────────────────────────────────
+
+        void Update()
+        {
+            if (!_isRunning)
+                return;
+
+            if (!monitors.Any(m => m.CheckForEndOfTurn()))
+                return;
+
+            _isRunning = false;
             gameData.InvokeGameTurnConditionsMet();
         }
 
-        protected virtual void OnDisable()
-        {
-            UnsubscribeFromEvents();
-            StopMonitors();
-        }
-        
-        protected void SubscribeToEvents()
+        // ── Event handlers ───────────────────────────────────────────────
+
+        void SubscribeToEvents()
         {
             gameData.OnMiniGameTurnStarted.OnRaised += StartMonitors;
-            // gameData.OnMiniGameTurnEnd += PauseMonitors;
             gameData.OnMiniGameTurnEnd.OnRaised += StopMonitors;
-            // gameData.OnMiniGameEnd += StopMonitors;
         }
 
-        protected void UnsubscribeFromEvents()
+        void UnsubscribeFromEvents()
         {
             gameData.OnMiniGameTurnStarted.OnRaised -= StartMonitors;
-            // gameData.OnMiniGameTurnEnd -= PauseMonitors;
             gameData.OnMiniGameTurnEnd.OnRaised -= StopMonitors;
-            // gameData.OnMiniGameEnd -= StopMonitors;
         }
 
         void StartMonitors()
         {
-            isRunning = true;
-            
-            foreach(var m in monitors) 
+            _isRunning = true;
+
+            foreach (var m in monitors)
                 m.StartMonitor();
         }
 
         void StopMonitors()
         {
-            isRunning = false;
-            
-            foreach(var m in monitors)
+            _isRunning = false;
+
+            foreach (var m in monitors)
                 m.StopMonitor();
         }
-
-        bool CheckEndOfTurn() => monitors.Any(m => m.CheckForEndOfTurn());
     }
 }
