@@ -1059,7 +1059,7 @@ PrefabInstance:
         type: 3}
       propertyPath: connectingPanel
       value: 
-      objectReference: {fileID: 1617932949}
+      objectReference: {fileID: 0}
     - target: {fileID: 4502508202291266892, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -2352,7 +2352,7 @@ MonoBehaviour:
   pip: {fileID: 400393580}
   silhouette: {fileID: 400393579}
   trailDisplay: {fileID: 400393578}
-  connectingPanelCanvasGroup: {fileID: 1617932949}
+  connectingPanelCanvasGroup: {fileID: 0}
   canvasGroup: {fileID: 400393581}
   lifeFormCounter: {fileID: 400393570}
   connectingPanel: {fileID: 0}
@@ -2370,6 +2370,7 @@ MonoBehaviour:
     Color: {r: 0, g: 0.15447235, b: 1, a: 1}
   - Domain: 4
     Color: {r: 1, g: 0.62498116, b: 0, a: 1}
+  animSettings: {fileID: 0}
 --- !u!114 &400393585
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2382,7 +2383,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8be3bc7de28342eab7a6def9013e9b89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   view: {fileID: 400393584}
   scoreboard: {fileID: 2095434562}
   onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
@@ -2394,7 +2394,6 @@ MonoBehaviour:
   onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
     type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  minConnectingSeconds: 5
   preGameCinematic: {fileID: 0}
   cinematicLookAtCenter: {x: 0, y: 0, z: 0}
   enablePreGameCinematic: 1
@@ -2614,6 +2613,8 @@ Transform:
   - {fileID: 1320319579}
   - {fileID: 966370462}
   - {fileID: 808058267}
+  - {fileID: 856778092}
+  - {fileID: 263098544}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &776211957 stripped
@@ -2678,7 +2679,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   weightedSegments: []
   guaranteedSpawnables: []
   spawnableByIntensity:
@@ -3410,86 +3410,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 709676733}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
---- !u!1001 &1429934007
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6603856079807241602, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7674008186778831584, guid: 25014292169327a46a64051ccbe7e228,
-        type: 3}
-      propertyPath: m_Name
-      value: MultiplayerSetup
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 25014292169327a46a64051ccbe7e228, type: 3}
---- !u!114 &1429934008 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7141091663868254756, guid: 25014292169327a46a64051ccbe7e228,
-    type: 3}
-  m_PrefabInstance: {fileID: 1429934007}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8c61f782db244c468ebf6a9644a063b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1468661146
 GameObject:
   m_ObjectHideFlags: 0
@@ -3623,12 +3543,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1562726423}
   m_CullTransparentMesh: 1
---- !u!225 &1617932949 stripped
-CanvasGroup:
-  m_CorrespondingSourceObject: {fileID: 6286389942094070827, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 400393569}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1628508325
 GameObject:
   m_ObjectHideFlags: 0
@@ -3647,7 +3561,6 @@ GameObject:
   - component: {fileID: 1628508334}
   - component: {fileID: 1628508333}
   - component: {fileID: 1628508338}
-  - component: {fileID: 1628508339}
   - component: {fileID: 1628508340}
   - component: {fileID: 1628508343}
   - component: {fileID: 1628508342}
@@ -3714,7 +3627,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!114 &1628508334
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3727,15 +3639,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   clientPlayerVesselInitializer: {fileID: 1628508333}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
-  gameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
-  aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
-  _playerOrigins:
-  - {fileID: 1468661147}
-  - {fileID: 1074736317}
+  shutdownNetworkOnDespawn: 1
+  playerSpawnPoints: []
+  preSpawnDelayMs: 200
+  postSpawnDelayMs: 200
 --- !u!114 &1628508335
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3763,7 +3673,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   OnClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   golfRules: 0
   scoringConfigs:
   - Mode: 7
@@ -3799,25 +3708,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   volumeUI: {fileID: 1013487527}
---- !u!114 &1628508339
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628508325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0d50c8fe93514b6da4c03b2a947bff62, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  _sceneNames: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
-  AllGames: {fileID: 11400000, guid: 23306534ee610414c99a9b7bf3d92995, type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  _onSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
 --- !u!114 &1628508340
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3834,59 +3725,13 @@ MonoBehaviour:
   _disableAfterSubscribing: 0
   _eventResponses:
   - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-    Response:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1628508339}
-          m_TargetAssemblyTypeName: CosmicShore.Core.SceneLoader, Assembly-CSharp
-          m_MethodName: ReturnToMainMenu
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - Delay: 0
     ScriptableEvent: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}
     Response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 1628508339}
-          m_TargetAssemblyTypeName: CosmicShore.Core.SceneLoader, Assembly-CSharp
-          m_MethodName: ReturnToMainMenu
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
         - m_Target: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
           m_TargetAssemblyTypeName: CosmicShore.SOAP.MiniGameDataSO, Assembly-CSharp
           m_MethodName: ResetAllData
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: 0066317e1b0d3f64baeead3311cd4970, type: 2}
-    Response:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1628508339}
-          m_TargetAssemblyTypeName: CosmicShore.Core.SceneLoader, Assembly-CSharp
-          m_MethodName: RestartGame
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -3938,7 +3783,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
     type: 3}
@@ -3964,10 +3808,8 @@ MonoBehaviour:
   numberOfRounds: 1
   numberOfTurnsPerRound: 1
   countdownTimer: {fileID: 256752124}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  multiplayerSetup: {fileID: 1429934008}
   localScoreboard: {fileID: 2095434562}
 --- !u!114 &1628508346
 MonoBehaviour:
@@ -3981,7 +3823,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72484f00ba8d4553a9bd03f4d94be33e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   gameMode: 35
 --- !u!1001 &1655328213
 PrefabInstance:
@@ -4086,79 +3927,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 061f308768b5b564bbb0f130d1a8f02e, type: 3}
---- !u!1001 &1707096413
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5630258903609976879, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7225496175357077209, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: m_Name
-      value: StatsManager
-      objectReference: {fileID: 0}
-    - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: _netcodeHooks
-      value: 
-      objectReference: {fileID: 1628508335}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 8373d81418838f64c97155119a29e98c, type: 3}
 --- !u!1 &1916135823 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7071078697595455670, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -6805,6 +6573,7 @@ MonoBehaviour:
   rematchDeniedText: {fileID: 977523998}
   playAgainButton: {fileID: 977524000}
   rematchPanelAutoDismissSeconds: 2
+  animSettings: {fileID: 0}
 --- !u!114 &2095434563
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6817,7 +6586,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87e6ed750945438e9e08f918293fefd6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -6827,7 +6595,4 @@ SceneRoots:
   - {fileID: 400393569}
   - {fileID: 420213768}
   - {fileID: 709676733}
-  - {fileID: 1516919746}
-  - {fileID: 1707096413}
-  - {fileID: 1429934007}
   - {fileID: 2001299555}
