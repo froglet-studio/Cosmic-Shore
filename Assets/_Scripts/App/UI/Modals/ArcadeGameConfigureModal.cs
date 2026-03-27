@@ -4,6 +4,8 @@ using System.Linq;
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
+using CosmicShore.App.Profile;
+using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.ToastNotification;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Game.Progression;
@@ -44,9 +46,17 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private GameObject configurationDetailView; // Screen 1
         [SerializeField] private GameObject gameDetailView;          // Screen 2
 
-        [Header("Screen 1 – Configuration Controls")]
-        [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
-        [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
+        [Header("Screen 1 – Intensity Controls")]
+        [SerializeField] private List<IntensitySelectButton> intensityButtons = new(4);
+
+        [Header("Screen 1 – Player Count Stepper")]
+        [SerializeField] private Button playerCountDecrementButton;
+        [SerializeField] private Button playerCountIncrementButton;
+        [SerializeField] private TMP_Text playerCountValueText;
+
+        [Header("Screen 1 – Team Count Stepper")]
+        [SerializeField] private Button teamCountDecrementButton;
+        [SerializeField] private Button teamCountIncrementButton;
         [SerializeField] private TMP_Text teamsValueText;
 
         [Header("Screen 2 – Selected Vessel Summary")]
@@ -67,8 +77,17 @@ namespace CosmicShore.App.UI.Modals
         [Tooltip("Button to cycle to the next vessel. Disabled when only one vessel is available.")]
         [SerializeField] private Button nextShipButton;
 
+        [Header("Screen 2 – Domain (Team) Selection")]
+        [Tooltip("One TeamInfoData per selectable team. First entry should be the RANDOM option (Domain = Unassigned).")]
+        [SerializeField] private List<TeamInfoData> teamInfoItems = new();
+
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
+
+        // Hard cap on the number of players the game supports
+        const int MaxSupportedPlayers = 4;
+        const int MaxSupportedTeams = 3;
+        const int MinTeams = 1;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
@@ -95,8 +114,23 @@ namespace CosmicShore.App.UI.Modals
                 intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
             }
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect += HandlePlayerCountSelected;
+            if (playerCountDecrementButton)
+                playerCountDecrementButton.onClick.AddListener(OnPlayerCountDecrement);
+            if (playerCountIncrementButton)
+                playerCountIncrementButton.onClick.AddListener(OnPlayerCountIncrement);
+
+            if (teamCountDecrementButton)
+                teamCountDecrementButton.onClick.AddListener(OnTeamCountDecrement);
+            if (teamCountIncrementButton)
+                teamCountIncrementButton.onClick.AddListener(OnTeamCountIncrement);
+
+            // Domain / team buttons
+            foreach (var item in teamInfoItems)
+            {
+                if (!item || !item.Button) continue;
+                var captured = item.Domain;
+                item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
+            }
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
@@ -117,8 +151,21 @@ namespace CosmicShore.App.UI.Modals
                 intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
             }
 
-            foreach (var playerCountButton in playerCountButtons)
-                playerCountButton.OnSelect -= HandlePlayerCountSelected;
+            if (playerCountDecrementButton)
+                playerCountDecrementButton.onClick.RemoveListener(OnPlayerCountDecrement);
+            if (playerCountIncrementButton)
+                playerCountIncrementButton.onClick.RemoveListener(OnPlayerCountIncrement);
+
+            if (teamCountDecrementButton)
+                teamCountDecrementButton.onClick.RemoveListener(OnTeamCountDecrement);
+            if (teamCountIncrementButton)
+                teamCountIncrementButton.onClick.RemoveListener(OnTeamCountIncrement);
+
+            foreach (var item in teamInfoItems)
+            {
+                if (item && item.Button)
+                    item.Button.onClick.RemoveAllListeners();
+            }
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -141,13 +188,14 @@ namespace CosmicShore.App.UI.Modals
 
             config.ResetState();
             config.SelectedGame = selectedGame;
-            config.TeamCount    = 1; // number of teams disabled for now
+            config.TeamCount    = 1;
 
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
             InitializeGameMetaView(selectedGame);
             InitializeScreen1Controls(selectedGame);
             InitializeDefaultShipFromAvailable();
+            InitializeDomainSelection();
 
             ShowConfigurationScreen();
             RaiseConfigChanged();
@@ -223,22 +271,17 @@ namespace CosmicShore.App.UI.Modals
                 button.SetSelected(active && level == config.Intensity);
             }
 
-            // Player count
-            for (int i = 0; i < playerCountButtons.Count; i++)
-            {
-                var button = playerCountButtons[i];
-                if (!button) continue;
+            // Player count stepper
+            RefreshPlayerCountStepper();
 
-                int count = i + 1;
-                button.SetPlayerCount(count);
+            // Team count stepper
+            RefreshTeamCountStepper();
+        }
 
-                bool active = count >= game.MinPlayers && count <= game.MaxPlayers;
-                button.SetActive(active);
-                button.SetSelected(count == config.PlayerCount);
-            }
-
-            if (teamsValueText)
-                teamsValueText.text = "1";
+        void InitializeDomainSelection()
+        {
+            config.SelectedDomain = Domains.Unassigned;
+            RefreshDomainButtons();
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -262,7 +305,7 @@ namespace CosmicShore.App.UI.Modals
             if (nextShipButton)
                 nextShipButton.gameObject.SetActive(canCycle);
         }
-        
+
         void InitializeDefaultShipFromAvailable()
         {
             if (_availableShips.Count == 0)
@@ -354,23 +397,6 @@ namespace CosmicShore.App.UI.Modals
             RaiseConfigChanged();
         }
 
-        void HandlePlayerCountSelected(int playerCount)
-        {
-            if (_selectedGame == null || config == null) return;
-
-            playerCount        = Mathf.Clamp(playerCount, _selectedGame.MinPlayers, _selectedGame.MaxPlayers);
-            config.PlayerCount = playerCount;
-
-            foreach (var button in playerCountButtons)
-            {
-                if (!button) continue;
-                button.SetSelected(button.Count == playerCount);
-            }
-
-            SyncGameDataConfig();
-            RaiseConfigChanged();
-        }
-
         void HandleLockedIntensitySelected(int intensity)
         {
             OnLockedIntensityClicked?.Invoke(intensity);
@@ -427,6 +453,133 @@ namespace CosmicShore.App.UI.Modals
         void RaiseConfigChanged()
         {
             configChangedEvent?.Raise();
+        }
+
+        #endregion
+
+        #region Player count stepper
+
+        public void OnPlayerCountIncrement()
+        {
+            if (_selectedGame == null || config == null) return;
+
+            int max = Mathf.Min(_selectedGame.MaxPlayers, MaxSupportedPlayers);
+            int next = Mathf.Min(config.PlayerCount + 1, max);
+            SetPlayerCount(next);
+        }
+
+        public void OnPlayerCountDecrement()
+        {
+            if (_selectedGame == null || config == null) return;
+
+            int next = Mathf.Max(config.PlayerCount - 1, _selectedGame.MinPlayers);
+            SetPlayerCount(next);
+        }
+
+        void SetPlayerCount(int playerCount)
+        {
+            if (config.PlayerCount == playerCount) return;
+
+            config.PlayerCount = playerCount;
+            RefreshPlayerCountStepper();
+            SyncGameDataConfig();
+            RaiseConfigChanged();
+        }
+
+        void RefreshPlayerCountStepper()
+        {
+            if (playerCountValueText)
+                playerCountValueText.text = config.PlayerCount.ToString();
+
+            if (_selectedGame == null) return;
+
+            int max = Mathf.Min(_selectedGame.MaxPlayers, MaxSupportedPlayers);
+
+            if (playerCountDecrementButton)
+                playerCountDecrementButton.interactable = config.PlayerCount > _selectedGame.MinPlayers;
+
+            if (playerCountIncrementButton)
+                playerCountIncrementButton.interactable = config.PlayerCount < max;
+        }
+
+        #endregion
+
+        #region Team count stepper
+
+        public void OnTeamCountIncrement()
+        {
+            if (config == null) return;
+
+            int next = Mathf.Min(config.TeamCount + 1, MaxSupportedTeams);
+            SetTeamCount(next);
+        }
+
+        public void OnTeamCountDecrement()
+        {
+            if (config == null) return;
+
+            int next = Mathf.Max(config.TeamCount - 1, MinTeams);
+            SetTeamCount(next);
+        }
+
+        void SetTeamCount(int teamCount)
+        {
+            if (config.TeamCount == teamCount) return;
+
+            config.TeamCount = teamCount;
+            RefreshTeamCountStepper();
+            SyncGameDataConfig();
+            RaiseConfigChanged();
+        }
+
+        void RefreshTeamCountStepper()
+        {
+            if (teamsValueText)
+                teamsValueText.text = config.TeamCount.ToString();
+
+            if (teamCountDecrementButton)
+                teamCountDecrementButton.interactable = config.TeamCount > MinTeams;
+
+            if (teamCountIncrementButton)
+                teamCountIncrementButton.interactable = config.TeamCount < MaxSupportedTeams;
+        }
+
+        #endregion
+
+        #region Domain (team) selection
+
+        void HandleDomainSelected(Domains domain)
+        {
+            if (config == null) return;
+
+            config.SelectedDomain = domain;
+            SyncGameDataDomain();
+            RefreshDomainButtons();
+            RaiseConfigChanged();
+        }
+
+        void RefreshDomainButtons()
+        {
+            var selected = config ? config.SelectedDomain : Domains.Unassigned;
+
+            // Resolve the player's current avatar sprite once
+            Sprite avatarSprite = null;
+            var dataService = PlayerDataService.Instance;
+            if (dataService != null)
+                avatarSprite = dataService.GetAvatarSprite(dataService.CurrentProfile.avatarId);
+
+            foreach (var item in teamInfoItems)
+            {
+                if (!item) continue;
+                item.SetSelected(item.Domain == selected);
+                item.SetAvatarSprite(avatarSprite);
+            }
+        }
+
+        void SyncGameDataDomain()
+        {
+            if (!gameData) return;
+            gameData.PreferredDomain = config ? config.SelectedDomain : Domains.Unassigned;
         }
 
         #endregion
@@ -576,6 +729,8 @@ namespace CosmicShore.App.UI.Modals
 
             if (gameData.SelectedPlayerCount)
                 gameData.SelectedPlayerCount.Value = config.PlayerCount;
+
+            gameData.SelectedTeamCount = config.TeamCount;
         }
 
         void SyncGameDataShip(SO_Vessel ship)

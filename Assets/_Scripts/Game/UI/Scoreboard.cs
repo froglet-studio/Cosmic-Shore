@@ -303,8 +303,12 @@ namespace CosmicShore.Game.UI
 
         protected virtual void ShowMultiplayerView()
         {
-            gameData.IsLocalDomainWinner(out DomainStats winnerStats);
-            SetBannerForDomain(winnerStats.Domain);
+            // Show the actual winning team in the banner, not the local player's team
+            if (gameData.TryGetWinningDomain(out DomainStats winnerStats))
+                SetBannerForDomain(winnerStats.Domain);
+            else if (BannerText)
+                BannerText.text = "GAME OVER";
+
             DisplayPlayerScores();
 
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
