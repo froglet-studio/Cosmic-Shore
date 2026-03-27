@@ -174,8 +174,13 @@ namespace CosmicShore.Game
                 return;
             }
 
-            // Always fill to 4 total players — AI takes the remaining slots
-            int aiCount = MaxTotalPlayers - 1;
+            // Fill to 4 total players — AI takes remaining slots based on human count
+            int humanCount = Mathf.Clamp(gameData.SelectedPlayerCount.Value, 1, MaxTotalPlayers);
+            int aiCount = MaxTotalPlayers - humanCount;
+            if (aiCount <= 0) return;
+
+            // Assign AI domains based on 2v2 team balance rules
+            var aiDomains = GetAIDomains(humanCount, aiCount);
 
             // Pick AI profiles for unique names
             var pickedProfiles = aiProfileList != null ? aiProfileList.PickRandom(aiCount) : null;
@@ -207,8 +212,8 @@ namespace CosmicShore.Game
                     continue;
                 }
 
-                // Configure AI player
-                var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                // Configure AI player with pre-computed domain
+                var aiDomain = aiDomains[i];
                 var aiVesselType = PickAIVesselType();
 
                 // Use AI profile name if available, otherwise fall back to generic name
@@ -233,6 +238,35 @@ namespace CosmicShore.Game
 
                 CSDebug.Log($"[ServerPlayerVesselInitializer] Spawned AI opponent {i + 1}/{aiCount}: domain={aiDomain}, vessel={aiVesselType}");
             }
+        }
+
+        /// <summary>
+        /// Determines AI domain assignments to form balanced 2v2 teams.
+        /// 1 human:  human(Jade) + AI(Jade) vs AI(Ruby) + AI(Ruby)
+        /// 2 humans: human(Jade) + human(Jade) vs AI(Ruby) + AI(Ruby)
+        /// 3 humans: human(Jade) + human(Jade) vs human(Ruby) + AI(Ruby)
+        /// </summary>
+        List<Domains> GetAIDomains(int humanCount, int aiCount)
+        {
+            var domains = new List<Domains>(aiCount);
+
+            switch (humanCount)
+            {
+                case 1:
+                    domains.Add(Domains.Jade);
+                    domains.Add(Domains.Ruby);
+                    domains.Add(Domains.Ruby);
+                    break;
+                case 2:
+                    domains.Add(Domains.Ruby);
+                    domains.Add(Domains.Ruby);
+                    break;
+                case 3:
+                    domains.Add(Domains.Ruby);
+                    break;
+            }
+
+            return domains;
         }
 
         protected VesselClassType PickAIVesselType()
