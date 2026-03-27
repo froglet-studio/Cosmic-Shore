@@ -23,10 +23,10 @@ MonoBehaviour:
     type: 3}
   GolfScoring: 0
   SceneName: MinigameWildlifeBlitzMultuplayerCoOp
-  Captains:
-  - {fileID: 11400000, guid: 38f86662381aa0c4da8018fa5fc4e62a, type: 2}
+  Vessels:
+  - {fileID: 0}
   MinPlayers: 2
-  MaxPlayers: 2
+  MaxPlayers: 4
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 430
