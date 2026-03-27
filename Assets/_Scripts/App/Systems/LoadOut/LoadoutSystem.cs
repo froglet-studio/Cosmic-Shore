@@ -89,6 +89,9 @@ namespace CosmicShore.App.Systems.Loadout
 
         public static void SaveGameLoadOut(GameModes mode, Loadout loadout)
         {
+            if (gameLoadouts == null)
+                gameLoadouts = DataAccessor.Load<List<ArcadeGameLoadout>>(GameLoadoutsSaveFileName);
+
             var gameLoadout = new ArcadeGameLoadout(mode, loadout);
             var found = false;
             for (var i=0; i<gameLoadouts.Count; i++)
