@@ -3,6 +3,7 @@ namespace CosmicShore.Game.Arcade
     /// <summary>
     /// Block Bandit game mode — timed single-player mode where the player
     /// steals blocks to score points before time runs out.
+    /// EndGameCinematicController handles the post-game cinematic and scoreboard trigger.
     /// </summary>
     public class SinglePlayerBlockBanditController : SinglePlayerMiniGameControllerBase
     {
@@ -10,14 +11,6 @@ namespace CosmicShore.Game.Arcade
         {
             RaiseToggleReadyButtonEvent(true);
             base.SetupNewRound();
-        }
-
-        protected override void EndGame()
-        {
-            base.EndGame();
-            // No EndGameCinematicController in this scene, so trigger
-            // the scoreboard directly after the base EndGame flow.
-            gameData.InvokeShowGameEndScreen();
         }
     }
 }
