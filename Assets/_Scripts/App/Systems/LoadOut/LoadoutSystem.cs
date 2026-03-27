@@ -76,6 +76,9 @@ namespace CosmicShore.App.Systems.Loadout
 
         public static ArcadeGameLoadout LoadGameLoadout(GameModes mode, bool isMultiplayer)
         {
+            if (gameLoadouts == null)
+                gameLoadouts = DataAccessor.Load<List<ArcadeGameLoadout>>(GameLoadoutsSaveFileName);
+
             for (var i = 0; i < gameLoadouts.Count; i++)
             {
                 if (gameLoadouts[i].GameMode == mode)
