@@ -87,6 +87,7 @@ namespace CosmicShore.Gameplay
                 return;
 
             if (shards == null) return;
+            if (membraneRadius <= 0f) return;
 
             float nodeScalerOverThree = nodeScaler / 3;
             for (int i = 0; i < shards.Length; i++)
