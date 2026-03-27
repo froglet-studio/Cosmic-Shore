@@ -70,19 +70,28 @@ public static class DomainAssigner
     }
 
     /// <summary>
-    /// Clears all assigned teams (use when restarting or resetting game).
+    /// Clears all assigned teams and populates the pool based on the number of
+    /// teams selected by the host. Each domain is added twice to support 4+
+    /// players with duplicate domain assignments (2v2 style).
     /// </summary>
-    public static void Initialize()
+    /// <param name="teamCount">Number of distinct teams (1-3). Clamped internally.</param>
+    public static void Initialize(int teamCount = 3)
     {
         availableDomains.Clear();
-        // Get all valid teams (excluding reserved ones), added twice each to
-        // support up to 6 players with duplicate domain assignments (2v2 style).
-        var validDomains = Enum.GetValues(typeof(Domains))
+
+        // All valid domains in a stable order (Jade, Ruby, Gold)
+        var allDomains = Enum.GetValues(typeof(Domains))
             .Cast<Domains>()
             .Where(t => t is not (Domains.None or Domains.Unassigned or Domains.Blue))
             .ToList();
-        availableDomains.AddRange(validDomains);
-        availableDomains.AddRange(validDomains);
-        CSDebug.Log("[DomainAssigner] 🔄 Cleared assigned domains cache.");
+
+        // Take only as many domains as the host selected for team count
+        int count = Mathf.Clamp(teamCount, 1, allDomains.Count);
+        var activeDomains = allDomains.GetRange(0, count);
+
+        // Add each domain twice so 4+ players can share teams
+        availableDomains.AddRange(activeDomains);
+        availableDomains.AddRange(activeDomains);
+        CSDebug.Log($"[DomainAssigner] Initialized with {count} team(s): {string.Join(", ", activeDomains)}");
     }
 }

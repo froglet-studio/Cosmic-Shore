@@ -54,7 +54,9 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private Button playerCountIncrementButton;
         [SerializeField] private TMP_Text playerCountValueText;
 
-        [Header("Screen 1 – Teams")]
+        [Header("Screen 1 – Team Count Stepper")]
+        [SerializeField] private Button teamCountDecrementButton;
+        [SerializeField] private Button teamCountIncrementButton;
         [SerializeField] private TMP_Text teamsValueText;
 
         [Header("Screen 2 – Selected Vessel Summary")]
@@ -84,6 +86,8 @@ namespace CosmicShore.App.UI.Modals
 
         // Hard cap on the number of players the game supports
         const int MaxSupportedPlayers = 4;
+        const int MaxSupportedTeams = 3;
+        const int MinTeams = 1;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
@@ -114,6 +118,11 @@ namespace CosmicShore.App.UI.Modals
                 playerCountDecrementButton.onClick.AddListener(OnPlayerCountDecrement);
             if (playerCountIncrementButton)
                 playerCountIncrementButton.onClick.AddListener(OnPlayerCountIncrement);
+
+            if (teamCountDecrementButton)
+                teamCountDecrementButton.onClick.AddListener(OnTeamCountDecrement);
+            if (teamCountIncrementButton)
+                teamCountIncrementButton.onClick.AddListener(OnTeamCountIncrement);
 
             // Domain / team buttons
             foreach (var item in teamInfoItems)
@@ -147,6 +156,11 @@ namespace CosmicShore.App.UI.Modals
             if (playerCountIncrementButton)
                 playerCountIncrementButton.onClick.RemoveListener(OnPlayerCountIncrement);
 
+            if (teamCountDecrementButton)
+                teamCountDecrementButton.onClick.RemoveListener(OnTeamCountDecrement);
+            if (teamCountIncrementButton)
+                teamCountIncrementButton.onClick.RemoveListener(OnTeamCountIncrement);
+
             foreach (var item in teamInfoItems)
             {
                 if (item && item.Button)
@@ -174,7 +188,7 @@ namespace CosmicShore.App.UI.Modals
 
             config.ResetState();
             config.SelectedGame = selectedGame;
-            config.TeamCount    = 1; // number of teams disabled for now
+            config.TeamCount    = 1;
 
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
@@ -260,8 +274,8 @@ namespace CosmicShore.App.UI.Modals
             // Player count stepper
             RefreshPlayerCountStepper();
 
-            if (teamsValueText)
-                teamsValueText.text = "1";
+            // Team count stepper
+            RefreshTeamCountStepper();
         }
 
         void InitializeDomainSelection()
@@ -490,6 +504,48 @@ namespace CosmicShore.App.UI.Modals
 
         #endregion
 
+        #region Team count stepper
+
+        public void OnTeamCountIncrement()
+        {
+            if (config == null) return;
+
+            int next = Mathf.Min(config.TeamCount + 1, MaxSupportedTeams);
+            SetTeamCount(next);
+        }
+
+        public void OnTeamCountDecrement()
+        {
+            if (config == null) return;
+
+            int next = Mathf.Max(config.TeamCount - 1, MinTeams);
+            SetTeamCount(next);
+        }
+
+        void SetTeamCount(int teamCount)
+        {
+            if (config.TeamCount == teamCount) return;
+
+            config.TeamCount = teamCount;
+            RefreshTeamCountStepper();
+            SyncGameDataConfig();
+            RaiseConfigChanged();
+        }
+
+        void RefreshTeamCountStepper()
+        {
+            if (teamsValueText)
+                teamsValueText.text = config.TeamCount.ToString();
+
+            if (teamCountDecrementButton)
+                teamCountDecrementButton.interactable = config.TeamCount > MinTeams;
+
+            if (teamCountIncrementButton)
+                teamCountIncrementButton.interactable = config.TeamCount < MaxSupportedTeams;
+        }
+
+        #endregion
+
         #region Domain (team) selection
 
         void HandleDomainSelected(Domains domain)
@@ -673,6 +729,8 @@ namespace CosmicShore.App.UI.Modals
 
             if (gameData.SelectedPlayerCount)
                 gameData.SelectedPlayerCount.Value = config.PlayerCount;
+
+            gameData.SelectedTeamCount = config.TeamCount;
         }
 
         void SyncGameDataShip(SO_Vessel ship)

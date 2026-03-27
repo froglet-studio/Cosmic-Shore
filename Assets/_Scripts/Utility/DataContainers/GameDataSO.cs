@@ -51,6 +51,7 @@ namespace CosmicShore.Soap
         public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
+        public int SelectedTeamCount = 1;
         public ResourceCollection ResourceCollection;
         public ThemeManagerDataContainerSO ThemeManagerData;
         
@@ -101,10 +102,9 @@ namespace CosmicShore.Soap
 
         public void SetupForMultiplayer()
         {
-            // Ensure the domain pool is fresh for the new session so every
-            // player gets a unique domain.  Without this, leftover state from
-            // a previous session could cause duplicate or swapped domains.
-            DomainAssigner.Initialize();
+            // Ensure the domain pool is fresh for the new session. The team count
+            // determines how many distinct domains are available for assignment.
+            DomainAssigner.Initialize(SelectedTeamCount);
 
             if (Players == null || Players.Count == 0)
                 return;
@@ -219,7 +219,7 @@ namespace CosmicShore.Soap
 
             ResetRuntimeData();
 
-            DomainAssigner.Initialize();
+            DomainAssigner.Initialize(SelectedTeamCount);
         }
 
         public void AddPlayer(IPlayer p)
