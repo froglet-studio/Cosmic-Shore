@@ -27,7 +27,7 @@ MonoBehaviour:
   Vessels:
   - {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
   MinPlayers: 1
-  MaxPlayers: 3
+  MaxPlayers: 4
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 432

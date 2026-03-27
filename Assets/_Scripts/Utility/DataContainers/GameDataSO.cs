@@ -51,6 +51,7 @@ namespace CosmicShore.Soap
         public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
+        public int SelectedTeamCount = 1;
         public ResourceCollection ResourceCollection;
         public ThemeManagerDataContainerSO ThemeManagerData;
         
@@ -101,10 +102,9 @@ namespace CosmicShore.Soap
 
         public void SetupForMultiplayer()
         {
-            // Ensure the domain pool is fresh for the new session so every
-            // player gets a unique domain.  Without this, leftover state from
-            // a previous session could cause duplicate or swapped domains.
-            DomainAssigner.Initialize();
+            // Ensure the domain pool is fresh for the new session. The team count
+            // determines how many distinct domains are available for assignment.
+            DomainAssigner.Initialize(SelectedTeamCount);
 
             if (Players == null || Players.Count == 0)
                 return;
@@ -219,7 +219,7 @@ namespace CosmicShore.Soap
 
             ResetRuntimeData();
 
-            DomainAssigner.Initialize();
+            DomainAssigner.Initialize(SelectedTeamCount);
         }
 
         public void AddPlayer(IPlayer p)
@@ -306,11 +306,33 @@ namespace CosmicShore.Soap
         public bool IsLocalDomainWinner(out DomainStats stats)
         {
             stats = default;
+            if (DomainStatsList == null || DomainStatsList.Count == 0 || LocalPlayer == null)
+                return false;
+
+            // The first entry in the sorted list is the winner
+            var winnerDomain = DomainStatsList[0];
+
+            // Find the local player's domain stats
             foreach (var stat in DomainStatsList.Where(stat => stat.Domain == LocalPlayer.Domain))
             {
                 stats = stat;
             }
-            return stats.Domain == LocalPlayer.Domain;
+
+            return winnerDomain.Domain == LocalPlayer.Domain;
+        }
+
+        /// <summary>
+        /// Returns the winning domain (first entry in the sorted DomainStatsList).
+        /// DomainStatsList must be sorted before calling this.
+        /// </summary>
+        public bool TryGetWinningDomain(out DomainStats winner)
+        {
+            winner = default;
+            if (DomainStatsList == null || DomainStatsList.Count == 0)
+                return false;
+
+            winner = DomainStatsList[0];
+            return true;
         }
         
         public void SetPlayersActive()

@@ -77232,6 +77232,16 @@ PrefabInstance:
       propertyPath: arcadeExploreView
       value: 
       objectReference: {fileID: 149703240736415088}
+    - target: {fileID: 4357675176818844460, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
+        type: 3}
+      propertyPath: teamCountDecrementButton
+      value: 
+      objectReference: {fileID: 2061010018}
+    - target: {fileID: 4357675176818844460, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
+        type: 3}
+      propertyPath: teamCountIncrementButton
+      value: 
+      objectReference: {fileID: 2061010017}
     - target: {fileID: 5626452830758336854, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -77410,7 +77420,15 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8899762354549211344, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2061010018}
+    - targetCorrespondingSourceObject: {fileID: 2098265765021851674, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2061010017}
   m_SourcePrefab: {fileID: 100100000, guid: b0af9f4503cc8434abbc1583cc0fb1b2, type: 3}
 --- !u!114 &2061010011 stripped
 MonoBehaviour:
@@ -77430,6 +77448,130 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 2061010010}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2061010013 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2098265765021851674, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
+    type: 3}
+  m_PrefabInstance: {fileID: 2061010010}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2061010014 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1085350927688115306, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
+    type: 3}
+  m_PrefabInstance: {fileID: 2061010010}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2061010013}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &2061010015 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8899762354549211344, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
+    type: 3}
+  m_PrefabInstance: {fileID: 2061010010}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2061010016 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 298155662361922365, guid: b0af9f4503cc8434abbc1583cc0fb1b2,
+    type: 3}
+  m_PrefabInstance: {fileID: 2061010010}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2061010015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2061010017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2061010013}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 2061010014}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &2061010018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2061010015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 2061010016}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!224 &2061170151 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6236172666001697302, guid: 37c5e5722efdd184bbb0e51f04fb4e91,
@@ -90392,7 +90534,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4125016652594217642}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0

@@ -20,6 +20,7 @@ namespace CosmicShore.Game
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
         const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
+        const string TEAM_COUNT_PROPERTY_KEY  = "teamCount";
 
         [FormerlySerializedAs("miniGameData")] 
         [SerializeField] private GameDataSO gameData;
@@ -96,10 +97,10 @@ namespace CosmicShore.Game
             }
 
             // Ensure domain pool is fresh so the host and AI opponents each get
-            // a unique domain.  The multiplayer path does this inside
+            // valid domains.  The multiplayer path does this inside
             // SetupForMultiplayer(); the solo path was missing it, which caused
             // every player (and their crystals) to get Domains.Unassigned.
-            DomainAssigner.Initialize();
+            DomainAssigner.Initialize(gameData.SelectedTeamCount);
 
             CSDebug.Log("[MultiplayerSetup] Starting local host for solo play with AI.");
             networkManager.StartHost();
@@ -215,10 +216,12 @@ namespace CosmicShore.Game
         {
             var gameModeString = gameData.GameMode.ToString();
             var maxPlayers     = gameData.SelectedPlayerCount.Value.ToString();
+            var teamCount      = gameData.SelectedTeamCount.ToString();
 
             var queryOptions = new QuerySessionsOptions();
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
+            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex3, teamCount,      FilterOperation.Equal));
 
             var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
             CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
@@ -277,10 +280,12 @@ namespace CosmicShore.Game
         {
             string gameMode   = gameData.GameMode.ToString();
             string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
+            string teamCount  = gameData.SelectedTeamCount.ToString();
             return new Dictionary<string, SessionProperty>
             {
                 { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
-                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
+                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) },
+                { TEAM_COUNT_PROPERTY_KEY,  new SessionProperty(teamCount,  VisibilityPropertyOptions.Public, PropertyIndex.String3) }
             };
         }
 
