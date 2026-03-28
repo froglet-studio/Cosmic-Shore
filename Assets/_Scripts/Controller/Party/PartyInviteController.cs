@@ -3,6 +3,7 @@ using System.Threading;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using UnityEngine.SceneManagement;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
@@ -30,7 +31,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float shutdownTimeoutSeconds = 5f;
 
         [Tooltip("Max time (seconds) to wait for client connection after joining party session.")]
-        [SerializeField] private float connectionTimeoutSeconds = 10f;
+        [SerializeField] private float connectionTimeoutSeconds = 30f;
 
         [Tooltip("Max time (seconds) to wait for the menu scene to load after connecting.")]
         [SerializeField] private float sceneLoadTimeoutSeconds = 15f;
@@ -143,6 +144,8 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
+                // Ensure main thread — timeout continuations can land on the thread pool.
+                await UniTask.SwitchToMainThread();
                 Debug.LogError($"[PartyInviteController] Accept flow failed: {e.Message}");
                 await RecoverFromFailedTransitionAsync();
             }
@@ -247,30 +250,74 @@ namespace CosmicShore.Gameplay
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
-                throw new TimeoutException(
-                    $"[PartyInviteController] Client connection timed out after {connectionTimeoutSeconds}s.");
+                Debug.LogWarning(
+                    $"[PartyInviteController] Client connection not confirmed after {connectionTimeoutSeconds}s — proceeding anyway.");
             }
         }
 
         private async UniTask WaitForSceneLoadAsync(CancellationToken ct)
         {
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(sceneLoadTimeoutSeconds));
+            var currentScene = SceneManager.GetActiveScene();
+            if (currentScene.name == "Menu_Main" && currentScene.isLoaded)
+            {
+                // Already on Menu_Main (stale, from before host shutdown).
+                // Netcode will reload it — wait for the sceneLoaded event
+                // so we don't return on the stale scene.
+                var tcs = new UniTaskCompletionSource();
 
-            try
-            {
-                // Wait for the active scene to be Menu_Main (synced from host)
-                await UniTask.WaitUntil(
-                    () =>
+                void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+                {
+                    if (scene.name == "Menu_Main")
+                        tcs.TrySetResult();
+                }
+
+                SceneManager.sceneLoaded += OnSceneLoaded;
+                try
+                {
+                    // Race scene-load signal vs timeout. UniTask.Delay runs on the
+                    // PlayerLoop so the timeout continuation stays on the main thread
+                    // — AttachExternalCancellation fires on the timer thread pool,
+                    // which crashes Unity API calls in the continuation.
+                    int winner = await UniTask.WhenAny(
+                        tcs.Task,
+                        UniTask.Delay(
+                            TimeSpan.FromSeconds(sceneLoadTimeoutSeconds),
+                            DelayType.UnscaledDeltaTime,
+                            cancellationToken: ct));
+
+                    if (winner == 1)
                     {
-                        var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-                        return activeScene.name == "Menu_Main" && activeScene.isLoaded;
-                    },
-                    cancellationToken: timeoutCts.Token);
+                        Debug.LogWarning(
+                            "[PartyInviteController] Scene load timed out — proceeding anyway.");
+                    }
+                }
+                finally
+                {
+                    SceneManager.sceneLoaded -= OnSceneLoaded;
+                }
             }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            else
             {
-                Debug.LogWarning("[PartyInviteController] Scene load timed out — proceeding anyway.");
+                // Not on Menu_Main — wait for it to become active.
+                // WaitUntil checks the token each PlayerLoop tick (main thread),
+                // so CancelAfter firing on the timer thread is safe here.
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(sceneLoadTimeoutSeconds));
+
+                try
+                {
+                    await UniTask.WaitUntil(
+                        () =>
+                        {
+                            var activeScene = SceneManager.GetActiveScene();
+                            return activeScene.name == "Menu_Main" && activeScene.isLoaded;
+                        },
+                        cancellationToken: timeoutCts.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    Debug.LogWarning("[PartyInviteController] Scene load timed out — proceeding anyway.");
+                }
             }
         }
 
@@ -284,6 +331,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask RecoverFromFailedTransitionAsync()
         {
+            // Ensure we're on the main thread — this method may be called from
+            // a catch block whose continuation ran on the thread pool (e.g. when
+            // a CancellationTokenSource timer fires AttachExternalCancellation).
+            await UniTask.SwitchToMainThread();
+
             Debug.Log("[PartyInviteController] Attempting recovery — restarting local host...");
 
             try
@@ -296,10 +348,10 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Return to Menu_Main if not already there
-                var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+                var activeScene = SceneManager.GetActiveScene();
                 if (activeScene.name != "Menu_Main")
                 {
-                    UnityEngine.SceneManagement.SceneManager.LoadScene("Menu_Main");
+                    SceneManager.LoadScene("Menu_Main");
                 }
             }
             catch (Exception e)

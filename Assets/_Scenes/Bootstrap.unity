@@ -2785,6 +2785,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: PartyServices
       objectReference: {fileID: 0}
+    - target: {fileID: 7831454145019129197, guid: b2bb38c2502442f2a1448fafdb7d94ea,
+        type: 3}
+      propertyPath: connectionTimeoutSeconds
+      value: 30
+      objectReference: {fileID: 0}
     - target: {fileID: 7839596180442651345, guid: b2bb38c2502442f2a1448fafdb7d94ea,
         type: 3}
       propertyPath: m_LocalPosition.x
