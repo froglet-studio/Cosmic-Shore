@@ -144,6 +144,8 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
+                // Ensure main thread — timeout continuations can land on the thread pool.
+                await UniTask.SwitchToMainThread();
                 Debug.LogError($"[PartyInviteController] Accept flow failed: {e.Message}");
                 await RecoverFromFailedTransitionAsync();
             }
@@ -255,38 +257,55 @@ namespace CosmicShore.Gameplay
 
         private async UniTask WaitForSceneLoadAsync(CancellationToken ct)
         {
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(sceneLoadTimeoutSeconds));
-
-            try
+            var currentScene = SceneManager.GetActiveScene();
+            if (currentScene.name == "Menu_Main" && currentScene.isLoaded)
             {
-                var currentScene = SceneManager.GetActiveScene();
-                if (currentScene.name == "Menu_Main" && currentScene.isLoaded)
+                // Already on Menu_Main (stale, from before host shutdown).
+                // Netcode will reload it — wait for the sceneLoaded event
+                // so we don't return on the stale scene.
+                var tcs = new UniTaskCompletionSource();
+
+                void OnSceneLoaded(Scene scene, LoadSceneMode mode)
                 {
-                    // Already on Menu_Main (stale, from before host shutdown).
-                    // Netcode will reload it — wait for the sceneLoaded event
-                    // so we don't return on the stale scene.
-                    var tcs = new UniTaskCompletionSource();
+                    if (scene.name == "Menu_Main")
+                        tcs.TrySetResult();
+                }
 
-                    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-                    {
-                        if (scene.name == "Menu_Main")
-                            tcs.TrySetResult();
-                    }
+                SceneManager.sceneLoaded += OnSceneLoaded;
+                try
+                {
+                    // Race scene-load signal vs timeout. UniTask.Delay runs on the
+                    // PlayerLoop so the timeout continuation stays on the main thread
+                    // — AttachExternalCancellation fires on the timer thread pool,
+                    // which crashes Unity API calls in the continuation.
+                    int winner = await UniTask.WhenAny(
+                        tcs.Task,
+                        UniTask.Delay(
+                            TimeSpan.FromSeconds(sceneLoadTimeoutSeconds),
+                            DelayType.UnscaledDeltaTime,
+                            cancellationToken: ct));
 
-                    SceneManager.sceneLoaded += OnSceneLoaded;
-                    try
+                    if (winner == 1)
                     {
-                        await tcs.Task.AttachExternalCancellation(timeoutCts.Token);
-                    }
-                    finally
-                    {
-                        SceneManager.sceneLoaded -= OnSceneLoaded;
+                        Debug.LogWarning(
+                            "[PartyInviteController] Scene load timed out — proceeding anyway.");
                     }
                 }
-                else
+                finally
                 {
-                    // Not on Menu_Main — wait for it to become active.
+                    SceneManager.sceneLoaded -= OnSceneLoaded;
+                }
+            }
+            else
+            {
+                // Not on Menu_Main — wait for it to become active.
+                // WaitUntil checks the token each PlayerLoop tick (main thread),
+                // so CancelAfter firing on the timer thread is safe here.
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(sceneLoadTimeoutSeconds));
+
+                try
+                {
                     await UniTask.WaitUntil(
                         () =>
                         {
@@ -295,10 +314,10 @@ namespace CosmicShore.Gameplay
                         },
                         cancellationToken: timeoutCts.Token);
                 }
-            }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-            {
-                Debug.LogWarning("[PartyInviteController] Scene load timed out — proceeding anyway.");
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    Debug.LogWarning("[PartyInviteController] Scene load timed out — proceeding anyway.");
+                }
             }
         }
 
@@ -312,6 +331,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask RecoverFromFailedTransitionAsync()
         {
+            // Ensure we're on the main thread — this method may be called from
+            // a catch block whose continuation ran on the thread pool (e.g. when
+            // a CancellationTokenSource timer fires AttachExternalCancellation).
+            await UniTask.SwitchToMainThread();
+
             Debug.Log("[PartyInviteController] Attempting recovery — restarting local host...");
 
             try
