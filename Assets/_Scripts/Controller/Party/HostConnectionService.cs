@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
         private PartyInviteData? _lastFiredInvite;
         private string _currentInviteTargetId;
         private ILogHandler _originalLogHandler;
-        private bool _creatingPartySession;
+        private Task _creatingPartySessionTask;
         /// <summary>
         /// Mutex flag preventing concurrent lobby operations.
         /// RefreshAsync skips if busy; SendInviteAsync waits then claims.
@@ -826,74 +826,86 @@ namespace CosmicShore.Gameplay
         private async Task CreatePartySessionAsync()
         {
             if (_partySession != null) return;
-            if (_creatingPartySession) return;
-            _creatingPartySession = true;
 
+            // If another caller is already creating the session, await that
+            // operation instead of returning with _partySession still null.
+            if (_creatingPartySessionTask != null)
+            {
+                await _creatingPartySessionTask;
+                return;
+            }
+
+            _creatingPartySessionTask = CreatePartySessionCoreAsync();
             try
             {
-                bool hadToShutdown = false;
-
-                var opts = new SessionOptions
-                {
-                    MaxPlayers = connectionData.MaxPartySlots,
-                    IsLocked = false,
-                    IsPrivate = true,
-                    PlayerProperties = BuildLocalPlayerProperties()
-                }.WithRelayNetwork();
-
-                for (int attempt = 0; ; attempt++)
-                {
-                    // The UGS Multiplayer SDK calls NetworkManager.StartHost()
-                    // internally when creating a Relay-backed session. If a local
-                    // host is already running (started by AuthenticationSceneController
-                    // as a fallback), that call fails. Shut it down before each attempt.
-                    var nm = NetworkManager.Singleton;
-                    if (nm != null && nm.IsListening)
-                    {
-                        Debug.Log("[HostConnectionService] Shutting down local host before Relay party session creation...");
-                        nm.Shutdown();
-                        hadToShutdown = true;
-
-                        var sw = System.Diagnostics.Stopwatch.StartNew();
-                        while (nm != null && nm.IsListening && sw.ElapsedMilliseconds < 5000)
-                            await Task.Delay(100);
-
-                        // Allow transport cleanup to settle.
-                        await Task.Delay(200);
-                    }
-
-                    try
-                    {
-                        _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                        connectionData.IsHost = true;
-                        Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
-
-                        // If we shut down a running host, reload Menu_Main as a
-                        // network scene so the new Relay host serves it properly
-                        // for clients that accept the invite.
-                        if (hadToShutdown)
-                            ReloadMenuSceneIfActive();
-
-                        return;
-                    }
-                    catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
-                    {
-                        // A local host was started by another system (e.g.
-                        // AuthenticationSceneController) during Relay allocation.
-                        // The next iteration's pre-check will shut it down.
-                        Debug.LogWarning($"[HostConnectionService] Host conflict during Relay session creation — retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
-                    }
-                    catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                    {
-                        int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                        Debug.LogWarning($"[HostConnectionService] Rate limited creating party session — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                        await Task.Delay(delay);
-                    }
-                }
+                await _creatingPartySessionTask;
             }
             finally
             {
-                _creatingPartySession = false;
+                _creatingPartySessionTask = null;
+            }
+        }
+
+        private async Task CreatePartySessionCoreAsync()
+        {
+            bool hadToShutdown = false;
+
+            var opts = new SessionOptions
+            {
+                MaxPlayers = connectionData.MaxPartySlots,
+                IsLocked = false,
+                IsPrivate = true,
+                PlayerProperties = BuildLocalPlayerProperties()
+            }.WithRelayNetwork();
+
+            for (int attempt = 0; ; attempt++)
+            {
+                // The UGS Multiplayer SDK calls NetworkManager.StartHost()
+                // internally when creating a Relay-backed session. If a local
+                // host is already running (started by AuthenticationSceneController
+                // as a fallback), that call fails. Shut it down before each attempt.
+                var nm = NetworkManager.Singleton;
+                if (nm != null && nm.IsListening)
+                {
+                    Debug.Log("[HostConnectionService] Shutting down local host before Relay party session creation...");
+                    nm.Shutdown();
+                    hadToShutdown = true;
+
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    while (nm != null && nm.IsListening && sw.ElapsedMilliseconds < 5000)
+                        await Task.Delay(100);
+
+                    // Allow transport cleanup to settle.
+                    await Task.Delay(200);
+                }
+
+                try
+                {
+                    _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
+                    connectionData.IsHost = true;
+                    Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
+
+                    // If we shut down a running host, reload Menu_Main as a
+                    // network scene so the new Relay host serves it properly
+                    // for clients that accept the invite.
+                    if (hadToShutdown)
+                        ReloadMenuSceneIfActive();
+
+                    return;
+                }
+                catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
+                {
+                    // A local host was started by another system (e.g.
+                    // AuthenticationSceneController) during Relay allocation.
+                    // The next iteration's pre-check will shut it down.
+                    Debug.LogWarning($"[HostConnectionService] Host conflict during Relay session creation — retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[HostConnectionService] Rate limited creating party session — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await Task.Delay(delay);
+                }
             }
         }
 
