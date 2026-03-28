@@ -3,6 +3,7 @@ using System.Threading;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using UnityEngine.SceneManagement;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
@@ -259,14 +260,41 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                // Wait for the active scene to be Menu_Main (synced from host)
-                await UniTask.WaitUntil(
-                    () =>
+                var currentScene = SceneManager.GetActiveScene();
+                if (currentScene.name == "Menu_Main" && currentScene.isLoaded)
+                {
+                    // Already on Menu_Main (stale, from before host shutdown).
+                    // Netcode will reload it — wait for the sceneLoaded event
+                    // so we don't return on the stale scene.
+                    var tcs = new UniTaskCompletionSource();
+
+                    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
                     {
-                        var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-                        return activeScene.name == "Menu_Main" && activeScene.isLoaded;
-                    },
-                    cancellationToken: timeoutCts.Token);
+                        if (scene.name == "Menu_Main")
+                            tcs.TrySetResult();
+                    }
+
+                    SceneManager.sceneLoaded += OnSceneLoaded;
+                    try
+                    {
+                        await tcs.Task.AttachExternalCancellation(timeoutCts.Token);
+                    }
+                    finally
+                    {
+                        SceneManager.sceneLoaded -= OnSceneLoaded;
+                    }
+                }
+                else
+                {
+                    // Not on Menu_Main — wait for it to become active.
+                    await UniTask.WaitUntil(
+                        () =>
+                        {
+                            var activeScene = SceneManager.GetActiveScene();
+                            return activeScene.name == "Menu_Main" && activeScene.isLoaded;
+                        },
+                        cancellationToken: timeoutCts.Token);
+                }
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
@@ -296,10 +324,10 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Return to Menu_Main if not already there
-                var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+                var activeScene = SceneManager.GetActiveScene();
                 if (activeScene.name != "Menu_Main")
                 {
-                    UnityEngine.SceneManagement.SceneManager.LoadScene("Menu_Main");
+                    SceneManager.LoadScene("Menu_Main");
                 }
             }
             catch (Exception e)
