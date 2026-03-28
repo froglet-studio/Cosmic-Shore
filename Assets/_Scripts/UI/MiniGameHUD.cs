@@ -131,6 +131,15 @@ namespace CosmicShore.UI
         {
             Debug.Log($"<color=#FFFFFF><b>[FLOW-HUD] [MiniGameHUD] Start — gameData={gameData != null}, enableCinematic={enablePreGameCinematic}</b></color>");
             SubscribeToEvents();
+
+            // If OnClientReady already fired before we subscribed (client race condition:
+            // RPCs can resolve in the same frame as scene load, before Start() runs),
+            // handle it now. LocalPlayer.Vessel being set means InitializePair() already ran.
+            if (gameData?.LocalPlayer?.Vessel != null)
+            {
+                Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] Late subscription — OnClientReady already fired, handling now</b></color>");
+                HandleClientReady().Forget();
+            }
         }
 
         protected virtual void OnDisable()
