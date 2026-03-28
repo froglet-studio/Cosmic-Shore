@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float shutdownTimeoutSeconds = 5f;
 
         [Tooltip("Max time (seconds) to wait for client connection after joining party session.")]
-        [SerializeField] private float connectionTimeoutSeconds = 10f;
+        [SerializeField] private float connectionTimeoutSeconds = 30f;
 
         [Tooltip("Max time (seconds) to wait for the menu scene to load after connecting.")]
         [SerializeField] private float sceneLoadTimeoutSeconds = 15f;
@@ -247,8 +247,8 @@ namespace CosmicShore.Gameplay
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
-                throw new TimeoutException(
-                    $"[PartyInviteController] Client connection timed out after {connectionTimeoutSeconds}s.");
+                Debug.LogWarning(
+                    $"[PartyInviteController] Client connection not confirmed after {connectionTimeoutSeconds}s — proceeding anyway.");
             }
         }
 
