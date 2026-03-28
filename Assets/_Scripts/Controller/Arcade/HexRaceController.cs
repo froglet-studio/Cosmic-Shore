@@ -57,6 +57,10 @@ namespace CosmicShore.Gameplay
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
 
+            // HexRaceController owns the track lifecycle (seed generation, spawning, replay reset).
+            // Prevent SegmentSpawner from auto-resetting on OnResetForReplay.
+            if (segmentSpawner) segmentSpawner.ExternalResetControl = true;
+
             // Listen for seed changes so late-joining clients can spawn the track
             _netTrackSeed.OnValueChanged += OnTrackSeedChanged;
 

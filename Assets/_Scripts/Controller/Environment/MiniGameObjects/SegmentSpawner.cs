@@ -52,10 +52,19 @@ namespace CosmicShore.Gameplay
         private List<Trail> trails = new();
         private float[] _normalizedWeights;
 
-        void Start()
+        /// <summary>
+        /// When true, SegmentSpawner will not auto-reset on OnResetForReplay.
+        /// Set by external controllers (e.g. HexRaceController) that manage the track lifecycle themselves.
+        /// </summary>
+        [HideInInspector] public bool ExternalResetControl;
+
+        void Awake()
         {
             MigrateLegacyFields();
+        }
 
+        void Start()
+        {
             if (SpawnedSegmentContainer == null) CreateContainer();
 
             if (InitializeOnStart)
@@ -95,6 +104,7 @@ namespace CosmicShore.Gameplay
 
         private void ResetTrack()
         {
+            if (ExternalResetControl) return;
             NukeTheTrails();
             Initialize();
         }
@@ -112,6 +122,9 @@ namespace CosmicShore.Gameplay
 
         public void Initialize()
         {
+            // Safety net: ensure legacy fields are migrated even if called before Awake()
+            MigrateLegacyFields();
+
             if (SpawnedSegmentContainer == null) CreateContainer();
 
             if (Seed != 0)
@@ -123,6 +136,8 @@ namespace CosmicShore.Gameplay
                 NukeTheTrails();
 
             NormalizeWeights();
+
+            Debug.Log($"[SegmentSpawner] Initialize — Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
 
             int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
