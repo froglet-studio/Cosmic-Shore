@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
@@ -33,6 +34,7 @@ namespace CosmicShore.Gameplay
 
         private bool _raceEnded;
         private bool _trackSpawned;
+        private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
         private readonly NetworkVariable<int> _netCrystalsToFinish = new(0);
 
@@ -70,10 +72,19 @@ namespace CosmicShore.Gameplay
                 // Client joined after the server already set the seed — spawn immediately
                 SpawnTrackLocally(_netTrackSeed.Value);
             }
+            else
+            {
+                // Seed not yet available — start polling fallback.
+                // Covers the race condition where OnValueChanged doesn't fire for
+                // initial sync and the ClientRpc was sent before this client spawned.
+                Debug.Log("<color=#00CED1>[FLOW-7HR] [HexRaceController] Client: seed not yet available, starting poll fallback</color>");
+                StartSeedPoll();
+            }
         }
 
         public override void OnNetworkDespawn()
         {
+            CancelSeedPoll();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
             base.OnNetworkDespawn();
         }
@@ -85,6 +96,52 @@ namespace CosmicShore.Gameplay
         {
             if (newValue != 0)
                 SpawnTrackLocally(newValue);
+        }
+
+        void StartSeedPoll()
+        {
+            CancelSeedPoll();
+            _seedPollCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            WaitForTrackSeed(_seedPollCts.Token).Forget();
+        }
+
+        void CancelSeedPoll()
+        {
+            _seedPollCts?.Cancel();
+            _seedPollCts?.Dispose();
+            _seedPollCts = null;
+        }
+
+        /// <summary>
+        /// Client-side fallback: polls _netTrackSeed until it becomes non-zero.
+        /// Covers the race condition where OnValueChanged doesn't fire for
+        /// initial sync and the ClientRpc was sent before this client spawned.
+        /// </summary>
+        private async UniTaskVoid WaitForTrackSeed(CancellationToken ct)
+        {
+            try
+            {
+                for (int i = 0; i < 50; i++)
+                {
+                    await UniTask.Delay(100, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+
+                    if (_trackSpawned)
+                        return;
+
+                    if (_netTrackSeed.Value != 0)
+                    {
+                        Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] Client poll: seed arrived ({_netTrackSeed.Value}), spawning track</color>");
+                        SpawnTrackLocally(_netTrackSeed.Value);
+                        return;
+                    }
+                }
+
+                Debug.LogWarning("[HexRaceController] Client poll: timed out after 5s waiting for track seed.");
+            }
+            catch (System.OperationCanceledException)
+            {
+                // Network despawn or object destroyed — expected
+            }
         }
 
         /// <summary>
@@ -268,6 +325,8 @@ namespace CosmicShore.Gameplay
 
         protected override void OnResetForReplayCustom()
         {
+            CancelSeedPoll();
+
             base.OnResetForReplayCustom();
             _raceEnded = false;
             _trackSpawned = false;
@@ -287,6 +346,11 @@ namespace CosmicShore.Gameplay
 
                 // Re-generate the track for the replay
                 SpawnTrackEarly().Forget();
+            }
+            else
+            {
+                // Client: restart poll fallback for the new track seed
+                StartSeedPoll();
             }
 
             RaiseToggleReadyButtonEvent(true);
