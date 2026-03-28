@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -139,7 +138,7 @@ namespace CosmicShore.Gameplay
 
                 Debug.LogWarning("[HexRaceController] Client poll: timed out after 5s waiting for track seed.");
             }
-            catch (OperationCanceledException)
+            catch (System.OperationCanceledException)
             {
                 // Network despawn or object destroyed — expected
             }
