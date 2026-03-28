@@ -99,6 +99,13 @@ namespace CosmicShore.Gameplay
 
             int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
             _netTrackSeed.Value = generatedSeed;
+            SpawnTrack_ClientRpc(generatedSeed);
+        }
+
+        [ClientRpc]
+        private void SpawnTrack_ClientRpc(int trackSeed)
+        {
+            SpawnTrackLocally(trackSeed);
         }
 
         protected override void OnCountdownTimerEnded()
@@ -112,6 +119,7 @@ namespace CosmicShore.Gameplay
                 _netTrackSeed.Value = generatedSeed;
             }
 
+            SpawnTrack_ClientRpc(_netTrackSeed.Value);
             base.OnCountdownTimerEnded();
         }
 
