@@ -158,9 +158,9 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (!_initialized || _presenceLobby == null || _lobbyBusy) return;
-            if (Time.time < _rateLimitBackoffUntil) return;
+            if (Time.unscaledTime < _rateLimitBackoffUntil) return;
 
-            _refreshTimer += Time.deltaTime;
+            _refreshTimer += Time.unscaledDeltaTime;
             if (_refreshTimer >= refreshIntervalSeconds)
             {
                 _refreshTimer = 0f;
@@ -675,7 +675,7 @@ namespace CosmicShore.Gameplay
             {
                 if (IsRateLimitException(e))
                 {
-                    _rateLimitBackoffUntil = Time.time + refreshIntervalSeconds * 2;
+                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     Debug.LogWarning("[HostConnectionService] Rate limited during refresh — backing off");
                 }
                 else
