@@ -482,11 +482,6 @@ namespace CosmicShore.UI
             if (_screenMap.TryGetValue(ScreenIndex, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
 
-            if (screenId == MenuScreens.HOME)
-                PauseSystem.TogglePauseGame(false);
-            else
-                PauseSystem.TogglePauseGame(true);
-
             // Slide effect: 1 viewport width per index (works at any aspect ratio)
             Vector3 newLocation = new Vector3(-ScreenIndex * GetSlideDistance(), 0, 0);
             panelLocation = newLocation;

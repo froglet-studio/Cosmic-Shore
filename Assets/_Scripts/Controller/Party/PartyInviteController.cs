@@ -226,7 +226,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Brief settle delay for transport cleanup
-            await UniTask.Delay(200, cancellationToken: ct);
+            await UniTask.Delay(200, DelayType.UnscaledDeltaTime, cancellationToken: ct);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -344,7 +344,7 @@ namespace CosmicShore.Gameplay
                 if (nm != null && !nm.IsListening)
                 {
                     nm.StartHost();
-                    await UniTask.Delay(500);
+                    await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
                 }
 
                 // Return to Menu_Main if not already there
