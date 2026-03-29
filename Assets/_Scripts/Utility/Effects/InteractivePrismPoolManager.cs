@@ -1,5 +1,6 @@
 using CosmicShore.Gameplay;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using CosmicShore.Utility;
@@ -17,6 +18,7 @@ namespace CosmicShore.Utility
                 OnResetForReplay.OnRaised += HandleReset;
             if (OnSceneTransition != null)
                 OnSceneTransition.OnRaised += HandleSceneTransition;
+            SceneManager.activeSceneChanged += HandleActiveSceneChanged;
         }
 
         protected override void OnDisable()
@@ -26,6 +28,7 @@ namespace CosmicShore.Utility
                 OnResetForReplay.OnRaised -= HandleReset;
             if (OnSceneTransition != null)
                 OnSceneTransition.OnRaised -= HandleSceneTransition;
+            SceneManager.activeSceneChanged -= HandleActiveSceneChanged;
         }
 
         private void HandleReset()
@@ -40,6 +43,14 @@ namespace CosmicShore.Utility
             // to prevent visual artifacts from leaking across scene transitions.
             if (!isLoading)
                 ReleaseAllActiveAsync(100).Forget();
+        }
+
+        private void HandleActiveSceneChanged(Scene oldScene, Scene newScene)
+        {
+            // Synchronously release all active prisms on scene change.
+            // Works on both host and client — critical for clients where the
+            // SOAP OnSceneTransition event never fires (Netcode drives their scene load).
+            ReleaseAllActive();
         }
 
         public override Prism Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
