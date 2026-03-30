@@ -1,10 +1,12 @@
 using System;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -14,12 +16,20 @@ namespace CosmicShore.Gameplay
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
         [Inject] protected MultiplayerSetup multiplayerSetup;
-        
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
+
         [Header("Rematch")]
         [SerializeField] private Scoreboard localScoreboard;
-        
+
         protected virtual int InitDelayMs => 1000;
         private bool _isResetting;
+
+        /// <summary>
+        /// When true, Play Again performs a full network scene reload instead of an in-place reset.
+        /// Override to true in game modes where the environment doesn't fully reset in-place
+        /// (e.g., HexRace with flora/fauna spawning).
+        /// </summary>
+        protected virtual bool UseSceneReloadForReplay => false;
 
         public override void OnNetworkSpawn()
         {
@@ -101,6 +111,14 @@ namespace CosmicShore.Gameplay
 
                 Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
                 gameData.InitializeGame();
+
+                // On replay scene reload, fade in once the player vessel is ready.
+                // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
+                if (gameData.IsReplayReload)
+                {
+                    gameData.IsReplayReload = false;
+                    gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
+                }
 
                 if (!IsServer)
                 {
@@ -278,9 +296,68 @@ namespace CosmicShore.Gameplay
         {
             if (_isResetting) return;
             _isResetting = true;
-            
-            // Initiate reset on all machines
-            ResetForReplay_ClientRpc();
+
+            if (UseSceneReloadForReplay && IsServer)
+                ExecuteSceneReloadReplay().Forget();
+            else
+                ResetForReplay_ClientRpc();
+        }
+
+        /// <summary>
+        /// Full scene reload path for Play Again. Fades to black on all clients,
+        /// clears vessel references, then reloads the scene via Netcode.
+        /// All environment objects (flora, fauna, track, crystals) are destroyed
+        /// with the scene and recreated fresh on reload.
+        /// </summary>
+        private async UniTaskVoid ExecuteSceneReloadReplay()
+        {
+            gameData.IsReplayReload = true;
+
+            // Fade to black on all clients before scene reload
+            PrepareForSceneReload_ClientRpc();
+
+            // Wait for fade to complete
+            await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
+
+            // Clear vessel references — vessels have destroyWithScene but we need
+            // clean GameDataSO state before ResetRuntimeData clears the lists.
+            foreach (var player in gameData.Players)
+            {
+                if (player is Player netPlayer && netPlayer.IsSpawned)
+                    netPlayer.NetVesselId.Value = 0;
+            }
+            for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
+            {
+                var vessel = gameData.Vessels[i];
+                if (vessel is VesselController vc && vc.IsSpawned)
+                    vc.NetworkObject.Despawn(false);
+            }
+            gameData.Vessels.Clear();
+
+            gameData.ResetRuntimeData();
+            _isResetting = false;
+
+            // Server-authoritative scene reload — all clients follow automatically
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.IsServer && nm.SceneManager != null)
+            {
+                Debug.Log($"[MultiplayerController] Scene reload replay — loading {gameData.SceneName}");
+                nm.SceneManager.LoadScene(gameData.SceneName, LoadSceneMode.Single);
+            }
+        }
+
+        [ClientRpc]
+        private void PrepareForSceneReload_ClientRpc()
+        {
+            _isResetting = false;
+            gameData.IsReplayReload = true;
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+        }
+
+        private void FadeFromBlackOnReplay()
+        {
+            gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
+            _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 
         [ClientRpc]
