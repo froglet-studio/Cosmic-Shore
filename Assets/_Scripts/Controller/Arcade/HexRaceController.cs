@@ -45,6 +45,7 @@ namespace CosmicShore.Gameplay
         public bool RaceResultsReady { get; private set; } = false;
 
         protected override bool UseGolfRules => true;
+        protected override bool UseSceneReloadForReplay => true;
 
         // HexRace handles end-game through OnTurnEndedCustom (server-side winner detection) →
         // SyncFinalScores_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
@@ -383,37 +384,8 @@ namespace CosmicShore.Gameplay
             gameData.InvokeMiniGameEnd();
         }
 
-        protected override void OnResetForReplayCustom()
-        {
-            CancelSeedPoll();
-
-            base.OnResetForReplayCustom();
-            _raceEnded = false;
-            _trackSpawned = false;
-            WinnerName = "";
-            RaceResultsReady = false;
-
-            foreach (var s in gameData.RoundStatsList)
-            {
-                s.Score = 0f;
-                s.CrystalsCollected = 0;
-            }
-
-            if (IsServer)
-            {
-                _netCrystalsToFinish.Value = 0;
-                _netTrackSeed.Value = 0;
-
-                // Re-generate the track for the replay
-                SpawnTrackEarly().Forget();
-            }
-            else
-            {
-                // Client: restart poll fallback for the new track seed
-                StartSeedPoll();
-            }
-
-            RaiseToggleReadyButtonEvent(true);
-        }
+        // OnResetForReplayCustom removed — HexRace uses UseSceneReloadForReplay = true,
+        // which performs a full scene reload. All race state, track, and environment objects
+        // are destroyed with the scene and re-initialized fresh via OnNetworkSpawn.
     }
 }

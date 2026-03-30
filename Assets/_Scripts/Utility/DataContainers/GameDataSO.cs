@@ -120,6 +120,12 @@ namespace CosmicShore.Utility
         public ISession ActiveSession { get; set; }
         public int TurnsTakenThisRound { get; set; }
         public int RoundsPlayed { get; set; }
+
+        /// <summary>
+        /// Set by MultiplayerMiniGameControllerBase before a scene-reload replay.
+        /// Used to control fade-in timing after the reload completes.
+        /// </summary>
+        [NonSerialized] public bool IsReplayReload;
         
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
@@ -240,6 +246,8 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
+
+            IsReplayReload = false;
 
             ResetRuntimeData();
             DestroyPlayerAndVessel();
