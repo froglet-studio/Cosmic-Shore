@@ -171,13 +171,15 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Positions.Count; i++)
             {
-                n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
-
-                // Write server-authoritative domain from the server's player list
+                // Write domain BEFORE position — setting n_Positions triggers
+                // OnPositionsChanged synchronously, which calls Spawn() and
+                // reads n_Domains. Domain must already be set at that point.
                 var domain = Domains.None;
                 if (i < gameData.Players.Count)
                     domain = gameData.Players[i].Domain;
                 n_Domains[i] = (int)domain;
+
+                n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
             }
 
             AdvanceBatchAnchor_ForNetworkTurnStart();
@@ -199,12 +201,13 @@ namespace CosmicShore.Gameplay
             {
                 if (n_Positions[i] == Vector3.zero)
                 {
-                    n_Positions[i] = GetSpawnPointAroundAnchor(_initialBatchAnchor);
-
+                    // Write domain BEFORE position (same reason as OnTurnStarted).
                     var domain = Domains.None;
                     if (i < gameData.Players.Count)
                         domain = gameData.Players[i].Domain;
                     n_Domains[i] = (int)domain;
+
+                    n_Positions[i] = GetSpawnPointAroundAnchor(_initialBatchAnchor);
                 }
             }
         }
