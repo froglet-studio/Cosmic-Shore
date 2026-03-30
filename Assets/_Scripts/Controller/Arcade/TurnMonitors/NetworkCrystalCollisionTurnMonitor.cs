@@ -23,12 +23,15 @@ namespace CosmicShore.Gameplay
             base.StartMonitor();
 
             if (!IsServer) return;
-            int target = GetCrystalCollisionCount();
+
+            int overrideTarget = controller != null ? controller.GetTestCrystalOverride() : -1;
+            int target = overrideTarget > 0 ? overrideTarget : GetCrystalCollisionCount();
+
             _netCrystalCollisions.Value = target;
             controller?.SetCrystalsToFinishServer(target);
 
             CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
-                      $"(intensity={gameData.SelectedIntensity.Value})");
+                      $"(override={overrideTarget > 0}, intensity={gameData.SelectedIntensity.Value})");
 
             foreach (var stat in gameData.RoundStatsList)
                 stat.OnCrystalsCollectedChanged += ServerSideCrystalSync;

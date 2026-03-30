@@ -27,8 +27,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] int seed = 0;
 
         [Header("Race Rules")]
-        [Tooltip("Optional override. If 0, uses networked target from monitor.")]
-        [SerializeField] int crystalsToFinishOverride = 0;
+        [Tooltip("Enable to override the waypoint-calculated crystal target for testing.")]
+        [SerializeField] bool useTestCrystalOverride;
+        [Tooltip("Crystal count to end the race when useTestCrystalOverride is true (e.g. 1-3 for quick testing).")]
+        [SerializeField] int crystalsToFinishOverride = 3;
 
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
@@ -257,6 +259,9 @@ namespace CosmicShore.Gameplay
             if (crystalsToFinishOverride > 0) return crystalsToFinishOverride;
             return 39;
         }
+
+        public int GetTestCrystalOverride()
+            => useTestCrystalOverride ? Mathf.Max(1, crystalsToFinishOverride) : -1;
 
         public void SetCrystalsToFinishServer(int value)
         {

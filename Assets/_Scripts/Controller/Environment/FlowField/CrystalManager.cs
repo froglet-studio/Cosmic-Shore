@@ -82,9 +82,23 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Spawn a crystal with a stable crystalId at spawnPos.
+        /// Domain is resolved from gameData.Players by index.
         /// If it already exists, returns existing.
         /// </summary>
         protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos)
+        {
+            var domain = Domains.None;
+            if (spawnCrystalWithPlayerDomain && crystalId - 1 < gameData.Players.Count)
+                domain = gameData.Players[crystalId - 1].Domain;
+
+            return SpawnWithDomain(crystalId, spawnPos, domain);
+        }
+
+        /// <summary>
+        /// Spawn a crystal with an explicit domain, bypassing the player list index lookup.
+        /// Used by NetworkCrystalManager to apply server-authoritative domains.
+        /// </summary>
+        protected Crystal SpawnWithDomain(int crystalId, Vector3 spawnPos, Domains domain)
         {
             if (cellData.TryGetCrystalById(crystalId, out Crystal existing))
             {
@@ -97,14 +111,8 @@ namespace CosmicShore.Gameplay
 
             var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
             crystal.InjectDependencies(this);
-
-            var domain = Domains.None;
-            if (spawnCrystalWithPlayerDomain && crystalId - 1 < gameData.Players.Count)
-                domain = gameData.Players[crystalId - 1].Domain;
-                
-            // Keep a list of crystals in the cell data (you already changed this).
             crystal.ChangeDomain(domain);
-            
+
             if (crystal.Id != 0)
             {
                 CSDebug.LogError("To initialize a cell item, its default Id must be 0");
