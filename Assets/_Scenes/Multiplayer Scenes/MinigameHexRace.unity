@@ -1100,7 +1100,8 @@ MonoBehaviour:
   helix: {fileID: 0}
   helixIntensityScaling: 4
   seed: 0
-  crystalsToFinishOverride: 0
+  useTestCrystalOverride: 1
+  crystalsToFinishOverride: 1
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2754,6 +2755,7 @@ MonoBehaviour:
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
+  ExternalResetControl: 0
 --- !u!1 &1897523407 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
