@@ -46,10 +46,10 @@ namespace CosmicShore.Gameplay
 
         protected override bool UseGolfRules => true;
 
-        // HexRace handles end-game entirely through ReportPlayerFinished_ServerRpc →
-        // SyncFinalScores_ClientRpc, which calls InvokeMiniGameEnd(). Suppress the base
-        // controller's turn→round→game flow (ExecuteServerRoundEnd → ExecuteServerGameEnd
-        // → SyncGameEnd_ClientRpc → InvokeMiniGameEnd) by disabling HasEndGame.
+        // HexRace handles end-game through OnTurnEndedCustom (server-side winner detection) →
+        // SyncFinalScores_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
+        // Suppress the base controller's turn→round→game flow so we don't get a duplicate
+        // InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
         public override void OnNetworkSpawn()
@@ -217,7 +217,58 @@ namespace CosmicShore.Gameplay
             helix.secondOrderRadius = radius;
         }
 
-        // Only called by the winner's ScoreTracker
+        // ── Server-authoritative race end ─────────────────────────────────
+
+        /// <summary>
+        /// Server-side winner detection, mirroring MultiplayerJoustController.OnTurnEndedCustom().
+        /// Called from SyncTurnEnd_ClientRpc BEFORE ExecuteServerTurnEnd → SetupNewRound,
+        /// so _raceEnded is set in time to suppress the Ready button.
+        /// </summary>
+        protected override void OnTurnEndedCustom()
+        {
+            base.OnTurnEndedCustom();
+            if (!IsServer || _raceEnded) return;
+
+            int target = ResolveCrystalsToFinishTarget();
+            var winner = gameData.RoundStatsList.FirstOrDefault(s => s.CrystalsCollected >= target);
+            if (winner == null) return;
+
+            _raceEnded = true;
+
+            // All players share the same elapsed time since turn start.
+            // The score tracker updates LocalRoundStats.Score every frame with elapsed time.
+            float finishTime = gameData.LocalRoundStats?.Score ?? 0f;
+            winner.Score = finishTime;
+
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats.Name == winner.Name) continue;
+                int crystalsLeft = Mathf.Max(0, target - stats.CrystalsCollected);
+                stats.Score = 10000f + crystalsLeft;
+            }
+
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+            SyncFinalScoresSnapshot(winner.Name);
+        }
+
+        /// <summary>
+        /// Suppress the base flow's SetupNewRound when the race just ended.
+        /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
+        /// ExecuteServerGameEnd — this override prevents the Ready button from appearing.
+        /// After replay reset, _raceEnded is cleared so new rounds work normally.
+        /// </summary>
+        protected override void SetupNewRound()
+        {
+            if (_raceEnded) return;
+            base.SetupNewRound();
+        }
+
+        // ── Legacy client-side report (kept as defensive fallback) ────────
+
+        // Called by HexRaceScoreTracker when the local player finishes.
+        // With OnTurnEndedCustom handling server-side detection, this is now a
+        // no-op (guarded by _raceEnded in ReportPlayerFinished_ServerRpc).
         public void ReportLocalPlayerFinished(float finishTimeSeconds)
         {
             string myName = gameData.LocalPlayer.Name;
