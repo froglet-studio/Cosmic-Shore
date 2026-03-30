@@ -149,7 +149,9 @@ namespace CosmicShore.Gameplay
             _cts?.Dispose();
             _cts = null;
 
-            if (shutdownNetworkOnDespawn && NetworkManager.Singleton)
+            // Skip shutdown during replay scene reload — the network must stay alive
+            // for the server to reload the scene on all clients.
+            if (shutdownNetworkOnDespawn && !gameData.IsReplayReload && NetworkManager.Singleton)
                 NetworkManager.Singleton.Shutdown();
         }
 
