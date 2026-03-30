@@ -16,6 +16,11 @@ namespace CosmicShore.Gameplay
 
         private NetworkList<Vector3> n_Positions;
 
+        // Server-authoritative domain for each crystal slot, synced to all clients.
+        // Clients read this instead of inferring domain from gameData.Players index
+        // (which has non-deterministic order across host/client).
+        private NetworkList<int> n_Domains;
+
         // Anchor used for the current initial batch so late-joining players
         // spawn around the same position as the first crystal.
         private Vector3 _initialBatchAnchor;
@@ -25,6 +30,7 @@ namespace CosmicShore.Gameplay
         {
             base.Awake();
             n_Positions = new NetworkList<Vector3>();
+            n_Domains = new NetworkList<int>();
         }
 
         public override void OnNetworkSpawn()
@@ -95,6 +101,7 @@ namespace CosmicShore.Gameplay
         /// Reads all existing non-zero positions from the NetworkList and
         /// spawns crystals that this client hasn't created yet. Handles the
         /// case where a client joins after the server already set positions.
+        /// Uses server-authoritative domains from n_Domains.
         /// </summary>
         private void SyncExistingCrystals()
         {
@@ -106,7 +113,8 @@ namespace CosmicShore.Gameplay
                 int crystalId = i + 1;
                 if (!cellData.TryGetCrystalById(crystalId, out _))
                 {
-                    var crystal = Spawn(crystalId, pos);
+                    var domain = (i < n_Domains.Count) ? (Domains)n_Domains[i] : Domains.None;
+                    var crystal = SpawnWithDomain(crystalId, pos, domain);
                     cellData.AddCrystalToList(crystal);
                 }
             }
@@ -126,7 +134,9 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = Vector3.zero;
-            CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index and positions cleared.");
+            for (int i = 0; i < n_Domains.Count; i++)
+                n_Domains[i] = (int)Domains.None;
+            CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index, positions, and domains cleared.");
         }
 
         // ---------------- Server Turn Start ----------------
@@ -137,9 +147,13 @@ namespace CosmicShore.Gameplay
 
             while (n_Positions.Count < count)
                 n_Positions.Add(Vector3.zero);
-
             while (n_Positions.Count > count)
                 n_Positions.RemoveAt(n_Positions.Count - 1);
+
+            while (n_Domains.Count < count)
+                n_Domains.Add((int)Domains.None);
+            while (n_Domains.Count > count)
+                n_Domains.RemoveAt(n_Domains.Count - 1);
         }
 
         private void OnTurnStarted()
@@ -156,7 +170,15 @@ namespace CosmicShore.Gameplay
             _initialBatchStarted = true;
 
             for (int i = 0; i < n_Positions.Count; i++)
+            {
                 n_Positions[i] = GetSpawnPointAroundAnchor(batchAnchor);
+
+                // Write server-authoritative domain from the server's player list
+                var domain = Domains.None;
+                if (i < gameData.Players.Count)
+                    domain = gameData.Players[i].Domain;
+                n_Domains[i] = (int)domain;
+            }
 
             AdvanceBatchAnchor_ForNetworkTurnStart();
         }
@@ -176,7 +198,14 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < n_Positions.Count; i++)
             {
                 if (n_Positions[i] == Vector3.zero)
+                {
                     n_Positions[i] = GetSpawnPointAroundAnchor(_initialBatchAnchor);
+
+                    var domain = Domains.None;
+                    if (i < gameData.Players.Count)
+                        domain = gameData.Players[i].Domain;
+                    n_Domains[i] = (int)domain;
+                }
             }
         }
 
@@ -209,6 +238,19 @@ namespace CosmicShore.Gameplay
 
         // ---------------- Replication ----------------
 
+        /// <summary>
+        /// Override base Spawn to use server-authoritative domain from n_Domains
+        /// instead of the non-deterministic gameData.Players index.
+        /// </summary>
+        protected override Crystal Spawn(int crystalId, Vector3 spawnPos)
+        {
+            int idx = crystalId - 1;
+            if (idx >= 0 && idx < n_Domains.Count)
+                return SpawnWithDomain(crystalId, spawnPos, (Domains)n_Domains[idx]);
+
+            return base.Spawn(crystalId, spawnPos);
+        }
+
         private void OnPositionsChanged(NetworkListEvent<Vector3> e)
         {
             if (e.Type != NetworkListEvent<Vector3>.EventType.Add &&
@@ -227,7 +269,8 @@ namespace CosmicShore.Gameplay
 
             if (!cellData.TryGetCrystalById(crystalId, out _))
             {
-                var crystal = Spawn(crystalId, pos);
+                var domain = (idx < n_Domains.Count) ? (Domains)n_Domains[idx] : Domains.None;
+                var crystal = SpawnWithDomain(crystalId, pos, domain);
                 cellData.AddCrystalToList(crystal);
             }
             else
