@@ -379,10 +379,10 @@ namespace CosmicShore.UI
             bool canCycle = _availableShips.Count > 1;
 
             if (previousShipButton)
-                previousShipButton.gameObject.SetActive(canCycle);
+                previousShipButton.interactable = canCycle;
 
             if (nextShipButton)
-                nextShipButton.gameObject.SetActive(canCycle);
+                nextShipButton.interactable = canCycle;
         }
         
         void InitializeDefaultShipFromAvailable()
@@ -766,15 +766,9 @@ namespace CosmicShore.UI
 
             if (shipPlaceholderIcon)
             {
-                if (icon != null)
-                {
-                    shipPlaceholderIcon.enabled = true;
-                    shipPlaceholderIcon.sprite  = icon;
-                }
-                else
-                {
-                    shipPlaceholderIcon.enabled = false;
-                }
+                shipPlaceholderIcon.sprite = icon;
+                // Keep the Image component enabled — just clear the sprite when null.
+                // Disabling the component hides the entire ShipView background.
             }
 
             if (iconInConfigurationSelectionView)
