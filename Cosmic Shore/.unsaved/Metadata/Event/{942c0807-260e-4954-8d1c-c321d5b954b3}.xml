@@ -205,7 +205,6 @@
 		</property>
 		<relationship name="parameters">
 			<destination>{ef71be69-a61b-4a6e-a43d-6b6ef6f63b18}</destination>
-			<destination>{ae30933f-2665-4f23-96bd-2aab6b00c63f}</destination>
 		</relationship>
 		<relationship name="event">
 			<destination>{b6e8ca72-664d-4ff3-ad7d-23999488da61}</destination>
@@ -242,7 +241,6 @@
 		</property>
 		<relationship name="parameters">
 			<destination>{dd36b658-d44b-4872-98ab-9b08a7f7b169}</destination>
-			<destination>{4079a1cd-4e67-4f05-b04d-6e71b462cfee}</destination>
 			<destination>{d45e1b3d-9442-41c0-b352-6de5f2179815}</destination>
 		</relationship>
 		<relationship name="event">
@@ -327,11 +325,6 @@
 			<destination>{38824e48-e42a-48a6-ba15-fcf9f471501b}</destination>
 		</relationship>
 	</object>
-	<object class="ParameterProperty" id="{ae30933f-2665-4f23-96bd-2aab6b00c63f}">
-		<relationship name="parameter">
-			<destination>{204ccc36-cc52-4afb-b259-b9f8a6b03ec5}</destination>
-		</relationship>
-	</object>
 	<object class="Automator" id="{991b74df-871c-4207-8b97-308208b1f1b7}">
 		<property name="nameOfPropertyBeingAutomated">
 			<value>volume</value>
@@ -349,11 +342,6 @@
 	<object class="ParameterProperty" id="{dd36b658-d44b-4872-98ab-9b08a7f7b169}">
 		<relationship name="parameter">
 			<destination>{fde35b7d-d08b-4949-a12a-75c76cb6f46e}</destination>
-		</relationship>
-	</object>
-	<object class="ParameterProperty" id="{4079a1cd-4e67-4f05-b04d-6e71b462cfee}">
-		<relationship name="parameter">
-			<destination>{0d606c40-26f6-41af-8f12-34187c28ded2}</destination>
 		</relationship>
 	</object>
 	<object class="ParameterProperty" id="{d45e1b3d-9442-41c0-b352-6de5f2179815}">

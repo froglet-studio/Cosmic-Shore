@@ -105863,6 +105863,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: DriftEndAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: d9c9843042dae47309c7829e1507cfb4, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: DriftStartAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: a0854c10a7c8243deb01da0aabb9a794, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: SpeedBurstAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: d9c9843042dae47309c7829e1507cfb4, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: CrystalCollectAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
