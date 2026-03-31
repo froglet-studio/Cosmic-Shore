@@ -105,6 +105,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Resolve any human players who picked "Random" (Unassigned) to actual teams
+            // before building team counts, so AI balancing sees every human.
+            ResolveUnassignedDomains();
+
             int aiCount = gameData.RequestedAIBackfillCount;
             Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}</color>");
             if (aiCount <= 0)
@@ -191,6 +195,42 @@ namespace CosmicShore.Gameplay
             }
 
             return best;
+        }
+
+        /// <summary>
+        /// Resolves human players whose NetDomain is Unassigned (Random) to an actual
+        /// team before AI spawning, so BuildTeamCounts() sees every human player.
+        /// Uses the same balanced-assignment algorithm as AI: pick the team with fewest players.
+        /// </summary>
+        void ResolveUnassignedDomains()
+        {
+            var teamCounts = new Dictionary<Domains, int>
+            {
+                { Domains.Jade, 0 },
+                { Domains.Ruby, 0 },
+                { Domains.Gold, 0 }
+            };
+
+            var unassigned = new List<Player>();
+
+            foreach (var p in gameData.Players)
+            {
+                if (p is not Player player) continue;
+                if (player.NetIsAI.Value) continue;
+
+                if (teamCounts.ContainsKey(player.NetDomain.Value))
+                    teamCounts[player.NetDomain.Value]++;
+                else
+                    unassigned.Add(player);
+            }
+
+            foreach (var player in unassigned)
+            {
+                var domain = GetBalancedDomain(teamCounts);
+                player.NetDomain.Value = domain;
+                teamCounts[domain]++;
+                Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Resolved Unassigned domain for '{player.NetName.Value}' → {domain}</color>");
+            }
         }
 
         VesselClassType PickAIVesselType()

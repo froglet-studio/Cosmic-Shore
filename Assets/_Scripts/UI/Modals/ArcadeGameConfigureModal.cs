@@ -101,10 +101,14 @@ namespace CosmicShore.UI
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
-        // Hard cap on the number of players/teams the game supports
-        const int MaxSupportedPlayers = 4;
         const int MaxSupportedTeams = 3;
         const int MinTeams = 1;
+
+        /// <summary>
+        /// Effective max players: reads from GameDataSO.MaxTotalPlayers (shared config).
+        /// Falls back to 4 if gameData isn't injected yet.
+        /// </summary>
+        int MaxSupportedPlayers => gameData != null ? gameData.MaxTotalPlayers : 4;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
@@ -350,9 +354,11 @@ namespace CosmicShore.UI
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
+            int effectiveMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
+
             // Component stepper UI (preferred — supports 1-12 range)
             if (playerCountStepper)
-                playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount);
+                playerCountStepper.Initialize(effectiveMin, effectiveMax, config.PlayerCount);
 
             // Inline stepper UI (development UI)
             RefreshPlayerCountStepper();
@@ -491,7 +497,8 @@ namespace CosmicShore.UI
             if (IsClientMode) return;
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayersAllowed);
+            int effectiveMax = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+            playerCount        = Mathf.Clamp(playerCount, effectiveMin, effectiveMax);
             config.PlayerCount = playerCount;
 
             if (playerCountStepper)
@@ -556,19 +563,26 @@ namespace CosmicShore.UI
 
         void RefreshPlayerCountStepper()
         {
-            if (playerCountValueText)
-                playerCountValueText.text = config.PlayerCount.ToString();
-
             if (_selectedGame == null) return;
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            int max = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+            int effectiveMax = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+
+            // Clamp config in case party size grew after the modal opened
+            config.PlayerCount = Mathf.Clamp(config.PlayerCount, effectiveMin, effectiveMax);
+
+            if (playerCountValueText)
+                playerCountValueText.text = config.PlayerCount.ToString();
+
+            // Re-initialize the component stepper so its internal min/max stay current
+            if (playerCountStepper)
+                playerCountStepper.Initialize(effectiveMin, effectiveMax, config.PlayerCount);
 
             if (playerCountDecrementButton)
                 playerCountDecrementButton.interactable = config.PlayerCount > effectiveMin && !IsClientMode;
 
             if (playerCountIncrementButton)
-                playerCountIncrementButton.interactable = config.PlayerCount < max && !IsClientMode;
+                playerCountIncrementButton.interactable = config.PlayerCount < effectiveMax && !IsClientMode;
         }
 
         #endregion

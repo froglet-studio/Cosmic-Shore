@@ -54,6 +54,10 @@ namespace CosmicShore.Utility
         
         
         // Game Config / State
+        [Header("Player Count Limits")]
+        [Tooltip("Hard cap on total players (human + AI) per game session. All UI and spawning systems read this.")]
+        public int MaxTotalPlayers = 4;
+
         public string SceneName;
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
