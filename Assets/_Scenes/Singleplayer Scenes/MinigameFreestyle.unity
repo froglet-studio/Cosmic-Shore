@@ -734,7 +734,7 @@ MonoBehaviour:
   baseBlockCount: 30
   spawnInterval: 0.03
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  size: 18
+  size: 5
 --- !u!1 &278276031
 GameObject:
   m_ObjectHideFlags: 0
@@ -2421,6 +2421,7 @@ MonoBehaviour:
   baseBlockCount: 30
   spawnInterval: 0.03
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  sizeScale: 0.25
 --- !u!1 &721738473
 GameObject:
   m_ObjectHideFlags: 0
@@ -2475,8 +2476,8 @@ MonoBehaviour:
   baseBlockCount: 30
   spawnInterval: 0.03
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  amplitude: 12
-  wavelength: 30
+  amplitude: 3
+  wavelength: 8
   cycles: 2
 --- !u!1 &730710529
 GameObject:
@@ -2859,9 +2860,9 @@ MonoBehaviour:
   baseBlockCount: 30
   spawnInterval: 0.03
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  headWidth: 16
-  headHeight: 12
-  shaftLength: 24
+  headWidth: 4
+  headHeight: 3
+  shaftLength: 6
   shaftWidth: 4
 --- !u!4 &822875536
 Transform:
@@ -2932,7 +2933,7 @@ MonoBehaviour:
   baseBlockCount: 30
   spawnInterval: 0.03
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  radius: 16
+  radius: 4
 --- !u!1 &868879487
 GameObject:
   m_ObjectHideFlags: 0
@@ -2968,7 +2969,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   pauseButton: {fileID: 547474321}
-  snowChangerPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20,
+  snowChangerPrefab: {fileID: 639495419069806261, guid: d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2,
     type: 3}
   guideLine: {fileID: 0}
   ghostLine: {fileID: 0}
@@ -3387,8 +3388,8 @@ MonoBehaviour:
   baseBlockCount: 30
   spawnInterval: 0.03
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  halfWidth: 12
-  halfHeight: 20
+  halfWidth: 3
+  halfHeight: 5
 --- !u!1001 &945887366
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4059,6 +4060,8 @@ MonoBehaviour:
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
+  guaranteedShapeDistance: 3800
+  guaranteedShapeClusterRadius: 80
 --- !u!1 &1033100996
 GameObject:
   m_ObjectHideFlags: 0
@@ -5291,7 +5294,7 @@ PrefabInstance:
         type: 3}
       propertyPath: 'CellConfigs.Array.data[0]'
       value: 
-      objectReference: {fileID: 11400000, guid: b64a1bf81c83fff4aa844cdd9f3619a0,
+      objectReference: {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8,
         type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -6827,7 +6830,7 @@ MonoBehaviour:
   baseBlockCount: 30
   spawnInterval: 0.03
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  maxRadius: 20
+  maxRadius: 5
   revolutions: 3
 --- !u!1 &1692904585
 GameObject:
@@ -7149,8 +7152,8 @@ MonoBehaviour:
   baseBlockCount: 30
   spawnInterval: 0.03
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  outerRadius: 20
-  innerRadius: 8
+  outerRadius: 5
+  innerRadius: 2
   points: 5
 --- !u!1 &1818635897
 GameObject:

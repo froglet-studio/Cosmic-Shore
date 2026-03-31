@@ -256,6 +256,42 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 108862833}
   m_CullTransparentMesh: 1
+--- !u!114 &174675113 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 803111308383094029, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc59001179a91754387a44928598274a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &174675114 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1855614167574679671, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc59001179a91754387a44928598274a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &174675115 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6228105785308262603, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc59001179a91754387a44928598274a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &256752124 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 389723952512325174, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -1676,6 +1712,8 @@ MonoBehaviour:
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
+  guaranteedShapeDistance: 420
+  guaranteedShapeClusterRadius: 80
 --- !u!1 &835643674 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7071078697595455670, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -1920,7 +1958,9 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 1046768873}
   view: {fileID: 1046768874}
-  crystalsPerGame: 5
+  crystalsFirstPlace: 10
+  crystalsSecondPlace: 5
+  crystalsThirdPlace: 0
   crystalRewardRoot: {fileID: 1673232261}
   crystalRewardText: {fileID: 2087070029}
   crystalFadeDuration: 0.5
@@ -2790,6 +2830,11 @@ MonoBehaviour:
   SinglePlayerScoreTextField: {fileID: 1597585038}
   SinglePlayerHighscoreTextField: {fileID: 1597585039}
   MultiplayerView: {fileID: 1597585028}
+  teamScorecards:
+  - {fileID: 174675115}
+  - {fileID: 174675114}
+  - {fileID: 174675113}
+  domainColorPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   PlayerNameTextFields:
   - {fileID: 1597585036}
   - {fileID: 1597585034}
