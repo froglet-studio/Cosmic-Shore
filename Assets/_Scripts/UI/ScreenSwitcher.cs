@@ -82,10 +82,7 @@ namespace CosmicShore.UI
         [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
 
         [Header("Arcade Panel")]
-        [Tooltip("ArcadeScreen component for the Arcade panel. Uses CanvasGroup for visibility.")]
-        [SerializeField] private ArcadeScreen arcadeScreen;
-
-        [Tooltip("Arcade modal window (alternative to CanvasGroup panel). If assigned, Arcade opens as a modal.")]
+        [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
         [SerializeField] private ModalWindowManager ArcadeModal;
 
         private Vector3 panelLocation;
@@ -100,30 +97,13 @@ namespace CosmicShore.UI
         // Cached IScreen components per screen index for lifecycle callbacks
         private readonly Dictionary<int, IScreen> _screenMap = new();
 
-        // Old constants kept for compatibility
-        private const int STORE   = (int)MenuScreens.STORE;
-        private const int ARCADE  = (int)MenuScreens.ARK;
-        private const int HOME    = (int)MenuScreens.HOME;
-        private const int PORT    = (int)MenuScreens.PORT;
-        private const int HANGAR  = (int)MenuScreens.HANGAR;
-        private const int PROFILE = (int)MenuScreens.PROFILE;
-
-        [Header("Nav Bar Line")]
+        [Header("Nav Bar Visuals")]
         [SerializeField] private Image NavBarLine;
         [SerializeField] private List<Sprite> NavBarLineSprites;
 
-        [Header("Nav Tab Icons (optional)")]
-        [Tooltip("Active images for each screen index (visual order: 0,1,2,...)")]
-        [SerializeField] private List<GameObject> NavActiveImages;
-        [Tooltip("Inactive images for each screen index (visual order: 0,1,2,...)")]
-        [SerializeField] private List<GameObject> NavInactiveImages;
-
         [Header("Modal Windows")]
+        [Tooltip("All modal windows in the scene. Used for return-state restoration and closing on freestyle entry.")]
         [SerializeField] private List<ModalWindowManager> Modals;
-        [SerializeField] private ModalWindowManager ArcadeGameConfigureModal;
-        [SerializeField] private ModalWindowManager DailyChallengeModal;
-        [SerializeField] private ModalWindowManager HangarTrainingGameModal;
-        [SerializeField] private ModalWindowManager FactionMissionModal;
 
         private static readonly string ReturnToScreenPrefKey = "ReturnToScreen";
         private static readonly string ReturnToModalPrefKey  = "ReturnToModal";
@@ -521,15 +501,8 @@ namespace CosmicShore.UI
         {
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
 
-            // Prefer modal approach (development UI), fall back to CanvasGroup overlay
             if (ArcadeModal)
-            {
                 ArcadeModal.ModalWindowIn();
-                return;
-            }
-
-            if (arcadeScreen)
-                arcadeScreen.Show();
         }
 
         #endregion
@@ -641,17 +614,6 @@ namespace CosmicShore.UI
             {
                 NavBarLine.sprite = NavBarLineSprites[index];
             }
-
-            for (int i = 0; i < NavActiveImages.Count; i++)
-            {
-                bool isActive = (i == index);
-
-                if (NavActiveImages[i])
-                    NavActiveImages[i].SetActive(isActive);
-
-                if (i < NavInactiveImages.Count && NavInactiveImages[i])
-                    NavInactiveImages[i].SetActive(!isActive);
-            }
         }
 
         #endregion
@@ -677,17 +639,8 @@ namespace CosmicShore.UI
         {
             _isInFreestyle = false;
 
-            // Hide ArcadeScreen overlay if it was open
-            if (arcadeScreen)
-                arcadeScreen.Hide();
-
-            // Close arcade modal if it was open
-            if (ArcadeModal)
-            {
-                var cg = ArcadeModal.GetComponent<CanvasGroup>();
-                if (cg && cg.alpha > 0.01f)
-                    ArcadeModal.ModalWindowOut();
-            }
+            // Close any modals that were open
+            CloseAllModals();
 
             // Show NavBar
             SetNavBarVisible(true);
