@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
-using CosmicShore.ScriptableObjects.SOAP;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using TMPro;
