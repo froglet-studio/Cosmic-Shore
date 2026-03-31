@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
-    public class HangarScreen : MonoBehaviour
+    public class HangarScreen : MonoBehaviour, IScreen
     {
         [Header("Data")]
         [SerializeField] private SO_VesselList ShipList;
@@ -69,6 +69,13 @@ namespace CosmicShore.UI
         {
             VesselUnlockSystem.OnUnlockStateChanged -= RefreshGridCards;
         }
+
+        public void OnScreenEnter()
+        {
+            LoadView();
+        }
+
+        public void OnScreenExit() { }
 
         public void LoadView()
         {
