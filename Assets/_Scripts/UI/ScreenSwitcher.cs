@@ -48,6 +48,9 @@ namespace CosmicShore.UI
 
             // HANGAR MODALS
             HANGAR_TRAINING        = 9,
+
+            // ARCADE (as modal overlay)
+            ARCADE                 = 10,
         }
 
         [System.Serializable]
@@ -78,9 +81,12 @@ namespace CosmicShore.UI
         [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
         [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
 
-        [Header("Arcade Panel (separate)")]
+        [Header("Arcade Panel")]
         [Tooltip("ArcadeScreen component for the Arcade panel. Uses CanvasGroup for visibility.")]
         [SerializeField] private ArcadeScreen arcadeScreen;
+
+        [Tooltip("Arcade modal window (alternative to CanvasGroup panel). If assigned, Arcade opens as a modal.")]
+        [SerializeField] private ModalWindowManager ArcadeModal;
 
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
@@ -167,6 +173,8 @@ namespace CosmicShore.UI
             PlayerPrefs.Save();
         }
         
+        public bool HasActiveModal => activeModalStack.Count > 0;
+
         public bool ScreenIsActive(MenuScreens screen)
         {
             return GetScreenIdForIndex(currentScreen) == screen;
@@ -512,10 +520,16 @@ namespace CosmicShore.UI
         private void OpenArcadePanel()
         {
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
-            if (arcadeScreen)
+
+            // Prefer modal approach (development UI), fall back to CanvasGroup overlay
+            if (ArcadeModal)
             {
-                arcadeScreen.Show();
+                ArcadeModal.ModalWindowIn();
+                return;
             }
+
+            if (arcadeScreen)
+                arcadeScreen.Show();
         }
 
         #endregion

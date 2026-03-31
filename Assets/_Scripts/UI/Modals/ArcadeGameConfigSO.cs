@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
@@ -14,15 +15,17 @@ namespace CosmicShore.UI
             public int           Intensity;
             public int           PlayerCount;
             public int           TeamCount;
-            public SO_Vessel       SelectedShip;
+            public SO_Vessel     SelectedShip;
+            public Domains       SelectedDomain;
 
             public void ResetState()
             {
-                SelectedGame = null;
-                Intensity    = 0;
-                PlayerCount  = 0;
-                TeamCount    = 0;
-                SelectedShip = null;
+                SelectedGame   = null;
+                Intensity      = 0;
+                PlayerCount    = 0;
+                TeamCount      = 0;
+                SelectedShip   = null;
+                SelectedDomain = Domains.Unassigned;
             }
         }
 }
