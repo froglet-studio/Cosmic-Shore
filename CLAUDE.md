@@ -30,9 +30,9 @@ The game features 11 vessel class types (defined in `Assets/_Scripts/Data/Enums/
 
 Meta values: `Any (-1)`, `Random (0)`
 
-### Team Domains
+### Domains
 
-Team ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue (3)`, `Gold (4)`, `Unassigned (0)`, `None (-1)`.
+Domain ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue (3)`, `Gold (4)`, `Unassigned (0)`, `None (-1)`.
 
 ### Tech Stack
 
@@ -602,7 +602,7 @@ The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5
 - `MenuCrystalClickHandler` — toggles between menu mode (Cinemachine crystal camera + autopilot) and gameplay mode (Cinemachine follows vessel + player control) on Menu_Main. Tap crystal → fade out menu UI, disable autopilot, enable player input, retarget Cinemachine vCam to vessel follow target. Center tap → restore autopilot and menu UI.
 - `MultiplayerSetup` — bridges authentication → Netcode host lifecycle. `EnsureHostStarted()` registers Netcode callbacks and calls `nm.StartHost()` exactly once (guarded by `_hostStartInProgress` flag). For multiplayer games: shuts down local host, queries/creates/joins UGS Multiplayer sessions with Relay transport, handles race conditions on session joins. Session properties: `gameMode` (String1), `maxPlayers` (String2). Connection approval auto-creates player objects.
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
-- `DomainAssigner` — static team pool manager. `Initialize()` fills pool with `[Jade, Ruby, Gold]` (excludes None, Unassigned, Blue). `GetDomainsByGameModes()` picks a random unique domain per player (returns `Domains.Jade` for co-op modes). **Must** be called per session start to prevent duplicate/swapped domains.
+- `DomainAssigner` — static domain pool manager. `Initialize()` fills pool with `[Jade, Ruby, Gold]` (excludes None, Unassigned, Blue). `GetDomainsByGameModes()` picks a random unique domain per player (returns `Domains.Jade` for co-op modes). **Must** be called per session start to prevent duplicate/swapped domains.
 
 Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `MonoBehaviour` and auto-selects local vs network scene loading based on whether a host/server is running. `SceneLoader` lives in Bootstrap (DontDestroyOnLoad) and subscribes to SOAP events in code. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in `OnNetworkSpawn()`.
 
@@ -631,7 +631,7 @@ PlayerSpawner / VesselSpawner (single-player, non-networked path)
 | Variable | Read | Write | Purpose |
 |---|---|---|---|
 | `NetDefaultVesselType` | Everyone | Owner | Vessel class selection |
-| `NetDomain` | Everyone | Server | Team assignment (via `DomainAssigner`) |
+| `NetDomain` | Everyone | Server | Domain assignment (via `DomainAssigner`) |
 | `NetName` | Everyone | Owner | Display name (3-tier fallback: PlayerDataService → GameDataSO cache → UGS PlayerName) |
 | `NetVesselId` | Everyone | Server | Linked vessel's `NetworkObjectId` |
 | `NetIsAI` | Everyone | Server | AI flag |
@@ -734,7 +734,7 @@ MiniGamePlayerSpawnerAdapter.InitializeGame() [on OnInitializeGame]
 | Menu autopilot spawner | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
 | Menu play-from-menu toggle | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
 | NetworkManager lifecycle | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
-| Team assignment | `DomainAssigner.cs` | `_Scripts/Controller/Multiplayer/` |
+| Domain assignment | `DomainAssigner.cs` | `_Scripts/Controller/Multiplayer/` |
 | Player NetworkBehaviour | `Player.cs` | `_Scripts/Controller/Player/` |
 | Player interface | `IPlayer.cs` | `_Scripts/Controller/Player/` |
 | Single-player spawner | `PlayerSpawner.cs` | `_Scripts/Controller/Player/` |
@@ -1162,10 +1162,10 @@ MultiplayerMiniGameControllerBase.OnNetworkSpawn() [game scene]
 ServerPlayerVesselInitializerWithAI.OnNetworkSpawn() [game scene]
        │ SpawnAIs():
        │   aiCount = gameData.RequestedAIBackfillCount
-       │   teamCounts = gameData.BuildTeamCounts()  ← counts existing human players per team
+       │   domainCounts = gameData.BuildTeamCounts()  ← counts existing human players per domain
        │   For each AI:
-       │     domain = GetBalancedDomain(teamCounts)  ← picks team with fewest players
-       │     teamCounts[domain]++
+       │     domain = GetBalancedDomain(domainCounts)  ← picks domain with fewest players
+       │     domainCounts[domain]++
        │     Spawn AI player + vessel with that domain
        ▼
 MultiplayerSetup.CreateOrJoinSession()
@@ -1174,7 +1174,7 @@ MultiplayerSetup.CreateOrJoinSession()
 
 #### Player Count Examples
 
-| Humans in Party | Selected Total | AI Backfill | Teams (Jade/Ruby/Gold) |
+| Humans in Party | Selected Total | AI Backfill | Domains (Jade/Ruby/Gold) |
 |---|---|---|---|
 | 1 (solo) | 1 | 0 | 1/0/0 |
 | 1 (solo) | 4 | 3 | 2/1/1 (balanced) |
@@ -1182,9 +1182,9 @@ MultiplayerSetup.CreateOrJoinSession()
 | 2 (both Jade) | 6 | 4 | 2/2/2 → 4/4/4 with AI fill |
 | 3 (J/R/G) | 9 | 6 | 3/3/3 (balanced) |
 
-#### Team Balancing Algorithm
+#### Domain Balancing Algorithm
 
-`ServerPlayerVesselInitializerWithAI.GetBalancedDomain()` assigns each AI to the team with the fewest players. Ties break by enum order (Jade → Ruby → Gold). `GameDataSO.BuildTeamCounts()` initializes a `Dictionary<Domains, int>` with {Jade=0, Ruby=0, Gold=0} and counts existing non-AI players.
+`ServerPlayerVesselInitializerWithAI.GetBalancedDomain()` assigns each AI to the domain with the fewest players. Ties break by enum order (Jade → Ruby → Gold). `GameDataSO.BuildTeamCounts()` initializes a `Dictionary<Domains, int>` with {Jade=0, Ruby=0, Gold=0} and counts existing non-AI players.
 
 #### PlayerCountStepper
 
@@ -1218,8 +1218,8 @@ These are independent — a party of 2 humans can launch a 12-player game with 1
 | Configure modal (UI) | `ArcadeGameConfigureModal.cs` | `_Scripts/UI/Modals/` |
 | Player count stepper | `PlayerCountStepper.cs` | `_Scripts/UI/Elements/` |
 | Player count computation | `GameDataSO.ConfigurePlayerCounts()` | `_Scripts/Utility/DataContainers/` |
-| Team count builder | `GameDataSO.BuildTeamCounts()` | `_Scripts/Utility/DataContainers/` |
-| AI spawner + team balancing | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
+| Domain count builder | `GameDataSO.BuildTeamCounts()` | `_Scripts/Utility/DataContainers/` |
+| AI spawner + domain balancing | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
 | Session creation | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
 
 ### HexRace Game Mode
@@ -1665,7 +1665,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Friends UI | `FriendsPanel` (tabbed: list + requests + add), `FriendEntryView` (friend row with invite/remove), `FriendRequestEntryView` (accept/decline/cancel), `AddFriendPanel` (name input) | `_Scripts/UI/Views/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
-| Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
+| Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (domain pool) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
 | Party UI | `PartyAreaPanel` (3-slot), `PartyArcadeView` (4-slot), `PartySlotView`, `OnlinePlayersPanel`, `OnlinePlayerEntry`, `FriendsPanel`, `FriendEntryView`, `AddFriendPanel`, `PartyInviteNotificationPanel` | `_Scripts/UI/Views/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Screens/` |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |

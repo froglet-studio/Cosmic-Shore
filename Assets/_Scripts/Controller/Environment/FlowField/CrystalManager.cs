@@ -45,6 +45,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
         [SerializeField] private bool spawnCrystalWithPlayerDomain;
+
+        [Tooltip("Domain assigned to crystals when spawnCrystalWithPlayerDomain is false. " +
+                 "Use Jade for menu crystals, None for neutral crystals.")]
+        [SerializeField] protected Domains defaultCrystalDomain = Domains.None;
+
         [SerializeField] private int extraCrystalsToSpawnBeyondPlayerCount = 0;
         
         // ---------------- Runtime State ----------------
@@ -87,7 +92,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos)
         {
-            var domain = Domains.None;
+            var domain = defaultCrystalDomain;
             if (spawnCrystalWithPlayerDomain && crystalId - 1 < gameData.Players.Count)
                 domain = gameData.Players[crystalId - 1].Domain;
 

@@ -27,6 +27,13 @@ namespace CosmicShore.Gameplay
             int overrideTarget = controller != null ? controller.GetTestCrystalOverride() : -1;
             int target = overrideTarget > 0 ? overrideTarget : GetCrystalCollisionCount();
 
+            // When domain crystals are active, each player can only collect their
+            // domain's share of the total crystals. Divide the target by the number
+            // of distinct player domains so each player needs their fair portion.
+            int domainCount = GetDistinctDomainCount();
+            if (domainCount > 1)
+                target = Mathf.Max(1, target / domainCount);
+
             _netCrystalCollisions.Value = target;
             controller?.SetCrystalsToFinishServer(target);
 
@@ -67,6 +74,18 @@ namespace CosmicShore.Gameplay
                 : CrystalCollisions;
 
             return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target);
+        }
+
+        int GetDistinctDomainCount()
+        {
+            if (gameData?.Players == null || gameData.Players.Count == 0)
+                return 1;
+
+            return gameData.Players
+                .Select(p => p.Domain)
+                .Where(d => d is not (Domains.None or Domains.Unassigned))
+                .Distinct()
+                .Count();
         }
 
         protected override void UpdateCrystalsRemainingUI()
