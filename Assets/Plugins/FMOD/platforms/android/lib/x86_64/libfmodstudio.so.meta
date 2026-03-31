@@ -1,0 +1,31 @@
+fileFormatVersion: 2
+guid: 8c078c4748d95c2489bb3b82aa144194
+PluginImporter:
+  serializedVersion: 1
+  iconMap: {}
+  executionOrder: {}
+  isPreloaded: 0
+  isOverridable: 0
+  platformData:
+    Android:
+      enabled: 1
+      settings:
+        CPU: x86_64
+        Is16KbAligned: true
+    Any:
+      enabled: 0
+      settings: {}
+    Editor:
+      enabled: 0
+      settings:
+        DefaultValueInitialized: true
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311497
+  packageName: FMOD for Unity (2.03)
+  packageVersion: 2.03.11
+  assetPath: Assets/Plugins/FMOD/platforms/android/lib/x86_64/libfmodstudio.so
+  uploadId: 847624

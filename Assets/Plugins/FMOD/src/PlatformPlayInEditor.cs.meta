@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 335f0a4b26fb46942858ea029e030d2a
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311497
+  packageName: FMOD for Unity (2.03)
+  packageVersion: 2.03.11
+  assetPath: Assets/Plugins/FMOD/src/PlatformPlayInEditor.cs
+  uploadId: 847624

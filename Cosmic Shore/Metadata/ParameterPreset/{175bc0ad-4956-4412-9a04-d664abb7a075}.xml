@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="ParameterPreset" id="{175bc0ad-4956-4412-9a04-d664abb7a075}">
+		<property name="name">
+			<value>Tilt Acel</value>
+		</property>
+		<relationship name="folder">
+			<destination>{13129644-f1bd-481c-a39a-9d5da342acdb}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{d2a1f6c6-d530-4365-891f-dfe93708f5d2}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{d2a1f6c6-d530-4365-891f-dfe93708f5d2}">
+		<property name="minimum">
+			<value>-100</value>
+		</property>
+		<property name="maximum">
+			<value>100</value>
+		</property>
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+	</object>
+</objects>

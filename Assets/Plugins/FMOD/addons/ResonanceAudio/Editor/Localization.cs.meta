@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 6711f1f86af21644c897cc89748266f6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311497
+  packageName: FMOD for Unity (2.03)
+  packageVersion: 2.03.11
+  assetPath: Assets/Plugins/FMOD/addons/ResonanceAudio/Editor/Localization.cs
+  uploadId: 847624

@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: fa325be8441506c4bb1462c8333ccce9
+timeCreated: 1523230773
+licenseType: Store
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311497
+  packageName: FMOD for Unity (2.03)
+  packageVersion: 2.03.11
+  assetPath: Assets/Plugins/FMOD/src/Editor/FMODEventPlayableEditor.cs
+  uploadId: 847624

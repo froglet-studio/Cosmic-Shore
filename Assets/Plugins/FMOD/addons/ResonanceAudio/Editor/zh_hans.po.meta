@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: df892acb3265e0043b3bb1b8981b5aeb
+LocalizationImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311497
+  packageName: FMOD for Unity (2.03)
+  packageVersion: 2.03.11
+  assetPath: Assets/Plugins/FMOD/addons/ResonanceAudio/Editor/zh_hans.po
+  uploadId: 847624

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 6bc0be9e3a234d3429dfe763083ef8a9
+LocalizationImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311497
+  packageName: FMOD for Unity (2.03)
+  packageVersion: 2.03.11
+  assetPath: Assets/Plugins/FMOD/src/Editor/zh_hans.po
+  uploadId: 847624
