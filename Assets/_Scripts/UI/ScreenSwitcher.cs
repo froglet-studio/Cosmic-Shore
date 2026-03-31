@@ -666,27 +666,60 @@ namespace CosmicShore.UI
             if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
                 exitingScreen.OnScreenExit();
 
-            // Hide NavBar
-            if (NavBar)
-                NavBar.gameObject.SetActive(false);
+            // Close any open modals (CanvasGroup-based, no SetActive toggling)
+            CloseAllModals();
+
+            // Hide NavBar via CanvasGroup (avoids expensive SetActive rebuild)
+            SetNavBarVisible(false);
         }
 
         private void HandleExitFreestyle()
         {
             _isInFreestyle = false;
 
-            // Hide ArcadeScreen overlay if it was open — it should only appear
-            // when explicitly opened via the Arcade nav button.
+            // Hide ArcadeScreen overlay if it was open
             if (arcadeScreen)
                 arcadeScreen.Hide();
 
+            // Close arcade modal if it was open
+            if (ArcadeModal)
+            {
+                var cg = ArcadeModal.GetComponent<CanvasGroup>();
+                if (cg && cg.alpha > 0.01f)
+                    ArcadeModal.ModalWindowOut();
+            }
+
             // Show NavBar
-            if (NavBar)
-                NavBar.gameObject.SetActive(true);
+            SetNavBarVisible(true);
 
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
+        }
+
+        private void SetNavBarVisible(bool visible)
+        {
+            if (!NavBar) return;
+
+            if (!NavBar.TryGetComponent<CanvasGroup>(out var cg))
+                cg = NavBar.gameObject.AddComponent<CanvasGroup>();
+
+            cg.alpha = visible ? 1f : 0f;
+            cg.blocksRaycasts = visible;
+            cg.interactable = visible;
+        }
+
+        private void CloseAllModals()
+        {
+            if (Modals == null) return;
+
+            foreach (var modal in Modals)
+            {
+                if (!modal) continue;
+                var cg = modal.GetComponent<CanvasGroup>();
+                if (cg && cg.alpha > 0.01f)
+                    modal.ModalWindowOut();
+            }
         }
 
         #endregion

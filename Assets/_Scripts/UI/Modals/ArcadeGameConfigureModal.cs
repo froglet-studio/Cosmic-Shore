@@ -898,7 +898,12 @@ namespace CosmicShore.UI
         {
             Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
 
-            if (hostConnectionData != null && hostConnectionData.IsHost)
+            // If there's no sync manager, this is a solo/local launch — always proceed.
+            // If there IS a sync manager, only the host should trigger the launch.
+            bool shouldLaunch = !arcadeConfigSyncManager
+                || (hostConnectionData != null && hostConnectionData.IsHost);
+
+            if (shouldLaunch)
             {
                 audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
                 SyncAllGameDataForLaunch();
