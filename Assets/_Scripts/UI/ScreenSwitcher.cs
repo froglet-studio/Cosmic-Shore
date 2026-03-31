@@ -74,6 +74,9 @@ namespace CosmicShore.UI
         [Header("Scene References")]
         [SerializeField] private Transform NavBar;
 
+        [Tooltip("CanvasGroup on the Screens root. Disabled during freestyle to hide all screens without SetActive.")]
+        [SerializeField] private CanvasGroup screensCanvasGroup;
+
         [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
         [Inject] private HostConnectionDataSO hostConnectionData;
 
@@ -631,8 +634,9 @@ namespace CosmicShore.UI
             // Close any open modals (CanvasGroup-based, no SetActive toggling)
             CloseAllModals();
 
-            // Hide NavBar via CanvasGroup (avoids expensive SetActive rebuild)
+            // Hide NavBar and Screens via CanvasGroup
             SetNavBarVisible(false);
+            SetCanvasGroupVisible(screensCanvasGroup, false);
         }
 
         private void HandleExitFreestyle()
@@ -642,12 +646,21 @@ namespace CosmicShore.UI
             // Close any modals that were open
             CloseAllModals();
 
-            // Show NavBar
+            // Show NavBar and Screens
             SetNavBarVisible(true);
+            SetCanvasGroupVisible(screensCanvasGroup, true);
 
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
+        }
+
+        private static void SetCanvasGroupVisible(CanvasGroup cg, bool visible)
+        {
+            if (!cg) return;
+            cg.alpha = visible ? 1f : 0f;
+            cg.blocksRaycasts = visible;
+            cg.interactable = visible;
         }
 
         private void SetNavBarVisible(bool visible)
