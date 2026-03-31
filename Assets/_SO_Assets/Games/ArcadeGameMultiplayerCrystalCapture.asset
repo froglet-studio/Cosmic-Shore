@@ -23,10 +23,10 @@ MonoBehaviour:
     type: 3}
   GolfScoring: 0
   SceneName: MinigameCrystalCaptureMultiplayer_Gameplay
-  Captains:
-  - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
-  - {fileID: 11400000, guid: f2d76569deb637b4e90869cb5a908a6b, type: 2}
-  - {fileID: 11400000, guid: 38f86662381aa0c4da8018fa5fc4e62a, type: 2}
+  Vessels:
+  - {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
+  - {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
+  - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
   MinPlayersAllowed: 1
   MaxPlayersAllowed: 12
   MinIntensity: 1

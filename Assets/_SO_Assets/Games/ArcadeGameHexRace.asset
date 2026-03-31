@@ -26,8 +26,6 @@ MonoBehaviour:
   SceneName: MinigameHexRace
   Vessels:
   - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
-  - {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
-  - {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
   MinPlayersAllowed: 1
   MaxPlayersAllowed: 12
   MinIntensity: 1
