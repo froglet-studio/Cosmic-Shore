@@ -148,11 +148,8 @@ namespace CosmicShore.Gameplay
             // When seeking players (Joust mode), ignore cell item updates
             if (seekPlayers) return;
 
-            // Guard against early calls before vessel is assigned or cell is ready
+            // Guard against early calls before vessel is assigned
             if (vessel == null || VesselStatus == null) return;
-
-            var activeCell = cellData.Cell;
-            if (activeCell == null) return;
 
             var cellItems = cellData.CellItems;
             float MinDistance = Mathf.Infinity;
@@ -180,7 +177,10 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            _targetPosition = !closestItem ? activeCell.transform.position : closestItem.transform.position;
+            if (closestItem)
+                _targetPosition = closestItem.transform.position;
+            else if (cellData.Cell)
+                _targetPosition = cellData.Cell.transform.position;
         }
 
         IEnumerator UpdatePlayerTarget()
