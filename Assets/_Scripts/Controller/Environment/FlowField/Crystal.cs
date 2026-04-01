@@ -40,6 +40,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected bool allowVesselImpactEffect = true;
         [SerializeField] bool allowRespawnOnImpact;
 
+        [Header("Initial Domain")]
+        [Tooltip("When not None, the crystal applies this domain on Start, overriding any manager-assigned domain.")]
+        [SerializeField] private Domains _initialDomain = Domains.None;
+
         [Header("Data Containers")]
         [SerializeField] protected ThemeManagerDataContainerSO _themeManagerData;
 
@@ -54,6 +58,9 @@ namespace CosmicShore.Gameplay
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
+
+            if (_initialDomain != Domains.None)
+                ChangeDomain(_initialDomain);
         }
 
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
