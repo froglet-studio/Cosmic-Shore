@@ -6,11 +6,12 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Row entry for the Friends tab of FriendsListPanel.
-    /// Shows avatar, username, online status, and invite button.
-    /// These are confirmed friends — no add-friend button needed.
+    /// Row entry for the Online tab of FriendsListPanel.
+    /// Shows avatar, username, online status, add-friend button,
+    /// invite button, and pending state.
+    /// Only online players appear here (never the current user).
     /// </summary>
-    public class FriendInfoEntry : MonoBehaviour
+    public class OnlineInfoEntry : MonoBehaviour
     {
         [Header("Display")]
         [SerializeField] private Image avatarIcon;
@@ -19,7 +20,8 @@ namespace CosmicShore.UI
         [SerializeField] private Image labelStatus;
 
         [Header("Actions")]
-        [SerializeField] private Button inviteButton;
+        [SerializeField] private Button addFriendButton;
+        [SerializeField] private Button inviteFriendButton;
         [SerializeField] private GameObject pendingState;
 
         [Header("Status Colors")]
@@ -27,24 +29,28 @@ namespace CosmicShore.UI
         [SerializeField] private Color offlineColor = new(0.5f, 0.5f, 0.5f, 1f);
         [SerializeField] private Color inMatchColor = new(0.9f, 0.2f, 0.2f, 1f);
 
-        public enum OnlineStatus { Online, Offline, InMatch }
+        public enum Status { Online, Offline, InMatch }
 
         string _playerId;
+        Action<string> _onAddFriend;
         Action<string> _onInvite;
 
         public string PlayerId => _playerId;
 
         /// <summary>
-        /// Populates the entry with friend data.
+        /// Populates the entry with online player data.
         /// </summary>
         public void Populate(
             string playerId,
             string displayName,
             Sprite avatar,
-            OnlineStatus status,
+            Status status,
+            bool isAlreadyFriend,
+            Action<string> onAddFriend,
             Action<string> onInvite)
         {
             _playerId = playerId;
+            _onAddFriend = onAddFriend;
             _onInvite = onInvite;
 
             if (usernameText)
@@ -58,33 +64,44 @@ namespace CosmicShore.UI
 
             SetStatus(status);
 
-            // Invite button — only shown for online/in-match friends
-            if (inviteButton)
+            // Add Friend — hidden if already a friend or no callback
+            if (addFriendButton)
             {
-                bool showInvite = onInvite != null && status != OnlineStatus.Offline;
-                inviteButton.gameObject.SetActive(showInvite);
-                inviteButton.interactable = true;
-                inviteButton.onClick.RemoveAllListeners();
+                bool showAdd = !isAlreadyFriend && onAddFriend != null;
+                addFriendButton.gameObject.SetActive(showAdd);
+                addFriendButton.interactable = true;
+                addFriendButton.onClick.RemoveAllListeners();
+                if (showAdd)
+                    addFriendButton.onClick.AddListener(HandleAddFriendClicked);
+            }
+
+            // Invite
+            if (inviteFriendButton)
+            {
+                bool showInvite = onInvite != null;
+                inviteFriendButton.gameObject.SetActive(showInvite);
+                inviteFriendButton.interactable = true;
+                inviteFriendButton.onClick.RemoveAllListeners();
                 if (showInvite)
-                    inviteButton.onClick.AddListener(HandleInviteClicked);
+                    inviteFriendButton.onClick.AddListener(HandleInviteClicked);
             }
 
             if (pendingState)
                 pendingState.SetActive(false);
         }
 
-        public void SetStatus(OnlineStatus status)
+        public void SetStatus(Status status)
         {
             string text;
             Color color;
 
             switch (status)
             {
-                case OnlineStatus.Online:
+                case Status.Online:
                     text = "Online";
                     color = onlineColor;
                     break;
-                case OnlineStatus.InMatch:
+                case Status.InMatch:
                     text = "In a Match";
                     color = inMatchColor;
                     break;
@@ -100,13 +117,26 @@ namespace CosmicShore.UI
 
         public void ResetInviteState()
         {
-            if (inviteButton) inviteButton.interactable = true;
+            if (inviteFriendButton) inviteFriendButton.interactable = true;
             if (pendingState) pendingState.SetActive(false);
+        }
+
+        public void ResetAddFriendState()
+        {
+            if (addFriendButton) addFriendButton.interactable = true;
+            if (pendingState) pendingState.SetActive(false);
+        }
+
+        void HandleAddFriendClicked()
+        {
+            if (addFriendButton) addFriendButton.interactable = false;
+            if (pendingState) pendingState.SetActive(true);
+            _onAddFriend?.Invoke(_playerId);
         }
 
         void HandleInviteClicked()
         {
-            if (inviteButton) inviteButton.interactable = false;
+            if (inviteFriendButton) inviteFriendButton.interactable = false;
             if (pendingState) pendingState.SetActive(true);
             _onInvite?.Invoke(_playerId);
         }

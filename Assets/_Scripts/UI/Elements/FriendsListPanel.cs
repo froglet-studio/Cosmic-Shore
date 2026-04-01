@@ -37,6 +37,7 @@ namespace CosmicShore.UI
         [SerializeField] private CanvasGroup friendsCanvasGroup;
 
         [Header("Prefabs")]
+        [SerializeField] private OnlineInfoEntry onlineInfoPrefab;
         [SerializeField] private FriendInfoEntry friendInfoPrefab;
         [SerializeField] private RequestInfoEntry requestInfoPrefab;
 
@@ -165,13 +166,12 @@ namespace CosmicShore.UI
         void PopulateOnlineTab()
         {
             ClearSpawned(_spawnedOnline);
-            if (!connectionData || !onlineContent || !friendInfoPrefab) return;
+            if (!connectionData || !onlineContent || !onlineInfoPrefab) return;
 
             string localId = connectionData.LocalPlayerId;
 
             foreach (var player in connectionData.OnlinePlayers)
             {
-                // Skip the current user
                 if (player.PlayerId == localId) continue;
                 SpawnOnlineEntry(player);
             }
@@ -179,7 +179,7 @@ namespace CosmicShore.UI
 
         void SpawnOnlineEntry(PartyPlayerData player)
         {
-            var entry = Instantiate(friendInfoPrefab, onlineContent);
+            var entry = Instantiate(onlineInfoPrefab, onlineContent);
             _spawnedOnline.Add(entry.gameObject);
 
             bool isFriend = friendsService != null && friendsService.IsInitialized
@@ -189,7 +189,7 @@ namespace CosmicShore.UI
                 player.PlayerId,
                 player.DisplayName,
                 ResolveAvatar(player.AvatarId),
-                FriendInfoEntry.OnlineStatus.Online,
+                OnlineInfoEntry.Status.Online,
                 isFriend,
                 onAddFriend: OnAddFriendClicked,
                 onInvite: OnInviteClicked);
@@ -278,8 +278,6 @@ namespace CosmicShore.UI
                 friend.DisplayName,
                 ResolveAvatar(0),
                 status,
-                isAlreadyFriend: true, // They're already friends — hide add button
-                onAddFriend: null,
                 onInvite: status == FriendInfoEntry.OnlineStatus.Offline ? null : OnInviteClicked);
         }
 
@@ -317,7 +315,7 @@ namespace CosmicShore.UI
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to send friend request: {e.Message}");
 
                 // Reset the add button so user can retry
-                var entry = FindEntryByPlayerId<FriendInfoEntry>(_spawnedOnline, playerId);
+                var entry = FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId);
                 entry?.ResetAddFriendState();
             }
         }
@@ -336,9 +334,11 @@ namespace CosmicShore.UI
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to send invite: {e.Message}");
 
                 // Reset the invite button so user can retry
-                var entry = FindEntryByPlayerId<FriendInfoEntry>(_spawnedOnline, playerId)
-                         ?? FindEntryByPlayerId<FriendInfoEntry>(_spawnedFriends, playerId);
-                entry?.ResetInviteState();
+                var onlineEntry = FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId);
+                if (onlineEntry) { onlineEntry.ResetInviteState(); return; }
+
+                var friendEntry = FindEntryByPlayerId<FriendInfoEntry>(_spawnedFriends, playerId);
+                friendEntry?.ResetInviteState();
             }
         }
 
@@ -433,22 +433,27 @@ namespace CosmicShore.UI
             list.Clear();
         }
 
+        static string GetPlayerId(GameObject go)
+        {
+            var online = go.GetComponent<OnlineInfoEntry>();
+            if (online) return online.PlayerId;
+
+            var friend = go.GetComponent<FriendInfoEntry>();
+            if (friend) return friend.PlayerId;
+
+            var request = go.GetComponent<RequestInfoEntry>();
+            if (request) return request.PlayerId;
+
+            return null;
+        }
+
         static void RemoveEntryByPlayerId(List<GameObject> list, string playerId)
         {
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 if (!list[i]) { list.RemoveAt(i); continue; }
 
-                var friendEntry = list[i].GetComponent<FriendInfoEntry>();
-                if (friendEntry != null && friendEntry.PlayerId == playerId)
-                {
-                    Destroy(list[i]);
-                    list.RemoveAt(i);
-                    return;
-                }
-
-                var requestEntry = list[i].GetComponent<RequestInfoEntry>();
-                if (requestEntry != null && requestEntry.PlayerId == playerId)
+                if (GetPlayerId(list[i]) == playerId)
                 {
                     Destroy(list[i]);
                     list.RemoveAt(i);
@@ -462,11 +467,9 @@ namespace CosmicShore.UI
             foreach (var go in list)
             {
                 if (!go) continue;
+                if (GetPlayerId(go) != playerId) continue;
                 var entry = go.GetComponent<T>();
-                if (entry == null) continue;
-
-                if (entry is FriendInfoEntry fie && fie.PlayerId == playerId) return entry;
-                if (entry is RequestInfoEntry rie && rie.PlayerId == playerId) return entry;
+                if (entry) return entry;
             }
             return null;
         }
