@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
                 assembler = healthPrism.GetComponent<Assembler>();
             }
         }
-        
+
         /// <summary>
         /// The max recursion depth of the assembler
         /// </summary>
@@ -45,6 +45,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] int itemsPerGrow = 5;
         [SerializeField] int randomItems = 2;
         [SerializeField] float crystalGrowth = 1.01f;
+
+        [Header("Octagon Flora Seeding")]
+        [Tooltip("Self-reference prefab for spawning new gyroid flora per octagon. " +
+                 "When set, danger prisms (GEs/DE/EG/EsD) spawn their own flora.")]
+        [SerializeField] AssembledFlora gyroidFloraPrefab;
 
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
@@ -108,6 +113,16 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Check if this is a danger prism that should seed its own octagon flora
+                if (growthInfo.IsDangerous && growthInfo is GyroidGrowthInfo gyroidInfo
+                    && GyroidAssembler.IsOctagonDangerType(gyroidInfo.BlockType)
+                    && gyroidFloraPrefab != null)
+                {
+                    SpawnOctagonDangerPrism(growthInfo, gyroidInfo, branch);
+                    itemsSpawned++;
+                    continue;
+                }
+
                 HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
                 AddHealthBlock(newHealthPrism);
                 Branch newBranch = new Branch(newHealthPrism);
@@ -129,7 +144,7 @@ namespace CosmicShore.Gameplay
                 newHealthPrism.transform.localRotation = Quaternion.identity;
                 if (growthInfo.IsDangerous) newHealthPrism.MakeDangerous();
                 newHealthPrism.Initialize();
-                
+
                 newBranch.gameObject = newSpindle.gameObject;
                 newBranch.assembler = newAssembler;
                 newBranch.depth = branch.depth + 1;
@@ -197,6 +212,122 @@ namespace CosmicShore.Gameplay
             activeBranches.Add(newBranch);
 
             return newAssembler;
+        }
+
+        /// <summary>
+        /// Spawns an octagon danger prism. Instead of adding it to this flora,
+        /// checks for an existing flora near the octagon center. If found, the
+        /// prism joins that flora. If not, creates a new gyroid flora with a
+        /// crystal at the octagon center and adds this prism as its first health block.
+        /// </summary>
+        void SpawnOctagonDangerPrism(GrowthInfo growthInfo, GyroidGrowthInfo gyroidInfo, Branch sourceBranch)
+        {
+            // Instantiate the health prism at the growth position
+            HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
+            newHealthPrism.MakeDangerous();
+
+            // Program the assembler with the correct block type
+            var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
+            if (newAssembler == null)
+            {
+                CSDebug.LogError("Failed to create assembler for octagon danger prism");
+                Destroy(newHealthPrism.gameObject);
+                return;
+            }
+
+            var gyroidAssembler = newAssembler as GyroidAssembler;
+
+            // Calculate the octagon center from the prism's bond site geometry
+            Vector3 octagonCenter = growthInfo.Position;
+            if (gyroidAssembler != null)
+            {
+                // Temporarily position at growth location so we can compute bond sites
+                gyroidAssembler.BlockType = gyroidInfo.BlockType;
+                // The octagon center will be computed after the assembler's transform is set
+            }
+
+            // Search for an existing flora near the octagon center
+            var existingFlora = GyroidAssembler.FindNearbyAssembledFlora(
+                growthInfo.Position,
+                gyroidAssembler != null ? gyroidAssembler.OctagonCrystalDetectionRadius : 15f);
+
+            if (existingFlora != null)
+            {
+                // Join the existing flora
+                AdoptPrismIntoFlora(existingFlora, newHealthPrism, newAssembler, growthInfo, sourceBranch);
+            }
+            else
+            {
+                // Create a new gyroid flora at the octagon center
+                var newFlora = CreateOctagonFlora(growthInfo.Position, growthInfo.Rotation);
+                if (newFlora != null)
+                {
+                    AdoptPrismIntoFlora(newFlora, newHealthPrism, newAssembler, growthInfo, sourceBranch);
+                }
+                else
+                {
+                    // Fallback: add to this flora if prefab instantiation fails
+                    CSDebug.LogWarning("Failed to create octagon flora, falling back to parent flora");
+                    AdoptPrismIntoFlora(this, newHealthPrism, newAssembler, growthInfo, sourceBranch);
+                }
+            }
+
+            spawnedItemCount++;
+        }
+
+        /// <summary>
+        /// Adopts a newly created health prism into a target flora, creating
+        /// the spindle hierarchy and initializing the prism.
+        /// </summary>
+        void AdoptPrismIntoFlora(AssembledFlora targetFlora, HealthPrism newHealthPrism,
+            Assembler newAssembler, GrowthInfo growthInfo, Branch sourceBranch)
+        {
+            Spindle newSpindle = Instantiate(spindle, targetFlora.transform);
+            newSpindle.LifeForm = targetFlora;
+            newSpindle.transform.position = newHealthPrism.transform.position;
+            newSpindle.transform.rotation = newHealthPrism.transform.rotation;
+            targetFlora.AddSpindle(newSpindle);
+
+            newHealthPrism.transform.SetParent(newSpindle.transform, false);
+            newHealthPrism.transform.localPosition = Vector3.zero;
+            newHealthPrism.transform.localRotation = Quaternion.identity;
+            newHealthPrism.LifeForm = targetFlora;
+            targetFlora.AddHealthBlock(newHealthPrism);
+            newHealthPrism.Initialize();
+
+            // Add as an active branch in the target flora so it continues growing
+            Branch newBranch = new Branch(newHealthPrism);
+            newBranch.gameObject = newSpindle.gameObject;
+            newBranch.assembler = newAssembler;
+            newBranch.depth = sourceBranch.depth + 1;
+            targetFlora.AddActiveBranch(newBranch);
+        }
+
+        /// <summary>
+        /// Creates a new AssembledFlora for an octagon, with the crystal at local (0,0,0).
+        /// The flora is positioned at the octagon center.
+        /// </summary>
+        AssembledFlora CreateOctagonFlora(Vector3 octagonCenter, Quaternion rotation)
+        {
+            if (gyroidFloraPrefab == null) return null;
+
+            var newFlora = Instantiate(gyroidFloraPrefab, octagonCenter, rotation);
+            newFlora.domain = domain;
+
+            // Initialize with the same cell as this flora
+            if (cell != null)
+                newFlora.Initialize(cell);
+
+            return newFlora;
+        }
+
+        /// <summary>
+        /// Adds a branch to the active branch set. Used by octagon flora adoption
+        /// to register danger prisms as growth points in the target flora.
+        /// </summary>
+        public void AddActiveBranch(Branch branch)
+        {
+            activeBranches.Add(branch);
         }
     }
 }

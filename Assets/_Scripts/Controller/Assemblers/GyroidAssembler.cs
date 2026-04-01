@@ -61,8 +61,8 @@ namespace CosmicShore.Gameplay
 
         public GyroidBlockType BlockType = GyroidBlockType.AB;
         public int depth = -1;
-        
-        
+
+
         public override int Depth
         {
             get => depth;
@@ -75,8 +75,26 @@ namespace CosmicShore.Gameplay
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 
+        [Header("Octagon Flora Seeding")]
+        [Tooltip("Radius to search for an existing crystal when seeding an octagon danger prism")]
+        [SerializeField] float octagonCrystalDetectionRadius = 15f;
+
+        public float OctagonCrystalDetectionRadius => octagonCrystalDetectionRadius;
+
         private const int MaxColliders = 10; // This one only detects 10 collider at the same frame
         private readonly Collider[] _colliders = new Collider[MaxColliders];
+
+        /// <summary>
+        /// Returns true if the given block type is one of the 4 octagon danger prism types.
+        /// These types form the octagonal openings in the gyroid surface.
+        /// </summary>
+        public static bool IsOctagonDangerType(GyroidBlockType blockType)
+        {
+            return blockType == GyroidBlockType.GEs
+                || blockType == GyroidBlockType.DE
+                || blockType == GyroidBlockType.EG
+                || blockType == GyroidBlockType.EsD;
+        }
 
         void Start()
         {
@@ -87,8 +105,97 @@ namespace CosmicShore.Gameplay
                 if (isSeed)
                 {
                     Prism.Domain = Domains.Blue;
+                    if (IsOctagonDangerType(BlockType))
+                    {
+                        TryAttachToOrCreateFlora();
+                    }
                 }
             }
+        }
+
+        /// <summary>
+        /// For octagon danger prisms: checks if a crystal/flora exists near the octagon center.
+        /// If found, attaches this prism to that flora. If not, creates a new gyroid flora
+        /// with a crystal at the octagon center, making this prism its first health block.
+        /// </summary>
+        void TryAttachToOrCreateFlora()
+        {
+            var healthPrism = GetComponent<HealthPrism>();
+            if (!healthPrism) return;
+
+            // Calculate the octagon center: the centroid of this prism's 4 bond sites in world space
+            Vector3 octagonCenter = CalculateOctagonCenter();
+
+            // Search for an existing flora crystal near the octagon center
+            var existingFlora = FindNearbyAssembledFlora(octagonCenter, octagonCrystalDetectionRadius);
+            if (existingFlora != null)
+            {
+                // Join the existing flora
+                healthPrism.LifeForm = existingFlora;
+                existingFlora.AddHealthBlock(healthPrism);
+                return;
+            }
+
+            // No existing flora found — the parent AssembledFlora.Grow() handles creation
+            // of new flora via CreateOctagonFlora(). When called from Start() on a seed,
+            // we signal that this prism needs its own flora by storing the center position.
+            OctagonCenterPosition = octagonCenter;
+            NeedsOctagonFlora = true;
+        }
+
+        /// <summary>
+        /// When true, this danger prism needs a new octagon flora created for it.
+        /// Set by TryAttachToOrCreateFlora() when no existing flora is found.
+        /// Read by AssembledFlora to trigger flora creation.
+        /// </summary>
+        [HideInInspector] public bool NeedsOctagonFlora;
+
+        /// <summary>
+        /// The calculated octagon center position in world space.
+        /// </summary>
+        [HideInInspector] public Vector3 OctagonCenterPosition;
+
+        /// <summary>
+        /// Calculates the approximate octagon center by averaging the 4 bond site
+        /// positions in world space. The crystal should be placed at this position.
+        /// </summary>
+        Vector3 CalculateOctagonCenter()
+        {
+            Vector3 sum = Vector3.zero;
+            int count = 0;
+
+            foreach (CornerSiteType site in new[] {
+                CornerSiteType.TopLeft, CornerSiteType.TopRight,
+                CornerSiteType.BottomLeft, CornerSiteType.BottomRight })
+            {
+                if (GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((BlockType, site), out var data))
+                {
+                    Vector3 localBondSite = data.DeltaPosition * separationDistance;
+                    sum += transform.TransformPoint(localBondSite);
+                    count++;
+                }
+            }
+
+            return count > 0 ? sum / count : transform.position;
+        }
+
+        /// <summary>
+        /// Searches for an existing AssembledFlora whose crystal is near the given position.
+        /// </summary>
+        static AssembledFlora FindNearbyAssembledFlora(Vector3 position, float detectionRadius)
+        {
+            var hits = Physics.OverlapSphere(position, detectionRadius);
+            foreach (var hit in hits)
+            {
+                var crystal = hit.GetComponent<Crystal>();
+                if (crystal != null)
+                {
+                    var flora = crystal.GetComponentInParent<AssembledFlora>();
+                    if (flora != null)
+                        return flora;
+                }
+            }
+            return null;
         }
 
         public override void StartBonding()
