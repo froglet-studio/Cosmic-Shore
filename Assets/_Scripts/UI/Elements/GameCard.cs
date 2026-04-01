@@ -65,7 +65,9 @@ namespace CosmicShore.UI
 
         void UpdateCardView()
         {
+            if (AllGames == null) return;
             SO_ArcadeGame game = AllGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
+            if (game == null) return;
             GameTitle.text = game.DisplayName;
             BackgroundImage.sprite = game.CardBackground;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
