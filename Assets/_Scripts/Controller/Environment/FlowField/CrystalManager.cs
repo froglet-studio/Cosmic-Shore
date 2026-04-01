@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private IntVariable intensityLevelData;
         [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
-        [SerializeField] private bool spawnCrystalWithPlayerDomain;
+        [SerializeField] protected bool spawnCrystalWithPlayerDomain;
 
         [Tooltip("Domain assigned to crystals when spawnCrystalWithPlayerDomain is false. " +
                  "Use Jade for menu crystals, None for neutral crystals.")]
