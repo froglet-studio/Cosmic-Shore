@@ -182,7 +182,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Searches for an existing AssembledFlora whose crystal is near the given position.
         /// </summary>
-        static AssembledFlora FindNearbyAssembledFlora(Vector3 position, float detectionRadius)
+        public static AssembledFlora FindNearbyAssembledFlora(Vector3 position, float detectionRadius)
         {
             var hits = Physics.OverlapSphere(position, detectionRadius);
             foreach (var hit in hits)
