@@ -15,42 +15,33 @@ namespace CosmicShore.Gameplay
         [SerializeField]
         ScriptableEventCrystalStats OnCrystalCollected;
 
-        [SerializeField, Tooltip("Toggle on if only impactor is of same domain as this crystal")] 
-        private bool onlyAllowOwnDomainImpactor;
-        
         bool IsImpacting;
-        
-        protected virtual bool IsDomainMatching(Domains domain) => 
-            Crystal.ownDomain == domain || Crystal.ownDomain == Domains.None;
+
+        protected virtual bool IsDomainMatching(Domains domain) => true;
 
         bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
-        
+
         protected override void AcceptImpactee(IImpactor impactee)
         {
             if (IsNetworkClient())
                 return;
-            
+
             if (IsImpacting)
                 return;
-            
+
             if (Crystal.IsExploding)
                 return;
 
-            if (onlyAllowOwnDomainImpactor)
-            {
-                bool matched = IsDomainMatching(impactee.OwnDomain);
-                if (!matched)
-                    return;
-            }
-                
-            
+            if (!IsDomainMatching(impactee.OwnDomain))
+                return;
+
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
                 {
                     IsImpacting = true;
                     WaitForImpact().Forget();
-                    
+
                     ExecuteEffect(shipImpactee);
 
                     if (DoesEffectExist(omniCrystalShipEffects))
@@ -59,19 +50,16 @@ namespace CosmicShore.Gameplay
                         foreach (var effect in omniCrystalShipEffects)
                             effect.Execute(shipImpactee, data);
                     }
-                    
+
                     Crystal.Respawn();
                     break;
                 }
             }
         }
-        
-        void ExecuteEffect(VesselImpactor vesselImpactee)
+
+        protected virtual void ExecuteEffect(VesselImpactor vesselImpactee)
         {
             var shipStatus = vesselImpactee.Vessel.VesselStatus;
-
-            if (onlyAllowOwnDomainImpactor && !Crystal.CanBeCollected(shipStatus.Domain))
-                return;
 
             OnCrystalCollected?.Raise(
                 new CrystalStats()

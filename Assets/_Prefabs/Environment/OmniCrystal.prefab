@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 1739894811999228810}
   - component: {fileID: 2388016658642669547}
   m_Layer: 9
-  m_Name: Crystal
+  m_Name: OmniCrystal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -233,7 +233,6 @@ MonoBehaviour:
   Crystal: {fileID: 5535990081244205891}
   omniCrystalShipEffects: []
   OnCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c, type: 2}
-  onlyAllowOwnDomainImpactor: 0
 --- !u!114 &2388016658642669547
 MonoBehaviour:
   m_ObjectHideFlags: 0
