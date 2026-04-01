@@ -144,18 +144,25 @@ namespace CosmicShore.Gameplay
             // When seeking players (Joust mode), ignore cell item updates
             if (seekPlayers) return;
 
-            // Guard against early calls before vessel is assigned or cell is ready
+            // Guard against early calls before vessel is assigned
             if (vessel == null || VesselStatus == null) return;
 
-            var activeCell = cellData.Cell;
-            if (activeCell == null) return;
-
             var cellItems = cellData.CellItems;
-            float MinDistance = Mathf.Infinity;
+            if (cellItems == null || cellItems.Count == 0)
+            {
+                // No items — fall back to Cell position if available
+                if (cellData.Cell)
+                    _targetPosition = cellData.Cell.transform.position;
+                return;
+            }
+
+            float minSqDistance = Mathf.Infinity;
             CellItem closestItem = null;
 
             foreach (var item in cellItems)
             {
+                if (item == null) continue;
+
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
@@ -167,14 +174,17 @@ namespace CosmicShore.Gameplay
                     continue;
 
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
-                if (sqDistance < (MinDistance * MinDistance))
+                if (sqDistance < minSqDistance)
                 {
                     closestItem = item;
-                    MinDistance = sqDistance;
+                    minSqDistance = sqDistance;
                 }
             }
 
-            _targetPosition = !closestItem ? activeCell.transform.position : closestItem.transform.position;
+            if (closestItem)
+                _targetPosition = closestItem.transform.position;
+            else if (cellData.Cell)
+                _targetPosition = cellData.Cell.transform.position;
         }
 
         IEnumerator UpdatePlayerTarget()
