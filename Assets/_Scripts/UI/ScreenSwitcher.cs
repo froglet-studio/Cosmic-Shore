@@ -106,6 +106,12 @@ namespace CosmicShore.UI
         [SerializeField] private Image NavBarLine;
         [SerializeField] private List<Sprite> NavBarLineSprites;
 
+        [Header("Nav Tab Icons (optional)")]
+        [Tooltip("Active images for each screen index (visual order: 0,1,2,...)")]
+        [SerializeField] private List<GameObject> NavActiveImages;
+        [Tooltip("Inactive images for each screen index (visual order: 0,1,2,...)")]
+        [SerializeField] private List<GameObject> NavInactiveImages;
+
         [Header("Modal Windows")]
         [Tooltip("All modal windows in the scene. Used for return-state restoration and closing on freestyle entry.")]
         [SerializeField] private List<ModalWindowManager> Modals;
@@ -693,6 +699,20 @@ namespace CosmicShore.UI
                 index >= 0 && index < NavBarLineSprites.Count)
             {
                 NavBarLine.sprite = NavBarLineSprites[index];
+            }
+
+            if (NavActiveImages != null)
+            {
+                for (int i = 0; i < NavActiveImages.Count; i++)
+                {
+                    bool isActive = (i == index);
+
+                    if (NavActiveImages[i])
+                        NavActiveImages[i].SetActive(isActive);
+
+                    if (NavInactiveImages != null && i < NavInactiveImages.Count && NavInactiveImages[i])
+                        NavInactiveImages[i].SetActive(!isActive);
+                }
             }
         }
 
