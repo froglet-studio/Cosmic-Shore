@@ -245,6 +245,9 @@ namespace CosmicShore.Gameplay
         {
             AutoPilotEnabled = true;
 
+            // Pick up any crystals/items that were spawned before the pilot started
+            UpdateCellContent();
+
             foreach (var ability in abilities)
             {
                 StartCoroutine(UseAbilityCoroutine(ability));
