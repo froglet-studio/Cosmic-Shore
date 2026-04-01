@@ -21,10 +21,10 @@ namespace CosmicShore.Game
         IVesselStatus _vesselStatus;
 
 
-        public override void Initialize(IVessel ship)
+        public override void Initialize(IVesselStatus ship)
         {
             base.Initialize(ship);
-            _vesselStatus = ship.VesselStatus;
+            _vesselStatus = ship;
         }
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
