@@ -215,9 +215,17 @@ namespace CosmicShore.UI
 
         private void Start()
         {
-            _rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
+            var parentCanvas = GetComponentInParent<Canvas>();
+            if (parentCanvas == null)
+            {
+                Debug.LogError("[ScreenSwitcher] No parent Canvas found! Screen sliding will not work.");
+                return;
+            }
+            _rootCanvas = parentCanvas.rootCanvas;
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
             _menuAudio = GetComponent<MenuAudio>();
+
+            Debug.Log($"[ScreenSwitcher] Start — rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
 
             CacheScreenComponents();
             LayoutScreensToViewport();
@@ -464,7 +472,11 @@ namespace CosmicShore.UI
         private void NavigateTo(int ScreenIndex, bool animate = true)
         {
             // Block screen navigation while in freestyle mode
-            if (_isInFreestyle) return;
+            if (_isInFreestyle)
+            {
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — in freestyle");
+                return;
+            }
 
             int max = GetScreenCount() - 1;
             if (max < 0)
@@ -476,10 +488,18 @@ namespace CosmicShore.UI
             ScreenIndex = Mathf.Clamp(ScreenIndex, 0, max);
 
             if (IsIndexDisabled(ScreenIndex))
+            {
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
                 return;
+            }
 
             if (ScreenIndex == currentScreen)
+            {
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — already on this screen");
                 return;
+            }
+
+            Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) — sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
 
             // Notify the outgoing screen
             if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
@@ -567,21 +587,25 @@ namespace CosmicShore.UI
 
         public void OnClickStoreNav()
         {
+            Debug.Log("[ScreenSwitcher] OnClickStoreNav");
             NavigateTo(MenuScreens.STORE);
         }
 
         public void OnClickPortNav()
         {
+            Debug.Log("[ScreenSwitcher] OnClickPortNav");
             NavigateTo(MenuScreens.PORT);
         }
 
         public void OnClickHomeNav()
         {
+            Debug.Log("[ScreenSwitcher] OnClickHomeNav");
             NavigateTo(MenuScreens.HOME);
         }
 
         public void OnClickHangarNav()
         {
+            Debug.Log("[ScreenSwitcher] OnClickHangarNav");
             NavigateTo(MenuScreens.HANGAR);
         }
 
