@@ -2,6 +2,7 @@ using System.Collections;
 using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using static CosmicShore.UI.ScreenSwitcher;
 
 namespace CosmicShore.UI
@@ -13,6 +14,10 @@ namespace CosmicShore.UI
 
         [Header("Settings")]
         public bool sharpAnimations;
+
+        [Header("Controller")]
+        [Tooltip("When true, pressing gamepad B (East) will close this modal.")]
+        [SerializeField] private bool closeOnGamepadB = true;
 
         [SerializeField] public ModalWindows ModalType;
 
@@ -27,23 +32,47 @@ namespace CosmicShore.UI
         {
             _canvasGroup = GetComponent<CanvasGroup>();
 
-            if(windowAnimator == null)
+            if (windowAnimator == null)
                 windowAnimator = GetComponent<Animator>();
 
             _screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
         }
 
+        protected virtual void Update()
+        {
+            if (!isOn || !closeOnGamepadB) return;
+            if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
+            {
+                if (_screenSwitcher != null && !_screenSwitcher.ModalIsActive(ModalType))
+                    return;
+
+                ModalWindowOut();
+            }
+        }
+
         public void ModalWindowIn()
         {
-            // Cancel any pending close — prevents a stale DisableWindow from
-            // hiding us right after we reopen.
+            // Cancel any pending disable from a previous ModalWindowOut
             if (_disableCoroutine != null)
             {
                 StopCoroutine(_disableCoroutine);
                 _disableCoroutine = null;
             }
 
-            // Activate the GO once if it started disabled (scene backward compat).
+            // Detect external deactivation (e.g. something calling SetActive(false)
+            // or setting CanvasGroup alpha to 0 directly instead of ModalWindowOut).
+            // Reset state so the modal can reopen properly.
+            bool wasExternallyDeactivated = isOn &&
+                (!gameObject.activeSelf || (_canvasGroup && _canvasGroup.alpha < 0.01f));
+
+            if (wasExternallyDeactivated)
+            {
+                isOn = false;
+
+                if (_screenSwitcher != null)
+                    _screenSwitcher.PopModal();
+            }
+
             if (!gameObject.activeSelf)
                 gameObject.SetActive(true);
 
@@ -69,22 +98,21 @@ namespace CosmicShore.UI
 
         public void ModalWindowOut()
         {
-            if (isOn)
+            if (!isOn) return;
+
+            if (_screenSwitcher != null)
+                _screenSwitcher.PopModal();
+
+            if (windowAnimator)
             {
-                if (_screenSwitcher != null)
-                    _screenSwitcher.PopModal();
-
-                if (windowAnimator)
-                {
-                    if (sharpAnimations == false)
-                        windowAnimator.CrossFade("Window Out", 0.1f);
-                    else
-                        windowAnimator.Play("Window Out");
-                }
-
-                audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
-                isOn = false;
+                if (sharpAnimations == false)
+                    windowAnimator.CrossFade("Window Out", 0.1f);
+                else
+                    windowAnimator.Play("Window Out");
             }
+
+            audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
+            isOn = false;
 
             if (ModalType == ModalWindows.SETTINGS) return;
 

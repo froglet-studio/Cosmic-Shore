@@ -73,6 +73,8 @@ namespace CosmicShore.UI
 
         [Header("Scene References")]
         [SerializeField] private Transform NavBar;
+        [SerializeField] private HangarScreen HangarMenu;
+        [SerializeField] private LeaderboardsMenu LeaderboardMenu;
 
         [Tooltip("CanvasGroup on the Screens root. Disabled during freestyle to hide all screens without SetActive.")]
         [SerializeField] private CanvasGroup screensCanvasGroup;
@@ -260,6 +262,23 @@ namespace CosmicShore.UI
         {
             if (_isInFreestyle) return;
             if (Gamepad.current == null) return;
+            if (HasActiveModal) return;
+
+            if (ScreenIsActive(MenuScreens.HOME))
+            {
+                if (Gamepad.current.buttonSouth.wasPressedThisFrame)
+                {
+                    OpenArcadePanel();
+                    return;
+                }
+
+                if (Gamepad.current.buttonWest.wasPressedThisFrame)
+                {
+                    OpenModalByType(ModalWindows.SETTINGS);
+                    return;
+                }
+            }
+
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
             if (Gamepad.current.rightTrigger.wasPressedThisFrame)
@@ -469,6 +488,26 @@ namespace CosmicShore.UI
             // Map index → logical enum id
             MenuScreens screenId = GetScreenIdForIndex(ScreenIndex);
 
+            // Screen-specific initialization (matches development branch)
+            switch (screenId)
+            {
+                case MenuScreens.HANGAR:
+                    UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
+                    if (HangarMenu)
+                        HangarMenu.LoadView();
+                    break;
+                case MenuScreens.PORT:
+                    if (LeaderboardMenu)
+                        LeaderboardMenu.LoadView();
+                    break;
+            }
+
+            // Pause game on non-HOME screens (frees CPU for UI rendering)
+            if (screenId == MenuScreens.HOME)
+                PauseSystem.TogglePauseGame(false);
+            else
+                PauseSystem.TogglePauseGame(true);
+
             // Notify the incoming screen
             if (_screenMap.TryGetValue(ScreenIndex, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
@@ -506,6 +545,20 @@ namespace CosmicShore.UI
 
             if (ArcadeModal)
                 ArcadeModal.ModalWindowIn();
+        }
+
+        private void OpenModalByType(ModalWindows modalType)
+        {
+            if (Modals == null) return;
+
+            foreach (var modal in Modals)
+            {
+                if (modal != null && modal.ModalType == modalType)
+                {
+                    modal.ModalWindowIn();
+                    return;
+                }
+            }
         }
 
         #endregion
