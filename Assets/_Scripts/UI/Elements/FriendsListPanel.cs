@@ -126,6 +126,13 @@ namespace CosmicShore.UI
             SwitchTab(_activeTab);
         }
 
+        /// <summary>Opens the panel directly to the Online tab (used by "+" add buttons).</summary>
+        public void ShowOnlineTab()
+        {
+            gameObject.SetActive(true);
+            SwitchTab(Tab.Online);
+        }
+
         public void Hide()
         {
             gameObject.SetActive(false);
