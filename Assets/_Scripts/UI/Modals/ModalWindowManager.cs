@@ -21,6 +21,7 @@ namespace CosmicShore.UI
 
         ScreenSwitcher _screenSwitcher;
         CanvasGroup _canvasGroup;
+        Coroutine _disableCoroutine;
 
         protected virtual void Start()
         {
@@ -34,8 +35,15 @@ namespace CosmicShore.UI
 
         public void ModalWindowIn()
         {
+            // Cancel any pending close — prevents a stale DisableWindow from
+            // hiding us right after we reopen.
+            if (_disableCoroutine != null)
+            {
+                StopCoroutine(_disableCoroutine);
+                _disableCoroutine = null;
+            }
+
             // Activate the GO once if it started disabled (scene backward compat).
-            // After this, the GO stays active and visibility is CanvasGroup-only.
             if (!gameObject.activeSelf)
                 gameObject.SetActive(true);
 
@@ -46,10 +54,13 @@ namespace CosmicShore.UI
                 if (_screenSwitcher != null)
                     _screenSwitcher.PushModal(ModalType);
 
-                if (sharpAnimations == false)
-                    windowAnimator.CrossFade("Window In", 0.1f);
-                else
-                    windowAnimator.Play("Window In");
+                if (windowAnimator)
+                {
+                    if (sharpAnimations == false)
+                        windowAnimator.CrossFade("Window In", 0.1f);
+                    else
+                        windowAnimator.Play("Window In");
+                }
 
                 audioSystem.PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
@@ -63,22 +74,30 @@ namespace CosmicShore.UI
                 if (_screenSwitcher != null)
                     _screenSwitcher.PopModal();
 
-                if (sharpAnimations == false)
-                    windowAnimator.CrossFade("Window Out", 0.1f);
-                else
-                    windowAnimator.Play("Window Out");
+                if (windowAnimator)
+                {
+                    if (sharpAnimations == false)
+                        windowAnimator.CrossFade("Window Out", 0.1f);
+                    else
+                        windowAnimator.Play("Window Out");
+                }
 
                 audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
                 isOn = false;
             }
-            if(ModalType == ModalWindows.SETTINGS) return;
-            StartCoroutine(DisableWindow());
+
+            if (ModalType == ModalWindows.SETTINGS) return;
+
+            if (_disableCoroutine != null)
+                StopCoroutine(_disableCoroutine);
+            _disableCoroutine = StartCoroutine(DisableWindow());
         }
 
         IEnumerator DisableWindow()
         {
             yield return new WaitForSeconds(0.5f);
             SetCanvasGroupVisible(false);
+            _disableCoroutine = null;
         }
 
         protected void SetCanvasGroupVisible(bool visible)

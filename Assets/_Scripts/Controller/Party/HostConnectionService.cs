@@ -271,11 +271,8 @@ namespace CosmicShore.Gameplay
                     $"[INVITE-SEND] Setting properties — invite_target: '{targetPlayerId}', " +
                     $"invite_data: '{inviteData}'", Color.cyan);
 
-                // Refresh FIRST so the SDK's cached player list has a valid index
-                // for the local player. Then set properties and save — this order
-                // ensures refresh doesn't overwrite our SetProperty() calls.
-                await _presenceLobby.RefreshAsync();
-
+                // Set properties and save. Skip the pre-save refresh to avoid
+                // hitting the UGS rate limit (save + post-save refresh is enough).
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
@@ -308,6 +305,9 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
+                // Push the next polling refresh a full interval out so we don't
+                // immediately hit the rate limit with a back-to-back request.
+                _refreshTimer = 0f;
                 _lobbyBusy = false;
             }
         }

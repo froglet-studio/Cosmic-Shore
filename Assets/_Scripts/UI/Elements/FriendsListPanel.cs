@@ -310,18 +310,24 @@ namespace CosmicShore.UI
 
         async void OnAddFriendClicked(string playerId)
         {
-            if (friendsService == null) return;
+            if (friendsService == null || !friendsService.IsInitialized)
+            {
+                ToastNotificationAPI.Show("Friends service not ready. Try again shortly.");
+                var entry2 = FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId);
+                entry2?.ResetAddFriendState();
+                return;
+            }
 
             try
             {
                 await friendsService.SendFriendRequestAsync(playerId);
-                CSDebug.Log($"[FriendsListPanel] Friend request sent to {playerId}");
+                ToastNotificationAPI.Show("Friend request sent!");
             }
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to send friend request: {e.Message}");
+                ToastNotificationAPI.Show($"Failed to send request: {e.Message}");
 
-                // Reset the add button so user can retry
                 var entry = FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId);
                 entry?.ResetAddFriendState();
             }
@@ -329,7 +335,11 @@ namespace CosmicShore.UI
 
         async void OnInviteClicked(string playerId)
         {
-            if (HostConnectionService.Instance == null) return;
+            if (HostConnectionService.Instance == null)
+            {
+                ToastNotificationAPI.Show("Connection service not ready. Try again shortly.");
+                return;
+            }
 
             try
             {
@@ -351,22 +361,27 @@ namespace CosmicShore.UI
 
         async void OnAcceptRequestClicked(string playerId)
         {
-            if (friendsService == null) return;
+            if (friendsService == null || !friendsService.IsInitialized)
+            {
+                ToastNotificationAPI.Show("Friends service not ready.");
+                return;
+            }
 
             try
             {
                 await friendsService.AcceptFriendRequestAsync(playerId);
-                CSDebug.Log($"[FriendsListPanel] Accepted friend request from {playerId}");
+                ToastNotificationAPI.Show("Friend request accepted!");
             }
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to accept request: {e.Message}");
+                ToastNotificationAPI.Show($"Failed to accept: {e.Message}");
             }
         }
 
         async void OnDeclineRequestClicked(string playerId)
         {
-            if (friendsService == null) return;
+            if (friendsService == null || !friendsService.IsInitialized) return;
 
             try
             {
