@@ -325,7 +325,7 @@ namespace CosmicShore.Gameplay
         /// Adds a branch to the active branch set. Used by octagon flora adoption
         /// to register danger prisms as growth points in the target flora.
         /// </summary>
-        public void AddActiveBranch(Branch branch)
+        void AddActiveBranch(Branch branch)
         {
             activeBranches.Add(branch);
         }
