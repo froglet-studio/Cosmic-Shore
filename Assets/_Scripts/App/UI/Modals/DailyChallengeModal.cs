@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -65,12 +66,13 @@ namespace CosmicShore.App.UI.Modals
 
         void AssignGameMode()
         {
-            GameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
-            GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(GameMode));
+            // GameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
+            // GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(GameMode));
         }
 
         public void Play()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             DailyChallengeSystem.Instance.PlayDailyChallenge();
         }
     }

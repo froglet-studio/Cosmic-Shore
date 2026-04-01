@@ -3,114 +3,118 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace CosmicShore.Core
 {
     public class PrismScaleManager : AdaptiveAnimationManager<PrismScaleManager, PrismScaleAnimator, ScaleAnimationData>
     {
-        private const float COMPLETION_THRESHOLD = 0.01f;
+        // This is a squared distance threshold check (since we use lengthsq)
+        private const float COMPLETION_THRESHOLD_SQR = 0.01f;
+
         private readonly List<(PrismScaleAnimator block, Vector3 scale)> completionQueue =
             new List<(PrismScaleAnimator, Vector3)>(32);
 
-        protected override bool IsAnimatorActive(PrismScaleAnimator animator) =>
-            animator.IsScaling;
+        // ✅ This list is the critical fix: animators aligned 1:1 with animationData indices.
+        private readonly List<PrismScaleAnimator> scalingAnimators =
+            new List<PrismScaleAnimator>(256);
 
-        protected override bool IsAnimatorValid(PrismScaleAnimator animator) =>
-            animator.enabled;
+        protected override bool IsAnimatorActive(PrismScaleAnimator animator) => animator.IsScaling;
+        protected override bool IsAnimatorValid(PrismScaleAnimator animator) => animator != null && animator.enabled;
 
-        internal void OnBlockStartScaling(PrismScaleAnimator prism) =>
-            OnAnimatorStart(prism);
-
-        internal void OnBlockStopScaling(PrismScaleAnimator prism) =>
-            OnAnimatorStop(prism);
+        internal void OnBlockStartScaling(PrismScaleAnimator prism) => OnAnimatorStart(prism);
+        internal void OnBlockStopScaling(PrismScaleAnimator prism) => OnAnimatorStop(prism);
 
         protected override void ProcessAnimationFrame(float deltaTime)
         {
-            // Update our stable index list
+            // Refresh stable list
             activeAnimatorsList.Clear();
             activeAnimatorsList.AddRange(activeAnimators);
 
+            scalingAnimators.Clear();
+            completionQueue.Clear();
+
             int scalingCount = 0;
-            foreach (var block in activeAnimatorsList)
+
+            // Build contiguous job input + aligned animator list
+            for (int i = 0; i < activeAnimatorsList.Count; i++)
             {
+                var block = activeAnimatorsList[i];
                 if (block == null || !block.enabled || !block.IsScaling) continue;
 
-                var targetScale = Vector3.Min(Vector3.Max(block.TargetScale, block.MinScale), block.MaxScale);
+                var targetScale = Vector3.Min(
+                    Vector3.Max(block.TargetScale, block.MinScale),
+                    block.MaxScale
+                );
+
+                // Make sure our NativeArray is large enough (AdaptiveAnimationManager usually allocs it)
                 animationData[scalingCount] = new ScaleAnimationData
                 {
                     currentScale = block.transform.localScale,
                     targetScale = targetScale,
-                    growthRate = block.GrowthRate,
-                    minScale = block.MinScale,
-                    maxScale = block.MaxScale,
-                    blockIndex = scalingCount
+                    growthRate = block.GrowthRate
                 };
+
+                scalingAnimators.Add(block);
                 scalingCount++;
             }
 
-            if (scalingCount == 0) return;
-
-            completionQueue.Clear();
+            if (scalingCount == 0)
+                return;
 
             var job = new UpdateScalesJob
             {
                 data = animationData,
                 deltaTime = deltaTime,
-                completionThreshold = COMPLETION_THRESHOLD
+                completionThresholdSqr = COMPLETION_THRESHOLD_SQR
             };
 
             var handle = job.Schedule(scalingCount, BATCH_SIZE);
             handle.Complete();
 
-            // Process results and queue completions
+            // Apply results to the correct block using scalingAnimators[i]
             for (int i = 0; i < scalingCount; i++)
             {
                 var data = animationData[i];
-                var block = activeAnimatorsList[data.blockIndex];
-                if (block != null && block.enabled)
-                {
-                    var sqrDistance = math.lengthsq(data.targetScale - data.currentScale);
+                var block = scalingAnimators[i];
 
-                    if (sqrDistance <= COMPLETION_THRESHOLD)
-                    {
-                        completionQueue.Add((block, data.targetScale));
-                    }
-                    else
-                    {
-                        block.transform.localScale = data.currentScale;
-                    }
+                if (block == null || !block.enabled)
+                    continue;
+
+                var sqrDistance = math.lengthsq((float3)(data.targetScale - data.currentScale));
+
+                if (sqrDistance <= COMPLETION_THRESHOLD_SQR)
+                {
+                    completionQueue.Add((block, data.targetScale));
+                }
+                else
+                {
+                    block.transform.localScale = data.currentScale;
                 }
             }
 
             // Process completions
-            foreach (var (block, targetScale) in completionQueue)
+            for (int i = 0; i < completionQueue.Count; i++)
             {
+                var (block, targetScale) = completionQueue[i];
+                if (block == null || !block.enabled) continue;
+
+                // Hit target exactly
                 block.transform.localScale = targetScale;
+
+                // Stop scaling (may call back into manager depending on your base class)
                 block.IsScaling = false;
 
-                // Set scale one final time to ensure we hit target exactly
-                block.transform.localScale = targetScale;
-
-                bool wasRemoved = activeAnimators.Remove(block);
-
-                // Validate removal
-                if (!wasRemoved)
-                {
-                    // Check if it's actually in the set
-                    bool contains = activeAnimators.Contains(block);
-                }
+                // Ensure this animator is not left in the active set
+                activeAnimators.Remove(block);
 
                 block.ExecuteOnScaleComplete();
             }
 
-            // Validate all remaining active animators are actually scaling
-            foreach (var animator in activeAnimators.ToArray())
+            // Cleanup: remove any animators that are no longer scaling
+            foreach (var animator in activeAnimatorsList)
             {
-                if (!animator.IsScaling)
-                {
+                if (animator == null || !animator.IsScaling)
                     activeAnimators.Remove(animator);
-                }
             }
         }
 
@@ -118,6 +122,7 @@ namespace CosmicShore.Core
         {
             base.CleanupResources();
             completionQueue.Clear();
+            scalingAnimators.Clear();
         }
     }
 
@@ -125,10 +130,7 @@ namespace CosmicShore.Core
     {
         public Vector3 currentScale;
         public Vector3 targetScale;
-        public Vector3 minScale;
-        public Vector3 maxScale;
         public float growthRate;
-        public int blockIndex;
     }
 
     [Unity.Burst.BurstCompile]
@@ -136,24 +138,20 @@ namespace CosmicShore.Core
     {
         public NativeArray<ScaleAnimationData> data;
         [ReadOnly] public float deltaTime;
-        [ReadOnly] public float completionThreshold;
+        [ReadOnly] public float completionThresholdSqr;
 
         public void Execute(int i)
         {
             var item = data[i];
 
-            var diff = item.targetScale - item.currentScale;
+            var diff = (float3)(item.targetScale - item.currentScale);
             var sqrDistance = math.lengthsq(diff);
 
-            if (sqrDistance > completionThreshold)
+            if (sqrDistance > completionThresholdSqr)
             {
-                var lerpSpeed = math.clamp(
-                    item.growthRate * deltaTime,
-                    0.05f,
-                    0.1f
-                );
-
-                item.currentScale = math.lerp(item.currentScale, item.targetScale, lerpSpeed);
+                // You can tune these, but keeping your original clamp behavior:
+                var lerpSpeed = math.clamp(item.growthRate * deltaTime, 0.05f, 0.1f);
+                item.currentScale = math.lerp((float3)item.currentScale, (float3)item.targetScale, lerpSpeed);
             }
             else
             {

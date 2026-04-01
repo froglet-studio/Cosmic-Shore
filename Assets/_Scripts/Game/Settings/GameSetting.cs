@@ -1,5 +1,8 @@
+using CosmicShore.App.Systems.CloudData;
+using CosmicShore.App.Systems.CloudData.Models;
 using CosmicShore.Utilities;
 using UnityEngine;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Core
@@ -19,7 +22,7 @@ namespace CosmicShore.Core
         public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertYEnabledStatus;
 
         public delegate void OnChangeInvertThrottleEnabledStatusEvent(bool status);
-        public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertThrottleEnabledStatus;
+        public static event OnChangeInvertThrottleEnabledStatusEvent  OnChangeInvertThrottleEnabledStatus;
 
         public delegate void OnChangeJoystickVisualsStatusEvent(bool status);
         public static event OnChangeJoystickVisualsStatusEvent OnChangeJoystickVisualsStatus;
@@ -90,15 +93,85 @@ namespace CosmicShore.Core
 
             PlayerPrefs.Save();
 
-            musicEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.MusicEnabled.ToString()) == 1;
-            sfxEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.SFXEnabled.ToString()) == 1;
-            hapticsEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.HapticsEnabled.ToString()) == 1;
-            invertYEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.InvertYEnabled.ToString()) == 1;
-            invertThrottleEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.InvertThrottleEnabled.ToString()) == 1;
-            joystickVisualsEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.JoystickVisualsEnabled.ToString()) == 1;
-            musicLevel = PlayerPrefs.GetFloat(PlayerPrefKeys.MusicLevel.ToString());
-            sfxLevel = PlayerPrefs.GetFloat(PlayerPrefKeys.SFXLevel.ToString());
-            hapticsLevel = PlayerPrefs.GetFloat(PlayerPrefKeys.HapticsLevel.ToString());
+            musicEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.MusicEnabled)) == 1;
+            sfxEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.SFXEnabled)) == 1;
+            hapticsEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.HapticsEnabled)) == 1;
+            invertYEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.InvertYEnabled)) == 1;
+            invertThrottleEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.InvertThrottleEnabled)) == 1;
+            joystickVisualsEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.JoystickVisualsEnabled)) == 1;
+            musicLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.MusicLevel));
+            sfxLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.SFXLevel));
+            hapticsLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.HapticsLevel));
+
+            // Subscribe to cloud data ready event to apply cloud settings on top of local
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+            {
+                if (ds.IsInitialized)
+                    ApplyCloudSettings(ds.Settings?.Data);
+                else
+                    ds.OnInitialized += HandleCloudDataReady;
+            }
+        }
+
+        void OnDestroy()
+        {
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+                ds.OnInitialized -= HandleCloudDataReady;
+        }
+
+        void HandleCloudDataReady()
+        {
+            var ds = UGSDataService.Instance;
+            if (ds != null)
+                ds.OnInitialized -= HandleCloudDataReady;
+
+            ApplyCloudSettings(UGSDataService.Instance?.Settings?.Data);
+        }
+
+        /// <summary>
+        /// Applies cloud-synced settings on top of local PlayerPrefs.
+        /// Cloud data takes priority when available (enables roaming across devices).
+        /// </summary>
+        void ApplyCloudSettings(PlayerSettingsCloudData cloud)
+        {
+            if (cloud == null) return;
+
+            musicEnabled = cloud.MusicEnabled;
+            sfxEnabled = cloud.SFXEnabled;
+            hapticsEnabled = cloud.HapticsEnabled;
+            invertYEnabled = cloud.InvertYEnabled;
+            invertThrottleEnabled = cloud.InvertThrottleEnabled;
+            joystickVisualsEnabled = cloud.JoystickVisualsEnabled;
+            musicLevel = cloud.MusicLevel;
+            sfxLevel = cloud.SFXLevel;
+            hapticsLevel = cloud.HapticsLevel;
+
+            // Write cloud values back to PlayerPrefs for offline consistency
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.MusicEnabled), musicEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.SFXEnabled), sfxEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.HapticsEnabled), hapticsEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.InvertYEnabled), invertYEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.InvertThrottleEnabled), invertThrottleEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.JoystickVisualsEnabled), joystickVisualsEnabled ? 1 : 0);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.MusicLevel), musicLevel);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.SFXLevel), sfxLevel);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.HapticsLevel), hapticsLevel);
+            PlayerPrefs.Save();
+
+            // Fire all events so listeners pick up the new values
+            OnChangeMusicEnabledStatus?.Invoke(musicEnabled);
+            OnChangeSFXEnabledStatus?.Invoke(sfxEnabled);
+            OnChangeHapticsEnabledStatus?.Invoke(hapticsEnabled);
+            OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);
+            OnChangeInvertThrottleEnabledStatus?.Invoke(invertThrottleEnabled);
+            OnChangeJoystickVisualsStatus?.Invoke(joystickVisualsEnabled);
+            OnChangeMusicLevel?.Invoke(musicLevel);
+            OnChangeSFXLevel?.Invoke(sfxLevel);
+            OnChangeHapticsLevel?.Invoke(hapticsLevel);
+
+            CSDebug.Log("[GameSetting] Applied cloud settings.");
         }
 
         /// <summary>
@@ -107,82 +180,105 @@ namespace CosmicShore.Core
         public void ChangeMusicEnabledSetting()
         {
             musicEnabled = !musicEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.MusicEnabled.ToString(), musicEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.MusicEnabled), musicEnabled ? 1 : 0);
             PlayerPrefs.Save();
-
-
-            OnChangeMusicEnabledStatus?.Invoke(musicEnabled);   //Event to toggle AudioSystem isAudioEnabled         
+            SyncToCloud();
+            OnChangeMusicEnabledStatus?.Invoke(musicEnabled);
         }
 
-        /// <summary>
-        /// Toggles the Mute on/off on options menu and pause menu panels
-        /// </summary>
         public void ChangeSFXEnabledSetting()
         {
             sfxEnabled = !sfxEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.SFXEnabled.ToString(), sfxEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.SFXEnabled), sfxEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            OnChangeSFXEnabledStatus?.Invoke(sfxEnabled);     
+            SyncToCloud();
+            OnChangeSFXEnabledStatus?.Invoke(sfxEnabled);
         }
 
-        /// <summary>
-        /// Toggles the Mute on/off on options menu and pause menu panels
-        /// </summary>
         public void ChangeHapticsEnabledSetting()
         {
             hapticsEnabled = !hapticsEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.HapticsEnabled.ToString(), hapticsEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.HapticsEnabled), hapticsEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            OnChangeHapticsEnabledStatus?.Invoke(hapticsEnabled);      
+            SyncToCloud();
+            OnChangeHapticsEnabledStatus?.Invoke(hapticsEnabled);
         }
 
-        /// <summary>
-        /// Toggles Invert Y Axis on/off on options menu and pause menu panels
-        /// </summary>
         public void ChangeInvertYEnabledStatus()
         {
             invertYEnabled = !invertYEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.InvertYEnabled.ToString(), invertYEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.InvertYEnabled), invertYEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);  // Event to toggle InputController isGryoEnabled
+            SyncToCloud();
+            OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);
         }
-        
+
         public void ChangeInvertThrottleEnabledStatus()
         {
             invertThrottleEnabled = !invertThrottleEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.InvertThrottleEnabled.ToString(), invertThrottleEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.InvertThrottleEnabled), invertThrottleEnabled ? 1 : 0);
             PlayerPrefs.Save();
+            SyncToCloud();
             OnChangeInvertThrottleEnabledStatus?.Invoke(invertThrottleEnabled);
         }
 
         public void ChangeJoystickVisualsStatus()
         {
             joystickVisualsEnabled = !joystickVisualsEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.JoystickVisualsEnabled.ToString(), joystickVisualsEnabled ? 1 :0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.JoystickVisualsEnabled), joystickVisualsEnabled ? 1 : 0);
             PlayerPrefs.Save();
+            SyncToCloud();
             OnChangeJoystickVisualsStatus?.Invoke(joystickVisualsEnabled);
         }
 
         public void SetMusicLevel(float level)
         {
             musicLevel = level;
-            PlayerPrefs.SetFloat(PlayerPrefKeys.MusicLevel.ToString(), level);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.MusicLevel), level);
             PlayerPrefs.Save();
+            SyncToCloud();
             OnChangeMusicLevel?.Invoke(musicLevel);
         }
+
         public void SetSFXLevel(float level)
         {
             sfxLevel = level;
-            PlayerPrefs.SetFloat(PlayerPrefKeys.SFXLevel.ToString(), level);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.SFXLevel), level);
             PlayerPrefs.Save();
+            SyncToCloud();
             OnChangeSFXLevel?.Invoke(sfxLevel);
         }
+
         public void SetHapticsLevel(float level)
         {
             hapticsLevel = level;
-            PlayerPrefs.SetFloat(PlayerPrefKeys.HapticsLevel.ToString(), level);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.HapticsLevel), level);
             PlayerPrefs.Save();
+            SyncToCloud();
             OnChangeHapticsLevel?.Invoke(hapticsLevel);
+        }
+
+        /// <summary>
+        /// Pushes current settings to UGS Cloud Save via PlayerSettingsRepository.
+        /// Debounced by the repository's built-in save coalescing.
+        /// </summary>
+        void SyncToCloud()
+        {
+            var ds = UGSDataService.Instance;
+            if (ds?.SettingsRepo == null) return;
+
+            var cloud = ds.SettingsRepo.Data;
+            cloud.MusicEnabled = musicEnabled;
+            cloud.SFXEnabled = sfxEnabled;
+            cloud.HapticsEnabled = hapticsEnabled;
+            cloud.InvertYEnabled = invertYEnabled;
+            cloud.InvertThrottleEnabled = invertThrottleEnabled;
+            cloud.JoystickVisualsEnabled = joystickVisualsEnabled;
+            cloud.MusicLevel = musicLevel;
+            cloud.SFXLevel = sfxLevel;
+            cloud.HapticsLevel = hapticsLevel;
+
+            ds.SettingsRepo.MarkDirty();
         }
 
         void SetPlayerPrefDefault(PlayerPrefKeys key, int value)

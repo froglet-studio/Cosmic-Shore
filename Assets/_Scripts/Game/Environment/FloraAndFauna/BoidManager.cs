@@ -3,9 +3,10 @@ using System.Collections;
 using CosmicShore.Core;
 using System.Collections.Generic;
 using CosmicShore;
+using CosmicShore.Game;
 using CosmicShore.Utility;
 
-public class BoidManager : Population
+public class BoidManager : Fauna
 {
     [Header("Boid Settings")]
     public Boid boidPrefab;
@@ -16,39 +17,52 @@ public class BoidManager : Population
     public Transform Mound;
 
     public List<Boid> Boids;
-
-
+    
     public Trail boidTrail = new();
 
     protected override void Start()
     {
-        //Weights = new List<float> { 1, 1, 1, 1 };
+        base.Start();
+
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
-            SafeLookRotation.TryGet(Vector3.Cross(spawnPosition,Vector3.forward), out var initialRotation, boidPrefab);
-            Boid newBoid = Instantiate(boidPrefab, spawnPosition, initialRotation);
-            newBoid.transform.SetParent(transform);
-            newBoid.Population = this;
-            newBoid.domain = domain;
-            var block = newBoid.GetComponentInChildren<Prism>();
+            SafeLookRotation.TryGet(Vector3.Cross(spawnPosition, Vector3.forward), out var initialRotation, boidPrefab);
 
-            if (Mound)
+            Boid newBoid = Instantiate(boidPrefab, spawnPosition, initialRotation, transform);
+            newBoid.BoidManager = this;
+            newBoid.domain = domain;
+            newBoid.normalizedIndex = (float)i / numberOfBoids;
+
+            newBoid.Initialize(cell);
+
+            Boids.Add(newBoid);
+
+            var block = newBoid.GetComponentInChildren<Prism>(true);
+            if (block)
             {
-                newBoid.Mound = Mound;
+                boidTrail.Add(block);
+                block.ChangeTeam(domain);
+                block.Trail = boidTrail;
             }
 
-            //newBoid.DefaultGoal = node.GetClosestItem(spawnPosition).transform;
-
-            boidTrail.Add(block);
-            block.ChangeTeam(domain);
-            block.Trail = boidTrail;
-            
-            newBoid.normalizedIndex = (float)i / numberOfBoids;
-            Boids.Add(newBoid);
+            if (Mound)
+                newBoid.Mound = Mound;
         }
-
-        base.Start();
     }
 
+    public override void Initialize(Cell cell)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    protected override void Spawn()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    protected override void Die(string killername = "")
+    {
+        throw new System.NotImplementedException();
+    }
 }

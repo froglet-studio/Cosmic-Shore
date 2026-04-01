@@ -47,7 +47,7 @@ namespace CosmicShore.Game
             if (allowFriendlyPassThrough && Equals(shooterDomain, targetDomain))
                 return;
 
-            var impactVector = projectile.Velocity;
+            var impactVector = projectile.Velocity * shooterPrism.Volume;
 
             targetPrism.Damage(
                 impactVector: impactVector,

@@ -3,8 +3,10 @@ using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
+using CosmicShore.Game.Cinematics;
 using CosmicShore.Utilities;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -14,6 +16,7 @@ namespace CosmicShore.Game
         Transform Transform => Vessel.Transform;
 
         AIPilot AIPilot { get; }
+        AICinematicBehavior AICinematicBehavior { get; }
         bool IsInitializedAsAI => Player.IsInitializedAsAI;
         bool AutoPilotEnabled => AIPilot.AutoPilotEnabled;
 
@@ -30,7 +33,7 @@ namespace CosmicShore.Game
         bool IsBoosting { get; set; }
         float BoostMultiplier { get; set; }
 
-        SO_Captain Captain { get; set; }
+        float Inertia { get; }
 
         float ChargedBoostCharge { get; set; }
         bool IsChargedBoostDischarging { get; set; }
@@ -63,7 +66,7 @@ namespace CosmicShore.Game
                 if (Player != null)
                     return Player.Name;
 
-                Debug.LogWarning("Player is null, returning empty string for PlayerName.");
+                CSDebug.LogWarning("Player is null, returning empty string for PlayerName.");
                 return "No-name";
             }
         }
@@ -74,7 +77,7 @@ namespace CosmicShore.Game
             {
                 if (Player == null)
                 {
-                    Debug.LogError("No Player found to get domain!");
+                    CSDebug.LogError("No Player found to get domain!");
                     return Domains.Jade;
                 }
                 return Player.Domain;

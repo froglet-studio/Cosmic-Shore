@@ -47,7 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkManagerExpanded: 0
   NetworkConfig:
-    ProtocolVersion: 5
+    ProtocolVersion: 6
     NetworkTransport: {fileID: 6731789929349827546}
     PlayerPrefab: {fileID: 2151207714166088056, guid: 0a8653be5d331c5449d3130cef596493,
       type: 3}

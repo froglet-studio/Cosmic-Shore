@@ -6,17 +6,17 @@ namespace CosmicShore.Utility.ClassExtensions
     {
         public static void LogWithClassMethod<T>(this T obj, string methodName, string message)
         {
-            Debug.LogFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);
+            CSDebug.LogFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);
         }
-        
+
         public static void LogWarningWithClassMethod<T>(this T obj, string methodName, string message)
         {
-            Debug.LogWarningFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);
+            CSDebug.LogWarningFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);
         }
-        
+
         public static void LogErrorWithClassMethod<T>(this T obj, string methodName, string message)
         {
-            Debug.LogErrorFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);
+            CSDebug.LogErrorFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);
         }
 
         /// <summary>
@@ -32,9 +32,9 @@ namespace CosmicShore.Utility.ClassExtensions
             string wrapped = $"<color=#{hex}>{message}</color>";
 
             if (context != null)
-                Debug.Log(wrapped, context);
+                CSDebug.Log(wrapped, context);
             else
-                Debug.Log(wrapped);
+                CSDebug.Log(wrapped);
         }
 
         /// <summary>
@@ -46,9 +46,9 @@ namespace CosmicShore.Utility.ClassExtensions
             string wrapped = $"<color=#{hex}>{message}</color>";
 
             if (context != null)
-                Debug.LogWarning(wrapped, context);
+                CSDebug.LogWarning(wrapped, context);
             else
-                Debug.LogWarning(wrapped);
+                CSDebug.LogWarning(wrapped);
         }
 
         /// <summary>
@@ -60,9 +60,9 @@ namespace CosmicShore.Utility.ClassExtensions
             string wrapped = $"<color=#{hex}>{message}</color>";
 
             if (context != null)
-                Debug.LogError(wrapped, context);
+                CSDebug.LogError(wrapped, context);
             else
-                Debug.LogError(wrapped);
+                CSDebug.LogError(wrapped);
         }
     }
 }

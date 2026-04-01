@@ -1,6 +1,8 @@
 ﻿using CosmicShore.Core;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -9,11 +11,23 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselDangerBlockFormationBySkimmerEffectSO")]
     public sealed class VesselDangerBlockFormationBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
+        /// <summary>Static event: fired when danger blocks are spawned. Param = attacker player name.</summary>
+        public static event System.Action<string> OnDangerBlockSpawned;
+
         [Header("AOE Prefab")]
         [SerializeField] private GameObject dangerHemispherePrefab;
-
+        
+        [SerializeField]
+        CellRuntimeDataSO cellData;
+        
         public override void Execute(VesselImpactor vesselImpactor, SkimmerImpactor skimmerImpactee)
         {
+            if (!cellData)
+            {
+                CSDebug.LogError("No Cell data found!");
+                return;
+            }
+            
             var victimVessel  = vesselImpactor.Vessel;
             var attackerSkimmer = skimmerImpactee.Skimmer;
             if (attackerSkimmer == null || victimVessel == null)
@@ -35,15 +49,12 @@ namespace CosmicShore.Game
                 return;
 
             var victimPos   = victimTransform.position;
-            var cellManager = CellControlManager.Instance;
-            var cell = cellManager.GetNearestCell(victimPos);
-
-            var targetPos = cell.GetCrystalTransform().position;
+            var targetPos = cellData.Cell.GetCrystalTransform().position;
 
             var toTarget = targetPos - victimPos;
             if (toTarget.sqrMagnitude < 0.01f)
             {
-                Debug.LogWarning("[VesselDangerBlockFormationBySkimmerEffectSO] Target too close to victim. Aborting AOE.");
+                CSDebug.LogWarning("[VesselDangerBlockFormationBySkimmerEffectSO] Target too close to victim. Aborting AOE.");
                 return;
             }
 
@@ -66,6 +77,8 @@ namespace CosmicShore.Game
 
             aoe.Initialize(init);
             aoe.Detonate();
+
+            OnDangerBlockSpawned?.Invoke(attackerStatus.PlayerName);
         }
     }
 }

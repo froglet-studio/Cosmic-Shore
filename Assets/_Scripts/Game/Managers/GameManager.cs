@@ -38,11 +38,11 @@ namespace CosmicShore.Core
         
         public virtual void RestartGame()
         {
-            // LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
-            
             gameData.ResetStatsDataForReplay();
-            // VesselPrismController.ClearTrails();
             InvokeOnResetForReplay();
+
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
 
         public virtual void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();

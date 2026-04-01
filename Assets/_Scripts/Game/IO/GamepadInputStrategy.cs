@@ -1,11 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game.IO
 {
     public class GamepadInputStrategy : BaseInputStrategy
     {
+        private const float TriggerDeadzone = 0.05f;
+
         private bool leftStickEffectsStarted;
         private bool rightStickEffectsStarted;
         private bool fullSpeedStraightEffectsStarted;
@@ -14,10 +17,19 @@ namespace CosmicShore.Game.IO
         private Vector2 leftStickRaw;
         private Vector2 rightStickRaw;
 
+        private bool prevLeftTriggerActive;
+        private bool prevRightTriggerActive;
+
         public override void Initialize(IInputStatus inputStatus)
         {
             base.Initialize(inputStatus);
             ResetInput();
+        }
+
+        public override void OnStrategyActivated()
+        {
+            base.OnStrategyActivated();
+            inputStatus.ActiveInputDevice = InputDeviceType.Gamepad;
         }
 
         public override void ProcessInput()
@@ -32,7 +44,10 @@ namespace CosmicShore.Game.IO
 
         private void ProcessStickInput()
         {
+            // Read throttle (this is just the boost button - don't invert it)
             inputStatus.Throttle = Gamepad.current.rightShoulder.ReadValue();
+            
+            // Read raw stick values without any inversion yet
             leftStickRaw = Gamepad.current.leftStick.ReadValue();
             rightStickRaw = Gamepad.current.rightStick.ReadValue();
         }
@@ -81,22 +96,72 @@ namespace CosmicShore.Game.IO
                 // vessel.PerformShipControllerActions(InputEvents.FlipAction);
             if (Gamepad.current.rightShoulder.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
-                // vessel.StopShipControllerActions(InputEvents.FlipAction);
+            // vessel.StopShipControllerActions(InputEvents.FlipAction);
 
-            // Triggers for stick actions
-            if (Gamepad.current.leftTrigger.wasPressedThisFrame)
+            // Triggers — read analog values and use custom deadzone for edge detection.
+            // This gives full analog range (0-1) for drift scaling while keeping
+            // binary event compatibility for button-style triggers (which snap 0/1).
+            float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
+            float rightTriggerValue = Gamepad.current.rightTrigger.ReadValue();
+
+            inputStatus.LeftTriggerAnalog = leftTriggerValue;
+            inputStatus.RightTriggerAnalog = rightTriggerValue;
+
+            bool leftActive = leftTriggerValue > TriggerDeadzone;
+            bool rightActive = rightTriggerValue > TriggerDeadzone;
+
+            bool leftJustPressed = leftActive && !prevLeftTriggerActive;
+            bool leftJustReleased = !leftActive && prevLeftTriggerActive;
+            bool leftHeld = leftActive;
+
+            bool rightJustPressed = rightActive && !prevRightTriggerActive;
+            bool rightJustReleased = !rightActive && prevRightTriggerActive;
+            bool rightHeld = rightActive;
+
+            prevLeftTriggerActive = leftActive;
+            prevRightTriggerActive = rightActive;
+
+            // Individual trigger events
+            if (leftJustPressed)
                 inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-                // vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
-            if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
+            if (leftJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-                // vessel.StopShipControllerActions(InputEvents.LeftStickAction);
-
-            if (Gamepad.current.rightTrigger.wasPressedThisFrame)
+            if (rightJustPressed)
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-                // vessel.PerformShipControllerActions(InputEvents.RightStickAction);
-            if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
+            if (rightJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-                // vessel.StopShipControllerActions(InputEvents.RightStickAction);
+
+            // BothSticksAction Released
+            if ((leftJustReleased && rightJustReleased)
+                || (leftJustReleased && rightHeld)
+                || (rightJustReleased && leftHeld))
+                inputStatus.OnButtonReleased.Raise(InputEvents.BothSticksAction);
+
+            // OnlyLeftStickAction Released
+            if ((leftJustReleased && !rightHeld)
+                || (rightJustPressed && leftHeld))
+                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
+
+            // OnlyRightStickAction Released
+            if ((rightJustReleased && !leftHeld)
+                || (leftJustPressed && rightHeld))
+                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
+
+            // OnlyLeftStickAction Pressed
+            if ((leftJustPressed && !rightHeld)
+                || (rightJustReleased && leftHeld))
+                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
+
+            // OnlyRightStickAction Pressed
+            if ((rightJustPressed && !leftHeld)
+                || (leftJustReleased && rightHeld))
+                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
+
+            // BothSticksAction Pressed
+            if ((leftJustPressed && rightJustPressed)
+                || (leftJustPressed && rightHeld)
+                || (rightJustPressed && leftHeld))
+                inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
         }
 
         private void Reparameterize()
@@ -116,6 +181,36 @@ namespace CosmicShore.Game.IO
             inputStatus.YSum = -Ease(rightStickRaw.y + leftStickRaw.y);
             inputStatus.XDiff = (rightStickRaw.x - leftStickRaw.x + 2) / 4;
             inputStatus.YDiff = Ease(rightStickRaw.y - leftStickRaw.y);
+            
+            // Store values before inversion for debugging
+            float ySumBefore = inputStatus.YSum;
+            float yDiffBefore = inputStatus.YDiff;
+            float xDiffBefore = inputStatus.XDiff;
+            
+            // Apply inversions AFTER calculations
+            if (inputStatus.InvertYEnabled)
+            {
+                inputStatus.YSum *= -1f;   // Invert pitch
+                inputStatus.YDiff *= -1f;  // Invert roll
+            }
+            
+            if (inputStatus.InvertThrottleEnabled)
+            {
+                inputStatus.XDiff = 1f - inputStatus.XDiff;  // Invert throttle/speed
+            }
+            
+            // DEBUG: Uncomment to see inversion working (press Tab key to log)
+            #if UNITY_EDITOR
+            if (UnityEngine.InputSystem.Keyboard.current != null && 
+                UnityEngine.InputSystem.Keyboard.current.tabKey.wasPressedThisFrame)
+            {
+                CSDebug.Log($"[GamepadInput] Reparameterize Debug:\n" +
+                          $"  Raw Sticks - L: {leftStickRaw}, R: {rightStickRaw}\n" +
+                          $"  YSum: {ySumBefore:F2} → {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  YDiff: {yDiffBefore:F2} → {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  XDiff: {xDiffBefore:F2} → {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
+            }
+            #endif
         }
 
         private void PerformSpeedAndDirectionalEffects()

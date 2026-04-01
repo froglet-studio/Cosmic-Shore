@@ -17,13 +17,14 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] bool ScaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] SpawnableHelix helix;
         [SerializeField] float helixIntensitycaling = 1.3f;
+        [SerializeField] bool randomize = true;
 
         //public
 
         protected override void Start()
         {
             base.Start();
-            SegmentSpawner.Seed = new System.Random().Next();
+            if (randomize) SegmentSpawner.Seed = new System.Random().Next();
             if (ScaleNumberOfSegmentsWithIntensity) numberOfSegments *= IntensityLevel;
 
             // TODO - Scoring mode should not be dependent on Vessel Class Type

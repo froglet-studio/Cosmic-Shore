@@ -6,14 +6,10 @@ namespace CosmicShore.Game.Arcade
 {
     internal class PrismsCreatedScoring : BaseScoring
     {
-        protected IScoreTracker ScoreTracker;
-
-        public PrismsCreatedScoring(IScoreTracker tracker, GameDataSO gameData, float multiplier) : base(gameData,
-            multiplier)
+        public PrismsCreatedScoring(IScoreTracker tracker, GameDataSO gameData, float multiplier) : base(tracker, gameData, multiplier)
         {
-            ScoreTracker = tracker;
         }
-        
+
         public override void Subscribe()
         {
             foreach (var playerScore in GameData.RoundStatsList)

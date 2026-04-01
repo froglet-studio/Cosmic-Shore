@@ -4,6 +4,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
 using Obvious.Soap;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -35,7 +36,7 @@ namespace CosmicShore
             var boid = drone.GetComponent<Boid>();
             boid.DefaultGoal = goal;
             boid.domain = vessel.VesselStatus.Domain;
-            boid.Population = this;
+            boid.BoidController = this;
             if (isQueenDrone)
             {
                 queenDrones.Add(drone);
@@ -84,7 +85,7 @@ namespace CosmicShore
             }
             else
             {
-                Debug.Log("No drones to transfer");
+                CSDebug.Log("No drones to transfer");
             }
         }
     }

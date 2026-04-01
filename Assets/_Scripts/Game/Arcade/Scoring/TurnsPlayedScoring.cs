@@ -7,7 +7,7 @@ namespace CosmicShore.Game.Arcade.Scoring
     /// </summary>
     public class TurnsPlayedScoring : BaseScoring
     {
-        public TurnsPlayedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        public TurnsPlayedScoring(IScoreTracker tracker, GameDataSO data, float scoreMultiplier) : base(tracker, data, scoreMultiplier) { }
 
         /*public override void CalculateScore()
         {

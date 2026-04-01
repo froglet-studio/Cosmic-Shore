@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
-using Unity.Services.Core;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
+using CosmicShore.Services.Auth;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Obvious.Soap;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -19,6 +20,7 @@ namespace CosmicShore.Game
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
         const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
+        const string TEAM_COUNT_PROPERTY_KEY  = "teamCount";
 
         [FormerlySerializedAs("miniGameData")] 
         [SerializeField] private GameDataSO gameData;
@@ -34,7 +36,7 @@ namespace CosmicShore.Game
             networkManager = NetworkManager.Singleton; // or NetworkManager.Instance if you’ve wrapped it
             if (networkManager == null)
             {
-                Debug.LogError("[MultiplayerSetup] NetworkManager missing in scene!");
+                CSDebug.LogError("[MultiplayerSetup] NetworkManager missing in scene!");
             }
         }
 
@@ -51,21 +53,57 @@ namespace CosmicShore.Game
         {
             try
             {
-                await UnityServices.InitializeAsync();
+                // Use centralized UGS initialization via AuthenticationController
+                if (AuthenticationController.Instance == null)
+                {
+                    Debug.LogError("[MultiplayerSetup] AuthenticationController.Instance is null. Cannot initialize UGS.");
+                    return;
+                }
 
-                if (!AuthenticationService.Instance.IsSignedIn)
-                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                await AuthenticationController.Instance.EnsureSignedInAnonymouslyAsync();
 
                 if (gameData.IsMultiplayerMode)
                 {
                     gameData.SetupForMultiplayer();
                     ExecuteMultiplayerSetup().Forget();
                 }
+                else
+                {
+                    // Solo play with AI — start a local host so NetworkBehaviours work
+                    // without online matchmaking. The ServerPlayerVesselInitializer will
+                    // detect solo mode and spawn AI opponents.
+                    StartLocalHostForSoloPlay();
+                }
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[MultiplayerSetup] UGS init/sign-in failed: {ex}");
+                CSDebug.LogError($"[MultiplayerSetup] UGS init/sign-in failed: {ex}");
             }
+        }
+
+        private async void StartLocalHostForSoloPlay()
+        {
+            if (networkManager == null)
+            {
+                CSDebug.LogError("[MultiplayerSetup] Cannot start local host — NetworkManager is null.");
+                return;
+            }
+
+            // Wait for any previous session's shutdown to complete before starting a new host
+            if (networkManager.IsListening)
+            {
+                networkManager.Shutdown();
+                await UniTask.WaitUntil(() => !networkManager.IsListening);
+            }
+
+            // Ensure domain pool is fresh so the host and AI opponents each get
+            // valid domains.  The multiplayer path does this inside
+            // SetupForMultiplayer(); the solo path was missing it, which caused
+            // every player (and their crystals) to get Domains.Unassigned.
+            DomainAssigner.Initialize(gameData.SelectedTeamCount);
+
+            CSDebug.Log("[MultiplayerSetup] Starting local host for solo play with AI.");
+            networkManager.StartHost();
         }
 
         private void OnDisable()
@@ -113,12 +151,12 @@ namespace CosmicShore.Game
                 catch (SessionException sx)
                 {
                     // Known cases to skip and try next: full/locked/deleted/etc.
-                    Debug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
                     continue;
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
                     continue;
                 }
             }
@@ -155,7 +193,7 @@ namespace CosmicShore.Game
             gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
             gameData.InvokeSessionStarted();
 
-            Debug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
+            CSDebug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
         }
 
         private async UniTask JoinSessionAsClientById(string sessionId)
@@ -167,7 +205,7 @@ namespace CosmicShore.Game
                 PlayerProperties = playerProperties
             };
 
-            Debug.Log($"[MultiplayerSetup] Joining session {sessionId}");
+            CSDebug.Log($"[MultiplayerSetup] Joining session {sessionId}");
             gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
         }
 
@@ -178,13 +216,15 @@ namespace CosmicShore.Game
         {
             var gameModeString = gameData.GameMode.ToString();
             var maxPlayers     = gameData.SelectedPlayerCount.Value.ToString();
+            var teamCount      = gameData.SelectedTeamCount.ToString();
 
             var queryOptions = new QuerySessionsOptions();
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
+            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex3, teamCount,      FilterOperation.Equal));
 
             var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-            Debug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
+            CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
             return results.Sessions;
         }
 
@@ -211,14 +251,14 @@ namespace CosmicShore.Game
             {
                 if (clientId != networkManager.LocalClientId)
                 {
-                    Debug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    CSDebug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
                 }
                 return;
             }
 
             if (clientId == networkManager.LocalClientId)
             {
-                Debug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
+                CSDebug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
                 OnActiveSessionEnd?.Raise();
             }
         }
@@ -240,10 +280,12 @@ namespace CosmicShore.Game
         {
             string gameMode   = gameData.GameMode.ToString();
             string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
+            string teamCount  = gameData.SelectedTeamCount.ToString();
             return new Dictionary<string, SessionProperty>
             {
                 { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
-                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
+                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) },
+                { TEAM_COUNT_PROPERTY_KEY,  new SessionProperty(teamCount,  VisibilityPropertyOptions.Public, PropertyIndex.String3) }
             };
         }
 
@@ -263,18 +305,18 @@ namespace CosmicShore.Game
                     if (gameData.ActiveSession.IsHost)
                     {
                         await gameData.ActiveSession.AsHost().DeleteAsync();
-                        Debug.Log("[MultiplayerSetup] Host deleted session.");
+                        CSDebug.Log("[MultiplayerSetup] Host deleted session.");
                     }
                     else
                     {
                         await gameData.ActiveSession.LeaveAsync();
-                        Debug.Log("[MultiplayerSetup] Client left session.");
+                        CSDebug.Log("[MultiplayerSetup] Client left session.");
                     }
                 }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[MultiplayerSetup] LeaveSession error: {e.Message}");
+                CSDebug.LogWarning($"[MultiplayerSetup] LeaveSession error: {e.Message}");
             }
             finally
             {
@@ -295,7 +337,7 @@ namespace CosmicShore.Game
         {
             try
             {
-                Debug.LogWarning("[Net] Transport failure. Recreating session/join…");
+                CSDebug.LogWarning("[Net] Transport failure. Recreating session/join…");
                 if (gameData.ActiveSession != null)
                 {
                     if (gameData.ActiveSession.IsHost)
@@ -314,7 +356,7 @@ namespace CosmicShore.Game
             }
             catch (Exception e)
             {
-                Debug.LogError($"[Net] Transport failure handling error: {e}");
+                CSDebug.LogError($"[Net] Transport failure handling error: {e}");
             }
         }
     }

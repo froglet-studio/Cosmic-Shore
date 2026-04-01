@@ -1,8 +1,10 @@
 using System;
 using System.Threading;
 using UnityEngine;
+using CosmicShore.App.Systems.Audio;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -72,7 +74,7 @@ namespace CosmicShore.Game.Projectiles
 
         /*private void OnDestroy()
         {
-            Debug.LogError("Projectile destroyed! Should not happen! Should return to pool!");
+            CSDebug.LogError("Projectile destroyed! Should not happen! Should return to pool!");
         }*/
 
         #region Initialization
@@ -95,6 +97,12 @@ namespace CosmicShore.Game.Projectiles
 
         public void LaunchProjectile(float projectileTime)
         {
+            if (!_factory)
+            {
+                CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
+            }
+
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch);
             ProjectileTime = projectileTime;
 
             if (_detachOnLaunch && transform.parent)
@@ -125,6 +133,28 @@ namespace CosmicShore.Game.Projectiles
             _moveCts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
             MoveProjectileAsync(projectileTime, _moveCts.Token).Forget();
+        }
+        
+        public void ReturnToFactory()
+        {
+            Stop();
+
+            // Only reattach if we had detached for this flight
+            if (_detachedThisFlight && _pooledParent != null && transform.parent == null)
+            {
+                transform.SetParent(_pooledParent, false);
+                transform.localPosition = Vector3.zero;
+                transform.localRotation = Quaternion.identity;
+                transform.localScale    = Vector3.one; // or InitialScale
+            }
+
+            if (_factory) _factory.ReturnProjectile(this);
+            else
+            {
+                // This should not happen, make sure to handle later
+                CSDebug.LogWarning("No projectile factory found to release projectile!");
+                Destroy(gameObject);
+            }
         }
 
         private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
@@ -159,25 +189,8 @@ namespace CosmicShore.Game.Projectiles
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                Debug.LogError($"[Projectile] Move loop error: {ex}");
+                CSDebug.LogError($"[Projectile] Move loop error: {ex}");
             }
-        }
-
-        public void ReturnToFactory()
-        {
-            Stop();
-
-            // Only reattach if we had detached for this flight
-            if (_detachedThisFlight && _pooledParent != null && transform.parent == null)
-            {
-                transform.SetParent(_pooledParent, false);
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                transform.localScale    = Vector3.one; // or InitialScale
-            }
-
-            if (_factory) _factory.ReturnProjectile(this);
-            else Debug.LogError("No projectile factory found to release projectile!");
         }
 
         void Stop()

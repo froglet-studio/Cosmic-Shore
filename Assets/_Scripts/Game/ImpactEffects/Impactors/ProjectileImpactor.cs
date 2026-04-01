@@ -9,7 +9,8 @@ namespace CosmicShore.Game
         [SerializeField] private ProjectileImpactorDataContainerSO projectileImpactorDataContainer;
 
         public Projectile Projectile { get; private set; }
-        
+        public override Domains OwnDomain => Projectile.OwnDomain;
+
 
         private void Awake()
         { 

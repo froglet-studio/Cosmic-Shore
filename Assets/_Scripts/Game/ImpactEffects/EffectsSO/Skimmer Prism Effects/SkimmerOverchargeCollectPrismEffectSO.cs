@@ -141,9 +141,9 @@ namespace CosmicShore.Game
                 .Where(p => p && p.Prism)
                 .OrderBy(p => Vector3.Distance(shipPos, p.transform.position));
 
-            foreach (var prism in orderedPrisms)
+            foreach (var i in orderedPrisms)
             {
-                RecursiveRaycastDestruction(prism.Prism, status);
+                RecursiveRaycastDestruction(i.Prism, status);
 
                 // Async delay before hitting the next prism
                 await UniTask.Delay(TimeSpan.FromSeconds(0.1f));

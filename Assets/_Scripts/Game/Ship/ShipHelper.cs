@@ -17,6 +17,8 @@ namespace CosmicShore.Game
         {
             shipControlActions.Clear();
 
+            if (inputEventShipActions == null) return;
+
             foreach (var map in inputEventShipActions)
             {
                 if (!shipControlActions.TryGetValue(map.InputEvent, out var list))
@@ -117,7 +119,7 @@ namespace CosmicShore.Game
                 if (shipGeometry.GetComponent<SkinnedMeshRenderer>() != null)
                 {
                     var materials = shipGeometry.GetComponent<SkinnedMeshRenderer>().materials;
-                    materials[2] = shipMaterial;
+                    materials[0] = shipMaterial;
                     shipGeometry.GetComponent<SkinnedMeshRenderer>().materials = materials;
                 }
                 else if (shipGeometry.GetComponent<MeshRenderer>() != null)
@@ -127,6 +129,33 @@ namespace CosmicShore.Game
                     shipGeometry.GetComponent<MeshRenderer>().materials = materials;
                 }
             }
+        }
+        public static void SetShipProperties(ThemeManagerDataContainerSO themeManagerData, IVessel vessel)
+        {
+            if (themeManagerData == null)
+            {
+                Debug.LogError("[ShipHelper] ThemeManagerData is null — cannot set ship properties.");
+                return;
+            }
+
+            if (themeManagerData.TeamMaterialSets == null)
+            {
+                Debug.LogError("[ShipHelper] TeamMaterialSets not initialized — ThemeManager may not have run.");
+                return;
+            }
+
+            var domain = vessel.VesselStatus.Domain;
+            if (!themeManagerData.TeamMaterialSets.TryGetValue(domain, out var materialSet))
+            {
+                Debug.LogError($"[ShipHelper] No material set found for domain {domain}.");
+                return;
+            }
+
+            vessel.SetShipMaterial(materialSet.ShipMaterial);
+            vessel.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
+            vessel.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
+            vessel.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
+            vessel.SetSkimmerMaterial(materialSet.SkimmerMaterial);
         }
     }
 }

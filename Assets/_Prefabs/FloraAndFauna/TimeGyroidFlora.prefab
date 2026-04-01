@@ -45,7 +45,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3651588f6d7bbd4ba59c18516075c9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   healthPrism: {fileID: 8110546509497104660, guid: c1f494543c951b54f9d9e15318de9a4a,
     type: 3}
   spindle: {fileID: 5157459880619768690, guid: 76cd644e62b88cc43a93674d5596971e, type: 3}
@@ -56,6 +57,7 @@ MonoBehaviour:
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}
+  autoInitialize: 1
   leafSize: {x: 9, y: 3.4, z: 1.5}
   growPeriod: 0.25
   PlantPeriod: 30
@@ -172,7 +174,15 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7773834532554850255}
+    - targetCorrespondingSourceObject: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5991995580429407985}
   m_SourcePrefab: {fileID: 100100000, guid: e707773a458187444a9dfbf3ec06568f, type: 3}
 --- !u!135 &678972201625215682 stripped
 SphereCollider:
@@ -180,6 +190,52 @@ SphereCollider:
     type: 3}
   m_PrefabInstance: {fileID: 5909534463492262082}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &678972201625215684 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
+    type: 3}
+  m_PrefabInstance: {fileID: 5909534463492262082}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7773834532554850255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 678972201625215684}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3952a371fe646fcbe11bf76ed7434ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Crystal: {fileID: 678972201625215709}
+  moveToVesselDuration: 3
+  easeMoveToVessel: 1
+--- !u!114 &5991995580429407985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 678972201625215684}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 7773834532554850255}
+--- !u!114 &678972201625215709 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: e707773a458187444a9dfbf3ec06568f,
+    type: 3}
+  m_PrefabInstance: {fileID: 5909534463492262082}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 678972201625215684}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &678972201625215711 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,

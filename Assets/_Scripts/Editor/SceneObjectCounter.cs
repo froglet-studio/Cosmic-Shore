@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Utility;
 
 public class SceneObjectCounter : EditorWindow
 {
@@ -60,6 +61,6 @@ public class SceneObjectCounter : EditorWindow
             objectCounts[typeName]++;
         }
 
-        Debug.Log("Scene objects counted.");
+        CSDebug.Log("Scene objects counted.");
     }
 }

@@ -19,6 +19,8 @@ MonoBehaviour:
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
   OnMiniGameRoundEnd: {fileID: 11400000, guid: eadb3425134abb341a2ebc617fa5604a, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnShowGameEndScreen: {fileID: 11400000, guid: 4c4df83a7f0a61f4aa7b643396bc9d45,
+    type: 2}
   selectedVesselClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
   VesselClassSelectedIndex: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
@@ -32,10 +34,12 @@ MonoBehaviour:
     Charge: 0.5
     Space: 0.5
     Time: 0.5
-  SceneName: 
+  ThemeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  SceneName: MinigameHexRace
   GameMode: 0
+  LocalPlayerDisplayName: 
   IsDailyChallenge: 0
   IsTraining: 0
   IsMission: 0
-  IsMultiplayerMode: 1
+  IsMultiplayerMode: 0
   TurnStartTime: 0

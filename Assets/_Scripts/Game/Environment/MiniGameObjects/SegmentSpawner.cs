@@ -1,415 +1,343 @@
-using CosmicShore.Core;
-using CosmicShore.Models.Enums;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
-using CosmicShore.Utility;
+using System.Linq;
+using CosmicShore.Soap;
 using UnityEngine;
+using Obvious.Soap;
+using CosmicShore.Core;
 
 public class SegmentSpawner : MonoBehaviour
 {
-    [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
-    [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
-    [SerializeField] List<float> spawnSegmentWeights;
+    [Header("Dependencies")]
+    [SerializeField] private GameDataSO gameData;
+
+    [Header("Weighted Segments")]
+    [Tooltip("Segments selected randomly by weight for each NumberOfSegments slot.")]
+    [SerializeField] List<WeightedSpawnable> weightedSegments = new();
+
+    [Header("Guaranteed Shapes")]
+    [Tooltip("These always spawn every time, in addition to the weighted segments. " +
+             "Use for shape spawnables that must always be present.")]
+    [SerializeField] List<SpawnableBase> guaranteedSpawnables = new();
+
+    [Header("Intensity-Mapped Spawning")]
+    [Tooltip("Optional: map specific spawnables to intensity levels (index 0 = intensity 1). " +
+             "When set, overrides random selection for that intensity.")]
+    [SerializeField] SpawnableBase[] spawnableByIntensity;
+
+    // Legacy fields — kept for backward compatibility with scenes serialized before
+    // the WeightedSpawnable refactor. Migrated to weightedSegments at startup.
+    [SerializeField, HideInInspector] List<SpawnableBase> spawnableSegments;
+    [SerializeField, HideInInspector] List<float> spawnSegmentWeights;
+
+    [Header("Configuration")]
     [SerializeField] public int Seed;
     [SerializeField] Transform parent;
-
-    [SerializeField] public Vector3 origin = Vector3.zero;
-    GameObject SpawnedSegmentContainer;
-    List<Trail> trails = new();
-    System.Random random = new();
-    int spawnedItemCount;
-    public float Radius = 250f;
-    public float StraightLineLength = 400f;
-    public float RotationAmount = 10f;
-    [HideInInspector] public int DifficultyAngle = 90;
-    [HideInInspector] public int IntensityLevel = 1;
-
+    [SerializeField] IntVariable intensityLevelData;
     [SerializeField] bool InitializeOnStart;
     [SerializeField] public int NumberOfSegments = 1;
 
-    Vector3 currentDisplacement;
-    Quaternion currentRotation;
+    [Header("Segment Layout")]
+    [SerializeField] public Vector3 origin = Vector3.zero;
+    [SerializeField] public float Radius;
+    [SerializeField] public float StraightLineLength;
+    [SerializeField] public float RotationAmount;
+    [HideInInspector] public int DifficultyAngle = 90;
 
-    public MazeData[] mazeData;
+    [Header("Guaranteed Shape Layout")]
+    [Tooltip("Distance from origin to place the guaranteed shape cluster. " +
+             "Set just inside the membrane radius so players must fly to the edge to reach them.")]
+    [SerializeField] float guaranteedShapeDistance = 420f;
 
-    [Header("Branching Settings")]
-    [SerializeField] float branchProbability = 0.2f;
-    [SerializeField] int minBranchAngle = 20;
-    [SerializeField] int maxBranchAngle = 20;
-    [SerializeField] int minBranches = 1;
-    [SerializeField] int maxBranches = 3;
-    [SerializeField] float minBranchLengthMultiplier = 0.6f;
-    [SerializeField] float maxBranchLengthMultiplier = 0.8f;
-    [SerializeField] int maxDepth = 3;
-    [SerializeField] int maxTotalSpawnedObjects = 100;
-    [SerializeField] List<GameObject> branchPrefabs;
+    [Tooltip("Radius of the ring that the guaranteed shapes are arranged in at the cluster point.")]
+    [SerializeField] float guaranteedShapeClusterRadius = 80f;
 
-    [Header("Maze Grid Settings")]
-    [SerializeField] public int GridWidth = 10;
-    [SerializeField] public int GridHeight = 10;
-    [SerializeField] public int GridThickness = 10;
-    [SerializeField] public float CellSize = 10f;
-
-    [Header("Tube Network Settings")]
-    [SerializeField] public float Curviness = 0.5f;
-    [SerializeField] public float BranchProbability = 0.2f;
-
-    [Header("Spiral Tower Settings")]
-    [SerializeField] public float TowerHeight = 100f;
-    [SerializeField] public float TowerRadius = 20f;
-    [SerializeField] public float RotationsPerUnit = 0.1f;
+    // Runtime state
+    private GameObject SpawnedSegmentContainer;
+    private List<Trail> trails = new();
+    private float[] _normalizedWeights;
 
     void Start()
     {
-        currentDisplacement = origin + transform.position;
-        currentRotation = Quaternion.identity;
-        SpawnedSegmentContainer = new GameObject();
-        SpawnedSegmentContainer.name = "SpawnedSegments";
+        MigrateLegacyFields();
+
+        if (SpawnedSegmentContainer == null) CreateContainer();
 
         if (InitializeOnStart)
             Initialize();
-        if (parent != null) SpawnedSegmentContainer.transform.parent = parent;
+    }
+
+    void MigrateLegacyFields()
+    {
+        if (spawnableSegments is not { Count: > 0 }) return;
+        if (weightedSegments is { Count: > 0 }) return;
+
+        for (int i = 0; i < spawnableSegments.Count; i++)
+        {
+            float w = (spawnSegmentWeights != null && i < spawnSegmentWeights.Count)
+                ? spawnSegmentWeights[i]
+                : 1f;
+            weightedSegments.Add(new WeightedSpawnable
+            {
+                spawnable = spawnableSegments[i],
+                weight = w
+            });
+        }
+
+        spawnableSegments = null;
+        spawnSegmentWeights = null;
+    }
+
+    private void OnEnable()
+    {
+        if (gameData != null) gameData.OnResetForReplay.OnRaised += ResetTrack;
+    }
+
+    private void OnDisable()
+    {
+        if (gameData != null) gameData.OnResetForReplay.OnRaised -= ResetTrack;
+    }
+
+    private void ResetTrack()
+    {
+        NukeTheTrails();
+        Initialize();
+    }
+
+    private void CreateContainer()
+    {
+        SpawnedSegmentContainer = new GameObject("SpawnedSegments")
+        {
+            transform =
+            {
+                parent = parent ? parent : transform
+            }
+        };
     }
 
     public void Initialize()
     {
+        if (SpawnedSegmentContainer == null) CreateContainer();
+
         if (Seed != 0)
         {
-            random = new System.Random(Seed);
             Random.InitState(Seed);
         }
 
-        // Clear out last run
-        foreach (Trail trail in trails)
-            foreach (var block in trail.TrailList)
-                Destroy(block);
+        if (SpawnedSegmentContainer.transform.childCount > 0)
+            NukeTheTrails();
 
-        NukeTheTrails();
+        NormalizeWeights();
 
-        normalizeWeights();
+        int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
-        for (int i=0; i < NumberOfSegments; i++)
+        // Collect active player domains so spawned segments cycle through them
+        var playerDomains = GetActivePlayerDomains();
+        int layoutIndex = 0;
+
+        // Spawn weighted segments (random selection per slot)
+        for (int i = 0; i < NumberOfSegments; i++)
         {
-            var spawned = SpawnRandom();
-            PositionSpawnedObject(spawned, positioningScheme);
-            spawned.transform.parent = SpawnedSegmentContainer.transform;
-            spawnedItemCount++;
+            if (playerDomains.Count > 0)
+            {
+                var segmentDomain = playerDomains[layoutIndex % playerDomains.Count];
+                SetDomainOnWeighted(segmentDomain);
+            }
+
+            var spawnable = SelectSpawnable(currentIntensity);
+            if (spawnable == null) continue;
+
+            SpawnAndLayout(spawnable, currentIntensity, layoutIndex);
+            layoutIndex++;
+        }
+
+        // Spawn guaranteed shapes in a cluster near the membrane edge.
+        // These keep their inspector-configured domain — shape-drawing shapes
+        // intentionally have per-shape domains set in the editor.
+        SpawnGuaranteedShapes(currentIntensity);
+    }
+
+    void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
+    {
+        if (Seed != 0) spawnable.SetSeed(Seed + layoutIndex);
+
+        var spawned = spawnable.Spawn(intensity);
+        if (!spawned) return;
+
+        spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+        LayoutSegment(spawned.transform, layoutIndex);
+        trails.AddRange(spawnable.GetTrails());
+    }
+
+    void LayoutSegment(Transform segment, int index)
+    {
+        var worldOrigin = origin + transform.position;
+        int totalCount = NumberOfSegments;
+
+        if (totalCount <= 1)
+        {
+            segment.SetPositionAndRotation(worldOrigin, Quaternion.identity);
+        }
+        else if (Radius > 0 && StraightLineLength == 0)
+        {
+            segment.position = Random.insideUnitSphere * Radius + worldOrigin;
+            segment.rotation = Random.rotation;
+        }
+        else if (StraightLineLength > 0)
+        {
+            segment.position = new Vector3(0, 0, index * StraightLineLength) + worldOrigin;
+            if (RotationAmount != 0)
+                segment.Rotate(Vector3.forward, index * RotationAmount);
+        }
+        else
+        {
+            segment.SetPositionAndRotation(worldOrigin, Quaternion.identity);
+        }
+    }
+
+    void SpawnGuaranteedShapes(int intensity)
+    {
+        if (guaranteedSpawnables == null || guaranteedSpawnables.Count == 0) return;
+
+        var worldOrigin = origin + transform.position;
+
+        // Pick a random direction from center for the cluster
+        var clusterDirection = Random.onUnitSphere;
+        var clusterCenter = worldOrigin + clusterDirection * guaranteedShapeDistance;
+
+        // Build a stable tangent frame at the cluster center for laying out shapes in a ring
+        var up = Mathf.Abs(Vector3.Dot(clusterDirection, Vector3.up)) < 0.99f
+            ? Vector3.up
+            : Vector3.right;
+        var tangent1 = Vector3.Cross(clusterDirection, up).normalized;
+        var tangent2 = Vector3.Cross(clusterDirection, tangent1).normalized;
+
+        int shapeCount = guaranteedSpawnables.Count;
+        float angleStep = 360f / shapeCount;
+
+        for (int i = 0; i < shapeCount; i++)
+        {
+            var spawnable = guaranteedSpawnables[i];
+            if (spawnable == null) continue;
+
+            if (Seed != 0) spawnable.SetSeed(Seed + 1000 + i);
+
+            var spawned = spawnable.Spawn(intensity);
+            if (!spawned) continue;
+
+            spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+
+            // Place in a ring around the cluster center on the tangent plane
+            float angle = i * angleStep * Mathf.Deg2Rad;
+            var offset = (tangent1 * Mathf.Cos(angle) + tangent2 * Mathf.Sin(angle)) * guaranteedShapeClusterRadius;
+            spawned.transform.position = clusterCenter + offset;
+
+            // Face inward toward the cell center so the shape is visible to approaching players
+            spawned.transform.rotation = Quaternion.LookRotation(worldOrigin - spawned.transform.position, clusterDirection);
+
+            trails.AddRange(spawnable.GetTrails());
         }
     }
 
     public void NukeTheTrails()
     {
         trails.Clear();
-        spawnedItemCount = 0;
-        if (SpawnedSegmentContainer == null) return;
 
-        foreach (Transform child in SpawnedSegmentContainer.transform)
-            Destroy(child.gameObject);
-    }
-
-    void PositionSpawnedObject(GameObject spawned, PositioningScheme positioningScheme)
-    {
-        switch (positioningScheme)
+        if (SpawnedSegmentContainer)
         {
-            case PositioningScheme.SphereUniform:
-                spawned.transform.SetPositionAndRotation(Random.insideUnitSphere * Radius + origin + transform.position, Random.rotation);
-                return;
-            case PositioningScheme.SphereSurface:
-                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360/ NumberOfSegments), spawnedItemCount * (360 / NumberOfSegments) + 20)) *
-                    (Quaternion.Euler(0, random.Next(Mathf.Max(DifficultyAngle - 20, 40), Mathf.Max(DifficultyAngle + 20, 40)), 0) *
-                    (Radius * Vector3.forward)) + origin + transform.position;
-                spawned.transform.LookAt(Vector3.zero);
-                return;
-            case PositioningScheme.KinkyLine:
-                Quaternion rotation;
-                spawned.transform.position = currentDisplacement += RandomVectorRotation(StraightLineLength * Vector3.forward, out rotation) ;
-                spawned.transform.rotation = currentRotation = rotation;
-                return;
-            case PositioningScheme.ToroidSurface:
-                // TODO: this is not a torus, it's ripped from the sphere
-                int toroidDifficultyAngle = 90;
-                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360 / NumberOfSegments), spawnedItemCount * (360 / NumberOfSegments) + 20)) *
-                    (Quaternion.Euler(0, random.Next(Mathf.Max(toroidDifficultyAngle - 20, 40), Mathf.Max(toroidDifficultyAngle - 20, 40)), 0) *
-                    (Radius * Vector3.forward)) + origin + transform.position;
-                spawned.transform.LookAt(Vector3.zero);
-                return;
-            case PositioningScheme.StraightLineRandomOrientation:
-                spawned.transform.position = new Vector3(0, 0, spawnedItemCount * StraightLineLength) + origin + transform.position;
-                spawned.transform.Rotate(Vector3.forward, (float)Random.value * 180);
-                return;
-            case PositioningScheme.Cubic:
-                // Volumetric Grid, looking at origin
-                var volumeSideLength = 100;
-                var voxelSideLength = 10;
-                var x = random.Next(0, volumeSideLength/voxelSideLength) * voxelSideLength;
-                var y = random.Next(0, volumeSideLength/voxelSideLength) * voxelSideLength;
-                var z = random.Next(0, volumeSideLength/voxelSideLength) * voxelSideLength;
-                spawned.transform.position = new Vector3(x, y, z) + origin + transform.position;
-                spawned.transform.LookAt(Vector3.zero, Vector3.up);
-                break;
-            case PositioningScheme.SphereEmanating:
-                spawned.transform.SetPositionAndRotation(origin + transform.position, Random.rotation);
-                break;
-            case PositioningScheme.StraightLineConstantRotation:
-                spawned.transform.position = new Vector3(0, 0, spawnedItemCount * StraightLineLength) + origin + transform.position;
-                spawned.transform.Rotate(Vector3.forward, spawnedItemCount * RotationAmount);
-                return;
-            case PositioningScheme.CylinderSurfaceWithAngle:
-                spawned.transform.position = new Vector3(Radius * Mathf.Sin(spawnedItemCount),
-                                                         Radius * Mathf.Cos(spawnedItemCount),
-                                                         spawnedItemCount * StraightLineLength) + origin + transform.position;
-                spawned.transform.Rotate(Vector3.forward + (((float)Random.value - .4f) * Vector3.right)
-                                                         + (((float)Random.value - .4f) * Vector3.up), (float)Random.value * 180);
-                return;
-            case PositioningScheme.KinkyLineBranching:
-
-                // Check if the maximum total spawned objects limit is reached
-                if (spawnedItemCount >= maxTotalSpawnedObjects)
-                    return;
-
-                // Check if the current kink should branch
-                if (Random.value < branchProbability && maxDepth > 0)
-                {
-                    // Determine the number of branches for the current kink
-                    int numBranches = random.Next(minBranches, maxBranches + 1);
-
-                    // Spawn branches
-                    for (int i = 0; i < numBranches; i++)
-                    {
-                        // Calculate the branch angle
-                        float branchAngle = random.Next(minBranchAngle, maxBranchAngle);
-                        float branchAngleRad = branchAngle * Mathf.Deg2Rad;
-
-                        // Calculate the direction vector for the branch
-                        Vector3 branchDirection = Quaternion.Euler(0f, branchAngleRad * Mathf.Rad2Deg, 0f) * currentRotation * Vector3.forward;
-
-                        // Calculate the branch length
-                        float branchLengthMultiplier = Random.Range(minBranchLengthMultiplier, maxBranchLengthMultiplier);
-                        float branchLength = StraightLineLength * branchLengthMultiplier;
-
-                        // Spawn the branch object
-                        GameObject branch = SpawnRandomBranch();
-                        branch.transform.position = currentDisplacement + branchDirection * branchLength;
-                        SafeLookRotation.TrySet(branch.transform, branchDirection, branch);
-
-                        // Recursively spawn branches for the current branch
-                        SpawnBranches(branch, maxDepth - 1, branchDirection, branchLength);
-                    }
-                }
-
-                // Update the main line
-                //Quaternion rotation;
-                spawned.transform.position = currentDisplacement += RandomVectorRotation(StraightLineLength * Vector3.forward, out rotation);
-                spawned.transform.rotation = currentRotation = rotation;
-                return;
-            case PositioningScheme.MazeGrid:
-                PositionInMazeGrid(spawned);
-                return;
-            case PositioningScheme.CurvyTubeNetwork:
-                PositionInCurvyTubeNetwork(spawned);
-                return;
-            case PositioningScheme.KinkyTubeNetwork:
-                PositionInKinkyTubeNetwork(spawned);
-                return;
-            case PositioningScheme.SpiralTower:
-                PositionInSpiralTower(spawned);
-                return;
-            case PositioningScheme.HoneycombGrid:
-                PositionInHoneycombGrid(spawned);
-                return;
-            case PositioningScheme.HilbertCurveLSystem:
-                var hilbertPositioner = GetComponent<HilbertCurveLSystemPositioning>();
-                if (hilbertPositioner == null)
-                {
-                    hilbertPositioner = gameObject.AddComponent<HilbertCurveLSystemPositioning>();
-                }
-                hilbertPositioner.segmentLength = 60 - (IntensityLevel * 10);
-                hilbertPositioner.GenerateHilbertCurve();
-                var positions = hilbertPositioner.GetPositions();
-                var rotations = hilbertPositioner.GetRotations();
-
-                mazeData[IntensityLevel - 1].walls.Clear();
-
-                for (int i = 0; i < positions.Count; i++)
-                {
-                    mazeData[IntensityLevel - 1].walls.Add(new MazeData.WallData
-                    {
-                        position = positions[i],
-                        rotation = rotations[i]
-                    });
-                }
-
-#if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(mazeData[IntensityLevel-1]);
-                UnityEditor.AssetDatabase.SaveAssets();
-             #endif
-
-                if (spawnedItemCount < positions.Count)
-                {
-                    spawned.transform.SetPositionAndRotation(
-                        Quaternion.Euler(0, 0, RotationAmount) * (positions[spawnedItemCount] + origin + transform.position),
-                        Quaternion.Euler(0, 0, RotationAmount) * rotations[spawnedItemCount] 
-                    );
-                }
-                return;
-            case PositioningScheme.SavedMaze:
-
-                if (spawnedItemCount < mazeData[IntensityLevel - 1].walls.Count)
-                {
-                    spawned.transform.SetPositionAndRotation(
-                        Quaternion.Euler(0, 0, RotationAmount) * (mazeData[IntensityLevel - 1].walls[spawnedItemCount].position + origin + transform.position),
-                        Quaternion.Euler(0, 0, RotationAmount) * mazeData[IntensityLevel - 1].walls[spawnedItemCount].rotation);
-                }
-                return;    
+            Destroy(SpawnedSegmentContainer);
         }
+        CreateContainer();
     }
 
-    GameObject SpawnRandom()
+    SpawnableBase SelectSpawnable(int intensity)
     {
-        var spawnWeight = Random.value;
-        var spawnIndex = 0;
-        var totalWeight = 0f;
-        for (int i = 0; i < spawnSegmentWeights.Count && totalWeight < spawnWeight; i++)
+        // Check for intensity-specific spawnable first
+        if (spawnableByIntensity != null && spawnableByIntensity.Length > 0)
         {
-            spawnIndex = i;
-            totalWeight += spawnSegmentWeights[i];
+            int index = Mathf.Clamp(intensity - 1, 0, spawnableByIntensity.Length - 1);
+            if (spawnableByIntensity[index] != null)
+                return spawnableByIntensity[index];
         }
 
-        return spawnableSegments[spawnIndex].Spawn(IntensityLevel);
+        // Fall back to weighted random selection
+        if (weightedSegments == null || weightedSegments.Count == 0) return null;
+
+        var roll = Random.value;
+        var accumulated = 0f;
+
+        for (int i = 0; i < weightedSegments.Count; i++)
+        {
+            accumulated += _normalizedWeights[i];
+            if (accumulated >= roll)
+                return weightedSegments[i].spawnable;
+        }
+
+        // Fallback to last entry
+        return weightedSegments[^1].spawnable;
     }
 
-    void normalizeWeights()
+    void NormalizeWeights()
     {
-        float totalWeight = 0;
-        foreach (var weight in spawnSegmentWeights)
-            totalWeight += weight;
-
-        for (int i = 0; i < spawnSegmentWeights.Count; i++)
-            spawnSegmentWeights[i] = spawnSegmentWeights[i] * (1 / totalWeight);
-    }
-
-    private Vector3 RandomVectorRotation(Vector3 vector, out Quaternion rotation)
-    {
-        float altitude = Random.Range(70, 90);
-        float azimuth = Random.Range(0, 360);
-
-        rotation = Quaternion.Euler(0f, 0f, azimuth) * Quaternion.Euler(0f, altitude, 0f);
-        Vector3 newVector = rotation * vector;
-        return newVector;
-    }
-
-    private void SpawnBranches(GameObject parent, int depth, Vector3 direction, float length)
-    {
-        if (depth <= 0 || spawnedItemCount >= maxTotalSpawnedObjects)
+        if (weightedSegments == null || weightedSegments.Count == 0)
+        {
+            _normalizedWeights = System.Array.Empty<float>();
             return;
-
-        // Check if the current branch should spawn more branches
-        if (Random.value < branchProbability)
-        {
-            // Determine the number of branches for the current branch
-            int numBranches = random.Next(minBranches, maxBranches + 1);
-
-            // Spawn branches
-            for (int i = 0; i < numBranches; i++)
-            {
-                // Calculate the branch angle
-                float branchAngle = random.Next(minBranchAngle, maxBranchAngle);
-                float branchAngleRad = branchAngle * Mathf.Deg2Rad;
-
-                // Calculate the direction vector for the branch
-                Vector3 branchDirection = Quaternion.Euler(0f, branchAngleRad * Mathf.Rad2Deg, 0f) * direction;
-
-                // Calculate the branch length
-                float branchLengthMultiplier = Random.Range(minBranchLengthMultiplier, maxBranchLengthMultiplier);
-                float branchLength = length * branchLengthMultiplier;
-
-                // Spawn the branch object
-                GameObject branch = SpawnRandomBranch();
-                branch.transform.position = parent.transform.position + branchDirection * branchLength;
-                SafeLookRotation.TrySet(branch.transform, branchDirection, branch);
-
-                // Recursively spawn branches for the current branch
-                SpawnBranches(branch, depth - 1, branchDirection, branchLength);
-            }
         }
-    }
 
-    private GameObject SpawnRandomBranch()
-    {
-        // Randomly select a branch prefab from the pool
-        int randomIndex = random.Next(0, branchPrefabs.Count);
-        GameObject branchPrefab = branchPrefabs[randomIndex];
+        _normalizedWeights = new float[weightedSegments.Count];
+        float total = 0f;
 
-        // Spawn the branch object
-        GameObject branch = Instantiate(branchPrefab);
-        branch.transform.parent = SpawnedSegmentContainer.transform;
-        spawnedItemCount++;
+        for (int i = 0; i < weightedSegments.Count; i++)
+            total += weightedSegments[i].weight;
 
-        return branch;
-    }
-    void PositionInMazeGrid(GameObject spawned)
-    {
-        int x = random.Next(0, GridWidth);
-        int y = random.Next(0, GridHeight);
-        int z = random.Next(0, GridThickness);
-        spawned.transform.position = new Vector3(x * CellSize, y * CellSize, z * CellSize) + origin + transform.position;
-        spawned.transform.rotation = Quaternion.Euler(random.Next(0, 4) * 90, random.Next(0, 4) * 90, random.Next(0, 4) * 90);
-    }
-
-    void PositionInCurvyTubeNetwork(GameObject spawned)
-    {
-        float t = spawnedItemCount * 0.1f;
-        Vector3 position = new Vector3(
-            Mathf.Sin(t * Curviness) * TowerRadius,
-            t * 10,
-            Mathf.Cos(t * Curviness) * TowerRadius
-        );
-        spawned.transform.position = position + origin + transform.position;
-        spawned.transform.LookAt(position + Vector3.up * 10);
-
-        if (random.NextDouble() < BranchProbability)
+        // If all weights are 0, distribute equally
+        if (total <= 0f)
         {
-            // Start a new branch
-            currentDisplacement = spawned.transform.position;
-            currentRotation = spawned.transform.rotation;
+            float equal = 1f / weightedSegments.Count;
+            for (int i = 0; i < _normalizedWeights.Length; i++)
+                _normalizedWeights[i] = equal;
+            return;
         }
+
+        for (int i = 0; i < weightedSegments.Count; i++)
+            _normalizedWeights[i] = weightedSegments[i].weight / total;
     }
 
-    void PositionInKinkyTubeNetwork(GameObject spawned)
+    List<Domains> GetActivePlayerDomains()
     {
-        if (spawnedItemCount % 5 == 0)
+        if (gameData != null && gameData.Players != null && gameData.Players.Count > 0)
         {
-            // Make a sharp turn every 5 segments
-            currentRotation *= Quaternion.Euler(
-                random.Next(-60, 61),
-                random.Next(-60, 61),
-                random.Next(-60, 61)
-            );
+            var domains = gameData.Players
+                .Select(p => p.Domain)
+                .Where(d => d is not (Domains.None or Domains.Unassigned))
+                .Distinct()
+                .ToList();
+
+            if (domains.Count > 0)
+                return domains;
         }
-        spawned.transform.position = currentDisplacement;
-        spawned.transform.rotation = currentRotation;
-        currentDisplacement += currentRotation * Vector3.forward * 10;
+
+        return new List<Domains> { Domains.Jade, Domains.Ruby, Domains.Gold };
     }
 
-    void PositionInSpiralTower(GameObject spawned)
+    void SetDomainOnWeighted(Domains domain)
     {
-        float height = (spawnedItemCount * TowerHeight) / NumberOfSegments;
-        float angle = height * RotationsPerUnit * Mathf.PI * 2;
-        Vector3 position = new Vector3(
-            Mathf.Cos(angle) * TowerRadius,
-            height,
-            Mathf.Sin(angle) * TowerRadius
-        );
-        spawned.transform.position = position + origin + transform.position;
-        spawned.transform.LookAt(new Vector3(0, height, 0) + origin + transform.position);
+        foreach (var entry in weightedSegments)
+            if (entry.spawnable != null) entry.spawnable.domain = domain;
+
+        if (spawnableByIntensity != null)
+            foreach (var s in spawnableByIntensity)
+                if (s != null) s.domain = domain;
     }
 
-    void PositionInHoneycombGrid(GameObject spawned)
+    [System.Serializable]
+    public struct WeightedSpawnable
     {
-        int row = random.Next(0, GridHeight);
-        int col = random.Next(0, GridWidth);
-        float x = col * CellSize * 1.5f;
-        float z = row * CellSize * Mathf.Sqrt(3) + (col % 2 == 0 ? 0 : CellSize * Mathf.Sqrt(3) / 2);
-        spawned.transform.position = new Vector3(x, 0, z) + origin + transform.position;
-        spawned.transform.rotation = Quaternion.Euler(0, random.Next(0, 6) * 60, 0);
+        [Tooltip("The spawnable to instantiate.")]
+        public SpawnableBase spawnable;
+
+        [Tooltip("Relative weight for random selection. Higher = more likely.")]
+        public float weight;
     }
 }

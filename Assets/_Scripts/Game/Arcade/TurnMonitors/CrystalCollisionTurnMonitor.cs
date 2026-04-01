@@ -1,27 +1,73 @@
-using CosmicShore.Core;
-using CosmicShore.Soap;
+using System; // Required for Action
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
     public class CrystalCollisionTurnMonitor : TurnMonitor
     {
-        [SerializeField] int CrystalCollisions;
-        [SerializeField] bool hostileCollection;
+        [SerializeField] protected int CrystalCollisions;
+        protected IRoundStats ownStats;
 
-        public override bool CheckForEndOfTurn()
+        [Header("Optional Configuration")]
+        [SerializeField] SpawnableWaypointTrack optionalEnvironment;
+        [SerializeField] int optionalLaps = 4;
+
+        public override void StartMonitor()
         {
-            if (!gameData.TryGetActivePlayerStats(out IPlayer _, out IRoundStats roundStats))
-                return false;
-
-            return roundStats.OmniCrystalsCollected >= CrystalCollisions;
+            CrystalCollisions = GetCrystalCollisionCount();
+            
+            InitializeOwnStats();
+            if (ownStats != null) ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
+            UpdateCrystals(ownStats);
+            base.StartMonitor();
         }
 
-        /*public override void StartMonitor()
+        public override void StopMonitor()
         {
-            // TODO: perhaps coerce stats manager to create an entry for the player here
-        }*/
+            base.StopMonitor();
+            if (ownStats != null) ownStats.OnCrystalsCollectedChanged -= UpdateCrystals;
+        }
+        
+        public override bool CheckForEndOfTurn()
+        {
+            if (ownStats == null) return false;
+            return ownStats.CrystalsCollected >= CrystalCollisions;
+        }
+        
+        protected virtual void UpdateCrystals(IRoundStats stats) => UpdateCrystalsRemainingUI();
 
-        protected override void RestrictedUpdate() { }
+        protected virtual void UpdateCrystalsRemainingUI()
+        {
+            string message = GetRemainingCrystalsCountToCollect();
+            if (onUpdateTurnMonitorDisplay) onUpdateTurnMonitorDisplay.Raise(message);
+        }
+        
+        public string GetRemainingCrystalsCountToCollect()
+        {
+            InitializeOwnStats();
+            if (ownStats == null) return CrystalCollisions.ToString();
+            int remaining = CrystalCollisions - ownStats.CrystalsCollected;
+            return Mathf.Max(0, remaining).ToString();
+        }
+
+        protected virtual void InitializeOwnStats()
+        {
+            if (ownStats != null) return;
+            if (gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats)) return;
+        }
+
+        protected int GetCrystalCollisionCount()
+        {
+            if (optionalEnvironment)
+            {
+                return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
+            }
+
+            if (CrystalCollisions != 0) return CrystalCollisions;
+            CSDebug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
+            return 39;
+
+        }
     }
 }

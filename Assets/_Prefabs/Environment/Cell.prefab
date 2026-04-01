@@ -45,15 +45,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ID: 0
-  CellTypes:
-  - {fileID: 11400000, guid: 36999bb97c4204943bec39ef90cf958c, type: 2}
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
-  FloraTypeCount: 3
-  spawnJade: 1
-  FaunaTypeCount: 3
-  floraSpawnVolumeCeiling: 4000
-  initialFaunaSpawnWaitTime: 1
-  faunaSpawnVolumeThreshold: 10000
-  baseFaunaSpawnTime: 300
-  hasRandomFloraAndFauna: 0
+  CellConfigs: []
+  cellTypeChoiceOptions: 0
+  runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  nucleusScaleMultiplier: 1

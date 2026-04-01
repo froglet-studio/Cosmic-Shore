@@ -11,6 +11,11 @@ namespace CosmicShore.Game
     {
         Domains Domain { get; }
         string Name { get; }
+        /// <summary>
+        /// The player's selected profile avatar icon ID.
+        /// Used in multiplayer HUD score cards to display the player's avatar.
+        /// </summary>
+        int AvatarId { get; }
         string PlayerUUID { get; }
         IVessel Vessel { get; }
         InputController InputController { get; }
@@ -45,7 +50,20 @@ namespace CosmicShore.Game
         /// In Multiplayer, it is the Owner Client providing input.
         /// </summary>
         bool IsLocalUser { get; }
+        /// <summary>
+        /// In multiplayer session, this stores the network object id.
+        /// </summary>
+        ulong PlayerNetId { get; }
+        /// <summary>
+        /// In multiplayer session, this stores the vessel's network object id.
+        /// </summary>
+        ulong VesselNetId { get; }
+        /// <summary>
+        /// Id of the owner client of this player in multiplayer
+        /// </summary>
+        ulong OwnerClientNetId { get; }
         void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
+        void InitializeForMultiplayerMode(IVessel vessel);
         void ToggleGameObject(bool toggle);
         void DestroyPlayer();
         void StartPlayer();
@@ -59,10 +77,11 @@ namespace CosmicShore.Game
             public VesselClassType vesselClass;
             public Domains domain;
             public string PlayerName;
-            
+            public int AvatarId;
+
             [Tooltip("If true, the player-vessel will spawn as AI")]
             public bool IsAI;
-            
+
             [Tooltip("If true, then only this player-vessel will spawn")]
             public bool AllowSpawning;
         }

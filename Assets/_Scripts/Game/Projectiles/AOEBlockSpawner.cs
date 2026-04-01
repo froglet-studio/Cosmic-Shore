@@ -1,34 +1,40 @@
 using System;
-using System.Collections;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
+using System.Threading;
+using CosmicShore.Game.Spawning;
 
 namespace CosmicShore.Game.Projectiles
 {
-    using UnityEngine;
-    using Cysharp.Threading.Tasks;
-    using System.Threading;
-
     public class AOEBlockSpawner : AOEBlockCreation
     {
-        [SerializeField] private SpawnableAbstractBase spawnable;
+        [SerializeField] private SpawnableBase spawnable;
+        [SerializeField] int repetitions = 1;
+        [SerializeField] float delayBetweenSpawns = 0.3f;
 
         protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
             try
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
+                // AOEExplosion.Initialize() zeroes localScale to hide the explosion
+                // mesh during its delay. This subclass doesn't use the base explosion
+                // animation, so restore scale before spawning children.
+                transform.localScale = Vector3.one;
 
-                var position = Vessel.Transform.position;
-                var rotation = Vessel.Transform.rotation;
-                var team = Vessel.VesselStatus.Domain;
+                for (int i = 0; i < repetitions; i++)
+                {
+                    var position = Vessel.Transform.position;
+                    var rotation = Quaternion.LookRotation(Vessel.VesselStatus.Course, Vessel.Transform.up);
+                    var team = Vessel.VesselStatus.Domain;
 
-                spawnable.Spawn(position, rotation, team,
-                    (int)(Vessel.VesselStatus.ResourceSystem.Resources[0].CurrentAmount * 10));
+                    spawnable.Spawn(position, rotation, team, (int)Vessel.VesselStatus.Speed);
 
-                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate , ct);
+                    await UniTask.Delay(TimeSpan.FromSeconds(delayBetweenSpawns), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
+                }
+
+                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
             }
             catch (OperationCanceledException) { }
         }
     }
-
 }

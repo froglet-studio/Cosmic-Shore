@@ -1,5 +1,7 @@
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -21,32 +23,36 @@ namespace CosmicShore.Game
         [Tooltip("Max distance to search for a cell (used by CellControlManager on its side, if applicable).")]
         [SerializeField] private float searchRadiusHint = 0f; // optional / unused here, kept for future
 
+        [SerializeField] private CellRuntimeDataSO cellData;
+        
         // Runtime toggle state
         bool _redirectActive = false;
 
         public override void StartAction()
         {
-            if (shardFieldBus == null)
+            if (!cellData)
             {
-                Debug.LogWarning("[ShardToggleAction] No ShardFieldBus assigned!");
+                CSDebug.LogError("No cell data found!");
+                return;
+            }
+            
+            if (!shardFieldBus)
+            {
+                CSDebug.LogWarning("[ShardToggleAction] No ShardFieldBus assigned!");
                 return;
             }
             
             if (!_redirectActive)
             {
-                var shipPos = Vessel != null ? Vessel.Transform.position : transform.position;
-                var cell = CellControlManager.Instance.GetNearestCell(shipPos);
-
+                var cell = cellData.Cell;
                 Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
-
-                Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
+                // CSDebug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
                 shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
-
                 _redirectActive = true;
             }
             else
             {
-                Debug.Log("[ShardToggleAction] Toggled OFF → restoring shards to crystal.");
+                // CSDebug.Log("[ShardToggleAction] Toggled OFF → restoring shards to crystal.");
                 shardFieldBus.BroadcastRestoreToCrystal();
                 _redirectActive = false;
             }

@@ -4,8 +4,10 @@ using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.App.UI.Controllers
@@ -23,6 +25,7 @@ namespace CosmicShore.App.UI.Controllers
 
         private readonly List<ShipCardView> _cards = new();
         private ShipCardView _selectedCard;
+        private int _gamepadCardIndex;
 
         struct Snapshot
         {
@@ -42,6 +45,47 @@ namespace CosmicShore.App.UI.Controllers
         {
             CollectCards();
             ui.Hide();
+        }
+
+        private void Update()
+        {
+            if (Gamepad.current == null) return;
+            if (!ui || !ui.gameObject.activeSelf) return;
+
+            // Check panel is actually visible (alpha > 0 means shown)
+            var cg = ui.GetComponent<CanvasGroup>();
+            if (cg != null && cg.alpha < 0.1f) return;
+
+            if (_cards.Count == 0) return;
+
+            bool navigated = false;
+
+            if (Gamepad.current.dpad.left.wasPressedThisFrame)
+            {
+                _gamepadCardIndex = Mathf.Max(0, _gamepadCardIndex - 1);
+                navigated = true;
+            }
+            else if (Gamepad.current.dpad.right.wasPressedThisFrame)
+            {
+                _gamepadCardIndex = Mathf.Min(_cards.Count - 1, _gamepadCardIndex + 1);
+                navigated = true;
+            }
+
+            if (navigated)
+            {
+                var card = _cards[_gamepadCardIndex];
+                if (card.Button != null)
+                    card.Button.Select();
+            }
+
+            if (Gamepad.current.buttonSouth.wasPressedThisFrame)
+            {
+                if (_gamepadCardIndex >= 0 && _gamepadCardIndex < _cards.Count)
+                {
+                    OnCardClicked(_cards[_gamepadCardIndex]);
+                    OnResumeButtonClicked();
+                }
+            }
         }
 
         // ---------------------------------------------------------
@@ -96,7 +140,7 @@ namespace CosmicShore.App.UI.Controllers
             if (vesselSpawner.SpawnShip(targetClass, out newVessel)) 
                 return true;
             
-            Debug.LogError($"Failed to spawn {targetClass}");
+            CSDebug.LogError($"Failed to spawn {targetClass}");
             return false;
         }
         
@@ -113,7 +157,7 @@ namespace CosmicShore.App.UI.Controllers
         {
             Player.ChangeVessel(newVessel);
             newVessel.Initialize(Player);
-            VesselInitializeHelper.SetShipProperties(themeManagerData, newVessel);
+            ShipHelper.SetShipProperties(themeManagerData, newVessel);
         }
         
         private void TransferSnapshotStateToNewVessel(IVessel newVessel)
@@ -142,14 +186,19 @@ namespace CosmicShore.App.UI.Controllers
         {
             var currentClass = CurrentVessel.VesselStatus.VesselType;
             _selectedCard = null;
+            _gamepadCardIndex = 0;
 
-            foreach (var card in _cards)
+            for (int i = 0; i < _cards.Count; i++)
             {
+                var card = _cards[i];
                 bool isSelected = (card.VesselClass == currentClass);
                 card.SetSelected(isSelected);
 
                 if (isSelected)
+                {
                     _selectedCard = card;
+                    _gamepadCardIndex = i;
+                }
             }
         }
 

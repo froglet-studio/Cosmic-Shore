@@ -90,7 +90,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ba08c4594d34bda8bb525bda69cfa06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   ExplosionDuration: 2
   ExplosionDelay: 0.2
-  renderer: {fileID: 8610979696488315937}
+  meshRenderer: {fileID: 8610979696488315937}
   config: {fileID: 11400000, guid: 04ebada4ff14add43b258298b3eafbcf, type: 2}

@@ -6,24 +6,33 @@ namespace CosmicShore.Game
     public class SnowChangerManager : MonoBehaviour
     {
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
         
         private void OnEnable()
         {
-            cellData.OnCrystalSpawned.OnRaised += OnCrystalSpawned;
+            cellData.OnCellItemsUpdated.OnRaised += OnCellItemsUpdated;
         }
 
         private void OnDisable()
         {
-            cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawned;
+            cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
         }
 
-        private void OnCrystalSpawned()
+        void OnCellItemsUpdated()
         {
-            cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawned;
+            if (!cellData.TryGetLocalCrystal(out _))
+                return;
             
-            var snowChanger = Instantiate(cellData.CellType.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
-            snowChanger.SetOrigin(cellData.CrystalTransform.position);
+            cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
+            SpawnSnows();
+        }
+        
+        private void SpawnSnows()
+        {
+            if (cellData.Config == null || cellData.Config.CytoplasmPrefab == null || cellData.CellTransform == null)
+                return;
+
+            var snowChanger = Instantiate(cellData.Config.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
             snowChanger.Initialize();
         }
     }

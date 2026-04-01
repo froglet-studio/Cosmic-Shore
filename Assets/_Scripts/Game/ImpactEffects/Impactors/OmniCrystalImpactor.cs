@@ -9,20 +9,40 @@ namespace CosmicShore.Game
 {
     public class OmniCrystalImpactor : CrystalImpactor
     {
+        [SerializeField]
         VesselCrystalEffectSO[] omniCrystalShipEffects;
 
         [SerializeField]
         ScriptableEventCrystalStats OnCrystalCollected;
 
+        [SerializeField, Tooltip("Toggle on if only impactor is of same domain as this crystal")] 
+        private bool onlyAllowOwnDomainImpactor;
+        
         bool IsImpacting;
+        
+        protected virtual bool IsDomainMatching(Domains domain) => 
+            Crystal.ownDomain == domain || Crystal.ownDomain == Domains.None;
+
+        bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
         
         protected override void AcceptImpactee(IImpactor impactee)
         {
+            if (IsNetworkClient())
+                return;
+            
             if (IsImpacting)
                 return;
             
             if (Crystal.IsExploding)
                 return;
+
+            if (onlyAllowOwnDomainImpactor)
+            {
+                bool matched = IsDomainMatching(impactee.OwnDomain);
+                if (!matched)
+                    return;
+            }
+                
             
             switch (impactee)
             {

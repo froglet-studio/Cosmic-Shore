@@ -24,7 +24,7 @@ namespace CosmicShore.Game
     {
         #region Inspector Fields
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
         
         [SerializeField] 
         public CrystalProperties crystalProperties;
@@ -39,14 +39,14 @@ namespace CosmicShore.Game
         [SerializeField] bool allowRespawnOnImpact;
 
         [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [SerializeField] protected ThemeManagerDataContainerSO _themeManagerData;
 
         #endregion
         
         public List<CrystalModelData> CrystalModels => crystalModels;
         
         Material tempMaterial;
-        CrystalManager crystalManager;
+        public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
         protected virtual void Start()
@@ -54,7 +54,7 @@ namespace CosmicShore.Game
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
         }
 
-        public void InjectDependencies(CrystalManager cm) => crystalManager = cm;
+        public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
         
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
@@ -66,7 +66,7 @@ namespace CosmicShore.Game
         }
 
         public void NotifyManagerToExplodeCrystal(ExplodeParams explodeParams) =>
-            crystalManager.ExplodeCrystal(explodeParams);
+            CrystalManager.ExplodeCrystal(Id, explodeParams);
         
         public void Respawn()
         {
@@ -76,12 +76,12 @@ namespace CosmicShore.Game
                 return;
             }
 
-            crystalManager.RespawnCrystal();
+            CrystalManager.RespawnCrystal(Id);
         }
 
         public void DestroyCrystal()
         {
-            crystalManager.TryRemoveItem(this);
+            cellData.TryRemoveItem(this);
             Destroy(gameObject);
         }
         
@@ -145,11 +145,12 @@ namespace CosmicShore.Game
             {
                 var model = modelData.model;
 
-                tempMaterial = new Material(modelData.explodingMaterial);
                 var spentCrystal = Instantiate(SpentCrystalPrefab);
                 spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
-                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
                 spentCrystal.transform.localScale = transform.lossyScale;
+                
+                tempMaterial = new Material(modelData.explodingMaterial);
+                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
 
                 if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
                 {
@@ -172,7 +173,7 @@ namespace CosmicShore.Game
 
         public void ActivateCrystal()
         {
-            transform.parent = CellControlManager.Instance.GetNearestCell(transform.position).transform;
+            transform.parent = cellData.Cell.transform;
             gameObject.GetComponent<SphereCollider>().enabled = true;
             enabled = true;
 
@@ -186,53 +187,93 @@ namespace CosmicShore.Game
             }
         }
 
-        public void Steal(Domains domain, float duration)
+        public void ChangeDomain(Domains newDomain, float duration = -1)
         {
-            ownDomain = domain;
-            foreach (var modelData in crystalModels)
+            if (ownDomain == newDomain)
+                return;
+            if (newDomain == Domains.None)
             {
-                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(domain), 1));
+                for (int i = 0; i < crystalModels.Count; i++)
+                {
+                    StartCoroutine(LerpCrystalMaterialCoroutine(crystalModels[i].model, crystalModels[i].defaultMaterial, 1));
+                }
+                ownDomain = newDomain;
+                return;
             }
-            StartCoroutine(DecayingTheftCoroutine(duration));
+            ownDomain = newDomain;
+            for (int i = 0; i < crystalModels.Count; i++)
+            {
+                StartCoroutine(LerpCrystalMaterialCoroutine(crystalModels[i].model, _themeManagerData.GetTeamCrystalMaterial(ownDomain, i), 1));
+            }
+            if (duration != -1) StartCoroutine(DecayingTheftCoroutine(duration));
         }
 
         IEnumerator DecayingTheftCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            ownDomain = Domains.None;
-            foreach (var modelData in crystalModels)
-            {
-                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, modelData.defaultMaterial, 1));
-            }
+            ChangeDomain(Domains.None);
         }
 
-        IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
+        protected IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
         {
             Renderer renderer = model.GetComponent<Renderer>();
+            if (renderer == null)
+                yield break;
+
             Material tempMaterial = new Material(renderer.material);
             renderer.material = tempMaterial;
 
-            Color startColor1 = tempMaterial.GetColor("_BrightCrystalColor");
-            Color startColor2 = tempMaterial.GetColor("_DullCrystalColor");
+            // Detect which color property names the source and target shaders use.
+            // Regular crystal shaders use _BrightCrystalColor/_DullCrystalColor,
+            // while InverseDynamicFresnelGraph uses _BrightColor/_DullColor.
+            var srcProps = FindColorPropertyNames(tempMaterial);
+            var dstProps = FindColorPropertyNames(targetMaterial);
 
-            Color targetColor1 = targetMaterial.GetColor("_BrightCrystalColor");
-            Color targetColor2 = targetMaterial.GetColor("_DullCrystalColor");
+            bool canLerp = srcProps.bright != null && dstProps.bright != null
+                           && srcProps.bright == dstProps.bright;
 
-            float elapsedTime = 0.0f;
-
-            while (elapsedTime < lerpDuration)
+            if (canLerp)
             {
-                elapsedTime += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsedTime / lerpDuration);
+                Color startBright = tempMaterial.GetColor(srcProps.bright);
+                Color startDull = tempMaterial.GetColor(srcProps.dull);
+                Color targetBright = targetMaterial.GetColor(dstProps.bright);
+                Color targetDull = targetMaterial.GetColor(dstProps.dull);
 
-                tempMaterial.SetColor("_BrightCrystalColor", Color.Lerp(startColor1, targetColor1, t));
-                tempMaterial.SetColor("_DullCrystalColor", Color.Lerp(startColor2, targetColor2, t));
+                float elapsedTime = 0.0f;
+                while (elapsedTime < lerpDuration)
+                {
+                    elapsedTime += Time.deltaTime;
+                    float t = Mathf.Clamp01(elapsedTime / lerpDuration);
 
-                yield return null;
+                    tempMaterial.SetColor(srcProps.bright, Color.Lerp(startBright, targetBright, t));
+                    tempMaterial.SetColor(srcProps.dull, Color.Lerp(startDull, targetDull, t));
+
+                    yield return null;
+                }
             }
 
             renderer.material = targetMaterial;
+
+            // Update the explodingMaterial for the matching crystal model entry
+            for (int i = 0; i < crystalModels.Count; i++)
+            {
+                if (crystalModels[i].model == model)
+                {
+                    crystalModels[i].explodingMaterial = targetMaterial;
+                    break;
+                }
+            }
+
             Destroy(tempMaterial);
+        }
+
+        private static (string bright, string dull) FindColorPropertyNames(Material mat)
+        {
+            if (mat.HasProperty("_BrightCrystalColor") && mat.HasProperty("_DullCrystalColor"))
+                return ("_BrightCrystalColor", "_DullCrystalColor");
+            if (mat.HasProperty("_BrightColor") && mat.HasProperty("_DullColor"))
+                return ("_BrightColor", "_DullColor");
+            return (null, null);
         }
         
         /// <summary>
@@ -245,4 +286,3 @@ namespace CosmicShore.Game
         }
     }
 }
-

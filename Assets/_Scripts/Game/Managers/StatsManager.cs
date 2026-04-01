@@ -44,7 +44,7 @@ namespace CosmicShore.Core
         GameDataSO gameData;
         
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
 
         protected bool allowRecord = true;
         
@@ -139,6 +139,22 @@ namespace CosmicShore.Core
             if (!gameData.TryGetRoundStats(skimmerPlayerName, out var roundStats))
                 return;
             roundStats.SkimmerShipCollisions++;
+        }
+        
+        public void ExecuteJoustCollision(string joustPlayerName)
+        {
+            if (!allowRecord) return;
+
+            if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats))
+                return;
+            roundStats.JoustCollisions++;
+        }
+
+        public void ExecuteDogFightHit(string shooterPlayerName)
+        {
+            if (!gameData.TryGetRoundStats(shooterPlayerName, out var roundStats))
+                return;
+            roundStats.DogFightHits++;
         }
 
         public void PrismCreated(PrismStats prismStats)

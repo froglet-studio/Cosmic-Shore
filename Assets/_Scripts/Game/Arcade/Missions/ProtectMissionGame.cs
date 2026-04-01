@@ -7,6 +7,8 @@ using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System.Linq;
 using CosmicShore.Game;
+using CosmicShore.Soap;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -32,8 +34,10 @@ namespace CosmicShore
         };
 
         [Range(1, 9)] public int CurrentDifficulty = 5;
-        [SerializeField] float faunaOnlyLimit = 1000; // If the team volume is above this limit, only fauna threats will spawn
+        [SerializeField] float faunaOnlyLimit = 1000; // If the team volume is above this limit, only FaunaPrefab threats will spawn
 
+        [SerializeField] private CellRuntimeDataSO cellData;
+        
         public float IntensityThreshold = 1;  // How much variance is allowed from mission difficulty in a wave
         public float ThreatWaveMinimumPeriodInSeconds = 20;
         int currentSpawnLocationIndex = 0;
@@ -44,7 +48,7 @@ namespace CosmicShore
         {
             base.Start();
             CurrentDifficulty = IntensityLevel;
-            Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
+            // Captain system removed — mission initialization needs refactoring
 
             // TODO - Cannot modify player datas directly... need other way of initialization.
             /*Players[0].ShipType = SquadSystem.SquadLeader.Vessel.Class;
@@ -54,8 +58,8 @@ namespace CosmicShore
             HostileAITwo.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];*/
 
-            faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
-            node = CellControlManager.Instance.GetNearestCell(Vector3.zero);
+            faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Fauna>(out _)).ToArray();
+            node = cellData.Cell; // CellControlManager.Instance.GetNearestCell(Vector3.zero);
         }
 
         protected override void StartNewGame()
@@ -70,7 +74,7 @@ namespace CosmicShore
         // Method to roll a single threat based on weights
         Threat RollThreat()
         {
-            Debug.LogWarning("jade volume: node.GetTeamVolume(Teams.Jade)");
+            CSDebug.LogWarning("jade volume: node.GetTeamVolume(Teams.Jade)");
             var threats = node.GetTeamVolume(Domains.Jade) > faunaOnlyLimit ? faunaThreats : MissionData.PotentialThreats;
             float totalWeight = 0f;
             foreach (Threat threat in threats)
@@ -154,7 +158,7 @@ namespace CosmicShore
                 {
                     elapsedThreat += threat.threatLevel;
 
-                    Debug.LogWarning($"ThreatWaveCoroutine -  Spawning Threat:{threat.threatName}");
+                    CSDebug.LogWarning($"ThreatWaveCoroutine -  Spawning Threat:{threat.threatName}");
 
                     if (SpawnLocations != null)
                         ThreatSpawner.SpawnThreat(threat, threatTeam, SpawnLocations[currentSpawnLocationIndex].position);
@@ -170,7 +174,7 @@ namespace CosmicShore
 
                 var timeToTarget = (elapsedThreat / targetThreatPerTime) - elapsedTime;
 
-                Debug.LogWarning($"ThreatWaveCoroutine -  elapsedTime:{elapsedTime}, elapsedThreat:{elapsedThreat}, timeToTarget:{timeToTarget}");
+                CSDebug.LogWarning($"ThreatWaveCoroutine -  elapsedTime:{elapsedTime}, elapsedThreat:{elapsedThreat}, timeToTarget:{timeToTarget}");
 
                 yield return new WaitForSeconds(Mathf.Max(ThreatWaveMinimumPeriodInSeconds, timeToTarget));
             }

@@ -22,7 +22,7 @@ namespace CosmicShore.Utility
             rotation = Quaternion.identity;
 
             if (logError)
-                DebugExtensions.LogErrorColored($"ZERO LOOK ROTATION detected on {(context ? context.name : "unknown object")}", Color.magenta);
+                DebugExtensions.LogWarningColored($"ZERO LOOK ROTATION detected on {(context ? context.name : "unknown object")}", Color.magenta);
 
             return false;
         }

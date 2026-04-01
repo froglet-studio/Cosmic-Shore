@@ -33,6 +33,11 @@ public enum GameModes
     MultiplayerFreestyle = 28,
     MultiplayerCellularDuel = 29,
     Multiplayer2v2CoOpVsAI = 30,
-    HexRace = 31,
-    MultiplayerWildlifeBlitzGame = 32
+    MultiplayerWildlifeBlitzGame = 32,
+    HexRace = 33,
+    MultiplayerJoust = 34,
+    MultiplayerCrystalCapture = 35,
+    DragScouting = 36,
+    MultiplayerDogFight = 37,
+    MultiplayerMissileDogFight = 38,
 }

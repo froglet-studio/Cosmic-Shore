@@ -16,6 +16,7 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] Image BackgroundImage;
 
         GameModes gameMode;
+        bool isComingSoon;
 
         public GameModes GameMode
         {
@@ -29,11 +30,14 @@ namespace CosmicShore.App.UI.Elements
 
         void Start()
         {
-            gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
+            if (!isComingSoon)
+                gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
         }
 
         void Update()
         {
+            if (isComingSoon) return;
+
             DateTime current = DateTime.UtcNow;
             DateTime tomorrow = current.AddDays(1).Date;
             double secondsUntilMidnight = (tomorrow - current).TotalSeconds;
@@ -50,6 +54,24 @@ namespace CosmicShore.App.UI.Elements
             {
                 gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
             }
+        }
+
+        /// <summary>
+        /// Disables the button and replaces timer text with "Coming Soon".
+        /// The card remains visible but non-interactive.
+        /// </summary>
+        public void SetComingSoon()
+        {
+            isComingSoon = true;
+
+            if (TryGetComponent<Button>(out var btn))
+                btn.interactable = false;
+
+            if (GameTitle != null)
+                GameTitle.text = "Daily Challenge";
+
+            if (TimeRemaining != null)
+                TimeRemaining.text = "Coming Soon";
         }
 
         void UpdateCardView()

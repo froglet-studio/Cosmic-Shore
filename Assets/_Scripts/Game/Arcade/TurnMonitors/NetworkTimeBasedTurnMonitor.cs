@@ -13,6 +13,6 @@ namespace CosmicShore.Game.Arcade
 
         [ClientRpc]
         private void UpdateTimerUI_ClientRpc(FixedString32Bytes message) =>
-            UpdateTimerUI_2(message.ToString());
+            InvokeUpdateTurnMonitorDisplay(message.ToString());
     }
 }

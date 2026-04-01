@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Wildlife Cell 3 Spawn Profile
+  m_EditorClassIdentifier: 
+  FloraTypeCount: 1
+  FloraExcludeLocalDomain: 1
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 2
+  SupportedFloras:
+  - {fileID: 11400000, guid: 85491b48d7564c94587b504e6608d88c, type: 2}
+  FaunaTypeCount: 1
+  FaunaExcludeLocalDomain: 1
+  InitialFaunaSpawnWaitTime: 10
+  FaunaSpawnVolumeThreshold: 1
+  BaseFaunaSpawnTime: 60
+  FaunaInitialDelaySeconds: 5
+  FaunaSpawnIntervalSeconds: 4
+  SupportedFaunas: []

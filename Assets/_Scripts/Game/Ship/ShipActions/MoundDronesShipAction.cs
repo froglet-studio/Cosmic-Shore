@@ -7,7 +7,7 @@ namespace CosmicShore
     public class MoundDronesShipAction : ShipAction
     {
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
         [SerializeField] GameObject dronePrefab;
         [SerializeField] int Drones = 5;
         [SerializeField] BoidController boidController;

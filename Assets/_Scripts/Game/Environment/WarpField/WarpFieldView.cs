@@ -16,12 +16,12 @@ public class WarpFieldView : MonoBehaviour
 
     private void OnEnable()
     {
-        //Crystal.OnCrystalMove += ChangeSnowSize;
+        //Crystal.OnCrystalMove += ChangeSnowOrientation;
     }
 
     private void OnDisable()
     {
-        //Crystal.OnCrystalMove -= ChangeSnowSize;
+        //Crystal.OnCrystalMove -= ChangeSnowOrientation;
     }
 
     // Start is called before the first frame update

@@ -6,14 +6,14 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Projectile - Prism/ProjectileDamagePrismEffectSO")]
     public class ProjectileDamagePrismEffectSO : ProjectilePrismEffectSO
     {
-        [SerializeField] float inertia = 70f;   // global scalar you can tune per effect
+        [SerializeField] float inertia = 1f;   // global scalar you can tune per effect
         [SerializeField] private Vector3 overrideCourse;
         [SerializeField] private float overrideSpeed;
         
         public override void Execute(ProjectileImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = impactor.Projectile.VesselStatus;
-            PrismEffectHelper.Damage(status, prismImpactee, inertia, status.Course, status.Speed);
+            PrismEffectHelper.Damage(status, prismImpactee, inertia, impactor.Projectile.Velocity);
         }
     }
 }

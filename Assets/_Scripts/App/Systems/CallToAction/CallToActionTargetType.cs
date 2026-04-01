@@ -53,6 +53,11 @@ namespace CosmicShore.App.Systems.CTA
         PlayGameMultiplayerFreestyle = 428,
         PlayGameMultiplayerDuelForCell = 429,
         PlayGameMultiplayerWildlifeBlitzGame = 430,
+        PlayGameHexRace = 431,
+        PlayGameDragScouting = 432,
+
+        PlayGameMultiplayerDogFight = 433,
+        PlayGameMultiplayerMissileDogFight = 434,
 
         /*********** ADDED BY WILL *************/
 

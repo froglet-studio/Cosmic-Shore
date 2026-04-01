@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -10,9 +11,10 @@ namespace CosmicShore.Game
     {
         [SerializeField] VesselImpactorDataContainerSO vesselImpactorDataContainerSO;
         [SerializeField] NetworkVesselImpactor networkVesselImpactor;
-        
+
         public IVessel Vessel { get; private set; }
-        
+        public override Domains OwnDomain => Vessel.VesselStatus.Domain;
+
         private void Awake()
         {
             Vessel ??= GetComponent<IVessel>();
@@ -24,38 +26,70 @@ namespace CosmicShore.Game
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
-                   if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
-                   foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
-                   {
-                       effect.Execute(this, prismImpactee);
-                   }
-                   break;
+                    if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.VesselImpact);
+                    foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
+                        effect.Execute(this, prismImpactee);
+                    break;
+
                 case OmniCrystalImpactor omniCrystalImpactee:
-                    CrystalImpactData data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
+                {
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect);
+                    var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
                     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
                         networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
                     else
-                        ExecuteCrystalImpact(data);
+                        ExecuteOmniCrystalImpact(data);
                     break;
+                }
+
+                case ElementalCrystalImpactor elementalCrystalImpactee:
+                {
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect);
+                    var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
+                    if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
+                        networkVesselImpactor.ExecuteOnHitElementalCrystal(data);
+                    else
+                        ExecuteElementalCrystalImpact(data);
+                    break;
+                }
+
                 case SkimmerImpactor skimmerImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.VesselImpact);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)
-                    {
                         effect.Execute(this, skimmerImpactee);
-                    }
                     break;
             }
         }
 
-        internal void ExecuteCrystalImpact(CrystalImpactData data)
+        public void ExecuteOmniCrystalImpact(CrystalImpactData data)
         {
-            if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
+            if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
             foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
                 effect.Execute(this, data);
         }
 
+        public void ExecuteElementalCrystalImpact(CrystalImpactData data)
+        {
+            VesselCrystalEffectSO[] effects = data.Element switch
+            {
+                Element.Mass   => vesselImpactorDataContainerSO.VesselMassCrystalEffects,
+                Element.Charge => vesselImpactorDataContainerSO.VesselChargeCrystalEffects,
+                Element.Space  => vesselImpactorDataContainerSO.VesselSpaceCrystalEffects,
+                Element.Time   => vesselImpactorDataContainerSO.VesselTimeCrystalEffects,
+                _ => null
+            };
+
+            if (!DoesEffectExist(effects)) return;
+
+            foreach (var effect in effects)
+                effect.Execute(this, data);
+        }
+
+
         void OnValidate()
-        { 
+        {
             Vessel ??= GetComponent<IVessel>();
             networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
         }

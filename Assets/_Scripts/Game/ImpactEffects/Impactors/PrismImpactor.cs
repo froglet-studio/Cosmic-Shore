@@ -17,6 +17,7 @@ namespace CosmicShore.Game
        
         
         public Prism Prism;
+        public override Domains OwnDomain => Prism.Domain;
 
         void Awake()
         {

@@ -5,9 +5,11 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Game.Cinematics;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game
@@ -38,7 +40,7 @@ namespace CosmicShore.Game
                 if (_shipInstance is not null) 
                     return _shipInstance as IVessel;
                 
-                Debug.LogError("ShipInstance is not referenced in inspector of Vessel Prefab!");
+                CSDebug.LogError("ShipInstance is not referenced in inspector of Vessel Prefab!");
                 return null;
             }
         }
@@ -50,7 +52,7 @@ namespace CosmicShore.Game
             get
             {
                 if (vesselHUDController is IVesselHUDController c) return c;
-                Debug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
+                CSDebug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
                 return null;
             }
         }
@@ -62,6 +64,10 @@ namespace CosmicShore.Game
             get => boostMultiplier;
             set => boostMultiplier = value;
         }
+
+        [SerializeField] protected float inertia = 1f;
+        public float Inertia => inertia;
+
 
         [Header("Vessel Meta")]
         [SerializeField] protected string _name;
@@ -88,7 +94,6 @@ namespace CosmicShore.Game
         public Material AOEConicExplosionMaterial { get; set; }
         public Material ShipMaterial { get; set; }
         public Material SkimmerMaterial { get; set; }
-        public SO_Captain Captain { get; set; }
         public List<GameObject> ShipGeometries { get; set; }
         public Prism AttachedPrism { get; set; }
 
@@ -159,6 +164,16 @@ namespace CosmicShore.Game
             {
                 aiPilot = aiPilot != null ? aiPilot : gameObject.gameObject.GetOrAdd<AIPilot>();
                 return aiPilot;
+            }
+        }
+
+        AICinematicBehavior aiCinematicBehavior;
+        public AICinematicBehavior AICinematicBehavior
+        {
+            get
+            {
+                aiCinematicBehavior = aiCinematicBehavior != null ? aiCinematicBehavior : gameObject.gameObject.GetOrAdd<AICinematicBehavior>();
+                return aiCinematicBehavior;
             }
         }
 

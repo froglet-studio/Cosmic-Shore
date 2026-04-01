@@ -4,6 +4,7 @@ using System.Linq;
 using CosmicShore.Game;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -114,7 +115,7 @@ namespace CosmicShore
                 var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
                 if (newAssembler == null)
                 {
-                    Debug.LogError("Failed to create assembler");
+                    CSDebug.LogError("Failed to create assembler");
                     continue;
                 }
 
@@ -174,7 +175,7 @@ namespace CosmicShore
 
         public Assembler CreateNewAssembler()
         {
-            Debug.Log("New Assembler");
+            CSDebug.Log("New Assembler");
             var newSpindle = AddSpindle();
 
             HealthPrism newHealthPrism = Instantiate(healthPrism, transform.position, transform.rotation);

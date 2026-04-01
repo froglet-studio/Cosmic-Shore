@@ -16,42 +16,50 @@ namespace CosmicShore.Game.Arcade.Scoring
             Elemental
         }
 
-        public CrystalsCollectedScoring(GameDataSO scoreData, float scoreMultiplier = 145.65f, CrystalType type = CrystalType.All, bool ScaleWithSize = false) 
-            : base(scoreData, scoreMultiplier)
+        public CrystalsCollectedScoring(IScoreTracker tracker, GameDataSO scoreData, float scoreMultiplier = 145.65f, CrystalType type = CrystalType.All, bool ScaleWithSize = false) 
+            : base(tracker, scoreData, scoreMultiplier)
         {
             crystalType = type;
             scaleWithSize = ScaleWithSize;
         }
 
-        /*public override void CalculateScore()
+        public override void Subscribe()
         {
             foreach (var playerScore in GameData.RoundStatsList)
             {
-                if (!TryGetRoundStats(playerScore.Name, out IRoundStats roundStats))
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                     return;
-                
-                float scoreIncrement = crystalType switch
-                {
-                    CrystalType.All => roundStats.CrystalsCollected,
-                    CrystalType.Omni => roundStats.OmniCrystalsCollected,
-                    CrystalType.Elemental => scaleWithSize ? roundStats.MassCrystalValue +
-                                                             roundStats.ChargeCrystalValue +
-                                                             roundStats.TimeCrystalValue + 
-                                                             roundStats.SpaceCrystalValue: roundStats.ElementalCrystalsCollected,
-                    _ => 0
-                };
-                playerScore.Score += scoreIncrement * scoreMultiplier;
-            }
-        }*/
 
-        public override void Subscribe()
-        {
-            throw new System.NotImplementedException();
+                roundStats.OnCrystalsCollectedChanged += UpdateScore;
+            }
         }
 
         public override void Unsubscribe()
         {
-            throw new System.NotImplementedException();
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                roundStats.OnCrystalsCollectedChanged -= UpdateScore;
+            }
+        }
+        
+        void UpdateScore(IRoundStats roundStats)
+        {
+            /*float scoreIncrement = crystalType switch
+            {
+                CrystalType.All => roundStats.CrystalsCollected,
+                CrystalType.Omni => roundStats.OmniCrystalsCollected,
+                CrystalType.Elemental => scaleWithSize ? roundStats.MassCrystalValue +
+                                                         roundStats.ChargeCrystalValue +
+                                                         roundStats.TimeCrystalValue + 
+                                                         roundStats.SpaceCrystalValue: roundStats.ElementalCrystalsCollected,
+                _ => 0
+            };*/
+            
+            Score = roundStats.CrystalsCollected * scoreMultiplier;
+            ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }
 }

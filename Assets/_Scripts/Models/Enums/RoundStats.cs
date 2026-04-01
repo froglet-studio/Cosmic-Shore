@@ -41,6 +41,8 @@ namespace CosmicShore.Game
         public event Action<IRoundStats> OnTimeCrystalValueChanged;
 
         public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
+        public event Action<IRoundStats> OnJoustCollisionChanged;
+        public event Action<IRoundStats> OnDogFightHitChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -66,9 +68,16 @@ namespace CosmicShore.Game
 
         int _crystalsCollectedLocal, _omniCrystalsCollectedLocal, _elementalCrystalsCollectedLocal;
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
-        int _skimmerShipCollisionsLocal;
-        float _fullSpeedStraightAbilityActiveTimeLocal, _rightStickAbilityActiveTimeLocal, _leftStickAbilityActiveTimeLocal;
-        float _flipAbilityActiveTimeLocal, _button1AbilityActiveTimeLocal, _button2AbilityActiveTimeLocal, _button3AbilityActiveTimeLocal;
+        int _skimmerShipCollisionsLocal, _joustCollisionsLocal, _dogFightHitsLocal;
+
+        float _fullSpeedStraightAbilityActiveTimeLocal,
+            _rightStickAbilityActiveTimeLocal,
+            _leftStickAbilityActiveTimeLocal;
+
+        float _flipAbilityActiveTimeLocal,
+            _button1AbilityActiveTimeLocal,
+            _button2AbilityActiveTimeLocal,
+            _button3AbilityActiveTimeLocal;
 
         //–––––––––––––––––––––––––––––––––––––––––
         // NETWORK VARIABLES
@@ -127,35 +136,52 @@ namespace CosmicShore.Game
 
         readonly NetworkVariable<int> n_CrystalsCollected =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<int> n_OmniCrystalsCollected =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<int> n_ElementalCrystalsCollected =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         readonly NetworkVariable<float> n_ChargeCrystalValue =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_MassCrystalValue =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_SpaceCrystalValue =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_TimeCrystalValue =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         readonly NetworkVariable<int> n_SkimmerShipCollisions =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        readonly NetworkVariable<int> n_JoustCollisions =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_DogFightHits =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_RightStickAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_LeftStickAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_FlipAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_Button1AbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_Button2AbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_Button3AbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
@@ -169,6 +195,13 @@ namespace CosmicShore.Game
             OnAnyStatChanged?.Invoke(this);
         }
 
+        /// <summary>
+        /// Allows external callers (e.g. StatsManager) to fire OnJoustCollisionChanged
+        /// without needing access to the private event backing field.
+        /// </summary>
+        public void InvokeOnJoustCollisionChanged() => RaiseSpecific(OnJoustCollisionChanged);
+        public void InvokeOnDogFightHitChanged() => RaiseSpecific(OnDogFightHitChanged);
+
         //–––––––––––––––––––––––––––––––––––––––––
         // PROPERTIES
         //–––––––––––––––––––––––––––––––––––––––––
@@ -176,13 +209,21 @@ namespace CosmicShore.Game
         public string Name
         {
             get => IsSpawned ? n_Name.Value.ToString() : _nameLocal;
-            set { if (IsSpawned && IsServer) n_Name.Value = value; else _nameLocal = value; }
+            set
+            {
+                if (IsSpawned && IsServer) n_Name.Value = value;
+                else _nameLocal = value;
+            }
         }
 
         public Domains Domain
         {
             get => IsSpawned ? n_Domain.Value : _domainLocal;
-            set { if (IsSpawned && IsServer) n_Domain.Value = value; else _domainLocal = value; }
+            set
+            {
+                if (IsSpawned && IsServer) n_Domain.Value = value;
+                else _domainLocal = value;
+            }
         }
 
         public float Score
@@ -195,6 +236,7 @@ namespace CosmicShore.Game
                 else
                     _scoreLocal = value;
 
+                if (IsSpawned) return;
                 OnScoreChanged?.Invoke();
                 OnAnyStatChanged?.Invoke(this);
             }
@@ -208,7 +250,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_VolumeCreated.Value = value;
                 else _volumeCreatedLocal = value;
 
-                RaiseSpecific(OnVolumeCreatedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnVolumeCreatedChanged);
             }
         }
 
@@ -220,7 +263,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_BlocksCreated.Value = value;
                 else _blocksCreatedLocal = value;
 
-                RaiseSpecific(OnBlocksCreatedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnBlocksCreatedChanged);
             }
         }
 
@@ -232,7 +276,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_BlocksDestroyed.Value = value;
                 else _blocksDestroyedLocal = value;
 
-                RaiseSpecific(OnBlocksDestroyedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnBlocksDestroyedChanged);
             }
         }
 
@@ -244,7 +289,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_BlocksRestored.Value = value;
                 else _blocksRestoredLocal = value;
 
-                RaiseSpecific(OnBlocksRestoredChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnBlocksRestoredChanged);
             }
         }
 
@@ -256,7 +302,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_PrismStolen.Value = value;
                 else _prismStolenLocal = value;
 
-                RaiseSpecific(OnPrismsStolenChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnPrismsStolenChanged);
             }
         }
 
@@ -268,7 +315,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_PrismsRemaining.Value = value;
                 else _prismsRemainingLocal = value;
 
-                RaiseSpecific(OnPrismsRemainingChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnPrismsRemainingChanged);
             }
         }
 
@@ -280,7 +328,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_FriendlyPrismsDestroyed.Value = value;
                 else _friendlyPrismsDestroyedLocal = value;
 
-                RaiseSpecific(OnFriendlyPrismsDestroyedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnFriendlyPrismsDestroyedChanged);
             }
         }
 
@@ -292,7 +341,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_HostilePrismsDestroyed.Value = value;
                 else _hostilePrismsDestroyedLocal = value;
 
-                RaiseSpecific(OnHostilePrismsDestroyedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnHostilePrismsDestroyedChanged);
             }
         }
 
@@ -304,7 +354,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_TotalVolumeDestroyed.Value = value;
                 else _totalVolumeDestroyedLocal = value;
 
-                RaiseSpecific(OnTotalVolumeDestroyedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnTotalVolumeDestroyedChanged);
             }
         }
 
@@ -316,7 +367,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_VolumeRestored.Value = value;
                 else _volumeRestoredLocal = value;
 
-                RaiseSpecific(OnVolumeRestoredChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnVolumeRestoredChanged);
             }
         }
 
@@ -328,7 +380,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_VolumeStolen.Value = value;
                 else _volumeStolenLocal = value;
 
-                RaiseSpecific(OnVolumeStolenChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnVolumeStolenChanged);
             }
         }
 
@@ -340,7 +393,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_VolumeRemaining.Value = value;
                 else _volumeRemainingLocal = value;
 
-                RaiseSpecific(OnVolumeRemainingChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnVolumeRemainingChanged);
             }
         }
 
@@ -352,7 +406,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_FriendlyVolumeDestroyed.Value = value;
                 else _friendlyVolumeDestroyedLocal = value;
 
-                RaiseSpecific(OnFriendlyVolumeDestroyedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnFriendlyVolumeDestroyedChanged);
             }
         }
 
@@ -364,13 +419,10 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_HostileVolumeDestroyed.Value = value;
                 else _hostileVolumeDestroyedLocal = value;
 
-                RaiseSpecific(OnHostileVolumeDestroyedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnHostileVolumeDestroyedChanged);
             }
         }
-
-        //──────────────────────────────────────────
-        // CRYSTALS & OTHER STATS
-        //──────────────────────────────────────────
 
         public int CrystalsCollected
         {
@@ -380,7 +432,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_CrystalsCollected.Value = value;
                 else _crystalsCollectedLocal = value;
 
-                RaiseSpecific(OnCrystalsCollectedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnCrystalsCollectedChanged);
             }
         }
 
@@ -392,7 +445,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_OmniCrystalsCollected.Value = value;
                 else _omniCrystalsCollectedLocal = value;
 
-                RaiseSpecific(OnOmniCrystalsCollectedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnOmniCrystalsCollectedChanged);
             }
         }
 
@@ -404,7 +458,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_ElementalCrystalsCollected.Value = value;
                 else _elementalCrystalsCollectedLocal = value;
 
-                RaiseSpecific(OnElementalCrystalsCollectedChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnElementalCrystalsCollectedChanged);
             }
         }
 
@@ -416,7 +471,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_ChargeCrystalValue.Value = value;
                 else _chargeCrystalValueLocal = value;
 
-                RaiseSpecific(OnChargeCrystalValueChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnChargeCrystalValueChanged);
             }
         }
 
@@ -428,7 +484,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_MassCrystalValue.Value = value;
                 else _massCrystalValueLocal = value;
 
-                RaiseSpecific(OnMassCrystalValueChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnMassCrystalValueChanged);
             }
         }
 
@@ -440,7 +497,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_SpaceCrystalValue.Value = value;
                 else _spaceCrystalValueLocal = value;
 
-                RaiseSpecific(OnSpaceCrystalValueChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnSpaceCrystalValueChanged);
             }
         }
 
@@ -452,7 +510,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_TimeCrystalValue.Value = value;
                 else _timeCrystalValueLocal = value;
 
-                RaiseSpecific(OnTimeCrystalValueChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnTimeCrystalValueChanged);
             }
         }
 
@@ -464,7 +523,34 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_SkimmerShipCollisions.Value = value;
                 else _skimmerShipCollisionsLocal = value;
 
-                RaiseSpecific(OnSkimmerShipCollisionsChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnSkimmerShipCollisionsChanged);
+            }
+        }
+
+        public int JoustCollisions
+        {
+            get => IsSpawned ? n_JoustCollisions.Value : _joustCollisionsLocal;
+            set
+            {
+                if (IsSpawned && IsServer) n_JoustCollisions.Value = value;
+                else _joustCollisionsLocal = value;
+
+                if (!IsSpawned)
+                    RaiseSpecific(OnJoustCollisionChanged);
+            }
+        }
+
+        public int DogFightHits
+        {
+            get => IsSpawned ? n_DogFightHits.Value : _dogFightHitsLocal;
+            set
+            {
+                if (IsSpawned && IsServer) n_DogFightHits.Value = value;
+                else _dogFightHitsLocal = value;
+
+                if (!IsSpawned)
+                    RaiseSpecific(OnDogFightHitChanged);
             }
         }
 
@@ -476,7 +562,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_FullSpeedStraightAbilityActiveTime.Value = value;
                 else _fullSpeedStraightAbilityActiveTimeLocal = value;
 
-                RaiseSpecific(OnFullSpeedStraightAbilityActiveTimeChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnFullSpeedStraightAbilityActiveTimeChanged);
             }
         }
 
@@ -488,7 +575,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_RightStickAbilityActiveTime.Value = value;
                 else _rightStickAbilityActiveTimeLocal = value;
 
-                RaiseSpecific(OnRightStickAbilityActiveTimeChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnRightStickAbilityActiveTimeChanged);
             }
         }
 
@@ -500,7 +588,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_LeftStickAbilityActiveTime.Value = value;
                 else _leftStickAbilityActiveTimeLocal = value;
 
-                RaiseSpecific(OnLeftStickAbilityActiveTimeChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnLeftStickAbilityActiveTimeChanged);
             }
         }
 
@@ -512,7 +601,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_FlipAbilityActiveTime.Value = value;
                 else _flipAbilityActiveTimeLocal = value;
 
-                RaiseSpecific(OnFlipAbilityActiveTimeChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnFlipAbilityActiveTimeChanged);
             }
         }
 
@@ -524,7 +614,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_Button1AbilityActiveTime.Value = value;
                 else _button1AbilityActiveTimeLocal = value;
 
-                RaiseSpecific(OnButton1AbilityActiveTimeChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnButton1AbilityActiveTimeChanged);
             }
         }
 
@@ -536,7 +627,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_Button2AbilityActiveTime.Value = value;
                 else _button2AbilityActiveTimeLocal = value;
 
-                RaiseSpecific(OnButton2AbilityActiveTimeChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnButton2AbilityActiveTimeChanged);
             }
         }
 
@@ -548,7 +640,8 @@ namespace CosmicShore.Game
                 if (IsSpawned && IsServer) n_Button3AbilityActiveTime.Value = value;
                 else _button3AbilityActiveTimeLocal = value;
 
-                RaiseSpecific(OnButton3AbilityActiveTimeChanged);
+                if (!IsSpawned)
+                    RaiseSpecific(OnButton3AbilityActiveTimeChanged);
             }
         }
 
@@ -564,32 +657,34 @@ namespace CosmicShore.Game
                 OnAnyStatChanged?.Invoke(this);
             };
 
-            n_VolumeCreated.OnValueChanged          += (_, __) => RaiseSpecific(OnVolumeCreatedChanged);
-            n_TotalVolumeDestroyed.OnValueChanged   += (_, __) => RaiseSpecific(OnTotalVolumeDestroyedChanged);
-            n_HostileVolumeDestroyed.OnValueChanged += (_, __) => RaiseSpecific(OnHostileVolumeDestroyedChanged);
-            n_FriendlyVolumeDestroyed.OnValueChanged+= (_, __) => RaiseSpecific(OnFriendlyVolumeDestroyedChanged);
+            n_VolumeCreated.OnValueChanged              += (_, __) => RaiseSpecific(OnVolumeCreatedChanged);
+            n_TotalVolumeDestroyed.OnValueChanged        += (_, __) => RaiseSpecific(OnTotalVolumeDestroyedChanged);
+            n_HostileVolumeDestroyed.OnValueChanged      += (_, __) => RaiseSpecific(OnHostileVolumeDestroyedChanged);
+            n_FriendlyVolumeDestroyed.OnValueChanged     += (_, __) => RaiseSpecific(OnFriendlyVolumeDestroyedChanged);
 
-            n_BlocksCreated.OnValueChanged          += (_, __) => RaiseSpecific(OnBlocksCreatedChanged);
-            n_BlocksDestroyed.OnValueChanged        += (_, __) => RaiseSpecific(OnBlocksDestroyedChanged);
-            n_BlocksRestored.OnValueChanged         += (_, __) => RaiseSpecific(OnBlocksRestoredChanged);
+            n_BlocksCreated.OnValueChanged               += (_, __) => RaiseSpecific(OnBlocksCreatedChanged);
+            n_BlocksDestroyed.OnValueChanged             += (_, __) => RaiseSpecific(OnBlocksDestroyedChanged);
+            n_BlocksRestored.OnValueChanged              += (_, __) => RaiseSpecific(OnBlocksRestoredChanged);
 
-            n_PrismStolen.OnValueChanged            += (_, __) => RaiseSpecific(OnPrismsStolenChanged);
-            n_PrismsRemaining.OnValueChanged        += (_, __) => RaiseSpecific(OnPrismsRemainingChanged);
+            n_PrismStolen.OnValueChanged                 += (_, __) => RaiseSpecific(OnPrismsStolenChanged);
+            n_PrismsRemaining.OnValueChanged             += (_, __) => RaiseSpecific(OnPrismsRemainingChanged);
 
-            n_VolumeRestored.OnValueChanged         += (_, __) => RaiseSpecific(OnVolumeRestoredChanged);
-            n_VolumeStolen.OnValueChanged           += (_, __) => RaiseSpecific(OnVolumeStolenChanged);
-            n_VolumeRemaining.OnValueChanged        += (_, __) => RaiseSpecific(OnVolumeRemainingChanged);
+            n_VolumeRestored.OnValueChanged              += (_, __) => RaiseSpecific(OnVolumeRestoredChanged);
+            n_VolumeStolen.OnValueChanged                += (_, __) => RaiseSpecific(OnVolumeStolenChanged);
+            n_VolumeRemaining.OnValueChanged             += (_, __) => RaiseSpecific(OnVolumeRemainingChanged);
 
-            n_CrystalsCollected.OnValueChanged          += (_, __) => RaiseSpecific(OnCrystalsCollectedChanged);
-            n_OmniCrystalsCollected.OnValueChanged      += (_, __) => RaiseSpecific(OnOmniCrystalsCollectedChanged);
-            n_ElementalCrystalsCollected.OnValueChanged += (_, __) => RaiseSpecific(OnElementalCrystalsCollectedChanged);
+            n_CrystalsCollected.OnValueChanged           += (_, __) => RaiseSpecific(OnCrystalsCollectedChanged);
+            n_OmniCrystalsCollected.OnValueChanged       += (_, __) => RaiseSpecific(OnOmniCrystalsCollectedChanged);
+            n_ElementalCrystalsCollected.OnValueChanged  += (_, __) => RaiseSpecific(OnElementalCrystalsCollectedChanged);
 
-            n_ChargeCrystalValue.OnValueChanged         += (_, __) => RaiseSpecific(OnChargeCrystalValueChanged);
-            n_MassCrystalValue.OnValueChanged           += (_, __) => RaiseSpecific(OnMassCrystalValueChanged);
-            n_SpaceCrystalValue.OnValueChanged          += (_, __) => RaiseSpecific(OnSpaceCrystalValueChanged);
-            n_TimeCrystalValue.OnValueChanged           += (_, __) => RaiseSpecific(OnTimeCrystalValueChanged);
+            n_ChargeCrystalValue.OnValueChanged          += (_, __) => RaiseSpecific(OnChargeCrystalValueChanged);
+            n_MassCrystalValue.OnValueChanged            += (_, __) => RaiseSpecific(OnMassCrystalValueChanged);
+            n_SpaceCrystalValue.OnValueChanged           += (_, __) => RaiseSpecific(OnSpaceCrystalValueChanged);
+            n_TimeCrystalValue.OnValueChanged            += (_, __) => RaiseSpecific(OnTimeCrystalValueChanged);
 
-            n_SkimmerShipCollisions.OnValueChanged      += (_, __) => RaiseSpecific(OnSkimmerShipCollisionsChanged);
+            n_SkimmerShipCollisions.OnValueChanged       += (_, __) => RaiseSpecific(OnSkimmerShipCollisionsChanged);
+            n_JoustCollisions.OnValueChanged             += (_, __) => RaiseSpecific(OnJoustCollisionChanged);
+            n_DogFightHits.OnValueChanged               += (_, __) => RaiseSpecific(OnDogFightHitChanged);
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, __) => RaiseSpecific(OnFullSpeedStraightAbilityActiveTimeChanged);
             n_RightStickAbilityActiveTime.OnValueChanged        += (_, __) => RaiseSpecific(OnRightStickAbilityActiveTimeChanged);
@@ -602,7 +697,6 @@ namespace CosmicShore.Game
 
         public override void OnNetworkDespawn()
         {
-            // Optional: explicit -= here if you want, but Netcode clears handlers on destroy.
         }
     }
 }

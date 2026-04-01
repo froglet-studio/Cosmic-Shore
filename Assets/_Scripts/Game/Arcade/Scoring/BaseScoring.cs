@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Core;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade.Scoring
 {
@@ -12,9 +13,11 @@ namespace CosmicShore.Game.Arcade.Scoring
         protected float scoreMultiplier;
 
         protected GameDataSO GameData;
+        protected IScoreTracker ScoreTracker;
         
-        protected BaseScoring(GameDataSO data, float scoreMultiplier = 145.65f)
+        protected BaseScoring(IScoreTracker tracker, GameDataSO data, float scoreMultiplier = 145.65f)
         {
+            ScoreTracker = tracker;
             GameData = data;
             this.scoreMultiplier = scoreMultiplier;
         }
@@ -28,7 +31,7 @@ namespace CosmicShore.Game.Arcade.Scoring
             if (GameData.TryGetRoundStats(playerName, out roundStats)) 
                 return true;
             
-            Debug.LogError($"Didn't find RoundStats for player: {playerName}");
+            CSDebug.LogError($"Didn't find RoundStats for player: {playerName}");
             return false;
         }
     }

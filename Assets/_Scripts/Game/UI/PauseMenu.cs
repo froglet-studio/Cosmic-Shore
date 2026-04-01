@@ -1,9 +1,12 @@
 using CosmicShore.App.Systems;
+using CosmicShore.App.Systems.Audio;
+using CosmicShore.App.UI.Modals;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Displays and controls toggles and buttons on the Pause Menu Panel
@@ -23,8 +26,10 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField]
         GameDataSO gameData;
         
+        [FormerlySerializedAs("canvasGroup")]
+        [SerializeField] GameObject pauseMenuPanel;
         [SerializeField]
-        CanvasGroup canvasGroup;
+        ModalWindowManager settingsModalWindowManager;
 
         GameSetting gameSetting;
 
@@ -33,7 +38,7 @@ namespace CosmicShore.App.UI.Screens
         /// </summary>
         bool wasLocalPlayerInputPausedBefore;
 
-        void Awake() => Hide();
+        //void Awake() => Hide();
         
         // Start is called before the first frame update
         void Start() => gameSetting = GameSetting.Instance;
@@ -52,13 +57,13 @@ namespace CosmicShore.App.UI.Screens
 
         public void OnClickMultiplayerResumeGameButton()
         {
-            TogglePlayerPauseWithDelay(false);
+            _ = TogglePlayerPauseWithDelay(false);
             Hide();
         }
 
         public void OnClickMultiplayerPauseButton()
         {
-            TogglePlayerPauseWithDelay(true);
+            _ = TogglePlayerPauseWithDelay(true);
             Show();
         }
         
@@ -71,7 +76,7 @@ namespace CosmicShore.App.UI.Screens
             Hide();
             
             if (!wasLocalPlayerInputPausedBefore)
-                TogglePlayerPauseWithDelay(false);
+                _ = TogglePlayerPauseWithDelay(false);
         }
 
         /// <summary>
@@ -84,23 +89,23 @@ namespace CosmicShore.App.UI.Screens
             
             wasLocalPlayerInputPausedBefore = gameData.LocalPlayer.InputStatus.Paused;
             if (!wasLocalPlayerInputPausedBefore)
-                TogglePlayerPauseWithDelay(true);
+                _ = TogglePlayerPauseWithDelay(true);
         }
 
         public void OnClickMainMenu() => _onClickToMainMenu.Raise();
 
         public void Show()
         {
-            canvasGroup.alpha = 1;
-            canvasGroup.blocksRaycasts = true;
-            canvasGroup.interactable = true;
+            pauseMenuPanel.gameObject.SetActive(true);
+            settingsModalWindowManager.ModalWindowIn();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
         }
 
         public void Hide()
         {
-            canvasGroup.alpha = 0;
-            canvasGroup.blocksRaycasts = false;
-            canvasGroup.interactable = false;
+            settingsModalWindowManager.ModalWindowOut();
+            pauseMenuPanel.gameObject.SetActive(false);
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseClose);
         }
         
         async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)

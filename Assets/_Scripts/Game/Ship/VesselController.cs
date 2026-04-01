@@ -3,6 +3,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Soap;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -37,7 +38,11 @@ namespace CosmicShore.Game
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<bool> n_IsTranslationRestricted =
             new(writePerm: NetworkVariableWritePermission.Owner);
-
+        
+        public ulong PlayerNetId { get; private set; }
+        public ulong VesselNetId => NetworkObjectId;
+        public ulong OwnerClientNetId => OwnerClientId;
+        
         public override void OnDestroy()
         {
             OnBeforeDestroyed?.Invoke();
@@ -45,6 +50,10 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
+            // Cache it to game data early, so that later,
+            // ClientInitializer can find the player and vessels with their Ids
+            gameData.Vessels.Add(this);
+            
             if (IsOwner) 
                 return;
             
@@ -73,41 +82,54 @@ namespace CosmicShore.Game
         {
             if (VesselStatus.Player != null)
             {
-                Debug.LogError("Double initialization not allowed!");
+                CSDebug.LogError("Double initialization not allowed!");
                 return;
             }
-            
+
             VesselStatus.Player = player;
             VesselStatus.VesselAnimation.Initialize(VesselStatus);
             VesselStatus.VesselPrismController.Initialize(VesselStatus);
-            VesselStatus.Customization.Initialize(VesselStatus);
-            
-            if (!VesselStatus.CameraFollowTarget) 
+
+            if (!VesselStatus.CameraFollowTarget)
                 VesselStatus.CameraFollowTarget = transform;
-            
+
             VesselStatus.ActionHandler.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.Initialize(this);
             VesselStatus.AIPilot.Initialize(this);
-            VesselStatus.VesselHUDController.Initialize(VesselStatus);
-            VesselStatus.VesselHUDController.HideHUD();
-            
-            if (VesselStatus.NearFieldSkimmer) 
+
+            var hudController = VesselStatus.VesselHUDController;
+            if (hudController != null)
+            {
+                hudController.Initialize(VesselStatus);
+                hudController.HideHUD();
+            }
+            else
+            {
+                CSDebug.LogWarning($"[VesselController] VesselHUDController is null on {name}. HUD will not function.");
+            }
+
+            if (VesselStatus.NearFieldSkimmer)
                 VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
 
-            if (VesselStatus.FarFieldSkimmer) 
+            if (VesselStatus.FarFieldSkimmer)
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
-            
+
             VesselStatus.Silhouette.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.ToggleActive(true);
-            
+
             if (player.IsLocalUser)
             {
                 VesselStatus.ActionHandler.ToggleSubscription(true);
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
-                VesselStatus.VesselHUDController.SubscribeToEvents();
-                VesselStatus.VesselHUDController.ShowHUD();
+                hudController?.SubscribeToEvents();
             }
-            
+
+            if (gameData != null)
+                ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
+            else
+                CSDebug.LogError($"[VesselController] GameDataSO is not assigned on {name}. Ship properties will not be set.");
+
+            VesselStatus.Customization.Initialize(VesselStatus);
             VesselStatus.ResetForPlay();
             OnInitialized?.Invoke();
         }
@@ -155,12 +177,6 @@ namespace CosmicShore.Game
         public virtual void SetSkimmerMaterial(Material material) =>
                 VesselStatus.SkimmerMaterial = material;
 
-        public virtual void AssignCaptain(SO_Captain captain)
-        {
-            VesselStatus.Captain = captain;
-            SetResourceLevels(captain.InitialResourceLevels);
-        }
-
         public virtual void BindElementalFloat(string name, Element element) =>
             VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
 
@@ -204,8 +220,13 @@ namespace CosmicShore.Game
             VesselStatus.ResetForPlay();
         }
 
-        public void SetPose(Pose pose) => 
-            VesselStatus.VesselTransformer.SetPose(pose);
+        public void SetPose(Pose pose)
+        {
+            if (IsSpawned)
+                SetPose_ClientRpc(pose);
+            else
+                SetPose_Local(pose);
+        }
 
         public void ChangePlayer(IPlayer player)
         {
@@ -288,6 +309,11 @@ namespace CosmicShore.Game
         void AddSlowedShipTransformToGameData_Local() =>
             gameData?.SlowedShipTransforms.Add(transform);
 
+        [ClientRpc]
+        void SetPose_ClientRpc(Pose pose) => SetPose_Local(pose);
+        
+        void SetPose_Local(Pose pose) => VesselStatus.VesselTransformer.SetPose(pose);
+        
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;

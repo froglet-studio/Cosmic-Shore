@@ -1,8 +1,11 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.App.Systems.Audio;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using CosmicShore.Game;
+using CosmicShore.Soap;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -11,13 +14,16 @@ namespace CosmicShore.Game.Projectiles
     {
         protected const float PI_OVER_TWO = Mathf.PI / 2;
 
+        [Header("Dependencies")]
+        [SerializeField] protected GameDataSO gameData;
+
         [Header("Explosion Settings")]
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
         [FormerlySerializedAs("renderer")] [SerializeField] MeshRenderer meshRenderer;
 
         protected Vector3 MaxScaleVector;
-        protected float Inertia = 70;
+        protected float Inertia = 1;
         protected float speed;
 
         protected CancellationTokenSource explosionCts;
@@ -28,15 +34,46 @@ namespace CosmicShore.Game.Projectiles
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
 
-        private void Awake()
-        { 
-            if (!meshRenderer)
-                meshRenderer = GetComponent<MeshRenderer>();
+        private ExplosionImpactor _explosionImpactor;
+        private float _colliderRadius = 0.5f; // Default sphere collider radius
+        private MaterialPropertyBlock _mpb;
+        private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
+
+        protected virtual void Awake()
+        {
+            if (!meshRenderer) meshRenderer = GetComponent<MeshRenderer>();
+            _explosionImpactor = GetComponent<ExplosionImpactor>();
+            var sphereCol = GetComponent<SphereCollider>();
+            if (sphereCol) _colliderRadius = sphereCol.radius;
+            _mpb = new MaterialPropertyBlock();
         }
-        
-        private void OnDestroy()
+
+        protected virtual void OnEnable()
+        {
+            if (gameData != null)
+            {
+                // [Visual Note] Stop CPU heavy tasks immediately on turn end
+                gameData.OnMiniGameTurnEnd.OnRaised += CancelExplosion;
+                // [Visual Note] Destroy objects only when resetting
+                gameData.OnResetForReplay.OnRaised += PerformResetCleanup;
+            }
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (gameData != null)
+            {
+                gameData.OnMiniGameTurnEnd.OnRaised -= CancelExplosion;
+                gameData.OnResetForReplay.OnRaised -= PerformResetCleanup;
+            }
+            CancelExplosion();
+        }
+
+        // Virtual: Children can override if they need to destroy spawned sub-objects (like prisms)
+        protected virtual void PerformResetCleanup()
         {
             CancelExplosion();
+            Destroy(gameObject);
         }
 
         public virtual void Initialize(InitializeStruct initStruct)
@@ -53,66 +90,77 @@ namespace CosmicShore.Game.Projectiles
             Material = initStruct.OverrideMaterial;
 
             explosionCts = new CancellationTokenSource();
+
+            // Start invisible — ExplodeAsync enables the renderer once the animation
+            // begins. Without this, the mesh is visible at prefab default scale for
+            // the entire ExplosionDelay, appearing as a full-size opaque sphere.
+            transform.localScale = Vector3.zero;
+            if (meshRenderer) meshRenderer.enabled = false;
         }
 
         public void Detonate()
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.Explosion);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 
         public void CancelExplosionAndDestroy()
         {
-            CancelExplosion();
-            // Destroy handled by derived classes too
-            Destroy(gameObject);
+            PerformResetCleanup();
         }
 
-        void CancelExplosion()
+        public void CancelExplosion()
         {
-            if (explosionCts == null)
-                return;
-
-            if (!explosionCts.IsCancellationRequested)
-                explosionCts.Cancel();
-
+            if (explosionCts == null) return;
+            if (!explosionCts.IsCancellationRequested) explosionCts.Cancel();
             explosionCts.Dispose();
             explosionCts = null;
         }
 
+        // ... [CalculateImpactVector and ExplodeAsync remain unchanged] ...
+        
         public Vector3 CalculateImpactVector(Vector3 impacteePosition)
         {
-            // Direction from explosion to impactee
             Vector3 direction = (impacteePosition - transform.position).normalized;
-
-            // Scale by explosion speed and inertia
             return direction * speed * Inertia;
         }
         
         protected virtual async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
+            // Cache impactor ref — _explosionImpactor may be null after Destroy
+            var impactor = _explosionImpactor;
             try
             {
+                // Start batch AOE processing — skips Physics OnTriggerEnter for prisms
+                impactor?.BeginBatchProcessing();
+
                 await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
-                // Explosion might already be despawned; bail early if so
                 if (!this || ct.IsCancellationRequested)
+                {
+                    impactor?.EndBatchProcessing();
                     return;
+                }
 
                 var cachedTransform = transform;
                 if (meshRenderer)
+                {
                     meshRenderer.material = Material;
+                    meshRenderer.enabled = true;
+                }
 
                 float time = 0f;
 
                 while (time < ExplosionDuration)
                 {
                     ct.ThrowIfCancellationRequested();
-
-                    // Seeing null pointers from destroyed objects here sometimes -- bail out if so
                     if (!this || cachedTransform == null)
+                    {
+                        impactor?.EndBatchProcessing();
                         return;
+                    }
 
                     time += Time.deltaTime;
                     float t = time / ExplosionDuration;
@@ -120,24 +168,49 @@ namespace CosmicShore.Game.Projectiles
 
                     cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
 
-                    if (Material != null)
-                        Material.SetFloat("_Opacity", 1 - ease);
+                    // Batch AOE damage via Burst job over cache-packed prism data
+                    // Effective radius = collider radius (local) * localScale
+                    float currentRadius = _colliderRadius * MaxScale * ease;
+                    bool shouldContinue = impactor?.ProcessBatchFrame(
+                        cachedTransform.position, currentRadius, speed, Inertia) ?? true;
+
+                    if (!shouldContinue)
+                    {
+                        // Super-shielded enemy hit — mirrors original Destroy(gameObject) in
+                        // ExecuteCommonPrismCommands. Stop explosion immediately.
+                        impactor?.EndBatchProcessing();
+                        if (this) Destroy(gameObject);
+                        return;
+                    }
+
+                    // Use MaterialPropertyBlock for per-instance opacity so multiple
+                    // concurrent explosions sharing the same Material don't fight over
+                    // the shared material's _Opacity value (which caused flickering).
+                    if (meshRenderer)
+                    {
+                        meshRenderer.GetPropertyBlock(_mpb);
+                        _mpb.SetFloat(OpacityID, 1 - ease);
+                        meshRenderer.SetPropertyBlock(_mpb);
+                    }
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
-                if (this)
-                    Destroy(gameObject);
+                impactor?.EndBatchProcessing();
+                if (this) Destroy(gameObject);
             }
-            catch (OperationCanceledException) { }
-        }
-        
-        private void OnValidate()
-        {
-            meshRenderer = GetComponent<MeshRenderer>();
-            if (!meshRenderer)
+            catch (OperationCanceledException)
             {
-                Debug.LogError("No mesh renderer found!");
+                impactor?.EndBatchProcessing();
+            }
+            catch (System.Exception e)
+            {
+                // Safety net: any unexpected exception (e.g. NativeList overflow) must still
+                // clean up batch processing and destroy the explosion — otherwise it stays
+                // stuck at max scale with _useBatchProcessing permanently true.
+                Debug.LogException(e);
+                impactor?.EndBatchProcessing();
+                if (this) Destroy(gameObject);
             }
         }
 

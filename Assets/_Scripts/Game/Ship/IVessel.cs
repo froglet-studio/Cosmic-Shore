@@ -24,6 +24,18 @@ namespace CosmicShore.Game
         /// In singleplayer mode, always false
         /// </summary>
         bool IsNetworkClient { get; }
+        /// <summary>
+        /// In multiplayer session, this stores the network object id.
+        /// </summary>
+        ulong PlayerNetId { get; }
+        /// <summary>
+        /// In multiplayer session, this stores the vessel's network object id.
+        /// </summary>
+        ulong VesselNetId { get; }
+        /// <summary>
+        /// Id of the owner client of this player in multiplayer
+        /// </summary>
+        ulong OwnerClientNetId { get; }
         void Initialize(IPlayer player);
         void PerformShipControllerActions(InputEvents @event);
         void StopShipControllerActions(InputEvents @event);
@@ -37,7 +49,6 @@ namespace CosmicShore.Game
         void SetAOEExplosionMaterial(Material material);
         void SetAOEConicExplosionMaterial(Material material);
         void SetSkimmerMaterial(Material material);
-        void AssignCaptain(SO_Captain captain);
         void BindElementalFloat(string name, Element element);
         // void PerformButtonActions(int buttonNumber);
         void ToggleAIPilot(bool toggle);

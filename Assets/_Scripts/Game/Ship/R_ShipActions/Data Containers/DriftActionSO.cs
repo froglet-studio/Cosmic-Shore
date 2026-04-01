@@ -1,26 +1,40 @@
-﻿using CosmicShore.Game;
+﻿using CosmicShore.App.Systems.Audio;
+using CosmicShore.Game;
+using Obvious.Soap;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "DriftAction", menuName = "ScriptableObjects/Vessel Actions/Drift")]
 public class DriftActionSO : ShipActionSO
 {
-    const float Mult = 1.5f;
+    [SerializeField] float Mult = 1.5f;
+    [SerializeField] float driftDamping = 0f;
+    [SerializeField] bool isSharpDrifting;
+
+    [SerializeField] ScriptableEventNoParam OnDriftingStarted;
+    [SerializeField] ScriptableEventNoParam OnDoubleDriftingStarted;
+    [SerializeField] ScriptableEventNoParam OnDriftEnded;
 
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
         var t = vesselStatus.VesselTransformer;
-        t.PitchScaler *= Mult;
-        t.YawScaler   *= Mult;
-        t.RollScaler  *= Mult;
+        t.BeginDrift(Mult, driftDamping, isSharpDrifting);
         vesselStatus.IsDrifting = true;
+
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
+
+        if (isSharpDrifting)
+            OnDoubleDriftingStarted.Raise();
+        else
+            OnDriftingStarted.Raise();
     }
 
     public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
         var t = vesselStatus.VesselTransformer;
-        t.PitchScaler /= Mult;
-        t.YawScaler   /= Mult;
-        t.RollScaler  /= Mult;
-        vesselStatus.IsDrifting = false;
+        t.EndDrift(isSharpDrifting);
+        vesselStatus.IsDrifting = t.IsDriftActive;
+
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
+        OnDriftEnded.Raise();
     }
 }

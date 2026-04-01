@@ -30,7 +30,7 @@ public class BoidSImulationController : MonoBehaviour
     GameDataSO gameData;
     
     [SerializeField]
-    CellDataSO cellData;
+    CellRuntimeDataSO cellData;
     
     public ComputeShader boidSimulationShader;
     public Prism boidPrefab;
@@ -64,7 +64,7 @@ public class BoidSImulationController : MonoBehaviour
         Prism[] trailBlocks = FindObjectsByType<Prism>(FindObjectsSortMode.None);
         foreach (var block in trailBlocks)
         {
-            if (!block.CompareTag("Fauna")) // Assuming "Fauna" is the tag for boid trail blocks
+            if (!block.CompareTag("FaunaPrefab")) // Assuming "FaunaPrefab" is the tag for boid trail blocks
             {
                 Entity blockEntity = new Entity
                 {
@@ -74,7 +74,7 @@ public class BoidSImulationController : MonoBehaviour
                     goalDirection = Vector3.zero,
                     team = (int)block.Domain
                 };
-                Debug.Log($"team {(int)block.Domain}");
+                CSDebug.Log($"team {(int)block.Domain}");
 
                 // Add blockEntity to the entities list
                 entities.Add(blockEntity);
@@ -93,7 +93,7 @@ public class BoidSImulationController : MonoBehaviour
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-            Debug.Log("Instantiating boid number: " + i);
+            CSDebug.Log("Instantiating boid number: " + i);
             Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
             newBoid.transform.SetParent(transform);
             newBoid.Initialize();
@@ -143,7 +143,7 @@ public class BoidSImulationController : MonoBehaviour
 
             if (entity.position == new Vector3(9999.0f, 9999.0f, 9999.0f))
             {
-                Debug.LogError("NaN detected by shader for entity at index: " + i);
+                CSDebug.LogError("NaN detected by shader for entity at index: " + i);
             }
 
             if (entity.type == Entity.ENTITY_TYPE_BOID)
@@ -176,7 +176,7 @@ public class BoidSImulationController : MonoBehaviour
                     Entity entity = entityArray[i];
                     entity.teamWeights = currentWeights;
                     entityArray[i] = entity;
-                    Debug.Log($"BoidManager.entityArray[{i}].position {entityArray[i].position}");
+                    CSDebug.Log($"BoidManager.entityArray[{i}].position {entityArray[i].position}");
                 }
             }
 
@@ -202,7 +202,7 @@ public class BoidSImulationController : MonoBehaviour
     private Prism FindBlockByPosition(Vector3 position)
     {
         // Get the node that contains the position
-        Cell containingNode = CellControlManager.Instance.GetCellByPosition(position);
+        Cell containingNode = cellData.Cell;
 
         // If there's no node that contains the position, return null
         if (containingNode == null)
@@ -217,7 +217,7 @@ public class BoidSImulationController : MonoBehaviour
 
         foreach (var item in cellItems)
         {
-            if (item.GetComponent<Prism>() && !item.CompareTag("Fauna"))
+            if (item.GetComponent<Prism>() && !item.CompareTag("FaunaPrefab"))
             {
                 float distance = Vector3.Distance(position, item.transform.position);
                 if (distance < closestDistance)

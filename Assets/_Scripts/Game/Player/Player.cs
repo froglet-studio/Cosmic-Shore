@@ -12,22 +12,38 @@ using UnityEngine.Serialization;
 namespace CosmicShore.Game
 {
     public class Player : NetworkBehaviour, IPlayer
-    { 
+    {
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
-        
-        public static List<IPlayer> NppList { get; } = new();
         
         public NetworkVariable<VesselClassType> NetDefaultVesselType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Domains> NetDomain = new();
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<ulong> NetVesselId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        
+        public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         public Domains Domain { get; private set; }
+
+        /// <summary>
+        /// Changes the player's domain at runtime. Used by shape mode to match
+        /// the player's prism color to the collided shape's domain.
+        /// </summary>
+        public void SetDomain(Domains newDomain)
+        {
+            Domain = newDomain;
+        }
         public string Name { get; private set; }
+        public int AvatarId { get; private set; }
         public string PlayerUUID => Name;
-        public ulong PlayerNetId { get; private set; }
+        public ulong PlayerNetId => NetworkObjectId;
+        /// <summary>
+        /// Remarks, this VesselNetId will be set by server
+        /// through a network variable during initialization
+        /// of vessel and player.
+        /// </summary>
+        public ulong VesselNetId { get; private set; }
+        public ulong OwnerClientNetId => OwnerClientId;
         public IVessel Vessel { get; private set; }
         public bool IsActive { get; private set; }
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
@@ -71,6 +87,7 @@ namespace CosmicShore.Game
             IsInitializedAsAI = InitializeData.IsAI;
             Domain = InitializeData.domain;
             Name = InitializeData.PlayerName;
+            AvatarId = InitializeData.AvatarId;
             InputController.Initialize();
             ToggleInputPause(true);
             Vessel = vessel;
@@ -86,40 +103,65 @@ namespace CosmicShore.Game
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
             Name = NetName.Value.ToString();
+            AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
-            if (!IsServer) 
+            if (!IsServer)
                 return;
-            
+
             RoundStats.Name = Name;
             RoundStats.Domain = Domain;
-            
+
             SetGameObjectName();
         }
-        
+
         public override void OnNetworkSpawn()
         {
-            NppList.Add(this);
-            
+            // Cache it to game data early, so that later,
+            // ClientInitializer can find the player and vessels with their Ids
+            gameData.Players.Add(this);
+
+            VesselNetId = NetVesselId.Value;
+
             NetDomain.OnValueChanged += OnNetDomainChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
+            NetVesselId.OnValueChanged += OnNetVesselIdChanged;
+            NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
 
-            PlayerNetId = NetworkObjectId;
-
-            if (!IsLocalUser) 
+            if (!IsLocalUser)
                 return;
-            
+
             NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+
+            // Resolve display name & avatar ID with a 3-tier fallback:
+            // 1. PlayerDataService (live profile from Cloud Save)
+            // 2. GameDataSO cached values (set by PlayerDataService.HandleProfileChanged earlier)
+            // 3. UGS PlayerName with suffix stripped (last resort)
+            var profileService = App.Profile.PlayerDataService.Instance;
+            if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
+            {
+                NetName.Value = profileService.CurrentProfile.displayName;
+                NetAvatarId.Value = profileService.CurrentProfile.avatarId;
+            }
+            else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
+            {
+                NetName.Value = gameData.LocalPlayerDisplayName;
+                NetAvatarId.Value = gameData.LocalPlayerAvatarId;
+            }
+            else
+            {
+                NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
+            }
+
             InputController.Initialize();
-            NetName.Value = AuthenticationService.Instance.PlayerName;
         }
         
         public override void OnNetworkDespawn()
         {
-            NppList.Remove(this);
-            
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
+            NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
+            NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
         }
 
 
@@ -188,6 +230,12 @@ namespace CosmicShore.Game
         
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>
             Name = newValue.ToString();
+
+        void OnNetVesselIdChanged(ulong previousValue, ulong newValue) =>
+            VesselNetId = newValue;
+
+        void OnNetAvatarIdChanged(int previousValue, int newValue) =>
+            AvatarId = newValue;
         
         void SetGameObjectName()
         {
@@ -197,6 +245,17 @@ namespace CosmicShore.Game
             else
                 playerName = "Player_" + OwnerClientId;
             gameObject.name = playerName;
+        }
+
+        /// <summary>
+        /// Strips the "#XXXX" suffix that Unity Authentication appends to PlayerName.
+        /// e.g. "MyName#1234" → "MyName"
+        /// </summary>
+        static string StripPlayerNameSuffix(string ugsName)
+        {
+            if (string.IsNullOrEmpty(ugsName)) return ugsName;
+            int hashIndex = ugsName.LastIndexOf('#');
+            return hashIndex > 0 ? ugsName.Substring(0, hashIndex) : ugsName;
         }
     }
 }

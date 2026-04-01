@@ -9,6 +9,7 @@ namespace CosmicShore.Game
         protected virtual bool isInitialized => true;
         
         public Transform Transform => transform;
+        public abstract Domains OwnDomain { get; }
         
         protected abstract void AcceptImpactee(IImpactor impactee);
 

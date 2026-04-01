@@ -106,6 +106,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cycleSpeed: 1
   timer: 0
+  collectDuration: 0.35
+  shrinkDuration: 0.25
+  shrinkCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &6588436222817790470
 GameObject:
   m_ObjectHideFlags: 0
@@ -185,7 +211,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ownDomain: -1
   ItemType: 1
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   crystalProperties:
     crystal: {fileID: 6588436222817790495}
     fuelAmount: 0.01

@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 403a9ec95489766418f75b3a7c2eb21c, type: 3}
+  m_Name: OriginalMaterialSet
+  m_EditorClassIdentifier: 
+  ShipMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  BlockMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
+  TransparentBlockMaterial: {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214,
+    type: 2}
+  CrystalMaterial: {fileID: 2100000, guid: 20e4974a2de18e44880740ec87d82e44, type: 2}
+  CrystalMaterial1: {fileID: 2100000, guid: 2438fa6e25f42f04f9cff49f3f505acc, type: 2}
+  CrystalMaterial2: {fileID: 2100000, guid: 0605bc709a4621e48984803a3ebca8a3, type: 2}
+  CrystalMaterial3: {fileID: 2100000, guid: ef54fe02f6405e64aa62634bbc9ddefa, type: 2}
+  ExplodingBlockMaterial: {fileID: 2100000, guid: 0840df18df0bd8646b11c95e1861492d,
+    type: 2}
+  ShieldedBlockMaterial: {fileID: 2100000, guid: d8eecfb8be075a44991cdede59d8e0f1,
+    type: 2}
+  TransparentShieldedBlockMaterial: {fileID: 2100000, guid: 004ebae5058bcae4bb3ff63564e8622f,
+    type: 2}
+  SuperShieldedBlockMaterial: {fileID: 2100000, guid: 5ac89be3c0ba79946bc5a2a7ebace90d,
+    type: 2}
+  TransparentSuperShieldedBlockMaterial: {fileID: 2100000, guid: dd04726b463fb394c9ef8041ce328084,
+    type: 2}
+  DangerousBlockMaterial: {fileID: 2100000, guid: abdd319ac0ecd4248b35a706fb0839d9,
+    type: 2}
+  TransparentDangerousBlockMaterial: {fileID: 2100000, guid: e865a7a2f36fe74488497b684f7fc901,
+    type: 2}
+  BlockSilhouettePrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
+    type: 3}
+  AOEExplosionMaterial: {fileID: 2100000, guid: fd4788fd12c71f64185794559710e4ea,
+    type: 2}
+  AOEConicExplosionMaterial: {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6,
+    type: 2}
+  SpikeMaterial: {fileID: 2100000, guid: 77e1afb46629cc7469cfccbdae90a628, type: 2}
+  SkimmerMaterial: {fileID: 2100000, guid: bf677f297ed1bf444a620c193162a8cd, type: 2}

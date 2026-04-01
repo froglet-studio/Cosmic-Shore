@@ -1,8 +1,9 @@
 using System;
-using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.App.Systems.Audio;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Soap;
 using Obvious.Soap;
@@ -14,50 +15,103 @@ namespace CosmicShore
 {
     public abstract class LifeForm : MonoBehaviour, ITeamAssignable
     {
-        [SerializeField]
-        protected CellDataSO cellData;
-        
-        [FormerlySerializedAs("healthBlock")] [SerializeField] protected HealthPrism healthPrism;
+        [SerializeField] protected GameDataSO gameData;
+        [SerializeField] protected CellRuntimeDataSO cellData;
+        [FormerlySerializedAs("healthBlock")]
+        [SerializeField] protected HealthPrism healthPrism;
         [SerializeField] protected Spindle spindle;
         [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
+        [FormerlySerializedAs("Team")]
+        public Domains domain;
 
-        [FormerlySerializedAs("Team")] public Domains domain;
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
         protected Crystal crystal;
         protected Cell cell;
+
         bool mature = false;
         bool dying = false;
+        bool isCleaningUp = false;
+        
         HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
+
+        [SerializeField] ScriptableEventInt onLifeFormCreated;
+        [SerializeField] ScriptableEventInt onLifeFormDestroyed;
+        public static event Action<string, int> OnLifeFormDeath;
+        [SerializeField] private bool autoInitialize = true;
+        private bool initialized;
+
+        protected virtual void OnEnable()
+        {
+            if (gameData != null)
+                gameData.OnShowGameEndScreen.OnRaised += HandleTurnEnded;
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (gameData != null)
+                gameData.OnShowGameEndScreen.OnRaised -= HandleTurnEnded;
+        }
         
-        [SerializeField]
-        ScriptableEventInt onLifeFormCreated;
-        
-        [SerializeField]
-        ScriptableEventInt onLifeFormDestroyed;
+        protected virtual void Start()
+        {
+            if (!autoInitialize || initialized) return;
+            if (!cell)
+                cell = cellData.Cell;
+            Initialize(cell);
+        }
 
         public virtual void Initialize(Cell cell)
         {
-            if (shieldPeriod > 0) StartCoroutine(ShieldRegen());
+            if (initialized) return;
+            initialized = true;
+
+            if (shieldPeriod > 0)
+                StartCoroutine(ShieldRegen());
+
             crystal = GetComponentInChildren<Crystal>();
-            
             this.cell = cell;
-            // StatsManager.Instance.LifeformCreated(cell.ID);
-            onLifeFormCreated?.Raise(cell.ID);
+
+            BindEmbeddedParts();
+
+            if (cell != null)
+                onLifeFormCreated?.Raise(cell.ID);
+        }
+
+        private void BindEmbeddedParts()
+        {
+            var embeddedSpindles = GetComponentsInChildren<Spindle>(true);
+            foreach (var sp in embeddedSpindles)
+            {
+                if (!sp) continue;
+                AddSpindle(sp);
+            }
+
+            var embeddedHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
+            foreach (var hp in embeddedHealthPrisms)
+            {
+                if (!hp) continue;
+                hp.LifeForm = this;
+                hp.ChangeTeam(domain);
+                hp.Initialize("FaunaPrefab");
+                AddHealthBlock(hp); // [Visual Note] Ensure we explicitly add it to tracking
+            }
         }
 
         public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
+            if (!healthPrism) return;
             healthBlocks.Add(healthPrism);
             healthPrism.ChangeTeam(domain);
             healthPrism.LifeForm = this;
             healthPrism.ownerID = $"{this} + {healthPrism} + {healthBlocks.Count}";
             CheckIfMature();
         }
-
+        
         public void AddSpindle(Spindle spindle)
         {
+            if (!spindle) return;
             spindles.Add(spindle);
             spindle.LifeForm = this;
         }
@@ -71,79 +125,126 @@ namespace CosmicShore
 
         public virtual void RemoveSpindle(Spindle spindle)
         {
+            if (!spindle) return;
             spindles.Remove(spindle);
-        }
-
-        public virtual void RemoveHealthBlock(HealthPrism healthPrism)
-        { 
-            healthBlocks.Remove(healthPrism);
+            CleanupDeadRefs();
             CheckIfDead();
         }
 
-        public void CheckIfDead()
+        public virtual void RemoveHealthBlock(HealthPrism healthPrism, string killerName = "")
         {
-            if (!dying && (spindles.Count == 0 || (mature && healthBlocks.Count <= minHealthBlocks)))
-            {
-                dying = true;
-                Die();
-            }
+            if (!healthPrism) return;
+    
+            healthBlocks.Remove(healthPrism);
+            CleanupDeadRefs();
+            CheckIfDead(killerName);
+        }
+        
+        void CleanupDeadRefs()
+        {
+            spindles.RemoveWhere(s => !s);
+            healthBlocks.RemoveWhere(h => !h);
         }
 
-        void  CheckIfMature()
+        public void CheckIfDead(string killerName = "")
+        {
+            // [Visual Note] Safety: If we are already destroyed/cleaning up, don't run logic
+            if (dying) return;
+
+            CleanupDeadRefs();
+
+            if(healthBlocks.Count <= minHealthBlocks)
+            {
+                dying = true;
+                Die(killerName);
+                return;
+            }
+
+            if (spindles.Count != 0) return;
+            dying = true;
+            Die();
+        }
+
+        void CheckIfMature()
         {
             if (healthBlocks.Count >= healthBlocksForMaturity)
                 mature = true;
         }
 
-        protected virtual void Die()
+        protected virtual void Die(string killerName = "")
         {
-            crystal.ActivateCrystal();
-            foreach (HealthPrism healthBlock in healthBlocks.ToArray())
+            if (isCleaningUp) return;
+
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CreatureDeath);
+
+            if (crystal && crystal.gameObject.activeInHierarchy && !isCleaningUp)
+                crystal.ActivateCrystal();
+
+            int cellId = cell ? cell.ID : -1;
+
+            if (!string.IsNullOrEmpty(killerName))
+                OnLifeFormDeath?.Invoke(killerName, cellId);
+
+            foreach (var healthBlock in healthBlocks.ToArray())
             {
-                Debug.LogWarning("Post death health block created!. Should not happen!");
+                if (!healthBlock) continue;
                 healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
             }
+
+            var allSpindles = GetComponentsInChildren<Spindle>(true);
+            foreach (var sp in allSpindles)
+            {
+                if (sp) sp.ForceWither();
+            }
+            if (cell)
+            {
+                cell.UnregisterSpawnedObject(gameObject);
+            }
             StopAllCoroutines();
-            StartCoroutine(DieCoroutine());
-            // StatsManager.Instance.LifeformDestroyed(cell.ID);
-            onLifeFormDestroyed.Raise(cell.ID);
+            if (gameObject.activeInHierarchy)
+                StartCoroutine(DieCoroutine(cellId));
+            else if (!isCleaningUp)
+                Destroy(gameObject); // Instant destroy if inactive
         }
 
-        private IEnumerator DieCoroutine()
+        private IEnumerator DieCoroutine(int cellId)
         {
-            while (spindles.Count > 0)
+            while (true)
             {
+                CleanupDeadRefs();
+                if (spindles.Count == 0) break;
                 yield return null;
             }
-            Destroy(gameObject);
+            
+            if(!isCleaningUp)
+            {
+                // [Visual Note] Use the cached ID, don't access cell.ID here as cell might be dead by now
+                onLifeFormDestroyed?.Raise(cellId);
+                Destroy(gameObject);
+            }
         }
-
-        public GameObject GetGameObject()
-        {
-            return gameObject;
-        }
+        
+        public GameObject GetGameObject() => gameObject;
 
         public void SetTeam(Domains domain)
         {
             this.domain = domain;
+            var allHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
+            foreach (var hp in allHealthPrisms)
+                if (hp) hp.ChangeTeam(domain);
         }
 
         IEnumerator ShieldRegen()
         {
             while (shieldPeriod > 0)
             {
-                // Create a snapshot of the current health blocks
                 List<HealthPrism> currentBlocks = new List<HealthPrism>(healthBlocks);
-
                 if (currentBlocks.Count > 0)
                 {
                     foreach (HealthPrism healthBlock in currentBlocks)
                     {
-                        // Check if the block still exists in the main list
-                        if (healthBlocks.Contains(healthBlock))
-                        {
+                        if (healthBlocks.Contains(healthBlock) && healthBlock)
                             healthBlock.ActivateShield();
-                        }
                         yield return new WaitForSeconds(shieldPeriod);
                     }
                 }
@@ -152,6 +253,14 @@ namespace CosmicShore
                     yield return new WaitForSeconds(shieldPeriod);
                 }
             }
+        }
+        
+        protected virtual void HandleTurnEnded()
+        {
+            isCleaningUp = true;
+            StopAllCoroutines();
+            // [Visual Note] Don't trigger death logic, just vanish
+            if(gameObject) Destroy(gameObject);
         }
     }
 }

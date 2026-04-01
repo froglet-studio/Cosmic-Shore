@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -71,20 +72,8 @@ namespace CosmicShore.Game.Arcade
             bool removed = gameData.RemovePlayerData(playerName);
             if (removed)
             {
-                Debug.Log($"[Freestyle][Client] Removed player '{playerName}'.");
+                CSDebug.Log($"[Freestyle][Client] Removed player '{playerName}'.");
             }
-        }
-        
-        protected override void SetupNewRound()
-        {
-            SetupNewRound_ClientRpc();
-        }
-        
-        [ClientRpc]
-        void SetupNewRound_ClientRpc()
-        {
-            // RaiseToggleReadyButtonEvent(true);
-            base.SetupNewRound();
         }
     }
 }

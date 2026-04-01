@@ -9,20 +9,12 @@ namespace CosmicShore.Game.Arcade
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-
-            if (!IsServer)
-                return;
-            
             SubscribeToEvents();
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-
-            if (!IsServer)
-                return;
-            
             UnsubscribeFromEvents();
         }
 

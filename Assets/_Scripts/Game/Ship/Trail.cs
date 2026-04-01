@@ -1,10 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
+    [System.Serializable]
     public class Trail
     {
+        // [Fix] Added this field so Prism.cs can access/clear the visual line
+        public TrailRenderer TrailRenderer;
+
         bool isLoop;
         public List<Prism> TrailList { get; }
         Dictionary<Prism, ushort> trailBlockIndices;
@@ -18,30 +23,37 @@ namespace CosmicShore.Core
 
         public void Add(Prism block)
         {
+            if (trailBlockIndices.ContainsKey(block))
+            {
+                CSDebug.LogWarning($"[Trail] Attempted to add duplicate block {block.name}. Ignoring.");
+                return;
+            }
             trailBlockIndices.Add(block, (ushort)TrailList.Count);
             TrailList.Add(block);
-            block.prismProperties.Index = (ushort) trailBlockIndices.Count;
+            
+            // Note: If you need to access prismProperties, ensure it's initialized on the block
+            // block.prismProperties.Index = (ushort) trailBlockIndices.Count;
         }
 
         public void Clear()
         {
             TrailList.Clear();
             trailBlockIndices.Clear();
+            
+            // [Fix] Clear visual trail when logical trail clears
+            if (TrailRenderer) TrailRenderer.Clear();
         }
 
         public int GetBlockIndex(Prism block)
         {
-            return trailBlockIndices[block];
+            if (!block || !trailBlockIndices.TryGetValue(block, out var index)) return -1;
+            return index;
         }
 
         /// <summary>
         /// Look Ahead
         /// Looking ahead of the trail
-        /// // TODO: Could use some generalized methods because Look Ahead logically similar to Project method
-        /// 
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="lerp"></param>
         public List<Prism> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
         {
             var incrementor = (int)direction;
@@ -79,7 +91,6 @@ namespace CosmicShore.Core
         
         /// <summary>
         /// Project on Trail
-        /// // TODO: Please give a more descriptive name to the method if possible
         /// </summary>
         /// <param name="startIndex"></param>
         /// <param name="initialLerp">Percent progress between current block and next block along direction</param>
