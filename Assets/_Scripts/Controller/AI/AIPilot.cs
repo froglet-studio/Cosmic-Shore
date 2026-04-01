@@ -147,29 +147,42 @@ namespace CosmicShore.Gameplay
             // Guard against early calls before vessel is assigned
             if (vessel == null || VesselStatus == null) return;
 
-            var cellItems = cellData.CellItems;
-            if (cellItems == null || cellItems.Count == 0)
+            // Try CellItems first (populated by CrystalManager.AddCrystalToList)
+            if (TryFindClosestTargetInList(cellData.CellItems, out Vector3 targetPos))
             {
-                // No items — fall back to Cell position if available
-                if (cellData.Cell)
-                    _targetPosition = cellData.Cell.transform.position;
+                _targetPosition = targetPos;
                 return;
             }
+
+            // Fallback: check Crystals list directly (same data, different list reference)
+            if (TryFindClosestCrystal(cellData.Crystals, out targetPos))
+            {
+                _targetPosition = targetPos;
+                return;
+            }
+
+            // Last resort: target cell center if available
+            if (cellData.Cell)
+                _targetPosition = cellData.Cell.transform.position;
+        }
+
+        bool TryFindClosestTargetInList(System.Collections.Generic.List<CellItem> items, out Vector3 position)
+        {
+            position = Vector3.zero;
+            if (items == null || items.Count == 0) return false;
 
             float minSqDistance = Mathf.Infinity;
             CellItem closestItem = null;
 
-            foreach (var item in cellItems)
+            foreach (var item in items)
             {
                 if (item == null) continue;
 
-                // Debuffs are disguised as desireable to the other team
-                // So, if it's good, or if it's bad but made by another team, go for it
+                // Skip debuffs from own domain
                 if (item.ItemType != ItemType.Buff &&
                     (item.ItemType != ItemType.Debuff || item.ownDomain == VesselStatus.Domain)) continue;
 
-                // Skip buff items that belong to another player's domain (e.g. domain crystals in HexRace).
-                // Only target items with no domain or matching our own domain.
+                // Skip buff items from another player's domain (e.g. domain crystals in HexRace)
                 if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
                     continue;
 
@@ -181,10 +194,38 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (closestItem)
-                _targetPosition = closestItem.transform.position;
-            else if (cellData.Cell)
-                _targetPosition = cellData.Cell.transform.position;
+            if (!closestItem) return false;
+            position = closestItem.transform.position;
+            return true;
+        }
+
+        bool TryFindClosestCrystal(System.Collections.Generic.List<Crystal> crystals, out Vector3 position)
+        {
+            position = Vector3.zero;
+            if (crystals == null || crystals.Count == 0) return false;
+
+            float minSqDistance = Mathf.Infinity;
+            Crystal closest = null;
+
+            foreach (var crystal in crystals)
+            {
+                if (crystal == null) continue;
+
+                // Skip crystals from another domain (allow None and own domain)
+                if (crystal.ownDomain != Domains.None && crystal.ownDomain != VesselStatus.Domain)
+                    continue;
+
+                var sqDistance = Vector3.SqrMagnitude(crystal.transform.position - transform.position);
+                if (sqDistance < minSqDistance)
+                {
+                    closest = crystal;
+                    minSqDistance = sqDistance;
+                }
+            }
+
+            if (!closest) return false;
+            position = closest.transform.position;
+            return true;
         }
 
         IEnumerator UpdatePlayerTarget()
@@ -284,6 +325,12 @@ namespace CosmicShore.Gameplay
 
             if (VesselStatus.IsStationary)
                 return;
+
+            // If target is still at origin, try to pick up crystals directly.
+            // This covers cases where the OnCellItemsUpdated event fired before
+            // the pilot was ready, or the event subscription didn't connect.
+            if (_targetPosition == Vector3.zero)
+                UpdateCellContent();
 
             _distance = _targetPosition - transform.position;
             Vector3 desiredDirection = _distance.normalized;
