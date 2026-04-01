@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
         {
             var shipStatus = vesselImpactee.Vessel.VesselStatus;
 
-            if (!Crystal.CanBeCollected(shipStatus.Domain))
+            if (onlyAllowOwnDomainImpactor && !Crystal.CanBeCollected(shipStatus.Domain))
                 return;
 
             OnCrystalCollected?.Raise(

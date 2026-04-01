@@ -40,9 +40,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected bool allowVesselImpactEffect = true;
         [SerializeField] bool allowRespawnOnImpact;
 
-        [Tooltip("When true, any vessel can collect this crystal regardless of domain (used for Menu_Main).")]
-        [SerializeField] bool collectableByAnyDomain;
-
         [Header("Data Containers")]
         [SerializeField] protected ThemeManagerDataContainerSO _themeManagerData;
 
@@ -61,7 +58,7 @@ namespace CosmicShore.Gameplay
 
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
         
-        public bool CanBeCollected(Domains shipDomain) => collectableByAnyDomain || ownDomain == Domains.None || ownDomain == shipDomain;
+        public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
         public struct ExplodeParams
         {
