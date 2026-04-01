@@ -60,6 +60,10 @@ namespace CosmicShore.Gameplay
         [Header("Targeting")]
         [Tooltip("When true, AI targets enemy players instead of crystals/items (used for Joust)")]
         [SerializeField] bool seekPlayers;
+
+        [Tooltip("When true, AI chases buff items regardless of their domain (used for Menu_Main where all vessels chase Jade crystals).")]
+        [SerializeField] bool ignoreItemDomainFilter;
+        public bool IgnoreItemDomainFilter { get => ignoreItemDomainFilter; set => ignoreItemDomainFilter = value; }
         [Inject] GameDataSO gameData;
         [SerializeField] float playerSeekUpdateInterval = 0.5f;
 
@@ -163,7 +167,9 @@ namespace CosmicShore.Gameplay
 
                 // Skip buff items that belong to another player's domain (e.g. domain crystals in HexRace).
                 // Only target items with no domain or matching our own domain.
-                if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
+                // When ignoreItemDomainFilter is true (e.g. Menu_Main), chase any buff regardless of domain.
+                if (!ignoreItemDomainFilter &&
+                    item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
                     continue;
 
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);

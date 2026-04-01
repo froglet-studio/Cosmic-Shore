@@ -208,6 +208,7 @@ namespace CosmicShore.Gameplay
 
             player.StartPlayer();
             player.Vessel.ToggleAIPilot(true);
+            player.Vessel.VesselStatus.AIPilot.IgnoreItemDomainFilter = true;
             player.InputController.SetPause(true);
 
             // Camera setup is handled by MainMenuController.HandleMenuReady()

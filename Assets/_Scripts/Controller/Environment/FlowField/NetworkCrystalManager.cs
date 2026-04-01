@@ -162,9 +162,9 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Slots.Count; i++)
             {
-                var domain = Domains.None;
-                if (i < gameData.Players.Count)
-                    domain = gameData.Players[i].Domain;
+                var domain = OverrideCrystalDomain != Domains.None
+                    ? OverrideCrystalDomain
+                    : (i < gameData.Players.Count ? gameData.Players[i].Domain : Domains.None);
 
                 // Write position + domain atomically in a single struct.
                 // This guarantees the OnSlotsChanged callback on both server
@@ -195,9 +195,9 @@ namespace CosmicShore.Gameplay
             {
                 if (n_Slots[i].IsEmpty)
                 {
-                    var domain = Domains.None;
-                    if (i < gameData.Players.Count)
-                        domain = gameData.Players[i].Domain;
+                    var domain = OverrideCrystalDomain != Domains.None
+                        ? OverrideCrystalDomain
+                        : (i < gameData.Players.Count ? gameData.Players[i].Domain : Domains.None);
 
                     n_Slots[i] = new CrystalSlotData
                     {

@@ -45,8 +45,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
         [SerializeField] private bool spawnCrystalWithPlayerDomain;
+
+        [Tooltip("When set to a value other than None, all crystals spawn with this domain regardless of player domains.")]
+        [SerializeField] private Domains overrideCrystalDomain = Domains.None;
+
         [SerializeField] private int extraCrystalsToSpawnBeyondPlayerCount = 0;
         
+        protected Domains OverrideCrystalDomain => overrideCrystalDomain;
+
         // ---------------- Runtime State ----------------
 
         // Tracks the last spawn position per crystal id (used to keep respawns away from their last position).
@@ -88,7 +94,9 @@ namespace CosmicShore.Gameplay
         protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos)
         {
             var domain = Domains.None;
-            if (spawnCrystalWithPlayerDomain && crystalId - 1 < gameData.Players.Count)
+            if (overrideCrystalDomain != Domains.None)
+                domain = overrideCrystalDomain;
+            else if (spawnCrystalWithPlayerDomain && crystalId - 1 < gameData.Players.Count)
                 domain = gameData.Players[crystalId - 1].Domain;
 
             return SpawnWithDomain(crystalId, spawnPos, domain);
