@@ -66,6 +66,12 @@ namespace CosmicShore.UI
         void UpdateCardView()
         {
             SO_ArcadeGame game = AllGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
+            if (game == null)
+            {
+                Debug.LogWarning($"GameCard: No SO_ArcadeGame found for mode {gameMode} on {gameObject.name}");
+                return;
+            }
+
             GameTitle.text = game.DisplayName;
             BackgroundImage.sprite = game.CardBackground;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
@@ -76,7 +82,6 @@ namespace CosmicShore.UI
             {
                 GetComponent<Button>().onClick.AddListener(delegate { FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType); });
             }
-
         }
 
         public void ToggleFavorite()
