@@ -71,6 +71,15 @@ namespace CosmicShore.Utility
         public int RequestedAIBackfillCount;
 
         /// <summary>
+        /// Number of teams configured by the host (1-3).
+        /// 1 = all players on same team, 2 = Jade + Ruby, 3 = Jade + Ruby + Gold.
+        /// Used by BuildTeamCounts() to limit available teams and by AI spawning
+        /// to assign AI to the correct teams.
+        /// Default is 3 for backward compatibility.
+        /// </summary>
+        public int RequestedTeamCount = 3;
+
+        /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
         /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
         /// and ServerPlayerVesselInitializerWithAI see correct values.
@@ -208,11 +217,11 @@ namespace CosmicShore.Utility
             _playerSpawnPoseList.Clear();
             LocalPlayer = null;
             LocalRoundStats = null;
-            // Note: RequestedAIBackfillCount is intentionally NOT reset here.
-            // It is a pre-launch config value set by ArcadeGameConfigureModal
-            // and must survive the ResetRuntimeData() call in SceneLoader.LoadSceneAsync()
-            // so ServerPlayerVesselInitializerWithAI can read it after the game scene loads.
-            // It is reset in ResetAllData() instead.
+            // Note: RequestedAIBackfillCount and RequestedTeamCount are intentionally
+            // NOT reset here. They are pre-launch config values set by
+            // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
+            // in SceneLoader.LoadSceneAsync() so the game scene can read them.
+            // They are reset in ResetAllData() instead.
         }
 
         void ResetRuntimeDataForReplay()
@@ -580,22 +589,37 @@ namespace CosmicShore.Utility
         // Team Balancing
 
         /// <summary>
-        /// Counts how many players are on each team (Jade, Ruby, Gold).
+        /// All available team domains in order. Index 0 = 1st team, etc.
+        /// </summary>
+        public static readonly Domains[] TeamDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        /// <summary>
+        /// Counts how many players are on each team, limited to RequestedTeamCount.
         /// Used by AI spawning to assign AI to the team with the fewest players.
+        /// Players on domains outside the active team set are counted on the first team.
         /// </summary>
         public Dictionary<Domains, int> BuildTeamCounts()
         {
-            var counts = new Dictionary<Domains, int>
-            {
-                { Domains.Jade, 0 },
-                { Domains.Ruby, 0 },
-                { Domains.Gold, 0 }
-            };
+            int teamCount = Mathf.Clamp(RequestedTeamCount, 1, TeamDomains.Length);
+            var counts = new Dictionary<Domains, int>();
+
+            for (int i = 0; i < teamCount; i++)
+                counts[TeamDomains[i]] = 0;
 
             foreach (var p in Players)
             {
-                if (p is Player player && counts.ContainsKey(player.NetDomain.Value))
-                    counts[player.NetDomain.Value]++;
+                if (p is not Player player) continue;
+
+                var domain = player.NetDomain.Value;
+                if (counts.ContainsKey(domain))
+                {
+                    counts[domain]++;
+                }
+                else
+                {
+                    // Player has a domain outside the active set — count on first team
+                    counts[TeamDomains[0]]++;
+                }
             }
 
             return counts;

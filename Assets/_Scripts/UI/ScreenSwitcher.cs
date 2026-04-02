@@ -265,8 +265,18 @@ namespace CosmicShore.UI
         private IEnumerator LaunchModalCoroutine()
         {
             yield return new WaitForEndOfFrame();
-            var modalType = PlayerPrefs.GetInt(ReturnToModalPrefKey);
-            foreach (var modal in Modals.Where(modal => modal.ModalType == (ModalWindows)modalType))
+            var modalType = (ModalWindows)PlayerPrefs.GetInt(ReturnToModalPrefKey);
+
+            // Clear immediately so a stale key never persists across scene loads
+            PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
+            PlayerPrefs.Save();
+
+            // Game configuration modals require context (selected game, party state)
+            // that is lost on scene transition — never auto-reopen them.
+            if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE or ModalWindows.DAILY_CHALLENGE)
+                yield break;
+
+            foreach (var modal in Modals.Where(modal => modal.ModalType == modalType))
             {
                 modal.ModalWindowIn();
             }

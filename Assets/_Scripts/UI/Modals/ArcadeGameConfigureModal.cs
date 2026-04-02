@@ -234,7 +234,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = selectedGame;
-            config.TeamCount    = 1; // number of teams disabled for now
+            config.TeamCount    = 1; // default to 1 team — user can adjust via stepper
 
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
@@ -931,6 +931,9 @@ namespace CosmicShore.UI
             // Single source of truth — GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
+            // Team count — controls how many teams AI can be assigned to
+            gameData.RequestedTeamCount = config.TeamCount;
+
             Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
                       $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, " +
@@ -1028,7 +1031,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = game;
-            config.TeamCount    = 1;
+            config.TeamCount    = 1; // clients inherit host's team count via UI sync
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 
@@ -1041,7 +1044,10 @@ namespace CosmicShore.UI
             ResetReadyUpUI();
 
             ModalWindowIn();
-            ShowConfigurationScreen();
+
+            // Clients skip the config screen (intensity/player count) and go
+            // directly to domain + vessel selection since only the host controls those.
+            ShowGameDetailScreen();
         }
 
         /// <summary>

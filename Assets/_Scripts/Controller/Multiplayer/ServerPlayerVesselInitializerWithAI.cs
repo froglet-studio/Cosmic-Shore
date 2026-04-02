@@ -106,12 +106,16 @@ namespace CosmicShore.Gameplay
             }
 
             int aiCount = gameData.RequestedAIBackfillCount;
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}</color>");
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}, teamCount={gameData.RequestedTeamCount}</color>");
             if (aiCount <= 0)
             {
                 Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
                 return;
             }
+
+            // Ensure all human players have valid domains for the configured team count.
+            // Party members are placed on the same team (first human's domain wins).
+            NormalizeHumanDomains();
 
             // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
             List<AIProfile> profiles = null;
@@ -191,6 +195,51 @@ namespace CosmicShore.Gameplay
             }
 
             return best;
+        }
+
+        /// <summary>
+        /// Ensures all human players have domains within the active team set
+        /// (based on RequestedTeamCount) and that party members share one team.
+        /// Called on the server before AI spawning so BuildTeamCounts is accurate.
+        /// </summary>
+        void NormalizeHumanDomains()
+        {
+            int teamCount = Mathf.Clamp(gameData.RequestedTeamCount, 1, 3);
+            var validDomains = new HashSet<Domains>();
+            for (int i = 0; i < teamCount; i++)
+                validDomains.Add(GameDataSO.TeamDomains[i]);
+
+            // Find the first human player's domain to use as the party team
+            Domains partyDomain = Domains.Unassigned;
+            foreach (var p in gameData.Players)
+            {
+                if (p is Player player && !player.NetIsAI.Value)
+                {
+                    var domain = player.NetDomain.Value;
+                    if (validDomains.Contains(domain) && domain != Domains.Unassigned)
+                    {
+                        partyDomain = domain;
+                        break;
+                    }
+                }
+            }
+
+            // If no valid domain found, pick the first valid team
+            if (partyDomain == Domains.Unassigned)
+                partyDomain = GameDataSO.TeamDomains[0];
+
+            // Assign all human players to the party domain
+            foreach (var p in gameData.Players)
+            {
+                if (p is Player player && !player.NetIsAI.Value)
+                {
+                    if (player.NetDomain.Value != partyDomain)
+                    {
+                        Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: Reassigning {player.NetName.Value} from {player.NetDomain.Value} to {partyDomain}</color>");
+                        player.NetDomain.Value = partyDomain;
+                    }
+                }
+            }
         }
 
         VesselClassType PickAIVesselType()
