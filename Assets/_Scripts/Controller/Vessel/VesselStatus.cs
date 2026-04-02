@@ -88,6 +88,7 @@ namespace CosmicShore.Gameplay
         public Transform ShipTransform => Vessel.Transform;
         public IPlayer Player { get; set; }
         public Domains Domain => Player?.Domain ?? Domains.Jade;
+        public string PlayerName => Player?.Name ?? "No-name";
         public Material AOEExplosionMaterial { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material ShipMaterial { get; set; }

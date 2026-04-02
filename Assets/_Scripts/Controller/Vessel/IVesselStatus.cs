@@ -56,30 +56,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool IsLocalUser => Player.IsLocalUser;
 
-        string PlayerName
-        {
-            get
-            {
-                if (Player != null)
-                    return Player.Name;
+        string PlayerName { get; }
 
-                CSDebug.LogWarning("Player is null, returning empty string for PlayerName.");
-                return "No-name";
-            }
-        }
-
-        Domains Domain
-        {
-            get
-            {
-                if (Player == null)
-                {
-                    CSDebug.LogError("No Player found to get domain!");
-                    return Domains.Jade;
-                }
-                return Player.Domain;
-            }
-        }
+        Domains Domain { get; }
 
         bool IsPortrait { get; set; }
 
