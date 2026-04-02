@@ -158,10 +158,13 @@ namespace CosmicShore.Gameplay
                 if (item.ItemType != ItemType.Buff &&
                     (item.ItemType != ItemType.Debuff || item.ownDomain == VesselStatus.Domain)) continue;
 
+                // TODO - Commented this following line, to fix Menu_Main scene crystal chasing of Vessels .
+                // item.ownDomain = Jade, and item.ownDomain != Domains.None matching, and VesselStatus.Domain = Unassigned (should not happen).
+                // Bypass this issue to enable the following line.
                 // Skip buff items that belong to another player's domain (e.g. domain crystals in HexRace).
                 // Only target items with no domain or matching our own domain.
-                if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
-                    continue;
+                /*if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
+                    continue;*/
 
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (sqDistance < (MinDistance * MinDistance))
