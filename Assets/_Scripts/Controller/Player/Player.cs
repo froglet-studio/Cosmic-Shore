@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
-        public Domains Domain { get; private set; }
+        public Domains Domain { get; private set; } = Domains.Jade;
 
         /// <summary>
         /// Changes the player's domain at runtime. Used by shape mode to match
