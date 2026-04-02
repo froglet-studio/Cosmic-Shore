@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private IntVariable intensityLevelData;
         [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
-        [SerializeField] private bool spawnCrystalWithPlayerDomain;
+        [SerializeField] protected bool spawnCrystalWithPlayerDomain;
         [SerializeField] private int extraCrystalsToSpawnBeyondPlayerCount = 0;
         
         // ---------------- Runtime State ----------------

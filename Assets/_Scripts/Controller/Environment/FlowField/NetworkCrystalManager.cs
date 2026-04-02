@@ -162,8 +162,8 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Slots.Count; i++)
             {
-                var domain = Domains.None;
-                if (i < gameData.Players.Count)
+                var domain = crystalPrefab.ownDomain;
+                if (spawnCrystalWithPlayerDomain && i < gameData.Players.Count)
                     domain = gameData.Players[i].Domain;
 
                 // Write position + domain atomically in a single struct.
@@ -195,8 +195,8 @@ namespace CosmicShore.Gameplay
             {
                 if (n_Slots[i].IsEmpty)
                 {
-                    var domain = Domains.None;
-                    if (i < gameData.Players.Count)
+                    var domain = crystalPrefab.ownDomain;
+                    if (spawnCrystalWithPlayerDomain && i < gameData.Players.Count)
                         domain = gameData.Players[i].Domain;
 
                     n_Slots[i] = new CrystalSlotData

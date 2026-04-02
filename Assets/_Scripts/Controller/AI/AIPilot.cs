@@ -144,11 +144,8 @@ namespace CosmicShore.Gameplay
             // When seeking players (Joust mode), ignore cell item updates
             if (seekPlayers) return;
 
-            // Guard against early calls before vessel is assigned or cell is ready
+            // Guard against early calls before vessel is assigned
             if (vessel == null || VesselStatus == null) return;
-
-            var activeCell = cellData.Cell;
-            if (activeCell == null) return;
 
             var cellItems = cellData.CellItems;
             float MinDistance = Mathf.Infinity;
@@ -161,10 +158,13 @@ namespace CosmicShore.Gameplay
                 if (item.ItemType != ItemType.Buff &&
                     (item.ItemType != ItemType.Debuff || item.ownDomain == VesselStatus.Domain)) continue;
 
+                // TODO - Commented this following line, to fix Menu_Main scene crystal chasing of Vessels .
+                // item.ownDomain = Jade, and item.ownDomain != Domains.None matching, and VesselStatus.Domain = Unassigned (should not happen).
+                // Bypass this issue to enable the following line.
                 // Skip buff items that belong to another player's domain (e.g. domain crystals in HexRace).
                 // Only target items with no domain or matching our own domain.
-                if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
-                    continue;
+                /*if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
+                    continue;*/
 
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (sqDistance < (MinDistance * MinDistance))
@@ -174,7 +174,10 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            _targetPosition = !closestItem ? activeCell.transform.position : closestItem.transform.position;
+            if (closestItem != null)
+                _targetPosition = closestItem.transform.position;
+            else if (cellData.Cell != null)
+                _targetPosition = cellData.Cell.transform.position;
         }
 
         IEnumerator UpdatePlayerTarget()
