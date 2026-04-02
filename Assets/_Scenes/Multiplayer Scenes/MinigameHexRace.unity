@@ -1101,7 +1101,7 @@ MonoBehaviour:
   helixIntensityScaling: 4
   seed: 0
   useTestCrystalOverride: 1
-  crystalsToFinishOverride: 1
+  crystalsToFinishOverride: 3
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0
