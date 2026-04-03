@@ -38,13 +38,6 @@ namespace CosmicShore.Game
             SpawnAIPlayersToFillSlots();
         }
 
-        private int GetMaxPlayerSlots()
-        {
-            if (_gameData.CurrentArcadeGame != null)
-                return Mathf.Clamp(_gameData.CurrentArcadeGame.MaxPlayers, 1, DefaultTotalPlayerSlots);
-            return DefaultTotalPlayerSlots;
-        }
-
         /// <summary>
         /// Returns the vessel class for a given player slot.
         /// If _initializeDatas has an entry at that index with a concrete vessel class,
@@ -64,9 +57,8 @@ namespace CosmicShore.Game
 
         private void SpawnAIPlayersToFillSlots()
         {
-            int maxSlots = GetMaxPlayerSlots();
-            int humanCount = Mathf.Clamp(_gameData.SelectedPlayerCount.Value, 1, maxSlots);
-            int aiCount = maxSlots - humanCount;
+            int humanCount = Mathf.Clamp(_gameData.SelectedPlayerCount.Value, 1, DefaultTotalPlayerSlots);
+            int aiCount = DefaultTotalPlayerSlots - humanCount;
             if (aiCount <= 0) return;
 
             var aiDomains = GetAIDomains(humanCount, aiCount);
