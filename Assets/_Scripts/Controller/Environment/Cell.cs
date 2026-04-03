@@ -79,6 +79,17 @@ namespace CosmicShore.Gameplay
                 gameData.OnInitializeGame.OnRaised -= Initialize;
                 gameData.OnInitializeGame.OnRaised += Initialize;
             }
+
+            // Clear stale config from previous scene. CellRuntimeDataSO is a
+            // shared SO asset — Menu_Main's Cell sets runtime.Config to Blob Cell
+            // Config, which persists into the next scene. If OnCellItemsUpdated
+            // fires before OnInitializeGame (crystals spawn ~200ms, init fires
+            // ~1000ms), InitilizePostFirstCellItem sees the stale config as
+            // non-null and spawns the wrong flora. Clearing it here forces the
+            // lazy-init path to call Initialize() → AssignConfig() with the
+            // correct CellConfigs for this scene.
+            if (runtime != null)
+                runtime.Config = null;
         }
 
         void OnDisable()
