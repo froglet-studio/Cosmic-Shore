@@ -55,10 +55,11 @@ namespace CosmicShore.Gameplay
         ICellLifeSpawner activeSpawner;
         bool postInitilized = false;
 
+        bool _subscribedToInitialize;
+
         void OnEnable()
         {
-            if (gameData != null)
-                gameData.OnInitializeGame.OnRaised += Initialize;
+            TrySubscribeToInitialize();
 
             if (!runtime) return;
 
@@ -70,10 +71,27 @@ namespace CosmicShore.Gameplay
                 runtime.OnResetForReplay.OnRaised += ResetCell;
         }
 
+        void Start()
+        {
+            // Deferred subscription: [Inject] fields are populated after Awake()
+            // but before Start(), so OnEnable() may run before gameData is injected.
+            TrySubscribeToInitialize();
+        }
+
+        void TrySubscribeToInitialize()
+        {
+            if (_subscribedToInitialize || gameData == null) return;
+            gameData.OnInitializeGame.OnRaised += Initialize;
+            _subscribedToInitialize = true;
+        }
+
         void OnDisable()
         {
-            if (gameData != null)
+            if (gameData != null && _subscribedToInitialize)
+            {
                 gameData.OnInitializeGame.OnRaised -= Initialize;
+                _subscribedToInitialize = false;
+            }
 
             if (runtime != null)
             {
