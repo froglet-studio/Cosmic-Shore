@@ -70,6 +70,17 @@ namespace CosmicShore.Gameplay
                 runtime.OnResetForReplay.OnRaised += ResetCell;
         }
 
+        void Start()
+        {
+            // [Inject] fields aren't available in OnEnable. Retry subscription
+            // here with deduplicate guard so Initialize() fires on OnInitializeGame.
+            if (gameData != null)
+            {
+                gameData.OnInitializeGame.OnRaised -= Initialize;
+                gameData.OnInitializeGame.OnRaised += Initialize;
+            }
+        }
+
         void OnDisable()
         {
             if (gameData != null)
