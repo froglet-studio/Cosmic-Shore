@@ -226,30 +226,45 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Ensures all human players have domains within the active team set
-        /// (based on RequestedTeamCount) and that party members share one team.
+        /// Builds the list of active team domains based on the human's chosen domain
+        /// and the requested team count. The human's domain is always slot 0;
+        /// remaining slots are filled from the standard pool (Jade, Ruby, Gold)
+        /// excluding the human's domain.
+        /// </summary>
+        static List<Domains> BuildActiveTeams(Domains humanDomain, int teamCount)
+        {
+            var teams = new List<Domains> { humanDomain };
+
+            foreach (var d in GameDataSO.TeamDomains)
+            {
+                if (teams.Count >= teamCount) break;
+                if (d != humanDomain)
+                    teams.Add(d);
+            }
+
+            return teams;
+        }
+
+        /// <summary>
+        /// Ensures all human players share one team.
+        /// The first human's chosen domain is respected (even if it's Ruby or Gold).
         /// Called on the server before AI spawning so team counts are accurate.
         /// </summary>
         void NormalizeHumanDomains(List<Player> humans)
         {
-            int teamCount = Mathf.Clamp(gameData.RequestedTeamCount, 1, 3);
-            var validDomains = new HashSet<Domains>();
-            for (int i = 0; i < teamCount; i++)
-                validDomains.Add(GameDataSO.TeamDomains[i]);
-
-            // Find the first human player's domain to use as the party team
+            // Find the first human player's chosen domain
             Domains partyDomain = Domains.Unassigned;
             foreach (var player in humans)
             {
                 var domain = player.NetDomain.Value;
-                if (validDomains.Contains(domain) && domain != Domains.Unassigned)
+                if (domain != Domains.Unassigned && domain != Domains.None)
                 {
                     partyDomain = domain;
                     break;
                 }
             }
 
-            // If no valid domain found, pick the first valid team
+            // If no valid domain found, fall back to Jade
             if (partyDomain == Domains.Unassigned)
                 partyDomain = GameDataSO.TeamDomains[0];
 
@@ -263,21 +278,33 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: {humans.Count} humans → domain={partyDomain}, teamCount={teamCount}</color>");
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: {humans.Count} humans → domain={partyDomain}, teamCount={gameData.RequestedTeamCount}</color>");
         }
 
         /// <summary>
-        /// Builds team counts from the given human players, respecting RequestedTeamCount.
-        /// Used instead of gameData.BuildTeamCounts() because gameData.Players is empty
-        /// when SpawnAIs() runs (before base.OnNetworkSpawn processes humans).
+        /// Builds team counts from the given human players.
+        /// Active teams are built around the human's domain (not hardcoded Jade-first).
         /// </summary>
         Dictionary<Domains, int> BuildTeamCountsFromPlayers(List<Player> humans)
         {
             int teamCount = Mathf.Clamp(gameData.RequestedTeamCount, 1, GameDataSO.TeamDomains.Length);
-            var counts = new Dictionary<Domains, int>();
 
-            for (int i = 0; i < teamCount; i++)
-                counts[GameDataSO.TeamDomains[i]] = 0;
+            // Determine the human party domain
+            Domains humanDomain = GameDataSO.TeamDomains[0];
+            foreach (var player in humans)
+            {
+                var d = player.NetDomain.Value;
+                if (d != Domains.Unassigned && d != Domains.None)
+                {
+                    humanDomain = d;
+                    break;
+                }
+            }
+
+            var activeTeams = BuildActiveTeams(humanDomain, teamCount);
+            var counts = new Dictionary<Domains, int>();
+            foreach (var team in activeTeams)
+                counts[team] = 0;
 
             foreach (var player in humans)
             {
@@ -285,7 +312,7 @@ namespace CosmicShore.Gameplay
                 if (counts.ContainsKey(domain))
                     counts[domain]++;
                 else
-                    counts[GameDataSO.TeamDomains[0]]++;
+                    counts[activeTeams[0]]++;
             }
 
             Debug.Log($"<color=#FF00FF>[FLOW-5AI] BuildTeamCountsFromPlayers: {string.Join(", ", counts)}</color>");
