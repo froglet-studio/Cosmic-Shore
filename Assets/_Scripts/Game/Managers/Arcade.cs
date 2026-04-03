@@ -66,6 +66,7 @@ namespace CosmicShore.Core
             gameData.IsTraining = false;
             gameData.IsMission = true;
             gameData.IsMultiplayerMode = false;
+            gameData.CurrentArcadeGame = null;
             gameData.GameMode = gameMode;
             gameData.SelectedPlayerCount.Value = 1;
             gameData.SelectedIntensity.Value = intensity;
@@ -98,6 +99,8 @@ namespace CosmicShore.Core
                 return;
             }
 
+            var arcadeGame = ArcadeGameLookup[gameMode];
+
             gameData.selectedVesselClass.Value = vessel;
             gameData.SelectedIntensity.Value = intensity;
             gameData.SelectedPlayerCount.Value = numberOfPlayers;
@@ -110,12 +113,13 @@ namespace CosmicShore.Core
             gameData.SelectedIntensity.Value = intensity;
             gameData.PlayedIntensity = intensity;
             gameData.selectedVesselClass.Value = vessel;
+            gameData.CurrentArcadeGame = arcadeGame;
 
             // For multiplayer-capable games with only 1 human player, run locally with AI
             // instead of doing online matchmaking. Use gameData.SelectedPlayerCount (set by
             // the config modal) rather than the legacy numberOfPlayers parameter.
             gameData.IsMultiplayerMode = isMultiplayer && gameData.SelectedPlayerCount.Value > 1;
-            gameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
+            gameData.SceneName = arcadeGame.SceneName;
             gameData.InvokeGameLaunch();
 
             /*MiniGame.PlayerShipType = vessel;
@@ -170,6 +174,7 @@ namespace CosmicShore.Core
             gameData.IsTraining = !isDailyChallenge;
             gameData.IsMission = false;
             gameData.IsMultiplayerMode = false;
+            gameData.CurrentArcadeGame = null;
             gameData.GameMode = gameMode;
             gameData.SelectedPlayerCount.Value = numberOfPlayers;
             gameData.SelectedIntensity.Value = intensity;

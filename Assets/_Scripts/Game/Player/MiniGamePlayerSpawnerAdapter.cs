@@ -7,7 +7,7 @@ namespace CosmicShore.Game
 {
     public class MiniGamePlayerSpawnerAdapter : PlayerSpawnerAdapterBase
     {
-        private const int TotalPlayerSlots = 4;
+        private const int DefaultTotalPlayerSlots = 4;
 
         [SerializeField] private bool _spawnAIAtStart = false;
 
@@ -38,10 +38,18 @@ namespace CosmicShore.Game
             SpawnAIPlayersToFillSlots();
         }
 
+        private int GetMaxPlayerSlots()
+        {
+            if (_gameData.CurrentArcadeGame != null)
+                return Mathf.Clamp(_gameData.CurrentArcadeGame.MaxPlayers, 1, DefaultTotalPlayerSlots);
+            return DefaultTotalPlayerSlots;
+        }
+
         private void SpawnAIPlayersToFillSlots()
         {
-            int humanCount = Mathf.Clamp(_gameData.SelectedPlayerCount.Value, 1, TotalPlayerSlots);
-            int aiCount = TotalPlayerSlots - humanCount;
+            int maxSlots = GetMaxPlayerSlots();
+            int humanCount = Mathf.Clamp(_gameData.SelectedPlayerCount.Value, 1, maxSlots);
+            int aiCount = maxSlots - humanCount;
             if (aiCount <= 0) return;
 
             var aiDomains = GetAIDomains(humanCount, aiCount);

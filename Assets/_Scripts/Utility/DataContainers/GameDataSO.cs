@@ -61,6 +61,13 @@ namespace CosmicShore.Soap
         public GameModes GameMode;
 
         /// <summary>
+        /// The SO_ArcadeGame for the current session, if launched via Arcade.
+        /// Null for training/mission modes. Used by spawners to enforce game mode constraints
+        /// (allowed vessels, player count limits, etc.).
+        /// </summary>
+        [System.NonSerialized] public SO_ArcadeGame CurrentArcadeGame;
+
+        /// <summary>
         /// Domain the local player chose from the config UI.
         /// Domains.Unassigned means "random" (use DomainAssigner as before).
         /// </summary>
@@ -221,6 +228,7 @@ namespace CosmicShore.Soap
             SelectedIntensity.Value = 1;
             PlayedIntensity = 1;
             PreferredDomain = Domains.Unassigned;
+            CurrentArcadeGame = null;
 
             ResetRuntimeData();
 

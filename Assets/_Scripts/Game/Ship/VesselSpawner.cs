@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -8,30 +9,25 @@ namespace CosmicShore.Game
 {
     public class VesselSpawner : MonoBehaviour
     {
-        [FormerlySerializedAs("_shipPrefabContainer")] [SerializeField] 
+        [FormerlySerializedAs("_shipPrefabContainer")] [SerializeField]
         VesselPrefabContainer vesselPrefabContainer;
-        
+
+        [SerializeField] GameDataSO _gameData;
+
         public bool SpawnShip(VesselClassType vesselType, out IVessel vessel)
         {
             if (vesselType is VesselClassType.Random or VesselClassType.Any)
             {
-                var values = Enum.GetValues(typeof(VesselClassType));
-                // Build a list excluding Any and Random to avoid infinite loops
-                var validTypes = new System.Collections.Generic.List<VesselClassType>();
-                foreach (VesselClassType v in values)
-                {
-                    if (v is not VesselClassType.Random and not VesselClassType.Any)
-                        validTypes.Add(v);
-                }
+                var allowedTypes = GetAllowedVesselTypes();
 
-                if (validTypes.Count == 0)
+                if (allowedTypes.Count == 0)
                 {
                     CSDebug.LogError("[VesselSpawner] No valid vessel types available for random selection.");
                     vessel = null;
                     return false;
                 }
 
-                vesselType = validTypes[UnityEngine.Random.Range(0, validTypes.Count)];
+                vesselType = allowedTypes[UnityEngine.Random.Range(0, allowedTypes.Count)];
             }
 
             vessel = null;
@@ -44,6 +40,33 @@ namespace CosmicShore.Game
 
             Instantiate(shipPrefab).TryGetComponent(out vessel);
             return true;
+        }
+
+        List<VesselClassType> GetAllowedVesselTypes()
+        {
+            // If we have a game config with a vessel list, constrain random selection to those
+            if (_gameData != null && _gameData.CurrentArcadeGame != null
+                && _gameData.CurrentArcadeGame.Vessels is { Count: > 0 })
+            {
+                var allowed = new List<VesselClassType>();
+                foreach (var vessel in _gameData.CurrentArcadeGame.Vessels)
+                {
+                    if (vessel != null && !vessel.IsLocked)
+                        allowed.Add(vessel.Class);
+                }
+
+                if (allowed.Count > 0)
+                    return allowed;
+            }
+
+            // Fallback: all vessel types except meta-types
+            var allTypes = new List<VesselClassType>();
+            foreach (VesselClassType v in Enum.GetValues(typeof(VesselClassType)))
+            {
+                if (v is not VesselClassType.Random and not VesselClassType.Any)
+                    allTypes.Add(v);
+            }
+            return allTypes;
         }
     }
 }
