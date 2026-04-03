@@ -59,8 +59,6 @@ namespace CosmicShore.Data
         PlayGameMultiplayerJoust = 434,
         PlayGameBotDuel = 435,
         PlayGameCurvatious = 436,
-        PlayGameRiskyDriftness = 437,
-        PlayGameSidewinder = 438,
 
     }
 }
