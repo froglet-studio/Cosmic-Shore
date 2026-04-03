@@ -15,33 +15,36 @@ namespace CosmicShore.Gameplay
         [SerializeField]
         ScriptableEventCrystalStats OnCrystalCollected;
 
-        [SerializeField, Tooltip("Toggle on if only impactor is of same domain as this crystal")] 
-        private bool onlyAllowOwnDomainImpactor;
-        
+        [SerializeField, Tooltip("When true, ONLY the owning domain can collect. When false (default), domain matching is still enforced — vessels can only collect crystals of their own domain or unowned (None) crystals.")]
+        private bool strictDomainOnly;
+
         bool IsImpacting;
-        
-        protected virtual bool IsDomainMatching(Domains domain) => 
+
+        /// <summary>
+        /// Returns true if the impacting vessel's domain is allowed to collect this crystal.
+        /// Default: own domain OR unowned (None) crystals are collectible.
+        /// Override in TeamCrystalImpactor for strict-only matching.
+        /// </summary>
+        protected virtual bool IsDomainMatching(Domains domain) =>
             Crystal.ownDomain == domain || Crystal.ownDomain == Domains.None;
 
         bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
-        
+
         protected override void AcceptImpactee(IImpactor impactee)
         {
             if (IsNetworkClient())
                 return;
-            
+
             if (IsImpacting)
                 return;
-            
+
             if (Crystal.IsExploding)
                 return;
 
-            if (onlyAllowOwnDomainImpactor)
-            {
-                bool matched = IsDomainMatching(impactee.OwnDomain);
-                if (!matched)
-                    return;
-            }
+            // Always enforce domain matching — vessels can only collect
+            // crystals that belong to their domain (or unowned crystals).
+            if (!IsDomainMatching(impactee.OwnDomain))
+                return;
                 
             
             switch (impactee)

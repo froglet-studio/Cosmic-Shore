@@ -75,13 +75,6 @@ namespace CosmicShore.UI
             GameTitle.text = game.DisplayName;
             BackgroundImage.sprite = game.CardBackground;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
-
-            FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType);
-
-            if (game.CallToActionTargetType == CallToActionTargetType.PlayGameFreestyle)
-            {
-                GetComponent<Button>().onClick.AddListener(delegate { FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType); });
-            }
         }
 
         public void ToggleFavorite()
@@ -97,6 +90,10 @@ namespace CosmicShore.UI
         {
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
             CSDebug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+
+            SO_ArcadeGame game = AllGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
+            if (game != null)
+                FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType);
         }
 
         /// <summary>

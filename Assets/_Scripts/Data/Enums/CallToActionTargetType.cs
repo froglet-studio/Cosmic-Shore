@@ -54,8 +54,13 @@ namespace CosmicShore.Data
         PlayGameMultiplayerDuelForCell = 429,
         PlayGameMultiplayerWildlifeBlitzGame = 430,
         PlayGameHexRace = 431,
-
-        /*********** ADDED BY WILL *************/
+        PlayGameMultiplayer2v2CoOpVsAI = 432,
+        PlayGameMultiplayerCrystalCapture = 433,
+        PlayGameMultiplayerJoust = 434,
+        PlayGameBotDuel = 435,
+        PlayGameCurvatious = 436,
+        PlayGameRiskyDriftness = 437,
+        PlayGameSidewinder = 438,
 
     }
 }
