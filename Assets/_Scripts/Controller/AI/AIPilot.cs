@@ -151,20 +151,24 @@ namespace CosmicShore.Gameplay
             float MinDistance = Mathf.Infinity;
             CellItem closestItem = null;
 
+            var myDomain = VesselStatus.Domain;
+
             foreach (var item in cellItems)
             {
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
-                    (item.ItemType != ItemType.Debuff || item.ownDomain == VesselStatus.Domain)) continue;
+                    (item.ItemType != ItemType.Debuff || item.ownDomain == myDomain)) continue;
 
-                // TODO - Commented this following line, to fix Menu_Main scene crystal chasing of Vessels .
-                // item.ownDomain = Jade, and item.ownDomain != Domains.None matching, and VesselStatus.Domain = Unassigned (should not happen).
-                // Bypass this issue to enable the following line.
-                // Skip buff items that belong to another player's domain (e.g. domain crystals in HexRace).
-                // Only target items with no domain or matching our own domain.
-                /*if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
-                    continue;*/
+                // Skip buff items that belong to another player's domain.
+                // Only target items with no domain (None) or matching our own domain.
+                // When our domain is Unassigned (e.g. Menu_Main autopilot), skip this
+                // check so the vessel still chases crystals freely.
+                if (item.ItemType == ItemType.Buff
+                    && myDomain != Domains.Unassigned
+                    && item.ownDomain != Domains.None
+                    && item.ownDomain != myDomain)
+                    continue;
 
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (sqDistance < (MinDistance * MinDistance))
