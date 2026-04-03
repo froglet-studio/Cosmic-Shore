@@ -3636,16 +3636,33 @@ MonoBehaviour:
   m_GameObject: {fileID: 1628508325}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Script: {fileID: 11500000, guid: 46ca9ae8ce99408c800f5e10c8691427, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
   clientPlayerVesselInitializer: {fileID: 1628508333}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
   shutdownNetworkOnDespawn: 1
-  playerSpawnPoints: []
+  playerSpawnPoints:
+  - {fileID: 1468661147}
+  - {fileID: 1074736317}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
+  spawnAIOnServerReady: 1
+  aiPlayerPrefab: {fileID: -3803897320145675891, guid: 0a8653be5d331c5449d3130cef596493,
+    type: 3}
+  aiInitializeDatas:
+  - vesselClass: 0
+    PlayerName: AI_1
+    AvatarId: 0
+    IsAI: 1
+    AllowSpawning: 1
+  - vesselClass: 0
+    PlayerName: AI_2
+    AvatarId: 1
+    IsAI: 1
+    AllowSpawning: 1
+  aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
 --- !u!114 &1628508335
 MonoBehaviour:
   m_ObjectHideFlags: 0
