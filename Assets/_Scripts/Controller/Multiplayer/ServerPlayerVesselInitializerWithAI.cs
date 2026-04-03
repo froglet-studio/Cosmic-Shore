@@ -115,15 +115,19 @@ namespace CosmicShore.Gameplay
 
             // Ensure all human players have valid domains for the configured team count.
             // Party members are placed on the same team (first human's domain wins).
-            NormalizeHumanDomains();
+            // NOTE: gameData.Players is cleared by ResetRuntimeData during scene transition,
+            // so we gather humans directly from NetworkManager.ConnectedClients.
+            var humanPlayers = GatherHumanPlayers();
+            NormalizeHumanDomains(humanPlayers);
 
             // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
             List<AIProfile> profiles = null;
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
-            // Build team counts from existing human players so AI fills the smallest teams first.
-            var teamCounts = gameData.BuildTeamCounts();
+            // Build team counts from the gathered human players (not gameData.Players
+            // which may be empty at this point in the spawn sequence).
+            var teamCounts = BuildTeamCountsFromPlayers(humanPlayers);
 
             for (int i = 0; i < aiCount; i++)
             {
@@ -198,11 +202,35 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Gathers human Player objects from NetworkManager.ConnectedClients.
+        /// gameData.Players is empty at this point (cleared by ResetRuntimeData
+        /// during scene transition), so we must go directly to Netcode.
+        /// </summary>
+        List<Player> GatherHumanPlayers()
+        {
+            var humans = new List<Player>();
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return humans;
+
+            foreach (var kvp in nm.ConnectedClients)
+            {
+                var playerObj = kvp.Value.PlayerObject;
+                if (playerObj == null) continue;
+                if (!playerObj.TryGetComponent<Player>(out var player)) continue;
+                if (player.NetIsAI.Value) continue;
+                humans.Add(player);
+            }
+
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans</color>");
+            return humans;
+        }
+
+        /// <summary>
         /// Ensures all human players have domains within the active team set
         /// (based on RequestedTeamCount) and that party members share one team.
-        /// Called on the server before AI spawning so BuildTeamCounts is accurate.
+        /// Called on the server before AI spawning so team counts are accurate.
         /// </summary>
-        void NormalizeHumanDomains()
+        void NormalizeHumanDomains(List<Player> humans)
         {
             int teamCount = Mathf.Clamp(gameData.RequestedTeamCount, 1, 3);
             var validDomains = new HashSet<Domains>();
@@ -211,16 +239,13 @@ namespace CosmicShore.Gameplay
 
             // Find the first human player's domain to use as the party team
             Domains partyDomain = Domains.Unassigned;
-            foreach (var p in gameData.Players)
+            foreach (var player in humans)
             {
-                if (p is Player player && !player.NetIsAI.Value)
+                var domain = player.NetDomain.Value;
+                if (validDomains.Contains(domain) && domain != Domains.Unassigned)
                 {
-                    var domain = player.NetDomain.Value;
-                    if (validDomains.Contains(domain) && domain != Domains.Unassigned)
-                    {
-                        partyDomain = domain;
-                        break;
-                    }
+                    partyDomain = domain;
+                    break;
                 }
             }
 
@@ -229,17 +254,42 @@ namespace CosmicShore.Gameplay
                 partyDomain = GameDataSO.TeamDomains[0];
 
             // Assign all human players to the party domain
-            foreach (var p in gameData.Players)
+            foreach (var player in humans)
             {
-                if (p is Player player && !player.NetIsAI.Value)
+                if (player.NetDomain.Value != partyDomain)
                 {
-                    if (player.NetDomain.Value != partyDomain)
-                    {
-                        Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: Reassigning {player.NetName.Value} from {player.NetDomain.Value} to {partyDomain}</color>");
-                        player.NetDomain.Value = partyDomain;
-                    }
+                    Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: Reassigning {player.NetName.Value} from {player.NetDomain.Value} to {partyDomain}</color>");
+                    player.NetDomain.Value = partyDomain;
                 }
             }
+
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: {humans.Count} humans → domain={partyDomain}, teamCount={teamCount}</color>");
+        }
+
+        /// <summary>
+        /// Builds team counts from the given human players, respecting RequestedTeamCount.
+        /// Used instead of gameData.BuildTeamCounts() because gameData.Players is empty
+        /// when SpawnAIs() runs (before base.OnNetworkSpawn processes humans).
+        /// </summary>
+        Dictionary<Domains, int> BuildTeamCountsFromPlayers(List<Player> humans)
+        {
+            int teamCount = Mathf.Clamp(gameData.RequestedTeamCount, 1, GameDataSO.TeamDomains.Length);
+            var counts = new Dictionary<Domains, int>();
+
+            for (int i = 0; i < teamCount; i++)
+                counts[GameDataSO.TeamDomains[i]] = 0;
+
+            foreach (var player in humans)
+            {
+                var domain = player.NetDomain.Value;
+                if (counts.ContainsKey(domain))
+                    counts[domain]++;
+                else
+                    counts[GameDataSO.TeamDomains[0]]++;
+            }
+
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] BuildTeamCountsFromPlayers: {string.Join(", ", counts)}</color>");
+            return counts;
         }
 
         VesselClassType PickAIVesselType()
