@@ -17,10 +17,7 @@ MonoBehaviour:
   FloraSpawnVolumeCeiling: 4000
   FloraInitialDelaySeconds: 0.5
   FloraSpawnIntervalSeconds: 5
-  SupportedFloras:
-  - {fileID: 11400000, guid: 1da6eb378abb68a4c926a3e744f64502, type: 2}
-  - {fileID: 11400000, guid: 1c42cd367fe439a48beba6cdb60ec9d4, type: 2}
-  - {fileID: 11400000, guid: 92c5e1234c5572043a8656f6fe98225d, type: 2}
+  SupportedFloras: []
   FaunaTypeCount: 2
   FaunaExcludeLocalDomain: 1
   InitialFaunaSpawnWaitTime: 10
