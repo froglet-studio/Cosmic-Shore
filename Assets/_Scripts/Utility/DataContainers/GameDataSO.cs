@@ -606,20 +606,23 @@ namespace CosmicShore.Utility
             for (int i = 0; i < teamCount; i++)
                 counts[TeamDomains[i]] = 0;
 
+            // When teamCount=1, include whatever domain players actually have
+            // so that AI backfill joins the same team (e.g. Ruby, not always Jade).
             foreach (var p in Players)
             {
                 if (p is not Player player) continue;
 
                 var domain = player.NetDomain.Value;
+                if (!counts.ContainsKey(domain) && teamCount == 1
+                    && domain != Domains.Unassigned && domain != Domains.None)
+                {
+                    counts[domain] = 0;
+                }
+
                 if (counts.ContainsKey(domain))
-                {
                     counts[domain]++;
-                }
                 else
-                {
-                    // Player has a domain outside the active set — count on first team
                     counts[TeamDomains[0]]++;
-                }
             }
 
             return counts;

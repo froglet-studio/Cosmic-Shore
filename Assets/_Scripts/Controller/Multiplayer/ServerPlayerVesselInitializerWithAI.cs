@@ -205,18 +205,15 @@ namespace CosmicShore.Gameplay
         void NormalizeHumanDomains()
         {
             int teamCount = Mathf.Clamp(gameData.RequestedTeamCount, 1, 3);
-            var validDomains = new HashSet<Domains>();
-            for (int i = 0; i < teamCount; i++)
-                validDomains.Add(GameDataSO.TeamDomains[i]);
 
-            // Find the first human player's domain to use as the party team
+            // Find the first human player's chosen domain
             Domains partyDomain = Domains.Unassigned;
             foreach (var p in gameData.Players)
             {
                 if (p is Player player && !player.NetIsAI.Value)
                 {
                     var domain = player.NetDomain.Value;
-                    if (validDomains.Contains(domain) && domain != Domains.Unassigned)
+                    if (domain != Domains.Unassigned && domain != Domains.None)
                     {
                         partyDomain = domain;
                         break;
@@ -224,9 +221,21 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // If no valid domain found, pick the first valid team
+            // If no human has a valid domain, pick the first team
             if (partyDomain == Domains.Unassigned)
                 partyDomain = GameDataSO.TeamDomains[0];
+
+            // When multiple teams are active, ensure the party domain is within
+            // the valid team set. Single-team mode always respects the player's choice.
+            if (teamCount > 1)
+            {
+                var validDomains = new HashSet<Domains>();
+                for (int i = 0; i < teamCount; i++)
+                    validDomains.Add(GameDataSO.TeamDomains[i]);
+
+                if (!validDomains.Contains(partyDomain))
+                    partyDomain = GameDataSO.TeamDomains[0];
+            }
 
             // Assign all human players to the party domain
             foreach (var p in gameData.Players)
