@@ -1267,7 +1267,7 @@ ArcadeGameConfigureModal.OnStartGameClicked()
 
 #### Track Spawning
 
-Server generates a random seed → writes to `_netTrackSeed` NetworkVariable → all clients spawn identical track via `SegmentSpawner.Initialize()`.
+Server generates a random seed (after 1500ms delay for intensity sync) → writes to `_netTrackSeed` NetworkVariable → all clients spawn identical track via `SegmentSpawner.Initialize()`. Clients receive the seed through three redundant paths: immediate read at spawn, `OnValueChanged` callback, or poll fallback (100ms × 50 attempts). `HexRaceController` sets `segmentSpawner.ExternalResetControl = true` to own the track lifecycle.
 
 | Parameter | Formula | Base |
 |---|---|---|
@@ -1277,20 +1277,20 @@ Server generates a random seed → writes to `_netTrackSeed` NetworkVariable →
 
 #### Race Rules
 
-- **Crystal target**: 39 (default from track waypoints, overridable via `_netCrystalsToFinish` NetworkVariable)
-- **Turn monitor**: `NetworkCrystalCollisionTurnMonitor` checks `gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target)` every frame
-- **Winner**: First player to collect all crystals → `HexRaceScoreTracker.HandleGameEnd()` → `controller.ReportLocalPlayerFinished(raceTime)`
-- **Server-authoritative**: `HexRaceController.ReportPlayerFinished_ServerRpc()` — guards with `_raceEnded` flag, only first finisher wins
-- **Scoring**: Winner score = race time (seconds); Loser score = `10000 + crystalsRemaining`. Golf rules: lower = better
-- **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients
+- **Crystal target**: 39 (default from track waypoints, overridable via `_netCrystalsToFinish` NetworkVariable or `crystalsToFinishOverride` inspector field when `useTestCrystalOverride=true`)
+- **Turn monitor**: `NetworkCrystalCollisionTurnMonitor` checks `gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target)` every frame (server only)
+- **Winner detection**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds first player with `CrystalsCollected >= target`, sets `_raceEnded=true`, calculates all scores. The legacy `ReportPlayerFinished_ServerRpc` (from client-side `HexRaceScoreTracker`) is retained as a defensive fallback but is no-op when `_raceEnded` is already set
+- **Scoring**: Winner score = race time (seconds); Loser score = `10000 + crystalsRemaining`. Golf rules (`UseGolfRules=true`): lower = better
+- **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients, then calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`
+- **HasEndGame=false**: Prevents base controller from calling `SyncGameEnd_ClientRpc` (which would duplicate `InvokeMiniGameEnd`). `SetupNewRound()` is overridden to return when `_raceEnded=true`, suppressing the Ready button
 - **Comeback**: `ElementalComebackSystem` buffs losing players based on crystal deficit (e.g., Space element +4 for 4 crystals behind)
 
 #### End Game
 
-- `HexRaceEndGameController` reads `hexRaceController.WinnerName` and `RaceResultsReady` (set by server ClientRpc)
-- Winner sees "VICTORY" + race time; losers see "DEFEAT" + crystals remaining
-- `HexRaceScoreboard` displays all players ranked by score (golf rules)
-- Replay: `OnResetForReplayCustom()` resets race state, re-generates track with new seed
+- `HexRaceEndGameController` reads `hexRaceController.WinnerName` and `RaceResultsReady` (set by server via `SyncFinalScores_ClientRpc`)
+- Winner sees "VICTORY" + race time (formatted mm:ss:cs); losers see "DEFEAT" + crystals remaining
+- `HexRaceScoreboard` displays all players ranked by score (golf rules — sorts ascending)
+- **Replay**: Full network scene reload (`UseSceneReloadForReplay=true`). `OnResetForReplayCustom()` was removed — all race state, track, and environment are destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`. Fade to black → scene reload → fade from black on `OnClientReady`
 
 #### NetworkVariable Inventory
 
@@ -1310,7 +1310,7 @@ Server generates a random seed → writes to `_netTrackSeed` NetworkVariable →
 | Domain games base | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
 | Score tracker | `HexRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Arcade/` |
+| Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | End game controller | `HexRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `HexRaceHUD.cs` | `_Scripts/UI/` |
 | Scoreboard | `HexRaceScoreboard.cs` | `_Scripts/UI/` |
@@ -1321,9 +1321,10 @@ Server generates a random seed → writes to `_netTrackSeed` NetworkVariable →
 
 #### HexRace Patterns to Follow
 
-- **Server authority**: Only the server declares race end, calculates final scores, and syncs winner. Never trust client-side winner determination.
-- **Deterministic track**: All clients spawn identical tracks from shared seed + intensity. `SegmentSpawner` uses `Random.InitState(seed)`.
+- **Server authority via OnTurnEndedCustom**: Winner detection runs on the server in `OnTurnEndedCustom()`, not via client-side ServerRpc. The `ReportPlayerFinished_ServerRpc` path is a defensive fallback only.
+- **Deterministic track**: All clients spawn identical tracks from shared seed + intensity. `SegmentSpawner` uses `Random.InitState(seed)`. Three redundant sync paths (immediate, OnValueChanged, poll fallback) ensure reliability.
 - **Golf scoring**: `UseGolfRules = true` — lower score = better rank. Winner time (seconds) always ranks above loser penalty (10000+).
+- **Scene reload for replay**: Use `UseSceneReloadForReplay = true` — do not implement in-place reset. Flora/fauna/environment don't fully reset in-place.
 - **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all).
 - **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
 - **Crystal target sync**: Server writes target to `_netCrystalsToFinish` NetworkVariable so all clients display correct remaining count.
