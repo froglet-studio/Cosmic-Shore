@@ -1,4 +1,4 @@
-﻿// MultiplayerCrystalCaptureEndGameController.cs
+// MultiplayerCrystalCaptureEndGameController.cs
 using System.Collections;
 using System.Linq;
 using CosmicShore.Utility;
@@ -8,11 +8,15 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerCrystalCaptureEndGameController : EndGameCinematicController
     {
+        [Header("Crystal Capture")]
+        [SerializeField] private MultiplayerCrystalCaptureController controller;
+
         protected override bool DetermineLocalPlayerWon()
         {
             var localName = gameData.LocalPlayer?.Name;
-            return gameData.RoundStatsList.Count > 0
-                && gameData.RoundStatsList[0].Name == localName;
+            return controller != null
+                && controller.ResultsReady
+                && controller.WinnerName == localName;
         }
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
@@ -26,13 +30,14 @@ namespace CosmicShore.Gameplay
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) yield break;
 
-            // Winner = index 0 after sort (UseGolfRules=false → descending, highest crystals first)
-            bool didWin = gameData.RoundStatsList.Count > 0 &&
-                          gameData.RoundStatsList[0].Name == localName;
+            // Single source of truth — the controller received this authoritatively from the server
+            bool didWin = controller != null
+                && controller.ResultsReady
+                && controller.WinnerName == localName;
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
 
-            // Crystal difference between winner and loser
+            // Crystal difference between local player and opponent
             int myScore = (int)localStats.Score;
             int opponentScore = gameData.RoundStatsList
                 .Where(s => s.Name != localName)
@@ -48,6 +53,7 @@ namespace CosmicShore.Gameplay
 
             CSDebug.Log($"[CrystalCapture] Local='{localName}' myScore={myScore} " +
                       $"opponentScore={opponentScore} didWin={didWin} diff={crystalDifference} " +
+                      $"WinnerName='{controller?.WinnerName}' " +
                       $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 
             yield return view.PlayScoreRevealAnimation(
