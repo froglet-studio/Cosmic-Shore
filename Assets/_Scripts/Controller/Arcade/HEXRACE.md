@@ -93,10 +93,13 @@ After scene load completes, the following chain runs:
 Scene Load Complete
 │
 ├─ HexRaceController.OnNetworkSpawn()
+│   ├─ base.OnNetworkSpawn()  — wires turn-end handler, syncs game config
 │   ├─ numberOfRounds = 1, numberOfTurnsPerRound = 1
+│   ├─ segmentSpawner.ExternalResetControl = true  — prevent auto-reset on replay
 │   ├─ Subscribe to _netTrackSeed.OnValueChanged
 │   ├─ [Server] SpawnTrackEarly().Forget()  (1500ms delay, then generate seed)
-│   └─ [Client, late join] SpawnTrackLocally(_netTrackSeed.Value) if seed already set
+│   ├─ [Client, seed already set] SpawnTrackLocally(_netTrackSeed.Value)
+│   └─ [Client, seed not yet set] StartSeedPoll()  — poll fallback (100ms × 50 attempts)
 │
 ├─ ServerPlayerVesselInitializerWithAI.OnNetworkSpawn()
 │   ├─ [Server] SpawnAIs()  — pre-spawns AI players based on RequestedAIBackfillCount
@@ -104,12 +107,14 @@ Scene Load Complete
 │   └─ base.OnNetworkSpawn()  — subscribe to OnPlayerNetworkSpawnedUlong for humans
 │
 ├─ MultiplayerMiniGameControllerBase.OnNetworkSpawn()
-│   ├─ [Server] SyncGameConfigToClients_ClientRpc()  — syncs intensity, player count, AI backfill to clients
+│   ├─ [Server] SyncGameConfigToClients_ClientRpc()  — syncs intensity, player count, AI backfill, team count to clients
 │   └─ InitializeAfterDelay().Forget()
 │
 ├─ MultiplayerMiniGameControllerBase.InitializeAfterDelay()
 │   ├─ await UniTask.Delay(1000ms)
 │   ├─ gameData.InitializeGame()  → raises OnInitializeGame
+│   ├─ [Replay reload] Subscribe to OnClientReady → FadeFromBlackOnReplay
+│   ├─ [Server] gameData.InvokeSessionStarted()  — AppState → InGame
 │   └─ [Server] SetupNewRound()
 │       ├─ readyClientCount = 0
 │       ├─ RaiseToggleReadyButtonEvent(true)  — show Ready button
@@ -120,6 +125,16 @@ Scene Load Complete
     ├─ Raise OnPlayerNetworkSpawnedUlong(OwnerClientId)
     └─ ServerPlayerVesselInitializer handles vessel spawning
 ```
+
+**Client track seed synchronization** has three redundant paths to ensure reliability:
+
+| Path | Trigger | When |
+|---|---|---|
+| Immediate | `_netTrackSeed.Value != 0` at spawn time | Client joined after server set seed |
+| OnValueChanged | `_netTrackSeed.OnValueChanged` callback | Normal flow: client spawned before server writes seed |
+| Poll fallback | `WaitForTrackSeed()` — polls every 100ms for up to 5s | Edge case: `OnValueChanged` missed initial sync |
+
+All three paths call `SpawnTrackLocally()`, which is guarded by `_trackSpawned` to prevent double-spawning.
 
 ### 5. Track Generation
 
@@ -155,7 +170,7 @@ segmentSpawner.Initialize();
 | Straight Line Length | `base / Intensity` | 400 | 200 | 133 | 100 |
 | Helix Radius | `Intensity / 1.3` | 0.77 | 1.54 | 2.31 | 3.08 |
 
-**SegmentSpawner** (`Assets/_Scripts/Controller/Arcade/SegmentSpawner.cs`):
+**SegmentSpawner** (`Assets/_Scripts/Controller/Environment/MiniGameObjects/SegmentSpawner.cs`):
 - Deterministic spawning via seeded `Random.InitState(seed)`
 - Each segment slot calls `SelectSpawnable(currentIntensity)` to pick a track piece
 - Domain cycling: segments cycle through active player domains (Jade, Ruby, Gold) for color theming
@@ -224,37 +239,49 @@ gameData.OnMiniGameTurnStarted.Raise()
 
 ### 8. Winner Determination & Score Sync
 
-When any player collects all crystals, the turn ends. The winner's local `HexRaceScoreTracker` reports to the server:
+When any player collects all crystals, the turn monitor detects the condition and the turn ends. Winner detection is **server-authoritative** via `OnTurnEndedCustom()`:
 
 ```
-HexRaceScoreTracker.HandleGameEnd()
+TurnMonitorController.CheckEndOfTurn()  [server, every frame]
+│   └─ NetworkCrystalCollisionTurnMonitor.CheckForEndOfTurn()
+│       └─ return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target)
+│           └─ If true → gameData.InvokeGameTurnConditionsMet()
 │
-├─ crystalsRemaining = turnMonitor.GetRemainingCrystalsCountToCollect()
-├─ isWinner = (crystalsRemaining <= 0)
-├─ finalScore = isWinner ? _elapsedRaceTime : (10000 + crystalsRemaining)
-├─ gameData.LocalRoundStats.Score = finalScore
+├─ MultiplayerMiniGameControllerBase.HandleTurnEnd()  [server]
+│   ├─ SyncTurnEnd_ClientRpc()  — notifies all clients
+│   │   └─ [All clients] OnTurnEndedCustom()
+│   │       └─ HexRaceController.OnTurnEndedCustom()  [server only — guard: if (!IsServer) return]
+│   │           ├─ Guard: if (_raceEnded) return
+│   │           ├─ Find winner: first player with CrystalsCollected >= target
+│   │           ├─ _raceEnded = true
+│   │           ├─ winner.Score = elapsed race time (from LocalRoundStats.Score)
+│   │           ├─ For each non-winner:
+│   │           │   └─ stats.Score = 10000 + (target - stats.CrystalsCollected)
+│   │           ├─ gameData.SortRoundStats(UseGolfRules: true)
+│   │           ├─ gameData.CalculateDomainStats(UseGolfRules: true)
+│   │           └─ SyncFinalScoresSnapshot(winnerName)
+│   │               └─ SyncFinalScores_ClientRpc(names[], scores[], domains[], crystals[], winnerName)
+│   │                   ├─ Update all RoundStats on all clients
+│   │                   ├─ WinnerName = winnerName, RaceResultsReady = true
+│   │                   ├─ gameData.InvokeWinnerCalculated()
+│   │                   └─ gameData.InvokeMiniGameEnd()
+│   │
+│   └─ ExecuteServerTurnEnd()
+│       └─ TurnsTakenThisRound++ → ExecuteServerRoundEnd()
+│           └─ HasEndGame=false → SetupNewRound()
+│               └─ HexRaceController.SetupNewRound() override
+│                   └─ if (_raceEnded) return  — suppresses Ready button after race ends
 │
-├─ [Winner only]:
-│   ├─ ugsStatsManager.ReportHexRaceStats(mode, intensity, cleanStreak, drift, jousts, score)
-│   ├─ ugsStatsManager.ReportVesselTelemetry(telemetry, vesselType)
-│   └─ controller.ReportLocalPlayerFinished(finalScore)
-│       └─ ReportPlayerFinished_ServerRpc(finishTime, playerName)
-│
-└─ [Server] HexRaceController.ReportPlayerFinished_ServerRpc()
-    ├─ Guard: if (_raceEnded) return  — only first finisher counts
-    ├─ _raceEnded = true
-    ├─ winnerStats.Score = finishTimeSeconds
-    ├─ For each non-winner:
-    │   └─ stats.Score = 10000 + (crystalsToFinish - stats.CrystalsCollected)
-    ├─ gameData.SortRoundStats(UseGolfRules: true)  — lower time = rank 1
-    ├─ gameData.CalculateDomainStats(UseGolfRules: true)
-    └─ SyncFinalScoresSnapshot(winnerName)
-        └─ SyncFinalScores_ClientRpc(names[], scores[], domains[], crystals[], winnerName)
-            ├─ Update all RoundStats on all clients
-            ├─ WinnerName = winnerName, RaceResultsReady = true
-            ├─ gameData.InvokeWinnerCalculated()
-            └─ gameData.InvokeMiniGameEnd()
+├─ HexRaceScoreTracker.HandleGameEnd()  [each client, on OnMiniGameTurnEnd]
+│   ├─ Calculates local finalScore (race time for winner, 10000+remaining for losers)
+│   ├─ [Winner only] Reports UGS stats + vessel telemetry
+│   └─ [Winner only] controller.ReportLocalPlayerFinished(finalScore)
+│       └─ ReportPlayerFinished_ServerRpc()  — defensive fallback, no-op if _raceEnded
 ```
+
+**Primary vs fallback paths**: `OnTurnEndedCustom()` is the primary server-side winner detection path. The legacy `ReportPlayerFinished_ServerRpc()` (called by `HexRaceScoreTracker` on the winner's client) is retained as a defensive fallback but is effectively a no-op — by the time the client-side ServerRpc arrives, `_raceEnded` is already `true` from `OnTurnEndedCustom()`.
+
+**`SetupNewRound()` suppression**: After the turn→round→game flow completes, the base controller calls `SetupNewRound()` (because `HasEndGame=false`). `HexRaceController` overrides this to return immediately when `_raceEnded=true`, preventing the Ready button from appearing after the race ends.
 
 **Scoring Rules:**
 
@@ -283,21 +310,56 @@ bool didWin = hexRaceController.RaceResultsReady
 
 ### 10. Replay & Rematch
 
-`HexRaceController.OnResetForReplayCustom()`:
+HexRace uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`). The in-place `OnResetForReplayCustom()` method was removed — flora, fauna, and environment spawners don't fully reset in-place, so a clean scene reload is required.
+
+**Replay flow** (triggered by Scoreboard "Play Again" button):
 
 ```
-Reset:
-├─ _raceEnded = false, _trackSpawned = false
-├─ WinnerName = "", RaceResultsReady = false
-├─ Clear all RoundStats scores + crystals
-├─ [Server] Reset NetworkVariables (_netCrystalsToFinish, _netTrackSeed)
-├─ [Server] SpawnTrackEarly().Forget()  — re-generate track with new seed
-└─ RaiseToggleReadyButtonEvent(true)  — show Ready button again
+Scoreboard.OnPlayAgainButtonPressed()
+│
+├─ [Multiplayer: 2+ humans]
+│   ├─ RequestRematch(playerName) → RequestRematch_ServerRpc → RequestRematch_ClientRpc
+│   │   └─ Opponent sees "PlayerName wants a rematch!" panel (YES/NO)
+│   ├─ YES → OnAcceptRematch() → RequestReplay()
+│   └─ NO → OnDeclineRematch() → NotifyRematchDeclined()
+│
+└─ [Solo with AI / accepted rematch]
+    └─ RequestReplay() → [Client] RequestReplay_ServerRpc → ExecuteReplaySequence()
+
+ExecuteReplaySequence()  [Server]
+│
+├─ Guard: if (_isResetting) return
+├─ _isResetting = true
+├─ UseSceneReloadForReplay=true → ExecuteSceneReloadReplay().Forget()
+│
+└─ ExecuteSceneReloadReplay()
+    ├─ gameData.IsReplayReload = true
+    ├─ PrepareForSceneReload_ClientRpc()  — all clients:
+    │   ├─ gameData.IsReplayReload = true
+    │   └─ sceneTransitionManager.SetFadeImmediate(1f)  — instant fade to black
+    ├─ await UniTask.Delay(500ms)  — wait for fade
+    ├─ Clear vessel references:
+    │   ├─ For each player: NetVesselId = 0
+    │   ├─ For each vessel: NetworkObject.Despawn(false)
+    │   └─ gameData.Vessels.Clear()
+    ├─ gameData.ResetRuntimeData()
+    └─ nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single)
+        └─ Scene destroyed + reloaded → fresh OnNetworkSpawn for everything
+
+Post-Reload (via InitializeAfterDelay):
+├─ gameData.IsReplayReload detected → subscribe to OnClientReady
+├─ OnClientReady fires (vessel spawned) → FadeFromBlackOnReplay()
+│   └─ sceneTransitionManager.FadeFromBlack()  — smooth fade in
+└─ Normal initialization continues (SetupNewRound, Ready button, etc.)
 ```
 
-Replay flows through `MultiplayerMiniGameControllerBase.RequestReplay()`:
-- Client → `RequestReplay_ServerRpc()` → Server → `ResetForReplay_ClientRpc()` (all clients)
-- Rematch requests broadcast via `RequestRematch_ServerRpc/ClientRpc` with opponent notification
+**Rematch request UI** (multiplayer with 2+ humans):
+
+| Panel | Recipient | Auto-Dismiss |
+|---|---|---|
+| "Waiting for Response..." | Requester (sender) | 2 seconds |
+| "PlayerName wants a rematch!" (YES/NO) | Opponent | None — waits for button press |
+| "Rematch declined" | Requester (if NO pressed) | 2 seconds |
 
 ## Elemental Comeback System
 
@@ -361,7 +423,7 @@ ugsStatsManager.ReportHexRaceStats(
 | Stats provider | `HexRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Base crystal monitor | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Arcade/` |
+| Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | End game controller | `HexRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `HexRaceHUD.cs` | `_Scripts/UI/` |
 | HUD view | `HexRaceHUDView.cs` | `_Scripts/UI/` |
@@ -388,18 +450,24 @@ ugsStatsManager.ReportHexRaceStats(
 
 1. **No separate singleplayer scene**: The original `MultiplayerHexRace` concept was consolidated into a single scene. All games run through Netcode regardless of player count. Solo games run as a host with AI-spawned opponents.
 
-2. **Server authority is critical**: Only the server can declare the race ended (`_raceEnded` flag). If two players finish on the same frame, only the first `ServerRpc` through the gate wins. This prevents race conditions.
+2. **Server-authoritative winner detection**: Winner detection runs entirely on the server via `OnTurnEndedCustom()`, which fires when `SyncTurnEnd_ClientRpc` is sent to all clients. The server finds the first player with enough crystals, sets `_raceEnded=true`, calculates all scores, and broadcasts via `SyncFinalScores_ClientRpc`. The legacy `ReportPlayerFinished_ServerRpc` (from client-side `HexRaceScoreTracker`) is retained as a defensive fallback but is effectively a no-op since `_raceEnded` is already set.
 
 3. **Deterministic track**: All clients must produce identical tracks from the same seed + intensity. The `SegmentSpawner` uses `Random.InitState(seed)` before spawning to ensure determinism.
 
-4. **Crystal count default**: 39 crystals comes from the track's `SpawnableWaypointTrack` waypoint count. This can be overridden via `crystalsToFinishOverride` (inspector) or `_netCrystalsToFinish` (NetworkVariable, set by turn monitor).
+4. **Crystal count default**: 39 crystals comes from the track's `SpawnableWaypointTrack` waypoint count. This can be overridden via `crystalsToFinishOverride` (inspector, when `useTestCrystalOverride=true`) or `_netCrystalsToFinish` (NetworkVariable, set by turn monitor).
 
-5. **Comeback mechanics**: The `ElementalComebackSystem` is critical for competitive balance — it buffs losing players proportionally to their crystal deficit, preventing runaway victories.
+5. **Comeback mechanics**: The `ElementalComebackSystem` is critical for competitive balance — it buffs losing players proportionally to their crystal deficit, preventing runaway victories. Configured via `SO_ElementalComebackProfile` with per-vessel, per-element weights.
 
-6. **EndGame override**: `HexRaceController` overrides `EndGame()` as a no-op to prevent double `InvokeMiniGameEnd()`. HexRace handles end-game entirely through its own `ReportPlayerFinished_ServerRpc()` → `SyncFinalScores_ClientRpc()` path, which calls `InvokeMiniGameEnd()` directly.
+6. **HasEndGame=false + SetupNewRound suppression**: `HexRaceController` sets `HasEndGame => false` to prevent the base controller's turn→round→game flow from calling `SyncGameEnd_ClientRpc` (which would duplicate `InvokeMiniGameEnd`). HexRace handles end-game entirely through `OnTurnEndedCustom()` → `SyncFinalScores_ClientRpc()`. Since `HasEndGame=false` causes `ExecuteServerRoundEnd` to call `SetupNewRound()` instead of `ExecuteServerGameEnd()`, `HexRaceController` also overrides `SetupNewRound()` to return immediately when `_raceEnded=true`, preventing the Ready button from reappearing.
 
 7. **Unified TurnMonitorController**: The scene uses `TurnMonitorController` (single class, no separate `NetworkTurnMonitorController`). It handles both singleplayer (`OnEnable`) and multiplayer (`OnNetworkSpawn`) lifecycle automatically.
 
 8. **DI-injected config**: `ArcadeGameConfigureModal` uses `[Inject]` for `GameDataSO` and `HostConnectionDataSO` (not `[SerializeField]`). Both are DI-registered in `AppManager`.
 
-6. **Vessel flexibility**: While Squirrel is the primary racing vessel, HexRace supports multiple vessel types via `SO_ArcadeGame.Captains`. Players can select any available vessel.
+9. **Full scene reload for replay**: HexRace uses `UseSceneReloadForReplay = true` instead of in-place reset. Flora, fauna, and environment spawners don't fully reset in-place, so a clean network scene reload ensures pristine state. The `OnResetForReplayCustom()` method was removed entirely — all race state, track, and environment objects are destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
+
+10. **ExternalResetControl**: `HexRaceController` sets `segmentSpawner.ExternalResetControl = true` on spawn to prevent `SegmentSpawner` from auto-resetting on `OnResetForReplay` events. Since HexRace uses scene reload, the track lifecycle is managed entirely by the controller (seed generation → `SpawnTrackLocally()` → scene destruction on replay).
+
+11. **Client seed poll fallback**: In addition to the `OnValueChanged` callback on `_netTrackSeed`, clients start a polling fallback (`WaitForTrackSeed`) that checks the NetworkVariable every 100ms for up to 5 seconds. This covers edge cases where `OnValueChanged` doesn't fire for the initial sync and the `SpawnTrack_ClientRpc` was sent before the client spawned.
+
+12. **Vessel flexibility**: While Squirrel is the primary racing vessel, HexRace supports multiple vessel types via `SO_ArcadeGame.Captains`. Players can select any available vessel.
