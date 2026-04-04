@@ -52,10 +52,26 @@ public class SegmentSpawner : MonoBehaviour
     [Tooltip("Radius of the ring that the guaranteed shapes are arranged in at the cluster point.")]
     [SerializeField] float guaranteedShapeClusterRadius = 80f;
 
+    // Runtime — distribution overrides (set via ConfigureGuaranteedDistribution before Initialize)
+    private bool _distributeAlongTrack;
+    private int _guaranteedRepeatCount = 1;
+    private float _guaranteedScaleFactor = 1f;
+
     // Runtime state
     private GameObject SpawnedSegmentContainer;
     private List<Trail> trails = new();
     private float[] _normalizedWeights;
+
+    /// <summary>
+    /// Configure guaranteed shape distribution along the track instead of in a single cluster.
+    /// Call before Initialize().
+    /// </summary>
+    public void ConfigureGuaranteedDistribution(bool alongTrack, int repeatCount = 1, float scaleFactor = 1f)
+    {
+        _distributeAlongTrack = alongTrack;
+        _guaranteedRepeatCount = Mathf.Max(1, repeatCount);
+        _guaranteedScaleFactor = scaleFactor;
+    }
 
     void Start()
     {
@@ -199,6 +215,12 @@ public class SegmentSpawner : MonoBehaviour
     {
         if (guaranteedSpawnables == null || guaranteedSpawnables.Count == 0) return;
 
+        if (_distributeAlongTrack && StraightLineLength > 0)
+        {
+            SpawnGuaranteedAlongTrack(intensity);
+            return;
+        }
+
         var worldOrigin = origin + transform.position;
 
         // Pick a random direction from center for the cluster
@@ -236,6 +258,45 @@ public class SegmentSpawner : MonoBehaviour
             spawned.transform.rotation = Quaternion.LookRotation(worldOrigin - spawned.transform.position, clusterDirection);
 
             trails.AddRange(spawnable.GetTrails());
+        }
+    }
+
+    void SpawnGuaranteedAlongTrack(int intensity)
+    {
+        var worldOrigin = origin + transform.position;
+
+        foreach (var spawnablePrefab in guaranteedSpawnables)
+        {
+            if (spawnablePrefab == null) continue;
+
+            for (int seg = 0; seg < NumberOfSegments; seg++)
+            {
+                // Instantiate an independent copy of the spawnable so each
+                // Spawn() call has its own cache/state — avoids issues with
+                // repeated Spawn() on the same prefab reference.
+                var spawnableInstance = Instantiate(spawnablePrefab);
+                spawnableInstance.gameObject.SetActive(false);
+
+                if (Seed != 0) spawnableInstance.SetSeed(Seed + 2000 + seg);
+
+                var spawned = spawnableInstance.Spawn(intensity);
+
+                // Grab trails before destroying the temporary spawnable
+                trails.AddRange(spawnableInstance.GetTrails());
+                Destroy(spawnableInstance.gameObject);
+
+                if (!spawned) continue;
+
+                spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+
+                float z = seg * StraightLineLength + StraightLineLength * 0.5f;
+                float side = (seg % 2 == 0) ? 1f : -1f;
+                spawned.transform.position = worldOrigin + new Vector3(side * guaranteedShapeClusterRadius, 0f, z);
+                spawned.transform.rotation = Quaternion.LookRotation(Vector3.forward);
+
+                if (_guaranteedScaleFactor != 1f)
+                    spawned.transform.localScale = Vector3.one * _guaranteedScaleFactor;
+            }
         }
     }
 

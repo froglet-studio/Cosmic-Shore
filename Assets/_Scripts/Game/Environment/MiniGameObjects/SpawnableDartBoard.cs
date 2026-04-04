@@ -12,6 +12,12 @@ public class SpawnableDartBoard : SpawnableBase
     [SerializeField] float ringThickness = 5f;
     [SerializeField] float gap = 6;
 
+    [Header("Domain")]
+    [Tooltip("When true, all blocks use Domains.None so they are hostile to every player's explosions.")]
+    [SerializeField] bool hostileToAll;
+
+    public bool HostileToAll { get => hostileToAll; set => hostileToAll = value; }
+
     protected override SpawnTrailData[] GenerateTrailData()
     {
         var trailDataList = new SpawnTrailData[ringCount];
@@ -69,12 +75,12 @@ public class SpawnableDartBoard : SpawnableBase
                 if ((block / ring + ring / 3) % 2 == 0)
                 {
                     prism = greenPrism;
-                    blockDomain = Domains.Jade;
+                    blockDomain = hostileToAll ? Domains.None : Domains.Jade;
                 }
                 else
                 {
                     prism = redPrism;
-                    blockDomain = Domains.Ruby;
+                    blockDomain = hostileToAll ? Domains.None : Domains.Ruby;
                 }
 
                 var point = td.Points[block];
