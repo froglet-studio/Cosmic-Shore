@@ -27,10 +27,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] int seed = 0;
 
         [Header("Race Rules")]
-        [Tooltip("Enable to override the waypoint-calculated crystal target for testing.")]
-        [SerializeField] bool useTestCrystalOverride;
-        [Tooltip("Crystal count to end the race when useTestCrystalOverride is true (e.g. 1-3 for quick testing).")]
-        [SerializeField] int crystalsToFinishOverride = 3;
+        [Tooltip("The NetworkCrystalCollisionTurnMonitor that drives race end conditions. " +
+                 "Read CrystalTarget from it for scoring.")]
+        [SerializeField] NetworkCrystalCollisionTurnMonitor crystalMonitor;
 
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
@@ -38,8 +37,6 @@ namespace CosmicShore.Gameplay
         private bool _trackSpawned;
         private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
-        private readonly NetworkVariable<int> _netCrystalsToFinish = new(0);
-
         // Single source of truth for who won — set authoritatively by server, read by end game controller
         public string WinnerName { get; private set; } = "";
         public bool RaceResultsReady { get; private set; } = false;
@@ -307,26 +304,9 @@ namespace CosmicShore.Gameplay
 
         int ResolveCrystalsToFinishTarget()
         {
-            if (_netCrystalsToFinish.Value > 0) return _netCrystalsToFinish.Value;
-            if (crystalsToFinishOverride > 0) return crystalsToFinishOverride;
+            if (crystalMonitor != null && crystalMonitor.CrystalTarget > 0)
+                return crystalMonitor.CrystalTarget;
             return 39;
-        }
-
-        public int GetTestCrystalOverride()
-            => useTestCrystalOverride ? Mathf.Max(1, crystalsToFinishOverride) : -1;
-
-        public void SetCrystalsToFinishServer(int value)
-        {
-            if (!IsServer) return;
-            _netCrystalsToFinish.Value = Mathf.Max(1, value);
-        }
-
-        public void NotifyCrystalsCollected(string playerName, int crystalsCollected)
-        {
-            if (!IsServer) return;
-            var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (stat != null)
-                stat.CrystalsCollected = crystalsCollected;
         }
 
         void SyncFinalScoresSnapshot(string winnerName)

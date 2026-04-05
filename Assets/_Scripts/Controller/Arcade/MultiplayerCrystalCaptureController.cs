@@ -9,26 +9,7 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerCrystalCaptureController : MultiplayerDomainGamesController
     {
-        public enum EndCondition
-        {
-            TimeBased,
-            CrystalTarget,
-        }
-
-        [Header("Crystal Capture")]
-        [SerializeField] EndCondition endCondition = EndCondition.TimeBased;
-
-        [Tooltip("Crystal count required to win when endCondition is CrystalTarget.")]
-        [SerializeField] int crystalTarget = 50;
-
-        [Header("Turn Monitors")]
-        [Tooltip("Assign the time-based monitor GameObject (disabled at runtime when not needed).")]
-        [SerializeField] GameObject timeBasedMonitorObject;
-        [Tooltip("Assign the crystal-target monitor GameObject (disabled at runtime when not needed).")]
-        [SerializeField] GameObject crystalTargetMonitorObject;
-
         private bool _finalResultsSent;
-        private readonly NetworkVariable<int> _netCrystalTarget = new(0);
 
         /// <summary>
         /// Authoritative winner name — set by server, read by EndGameController.
@@ -55,22 +36,6 @@ namespace CosmicShore.Gameplay
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
-
-            ConfigureTurnMonitors();
-
-            if (IsServer && endCondition == EndCondition.CrystalTarget)
-                _netCrystalTarget.Value = crystalTarget;
-        }
-
-        /// <summary>
-        /// Enables only the turn monitor matching the configured end condition.
-        /// </summary>
-        void ConfigureTurnMonitors()
-        {
-            if (timeBasedMonitorObject)
-                timeBasedMonitorObject.SetActive(endCondition == EndCondition.TimeBased);
-            if (crystalTargetMonitorObject)
-                crystalTargetMonitorObject.SetActive(endCondition == EndCondition.CrystalTarget);
         }
 
         // ── Server-authoritative game end ─────────────────────────────────
@@ -99,31 +64,19 @@ namespace CosmicShore.Gameplay
             SyncFinalScoresSnapshot(winnerName);
         }
 
+        /// <summary>
+        /// Highest CrystalsCollected wins — works for both time-based and crystal-target
+        /// end conditions since the turn monitor system determines when the turn ends.
+        /// </summary>
         string DetermineWinner()
         {
             if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0)
                 return "";
 
-            switch (endCondition)
-            {
-                case EndCondition.TimeBased:
-                {
-                    // Time expired — highest CrystalsCollected wins
-                    var winner = gameData.RoundStatsList
-                        .OrderByDescending(s => s.CrystalsCollected)
-                        .First();
-                    return winner.Name;
-                }
-                case EndCondition.CrystalTarget:
-                {
-                    // First to reach target wins
-                    int target = _netCrystalTarget.Value > 0 ? _netCrystalTarget.Value : crystalTarget;
-                    var winner = gameData.RoundStatsList.FirstOrDefault(s => s.CrystalsCollected >= target);
-                    return winner?.Name ?? "";
-                }
-                default:
-                    return "";
-            }
+            var winner = gameData.RoundStatsList
+                .OrderByDescending(s => s.CrystalsCollected)
+                .First();
+            return winner.Name;
         }
 
         /// <summary>
