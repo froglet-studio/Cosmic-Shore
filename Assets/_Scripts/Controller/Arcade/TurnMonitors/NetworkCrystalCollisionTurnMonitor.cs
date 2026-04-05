@@ -16,18 +16,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Crystal count when useTestCrystalOverride is true (e.g. 1-3 for quick testing).")]
         [SerializeField] int crystalsToFinishOverride = 3;
 
-        [Header("SOAP Events")]
-        [Tooltip("Raised after the server resolves and sets the crystal target. " +
-                 "Subscribers can read CrystalTarget for the resolved value.")]
-        [SerializeField] ScriptableEventNoParam onCrystalTargetResolved;
+        [Header("SOAP Data")]
+        [Tooltip("Shared crystal target variable. Written by this monitor on StartMonitor (server), " +
+                 "readable by any system (game controllers, HUDs) via SOAP.")]
+        [SerializeField] IntVariable crystalTargetVariable;
 
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
-
-        /// <summary>
-        /// The server-authoritative crystal target. Readable by any system (e.g. game controllers)
-        /// after <see cref="onCrystalTargetResolved"/> fires.
-        /// </summary>
-        public int CrystalTarget => _netCrystalCollisions.Value;
 
         public override void OnNetworkSpawn()
         {
@@ -45,11 +39,12 @@ namespace CosmicShore.Gameplay
 
             _netCrystalCollisions.Value = target;
 
+            // Publish resolved target to shared SOAP variable so any system can read it
+            if (crystalTargetVariable)
+                crystalTargetVariable.Value = target;
+
             CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
                       $"(override={overrideTarget > 0}, intensity={gameData.SelectedIntensity.Value})");
-
-            if (onCrystalTargetResolved)
-                onCrystalTargetResolved.Raise();
         }
 
         public override bool CheckForEndOfTurn()

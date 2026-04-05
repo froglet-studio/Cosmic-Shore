@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Obvious.Soap;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -27,9 +28,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] int seed = 0;
 
         [Header("Race Rules")]
-        [Tooltip("The NetworkCrystalCollisionTurnMonitor that drives race end conditions. " +
-                 "Read CrystalTarget from it for scoring.")]
-        [SerializeField] NetworkCrystalCollisionTurnMonitor crystalMonitor;
+        [Tooltip("Shared crystal target resolved by the turn monitor. " +
+                 "Read by this controller for loser score calculation.")]
+        [SerializeField] IntVariable crystalTargetVariable;
 
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
@@ -304,8 +305,8 @@ namespace CosmicShore.Gameplay
 
         int ResolveCrystalsToFinishTarget()
         {
-            if (crystalMonitor != null && crystalMonitor.CrystalTarget > 0)
-                return crystalMonitor.CrystalTarget;
+            if (crystalTargetVariable != null && crystalTargetVariable.Value > 0)
+                return crystalTargetVariable.Value;
             return 39;
         }
 
