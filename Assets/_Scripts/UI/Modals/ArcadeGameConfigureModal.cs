@@ -857,6 +857,12 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.NotifyConfigClosed();
 
             _isClientMode = false;
+
+            // Clear stale state so the modal never reopens showing a
+            // previously-selected game (e.g. after returning from a game scene).
+            _selectedGame = null;
+            if (config) config.ResetState();
+
             ModalWindowOut();
         }
 
@@ -910,6 +916,10 @@ namespace CosmicShore.UI
                 Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch()</color>");
                 gameData.InvokeGameLaunch();
             }
+
+            // Clear runtime state so it can't resurface after returning to menu
+            _selectedGame = null;
+            if (config) config.ResetState();
 
             // Close the modal on all instances
             ModalWindowOut();
