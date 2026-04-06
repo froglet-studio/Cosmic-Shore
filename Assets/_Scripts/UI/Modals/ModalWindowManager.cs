@@ -36,11 +36,6 @@ namespace CosmicShore.UI
                 windowAnimator = GetComponent<Animator>();
 
             _screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
-
-            // Ensure modals start hidden — scene-serialized CanvasGroup values
-            // may be stale (e.g. alpha=1) which causes modals to flash on load.
-            if (!isOn)
-                SetCanvasGroupVisible(false);
         }
 
         protected virtual void Update()
