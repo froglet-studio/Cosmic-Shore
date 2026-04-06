@@ -26,11 +26,17 @@ namespace CosmicShore.Gameplay
 
         void Awake()
         {
-            _sprites = new[] { countdown3, countdown2, countdown1, countdown0 };
+            EnsureSpritesInitialized();
+        }
+
+        void EnsureSpritesInitialized()
+        {
+            _sprites ??= new[] { countdown3, countdown2, countdown1, countdown0 };
         }
 
         public void BeginCountdown(Action onComplete)
         {
+            EnsureSpritesInitialized();
             _seq?.Kill();
             _seq = DOTween.Sequence();
 
