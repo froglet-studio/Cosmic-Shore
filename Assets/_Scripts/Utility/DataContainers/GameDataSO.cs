@@ -80,6 +80,12 @@ namespace CosmicShore.Utility
         public int RequestedTeamCount = 3;
 
         /// <summary>
+        /// Whether the current game uses golf-style scoring (lower = better).
+        /// Set by <see cref="SortRoundStats"/> during end-game flow.
+        /// </summary>
+        public bool IsGolfRules { get; private set; }
+
+        /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
         /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
         /// and ServerPlayerVesselInitializerWithAI see correct values.
@@ -291,6 +297,7 @@ namespace CosmicShore.Utility
         
         public void SortRoundStats(bool golfRules)
         {
+            IsGolfRules = golfRules;
             if (golfRules)
                 RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
             else

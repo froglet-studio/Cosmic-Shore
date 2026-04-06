@@ -5,12 +5,13 @@ using CosmicShore.Core;
 using CosmicShore.Utility;
 using DG.Tweening;
 using Obvious.Soap;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System;
 
 namespace CosmicShore.UI
 {
@@ -50,6 +51,11 @@ namespace CosmicShore.UI
         [SerializeField] protected Transform MultiplayerView;
         [SerializeField] protected List<TMP_Text> PlayerNameTextFields;
         [SerializeField] protected List<TMP_Text> PlayerScoreTextFields;
+
+        [Header("Team Scorecards")]
+        [Tooltip("Assign the 3 TeamScorecard components from the MultiplayerView hierarchy (winner displayed first).")]
+        [SerializeField] private TeamScorecard[] teamScorecards;
+        [SerializeField] private DomainColorPaletteSO domainColorPalette;
 
         [Header("Multiplayer Rematch")]
         [Tooltip("Shown to the player who SENT the request — auto-dismisses after 2s if no response")]
@@ -306,6 +312,7 @@ namespace CosmicShore.UI
             gameData.IsLocalDomainWinner(out DomainStats winnerStats);
             SetBannerForDomain(winnerStats.Domain);
             DisplayPlayerScores();
+            PopulateTeamScorecards();
 
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView)  MultiplayerView.gameObject.SetActive(true);
@@ -350,6 +357,99 @@ namespace CosmicShore.UI
                 if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
                     PlayerScoreTextFields[i].text = "";
             }
+        }
+
+        protected virtual void PopulateTeamScorecards()
+        {
+            if (teamScorecards == null || teamScorecards.Length == 0)
+                return;
+
+            var teamGroups = new Dictionary<Domains, List<IRoundStats>>();
+            foreach (var rs in gameData.RoundStatsList)
+            {
+                if (!teamGroups.TryGetValue(rs.Domain, out var list))
+                {
+                    list = new List<IRoundStats>(2);
+                    teamGroups[rs.Domain] = list;
+                }
+                list.Add(rs);
+            }
+
+            // Sort teams in the same order as DomainStatsList (winner first)
+            var sortedDomains = gameData.DomainStatsList
+                .Select(ds => ds.Domain)
+                .Where(d => teamGroups.ContainsKey(d))
+                .ToList();
+
+            foreach (var domain in teamGroups.Keys)
+            {
+                if (!sortedDomains.Contains(domain))
+                    sortedDomains.Add(domain);
+            }
+
+            bool isGolfRules = gameData.IsGolfRules;
+
+            for (int i = 0; i < teamScorecards.Length; i++)
+            {
+                if (i >= sortedDomains.Count)
+                {
+                    teamScorecards[i].Show(false);
+                    continue;
+                }
+
+                teamScorecards[i].Show(true);
+
+                var domain = sortedDomains[i];
+                var players = teamGroups[domain];
+
+                float teamScoreValue = isGolfRules
+                    ? players.Min(p => p.Score)
+                    : players.Sum(p => p.Score);
+
+                var playerDisplays = new List<PlayerDisplayData>(players.Count);
+                foreach (var p in players)
+                {
+                    playerDisplays.Add(new PlayerDisplayData
+                    {
+                        Name  = p.Name,
+                        Score = FormatScore(p.Score, isGolfRules),
+                    });
+                }
+
+                Color domainColor = GetDomainColor(domain);
+                string teamName = domain.ToString().ToUpper();
+                string teamScore = FormatScore(teamScoreValue, isGolfRules);
+
+                teamScorecards[i].Populate(teamName, teamScore, domainColor, playerDisplays);
+            }
+        }
+
+        protected string FormatScore(float score, bool isGolfRules)
+        {
+            if (isGolfRules)
+            {
+                var ts = TimeSpan.FromSeconds(score);
+                return ts.TotalMinutes >= 1
+                    ? $"{(int)ts.TotalMinutes}:{ts.Seconds:D2}.{ts.Milliseconds / 100}"
+                    : $"{ts.Seconds}.{ts.Milliseconds / 100}s";
+            }
+
+            return ((int)score).ToString();
+        }
+
+        private Color GetDomainColor(Domains domain)
+        {
+            if (domainColorPalette)
+                return domainColorPalette.Get(domain);
+
+            return domain switch
+            {
+                Domains.Jade => JadeTeamBannerColor,
+                Domains.Ruby => RubyTeamBannerColor,
+                Domains.Gold => GoldTeamBannerColor,
+                Domains.Blue => BlueTeamBannerColor,
+                _            => Color.white,
+            };
         }
 
         #endregion

@@ -1,6 +1,8 @@
 using System;
-using UnityEngine;
+using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Data;
+using UnityEngine;
 
 namespace CosmicShore.UI
 {
@@ -21,9 +23,19 @@ namespace CosmicShore.UI
 
             base.DisplayPlayerScores();
             FormatMultiplayerTimeOrCrystals();
+            PopulateTeamScorecards();
 
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// Override team scorecard population with HexRace-specific time/crystal formatting.
+        /// </summary>
+        protected override void PopulateTeamScorecards()
+        {
+            // Use the race-specific FormatScore for team scorecards
+            base.PopulateTeamScorecards();
         }
 
         void FormatMultiplayerTimeOrCrystals()
@@ -33,20 +45,20 @@ namespace CosmicShore.UI
             for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
             {
                 if (!PlayerScoreTextFields[i]) continue;
-
-                float score = playerScores[i].Score;
-
-                if (score < 10000f)
-                {
-                    TimeSpan t = TimeSpan.FromSeconds(score);
-                    PlayerScoreTextFields[i].text = $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
-                }
-                else
-                {
-                    int crystalsLeft = Mathf.Max(0, (int)(score - 10000f));
-                    PlayerScoreTextFields[i].text = $"{crystalsLeft} Crystals Left";
-                }
+                PlayerScoreTextFields[i].text = FormatRaceScore(playerScores[i].Score);
             }
+        }
+
+        static string FormatRaceScore(float score)
+        {
+            if (score < 10000f)
+            {
+                TimeSpan t = TimeSpan.FromSeconds(score);
+                return $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
+            }
+
+            int crystalsLeft = Mathf.Max(0, (int)(score - 10000f));
+            return $"{crystalsLeft} Crystals Left";
         }
     }
 }
