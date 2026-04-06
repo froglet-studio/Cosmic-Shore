@@ -286,6 +286,48 @@ PrefabInstance:
       propertyPath: m_Name
       value: GameCanvas-HexRace
       objectReference: {fileID: 0}
+    - target: {fileID: 3870071580335586427, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3870071580335586427, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1078953729}
+    - target: {fileID: 3870071580335586427, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnReadyClicked
+      objectReference: {fileID: 0}
+    - target: {fileID: 3870071580335586427, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.Gameplay.HexRaceController, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: animSettings
+      value: 
+      objectReference: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d,
+        type: 2}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: multiplayerController
+      value: 
+      objectReference: {fileID: 1078953729}
+    - target: {fileID: 6391527905454452042, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: hexRaceController
+      value: 
+      objectReference: {fileID: 1078953729}
+    - target: {fileID: 6776421237982909725, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: animSettings
+      value: 
+      objectReference: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d,
+        type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
