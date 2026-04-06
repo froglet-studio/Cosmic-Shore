@@ -32,15 +32,19 @@ namespace CosmicShore.Gameplay
                  "Read by this controller for loser score calculation.")]
         [SerializeField] IntVariable crystalTargetVariable;
 
+        [Header("SOAP Race Results")]
+        [Tooltip("Server-authoritative winner name. Written by SyncFinalScores_ClientRpc, " +
+                 "read by EndGameController.")]
+        [SerializeField] StringVariable raceWinnerName;
+        [Tooltip("True once final scores have been synced to all clients.")]
+        [SerializeField] BoolVariable raceResultsReady;
+
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         private bool _raceEnded;
         private bool _trackSpawned;
         private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
-        // Single source of truth for who won — set authoritatively by server, read by end game controller
-        public string WinnerName { get; private set; } = "";
-        public bool RaceResultsReady { get; private set; } = false;
 
         protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
@@ -57,6 +61,10 @@ namespace CosmicShore.Gameplay
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
+
+            // Clear SOAP race results (fresh state for scene reload replays)
+            if (raceWinnerName) raceWinnerName.Value = "";
+            if (raceResultsReady) raceResultsReady.Value = false;
 
             // HexRaceController owns the track lifecycle (seed generation, spawning, replay reset).
             // Prevent SegmentSpawner from auto-resetting on OnResetForReplay.
@@ -263,46 +271,6 @@ namespace CosmicShore.Gameplay
             base.SetupNewRound();
         }
 
-        // ── Legacy client-side report (kept as defensive fallback) ────────
-
-        // Called by HexRaceScoreTracker when the local player finishes.
-        // With OnTurnEndedCustom handling server-side detection, this is now a
-        // no-op (guarded by _raceEnded in ReportPlayerFinished_ServerRpc).
-        public void ReportLocalPlayerFinished(float finishTimeSeconds)
-        {
-            string myName = gameData.LocalPlayer.Name;
-            ReportPlayerFinished_ServerRpc(finishTimeSeconds, myName);
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void ReportPlayerFinished_ServerRpc(float finishTimeSeconds, string playerName)
-        {
-            if (_raceEnded) return;
-            _raceEnded = true;
-
-            var winnerStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (winnerStats == null)
-            {
-                CSDebug.LogError($"[HexRace] Could not find RoundStats for winner '{playerName}'. " +
-                               $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
-                return;
-            }
-
-            winnerStats.Score = finishTimeSeconds;
-
-            int crystalsToFinish = ResolveCrystalsToFinishTarget();
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                if (stats.Name == playerName) continue;
-                int crystalsLeft = Mathf.Max(0, crystalsToFinish - stats.CrystalsCollected);
-                stats.Score = 10000f + crystalsLeft;
-            }
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-            SyncFinalScoresSnapshot(playerName);
-        }
-
         int ResolveCrystalsToFinishTarget()
         {
             if (crystalTargetVariable != null && crystalTargetVariable.Value > 0)
@@ -355,9 +323,9 @@ namespace CosmicShore.Gameplay
                 stat.CrystalsCollected = crystalsCollected[i];
             }
 
-            // Authoritative winner — single source of truth consumed by EndGameController
-            WinnerName = winnerName.ToString();
-            RaceResultsReady = true;
+            // Authoritative winner — written to SOAP variables, consumed by EndGameController
+            if (raceWinnerName) raceWinnerName.Value = winnerName.ToString();
+            if (raceResultsReady) raceResultsReady.Value = true;
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);

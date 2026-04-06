@@ -23,9 +23,24 @@ namespace CosmicShore.Gameplay
 
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
-        public override void OnNetworkSpawn()
+        void OnEnable()
         {
-            base.OnNetworkSpawn();
+            _netCrystalCollisions.OnValueChanged += OnCrystalTargetSynced;
+        }
+
+        void OnDisable()
+        {
+            _netCrystalCollisions.OnValueChanged -= OnCrystalTargetSynced;
+        }
+
+        /// <summary>
+        /// Fires on all clients when the server writes to <c>_netCrystalCollisions</c>.
+        /// Keeps the shared SOAP variable in sync so any system can read it.
+        /// </summary>
+        void OnCrystalTargetSynced(int previousValue, int newValue)
+        {
+            if (crystalTargetVariable && newValue > 0)
+                crystalTargetVariable.Value = newValue;
         }
 
         public override void StartMonitor()
