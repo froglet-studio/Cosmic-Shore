@@ -15,10 +15,6 @@ namespace CosmicShore.Gameplay
 
         private bool _finalResultsSent;
 
-        // Single source of truth — set by server, read by EndGameController
-        public string WinnerName { get; private set; } = "";
-        public bool ResultsReady { get; private set; } = false;
-
         protected override bool UseGolfRules => true;
 
         public override void OnNetworkSpawn()
@@ -161,14 +157,14 @@ namespace CosmicShore.Gameplay
                 stat.Domain        = (Domains)domains[i];
             }
 
-            // Authoritative winner — EndGameController reads this, not RoundStatsList[0]
-            WinnerName   = winnerName.ToString();
-            ResultsReady = true;
+            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // OnWinnerCalculated (below) is the "results ready" signal.
+            gameData.WinnerName = winnerName.ToString();
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
 
-            CSDebug.Log($"[JoustController] Client synced. Winner='{WinnerName}' " +
+            CSDebug.Log($"[JoustController] Client synced. Winner='{gameData.WinnerName}' " +
                       $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F1}"))}]");
 
             gameData.InvokeWinnerCalculated();
@@ -179,8 +175,6 @@ namespace CosmicShore.Gameplay
         {
             base.OnResetForReplayCustom();
             _finalResultsSent = false;
-            WinnerName   = "";
-            ResultsReady = false;
 
             if (joustTurnMonitor) joustTurnMonitor.ResetMonitor();
 

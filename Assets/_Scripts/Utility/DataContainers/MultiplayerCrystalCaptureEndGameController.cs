@@ -8,15 +8,11 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerCrystalCaptureEndGameController : EndGameCinematicController
     {
-        [Header("Crystal Capture")]
-        [SerializeField] private MultiplayerCrystalCaptureController controller;
-
         protected override bool DetermineLocalPlayerWon()
         {
             var localName = gameData.LocalPlayer?.Name;
-            return controller != null
-                && controller.ResultsReady
-                && controller.WinnerName == localName;
+            return !string.IsNullOrEmpty(gameData.WinnerName)
+                && gameData.WinnerName == localName;
         }
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
@@ -30,10 +26,8 @@ namespace CosmicShore.Gameplay
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) yield break;
 
-            // Single source of truth — the controller received this authoritatively from the server
-            bool didWin = controller != null
-                && controller.ResultsReady
-                && controller.WinnerName == localName;
+            bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
+                && gameData.WinnerName == localName;
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
 
@@ -53,7 +47,7 @@ namespace CosmicShore.Gameplay
 
             CSDebug.Log($"[CrystalCapture] Local='{localName}' myScore={myScore} " +
                       $"opponentScore={opponentScore} didWin={didWin} diff={crystalDifference} " +
-                      $"WinnerName='{controller?.WinnerName}' " +
+                      $"WinnerName='{gameData.WinnerName}' " +
                       $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 
             yield return view.PlayScoreRevealAnimation(

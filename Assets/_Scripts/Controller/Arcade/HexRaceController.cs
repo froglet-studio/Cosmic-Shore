@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -27,18 +26,6 @@ namespace CosmicShore.Gameplay
         [Header("Seed")]
         [SerializeField] int seed = 0;
 
-        [Header("Race Rules")]
-        [Tooltip("Shared crystal target resolved by the turn monitor. " +
-                 "Read by this controller for loser score calculation.")]
-        [SerializeField] IntVariable crystalTargetVariable;
-
-        [Header("SOAP Race Results")]
-        [Tooltip("Server-authoritative winner name. Written by SyncFinalScores_ClientRpc, " +
-                 "read by EndGameController.")]
-        [SerializeField] StringVariable raceWinnerName;
-        [Tooltip("True once final scores have been synced to all clients.")]
-        [SerializeField] BoolVariable raceResultsReady;
-
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         private bool _raceEnded;
@@ -61,10 +48,6 @@ namespace CosmicShore.Gameplay
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
-
-            // Clear SOAP race results (fresh state for scene reload replays)
-            if (raceWinnerName) raceWinnerName.Value = "";
-            if (raceResultsReady) raceResultsReady.Value = false;
 
             // HexRaceController owns the track lifecycle (seed generation, spawning, replay reset).
             // Prevent SegmentSpawner from auto-resetting on OnResetForReplay.
@@ -273,9 +256,7 @@ namespace CosmicShore.Gameplay
 
         int ResolveCrystalsToFinishTarget()
         {
-            if (crystalTargetVariable != null && crystalTargetVariable.Value > 0)
-                return crystalTargetVariable.Value;
-            return 39;
+            return gameData.CrystalTargetCount > 0 ? gameData.CrystalTargetCount : 39;
         }
 
         void SyncFinalScoresSnapshot(string winnerName)
@@ -323,9 +304,9 @@ namespace CosmicShore.Gameplay
                 stat.CrystalsCollected = crystalsCollected[i];
             }
 
-            // Authoritative winner — written to SOAP variables, consumed by EndGameController
-            if (raceWinnerName) raceWinnerName.Value = winnerName.ToString();
-            if (raceResultsReady) raceResultsReady.Value = true;
+            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // OnWinnerCalculated (below) is the "results ready" signal.
+            gameData.WinnerName = winnerName.ToString();
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);

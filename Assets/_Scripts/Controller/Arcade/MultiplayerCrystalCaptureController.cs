@@ -11,16 +11,6 @@ namespace CosmicShore.Gameplay
     {
         private bool _finalResultsSent;
 
-        /// <summary>
-        /// Authoritative winner name — set by server, read by EndGameController.
-        /// </summary>
-        public string WinnerName { get; private set; } = "";
-
-        /// <summary>
-        /// True once final scores have been synced to all clients.
-        /// </summary>
-        public bool ResultsReady { get; private set; }
-
         protected override bool UseGolfRules => false;
         protected override bool UseSceneReloadForReplay => true;
 
@@ -137,9 +127,9 @@ namespace CosmicShore.Gameplay
                 stat.CrystalsCollected = crystalsCollected[i];
             }
 
-            // Authoritative winner — single source of truth consumed by EndGameController
-            WinnerName = winnerName.ToString();
-            ResultsReady = true;
+            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // OnWinnerCalculated (below) is the "results ready" signal.
+            gameData.WinnerName = winnerName.ToString();
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
@@ -153,8 +143,6 @@ namespace CosmicShore.Gameplay
         {
             base.OnResetForReplayCustom();
             _finalResultsSent = false;
-            WinnerName = "";
-            ResultsReady = false;
 
             foreach (var s in gameData.RoundStatsList)
             {

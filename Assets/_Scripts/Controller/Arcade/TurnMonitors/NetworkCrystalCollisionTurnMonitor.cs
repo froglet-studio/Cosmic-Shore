@@ -1,7 +1,6 @@
 // NetworkCrystalCollisionTurnMonitor.cs
 using System.Linq;
 using CosmicShore.Data;
-using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -15,11 +14,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool useTestCrystalOverride;
         [Tooltip("Crystal count when useTestCrystalOverride is true (e.g. 1-3 for quick testing).")]
         [SerializeField] int crystalsToFinishOverride = 3;
-
-        [Header("SOAP Data")]
-        [Tooltip("Shared crystal target variable. Written by this monitor on StartMonitor (server), " +
-                 "readable by any system (game controllers, HUDs) via SOAP.")]
-        [SerializeField] IntVariable crystalTargetVariable;
 
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
@@ -35,12 +29,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Fires on all clients when the server writes to <c>_netCrystalCollisions</c>.
-        /// Keeps the shared SOAP variable in sync so any system can read it.
+        /// Keeps <see cref="GameDataSO.CrystalTargetCount"/> in sync across all machines.
         /// </summary>
         void OnCrystalTargetSynced(int previousValue, int newValue)
         {
-            if (crystalTargetVariable && newValue > 0)
-                crystalTargetVariable.Value = newValue;
+            if (newValue > 0)
+                gameData.CrystalTargetCount = newValue;
         }
 
         public override void StartMonitor()
@@ -53,10 +47,7 @@ namespace CosmicShore.Gameplay
             int target = overrideTarget > 0 ? overrideTarget : GetCrystalCollisionCount();
 
             _netCrystalCollisions.Value = target;
-
-            // Publish resolved target to shared SOAP variable so any system can read it
-            if (crystalTargetVariable)
-                crystalTargetVariable.Value = target;
+            gameData.CrystalTargetCount = target;
 
             CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
                       $"(override={overrideTarget > 0}, intensity={gameData.SelectedIntensity.Value})");
