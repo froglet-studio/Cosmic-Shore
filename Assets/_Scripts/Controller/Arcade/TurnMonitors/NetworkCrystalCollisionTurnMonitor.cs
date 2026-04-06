@@ -7,14 +7,14 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Network-aware crystal collection turn monitor. After <c>base.StartMonitor()</c>
+    /// resolves the crystal target (from inspector override, waypoints, or default),
+    /// this subclass syncs it to all clients via NetworkVariable and publishes it
+    /// to <see cref="GameDataSO.CrystalTargetCount"/> so any system can read it.
+    /// </summary>
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
-        [Header("Test Override")]
-        [Tooltip("Enable to override the calculated crystal target for quick testing.")]
-        [SerializeField] bool useTestCrystalOverride;
-        [Tooltip("Crystal count when useTestCrystalOverride is true (e.g. 1-3 for quick testing).")]
-        [SerializeField] int crystalsToFinishOverride = 3;
-
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
         void OnEnable()
@@ -39,18 +39,16 @@ namespace CosmicShore.Gameplay
 
         public override void StartMonitor()
         {
+            // Base resolves the target: CrystalCollisions (inspector) > waypoints > 39
             base.StartMonitor();
 
             if (!IsServer) return;
 
-            int overrideTarget = useTestCrystalOverride ? Mathf.Max(1, crystalsToFinishOverride) : -1;
-            int target = overrideTarget > 0 ? overrideTarget : GetCrystalCollisionCount();
+            _netCrystalCollisions.Value = CrystalCollisions;
+            gameData.CrystalTargetCount = CrystalCollisions;
 
-            _netCrystalCollisions.Value = target;
-            gameData.CrystalTargetCount = target;
-
-            CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
-                      $"(override={overrideTarget > 0}, intensity={gameData.SelectedIntensity.Value})");
+            CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {CrystalCollisions} " +
+                      $"(intensity={gameData.SelectedIntensity.Value})");
         }
 
         public override bool CheckForEndOfTurn()

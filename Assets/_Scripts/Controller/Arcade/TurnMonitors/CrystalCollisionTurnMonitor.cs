@@ -9,6 +9,8 @@ namespace CosmicShore.Gameplay
 {
     public class CrystalCollisionTurnMonitor : TurnMonitor
     {
+        [Tooltip("Crystal target to end the turn. When non-zero, overrides the waypoint-calculated count. " +
+                 "Leave at 0 to auto-calculate from optionalEnvironment waypoints.")]
         [SerializeField] protected int CrystalCollisions;
         protected IRoundStats ownStats;
 
@@ -62,15 +64,14 @@ namespace CosmicShore.Gameplay
 
         protected int GetCrystalCollisionCount()
         {
-            if (optionalEnvironment)
-            {
-                return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
-            }
-
+            // Inspector value takes priority — non-zero means explicit override
             if (CrystalCollisions != 0) return CrystalCollisions;
+
+            if (optionalEnvironment)
+                return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
+
             CSDebug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
             return 39;
-
         }
     }
 }
