@@ -145,6 +145,11 @@ namespace CosmicShore.Core
         {
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
 
+            // Prevent the game scene's ServerPlayerVesselInitializer from calling
+            // NetworkManager.Shutdown() during the scene transition. The network
+            // must stay alive for Menu_Main's vessel spawning pipeline.
+            gameData.IsReturnToMenuTransition = true;
+
             // Clear stale modal return state — no modal should auto-reopen after a game.
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();

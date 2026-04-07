@@ -101,6 +101,10 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            // Clear the return-to-menu flag set by SceneLoader before the scene transition.
+            // The network is alive and we're ready to proceed with normal menu initialization.
+            _gameData.IsReturnToMenuTransition = false;
+
             ConfigureMenuGameData();
             SubscribeEvents();
             TransitionTo(MainMenuState.Initializing);
