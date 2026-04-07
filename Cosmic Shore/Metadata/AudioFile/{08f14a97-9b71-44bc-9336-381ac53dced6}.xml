@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{08f14a97-9b71-44bc-9336-381ac53dced6}">
+		<property name="assetPath">
+			<value>Cosmic shore Charge ship.wav</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>14</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{10bfe9dd-695d-4131-b664-efde45fc55f0}</destination>
+		</relationship>
+	</object>
+</objects>
