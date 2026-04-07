@@ -243,6 +243,13 @@ namespace CosmicShore.Core
 
         void HandleActiveSessionEnd()
         {
+            // Clear the stale party session reference so HostConnectionService
+            // can create a fresh Relay-backed session when Menu_Main loads.
+            // LeaveSession() deletes the game session and shuts down the network;
+            // the party session created during initial auth is now stale.
+            if (HostConnectionService.Instance != null)
+                HostConnectionService.Instance.ClearStalePartySession();
+
             ReturnToMainMenu();
             gameData.ResetAllData();
         }
