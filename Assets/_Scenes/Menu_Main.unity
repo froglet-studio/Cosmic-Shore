@@ -105863,6 +105863,36 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: DriftEndAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 71f77714e433042c7b64f6bab17e49a3, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: DriftStartAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 2712808ab9ad046a1b1f4b378f043abe, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: SpeedBurstAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 71f77714e433042c7b64f6bab17e49a3, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: BlockDestroyAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 318d5ba48e5f44c3b9bd5453a2857c27, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: VesselImpactAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 318d5ba48e5f44c3b9bd5453a2857c27, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: CrystalCollectAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 318d5ba48e5f44c3b9bd5453a2857c27, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
