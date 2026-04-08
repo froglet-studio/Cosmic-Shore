@@ -9,9 +9,9 @@ namespace CosmicShore.Game
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var skimmerVesselStatus = impactor.Skimmer.VesselStatus;
+            if (!skimmerVesselStatus.IsLocalUser || skimmerVesselStatus.AutoPilotEnabled) return;
             var hapticScale = impactor.CombinedWeight / 3;
-            if (!skimmerVesselStatus.AutoPilotEnabled)
-                HapticController.PlayConstant(hapticScale, hapticScale, Time.deltaTime);
+            HapticController.PlayConstant(hapticScale, hapticScale, Time.deltaTime);
         }
     }
 }

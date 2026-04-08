@@ -29,8 +29,10 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         void HandleLifeFormDeath(string killerName, int cellId)
         {
+            if (GameData.LocalPlayer == null || GameData.LocalPlayer.Name != killerName) return;
+
             totalLifeFormsKilled++;
-            Score += scoreMultiplier; 
+            Score += scoreMultiplier;
         }
 
         public int GetTotalLifeFormsKilled() => totalLifeFormsKilled;

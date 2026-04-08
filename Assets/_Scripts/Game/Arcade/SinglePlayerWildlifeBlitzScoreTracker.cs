@@ -47,12 +47,14 @@ namespace CosmicShore.Game.Arcade
         
         void OnScoringEvent(string playerName, int cellId)
         {
+            if (gameData.LocalPlayer == null || gameData.LocalPlayer.Name != playerName) return;
             var lifeFormScoring = GetScoring<LifeFormsKilledScoring>();
             if (lifeFormScoring != null) AddScore(lifeFormScoring.ScorePerKill);
         }
 
-        void OnCrystalScoringEvent(string playerName) 
+        void OnCrystalScoringEvent(string playerName)
         {
+            if (gameData.LocalPlayer == null || gameData.LocalPlayer.Name != playerName) return;
             var crystalsCollectedScoring = GetScoring<ElementalCrystalsCollectedBlitzScoring>();
             if (crystalsCollectedScoring != null) AddScore(crystalsCollectedScoring.GetScoreMultiplier());
         }

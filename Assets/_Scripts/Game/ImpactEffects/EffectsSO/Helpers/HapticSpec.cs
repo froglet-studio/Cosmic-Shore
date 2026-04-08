@@ -11,7 +11,7 @@ namespace CosmicShore.Game
         public void PlayIfManual(IVesselStatus status)
         {
             if (status == null) return;
-            if (!status.AutoPilotEnabled)
+            if (!status.AutoPilotEnabled && status.IsLocalUser)
                 HapticController.PlayHaptic(_type);
         }
     }
