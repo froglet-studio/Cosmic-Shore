@@ -138,6 +138,15 @@ namespace CosmicShore.Core
         public void ReturnToMainMenu()
         {
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
+
+            // Clear stale return-to-screen/modal state so Menu_Main starts clean
+            // on HOME with no modals open. These keys are set by ScreenSwitcher
+            // during normal menu navigation but become stale when a scene
+            // transition destroys modal GameObjects without proper ModalWindowOut().
+            PlayerPrefs.DeleteKey("ReturnToScreen");
+            PlayerPrefs.DeleteKey("ReturnToModal");
+            PlayerPrefs.Save();
+
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
@@ -201,6 +210,19 @@ namespace CosmicShore.Core
             }
 
             gameData.Vessels.Clear();
+
+            // Explicitly despawn AI Player NetworkObjects so they don't persist
+            // into Menu_Main. Human players survive (destroyWithScene=false from
+            // connection approval) but AI players must be removed.
+            for (int i = gameData.Players.Count - 1; i >= 0; i--)
+            {
+                if (gameData.Players[i] is Player aiPlayer
+                    && aiPlayer.IsSpawned
+                    && aiPlayer.NetIsAI.Value)
+                {
+                    aiPlayer.NetworkObject.Despawn(true);
+                }
+            }
         }
 
         #endregion
