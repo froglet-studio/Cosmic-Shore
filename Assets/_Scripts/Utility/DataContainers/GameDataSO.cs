@@ -80,6 +80,22 @@ namespace CosmicShore.Utility
         public int RequestedTeamCount = 3;
 
         /// <summary>
+        /// Server-authoritative winner name, written by game controllers in their
+        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
+        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public string WinnerName = "";
+
+        /// <summary>
+        /// The resolved crystal collection target for the current session.
+        /// Written by <see cref="NetworkCrystalCollisionTurnMonitor"/> in StartMonitor (server),
+        /// synced to clients via NetworkVariable.OnValueChanged.
+        /// Read by game controllers for scoring calculations.
+        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int CrystalTargetCount;
+
+        /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
         /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
         /// and ServerPlayerVesselInitializerWithAI see correct values.
@@ -217,6 +233,8 @@ namespace CosmicShore.Utility
             _playerSpawnPoseList.Clear();
             LocalPlayer = null;
             LocalRoundStats = null;
+            WinnerName = "";
+            CrystalTargetCount = 0;
             // Note: RequestedAIBackfillCount and RequestedTeamCount are intentionally
             // NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
@@ -231,6 +249,8 @@ namespace CosmicShore.Utility
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
             _playerSpawnPoseList.Clear();
+            WinnerName = "";
+            CrystalTargetCount = 0;
         }
 
         public void ResetStatsDataForReplay()

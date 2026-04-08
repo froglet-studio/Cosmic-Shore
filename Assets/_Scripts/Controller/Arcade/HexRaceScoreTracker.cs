@@ -17,7 +17,6 @@ namespace CosmicShore.Gameplay
     {
         [Header("Dependencies")]
         [SerializeField] CrystalCollisionTurnMonitor turnMonitor;
-        [SerializeField] private HexRaceController controller;
 
         [Header("Settings")]
         [SerializeField] float penaltyScoreBase = 10000f;
@@ -127,12 +126,11 @@ namespace CosmicShore.Gameplay
                 // Report per-vessel telemetry to UGS
                 if (ugsStatsManager && _vesselTelemetry != null && _observedVessel != null)
                     ugsStatsManager.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
-
-                if (controller) controller.ReportLocalPlayerFinished(finalScore);
             }
 
-            if (controller == null)
-                SortAndInvokeResults();
+            // Server handles final scoring and winner detection via
+            // OnTurnEndedCustom → SyncFinalScores_ClientRpc.
+            // This tracker only records elapsed time and reports UGS stats.
         }
 
         protected override void CalculateWinnerAndInvokeEvent()

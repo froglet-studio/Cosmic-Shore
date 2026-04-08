@@ -822,6 +822,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 731378237}
   m_CullTransparentMesh: 1
+--- !u!1 &1044331982
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1044331983}
+  m_Layer: 0
+  m_Name: 4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1044331983
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1044331982}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 700, y: 10, z: -200}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2013788254}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1065094408 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8519919900975884673, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -1030,6 +1061,7 @@ MonoBehaviour:
   - {fileID: 1194123993}
   - {fileID: 696378175}
   - {fileID: 1237987754}
+  - {fileID: 1044331983}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
   spawnAIOnServerReady: 1
@@ -1037,18 +1069,23 @@ MonoBehaviour:
     type: 3}
   aiInitializeDatas:
   - vesselClass: 6
-    PlayerName: AI_Squirrel1
+    PlayerName: AI 0
     AvatarId: 0
     IsAI: 1
     AllowSpawning: 1
   - vesselClass: 6
-    PlayerName: AI_Squirrel2
+    PlayerName: AI 1
     AvatarId: 1
     IsAI: 1
     AllowSpawning: 1
   - vesselClass: 6
-    PlayerName: AI_Squirrel3
+    PlayerName: AI 2
     AvatarId: 2
+    IsAI: 1
+    AllowSpawning: 1
+  - vesselClass: 6
+    PlayerName: AI 3
+    AvatarId: 3
     IsAI: 1
     AllowSpawning: 1
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
@@ -1069,10 +1106,9 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 2
+  CrystalCollisions: 7
   optionalEnvironment: {fileID: 1899528610}
   optionalLaps: 4
-  controller: {fileID: 1078953729}
 --- !u!114 &1078953729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1100,8 +1136,6 @@ MonoBehaviour:
   helix: {fileID: 0}
   helixIntensityScaling: 4
   seed: 0
-  useTestCrystalOverride: 1
-  crystalsToFinishOverride: 3
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1207,7 +1241,6 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
-  controller: {fileID: 1078953729}
   penaltyScoreBase: 10000
   showDebugLogs: 1
 --- !u!1 &1194123992
@@ -2860,7 +2893,6 @@ MonoBehaviour:
   crystalRewardRoot: {fileID: 629718971}
   crystalRewardText: {fileID: 731378239}
   crystalFadeDuration: 0.5
-  hexRaceController: {fileID: 1078953729}
 --- !u!114 &1897523413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3030,6 +3062,7 @@ Transform:
   - {fileID: 1194123993}
   - {fileID: 696378175}
   - {fileID: 1237987754}
+  - {fileID: 1044331983}
   m_Father: {fileID: 1078953705}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2130600574

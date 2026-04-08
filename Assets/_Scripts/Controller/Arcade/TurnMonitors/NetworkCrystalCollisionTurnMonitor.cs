@@ -7,55 +7,48 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Network-aware crystal collection turn monitor. After <c>base.StartMonitor()</c>
+    /// resolves the crystal target (from inspector override, waypoints, or default),
+    /// this subclass syncs it to all clients via NetworkVariable and publishes it
+    /// to <see cref="GameDataSO.CrystalTargetCount"/> so any system can read it.
+    /// </summary>
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
-        [SerializeField] private HexRaceController controller;
-
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
-        public override void OnNetworkSpawn()
+        void OnEnable()
         {
-            base.OnNetworkSpawn();
+            _netCrystalCollisions.OnValueChanged += OnCrystalTargetSynced;
+        }
+
+        void OnDisable()
+        {
+            _netCrystalCollisions.OnValueChanged -= OnCrystalTargetSynced;
+        }
+
+        /// <summary>
+        /// Fires on all clients when the server writes to <c>_netCrystalCollisions</c>.
+        /// Keeps <see cref="GameDataSO.CrystalTargetCount"/> in sync across all machines.
+        /// </summary>
+        void OnCrystalTargetSynced(int previousValue, int newValue)
+        {
+            if (newValue > 0)
+                gameData.CrystalTargetCount = newValue;
         }
 
         public override void StartMonitor()
         {
+            // Base resolves the target: CrystalCollisions (inspector) > waypoints > 39
             base.StartMonitor();
 
             if (!IsServer) return;
 
-            int overrideTarget = controller != null ? controller.GetTestCrystalOverride() : -1;
-            int target = overrideTarget > 0 ? overrideTarget : GetCrystalCollisionCount();
+            _netCrystalCollisions.Value = CrystalCollisions;
+            gameData.CrystalTargetCount = CrystalCollisions;
 
-            _netCrystalCollisions.Value = target;
-            controller?.SetCrystalsToFinishServer(target);
-
-            CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
-                      $"(override={overrideTarget > 0}, intensity={gameData.SelectedIntensity.Value})");
-
-            foreach (var stat in gameData.RoundStatsList)
-                stat.OnCrystalsCollectedChanged += ServerSideCrystalSync;
-
-            // Push initial values
-            foreach (var stat in gameData.RoundStatsList)
-                ServerSideCrystalSync(stat);
-        }
-
-        public override void StopMonitor()
-        {
-            if (IsServer)
-            {
-                foreach (var stat in gameData.RoundStatsList)
-                    stat.OnCrystalsCollectedChanged -= ServerSideCrystalSync;
-            }
-
-            base.StopMonitor();
-        }
-
-        void ServerSideCrystalSync(IRoundStats stats)
-        {
-            if (!IsServer) return;
-            controller?.NotifyCrystalsCollected(stats.Name, stats.CrystalsCollected);
+            CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {CrystalCollisions} " +
+                      $"(intensity={gameData.SelectedIntensity.Value})");
         }
 
         public override bool CheckForEndOfTurn()

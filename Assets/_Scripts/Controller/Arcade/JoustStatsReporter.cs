@@ -1,4 +1,4 @@
-﻿// JoustStatsReporter.cs
+// JoustStatsReporter.cs
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -7,13 +7,13 @@ using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.UI;
+
 namespace CosmicShore.Gameplay
 {
     public class JoustStatsReporter : MonoBehaviour
     {
         [Header("References")]
         [Inject] private GameDataSO gameData;
-        [SerializeField] private MultiplayerJoustController joustController;
 
         [Header("Settings")]
         [SerializeField] private GameModes gameMode = GameModes.MultiplayerJoust;
@@ -33,15 +33,14 @@ namespace CosmicShore.Gameplay
         void ReportStats()
         {
             if (!ugsStatsManager) return;
-            if (!joustController || !joustController.joustTurnMonitor) return;
 
             var localName = gameData.LocalPlayer?.Name;
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) return;
 
-            // Winner = index 0 after ascending sort
-            bool isWinner = gameData.RoundStatsList.Count > 0 &&
-                            gameData.RoundStatsList[0].Name == localName;
+            // Winner = whoever is in gameData.WinnerName (set by controller's ClientRpc)
+            bool isWinner = !string.IsNullOrEmpty(gameData.WinnerName)
+                && gameData.WinnerName == localName;
 
             if (!isWinner) return;
             float raceTime = localStats.Score;

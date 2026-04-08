@@ -1,4 +1,4 @@
-﻿// MultiplayerJoustEndGameController.cs
+// MultiplayerJoustEndGameController.cs
 using System.Collections;
 using System.Linq;
 using CosmicShore.Gameplay;
@@ -9,15 +9,14 @@ namespace CosmicShore.Utility
 {
     public class MultiplayerJoustEndGameController : EndGameCinematicController
     {
-        [Header("References")]
-        [SerializeField] private MultiplayerJoustController joustController;
+        [Header("Joust")]
+        [SerializeField] private JoustCollisionTurnMonitor joustTurnMonitor;
 
         protected override bool DetermineLocalPlayerWon()
         {
             var localName = gameData.LocalPlayer?.Name;
-            return joustController != null
-                && joustController.ResultsReady
-                && joustController.WinnerName == localName;
+            return !string.IsNullOrEmpty(gameData.WinnerName)
+                && gameData.WinnerName == localName;
         }
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
@@ -27,18 +26,17 @@ namespace CosmicShore.Utility
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
 
-            if (!joustController || !joustController.joustTurnMonitor) yield break;
+            if (!joustTurnMonitor) yield break;
 
             var localName = gameData.LocalPlayer?.Name;
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) yield break;
 
-            int needed = joustController.joustTurnMonitor.CollisionsNeeded;
+            int needed = joustTurnMonitor.CollisionsNeeded;
             int myJousts = localStats.JoustCollisions;
 
-            // Single source of truth from controller — same pattern as HexRace
-            bool didWin = joustController.ResultsReady &&
-                          joustController.WinnerName == localName;
+            bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
+                && gameData.WinnerName == localName;
 
             var opponentStats   = gameData.RoundStatsList.FirstOrDefault(s => s.Name != localName);
             int opponentJousts  = opponentStats?.JoustCollisions ?? 0;
@@ -64,7 +62,7 @@ namespace CosmicShore.Utility
             }
 
             CSDebug.Log($"[JoustEndGame] Local='{localName}' Jousts={myJousts}/{needed} " +
-                      $"didWin={didWin} WinnerName='{joustController.WinnerName}' " +
+                      $"didWin={didWin} WinnerName='{gameData.WinnerName}' " +
                       $"diff={joustDifference} RawScore={localStats.Score:F2} DisplayValue={displayValue} " +
                       $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F2}({s.JoustCollisions}j)"))}]");
 

@@ -26,23 +26,12 @@ namespace CosmicShore.Gameplay
         [Header("Seed")]
         [SerializeField] int seed = 0;
 
-        [Header("Race Rules")]
-        [Tooltip("Enable to override the waypoint-calculated crystal target for testing.")]
-        [SerializeField] bool useTestCrystalOverride;
-        [Tooltip("Crystal count to end the race when useTestCrystalOverride is true (e.g. 1-3 for quick testing).")]
-        [SerializeField] int crystalsToFinishOverride = 3;
-
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         private bool _raceEnded;
         private bool _trackSpawned;
         private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
-        private readonly NetworkVariable<int> _netCrystalsToFinish = new(0);
-
-        // Single source of truth for who won — set authoritatively by server, read by end game controller
-        public string WinnerName { get; private set; } = "";
-        public bool RaceResultsReady { get; private set; } = false;
 
         protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
@@ -265,68 +254,9 @@ namespace CosmicShore.Gameplay
             base.SetupNewRound();
         }
 
-        // ── Legacy client-side report (kept as defensive fallback) ────────
-
-        // Called by HexRaceScoreTracker when the local player finishes.
-        // With OnTurnEndedCustom handling server-side detection, this is now a
-        // no-op (guarded by _raceEnded in ReportPlayerFinished_ServerRpc).
-        public void ReportLocalPlayerFinished(float finishTimeSeconds)
-        {
-            string myName = gameData.LocalPlayer.Name;
-            ReportPlayerFinished_ServerRpc(finishTimeSeconds, myName);
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void ReportPlayerFinished_ServerRpc(float finishTimeSeconds, string playerName)
-        {
-            if (_raceEnded) return;
-            _raceEnded = true;
-
-            var winnerStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (winnerStats == null)
-            {
-                CSDebug.LogError($"[HexRace] Could not find RoundStats for winner '{playerName}'. " +
-                               $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
-                return;
-            }
-
-            winnerStats.Score = finishTimeSeconds;
-
-            int crystalsToFinish = ResolveCrystalsToFinishTarget();
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                if (stats.Name == playerName) continue;
-                int crystalsLeft = Mathf.Max(0, crystalsToFinish - stats.CrystalsCollected);
-                stats.Score = 10000f + crystalsLeft;
-            }
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-            SyncFinalScoresSnapshot(playerName);
-        }
-
         int ResolveCrystalsToFinishTarget()
         {
-            if (_netCrystalsToFinish.Value > 0) return _netCrystalsToFinish.Value;
-            if (crystalsToFinishOverride > 0) return crystalsToFinishOverride;
-            return 39;
-        }
-
-        public int GetTestCrystalOverride()
-            => useTestCrystalOverride ? Mathf.Max(1, crystalsToFinishOverride) : -1;
-
-        public void SetCrystalsToFinishServer(int value)
-        {
-            if (!IsServer) return;
-            _netCrystalsToFinish.Value = Mathf.Max(1, value);
-        }
-
-        public void NotifyCrystalsCollected(string playerName, int crystalsCollected)
-        {
-            if (!IsServer) return;
-            var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (stat != null)
-                stat.CrystalsCollected = crystalsCollected;
+            return gameData.CrystalTargetCount > 0 ? gameData.CrystalTargetCount : 39;
         }
 
         void SyncFinalScoresSnapshot(string winnerName)
@@ -374,9 +304,9 @@ namespace CosmicShore.Gameplay
                 stat.CrystalsCollected = crystalsCollected[i];
             }
 
-            // Authoritative winner — single source of truth consumed by EndGameController
-            WinnerName = winnerName.ToString();
-            RaceResultsReady = true;
+            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // OnWinnerCalculated (below) is the "results ready" signal.
+            gameData.WinnerName = winnerName.ToString();
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
