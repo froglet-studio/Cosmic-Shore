@@ -103,6 +103,12 @@ namespace CosmicShore.Core
         {
             PauseSystem.TogglePauseGame(false);
 
+            // Clear any saved modal return state so no stale modal reopens after the game.
+            // The ScreenSwitcher in Menu_Main reads these keys on Start() and would
+            // otherwise restore whatever modal was open when the game launched.
+            PlayerPrefs.DeleteKey("ReturnToModal");
+            PlayerPrefs.Save();
+
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame — Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
@@ -138,6 +144,16 @@ namespace CosmicShore.Core
         public void ReturnToMainMenu()
         {
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
+
+            // Prevent the game scene's ServerPlayerVesselInitializer from calling
+            // NetworkManager.Shutdown() during the scene transition. The network
+            // must stay alive for Menu_Main's vessel spawning pipeline.
+            gameData.IsReturnToMenuTransition = true;
+
+            // Clear stale modal return state — no modal should auto-reopen after a game.
+            PlayerPrefs.DeleteKey("ReturnToModal");
+            PlayerPrefs.Save();
+
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
@@ -227,6 +243,13 @@ namespace CosmicShore.Core
 
         void HandleActiveSessionEnd()
         {
+            // Clear the stale party session reference so HostConnectionService
+            // can create a fresh Relay-backed session when Menu_Main loads.
+            // LeaveSession() deletes the game session and shuts down the network;
+            // the party session created during initial auth is now stale.
+            if (HostConnectionService.Instance != null)
+                HostConnectionService.Instance.ClearStalePartySession();
+
             ReturnToMainMenu();
             gameData.ResetAllData();
         }

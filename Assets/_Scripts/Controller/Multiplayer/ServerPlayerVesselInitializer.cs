@@ -149,9 +149,11 @@ namespace CosmicShore.Gameplay
             _cts?.Dispose();
             _cts = null;
 
-            // Skip shutdown during replay scene reload — the network must stay alive
-            // for the server to reload the scene on all clients.
-            if (shutdownNetworkOnDespawn && !gameData.IsReplayReload && NetworkManager.Singleton)
+            // Skip shutdown during replay scene reload or return-to-menu transitions —
+            // the network must stay alive for the server to reload the scene on all clients
+            // and for Menu_Main's vessel spawning pipeline.
+            if (shutdownNetworkOnDespawn && !gameData.IsReplayReload
+                && !gameData.IsReturnToMenuTransition && NetworkManager.Singleton)
                 NetworkManager.Singleton.Shutdown();
         }
 
