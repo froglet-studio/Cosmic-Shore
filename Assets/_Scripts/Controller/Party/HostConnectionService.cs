@@ -74,6 +74,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private bool _lobbyBusy;
 
+        /// <summary>
+        /// Set after the first Relay party session creation triggers a Menu_Main
+        /// network-scene reload. Prevents subsequent recreations (e.g. after
+        /// returning from a game) from reloading the scene in an infinite loop.
+        /// Reset when ClearStalePartySession is called so the next fresh
+        /// session creation can reload once if needed.
+        /// </summary>
+        private bool _hasReloadedMenuForRelay;
+
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY = "displayName";
         private const string AVATAR_ID_KEY = "avatarId";
@@ -940,10 +949,15 @@ namespace CosmicShore.Gameplay
                     Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
 
                     // Reload Menu_Main as a network scene so the new Relay host
-                    // serves it properly. This handles both the initial local→Relay
-                    // transition and returning from a game (where Menu_Main loaded
-                    // non-networked because the old host was shut down).
-                    ReloadMenuSceneIfActive();
+                    // serves it properly — but only on the first local→Relay
+                    // transition. Subsequent recreations (e.g. after returning
+                    // from a game) must NOT reload or we enter an infinite loop:
+                    // reload → Start() → recreate → reload → ...
+                    if (!_hasReloadedMenuForRelay)
+                    {
+                        _hasReloadedMenuForRelay = true;
+                        ReloadMenuSceneIfActive();
+                    }
 
                     return;
                 }
