@@ -22,11 +22,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Returns true if the impacting vessel's domain is allowed to collect this crystal.
-        /// Default: own domain OR unowned (None) crystals are collectible.
-        /// Override in TeamCrystalImpactor for strict-only matching.
+        /// When strictDomainOnly is false (default): any vessel can collect regardless of domain.
+        /// When strictDomainOnly is true: only matching domain OR unowned (None) crystals are collectible.
+        /// Override in TeamCrystalImpactor for team-only matching.
         /// </summary>
         protected virtual bool IsDomainMatching(Domains domain) =>
-            Crystal.ownDomain == domain || Crystal.ownDomain == Domains.None;
+            !strictDomainOnly || Crystal.ownDomain == domain || Crystal.ownDomain == Domains.None;
 
         bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
 
