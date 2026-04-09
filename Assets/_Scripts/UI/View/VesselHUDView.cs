@@ -25,6 +25,18 @@ namespace CosmicShore.UI
         private CanvasGroup _canvasGroup;
         private Tween _fadeTween;
 
+        /// <summary>
+        /// Ensures the HUD starts fully hidden so it never flashes on screen
+        /// before an explicit <see cref="Show"/> call.
+        /// </summary>
+        protected virtual void Awake()
+        {
+            EnsureCanvasGroup();
+            _canvasGroup.alpha = 0f;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
+        }
+
         public abstract void Initialize();
 
         internal GameObject TrailBlockPrefab;

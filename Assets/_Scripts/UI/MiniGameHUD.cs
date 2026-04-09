@@ -442,9 +442,12 @@ namespace CosmicShore.UI
 
             Hide();
 
-            foreach (Transform child in data.ShipHUD.GetComponentsInChildren<Transform>(false))
+            // Move only direct children so nested hierarchies (e.g. VesselHUDView
+            // with its own child elements) stay intact. This ensures HideHUD() on the
+            // VesselHUDView properly hides all its descendants.
+            for (int i = data.ShipHUD.transform.childCount - 1; i >= 0; i--)
             {
-                if (child == data.ShipHUD.transform) continue;
+                var child = data.ShipHUD.transform.GetChild(i);
                 child.SetParent(transform.parent, false);
                 child.SetSiblingIndex(0);
             }

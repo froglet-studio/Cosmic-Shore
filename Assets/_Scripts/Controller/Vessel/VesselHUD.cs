@@ -15,32 +15,27 @@ namespace CosmicShore.Gameplay
 
         void Start()
         {
-
-            var shipHUD = GetComponentInChildren<MiniGameHUD>();
+            // Search includes inactive so the prefab can ship with the
+            // MiniGameHUD disabled, avoiding its Start() lifecycle.
+            var shipHUD = GetComponentInChildren<MiniGameHUD>(true);
 
             if (shipHUD == null)
-            {
                 return;
-            }
-            // TODO - Remove GameCanvas dependency
 
-            /*if (vessel.VesselStatus.Player.GameCanvas != null)
-            {
-                // Disable the default HUD
-                vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.gameObject.SetActive(false);
-
-                // Enable the modified HUD in the child
-                shipHUD.gameObject.SetActive(true);
-
-                // Assign the modified HUD to the vessel's player
-                vessel.VesselStatus.Player.GameCanvas.MiniGameHUD = shipHUD;
-            }*/
-
+            // Temporarily activate so the scene-level handler
+            // (MenuMiniGameHUD / MiniGameHUD) can discover and reparent
+            // the direct children via the SOAP event.
             shipHUD.gameObject.SetActive(true);
             onShipHUDInitialized.Raise(new ShipHUDData()
             {
                 ShipHUD = shipHUD
             });
+
+            // Deactivate the vessel's embedded MiniGameHUD now that its
+            // children have been reparented. This prevents its Start()
+            // from firing (which would subscribe to SOAP events and call
+            // Show(), briefly making the HUD visible on the vessel's Canvas).
+            shipHUD.gameObject.SetActive(false);
         }
     }
 }
