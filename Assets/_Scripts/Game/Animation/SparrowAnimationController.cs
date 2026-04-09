@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using System.Reflection;
 
 namespace CosmicShore.Game.Animation
 {
@@ -9,7 +10,7 @@ namespace CosmicShore.Game.Animation
         [SerializeField] FireGunActionExecutor missileExecutor;
         [SerializeField] bool hasBoost = false;
 
-        const int MissileLaunchLayer = 1;
+        const int MissileLaunching = 1;
 
         float currentPitch = 0;
         float currentYaw = 0;
@@ -68,17 +69,18 @@ namespace CosmicShore.Game.Animation
         void HandleMissileFired(float ammoBeforeFire, float ammoCost)
         {
             var animName = ammoBeforeFire >= 2f * ammoCost ? "Missile Launch 1" : "Missile Launch 2";
-            animator.SetLayerWeight(MissileLaunchLayer, 1f);
-            animator.Play(animName, MissileLaunchLayer);
-            //StartCoroutine(ResetMissileLaunchLayer());
+            animator.SetLayerWeight(MissileLaunching, 1f);
+            animator.Play(animName, MissileLaunching, 0f); // 0f forces it to restart from the beginning
+            StopAllCoroutines();
+            StartCoroutine(ResetMissileLaunching());
         }
 
-        //IEnumerator ResetMissileLaunchLayer()
-        //{
-            //yield return null; // wait one frame for the animator to enter the new state
-           // while (animator.GetCurrentAnimatorStateInfo(MissileLaunchLayer).normalizedTime < 1f)
-               // yield return null;
-            //animator.SetLayerWeight(MissileLaunchLayer, 0f);
-       // }  
+        IEnumerator ResetMissileLaunching()
+        {
+            yield return null; // wait one frame for the animator to enter the new state
+            while (animator.GetCurrentAnimatorStateInfo(MissileLaunching).normalizedTime < 1f)
+                yield return null;
+            animator.SetLayerWeight(MissileLaunching, 0f);
+        }
     }
 }
