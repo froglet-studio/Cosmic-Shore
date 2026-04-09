@@ -464,7 +464,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Missile Launch 2
-  m_Speed: 1
+  m_Speed: 2.5
   m_CycleOffset: 0
   m_Transitions: []
   m_StateMachineBehaviours: []
@@ -476,7 +476,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -3806784323310690574, guid: 1b0725c5c79aad145835d47b9ecfa510,
+  m_Motion: {fileID: 3552259950087936227, guid: ebe998f747168104ca3e85b7295e47be,
     type: 3}
   m_Tag: 
   m_SpeedParameter: 
@@ -571,7 +571,7 @@ AnimatorController:
     m_Mask: {fileID: 0}
     m_Motions: []
     m_Behaviours: []
-    m_BlendingMode: 0
+    m_BlendingMode: 1
     m_SyncedLayerIndex: -1
     m_DefaultWeight: 0
     m_IKPass: 0
@@ -989,7 +989,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Missile Launch 1
-  m_Speed: 1
+  m_Speed: 2.5
   m_CycleOffset: 0
   m_Transitions: []
   m_StateMachineBehaviours: []
@@ -1001,7 +1001,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 9028366799024305957, guid: 1b0725c5c79aad145835d47b9ecfa510,
+  m_Motion: {fileID: 2132225776441424335, guid: ebe998f747168104ca3e85b7295e47be,
     type: 3}
   m_Tag: 
   m_SpeedParameter: 

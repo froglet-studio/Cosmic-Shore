@@ -69,7 +69,8 @@ namespace CosmicShore.Game.Animation
         {
             var animName = ammoBeforeFire >= 2f * ammoCost ? "Missile Launch 1" : "Missile Launch 2";
             animator.SetLayerWeight(MissileLaunching, 1f);
-            animator.Play(animName, MissileLaunching);
+            animator.Play(animName, MissileLaunching, 0f); // 0f forces it to restart from the beginning
+            StopAllCoroutines();
             StartCoroutine(ResetMissileLaunching());
         }
 
