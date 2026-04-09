@@ -920,6 +920,7 @@ GameObject:
   - component: {fileID: 647308514974513799}
   - component: {fileID: 333211638083239348}
   - component: {fileID: 9172070623654400206}
+  - component: {fileID: 6492699325006970461}
   - component: {fileID: 838706159439259027}
   - component: {fileID: 4780908095115307824}
   - component: {fileID: 2296872113539841238}
@@ -1302,12 +1303,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 3818739590635575348}
+  SaveNewPositions: 0
+  UseShapeKeys: 1
+  brakeThreshold: 0.65
+  lerpAmount: 2
+  smallLerpAmount: 0.7
+  animator: {fileID: 4668559488328189978}
+  hasBoost: 1
+  missileExecutor: {fileID: 4658886838346608747}
+--- !u!114 &6492699325006970461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f949662b0a749b409c5d7d5d89e0913, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SkinnedMeshRenderer: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
+    type: 3}
   SaveNewPositions: 1
   UseShapeKeys: 1
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
   animator: {fileID: 4668559488328189978}
+  missileExecutor: {fileID: 4658886838346608747}
   hasBoost: 1
 --- !u!114 &838706159439259027
 MonoBehaviour:
@@ -2002,6 +2026,26 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -4283222722686542812, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4283222722686542812, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4283222722686542812, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4283222722686542812, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
       propertyPath: m_Name
@@ -2016,12 +2060,17 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 1705071819819171701, guid: 151e3f0352963624abf4da579618e66d,
+      objectReference: {fileID: 1705071819819171701, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
     - target: {fileID: 2692722512241470911, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2692722512241470911, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: 'm_BlendShapeWeights.Array.data[0]'
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 1b0725c5c79aad145835d47b9ecfa510,
         type: 3}
@@ -2042,6 +2091,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_ApplyRootMotion
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7033930867931438850, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7033930867931438850, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7033930867931438850, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7033930867931438850, guid: 1b0725c5c79aad145835d47b9ecfa510,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

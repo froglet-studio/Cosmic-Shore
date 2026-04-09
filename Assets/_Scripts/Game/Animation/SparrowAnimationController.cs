@@ -3,10 +3,11 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    public class SparrowAnimationController : VesselAnimation
+    class SparrowAnimationController : VesselAnimation
     {
         [SerializeField] Animator animator;
         [SerializeField] FireGunActionExecutor missileExecutor;
+        [SerializeField] bool hasBoost = false;
 
         const int MissileLaunchLayer = 1;
 
@@ -23,48 +24,26 @@ namespace CosmicShore.Game.Animation
                 missileExecutor.OnMissileFired += HandleMissileFired;
         }
 
-        void OnDestroy()
-        {
-            if (missileExecutor != null)
-                missileExecutor.OnMissileFired -= HandleMissileFired;
-        }
-
-        void HandleMissileFired(float ammoBeforeFire, float ammoCost)
-        {
-            var animName = ammoBeforeFire >= 2f * ammoCost ? "Missile Launch 1" : "Missile Launch 2";
-            animator.SetLayerWeight(MissileLaunchLayer, 1f);
-            animator.Play(animName, MissileLaunchLayer);
-            StartCoroutine(ResetMissileLaunchLayer());
-        }
-
-        IEnumerator ResetMissileLaunchLayer()
-        {
-            yield return null; // wait one frame for the animator to enter the new state
-            while (animator.GetCurrentAnimatorStateInfo(MissileLaunchLayer).normalizedTime < 1f)
-                yield return null;
-            animator.SetLayerWeight(MissileLaunchLayer, 0f);
-        }
-
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-
+            if (VesselStatus.IsBoosting && hasBoost) animator.SetBool("Boost", true);
+            else if (hasBoost) animator.SetBool("Boost", false);
 
             currentPitch = Mathf.Lerp(currentPitch, pitch, animationSpeed * Time.deltaTime);
             currentYaw = Mathf.Lerp(currentYaw, yaw, animationSpeed * Time.deltaTime);
             currentRoll = Mathf.Lerp(currentRoll, roll, animationSpeed * Time.deltaTime);
             currentThrottle = Mathf.Lerp(currentThrottle, throttle, animationSpeed * Time.deltaTime);
 
-            animator.SetFloat("Pitch", -currentPitch);
-            animator.SetFloat("Yaw", currentYaw);
-            animator.SetFloat("Roll", currentRoll);
-            animator.SetFloat("Throttle", currentThrottle);
-
+            animator.SetFloat("Pitch", -currentPitch * 2);
+            animator.SetFloat("Yaw", currentYaw * 2);
+            animator.SetFloat("Roll", currentRoll * 2);
+            animator.SetFloat("Throttle", currentThrottle * 2);
         }
-
+        
         protected override void Idle()
         {
             if (VesselStatus.IsBoosting) animator.SetBool("Boost", true);
-            else animator.SetBool("Boosting", false);
+            else animator.SetBool("Boost", false);
 
             currentPitch = Mathf.Lerp(currentPitch, 0, animationSpeed * Time.deltaTime);
             currentYaw = Mathf.Lerp(currentYaw, 0, animationSpeed * Time.deltaTime);
@@ -78,5 +57,28 @@ namespace CosmicShore.Game.Animation
         }
 
         protected override void AssignTransforms() { /* NOOP Abstract Implementation */ }
+        
+
+        void OnDestroy()
+        {
+            if (missileExecutor != null)
+                missileExecutor.OnMissileFired -= HandleMissileFired;
+        }
+
+        void HandleMissileFired(float ammoBeforeFire, float ammoCost)
+        {
+            var animName = ammoBeforeFire >= 2f * ammoCost ? "Missile Launch 1" : "Missile Launch 2";
+            animator.SetLayerWeight(MissileLaunchLayer, 1f);
+            animator.Play(animName, MissileLaunchLayer);
+            //StartCoroutine(ResetMissileLaunchLayer());
+        }
+
+        //IEnumerator ResetMissileLaunchLayer()
+        //{
+            //yield return null; // wait one frame for the animator to enter the new state
+           // while (animator.GetCurrentAnimatorStateInfo(MissileLaunchLayer).normalizedTime < 1f)
+               // yield return null;
+            //animator.SetLayerWeight(MissileLaunchLayer, 0f);
+       // }  
     }
 }
