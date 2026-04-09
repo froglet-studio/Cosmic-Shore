@@ -919,7 +919,6 @@ GameObject:
   - component: {fileID: 5613657713013293844}
   - component: {fileID: 647308514974513799}
   - component: {fileID: 333211638083239348}
-  - component: {fileID: 9172070623654400206}
   - component: {fileID: 6492699325006970461}
   - component: {fileID: 838706159439259027}
   - component: {fileID: 4780908095115307824}
@@ -1290,27 +1289,6 @@ MonoBehaviour:
     Cooldown: 10
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 5466809915974853214}
---- !u!114 &9172070623654400206
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8279817603024118164}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  SkinnedMeshRenderer: {fileID: 990959388069056740}
-  SaveNewPositions: 0
-  UseShapeKeys: 1
-  brakeThreshold: 0.65
-  lerpAmount: 2
-  smallLerpAmount: 0.7
-  animator: {fileID: 8787777563535130826}
-  hasBoost: 1
-  missileExecutor: {fileID: 4658886838346608747}
 --- !u!114 &6492699325006970461
 MonoBehaviour:
   m_ObjectHideFlags: 0

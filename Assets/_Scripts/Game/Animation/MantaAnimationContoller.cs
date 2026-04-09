@@ -8,9 +8,7 @@ namespace CosmicShore.Game.Animation
     {
         [SerializeField] Animator animator;
         [SerializeField] bool hasBoost = false;
-        [SerializeField] FireGunActionExecutor missileExecutor;
-
-        const int MissileLaunching = 1;
+      
 
         float currentPitch = 0;
         float currentYaw = 0;
@@ -21,8 +19,7 @@ namespace CosmicShore.Game.Animation
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
-            if (missileExecutor != null)
-                missileExecutor.OnMissileFired += HandleMissileFired;
+           
         }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
@@ -58,29 +55,5 @@ namespace CosmicShore.Game.Animation
         }
 
         protected override void AssignTransforms() { /* NOOP Abstract Implementation */ }
-
-        void OnDestroy()
-        {
-            if (missileExecutor != null)
-                missileExecutor.OnMissileFired -= HandleMissileFired;
-        }
-
-        void HandleMissileFired(float ammoBeforeFire, float ammoCost)
-        {
-            var animName = ammoBeforeFire >= 2f * ammoCost ? "Missile Launch 1" : "Missile Launch 2";
-            animator.SetLayerWeight(MissileLaunching, 1f);
-            animator.Play(animName, MissileLaunching, 0f); // 0f forces it to restart from the beginning
-            StopAllCoroutines();
-            StartCoroutine(ResetMissileLaunching());
-        }
-
-        IEnumerator ResetMissileLaunching()
-        {
-            yield return null; // wait one frame for the animator to enter the new state
-            while (animator.GetCurrentAnimatorStateInfo(MissileLaunching).normalizedTime < 1f)
-            yield return null;
-            animator.SetLayerWeight(MissileLaunching, 0f);
-        }  
-
     }
 }
