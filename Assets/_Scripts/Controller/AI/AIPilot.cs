@@ -276,6 +276,9 @@ namespace CosmicShore.Gameplay
             if (!AutoPilotEnabled)
                 return;
 
+            if (VesselStatus.Player is UnityEngine.Object obj && !obj)
+                return;
+
             if (VesselStatus.IsStationary)
                 return;
 

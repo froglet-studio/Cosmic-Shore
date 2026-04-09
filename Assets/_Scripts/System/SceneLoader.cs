@@ -213,7 +213,7 @@ namespace CosmicShore.Core
             {
                 var vessel = gameData.Vessels[i];
                 if (vessel is VesselController vc && vc.IsSpawned)
-                    vc.NetworkObject.Despawn(false);
+                    vc.NetworkObject.Despawn(true);
             }
 
             gameData.Vessels.Clear();

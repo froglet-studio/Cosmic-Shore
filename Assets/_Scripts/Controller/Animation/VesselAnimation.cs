@@ -28,6 +28,15 @@ namespace CosmicShore.Gameplay
             if (!_isInitialized)
                 return;
 
+            // Guard against destroyed Player during scene transitions.
+            // Vessels may outlive their Player when Netcode's destroyWithScene
+            // cleanup runs before Unity's scene-object destruction.
+            if (VesselStatus.Player is UnityEngine.Object obj && !obj)
+            {
+                _isInitialized = false;
+                return;
+            }
+
             if (InputStatus.Idle) Idle();
             else if (VesselStatus.IsSingleStickControls) PerformShipPuppetry(InputStatus.EasedLeftJoystickPosition.y, InputStatus.EasedLeftJoystickPosition.x, 0, 0);
             else PerformShipPuppetry(InputStatus.YSum, InputStatus.XSum, InputStatus.YDiff, InputStatus.XDiff);

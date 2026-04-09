@@ -24,6 +24,9 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            if ((shipInstance as IVesselStatus)?.Player is UnityEngine.Object obj && !obj)
+                return;
+
             var i = 0;
             foreach (var child in GetComponentsInChildren<Transform>())
             {
