@@ -271,10 +271,13 @@ namespace CosmicShore.UI
             PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
             PlayerPrefs.Save();
 
-            // Game configuration modals and the Arcade browse modal require context
-            // (selected game, party state) that is lost on scene transition —
-            // never auto-reopen them.
-            if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE or ModalWindows.DAILY_CHALLENGE or ModalWindows.ARCADE)
+            // Game-related modals require context (selected game, party state) that is
+            // lost on scene transition — never auto-reopen them after returning from a game.
+            // ARCADE is included because re-opening the arcade overlay on return causes
+            // stale game configuration to resurface.
+            if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
+                          or ModalWindows.DAILY_CHALLENGE
+                          or ModalWindows.ARCADE)
                 yield break;
 
             foreach (var modal in Modals.Where(modal => modal.ModalType == modalType))

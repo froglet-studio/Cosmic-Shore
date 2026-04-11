@@ -151,6 +151,15 @@ namespace CosmicShore.Utility
         /// Used to control fade-in timing after the reload completes.
         /// </summary>
         [NonSerialized] public bool IsReplayReload;
+
+        /// <summary>
+        /// Set by SceneLoader before loading Menu_Main from a game scene.
+        /// Prevents the game scene's ServerPlayerVesselInitializer from calling
+        /// NetworkManager.Shutdown() on despawn — the network must stay alive
+        /// for Menu_Main's vessel spawning pipeline.
+        /// Cleared by MainMenuController.Start().
+        /// </summary>
+        [NonSerialized] public bool IsReturnToMenuTransition;
         
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
@@ -270,6 +279,8 @@ namespace CosmicShore.Utility
         public void ResetAllData()
         {
             GameMode = GameModes.Random;
+            IsMultiplayerMode = false;
+            ActiveSession = null;
             selectedVesselClass.Value = VesselClassType.Manta;
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
@@ -277,6 +288,9 @@ namespace CosmicShore.Utility
             RequestedAIBackfillCount = 0;
 
             IsReplayReload = false;
+            // Note: IsReturnToMenuTransition is NOT cleared here because ResetAllData()
+            // may run before the game scene's OnNetworkDespawn fires. The flag is cleared
+            // by MainMenuController.Start() after the menu scene finishes loading.
 
             ResetRuntimeData();
             DestroyPlayerAndVessel();
