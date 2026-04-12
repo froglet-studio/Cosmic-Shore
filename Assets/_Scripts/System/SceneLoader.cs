@@ -150,7 +150,11 @@ namespace CosmicShore.Core
             // must stay alive for Menu_Main's vessel spawning pipeline.
             gameData.IsReturnToMenuTransition = true;
 
-            // Clear stale modal return state — no modal should auto-reopen after a game.
+            // Clear stale return-to-screen/modal state so Menu_Main starts clean
+            // on HOME with no modals open. These keys are set by ScreenSwitcher
+            // during normal menu navigation but become stale when a scene
+            // transition destroys modal GameObjects without proper ModalWindowOut().
+            PlayerPrefs.DeleteKey("ReturnToScreen");
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
@@ -209,11 +213,30 @@ namespace CosmicShore.Core
                     netPlayer.NetVesselId.Value = 0;
             }
 
+            // Explicitly despawn AI Player NetworkObjects so they don't persist
+            // into Menu_Main. Human players survive (destroyWithScene=false from
+            // connection approval) but AI players must be removed.
+            // Must happen BEFORE vessel despawn — AI player destruction after vessel
+            // despawn causes MissingReferenceException when VesselAnimation.Update()
+            // accesses the destroyed Player on the same frame.
+            for (int i = gameData.Players.Count - 1; i >= 0; i--)
+            {
+                if (gameData.Players[i] is Player aiPlayer
+                    && aiPlayer.IsSpawned
+                    && aiPlayer.NetIsAI.Value)
+                {
+                    aiPlayer.NetworkObject.Despawn(true);
+                }
+            }
+
+            // Despawn all vessels and destroy their GameObjects. Using destroy=true
+            // ensures VesselAnimation.Update() cannot run with stale Player references
+            // during the scene transition.
             for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
             {
                 var vessel = gameData.Vessels[i];
                 if (vessel is VesselController vc && vc.IsSpawned)
-                    vc.NetworkObject.Despawn(false);
+                    vc.NetworkObject.Despawn(true);
             }
 
             gameData.Vessels.Clear();
