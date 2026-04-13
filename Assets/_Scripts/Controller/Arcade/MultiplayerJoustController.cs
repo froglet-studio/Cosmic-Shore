@@ -14,6 +14,12 @@ namespace CosmicShore.Gameplay
 
         protected override bool UseGolfRules => true;
 
+        // Joust handles end-game through OnTurnEndedCustom (server-side winner detection) →
+        // SyncJoustResults_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
+        // Suppress the base controller's turn→round→game flow so we don't get a duplicate
+        // InvokeMiniGameEnd from SyncGameEnd_ClientRpc.
+        protected override bool HasEndGame => false;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

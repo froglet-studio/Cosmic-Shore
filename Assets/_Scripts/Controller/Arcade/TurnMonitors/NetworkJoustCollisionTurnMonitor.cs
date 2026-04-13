@@ -19,6 +19,11 @@ namespace CosmicShore.Gameplay
         {
             base.StartMonitor();
 
+            CSDebug.Log($"[NetworkJoustMonitor] StartMonitor — IsServer={IsServer}, " +
+                $"CollisionsNeeded={CollisionsNeeded}, " +
+                $"Players={gameData.RoundStatsList.Count}, " +
+                $"Names=[{string.Join(", ", gameData.RoundStatsList.Select(s => s.Name))}]");
+
             // ALL machines subscribe — client needs to report its own collisions up to server
             foreach (var stat in gameData.RoundStatsList)
                 stat.OnJoustCollisionChanged += OnCollisionChanged;
@@ -36,11 +41,9 @@ namespace CosmicShore.Gameplay
         {
             if (IsServer)
             {
-                // Server detects it directly — sync down to all clients
-                var serverStat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == stats.Name);
-                if (serverStat != null)
-                    serverStat.JoustCollisions = stats.JoustCollisions;
-
+                // Server already has the correct local value from the setter —
+                // just broadcast to clients. Do NOT re-assign JoustCollisions here
+                // or it will re-trigger this handler and cause infinite recursion.
                 SyncCollision_ClientRpc(stats.Name, stats.JoustCollisions);
             }
             else
@@ -71,6 +74,8 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void SyncCollision_ClientRpc(string playerName, int collisionCount)
         {
+            // Server already has the correct value — only clients need the update.
+            if (IsServer) return;
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
             stats.JoustCollisions = collisionCount;
         }

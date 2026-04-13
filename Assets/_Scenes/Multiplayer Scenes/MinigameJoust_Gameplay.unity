@@ -2026,7 +2026,7 @@ MonoBehaviour:
   crystalRewardRoot: {fileID: 1673232261}
   crystalRewardText: {fileID: 2087070029}
   crystalFadeDuration: 0.5
-  joustTurnMonitor: {fileID: 0}
+  joustTurnMonitor: {fileID: 1628508345}
 --- !u!1 &1074736316
 GameObject:
   m_ObjectHideFlags: 0
@@ -2762,7 +2762,7 @@ MonoBehaviour:
   playAgainButton: {fileID: 1315164671}
   rematchPanelAutoDismissSeconds: 3
   animSettings: {fileID: 0}
-  joustTurnMonitor: {fileID: 0}
+  joustTurnMonitor: {fileID: 1628508345}
 --- !u!114 &1604234836
 MonoBehaviour:
   m_ObjectHideFlags: 0

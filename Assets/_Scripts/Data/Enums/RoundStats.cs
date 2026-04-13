@@ -534,8 +534,7 @@ namespace CosmicShore.Data
                 _joustCollisionsLocal = value;
                 if (IsSpawned && IsServer) n_JoustCollisions.Value = value;
 
-                if (!IsSpawned)
-                    RaiseSpecific(OnJoustCollisionChanged);
+                RaiseSpecific(OnJoustCollisionChanged);
             }
         }
 
@@ -827,7 +826,10 @@ namespace CosmicShore.Data
             n_JoustCollisions.OnValueChanged += (_, v) =>
             {
                 _joustCollisionsLocal = v;
-                RaiseSpecific(OnJoustCollisionChanged);
+                // Server already raised OnJoustCollisionChanged from the setter;
+                // only clients need the replication-driven event.
+                if (!IsServer)
+                    RaiseSpecific(OnJoustCollisionChanged);
             };
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, v) =>
