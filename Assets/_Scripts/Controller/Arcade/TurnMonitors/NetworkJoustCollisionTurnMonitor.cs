@@ -19,6 +19,11 @@ namespace CosmicShore.Gameplay
         {
             base.StartMonitor();
 
+            CSDebug.Log($"[NetworkJoustMonitor] StartMonitor — IsServer={IsServer}, " +
+                $"CollisionsNeeded={CollisionsNeeded}, " +
+                $"Players={gameData.RoundStatsList.Count}, " +
+                $"Names=[{string.Join(", ", gameData.RoundStatsList.Select(s => s.Name))}]");
+
             // ALL machines subscribe — client needs to report its own collisions up to server
             foreach (var stat in gameData.RoundStatsList)
                 stat.OnJoustCollisionChanged += OnCollisionChanged;

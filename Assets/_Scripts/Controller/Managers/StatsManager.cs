@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -171,8 +172,14 @@ namespace CosmicShore.Gameplay
             if (!_allowRecord) return;
 
             if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats))
+            {
+                CSDebug.LogWarning($"[StatsManager] ExecuteJoustCollision: no RoundStats for '{joustPlayerName}'. " +
+                    $"Available: [{string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}]");
                 return;
+            }
+
             roundStats.JoustCollisions++;
+            CSDebug.Log($"[StatsManager] JoustCollision recorded for '{joustPlayerName}': {roundStats.JoustCollisions}");
         }
 
         public void PrismCreated(PrismStats prismStats)
