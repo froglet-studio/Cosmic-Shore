@@ -463,7 +463,7 @@ MonoBehaviour:
     type: 3}
   BlockDestroyAudioClip: {fileID: 8300000, guid: 1196fa0c8bbea49bc9c149562a6c694c,
     type: 3}
-  ShieldActivateAudioClip: {fileID: 8300000, guid: 8633cab71103e4151a49e213e14c7b66,
+  ShieldActivateAudioClip: {fileID: 8300000, guid: 2375f97df7d2d4549bb62274c7e31446,
     type: 3}
   ShieldDeactivateAudioClip: {fileID: 8300000, guid: 0ed8ea2827db2c147958145687d78c28,
     type: 3}
