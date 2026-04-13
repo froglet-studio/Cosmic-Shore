@@ -463,7 +463,7 @@ MonoBehaviour:
     type: 3}
   BlockDestroyAudioClip: {fileID: 8300000, guid: 1196fa0c8bbea49bc9c149562a6c694c,
     type: 3}
-  ShieldActivateAudioClip: {fileID: 8300000, guid: 0f1b51a3bb8fcf441a489114d4778a5b,
+  ShieldActivateAudioClip: {fileID: 8300000, guid: 8633cab71103e4151a49e213e14c7b66,
     type: 3}
   ShieldDeactivateAudioClip: {fileID: 8300000, guid: 0ed8ea2827db2c147958145687d78c28,
     type: 3}
@@ -473,7 +473,7 @@ MonoBehaviour:
     type: 3}
   CrystalCollectAudioClip: {fileID: 8300000, guid: 9f3fbc6355c644018816a9525c54505a,
     type: 3}
-  VesselImpactAudioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7,
+  VesselImpactAudioClip: {fileID: 8300000, guid: 08bc72bcda27445728e232220c1f6d98,
     type: 3}
   GameEndAudioClip: {fileID: 8300000, guid: ffa29bc36b571f641b4abc0f6bfb75f1, type: 3}
   ScoreRevealAudioClip: {fileID: 8300000, guid: bd7b64db48580b94fbf2cfbab2b5516c,
