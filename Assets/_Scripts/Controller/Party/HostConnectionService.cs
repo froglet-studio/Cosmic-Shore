@@ -74,6 +74,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private bool _lobbyBusy;
 
+        /// <summary>
+        /// Set after the first Relay party session creation triggers a Menu_Main
+        /// network-scene reload. Prevents subsequent recreations (e.g. after
+        /// returning from a game) from reloading the scene in an infinite loop.
+        /// Reset when ClearStalePartySession is called so the next fresh
+        /// session creation can reload once if needed.
+        /// </summary>
+        private bool _hasReloadedMenuForRelay;
+
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY = "displayName";
         private const string AVATAR_ID_KEY = "avatarId";
@@ -160,11 +169,54 @@ namespace CosmicShore.Gameplay
             if (!_initialized || _presenceLobby == null || _lobbyBusy) return;
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
 
+            // Only run party session recreation and lobby refresh while on
+            // Menu_Main. During game scenes the party session is irrelevant
+            // and recreation would shut down / restart the NetworkManager,
+            // destroying in-flight network objects and flashing stale UI.
+            if (!IsOnMenuScene()) return;
+
+            // If the party session was cleared (e.g. after returning from a game),
+            // recreate it so Menu_Main gets a live Relay host for vessel spawning.
+            if (_partySession == null && _creatingPartySessionTask == null
+                && Time.unscaledTime >= _nextRecreationAttemptTime)
+            {
+                RecreatePartySessionAsync().Forget();
+            }
+
             _refreshTimer += Time.unscaledDeltaTime;
             if (_refreshTimer >= refreshIntervalSeconds)
             {
                 _refreshTimer = 0f;
                 RefreshAsync().Forget();
+            }
+        }
+
+        /// <summary>
+        /// Returns true when the active scene is Menu_Main (or Authentication,
+        /// where initial setup runs). False during game scenes so the refresh
+        /// loop and party-session recreation are suspended.
+        /// </summary>
+        private static bool IsOnMenuScene()
+        {
+            var sceneName = SceneManager.GetActiveScene().name;
+            return sceneName == "Menu_Main" || sceneName == "Authentication";
+        }
+
+        /// <summary>Time before next recreation attempt after a failure.</summary>
+        private float _nextRecreationAttemptTime;
+
+        private async UniTaskVoid RecreatePartySessionAsync()
+        {
+            try
+            {
+                Debug.Log("[HostConnectionService] Party session is null — recreating...");
+                await CreatePartySessionAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] Party session recreation failed: {e.Message}");
+                // Back off to avoid tight retry loops if Relay is unavailable.
+                _nextRecreationAttemptTime = Time.unscaledTime + refreshIntervalSeconds * 2;
             }
         }
 
@@ -383,6 +435,22 @@ namespace CosmicShore.Gameplay
         }
 
         public ISession PartySession => _partySession;
+
+        /// <summary>
+        /// Clears the stale party session reference so the next refresh cycle
+        /// (or explicit call to <see cref="CreatePartySessionPublicAsync"/>)
+        /// will create a fresh Relay-backed session.
+        /// Called by <see cref="Core.SceneLoader"/> when returning to Menu_Main
+        /// after a game, since the game's LeaveSession() deleted the UGS game
+        /// session and shut down the NetworkManager.
+        /// </summary>
+        public void ClearStalePartySession()
+        {
+            if (_partySession == null) return;
+            Debug.Log("[HostConnectionService] Clearing stale party session reference.");
+            _partySession = null;
+            connectionData.PartyMembers?.Clear();
+        }
 
         /// <summary>
         /// Public wrapper for party session creation.
@@ -751,6 +819,13 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Party session refresh error: {e.Message}");
+
+                // Mark the session as stale. The Update() loop will handle
+                // recreation with proper backoff and scene guards — don't
+                // recreate inline here, as the NM shutdown/restart destroys
+                // network objects and causes visible camera/UI flashes.
+                _partySession = null;
+                connectionData.PartyMembers?.Clear();
                 return;
             }
 
@@ -848,8 +923,6 @@ namespace CosmicShore.Gameplay
 
         private async Task CreatePartySessionCoreAsync()
         {
-            bool hadToShutdown = false;
-
             var opts = new SessionOptions
             {
                 MaxPlayers = connectionData.MaxPartySlots,
@@ -869,7 +942,6 @@ namespace CosmicShore.Gameplay
                 {
                     Debug.Log("[HostConnectionService] Shutting down local host before Relay party session creation...");
                     nm.Shutdown();
-                    hadToShutdown = true;
 
                     var sw = System.Diagnostics.Stopwatch.StartNew();
                     while (nm != null && nm.IsListening && sw.ElapsedMilliseconds < 5000)
@@ -883,13 +955,24 @@ namespace CosmicShore.Gameplay
                 {
                     _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
                     connectionData.IsHost = true;
+
+                    // Give the new session a grace period before the refresh loop
+                    // tries RefreshAsync() on it — avoids immediate "stale" errors
+                    // that would null the session and trigger another recreation.
+                    _refreshTimer = -(refreshIntervalSeconds);
+
                     Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
 
-                    // If we shut down a running host, reload Menu_Main as a
-                    // network scene so the new Relay host serves it properly
-                    // for clients that accept the invite.
-                    if (hadToShutdown)
+                    // Reload Menu_Main as a network scene so the new Relay host
+                    // serves it properly — but only on the first local→Relay
+                    // transition. Subsequent recreations (e.g. after returning
+                    // from a game) must NOT reload or we enter an infinite loop:
+                    // reload → Start() → recreate → reload → ...
+                    if (!_hasReloadedMenuForRelay)
+                    {
+                        _hasReloadedMenuForRelay = true;
                         ReloadMenuSceneIfActive();
+                    }
 
                     return;
                 }

@@ -103,6 +103,12 @@ namespace CosmicShore.Core
         {
             PauseSystem.TogglePauseGame(false);
 
+            // Clear any saved modal return state so no stale modal reopens after the game.
+            // The ScreenSwitcher in Menu_Main reads these keys on Start() and would
+            // otherwise restore whatever modal was open when the game launched.
+            PlayerPrefs.DeleteKey("ReturnToModal");
+            PlayerPrefs.Save();
+
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame — Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
@@ -138,6 +144,20 @@ namespace CosmicShore.Core
         public void ReturnToMainMenu()
         {
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
+
+            // Prevent the game scene's ServerPlayerVesselInitializer from calling
+            // NetworkManager.Shutdown() during the scene transition. The network
+            // must stay alive for Menu_Main's vessel spawning pipeline.
+            gameData.IsReturnToMenuTransition = true;
+
+            // Clear stale return-to-screen/modal state so Menu_Main starts clean
+            // on HOME with no modals open. These keys are set by ScreenSwitcher
+            // during normal menu navigation but become stale when a scene
+            // transition destroys modal GameObjects without proper ModalWindowOut().
+            PlayerPrefs.DeleteKey("ReturnToScreen");
+            PlayerPrefs.DeleteKey("ReturnToModal");
+            PlayerPrefs.Save();
+
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             var nm = NetworkManager.Singleton;
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
@@ -193,11 +213,30 @@ namespace CosmicShore.Core
                     netPlayer.NetVesselId.Value = 0;
             }
 
+            // Explicitly despawn AI Player NetworkObjects so they don't persist
+            // into Menu_Main. Human players survive (destroyWithScene=false from
+            // connection approval) but AI players must be removed.
+            // Must happen BEFORE vessel despawn — AI player destruction after vessel
+            // despawn causes MissingReferenceException when VesselAnimation.Update()
+            // accesses the destroyed Player on the same frame.
+            for (int i = gameData.Players.Count - 1; i >= 0; i--)
+            {
+                if (gameData.Players[i] is Player aiPlayer
+                    && aiPlayer.IsSpawned
+                    && aiPlayer.NetIsAI.Value)
+                {
+                    aiPlayer.NetworkObject.Despawn(true);
+                }
+            }
+
+            // Despawn all vessels and destroy their GameObjects. Using destroy=true
+            // ensures VesselAnimation.Update() cannot run with stale Player references
+            // during the scene transition.
             for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
             {
                 var vessel = gameData.Vessels[i];
                 if (vessel is VesselController vc && vc.IsSpawned)
-                    vc.NetworkObject.Despawn(false);
+                    vc.NetworkObject.Despawn(true);
             }
 
             gameData.Vessels.Clear();
@@ -227,6 +266,13 @@ namespace CosmicShore.Core
 
         void HandleActiveSessionEnd()
         {
+            // Clear the stale party session reference so HostConnectionService
+            // can create a fresh Relay-backed session when Menu_Main loads.
+            // LeaveSession() deletes the game session and shuts down the network;
+            // the party session created during initial auth is now stale.
+            if (HostConnectionService.Instance != null)
+                HostConnectionService.Instance.ClearStalePartySession();
+
             ReturnToMainMenu();
             gameData.ResetAllData();
         }

@@ -162,7 +162,7 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Slots.Count; i++)
             {
-                var domain = crystalPrefab.ownDomain;
+                var domain = Domains.None;
                 if (spawnCrystalWithPlayerDomain && i < gameData.Players.Count)
                     domain = gameData.Players[i].Domain;
 
@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
             {
                 if (n_Slots[i].IsEmpty)
                 {
-                    var domain = crystalPrefab.ownDomain;
+                    var domain = Domains.None;
                     if (spawnCrystalWithPlayerDomain && i < gameData.Players.Count)
                         domain = gameData.Players[i].Domain;
 

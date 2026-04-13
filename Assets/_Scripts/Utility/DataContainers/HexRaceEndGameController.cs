@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Linq;
 using CosmicShore.Gameplay;
 using UnityEngine;
@@ -8,15 +8,11 @@ namespace CosmicShore.Utility
 {
     public class HexRaceEndGameController : EndGameCinematicController
     {
-        [Header("Hex Race")]
-        [SerializeField] private HexRaceController hexRaceController;
-
         protected override bool DetermineLocalPlayerWon()
         {
             var localName = gameData.LocalPlayer?.Name;
-            return hexRaceController != null
-                && hexRaceController.RaceResultsReady
-                && hexRaceController.WinnerName == localName;
+            return !string.IsNullOrEmpty(gameData.WinnerName)
+                && gameData.WinnerName == localName;
         }
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
@@ -41,10 +37,8 @@ namespace CosmicShore.Utility
                 yield break;
             }
 
-            // Single source of truth — the controller received this authoritatively from the server
-            bool didWin = hexRaceController != null
-                && hexRaceController.RaceResultsReady
-                && hexRaceController.WinnerName == localName;
+            bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
+                && gameData.WinnerName == localName;
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
             string label;
@@ -65,7 +59,7 @@ namespace CosmicShore.Utility
             }
 
             CSDebug.Log($"[HexRaceEndGame] Local='{localName}' Score={localStats.Score} didWin={didWin} " +
-                      $"WinnerName='{hexRaceController?.WinnerName}' " +
+                      $"WinnerName='{gameData.WinnerName}' " +
                       $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 
             yield return view.PlayScoreRevealAnimation(

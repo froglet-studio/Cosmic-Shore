@@ -80,10 +80,20 @@ namespace CosmicShore.Utility
         public int RequestedTeamCount = 3;
 
         /// <summary>
-        /// Whether the current game uses golf-style scoring (lower = better).
-        /// Set by <see cref="SortRoundStats"/> during end-game flow.
+        /// Server-authoritative winner name, written by game controllers in their
+        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
+        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
-        public bool IsGolfRules { get; private set; }
+        [NonSerialized] public string WinnerName = "";
+
+        /// <summary>
+        /// The resolved crystal collection target for the current session.
+        /// Written by <see cref="NetworkCrystalCollisionTurnMonitor"/> in StartMonitor (server),
+        /// synced to clients via NetworkVariable.OnValueChanged.
+        /// Read by game controllers for scoring calculations.
+        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int CrystalTargetCount;
 
         /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
@@ -141,6 +151,15 @@ namespace CosmicShore.Utility
         /// Used to control fade-in timing after the reload completes.
         /// </summary>
         [NonSerialized] public bool IsReplayReload;
+
+        /// <summary>
+        /// Set by SceneLoader before loading Menu_Main from a game scene.
+        /// Prevents the game scene's ServerPlayerVesselInitializer from calling
+        /// NetworkManager.Shutdown() on despawn — the network must stay alive
+        /// for Menu_Main's vessel spawning pipeline.
+        /// Cleared by MainMenuController.Start().
+        /// </summary>
+        [NonSerialized] public bool IsReturnToMenuTransition;
         
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
@@ -223,6 +242,8 @@ namespace CosmicShore.Utility
             _playerSpawnPoseList.Clear();
             LocalPlayer = null;
             LocalRoundStats = null;
+            WinnerName = "";
+            CrystalTargetCount = 0;
             // Note: RequestedAIBackfillCount and RequestedTeamCount are intentionally
             // NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
@@ -237,6 +258,8 @@ namespace CosmicShore.Utility
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
             _playerSpawnPoseList.Clear();
+            WinnerName = "";
+            CrystalTargetCount = 0;
         }
 
         public void ResetStatsDataForReplay()
@@ -256,6 +279,8 @@ namespace CosmicShore.Utility
         public void ResetAllData()
         {
             GameMode = GameModes.Random;
+            IsMultiplayerMode = false;
+            ActiveSession = null;
             selectedVesselClass.Value = VesselClassType.Manta;
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
@@ -263,6 +288,9 @@ namespace CosmicShore.Utility
             RequestedAIBackfillCount = 0;
 
             IsReplayReload = false;
+            // Note: IsReturnToMenuTransition is NOT cleared here because ResetAllData()
+            // may run before the game scene's OnNetworkDespawn fires. The flag is cleared
+            // by MainMenuController.Start() after the menu scene finishes loading.
 
             ResetRuntimeData();
             DestroyPlayerAndVessel();
@@ -297,7 +325,6 @@ namespace CosmicShore.Utility
         
         public void SortRoundStats(bool golfRules)
         {
-            IsGolfRules = golfRules;
             if (golfRules)
                 RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
             else

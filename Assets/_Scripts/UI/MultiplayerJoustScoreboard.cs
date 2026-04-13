@@ -3,14 +3,13 @@ using System;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
-using System.Linq;
 
 namespace CosmicShore.UI
 {
     public class MultiplayerJoustScoreboard : Scoreboard
     {
-        [Header("References")]
-        [SerializeField] private MultiplayerJoustController joustController;
+        [Header("Joust")]
+        [SerializeField] private JoustCollisionTurnMonitor joustTurnMonitor;
 
         protected override void ShowMultiplayerView()
         {
@@ -29,17 +28,14 @@ namespace CosmicShore.UI
 
         void FormatMultiplayerJoustScores()
         {
-            if (!joustController || !joustController.joustTurnMonitor)
+            if (!joustTurnMonitor)
             {
-                CSDebug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
+                CSDebug.LogError("[MultiplayerJoustScoreboard] JoustTurnMonitor is null!");
                 return;
             }
 
             var playerScores = gameData.RoundStatsList;
-            int needed = joustController.joustTurnMonitor.CollisionsNeeded;
-
-            // Find local player name to determine who won
-            var localName = gameData.LocalPlayer?.Name;
+            int needed = joustTurnMonitor.CollisionsNeeded;
 
             for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
             {

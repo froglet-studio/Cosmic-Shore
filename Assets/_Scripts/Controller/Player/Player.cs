@@ -254,9 +254,11 @@ namespace CosmicShore.Gameplay
             InputStatus?.ResetForReplay();
 
             // Update owner-writable NetworkVariables to match new game config.
-            // Only overwrite vessel type from gameData if the client hasn't already
-            // chosen their own vessel via the ArcadeGameConfigureModal.
-            if (IsOwner && !IsValidVesselTypeForSpawn(NetDefaultVesselType.Value))
+            // Always overwrite vessel type so the menu autopilot uses the configured
+            // menuVesselClass (e.g. Squirrel) rather than retaining the game vessel.
+            // When launching a new game, ArcadeGameConfigureModal.SyncLocalPlayerVesselType()
+            // writes the chosen vessel back to NetDefaultVesselType.
+            if (IsOwner)
                 NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
             // Reset server-writable NetworkVariables.

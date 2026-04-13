@@ -130,6 +130,18 @@ namespace CosmicShore.UI
             Instance = this;
         }
 
+        protected override void Start()
+        {
+            base.Start();
+
+            // Ensure no stale game selection from a previous session or scene load.
+            // ArcadeGameConfigSO is a ScriptableObject that persists in memory across
+            // scene transitions — if SelectedGame was set before a game launched, it
+            // would still be set when Menu_Main reloads.
+            _selectedGame = null;
+            if (config) config.ResetState();
+        }
+
         void OnEnable()
         {
             foreach (var intensityButton in intensityButtons)
@@ -857,6 +869,12 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.NotifyConfigClosed();
 
             _isClientMode = false;
+
+            // Clear stale state so the modal never reopens showing a
+            // previously-selected game (e.g. after returning from a game scene).
+            _selectedGame = null;
+            if (config) config.ResetState();
+
             ModalWindowOut();
         }
 
@@ -910,6 +928,10 @@ namespace CosmicShore.UI
                 Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch()</color>");
                 gameData.InvokeGameLaunch();
             }
+
+            // Clear runtime state so it can't resurface after returning to menu
+            _selectedGame = null;
+            if (config) config.ResetState();
 
             // Close the modal on all instances
             ModalWindowOut();
