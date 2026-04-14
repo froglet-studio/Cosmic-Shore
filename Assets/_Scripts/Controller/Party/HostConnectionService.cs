@@ -387,16 +387,6 @@ namespace CosmicShore.Gameplay
             {
                 SyncLocalIdentity();
 
-                // Refresh the presence lobby so the SDK's cached player list is
-                // current before the join triggers WebSocket lobby-change deltas.
-                // Stale indices cause LobbyPatcher.ApplyPatchesToLobby to crash
-                // with ArgumentOutOfRangeException.
-                if (_presenceLobby != null)
-                {
-                    try { await _presenceLobby.RefreshAsync(); }
-                    catch { /* best-effort */ }
-                }
-
                 _partySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
                     invite.PartySessionId,
                     new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
@@ -409,6 +399,11 @@ namespace CosmicShore.Gameplay
                 var hostData = new PartyPlayerData(invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
                 connectionData.PartyMembers?.Add(hostData);
                 connectionData.OnPartyMemberJoined?.Raise(hostData);
+
+                // Give the new session a grace period before the refresh loop
+                // hits it — the join itself already consumed API quota and an
+                // immediate RefreshAsync would trigger HTTP 429 Too Many Requests.
+                _refreshTimer = -(refreshIntervalSeconds);
 
                 // Keep _lastFiredInvite set so the dedup guard prevents
                 // re-triggering if the host is slow to clear their properties.
@@ -849,10 +844,15 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning($"[HostConnectionService] Party session refresh error: {e.Message}");
 
-                // Mark the session as stale. The Update() loop will handle
-                // recreation with proper backoff and scene guards — don't
-                // recreate inline here, as the NM shutdown/restart destroys
-                // network objects and causes visible camera/UI flashes.
+                // Rate limits are transient — back off and retry next cycle.
+                // Only null the session for non-transient errors (session deleted,
+                // auth failure, etc.) so the Update() loop can recreate it.
+                if (IsRateLimitException(e))
+                {
+                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
+                    return;
+                }
+
                 _partySession = null;
                 connectionData.PartyMembers?.Clear();
                 return;
