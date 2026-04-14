@@ -387,6 +387,16 @@ namespace CosmicShore.Gameplay
             {
                 SyncLocalIdentity();
 
+                // Refresh the presence lobby so the SDK's cached player list is
+                // current before the join triggers WebSocket lobby-change deltas.
+                // Stale indices cause LobbyPatcher.ApplyPatchesToLobby to crash
+                // with ArgumentOutOfRangeException.
+                if (_presenceLobby != null)
+                {
+                    try { await _presenceLobby.RefreshAsync(); }
+                    catch { /* best-effort */ }
+                }
+
                 _partySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
                     invite.PartySessionId,
                     new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });

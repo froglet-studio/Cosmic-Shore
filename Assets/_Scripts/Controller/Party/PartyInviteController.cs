@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -95,6 +96,12 @@ namespace CosmicShore.Gameplay
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
+
+            // Unpause immediately — ScreenSwitcher pauses on non-HOME screens,
+            // and the accept flow needs Update() ticking so the UGS SDK's
+            // internal lobby state stays synchronized with WebSocket deltas.
+            // Without this, LobbyPatcher crashes with ArgumentOutOfRangeException.
+            PauseSystem.TogglePauseGame(false);
 
             try
             {
