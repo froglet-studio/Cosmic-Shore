@@ -166,7 +166,6 @@ namespace CosmicShore.Core
         {
             TransitionTo(MainMenuState.Ready);
             ActivateLocalPlayerAutopilot();
-            _gameData.InitializeGame();
         }
 
         /// <summary>

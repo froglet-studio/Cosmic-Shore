@@ -122,6 +122,7 @@ namespace CosmicShore.Gameplay
             Instance = this;
             DontDestroyOnLoad(gameObject);
             InstallLobbyLogFilter();
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         async void Start()
@@ -222,11 +223,23 @@ namespace CosmicShore.Gameplay
 
         async void OnDestroy()
         {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
             UninstallLobbyLogFilter();
             await LeavePresenceLobbyAsync();
 
             if (Instance == this)
                 Instance = null;
+        }
+
+        /// <summary>
+        /// Resets invite dedup state when Menu_Main loads so stale
+        /// <see cref="_lastFiredInvite"/> from a prior session doesn't
+        /// block new invite detection.
+        /// </summary>
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name == "Menu_Main")
+                _lastFiredInvite = null;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -323,8 +336,12 @@ namespace CosmicShore.Gameplay
                     $"[INVITE-SEND] Setting properties — invite_target: '{targetPlayerId}', " +
                     $"invite_data: '{inviteData}'", Color.cyan);
 
-                // Set properties and save. Skip the pre-save refresh to avoid
-                // hitting the UGS rate limit (save + post-save refresh is enough).
+                // Best-effort refresh to sync SDK player list cache before setting
+                // properties. Without this, SaveCurrentPlayerDataAsync can fail
+                // silently if the SDK's internal player index is stale.
+                try { await _presenceLobby.RefreshAsync(); }
+                catch { /* non-fatal — SaveWithRetryAsync handles stale state */ }
+
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_DATA_KEY,
@@ -382,6 +399,11 @@ namespace CosmicShore.Gameplay
                 var hostData = new PartyPlayerData(invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
                 connectionData.PartyMembers?.Add(hostData);
                 connectionData.OnPartyMemberJoined?.Raise(hostData);
+
+                // Give the new session a grace period before the refresh loop
+                // hits it — the join itself already consumed API quota and an
+                // immediate RefreshAsync would trigger HTTP 429 Too Many Requests.
+                _refreshTimer = -(refreshIntervalSeconds);
 
                 // Keep _lastFiredInvite set so the dedup guard prevents
                 // re-triggering if the host is slow to clear their properties.
@@ -449,6 +471,8 @@ namespace CosmicShore.Gameplay
             if (_partySession == null) return;
             Debug.Log("[HostConnectionService] Clearing stale party session reference.");
             _partySession = null;
+            _lastFiredInvite = null;
+            _hasReloadedMenuForRelay = false;
             connectionData.PartyMembers?.Clear();
         }
 
@@ -820,10 +844,15 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning($"[HostConnectionService] Party session refresh error: {e.Message}");
 
-                // Mark the session as stale. The Update() loop will handle
-                // recreation with proper backoff and scene guards — don't
-                // recreate inline here, as the NM shutdown/restart destroys
-                // network objects and causes visible camera/UI flashes.
+                // Rate limits are transient — back off and retry next cycle.
+                // Only null the session for non-transient errors (session deleted,
+                // auth failure, etc.) so the Update() loop can recreate it.
+                if (IsRateLimitException(e))
+                {
+                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
+                    return;
+                }
+
                 _partySession = null;
                 connectionData.PartyMembers?.Clear();
                 return;

@@ -237,6 +237,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
+| `CRYSTAL_CAPTURE.md` | `_Scripts/Controller/Arcade/` | Crystal Capture game mode technical reference |
+| `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TEST_PROCEDURE.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance benchmarking procedures |
@@ -1277,9 +1279,9 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 
 #### Race Rules
 
-- **Crystal target**: 39 (default from track waypoints, overridable via `_netCrystalsToFinish` NetworkVariable or `crystalsToFinishOverride` inspector field when `useTestCrystalOverride=true`)
+- **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: inspector `CrystalCollisions` field (if non-zero) > `SpawnableWaypointTrack` waypoints > default 39. Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
 - **Turn monitor**: `NetworkCrystalCollisionTurnMonitor` checks `gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target)` every frame (server only)
-- **Winner detection**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds first player with `CrystalsCollected >= target`, sets `_raceEnded=true`, calculates all scores. The legacy `ReportPlayerFinished_ServerRpc` (from client-side `HexRaceScoreTracker`) is retained as a defensive fallback but is no-op when `_raceEnded` is already set
+- **Winner detection**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds first player with `CrystalsCollected >= target`, sets `_raceEnded=true`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
 - **Scoring**: Winner score = race time (seconds); Loser score = `10000 + crystalsRemaining`. Golf rules (`UseGolfRules=true`): lower = better
 - **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients, then calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`
 - **HasEndGame=false**: Prevents base controller from calling `SyncGameEnd_ClientRpc` (which would duplicate `InvokeMiniGameEnd`). `SetupNewRound()` is overridden to return when `_raceEnded=true`, suppressing the Ready button
@@ -1287,20 +1289,19 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 
 #### End Game
 
-- `HexRaceEndGameController` reads `hexRaceController.WinnerName` and `RaceResultsReady` (set by server via `SyncFinalScores_ClientRpc`)
+- `HexRaceEndGameController` reads `gameData.WinnerName` (set by server via `SyncFinalScores_ClientRpc`)
 - Winner sees "VICTORY" + race time (formatted mm:ss:cs); losers see "DEFEAT" + crystals remaining
 - `HexRaceScoreboard` displays all players ranked by score (golf rules — sorts ascending)
 - **Replay**: Full network scene reload (`UseSceneReloadForReplay=true`). `OnResetForReplayCustom()` was removed — all race state, track, and environment are destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`. Fade to black → scene reload → fade from black on `OnClientReady`
 
-#### NetworkVariable Inventory
+#### Shared State & NetworkVariables
 
 | Variable | Owner | Purpose |
 |---|---|---|
-| `_netTrackSeed` | Server | Deterministic track seed |
-| `_netCrystalsToFinish` | Server | Crystal collection target |
-| `_netCrystalCollisions` | Server | Crystal target (turn monitor) |
-| `WinnerName` | Server (ClientRpc) | Authoritative winner identity |
-| `RaceResultsReady` | Server (ClientRpc) | Final scores synced flag |
+| `HexRaceController._netTrackSeed` | Server | Deterministic track seed (NetworkVariable) |
+| `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` | Server | Crystal target synced to clients (NetworkVariable); writes to `gameData.CrystalTargetCount` |
+| `gameData.WinnerName` | Server (via ClientRpc) | Authoritative winner identity; non-empty = results ready |
+| `gameData.CrystalTargetCount` | Server (via `_netCrystalCollisions.OnValueChanged`) | Crystal target readable by any system |
 
 #### Key Files — HexRace
 
@@ -1321,13 +1322,13 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 
 #### HexRace Patterns to Follow
 
-- **Server authority via OnTurnEndedCustom**: Winner detection runs on the server in `OnTurnEndedCustom()`, not via client-side ServerRpc. The `ReportPlayerFinished_ServerRpc` path is a defensive fallback only.
+- **Server authority via OnTurnEndedCustom**: Winner detection runs on the server in `OnTurnEndedCustom()`. `HexRaceScoreTracker` only handles local elapsed-time tracking and UGS stats reporting — it does not participate in winner determination.
 - **Deterministic track**: All clients spawn identical tracks from shared seed + intensity. `SegmentSpawner` uses `Random.InitState(seed)`. Three redundant sync paths (immediate, OnValueChanged, poll fallback) ensure reliability.
 - **Golf scoring**: `UseGolfRules = true` — lower score = better rank. Winner time (seconds) always ranks above loser penalty (10000+).
 - **Scene reload for replay**: Use `UseSceneReloadForReplay = true` — do not implement in-place reset. Flora/fauna/environment don't fully reset in-place.
 - **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all).
 - **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
-- **Crystal target sync**: Server writes target to `_netCrystalsToFinish` NetworkVariable so all clients display correct remaining count.
+- **Crystal target sync**: Server writes target to `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable, which syncs to `gameData.CrystalTargetCount` on all clients.
 
 ### FTUE (First-Time User Experience)
 
