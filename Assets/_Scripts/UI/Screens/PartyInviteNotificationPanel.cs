@@ -196,6 +196,11 @@ namespace CosmicShore.UI
         {
             if (canvasGroup == null) return;
 
+            // Ensure the notification renders on top of all siblings
+            // (guards against dynamic UI hierarchy changes from scene migrations).
+            if (show)
+                transform.SetAsLastSibling();
+
             canvasGroup.alpha = show ? 1f : 0f;
             canvasGroup.blocksRaycasts = show;
             canvasGroup.interactable = show;
