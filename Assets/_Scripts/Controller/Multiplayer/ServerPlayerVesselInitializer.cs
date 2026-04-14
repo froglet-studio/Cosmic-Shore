@@ -194,10 +194,38 @@ namespace CosmicShore.Gameplay
 
             if (!IsReadyToSpawn(player))
             {
-                Debug.LogError($"<color=#FF0000>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready! VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'</color>");
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player {ownerClientId} not ready after delay. " +
-                                 $"VesselType={player.NetDefaultVesselType.Value}, Name={player.NetName.Value}");
-                return;
+                // Vessel type or name hasn't replicated yet. This is expected for:
+                //   - Host player: OnNetworkSpawn ran in Auth scene before
+                //     MainMenuController.Start() set selectedVesselClass.
+                //   - Remote client: NetworkVariables need time to replicate.
+                // Retry with backoff, and for the host's own player, apply
+                // gameData.selectedVesselClass once it becomes valid.
+                const int retryIntervalMs = 100;
+                const int maxRetries = 20; // 2 seconds total
+
+                for (int i = 0; i < maxRetries; i++)
+                {
+                    await UniTask.Delay(retryIntervalMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+
+                    // Host owns its own player — push selectedVesselClass when ready
+                    if (player.IsOwner
+                        && !IsValidVesselType(player.NetDefaultVesselType.Value)
+                        && IsValidVesselType(gameData.selectedVesselClass.Value))
+                    {
+                        player.NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+                    }
+
+                    if (IsReadyToSpawn(player)) break;
+                }
+
+                if (!IsReadyToSpawn(player))
+                {
+                    // Still not ready after retries — remove from processed so the
+                    // deferred spawn event (Player.TryRaiseDeferredSpawnEvent) can retry.
+                    _processedPlayers.Remove(player.NetworkObjectId);
+                    Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready after {maxRetries * retryIntervalMs}ms — VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'. Will retry on deferred event.</color>");
+                    return;
+                }
             }
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
