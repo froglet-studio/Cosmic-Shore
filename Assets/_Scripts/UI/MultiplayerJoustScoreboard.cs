@@ -13,6 +13,7 @@ namespace CosmicShore.UI
 
         protected override void ShowMultiplayerView()
         {
+            // Sort ascending (golf rules): winners with completion times first, losers with penalty scores last
             if (gameData.RoundStatsList is { Count: > 0 })
             {
                 gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
@@ -21,6 +22,7 @@ namespace CosmicShore.UI
             else if (BannerText) BannerText.text = "GAME OVER";
 
             FormatMultiplayerJoustScores();
+            PopulateTeamScorecards();
 
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView)  MultiplayerView.gameObject.SetActive(true);
@@ -46,23 +48,20 @@ namespace CosmicShore.UI
 
                 var stats = playerScores[i];
                 int joustsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
-                bool thisPlayerWon = joustsLeft == 0; // completed all jousts
+                bool thisPlayerWon = joustsLeft == 0;
 
                 if (thisPlayerWon)
                 {
-                    // Winner row shows finish time
                     TimeSpan t = TimeSpan.FromSeconds(stats.Score);
                     PlayerScoreTextFields[i].text = $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
                 }
                 else
                 {
-                    // Loser row shows jousts remaining
                     string plural = joustsLeft == 1 ? "" : "s";
                     PlayerScoreTextFields[i].text = $"{joustsLeft} Joust{plural} Left";
                 }
             }
 
-            // Clear unused slots
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
                 if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";

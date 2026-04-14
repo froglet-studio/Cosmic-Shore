@@ -1,4 +1,4 @@
-﻿using CosmicShore.UI;
+using UnityEngine;
 
 namespace CosmicShore.UI
 {
@@ -6,6 +6,7 @@ namespace CosmicShore.UI
     {
         protected override void ShowMultiplayerView()
         {
+            // Sort descending — highest crystals win (NOT golf rules)
             if (gameData.RoundStatsList is { Count: > 0 })
             {
                 gameData.RoundStatsList.Sort((a, b) => b.Score.CompareTo(a.Score));
@@ -14,6 +15,7 @@ namespace CosmicShore.UI
             else if (BannerText) BannerText.text = "GAME OVER";
 
             DisplayPlayerScores();
+            PopulateTeamScorecards();
 
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
@@ -23,7 +25,6 @@ namespace CosmicShore.UI
         {
             var playerScores = gameData.RoundStatsList;
 
-            // [Visual Note] Loop generates a row per player in the scoreboard canvas. Crystal count is appended with a text suffix for context.
             for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
             {
                 if (PlayerNameTextFields[i])
@@ -32,11 +33,11 @@ namespace CosmicShore.UI
                 if (PlayerScoreTextFields[i])
                     PlayerScoreTextFields[i].text = $"{(int)playerScores[i].Score} Crystals";
             }
-    
+
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
                 if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i]) 
+                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
                     PlayerScoreTextFields[i].text = "";
             }
         }
