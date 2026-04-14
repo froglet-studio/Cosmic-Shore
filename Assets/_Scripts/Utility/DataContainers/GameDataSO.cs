@@ -76,6 +76,11 @@ namespace CosmicShore.Soap
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;
+        /// <summary>
+        /// When true, lower scores are better (time-based modes).
+        /// Set automatically by SortRoundStats / CalculateDomainStats.
+        /// </summary>
+        public bool IsGolfRules { get; private set; }
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();
@@ -250,6 +255,7 @@ namespace CosmicShore.Soap
         
         public void SortRoundStats(bool golfRules)
         {
+            IsGolfRules = golfRules;
             if (golfRules)
                 RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
             else

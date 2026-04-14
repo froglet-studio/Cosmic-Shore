@@ -102,6 +102,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!ShowEndGameSequence) return;
             gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }

@@ -9,7 +9,7 @@ namespace CosmicShore.Events
     public static class FTUEEventManager
     {
         /// <summary>
-        /// Fired when the player clicks ï¿½Nextï¿½ on any FTUE step.
+        /// Fired when the player clicks “Next” on any FTUE step.
         /// </summary>
         public static event Action OnNextPressed;
         public static void RaiseNextPressed() => OnNextPressed?.Invoke();
@@ -39,12 +39,5 @@ namespace CosmicShore.Events
         public static void OnInitializeFTUECalled()
             => InitializeFTUE?.Invoke();
 
-        /// <summary>
-        /// Fired when a tutorial sequence completes playback.
-        /// Carries the sequenceId so subscribers can chain or react.
-        /// </summary>
-        public static event Action<string> OnTutorialSequenceCompleted;
-        public static void RaiseTutorialSequenceCompleted(string sequenceId)
-            => OnTutorialSequenceCompleted?.Invoke(sequenceId);
     }
 }

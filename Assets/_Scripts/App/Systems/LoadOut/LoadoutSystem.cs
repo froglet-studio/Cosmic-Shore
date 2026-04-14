@@ -14,6 +14,8 @@ namespace CosmicShore.App.Systems.Loadout
 
         static List<ArcadeGameLoadout> gameLoadouts;
 
+        static bool _initialized;
+
         /// <summary>
         /// Loadout configurations automatically saved as the last game play configuration
         /// </summary>
@@ -23,14 +25,16 @@ namespace CosmicShore.App.Systems.Loadout
         /// </summary>
         const string PlayerLoadoutsSaveFileName = "loadouts.data";
 
-
-        public static void Init()
+        static void EnsureInitialized()
         {
+            if (_initialized) return;
+            _initialized = true;
+
             gameLoadouts = DataAccessor.Load<List<ArcadeGameLoadout>>(GameLoadoutsSaveFileName);
             loadouts = DataAccessor.Load<List<Loadout>>(PlayerLoadoutsSaveFileName);
 
             // Save file doesn't exist yet, let's make it
-            if (loadouts.Count == 0)
+            if (loadouts == null || loadouts.Count == 0)
             {
                 loadouts = new List<Loadout>()
                 {
@@ -42,25 +46,39 @@ namespace CosmicShore.App.Systems.Loadout
                 DataAccessor.Save(PlayerLoadoutsSaveFileName, loadouts);
             }
 
+            if (gameLoadouts == null)
+                gameLoadouts = new List<ArcadeGameLoadout>();
+
             activeLoadout = loadouts[0];
         }
+
+        public static void Init()
+        {
+            _initialized = false;
+            EnsureInitialized();
+        }
+
         public static bool CheckLoadoutsExist(int idx)
         {
+            EnsureInitialized();
             return loadouts.Count > idx;
         }
 
         public static Loadout GetActiveLoadout()
         {
+            EnsureInitialized();
             return activeLoadout;
         }
 
         public static Loadout GetLoadout(int idx)
         {
+            EnsureInitialized();
             return loadouts[idx];
         }
 
         public static List<Loadout> GetFullListOfLoadouts()
         {
+            EnsureInitialized();
             return loadouts;
         }
 
@@ -76,6 +94,8 @@ namespace CosmicShore.App.Systems.Loadout
 
         public static ArcadeGameLoadout LoadGameLoadout(GameModes mode, bool isMultiplayer)
         {
+            EnsureInitialized();
+
             for (var i = 0; i < gameLoadouts.Count; i++)
             {
                 if (gameLoadouts[i].GameMode == mode)
@@ -89,6 +109,8 @@ namespace CosmicShore.App.Systems.Loadout
 
         public static void SaveGameLoadOut(GameModes mode, Loadout loadout)
         {
+            EnsureInitialized();
+
             var gameLoadout = new ArcadeGameLoadout(mode, loadout);
             var found = false;
             for (var i=0; i<gameLoadouts.Count; i++)
@@ -98,7 +120,7 @@ namespace CosmicShore.App.Systems.Loadout
                     gameLoadouts[i] = gameLoadout;
                     found = true;
                     break;
-                } 
+                }
             }
 
             if (!found)
@@ -109,6 +131,7 @@ namespace CosmicShore.App.Systems.Loadout
 
         public static void SetLoadout(Loadout loadout, int index)
         {
+            EnsureInitialized();
             index = Mathf.Clamp(index, 0, loadouts.Count-1);
             loadouts[index] = loadout;
             if (index == ActiveLoadoutIndex)
@@ -116,9 +139,10 @@ namespace CosmicShore.App.Systems.Loadout
 
             DataAccessor.Save(PlayerLoadoutsSaveFileName, loadouts);
         }
-        
-        public static void SetActiveLoadoutIndex(int index) 
+
+        public static void SetActiveLoadoutIndex(int index)
         {
+            EnsureInitialized();
             CSDebug.Log("Loadout Index changed to " + index);
 
             index = Mathf.Clamp(index, 0, loadouts.Count-1);
