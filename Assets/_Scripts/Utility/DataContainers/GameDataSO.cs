@@ -80,6 +80,12 @@ namespace CosmicShore.Utility
         public int RequestedTeamCount = 3;
 
         /// <summary>
+        /// Whether the current game uses golf-style scoring (lower = better).
+        /// Set by <see cref="SortRoundStats"/> during end-game flow.
+        /// </summary>
+        public bool IsGolfRules { get; private set; }
+
+        /// <summary>
         /// Server-authoritative winner name, written by game controllers in their
         /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
@@ -325,6 +331,7 @@ namespace CosmicShore.Utility
         
         public void SortRoundStats(bool golfRules)
         {
+            IsGolfRules = golfRules;
             if (golfRules)
                 RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
             else
