@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public abstract class CrystalManager : NetworkBehaviour
     {
+        public enum CrystalCountMode
+        {
+            FixedCount = 0,
+            PlayerCountPlusExtra = 1,
+        }
+
         // IMPORTANT:
         // We compare Vector3.SqrMagnitude(...) <= MIN_SQR_DISTANCE.
         // So this constant is "distance squared".
@@ -44,8 +50,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] private IntVariable intensityLevelData;
         [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
-        [SerializeField] protected bool spawnCrystalWithPlayerDomain;
+        [Header("Crystal Count")]
+        [SerializeField] private CrystalCountMode crystalCountMode = CrystalCountMode.PlayerCountPlusExtra;
+        [SerializeField, Min(0)] private int fixedCrystalCount = 1;
         [SerializeField] private int extraCrystalsToSpawnBeyondPlayerCount = 0;
+
+        [Header("Crystal Domain")]
+        [SerializeField] protected bool spawnCrystalWithPlayerDomain;
         
         // ---------------- Runtime State ----------------
 
@@ -259,7 +270,11 @@ namespace CosmicShore.Gameplay
 
         protected int GetCrystalCountToSpawn()
         {
-            return Mathf.Max(1, gameData.Players.Count + extraCrystalsToSpawnBeyondPlayerCount);
+            return crystalCountMode switch
+            {
+                CrystalCountMode.FixedCount => fixedCrystalCount,
+                _ => Mathf.Max(1, gameData.Players.Count + extraCrystalsToSpawnBeyondPlayerCount),
+            };
         }
 
         /// <summary>
