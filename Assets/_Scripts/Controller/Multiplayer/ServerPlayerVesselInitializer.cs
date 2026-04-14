@@ -194,9 +194,12 @@ namespace CosmicShore.Gameplay
 
             if (!IsReadyToSpawn(player))
             {
-                Debug.LogError($"<color=#FF0000>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready! VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'</color>");
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player {ownerClientId} not ready after delay. " +
-                                 $"VesselType={player.NetDefaultVesselType.Value}, Name={player.NetName.Value}");
+                // Remove from processed so the deferred spawn event
+                // (raised by Player.TryRaiseDeferredSpawnEvent when
+                // NetworkVariables replicate) can retry this player.
+                _processedPlayers.Remove(player.NetworkObjectId);
+
+                Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready yet — VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'. Removed from processed set; waiting for deferred retry.</color>");
                 return;
             }
 
