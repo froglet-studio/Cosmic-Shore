@@ -22,6 +22,7 @@ namespace CosmicShore.Gameplay
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
         private PrismTeamManager teamManager;
+        private PrismOctahedronShield octahedronShield; // optional: present only on prisms opted in to the octahedron supershield visual
 
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
@@ -30,6 +31,7 @@ namespace CosmicShore.Gameplay
             prism = GetComponent<Prism>();
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
             teamManager = GetComponent<PrismTeamManager>();
+            octahedronShield = GetComponent<PrismOctahedronShield>();
         }
 
         public void MakeDangerous()
@@ -70,6 +72,10 @@ namespace CosmicShore.Gameplay
                 _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.SuperShielded;
+
+            // Opt-in octahedron shield visual/collider swap. Prisms without
+            // this component keep the legacy material-only supershield.
+            if (octahedronShield != null) octahedronShield.Engage();
 
             SyncAOERegistryShieldState();
         }
@@ -123,6 +129,8 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsShielded = false;
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
+
+            if (octahedronShield != null) octahedronShield.Disengage();
 
             SyncAOERegistryShieldState();
 
