@@ -109,6 +109,25 @@ namespace CosmicShore.Gameplay
             ComputeMassTargets();
         }
 
+        private void OnDisable()
+        {
+            // Snap to unshielded state when the GameObject is disabled (e.g.
+            // pooled back to the prism pool). On next activation, the prism's
+            // Initialize / ActivateShield path will re-engage if needed. This
+            // prevents a pooled prism from coming back out still rendering
+            // as an octahedron.
+            if (_isShielded || _isTransitioning)
+            {
+                _transitionT = 0f;
+                _transitionSign = 0f;
+                _isTransitioning = false;
+                _isShielded = false;
+                // Only touch components if we actually initialized (Awake ran).
+                if (_octahedronMesh != null)
+                    ApplyFinalPose(shielded: false);
+            }
+        }
+
         private void OnDestroy()
         {
             if (_octahedronMesh != null) Destroy(_octahedronMesh);
