@@ -127,10 +127,13 @@ namespace CosmicShore.Gameplay
             } 
             if ((prism.Domain == explosion.Domain && !affectSelf) || !destructive)
             {
+                // Use the explosion's world position as the shield wave origin so
+                // all prisms caught by the same explosion merge into one shockwave.
+                Vector3 originWS = explosion != null ? explosion.transform.position : prism.transform.position;
                 if (shielding && prism.Domain == explosion.Domain)
-                    prism.ActivateShield();
-                else 
-                    prism.ActivateShield(2f);
+                    prism.ActivateShield(originWS);
+                else
+                    prism.ActivateShield(2f, originWS);
                 return;
             }
             

@@ -237,14 +237,14 @@ namespace CosmicShore.Gameplay
             if (other.TryGetComponent(out CellItem cellItem))
             {
                 if (!prismProperties.IsShielded)
-                    ActivateShield();
+                    ActivateShield(other.transform.position);
             }
         }
 
         protected void OnTriggerExit(Collider other)
         {
             if (other.gameObject.IsLayer("Crystals"))
-                ActivateShield(2.0f);
+                ActivateShield(2.0f, other.transform.position);
         }
 
         protected virtual GameObject SetupDestruction(Domains domain, string attackerPlayerName, bool devastate = false)
@@ -339,6 +339,8 @@ namespace CosmicShore.Gameplay
         public void DeactivateShields() => stateManager?.DeactivateShields();
         public void ActivateShield() => stateManager?.ActivateShield();
         public void ActivateShield(float duration) => stateManager?.ActivateShield(duration);
+        public void ActivateShield(Vector3 originWS) => stateManager?.ActivateShield(null, originWS);
+        public void ActivateShield(float duration, Vector3 originWS) => stateManager?.ActivateShield(duration, originWS);
         public void ActivateSuperShield() => stateManager?.ActivateSuperShield();
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 

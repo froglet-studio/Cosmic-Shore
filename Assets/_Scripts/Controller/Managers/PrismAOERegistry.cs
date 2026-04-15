@@ -363,13 +363,15 @@ namespace CosmicShore.Gameplay
                     // Fall through — original code does NOT return/continue here
                 }
 
-                // Same team (and not affectSelf) or non-destructive: shield the prism
+                // Same team (and not affectSelf) or non-destructive: shield the prism.
+                // Pass the explosion center as the shield wave origin so all prisms in
+                // this AOE batch coalesce into a single shockwave event, not N of them.
                 if ((prismDomain == expDomain && !affectSelf) || !destructive)
                 {
                     if (shielding && prismDomain == expDomain)
-                        prism.ActivateShield();
+                        prism.ActivateShield(center);
                     else
-                        prism.ActivateShield(2f);
+                        prism.ActivateShield(2f, center);
                     UpdateShieldState(idx, true, false);
                     continue;
                 }
