@@ -294,8 +294,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 61aeac9498f2bb44dac66107f18a3649, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 8
@@ -13074,8 +13074,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 446c6615770957e4aba57ea1dca789f8, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   sharpAnimations: 0
   closeOnGamepadB: 1
   ModalType: 7
@@ -52156,8 +52156,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b69e4860bc644894585fe2e6ad1147e0, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 2
@@ -61457,7 +61457,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1486013830}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5c8a5fb79afdbdd48ac8f822f5f069ad, type: 3}
+  m_Script: {fileID: 11500000, guid: 56c3dc7b741fe314791fb9d5d18ae47e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -73634,8 +73634,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0ae54d528c7d2be41a90b3e6184a00b9, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   sharpAnimations: 0
   closeOnGamepadB: 1
   ModalType: 4
@@ -76990,8 +76990,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 700f55ec68c5d124ebb8eb6d14268efb, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 1
@@ -77034,7 +77034,7 @@ MonoBehaviour:
   nextShipButton: {fileID: 0}
   startGameButton: {fileID: 4125016652611855919}
   waitingForOthersLabel: {fileID: 709792735}
-  arcadeConfigSyncManager: {fileID: 1486013854}
+  arcadeConfigSyncManager: {fileID: 0}
 --- !u!114 &1847035623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88981,6 +88981,11 @@ PrefabInstance:
       objectReference: {fileID: 1892651053}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
+      propertyPath: arcadeConfigSyncManager
+      value: 
+      objectReference: {fileID: 1486013854}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
       propertyPath: teamCountDecrementButton
       value: 
       objectReference: {fileID: 2098022937}
@@ -93630,8 +93635,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f10abb114d479614085e4c31103b2893, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 9
@@ -95529,8 +95534,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6faee5712a0d8e4ab09a892a4501402, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 0
@@ -99214,6 +99219,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -208.56
       objectReference: {fileID: 0}
+    - target: {fileID: 1111638120248792970, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 921072167}
     - target: {fileID: 1185706689474859756, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -99469,11 +99479,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -124.28
       objectReference: {fileID: 0}
-    - target: {fileID: 1111638120248792970, guid: 0b36fa278f9a30d4c8f44e846674c904,
-        type: 3}
-      propertyPath: screenSwitcher
-      value:
-      objectReference: {fileID: 921072167}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -101701,7 +101706,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 1486013854}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: CosmicShore.Gameplay.ArcadeConfigSyncManager, Assembly-CSharp
         m_MethodName: ConfirmLocalPlayerReady
         m_Mode: 1
