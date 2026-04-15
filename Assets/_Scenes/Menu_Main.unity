@@ -78761,6 +78761,11 @@ PrefabInstance:
       propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2899345457500593965, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 3082319601036034293, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_Enabled
@@ -78786,6 +78791,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3146296680026729587, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 3184225246671237893, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_IsActive
@@ -78841,6 +78851,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3673826221655834858, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 4082591368847160390, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -78906,6 +78921,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4163919379665076965, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 4216411970403090259, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: NavBar
@@ -79262,6 +79282,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5393631322067835149, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 5537682408756660529, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -79492,6 +79517,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7482659488227830858, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 7648754820907884424, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -79607,6 +79637,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8597140137728428893, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 8663503843334522142, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -79627,6 +79662,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8675064056856439436, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
+    - target: {fileID: 8980255272886593483, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: -1310382983498083792, guid: 4afd6beb328c37b4f97c61ac43f439e2, type: 3}
@@ -87240,6 +87285,18 @@ MonoBehaviour:
   scrollRect: {fileID: 601712922}
   supportUsButton: {fileID: 1066368857}
   episodePanel: {fileID: 0}
+--- !u!114 &2057023445 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4216411970403090259, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1892651051}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1892651057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afc48f8a84d86f945ae9c9c019eec3cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &2061170151 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6236172666001697302, guid: 37c5e5722efdd184bbb0e51f04fb4e91,
@@ -88969,6 +89026,11 @@ PrefabInstance:
       propertyPath: ModalType
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: startGameButton
