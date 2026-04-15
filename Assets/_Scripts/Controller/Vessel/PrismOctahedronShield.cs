@@ -159,6 +159,21 @@ namespace CosmicShore.Gameplay
         // --- Public API ------------------------------------------------------
 
         /// <summary>Engage the supershield. Lerps if transitionDuration &gt; 0.</summary>
+        [ContextMenu("Engage Shield")]
+        public void EngageContextMenu() => Engage();
+
+        /// <summary>Disengage the supershield. Lerps if transitionDuration &gt; 0.</summary>
+        [ContextMenu("Disengage Shield")]
+        public void DisengageContextMenu() => Disengage();
+
+        /// <summary>Toggle current state. Handy for runtime testing.</summary>
+        [ContextMenu("Toggle Shield")]
+        public void Toggle()
+        {
+            if (_isShielded) Disengage();
+            else Engage();
+        }
+
         public void Engage(bool instant = false)
         {
             if (_isShielded && !_isTransitioning) return;
