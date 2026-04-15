@@ -107,6 +107,14 @@ namespace CosmicShore.Gameplay
         void OpenConfigOnClients_ClientRpc(int gameMode, int intensity, int playerCount, int maxPlayers)
         {
             if (IsServer) return; // Host already has the modal open
+
+            int subscriberCount = OnConfigOpenedOnClient?.GetInvocationList().Length ?? 0;
+            Debug.Log($"[ArcadeConfigSync] ClientRpc received — gameMode={gameMode}, subscribers={subscriberCount}");
+
+            if (subscriberCount == 0)
+                Debug.LogWarning("[ArcadeConfigSync] No subscribers on OnConfigOpenedOnClient — modal will not open. " +
+                                 "Is ArcadeGameConfigureModal.OnEnable() running? Is ModalWindows active?");
+
             OnConfigOpenedOnClient?.Invoke(gameMode, intensity, playerCount, maxPlayers);
         }
 

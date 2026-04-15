@@ -186,6 +186,11 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigUpdatedOnClient += HandleConfigUpdatedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
+                Debug.Log($"[ArcadeConfigModal] OnEnable — subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
+            }
+            else
+            {
+                Debug.LogWarning($"[ArcadeConfigModal] OnEnable — arcadeConfigSyncManager is NULL, cannot subscribe (instance={GetInstanceID()})");
             }
         }
 
@@ -1039,13 +1044,17 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers)
         {
+            Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient — mode={gameModeInt}, intensity={intensity}, " +
+                      $"players={playerCount}, max={maxPlayers}");
+
             _isClientMode = true;
 
             // Look up the SO_ArcadeGame by mode so we can show the same game info
             SO_ArcadeGame game = arcadeConfigSyncManager.FindGameByMode(gameModeInt);
             if (game == null)
             {
-                Debug.LogWarning($"[ArcadeConfigModal] Client could not find game for mode {gameModeInt}");
+                Debug.LogWarning($"[ArcadeConfigModal] Client could not find game for mode {gameModeInt}. " +
+                                 $"gameList injected={arcadeConfigSyncManager != null}");
                 return;
             }
 
@@ -1065,6 +1074,7 @@ namespace CosmicShore.UI
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
+            Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
             ModalWindowIn();
 
             // Clients skip the config screen (intensity/player count) and go
