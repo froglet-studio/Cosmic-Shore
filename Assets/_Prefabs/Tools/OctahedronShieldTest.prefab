@@ -167,7 +167,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 996413983fb6498b84abca3bb58037ba, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  toggleKey: 32
   autoToggle: 0
   intervalSeconds: 2
   logToggles: 1

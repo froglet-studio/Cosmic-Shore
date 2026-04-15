@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CosmicShore.Gameplay
 {
@@ -6,20 +7,20 @@ namespace CosmicShore.Gameplay
     /// Standalone test harness for <see cref="PrismOctahedronShield"/>. Drop
     /// onto any GameObject that already has a BoxCollider, MeshFilter,
     /// MeshRenderer, and a PrismOctahedronShield component, hit play, and
-    /// press the configured key to toggle the shield. Does not require the
-    /// full Prism / PrismStateManager lifecycle.
+    /// press Space to toggle the shield. Does not require the full Prism /
+    /// PrismStateManager lifecycle.
     ///
     /// The <c>OctahedronShieldTest.prefab</c> under <c>Assets/_Prefabs/Tools/</c>
     /// is preconfigured with everything this harness needs — drag it into
     /// any scene and press Space.
+    ///
+    /// Uses the new Input System package (<c>UnityEngine.InputSystem</c>)
+    /// because the project has legacy Input handling disabled.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PrismOctahedronShield))]
     public class PrismOctahedronShieldTester : MonoBehaviour
     {
-        [Tooltip("Key that toggles the shield at runtime.")]
-        [SerializeField] private KeyCode toggleKey = KeyCode.Space;
-
         [Tooltip("If true, toggles automatically every intervalSeconds while playing.")]
         [SerializeField] private bool autoToggle = false;
 
@@ -39,11 +40,12 @@ namespace CosmicShore.Gameplay
 
         private void Update()
         {
-            if (Input.GetKeyDown(toggleKey))
+            var keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.spaceKey.wasPressedThisFrame)
             {
                 _shield.Toggle();
                 if (logToggles)
-                    Debug.Log($"[ShieldTester] toggled → shielded={_shield.IsShielded}");
+                    Debug.Log($"[ShieldTester] Space → shielded={_shield.IsShielded}");
             }
 
             if (autoToggle)
