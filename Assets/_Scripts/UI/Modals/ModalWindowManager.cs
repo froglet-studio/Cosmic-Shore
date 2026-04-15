@@ -24,7 +24,9 @@ namespace CosmicShore.UI
         [SerializeField] Animator windowAnimator;
         bool isOn;
 
-        ScreenSwitcher _screenSwitcher;
+        [Header("Scene References")]
+        [SerializeField] ScreenSwitcher screenSwitcher;
+
         CanvasGroup _canvasGroup;
         Coroutine _disableCoroutine;
 
@@ -35,7 +37,10 @@ namespace CosmicShore.UI
             if (windowAnimator == null)
                 windowAnimator = GetComponent<Animator>();
 
-            _screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+            // Parent containers stay active so OnEnable/OnDisable lifecycle
+            // fires for all children. Hide via CanvasGroup to prevent flash.
+            if (!isOn)
+                SetCanvasGroupVisible(false);
         }
 
         protected virtual void Update()
@@ -43,7 +48,7 @@ namespace CosmicShore.UI
             if (!isOn || !closeOnGamepadB) return;
             if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
             {
-                if (_screenSwitcher != null && !_screenSwitcher.ModalIsActive(ModalType))
+                if (screenSwitcher != null && !screenSwitcher.ModalIsActive(ModalType))
                     return;
 
                 ModalWindowOut();
@@ -69,8 +74,8 @@ namespace CosmicShore.UI
             {
                 isOn = false;
 
-                if (_screenSwitcher != null)
-                    _screenSwitcher.PopModal();
+                if (screenSwitcher != null)
+                    screenSwitcher.PopModal();
             }
 
             if (!gameObject.activeSelf)
@@ -80,8 +85,8 @@ namespace CosmicShore.UI
 
             if (isOn == false)
             {
-                if (_screenSwitcher != null)
-                    _screenSwitcher.PushModal(ModalType);
+                if (screenSwitcher != null)
+                    screenSwitcher.PushModal(ModalType);
 
                 if (windowAnimator)
                 {
@@ -100,8 +105,8 @@ namespace CosmicShore.UI
         {
             if (!isOn) return;
 
-            if (_screenSwitcher != null)
-                _screenSwitcher.PopModal();
+            if (screenSwitcher != null)
+                screenSwitcher.PopModal();
 
             if (windowAnimator)
             {

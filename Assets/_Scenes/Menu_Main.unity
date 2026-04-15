@@ -294,12 +294,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 61aeac9498f2bb44dac66107f18a3649, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 8
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   squadMemberCard: {fileID: 437482452}
   captainSelectView: {fileID: 1713566687}
   shipSelectionView: {fileID: 1163718278}
@@ -13073,12 +13074,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 446c6615770957e4aba57ea1dca789f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   sharpAnimations: 0
   closeOnGamepadB: 1
   ModalType: 7
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   GameView: {fileID: 689140778}
   Mission: {fileID: 11400000, guid: 886fcf63309eb3e428d7863f248c3f2d, type: 2}
   Intensity: 1
@@ -52154,12 +52156,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b69e4860bc644894585fe2e6ad1147e0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 2
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   GameView: {fileID: 1180815392}
   TimeRemaining: {fileID: 1631603210}
   TicketBalance: {fileID: 905972376}
@@ -73631,12 +73634,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0ae54d528c7d2be41a90b3e6184a00b9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   sharpAnimations: 0
   closeOnGamepadB: 1
   ModalType: 4
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   iconGrid: {fileID: 1599831762}
   iconButtonPrefab: {fileID: 6326892122188870019, guid: 15695415ce7889a4f9b99291cc0d79a6,
@@ -76986,12 +76990,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 700f55ec68c5d124ebb8eb6d14268efb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 1
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   config: {fileID: 11400000, guid: d59f413886aa00d4bb6f83999c77ba73, type: 2}
   configChangedEvent: {fileID: 11400000, guid: be9184fc21a77ea49b462437de5232b7, type: 2}
   startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
@@ -93625,12 +93630,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f10abb114d479614085e4c31103b2893, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 9
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   GameSelectionContainer: {fileID: 983087002}
   ShipModelImage: {fileID: 0}
   SelectedGameName: {fileID: 45047183}
@@ -95523,12 +95529,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6faee5712a0d8e4ab09a892a4501402, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   sharpAnimations: 1
   closeOnGamepadB: 1
   ModalType: 0
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   PriceLabel: {fileID: 1386307268}
   UnlockText: {fileID: 500414230}
   CrystalBalanceText: {fileID: 1576784903}
@@ -99462,6 +99469,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -124.28
       objectReference: {fileID: 0}
+    - target: {fileID: 1111638120248792970, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: screenSwitcher
+      value:
+      objectReference: {fileID: 921072167}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -103140,7 +103152,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!225 &4983872992474410976
 CanvasGroup:
   m_ObjectHideFlags: 0
