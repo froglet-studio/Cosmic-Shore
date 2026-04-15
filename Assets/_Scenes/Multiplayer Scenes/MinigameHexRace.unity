@@ -1106,7 +1106,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 7
+  CrystalCollisions: 0
   optionalEnvironment: {fileID: 1899528610}
   optionalLaps: 4
 --- !u!114 &1078953729
@@ -1219,8 +1219,10 @@ MonoBehaviour:
     - {x: 373, y: -93, z: -385}
     - {x: 515, y: -43, z: -278}
     - {x: 615, y: 0, z: -128}
-  spawnCrystalWithPlayerDomain: 1
+  crystalCountMode: 1
+  fixedCrystalCount: 1
   extraCrystalsToSpawnBeyondPlayerCount: 0
+  spawnCrystalWithPlayerDomain: 1
   spawnOnClientReady: 1
 --- !u!114 &1078953732
 MonoBehaviour:
