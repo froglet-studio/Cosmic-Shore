@@ -97,6 +97,45 @@ namespace CosmicShore.Utility
             // Normals are authored per-face for flat shading; do not recalculate.
         }
 
+        /// <summary>
+        /// Rewrite an existing mesh in-place with per-face scaling. Each of
+        /// the 8 triangular faces is scaled around its own centroid by
+        /// <paramref name="faceScale"/>:
+        ///   0 → every face collapsed to a point at its center (invisible)
+        ///   1 → full-size octahedron (identical to <see cref="PopulateMesh"/>)
+        ///
+        /// Each vertex v_i on a face becomes:
+        ///   centroid + faceScale · (v_i − centroid)
+        ///
+        /// Use this for the engage/disengage morph so faces "bloom" outward
+        /// from their centers rather than the whole shape growing uniformly.
+        /// </summary>
+        public static void PopulateMeshFaceScale(Mesh mesh, Vector3 halfExtents,
+            float faceScale, float shieldScale = CIRCUMSCRIBING_SCALE)
+        {
+            // First build the full-size octahedron, then shrink each face
+            // around its centroid. We reuse the same AddFace helper so the
+            // topology and winding are identical to PopulateMesh.
+            PopulateMesh(mesh, halfExtents, shieldScale);
+
+            var verts = mesh.vertices; // copy out
+
+            // Every 3 sequential vertices form one face (24 verts, 8 faces).
+            for (int f = 0; f < 8; f++)
+            {
+                int i0 = f * 3, i1 = i0 + 1, i2 = i0 + 2;
+                Vector3 centroid = (verts[i0] + verts[i1] + verts[i2]) * (1f / 3f);
+                verts[i0] = centroid + faceScale * (verts[i0] - centroid);
+                verts[i1] = centroid + faceScale * (verts[i1] - centroid);
+                verts[i2] = centroid + faceScale * (verts[i2] - centroid);
+            }
+
+            mesh.vertices = verts; // write back
+            mesh.RecalculateBounds();
+            // Normals stay correct — direction is unchanged by uniform
+            // per-face scaling from centroid; only magnitude changes.
+        }
+
         private static void AddFace(Vector3[] verts, Vector3[] norms, int[] tris, ref int vi,
                                     Vector3 v0, Vector3 v1, Vector3 v2)
         {

@@ -208,6 +208,12 @@ namespace CosmicShore.Gameplay
                 _transitionSign = +1f;
                 _isTransitioning = true;
                 DisableCollidersDuringMorph();
+                // Immediately swap to the morph mesh at the current t so we
+                // don't render one frame of the box mesh before Update kicks in.
+                // At t=0 the face-scale is 0, so faces are collapsed to their
+                // centroids (invisible) — the box vanishes and the shield
+                // panels bloom outward starting next frame.
+                UpdateMorphMesh(transitionCurve.Evaluate(_transitionT));
             }
         }
 
@@ -227,6 +233,9 @@ namespace CosmicShore.Gameplay
                 _transitionSign = -1f;
                 _isTransitioning = true;
                 DisableCollidersDuringMorph();
+                // Immediately update morph mesh at current t (should be 1.0)
+                // so the face-shrink starts rendering this frame.
+                UpdateMorphMesh(transitionCurve.Evaluate(_transitionT));
             }
         }
 
@@ -262,25 +271,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Morph the 8 box corners inward to the 6 octahedron vertices. At t=0
-        /// the mesh renders the box; at t=1 the mesh renders the octahedron.
-        /// Implementation: we tessellate the box into 8 corner tetrahedra and
-        /// collapse each tetra's outer corner toward the nearest face-center
-        /// vertex. For prototype simplicity we instead lerp the 8 box-corner
-        /// positions toward the octahedron's 6 face-centers along the dominant
-        /// axis, then rebuild the octahedron faces. Practically this means we
-        /// just scale the octahedron mesh from (1/shieldScale) of its final
-        /// size up to full size while cross-fading from the authored box mesh.
+        /// Per-face bloom morph. Each of the 8 triangular faces grows outward
+        /// from its own centroid:
+        ///   t=0 → every face collapsed to a single point (invisible)
+        ///   t=1 → faces at full size, forming the complete octahedron
+        ///
+        /// This replaces the old uniform-scale morph (whole shape growing from
+        /// inscribed → circumscribing) with a more visually distinctive
+        /// animation where individual shield panels "open" independently.
         /// </summary>
         private void UpdateMorphMesh(float t)
         {
-            // Simple, effective morph strategy for a prototype: rebuild the
-            // octahedron at an interpolated scale factor. At t=0 the octahedron
-            // is shrunk to exactly the inscribed dual (factor 1, vertices at
-            // face centers), which visually coincides with the box silhouette
-            // along each axis. At t=1 it's at full circumscribing size (factor 3).
-            float scale = Mathf.Lerp(1f, shieldScale, t);
-            OctahedronMeshGenerator.PopulateMesh(_morphMesh, _halfExtents, scale);
+            OctahedronMeshGenerator.PopulateMeshFaceScale(
+                _morphMesh, _halfExtents, t, shieldScale);
 
             if (meshFilter != null)
                 meshFilter.sharedMesh = _morphMesh;
