@@ -107,7 +107,7 @@ namespace CosmicShore.Utility
         /// Each vertex v_i on a face becomes:
         ///   centroid + faceScale · (v_i − centroid)
         ///
-        /// Use this for the engage/disengage morph so faces "bloom" outward
+        /// Use this for the engage morph so faces "bloom" outward
         /// from their centers rather than the whole shape growing uniformly.
         /// </summary>
         public static void PopulateMeshFaceScale(Mesh mesh, Vector3 halfExtents,
@@ -134,6 +134,42 @@ namespace CosmicShore.Utility
             mesh.RecalculateBounds();
             // Normals stay correct — direction is unchanged by uniform
             // per-face scaling from centroid; only magnitude changes.
+        }
+
+        /// <summary>
+        /// Shatter variant: each face simultaneously shrinks toward its centroid
+        /// AND translates outward along its face normal. Produces a "shield
+        /// panels flying apart" effect when used during disengage.
+        ///
+        ///   faceScale:  1 → full-size face, 0 → collapsed to centroid point
+        ///   faceOffset: 0 → face at original position, &gt;0 → displaced outward
+        ///
+        /// Each vertex v_i becomes:
+        ///   centroid + faceScale · (v_i − centroid) + faceOffset · faceNormal
+        /// </summary>
+        public static void PopulateMeshFaceShatter(Mesh mesh, Vector3 halfExtents,
+            float faceScale, float faceOffset, float shieldScale = CIRCUMSCRIBING_SCALE)
+        {
+            PopulateMesh(mesh, halfExtents, shieldScale);
+
+            var verts = mesh.vertices;
+            var norms = mesh.normals;
+
+            for (int f = 0; f < 8; f++)
+            {
+                int i0 = f * 3, i1 = i0 + 1, i2 = i0 + 2;
+                Vector3 centroid = (verts[i0] + verts[i1] + verts[i2]) * (1f / 3f);
+                // Face normal is identical for all 3 verts (flat shaded).
+                Vector3 normal = norms[i0];
+                Vector3 offset = faceOffset * normal;
+
+                verts[i0] = centroid + faceScale * (verts[i0] - centroid) + offset;
+                verts[i1] = centroid + faceScale * (verts[i1] - centroid) + offset;
+                verts[i2] = centroid + faceScale * (verts[i2] - centroid) + offset;
+            }
+
+            mesh.vertices = verts;
+            mesh.RecalculateBounds();
         }
 
         private static void AddFace(Vector3[] verts, Vector3[] norms, int[] tris, ref int vi,
