@@ -14451,12 +14451,12 @@ PrefabInstance:
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: arcDensity
-      value: 3
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: rippleSpeed
-      value: 0.5
+      value: 1.6
       objectReference: {fileID: 0}
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -14506,22 +14506,27 @@ PrefabInstance:
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: centerFillAmount
-      value: 0.3
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: fresnelRimColor.a
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: fresnelRimColor.b
-      value: 0.7075472
+      value: 0.3529412
       objectReference: {fileID: 0}
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: fresnelRimColor.g
-      value: 0.34094512
+      value: 0.02123571
       objectReference: {fileID: 0}
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: fresnelRimColor.r
-      value: 0.09011214
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
