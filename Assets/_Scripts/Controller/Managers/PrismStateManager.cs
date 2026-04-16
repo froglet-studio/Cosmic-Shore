@@ -22,6 +22,7 @@ namespace CosmicShore.Gameplay
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
         private PrismTeamManager teamManager;
+        private PrismOctahedronShield octahedronShield; // auto-added in Awake so every prism gets the octahedron on shield
 
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
@@ -30,6 +31,15 @@ namespace CosmicShore.Gameplay
             prism = GetComponent<Prism>();
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
             teamManager = GetComponent<PrismTeamManager>();
+
+            // Every prism gets an octahedron shield. If the prefab already
+            // carries one (e.g. BlueBlock has it wired explicitly) we reuse
+            // it; otherwise we add one at runtime so existing prefabs don't
+            // need to be touched individually. The component's Awake resolves
+            // BoxCollider / MeshFilter / Rigidbody from the same GameObject.
+            octahedronShield = GetComponent<PrismOctahedronShield>();
+            if (octahedronShield == null)
+                octahedronShield = gameObject.AddComponent<PrismOctahedronShield>();
         }
 
         public void MakeDangerous()
@@ -71,6 +81,10 @@ namespace CosmicShore.Gameplay
             );
             CurrentState = BlockState.SuperShielded;
 
+            // Opt-in octahedron shield visual/collider swap. Prisms without
+            // this component keep the legacy material-only supershield.
+            if (octahedronShield != null) octahedronShield.Engage();
+
             SyncAOERegistryShieldState();
         }
 
@@ -107,6 +121,10 @@ namespace CosmicShore.Gameplay
             );
             CurrentState = BlockState.Shielded;
 
+            // Engage the octahedron visual/collider swap for the regular
+            // shield state too, matching super shield behavior.
+            if (octahedronShield != null) octahedronShield.Engage();
+
             SyncAOERegistryShieldState();
             AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
@@ -123,6 +141,8 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsShielded = false;
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
+
+            if (octahedronShield != null) octahedronShield.Disengage();
 
             SyncAOERegistryShieldState();
 
