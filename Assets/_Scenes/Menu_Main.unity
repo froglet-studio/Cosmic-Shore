@@ -300,6 +300,7 @@ MonoBehaviour:
   closeOnGamepadB: 1
   ModalType: 8
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   squadMemberCard: {fileID: 437482452}
   captainSelectView: {fileID: 1713566687}
   shipSelectionView: {fileID: 1163718278}
@@ -13079,6 +13080,7 @@ MonoBehaviour:
   closeOnGamepadB: 1
   ModalType: 7
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   GameView: {fileID: 689140778}
   Mission: {fileID: 11400000, guid: 886fcf63309eb3e428d7863f248c3f2d, type: 2}
   Intensity: 1
@@ -52160,6 +52162,7 @@ MonoBehaviour:
   closeOnGamepadB: 1
   ModalType: 2
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   GameView: {fileID: 1180815392}
   TimeRemaining: {fileID: 1631603210}
   TicketBalance: {fileID: 905972376}
@@ -61454,7 +61457,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1486013830}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5c8a5fb79afdbdd48ac8f822f5f069ad, type: 3}
+  m_Script: {fileID: 11500000, guid: 56c3dc7b741fe314791fb9d5d18ae47e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -73637,6 +73640,7 @@ MonoBehaviour:
   closeOnGamepadB: 1
   ModalType: 4
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   iconGrid: {fileID: 1599831762}
   iconButtonPrefab: {fileID: 6326892122188870019, guid: 15695415ce7889a4f9b99291cc0d79a6,
@@ -76992,6 +76996,7 @@ MonoBehaviour:
   closeOnGamepadB: 1
   ModalType: 1
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   config: {fileID: 11400000, guid: d59f413886aa00d4bb6f83999c77ba73, type: 2}
   configChangedEvent: {fileID: 11400000, guid: be9184fc21a77ea49b462437de5232b7, type: 2}
   startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
@@ -77029,7 +77034,7 @@ MonoBehaviour:
   nextShipButton: {fileID: 0}
   startGameButton: {fileID: 4125016652611855919}
   waitingForOthersLabel: {fileID: 709792735}
-  arcadeConfigSyncManager: {fileID: 1486013854}
+  arcadeConfigSyncManager: {fileID: 0}
 --- !u!114 &1847035623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78756,6 +78761,11 @@ PrefabInstance:
       propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2899345457500593965, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 3082319601036034293, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_Enabled
@@ -78781,6 +78791,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3146296680026729587, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 3184225246671237893, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_IsActive
@@ -78836,6 +78851,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3673826221655834858, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 4082591368847160390, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -78901,6 +78921,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4163919379665076965, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 4216411970403090259, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: NavBar
@@ -79257,6 +79282,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5393631322067835149, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 5537682408756660529, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -79487,6 +79517,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7482659488227830858, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 7648754820907884424, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -79602,6 +79637,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8597140137728428893, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     - target: {fileID: 8663503843334522142, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -79622,6 +79662,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8675064056856439436, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
+    - target: {fileID: 8980255272886593483, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: -1310382983498083792, guid: 4afd6beb328c37b4f97c61ac43f439e2, type: 3}
@@ -87235,6 +87285,18 @@ MonoBehaviour:
   scrollRect: {fileID: 601712922}
   supportUsButton: {fileID: 1066368857}
   episodePanel: {fileID: 0}
+--- !u!114 &2057023445 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4216411970403090259, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1892651051}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1892651057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afc48f8a84d86f945ae9c9c019eec3cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &2061170151 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6236172666001697302, guid: 37c5e5722efdd184bbb0e51f04fb4e91,
@@ -88966,6 +89028,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 2057023445}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
       propertyPath: startGameButton
       value: 
       objectReference: {fileID: 2098022923}
@@ -88974,6 +89041,11 @@ PrefabInstance:
       propertyPath: arcadeExploreView
       value: 
       objectReference: {fileID: 1892651053}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: arcadeConfigSyncManager
+      value: 
+      objectReference: {fileID: 1486013854}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: teamCountDecrementButton
@@ -93631,6 +93703,7 @@ MonoBehaviour:
   closeOnGamepadB: 1
   ModalType: 9
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   GameSelectionContainer: {fileID: 983087002}
   ShipModelImage: {fileID: 0}
   SelectedGameName: {fileID: 45047183}
@@ -95529,6 +95602,7 @@ MonoBehaviour:
   closeOnGamepadB: 1
   ModalType: 0
   windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 921072167}
   PriceLabel: {fileID: 1386307268}
   UnlockText: {fileID: 500414230}
   CrystalBalanceText: {fileID: 1576784903}
@@ -99207,6 +99281,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -208.56
       objectReference: {fileID: 0}
+    - target: {fileID: 1111638120248792970, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 921072167}
     - target: {fileID: 1185706689474859756, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -101689,7 +101768,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 1486013854}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: CosmicShore.Gameplay.ArcadeConfigSyncManager, Assembly-CSharp
         m_MethodName: ConfirmLocalPlayerReady
         m_Mode: 1
@@ -103140,7 +103219,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!225 &4983872992474410976
 CanvasGroup:
   m_ObjectHideFlags: 0
