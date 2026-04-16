@@ -1,7 +1,7 @@
 using Unity.Profiling;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Manages a forcefield crackle overlay on the Skimmer's sphere collider.

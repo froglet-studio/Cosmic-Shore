@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Gameplay
 {
     [CreateAssetMenu(
         fileName = "SkimmerForcefieldCracklePrismEffect",
