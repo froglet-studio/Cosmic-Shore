@@ -22,6 +22,9 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("Team")]
         public Domains domain;
         [SerializeField] float goalUpdateInterval = 5f;
+        [Tooltip("Multiplier applied to goalUpdateInterval per aggression level: [Calm, Elevated, Stressed, Critical]. " +
+                 "Lower values = faster relocation to dense prism regions under stress.")]
+        [SerializeField] float[] goalUpdateIntervalByAggression = { 1f, 0.65f, 0.4f, 0.2f };
         public Vector3 Goal;
 
         // --- ILifeFormEntity ---
@@ -60,9 +63,21 @@ namespace CosmicShore.Gameplay
         {
             while (true)
             {
-                yield return new WaitForSeconds(goalUpdateInterval);
-                Goal = cell.GetExplosionTarget(domain);
+                yield return new WaitForSeconds(GetAggressionScaledGoalInterval());
+                if (cell != null)
+                    Goal = cell.GetExplosionTarget(domain);
             }
+        }
+
+        float GetAggressionScaledGoalInterval()
+        {
+            float baseInterval = Mathf.Max(0.05f, goalUpdateInterval);
+            if (cell == null || goalUpdateIntervalByAggression == null || goalUpdateIntervalByAggression.Length == 0)
+                return baseInterval;
+
+            int idx = Mathf.Clamp((int)cell.AggressionLevel, 0, goalUpdateIntervalByAggression.Length - 1);
+            float mult = Mathf.Max(0.05f, goalUpdateIntervalByAggression[idx]);
+            return baseInterval * mult;
         }
     }
 }

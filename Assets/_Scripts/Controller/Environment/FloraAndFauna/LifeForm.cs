@@ -126,12 +126,20 @@ namespace CosmicShore.Gameplay
         {
             if (!healthPrism) return;
             healthTracker.Add(healthPrism, this, domain);
+
+            // Feed the cell's aggression tracker. Cell dedupes internally, so duplicate
+            // binds (e.g. HealthPrism.Initialize AND flora Grow both call AddHealthBlock)
+            // don't over-count. Null cell is tolerated for off-cell spawns.
+            if (cell) cell.AddBlock(healthPrism);
         }
 
         public virtual void RemoveHealthBlock(HealthPrism healthPrism, string killerName = "")
         {
             if (!healthPrism) return;
             healthTracker.Remove(healthPrism, killerName);
+
+            if (cell) cell.RemoveBlock(healthPrism);
+
             spindleTracker.CleanupDeadRefs();
             CheckIfDead(killerName);
         }

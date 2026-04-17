@@ -1,4 +1,6 @@
 // Cell.cs
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
@@ -25,6 +27,16 @@ namespace CosmicShore.Gameplay
         [Inject] GameDataSO gameData;
 
         [SerializeField] float nucleusScaleMultiplier = 1f;
+
+        [Header("Aggression Thresholds")]
+        [Tooltip("Live prism count at or above which the cell enters Elevated.")]
+        [SerializeField, Min(1)] int elevatedThreshold = 400;
+        [Tooltip("Live prism count at or above which the cell enters Stressed.")]
+        [SerializeField, Min(1)] int stressedThreshold = 900;
+        [Tooltip("Live prism count at or above which the cell enters Critical (growth halts).")]
+        [SerializeField, Min(1)] int criticalThreshold = 1500;
+        [Tooltip("Seconds between aggression level re-evaluations.")]
+        [SerializeField, Min(0.1f)] float aggressionPollInterval = 1.5f;
 
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
@@ -54,6 +66,25 @@ namespace CosmicShore.Gameplay
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
         ICellLifeSpawner activeSpawner;
         bool postInitilized = false;
+
+        // Aggression state. Incremented / decremented in O(1) by AddBlock / RemoveBlock
+        // so we never iterate density grids to measure pressure.
+        int _liveBlockCount;
+        CellAggressionLevel _aggressionLevel = CellAggressionLevel.Calm;
+        Coroutine _aggressionPollRoutine;
+
+        // Dedupes AddBlock/RemoveBlock across multiple call paths (flora binding,
+        // HealthPrism.Initialize, future direct callers) so _liveBlockCount stays accurate.
+        readonly HashSet<Prism> _registeredBlocks = new();
+
+        /// <summary>Current live prism count in this cell (enemy-tracked blocks).</summary>
+        public int LiveBlockCount => _liveBlockCount;
+
+        /// <summary>Bucketed stress level driven by <see cref="LiveBlockCount"/>.</summary>
+        public CellAggressionLevel AggressionLevel => _aggressionLevel;
+
+        /// <summary>Raised when <see cref="AggressionLevel"/> transitions. New level is the argument.</summary>
+        public event Action<CellAggressionLevel> OnAggressionChanged;
 
         void OnEnable()
         {
@@ -113,6 +144,7 @@ namespace CosmicShore.Gameplay
             }
 
             StopSpawner();
+            StopAggressionPoll();
             runtime?.ResetRuntimeData();
         }
 
@@ -134,6 +166,10 @@ namespace CosmicShore.Gameplay
             StopSpawner();
             AssignConfig();
             ResetVolumes();
+
+            _liveBlockCount = 0;
+            _aggressionLevel = CellAggressionLevel.Calm;
+            StartAggressionPoll();
 
             runtime.EnsureCellStats(ID);
             UpdateCellStats();
@@ -186,6 +222,10 @@ namespace CosmicShore.Gameplay
             SetupDensityGrids();
             SpawnVisuals();
             ResetVolumes();
+
+            _liveBlockCount = 0;
+            _aggressionLevel = CellAggressionLevel.Calm;
+            StartAggressionPoll();
 
             UpdateCellStats();
         }
@@ -309,16 +349,68 @@ namespace CosmicShore.Gameplay
 
         public void AddBlock(Prism block)
         {
+            if (!block) return;
+            if (!_registeredBlocks.Add(block)) return; // already registered
+
             Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             foreach (var t in teams)
                 if (t != block.Domain) countGrids[t].AddBlock(block);
+
+            _liveBlockCount++;
         }
 
         public void RemoveBlock(Prism block)
         {
+            if (!block) return;
+            if (!_registeredBlocks.Remove(block)) return; // wasn't tracked
+
             Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             foreach (Domains t in teams)
                 if (t != block.Domain) countGrids[t].RemoveBlock(block);
+
+            if (_liveBlockCount > 0) _liveBlockCount--;
+        }
+
+        CellAggressionLevel BucketForCount(int count)
+        {
+            if (count >= criticalThreshold) return CellAggressionLevel.Critical;
+            if (count >= stressedThreshold) return CellAggressionLevel.Stressed;
+            if (count >= elevatedThreshold) return CellAggressionLevel.Elevated;
+            return CellAggressionLevel.Calm;
+        }
+
+        IEnumerator PollAggressionLevel()
+        {
+            var wait = new WaitForSeconds(Mathf.Max(0.1f, aggressionPollInterval));
+            while (true)
+            {
+                var next = BucketForCount(_liveBlockCount);
+                if (next != _aggressionLevel)
+                {
+                    _aggressionLevel = next;
+                    try { OnAggressionChanged?.Invoke(next); }
+                    catch (Exception e) { CSDebug.LogError($"[Cell {ID}] OnAggressionChanged listener threw: {e}"); }
+                }
+                yield return wait;
+            }
+        }
+
+        void StartAggressionPoll()
+        {
+            StopAggressionPoll();
+            _aggressionPollRoutine = StartCoroutine(PollAggressionLevel());
+        }
+
+        void StopAggressionPoll()
+        {
+            if (_aggressionPollRoutine != null)
+            {
+                StopCoroutine(_aggressionPollRoutine);
+                _aggressionPollRoutine = null;
+            }
+            _aggressionLevel = CellAggressionLevel.Calm;
+            _liveBlockCount = 0;
+            _registeredBlocks.Clear();
         }
 
         public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();

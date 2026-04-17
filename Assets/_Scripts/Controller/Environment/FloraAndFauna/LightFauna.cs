@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using System.Linq;
@@ -55,9 +56,37 @@ namespace CosmicShore.Gameplay
                 if (!data)
                     yield break;
 
-                yield return new WaitForSeconds(Mathf.Max(0f, data.behaviorUpdateRate + Phase));
+                float cadence = Mathf.Max(0.05f, data.behaviorUpdateRate + Phase) * GetAggressionCadenceMultiplier();
+                yield return new WaitForSeconds(cadence);
                 UpdateBehavior();
             }
+        }
+
+        // Cleanup urgency multipliers indexed by CellAggressionLevel:
+        // Calm, Elevated, Stressed, Critical. Values < 1 = faster cadence / wider consume / faster movement.
+        static readonly float[] CadenceByAggression   = { 1f,   0.7f, 0.45f, 0.25f };
+        static readonly float[] ConsumeRadiusByAggression = { 1f, 1.25f, 1.6f,  2.0f };
+        static readonly float[] SpeedByAggression     = { 1f,   1.15f, 1.35f, 1.6f };
+
+        float GetAggressionCadenceMultiplier()
+        {
+            if (cell == null) return 1f;
+            int idx = Mathf.Clamp((int)cell.AggressionLevel, 0, CadenceByAggression.Length - 1);
+            return CadenceByAggression[idx];
+        }
+
+        float GetAggressionConsumeRadiusMultiplier()
+        {
+            if (cell == null) return 1f;
+            int idx = Mathf.Clamp((int)cell.AggressionLevel, 0, ConsumeRadiusByAggression.Length - 1);
+            return ConsumeRadiusByAggression[idx];
+        }
+
+        float GetAggressionSpeedMultiplier()
+        {
+            if (cell == null) return 1f;
+            int idx = Mathf.Clamp((int)cell.AggressionLevel, 0, SpeedByAggression.Length - 1);
+            return SpeedByAggression[idx];
         }
 
         void UpdateBehavior()
@@ -79,7 +108,7 @@ namespace CosmicShore.Gameplay
 
             float detectionRadius = Mathf.Max(0f, data.detectionRadius);
             float separationRadius = Mathf.Max(0f, data.separationRadius);
-            float consumeRadius = Mathf.Max(0f, data.consumeRadius);
+            float consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
 
             var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
 
@@ -131,8 +160,9 @@ namespace CosmicShore.Gameplay
 
             desiredDirection = ((separation * separationWeight) + (goalDirection * goalWeight)).normalized;
 
-            float minSpeed = Mathf.Max(0f, data.minSpeed);
-            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
+            float speedMult = GetAggressionSpeedMultiplier();
+            float minSpeed = Mathf.Max(0f, data.minSpeed) * speedMult;
+            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed * speedMult);
 
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
 
