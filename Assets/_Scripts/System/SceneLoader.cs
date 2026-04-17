@@ -121,6 +121,15 @@ namespace CosmicShore.Core
             gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
 
             var nm = NetworkManager.Singleton;
+
+            // In multiplayer, only the server initiates scene loads.
+            // Clients receive the scene transition via Netcode's scene management.
+            // Without this guard, shared SOAP events (e.g. in MPPM) cause the client
+            // to call SceneManager.LoadScene() locally, which races with the server's
+            // network load and destroys AI NetworkObjects before they can replicate.
+            if (nm != null && nm.IsListening && !nm.IsServer)
+                return;
+
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
 
             // Game config sync to clients is now handled by
@@ -160,6 +169,11 @@ namespace CosmicShore.Core
 
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             var nm = NetworkManager.Singleton;
+
+            // Clients rely on the server's Netcode scene management for transitions.
+            if (nm != null && nm.IsListening && !nm.IsServer)
+                return;
+
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
             LoadSceneAsync(menuScene, useNetworkSceneLoading).Forget();
         }
@@ -266,6 +280,13 @@ namespace CosmicShore.Core
 
         void HandleActiveSessionEnd()
         {
+            // Clients rely on the server for session cleanup and scene transitions.
+            // Without this guard, shared SOAP events in MPPM cause the client to
+            // call ResetAllData() on the shared GameDataSO, wiping server state.
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.IsListening && !nm.IsServer)
+                return;
+
             // Clear the stale party session reference so HostConnectionService
             // can create a fresh Relay-backed session when Menu_Main loads.
             // LeaveSession() deletes the game session and shuts down the network;

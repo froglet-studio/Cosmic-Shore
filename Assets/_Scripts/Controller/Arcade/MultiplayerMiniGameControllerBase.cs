@@ -320,18 +320,30 @@ namespace CosmicShore.Gameplay
             // Wait for fade to complete
             await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
 
-            // Clear vessel references — vessels have destroyWithScene but we need
-            // clean GameDataSO state before ResetRuntimeData clears the lists.
             foreach (var player in gameData.Players)
             {
                 if (player is Player netPlayer && netPlayer.IsSpawned)
                     netPlayer.NetVesselId.Value = 0;
             }
+
+            // AI players/vessels are spawned with destroyWithScene=false and must be
+            // explicitly despawned before the reload, otherwise SpawnAIs creates duplicates.
+            // Despawn players before vessels — same order as SceneLoader.ClearPlayerVesselReferences.
+            for (int i = gameData.Players.Count - 1; i >= 0; i--)
+            {
+                if (gameData.Players[i] is Player aiPlayer
+                    && aiPlayer.IsSpawned
+                    && aiPlayer.NetIsAI.Value)
+                {
+                    aiPlayer.NetworkObject.Despawn(true);
+                }
+            }
+
             for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
             {
                 var vessel = gameData.Vessels[i];
                 if (vessel is VesselController vc && vc.IsSpawned)
-                    vc.NetworkObject.Despawn(false);
+                    vc.NetworkObject.Despawn(true);
             }
             gameData.Vessels.Clear();
 

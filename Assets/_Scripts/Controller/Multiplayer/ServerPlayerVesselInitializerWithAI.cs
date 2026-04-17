@@ -134,7 +134,8 @@ namespace CosmicShore.Gameplay
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
-                aiPlayerNO.Spawn(true);
+                // destroyWithScene=false — AI spawns in same tick as scene load; see ClearPlayerVesselReferences for cleanup.
+                aiPlayerNO.Spawn(false);
 
                 var aiPlayer = aiPlayerNO.GetComponent<Player>();
                 if (!aiPlayer)
@@ -363,7 +364,8 @@ namespace CosmicShore.Gameplay
 
             vesselNO = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
-            vesselNO.Spawn(true);
+            // destroyWithScene=false matches the AI player spawn — must stay consistent for cleanup ordering.
+            vesselNO.Spawn(false);
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
             return true;
         }
