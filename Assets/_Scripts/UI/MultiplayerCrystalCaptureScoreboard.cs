@@ -1,45 +1,26 @@
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.UI
 {
     public class MultiplayerCrystalCaptureScoreboard : Scoreboard
     {
-        protected override void ShowMultiplayerView()
+        /// <summary>
+        /// Descending sort — most crystals wins. NOT golf rules.
+        /// </summary>
+        protected override List<IRoundStats> SortPlayers(List<IRoundStats> stats)
         {
-            // Sort descending — highest crystals win (NOT golf rules)
-            if (gameData.RoundStatsList is { Count: > 0 })
-            {
-                gameData.RoundStatsList.Sort((a, b) => b.Score.CompareTo(a.Score));
-                SetBannerForDomain(gameData.RoundStatsList[0].Domain);
-            }
-            else if (BannerText) BannerText.text = "GAME OVER";
-
-            DisplayPlayerScores();
-            PopulateTeamScorecards();
-
-            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
-            if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
+            if (stats == null) return new List<IRoundStats>();
+            var sorted = stats.ToList();
+            sorted.Sort((a, b) => b.Score.CompareTo(a.Score));
+            return sorted;
         }
 
-        protected override void DisplayPlayerScores()
+        protected override string FormatPlayerScore(IRoundStats stats)
         {
-            var playerScores = gameData.RoundStatsList;
-
-            for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
-            {
-                if (PlayerNameTextFields[i])
-                    PlayerNameTextFields[i].text = playerScores[i].Name;
-
-                if (PlayerScoreTextFields[i])
-                    PlayerScoreTextFields[i].text = $"{(int)playerScores[i].Score} Crystals";
-            }
-
-            for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
-            {
-                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
-                    PlayerScoreTextFields[i].text = "";
-            }
+            return $"{(int)stats.Score} Crystals";
         }
     }
 }

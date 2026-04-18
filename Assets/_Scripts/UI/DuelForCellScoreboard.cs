@@ -1,26 +1,26 @@
+using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Gameplay;
-using TMPro;
-using UnityEngine;
-using CosmicShore.UI;
 using CosmicShore.Data;
+using UnityEngine;
+
 namespace CosmicShore.UI
 {
     public class DuelForCellScoreboard : Scoreboard
     {
-        [SerializeField] TMP_Text OppponentScoreTextField;
-
-        protected override void ShowSinglePlayerView()
+        /// <summary>
+        /// Descending sort — highest score wins (points-based).
+        /// </summary>
+        protected override List<IRoundStats> SortPlayers(List<IRoundStats> stats)
         {
-            base.ShowSinglePlayerView();
-            DomainStats opponentStats = new();
-            
-            foreach (var stat in gameData.DomainStatsList.Where(stat => !gameData.IsLocalDomain(stat.Domain)))
-            {
-                opponentStats = stat;
-            }
-            
-            OppponentScoreTextField.text = ((int)opponentStats.Score).ToString();
+            if (stats == null) return new List<IRoundStats>();
+            var sorted = stats.ToList();
+            sorted.Sort((a, b) => b.Score.CompareTo(a.Score));
+            return sorted;
+        }
+
+        protected override string FormatPlayerScore(IRoundStats stats)
+        {
+            return ((int)stats.Score).ToString();
         }
     }
 }

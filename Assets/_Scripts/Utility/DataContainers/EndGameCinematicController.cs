@@ -32,6 +32,8 @@ namespace CosmicShore.Utility
         [SerializeField] private TMP_Text crystalRewardText;
         [Tooltip("Duration of the fade-in animation.")]
         [SerializeField] private float crystalFadeDuration = 0.5f;
+        [Tooltip("If true, skip the crystal reward flow here — the Scoreboard is expected to award and display crystals instead (prevents double-awarding).")]
+        [SerializeField] private bool delegateCrystalRewardToScoreboard = true;
 
         protected bool isRunning;
         protected bool localPlayerWon;
@@ -307,6 +309,7 @@ namespace CosmicShore.Utility
         protected virtual IEnumerator AwardCrystalReward()
         {
             if (crystalsPerGame <= 0) yield break;
+            if (delegateCrystalRewardToScoreboard) yield break;
 
             var service = PlayerDataService.Instance;
             if (service != null)

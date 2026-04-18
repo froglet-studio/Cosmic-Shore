@@ -5,13 +5,39 @@ using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// End-game scoreboard row for a single player.
+    /// Displays avatar, username, formatted score, and optional "+N" crystal reward.
+    /// Background tints to the player's domain color.
+    /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public class PlayerScoreCard : MonoBehaviour
     {
-        [SerializeField] private TMP_Text playerNameText;
-        [SerializeField] private TMP_Text playerScoreText;
-        [SerializeField] private Image domainIndicatorImage;
+        [Header("Main Fields")]
+        [Tooltip("Player avatar / profile icon")]
         [SerializeField] private Image playerAvatarImage;
+        [Tooltip("Player display name")]
+        [SerializeField] private TMP_Text playerNameText;
+        [Tooltip("Primary score display (time / crystals / points)")]
+        [SerializeField] private TMP_Text playerScoreText;
+
+        [Header("Domain Tint")]
+        [Tooltip("Optional background image tinted with domain color (falls back to domainIndicatorImage if unset)")]
+        [SerializeField] private Image backgroundImage;
+        [Tooltip("Optional small indicator image (legacy)")]
+        [SerializeField] private Image domainIndicatorImage;
+        [Tooltip("Alpha applied to the background tint (0-1). 1 = solid, 0.2 = subtle tint")]
+        [Range(0f, 1f)]
+        [SerializeField] private float backgroundTintAlpha = 0.35f;
+
+        [Header("Extra Data Panels")]
+        [Tooltip("Root of DataPanels — hidden if no extra stats to show")]
+        [SerializeField] private GameObject dataPanelsRoot;
+        [Tooltip("Optional secondary data text (e.g. crystals collected, clean streak)")]
+        [SerializeField] private TMP_Text secondaryStatText;
+        [Tooltip("Optional '+N' crystal reward text shown only for winners")]
+        [SerializeField] private GameObject crystalRewardRoot;
+        [SerializeField] private TMP_Text crystalRewardText;
 
         [Header("Animation (optional — falls back to defaults)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
@@ -30,20 +56,32 @@ namespace CosmicShore.UI
             if (!_canvasGroup) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
-        public void Setup(string playerName, int initialCrystals, Color domainColor, bool isLocalPlayer, int staggerIndex = 0)
+        /// <summary>
+        /// Sets up the card with basic player info. Accepts a formatted score string directly
+        /// so the caller controls display (time, crystals, etc).
+        /// </summary>
+        public void Setup(string playerName, string formattedScore, Color domainColor, int staggerIndex = 0)
         {
-            playerNameText.text = playerName;
-            _displayedScore = initialCrystals;
-            playerScoreText.text = $"{initialCrystals}";
-            _baseTextColor = playerScoreText.color;
-
-            if (domainIndicatorImage)
+            if (playerNameText) playerNameText.text = playerName;
+            if (playerScoreText)
             {
-                domainIndicatorImage.gameObject.SetActive(true);
-                domainIndicatorImage.color = domainColor;
+                playerScoreText.text = formattedScore;
+                _baseTextColor = playerScoreText.color;
             }
 
+            ApplyDomainColor(domainColor);
+            HideCrystalReward();
+            HideSecondaryStat();
             PlayEntrance(staggerIndex);
+        }
+
+        /// <summary>
+        /// Back-compat overload for integer-score callers. Displays "{value}" as the score.
+        /// </summary>
+        public void Setup(string playerName, int initialScore, Color domainColor, bool isLocalPlayer, int staggerIndex = 0)
+        {
+            _displayedScore = initialScore;
+            Setup(playerName, initialScore.ToString(), domainColor, staggerIndex);
         }
 
         public void SetAvatar(Sprite avatarSprite)
@@ -60,8 +98,46 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// Shows a "+N" crystal reward on this card (e.g. for the winning player).
+        /// </summary>
+        public void ShowCrystalReward(int crystalCount)
+        {
+            if (!crystalRewardRoot || !crystalRewardText) return;
+            crystalRewardText.text = $"+{crystalCount}";
+            crystalRewardRoot.SetActive(true);
+        }
+
+        public void HideCrystalReward()
+        {
+            if (crystalRewardRoot) crystalRewardRoot.SetActive(false);
+        }
+
+        /// <summary>
+        /// Optional secondary stat line (e.g. "Jousts: 3" or "Crystals: 12").
+        /// </summary>
+        public void ShowSecondaryStat(string statText)
+        {
+            if (secondaryStatText)
+            {
+                secondaryStatText.text = statText;
+                secondaryStatText.gameObject.SetActive(true);
+            }
+            if (dataPanelsRoot) dataPanelsRoot.SetActive(true);
+        }
+
+        public void HideSecondaryStat()
+        {
+            if (secondaryStatText) secondaryStatText.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// In-game live score update. Animates a counter roll + punch.
+        /// </summary>
         public void UpdateScore(int crystalCount)
         {
+            if (!playerScoreText) return;
+
             if (crystalCount == _displayedScore)
             {
                 playerScoreText.text = $"{crystalCount}";
@@ -76,6 +152,22 @@ namespace CosmicShore.UI
             PlayColorFlash(crystalCount > from);
         }
 
+        private void ApplyDomainColor(Color domainColor)
+        {
+            if (backgroundImage)
+            {
+                var c = domainColor;
+                c.a = backgroundTintAlpha;
+                backgroundImage.color = c;
+            }
+
+            if (domainIndicatorImage)
+            {
+                domainIndicatorImage.gameObject.SetActive(true);
+                domainIndicatorImage.color = domainColor;
+            }
+        }
+
         private void PlayEntrance(int staggerIndex)
         {
             _entranceSeq?.Kill();
@@ -86,7 +178,6 @@ namespace CosmicShore.UI
             float stagger = animSettings ? animSettings.cardEntranceStagger : 0.08f;
             bool unscaled = animSettings == null || animSettings.useUnscaledTime;
 
-            // Scale+fade entrance — does NOT touch anchoredPosition, so LayoutGroups work
             _canvasGroup.alpha = 0f;
             transform.localScale = Vector3.one * startScale;
 
@@ -99,6 +190,7 @@ namespace CosmicShore.UI
 
         private void PlayScorePunch()
         {
+            if (!playerScoreText) return;
             _punchTween?.Kill();
 
             float scale = animSettings ? animSettings.scorePunchScale : 1.15f;
@@ -122,6 +214,7 @@ namespace CosmicShore.UI
 
         private void PlayCounterRoll(int from, int to)
         {
+            if (!playerScoreText) return;
             _rollTween?.Kill();
 
             float duration = animSettings ? animSettings.counterRollDuration : 0.35f;
@@ -137,6 +230,7 @@ namespace CosmicShore.UI
 
         private void PlayColorFlash(bool isGain)
         {
+            if (!playerScoreText) return;
             _colorFlashTween?.Kill();
 
             var flashColor = isGain

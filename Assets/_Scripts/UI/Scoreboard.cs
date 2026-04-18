@@ -1,7 +1,8 @@
-// Scoreboard.cs — rematch panels auto-dismiss after 2s (except received panel)
+// Scoreboard.cs — dynamic per-player cards, always multiplayer view
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using DG.Tweening;
 using Obvious.Soap;
@@ -15,6 +16,15 @@ using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// End-game scoreboard. Instantiates one <see cref="PlayerScoreCard"/> per player
+    /// under <see cref="playerCardContainer"/>, tints each card to its player's domain
+    /// color, and shows a "{DOMAIN} VICTORY" banner. Always uses the multiplayer layout;
+    /// the legacy SinglePlayerView is never shown.
+    ///
+    /// Subclasses override <see cref="FormatPlayerScore"/> and optionally
+    /// <see cref="FormatSecondaryStat"/> / <see cref="SortPlayers"/> to customize display.
+    /// </summary>
     public class Scoreboard : MonoBehaviour
     {
         #region Serialized Fields
@@ -25,7 +35,6 @@ namespace CosmicShore.UI
 
         [Header("References")]
         [SerializeField] private MultiplayerMiniGameControllerBase multiplayerController;
-
         [SerializeField] private GameObject endGameObject;
 
         [Header("UI Containers")]
@@ -42,20 +51,21 @@ namespace CosmicShore.UI
         [SerializeField] Color GoldTeamBannerColor    = new Color(1.0f, 0.8f, 0.0f);
         [SerializeField] Color BlueTeamBannerColor    = new Color(0.2f, 0.4f, 0.9f);
 
-        [Header("Single Player View")]
-        [SerializeField] protected Transform SingleplayerView;
-        [SerializeField] TMP_Text SinglePlayerScoreTextField;
-        [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
+        [Header("Player Score Cards")]
+        [Tooltip("Container transform that will host one PlayerScoreCard per player (e.g. ScrollView/Viewport/Content).")]
+        [SerializeField] protected Transform playerCardContainer;
+        [Tooltip("Prefab instance to clone for each player row.")]
+        [SerializeField] protected PlayerScoreCard playerCardPrefab;
+        [Tooltip("Domain color palette for card background tint (falls back to banner colors if unassigned).")]
+        [SerializeField] protected DomainColorPaletteSO domainColorPalette;
+        [Tooltip("Profile icon list used to resolve player avatars by AvatarId.")]
+        [SerializeField] protected SO_ProfileIconList profileIconList;
+        [Tooltip("AI profile list used to resolve AI avatars by name.")]
+        [SerializeField] protected SO_AIProfileList aiProfileList;
 
-        [Header("Multiplayer View")]
-        [SerializeField] protected Transform MultiplayerView;
-        [SerializeField] protected List<TMP_Text> PlayerNameTextFields;
-        [SerializeField] protected List<TMP_Text> PlayerScoreTextFields;
-
-        [Header("Team Scorecards")]
-        [Tooltip("Assign the 3 TeamScorecard components from the MultiplayerView hierarchy (winner displayed first).")]
-        [SerializeField] private TeamScorecard[] teamScorecards;
-        [SerializeField] private DomainColorPaletteSO domainColorPalette;
+        [Header("Winner Crystal Reward")]
+        [Tooltip("Crystals awarded to the winning player's card (+N indicator). Set 0 to disable.")]
+        [SerializeField] protected int winnerCrystalReward = 5;
 
         [Header("Multiplayer Rematch")]
         [Tooltip("Shown to the player who SENT the request — auto-dismisses after 2s if no response")]
@@ -88,8 +98,7 @@ namespace CosmicShore.UI
         private CanvasGroup _scoreboardCanvasGroup;
         private RectTransform _scoreboardRect;
         private Sequence _entranceSeq;
-        private Tween _scoreCounterTween;
-        private Tween _highScoreCounterTween;
+        private readonly List<PlayerScoreCard> _spawnedCards = new();
 
         #endregion
 
@@ -130,13 +139,7 @@ namespace CosmicShore.UI
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
             HideAllRematchPanels();
-
-            // Show multiplayer view when playing against opponents (online or AI).
-            // The multiplayerController being present means this is a multiplayer scene
-            // running with opponents, even in solo-with-AI mode.
-            if (gameData.IsMultiplayerMode || multiplayerController != null) ShowMultiplayerView();
-            else ShowSinglePlayerView();
-
+            ShowMultiplayerView();
             PopulateDynamicStats();
 
             if (scoreboardPanel)
@@ -150,8 +153,9 @@ namespace CosmicShore.UI
         {
             _entranceSeq?.Kill();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
-            if(endGameObject) endGameObject.SetActive(false);
+            if (endGameObject) endGameObject.SetActive(false);
             HideAllRematchPanels();
+            ClearPlayerCards();
         }
 
         void HideAllRematchPanels()
@@ -197,12 +201,10 @@ namespace CosmicShore.UI
             float duration = animSettings ? animSettings.scoreboardEntranceDuration : 0.35f;
             float offset = animSettings ? animSettings.scoreboardSlideOffset : 120f;
             var ease = animSettings ? animSettings.scoreboardEntranceEase : Ease.OutCubic;
-            float rowStagger = animSettings ? animSettings.scoreboardRowStagger : 0.1f;
             float bannerPunchDur = animSettings ? animSettings.bannerPunchDuration : 0.3f;
             float bannerPunchScale = animSettings ? animSettings.bannerPunchScale : 1.2f;
             bool unscaled = animSettings == null || animSettings.useUnscaledTime;
 
-            // Panel slide + fade
             var targetPos = _scoreboardRect.anchoredPosition;
             _scoreboardRect.anchoredPosition = new Vector2(targetPos.x, targetPos.y - offset);
             _scoreboardCanvasGroup.alpha = 0f;
@@ -211,7 +213,6 @@ namespace CosmicShore.UI
                 .Join(_scoreboardRect.DOAnchorPos(targetPos, duration).SetEase(ease))
                 .Join(_scoreboardCanvasGroup.DOFade(1f, duration));
 
-            // Banner text punch
             if (BannerText)
             {
                 BannerText.transform.localScale = Vector3.one * 0.5f;
@@ -223,221 +224,159 @@ namespace CosmicShore.UI
                     .SetEase(Ease.OutQuad));
             }
 
-            // Staggered player rows — fade each name+score pair in sequence
-            StaggerPlayerRows(rowStagger);
-
             _entranceSeq.SetUpdate(unscaled);
-        }
-
-        private void StaggerPlayerRows(float stagger)
-        {
-            for (int i = 0; i < PlayerNameTextFields.Count; i++)
-            {
-                float delay = stagger * i;
-
-                if (PlayerNameTextFields[i])
-                {
-                    var nameField = PlayerNameTextFields[i];
-                    nameField.alpha = 0f;
-                    _entranceSeq.Insert(delay, nameField.DOFade(1f, 0.2f));
-                }
-
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
-                {
-                    var scoreField = PlayerScoreTextFields[i];
-                    scoreField.alpha = 0f;
-                    _entranceSeq.Insert(delay, scoreField.DOFade(1f, 0.2f));
-                }
-            }
-        }
-
-        private void AnimateCounter(TMP_Text field, int target, ref Tween tween)
-        {
-            if (!field) return;
-
-            tween?.Kill();
-            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
-
-            field.text = "0";
-            float current = 0f;
-            tween = DOTween.To(() => current, x => current = x, target, 0.6f)
-                .SetDelay(0.15f)
-                .SetEase(Ease.OutCubic)
-                .OnUpdate(() => field.text = Mathf.RoundToInt(current).ToString())
-                .SetUpdate(unscaled);
         }
 
         void OnDestroy()
         {
             _entranceSeq?.Kill();
-            _scoreCounterTween?.Kill();
-            _highScoreCounterTween?.Kill();
         }
 
         #endregion
 
-        #region Single Player View
+        #region Multiplayer View (the only view)
 
-        protected virtual void ShowSinglePlayerView()
-        {
-            bool won = gameData.IsLocalDomainWinner(out DomainStats localDomainStats);
-            if (BannerImage) BannerImage.color = SinglePlayerBannerColor;
-            if (BannerText)  BannerText.text   = won ? "VICTORY" : "DEFEAT";
-
-            int playerScore = (int)localDomainStats.Score;
-            AnimateCounter(SinglePlayerScoreTextField, playerScore, ref _scoreCounterTween);
-
-            if (SinglePlayerHighscoreTextField)
-            {
-                float highScore = playerScore;
-                if (UGSStatsManager.Instance &&
-                    Enum.TryParse(gameData.GameMode.ToString(), out GameModes modeEnum))
-                {
-                    highScore = UGSStatsManager.Instance.GetEvaluatedHighScore(
-                        modeEnum, gameData.SelectedIntensity.Value, playerScore);
-                }
-                AnimateCounter(SinglePlayerHighscoreTextField, (int)highScore, ref _highScoreCounterTween);
-            }
-
-            if (MultiplayerView)  MultiplayerView.gameObject.SetActive(false);
-            if (SingleplayerView) SingleplayerView.gameObject.SetActive(true);
-        }
-
-        #endregion
-
-        #region Multiplayer View
-
+        /// <summary>
+        /// Always-on multiplayer presentation. The legacy "SinglePlayerView" is gone —
+        /// solo play uses the multiplayer layout with a single card.
+        /// </summary>
         protected virtual void ShowMultiplayerView()
         {
-            gameData.IsLocalDomainWinner(out DomainStats winnerStats);
-            SetBannerForDomain(winnerStats.Domain);
-            DisplayPlayerScores();
-            PopulateTeamScorecards();
+            var orderedStats = SortPlayers(gameData.RoundStatsList);
 
-            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
-            if (MultiplayerView)  MultiplayerView.gameObject.SetActive(true);
+            Domains winnerDomain = DetermineWinnerDomain(orderedStats);
+            SetBannerForDomain(winnerDomain);
+            PopulatePlayerCards(orderedStats);
         }
+
+        /// <summary>
+        /// Default ordering uses DomainStatsList if present (winner first), otherwise
+        /// returns the list as-is. Subclasses override to apply mode-specific sorting
+        /// (golf rules, crystals, etc).
+        /// </summary>
+        protected virtual List<IRoundStats> SortPlayers(List<IRoundStats> stats)
+        {
+            if (stats == null) return new List<IRoundStats>();
+            return stats.ToList();
+        }
+
+        /// <summary>
+        /// Default: first domain in DomainStatsList → first player's domain → Unassigned.
+        /// Subclasses can override if they need different winner-domain logic.
+        /// </summary>
+        protected virtual Domains DetermineWinnerDomain(List<IRoundStats> orderedStats)
+        {
+            if (gameData.DomainStatsList is { Count: > 0 })
+                return gameData.DomainStatsList[0].Domain;
+            if (orderedStats is { Count: > 0 })
+                return orderedStats[0].Domain;
+            return Domains.Unassigned;
+        }
+
+        /// <summary>
+        /// Subclasses override to format each player's primary score (time, crystals, etc).
+        /// </summary>
+        protected virtual string FormatPlayerScore(IRoundStats stats)
+        {
+            return ((int)stats.Score).ToString();
+        }
+
+        /// <summary>
+        /// Optional secondary line (e.g. "Jousts: 3"). Return null or empty to hide.
+        /// </summary>
+        protected virtual string FormatSecondaryStat(IRoundStats stats) => null;
 
         protected virtual void SetBannerForDomain(Domains domain)
         {
-            switch (domain)
+            string domainLabel = domain switch
             {
-                case Domains.Jade:
-                    if (BannerImage) BannerImage.color = JadeTeamBannerColor;
-                    if (BannerText)  BannerText.text   = "JADE VICTORY"; break;
-                case Domains.Ruby:
-                    if (BannerImage) BannerImage.color = RubyTeamBannerColor;
-                    if (BannerText)  BannerText.text   = "RUBY VICTORY"; break;
-                case Domains.Gold:
-                    if (BannerImage) BannerImage.color = GoldTeamBannerColor;
-                    if (BannerText)  BannerText.text   = "GOLD VICTORY"; break;
-                case Domains.Blue:
-                    if (BannerImage) BannerImage.color = BlueTeamBannerColor;
-                    if (BannerText)  BannerText.text   = "BLUE VICTORY"; break;
-                default:
-                    if (BannerText) BannerText.text = "GAME OVER"; break;
+                Domains.Jade => "JADE",
+                Domains.Ruby => "RUBY",
+                Domains.Gold => "GOLD",
+                Domains.Blue => "BLUE",
+                _            => null,
+            };
+
+            if (BannerImage) BannerImage.color = GetDomainColor(domain);
+            if (BannerText)
+            {
+                BannerText.text = string.IsNullOrEmpty(domainLabel)
+                    ? "GAME OVER"
+                    : $"{domainLabel} VICTORY";
             }
         }
 
-        protected virtual void DisplayPlayerScores()
+        void PopulatePlayerCards(List<IRoundStats> orderedStats)
         {
-            var playerScores = gameData.RoundStatsList;
+            ClearPlayerCards();
 
-            for (int i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
+            if (orderedStats == null || orderedStats.Count == 0) return;
+            if (!playerCardContainer || !playerCardPrefab)
             {
-                if (PlayerNameTextFields[i])
-                    PlayerNameTextFields[i].text = playerScores[i].Name;
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
-                    PlayerScoreTextFields[i].text = ((int)playerScores[i].Score).ToString();
-            }
-
-            for (int i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
-            {
-                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
-                    PlayerScoreTextFields[i].text = "";
-            }
-        }
-
-        protected virtual void PopulateTeamScorecards()
-        {
-            if (teamScorecards == null || teamScorecards.Length == 0)
+                CSDebug.LogWarning($"[Scoreboard] PopulatePlayerCards skipped — " +
+                    $"container={(playerCardContainer != null ? "OK" : "NULL")}, " +
+                    $"prefab={(playerCardPrefab != null ? "OK" : "NULL")}");
                 return;
-
-            var teamGroups = new Dictionary<Domains, List<IRoundStats>>();
-            foreach (var rs in gameData.RoundStatsList)
-            {
-                if (!teamGroups.TryGetValue(rs.Domain, out var list))
-                {
-                    list = new List<IRoundStats>(2);
-                    teamGroups[rs.Domain] = list;
-                }
-                list.Add(rs);
             }
 
-            // Sort teams in the same order as DomainStatsList (winner first)
-            var sortedDomains = gameData.DomainStatsList
-                .Select(ds => ds.Domain)
-                .Where(d => teamGroups.ContainsKey(d))
-                .ToList();
+            string winnerName = orderedStats[0].Name;
 
-            foreach (var domain in teamGroups.Keys)
+            for (int i = 0; i < orderedStats.Count; i++)
             {
-                if (!sortedDomains.Contains(domain))
-                    sortedDomains.Add(domain);
+                var stats = orderedStats[i];
+                var card = Instantiate(playerCardPrefab, playerCardContainer);
+
+                Color domainColor = GetDomainColor(stats.Domain);
+                card.Setup(stats.Name, FormatPlayerScore(stats), domainColor, i);
+
+                card.SetAvatar(ResolveAvatarSprite(stats));
+
+                string secondary = FormatSecondaryStat(stats);
+                if (!string.IsNullOrEmpty(secondary))
+                    card.ShowSecondaryStat(secondary);
+
+                // Winner gets the "+N crystals" reward indicator
+                if (winnerCrystalReward > 0 && stats.Name == winnerName)
+                    card.ShowCrystalReward(winnerCrystalReward);
+
+                _spawnedCards.Add(card);
             }
 
-            bool isGolfRules = gameData.IsGolfRules;
-
-            for (int i = 0; i < teamScorecards.Length; i++)
-            {
-                if (i >= sortedDomains.Count)
-                {
-                    teamScorecards[i].Show(false);
-                    continue;
-                }
-
-                teamScorecards[i].Show(true);
-
-                var domain = sortedDomains[i];
-                var players = teamGroups[domain];
-
-                float teamScoreValue = isGolfRules
-                    ? players.Min(p => p.Score)
-                    : players.Sum(p => p.Score);
-
-                var playerDisplays = new List<PlayerDisplayData>(players.Count);
-                foreach (var p in players)
-                {
-                    playerDisplays.Add(new PlayerDisplayData
-                    {
-                        Name  = p.Name,
-                        Score = FormatScore(p.Score, isGolfRules),
-                    });
-                }
-
-                Color domainColor = GetDomainColor(domain);
-                string teamName = domain.ToString().ToUpper();
-                string teamScore = FormatScore(teamScoreValue, isGolfRules);
-
-                teamScorecards[i].Populate(teamName, teamScore, domainColor, playerDisplays);
-            }
+            // Award crystals once to the local player if they won (same side-effect that
+            // EndGameCinematicController used to do — centralized here now)
+            AwardCrystalsIfLocalWinner(winnerName);
         }
 
-        protected string FormatScore(float score, bool isGolfRules)
+        void ClearPlayerCards()
         {
-            if (isGolfRules)
+            foreach (var card in _spawnedCards)
             {
-                var ts = TimeSpan.FromSeconds(score);
-                return ts.TotalMinutes >= 1
-                    ? $"{(int)ts.TotalMinutes}:{ts.Seconds:D2}.{ts.Milliseconds / 100}"
-                    : $"{ts.Seconds}.{ts.Milliseconds / 100}s";
+                if (card) Destroy(card.gameObject);
             }
+            _spawnedCards.Clear();
 
-            return ((int)score).ToString();
+            // Safety: also destroy any leftover cards in the container (e.g. editor-placed templates)
+            if (playerCardContainer)
+            {
+                foreach (Transform child in playerCardContainer)
+                    Destroy(child.gameObject);
+            }
         }
 
-        private Color GetDomainColor(Domains domain)
+        void AwardCrystalsIfLocalWinner(string winnerName)
+        {
+            if (winnerCrystalReward <= 0) return;
+            var localName = gameData.LocalPlayer?.Name;
+            if (string.IsNullOrEmpty(localName) || localName != winnerName) return;
+
+            var service = PlayerDataService.Instance;
+            if (service == null) return;
+
+            int newBalance = service.AddCrystals(winnerCrystalReward);
+            CSDebug.Log($"[Scoreboard] Awarded {winnerCrystalReward} crystals to '{localName}'. New balance: {newBalance}");
+        }
+
+        Color GetDomainColor(Domains domain)
         {
             if (domainColorPalette)
                 return domainColorPalette.Get(domain);
@@ -448,8 +387,38 @@ namespace CosmicShore.UI
                 Domains.Ruby => RubyTeamBannerColor,
                 Domains.Gold => GoldTeamBannerColor,
                 Domains.Blue => BlueTeamBannerColor,
-                _            => Color.white,
+                _            => SinglePlayerBannerColor,
             };
+        }
+
+        Sprite ResolveAvatarSprite(IRoundStats stats)
+        {
+            // AI players — look up by name in AI profile list
+            if (aiProfileList != null && aiProfileList.aiProfiles != null)
+            {
+                foreach (var p in aiProfileList.aiProfiles)
+                {
+                    if (p != null && p.Name == stats.Name)
+                        return p.AvatarSprite;
+                }
+            }
+
+            // Human players — look up by AvatarId via gameData.Players
+            if (profileIconList != null && profileIconList.profileIcons != null && gameData?.Players != null)
+            {
+                var player = gameData.Players.FirstOrDefault(pl => pl.Name == stats.Name);
+                if (player != null)
+                {
+                    foreach (var icon in profileIconList.profileIcons)
+                    {
+                        if (icon.Id == player.AvatarId) return icon.IconSprite;
+                    }
+                    if (profileIconList.profileIcons.Count > 0)
+                        return profileIconList.profileIcons[0].IconSprite;
+                }
+            }
+
+            return null;
         }
 
         #endregion
@@ -464,15 +433,11 @@ namespace CosmicShore.UI
 
             if (!statsProvider || !statsContainer || !statRowPrefab)
             {
-                Debug.LogWarning($"[Scoreboard] PopulateDynamicStats skipped — " +
-                    $"provider={(statsProvider != null ? "OK" : "NULL")}, " +
-                    $"container={(statsContainer != null ? "OK" : "NULL")}, " +
-                    $"rowPrefab={(statRowPrefab != null ? "OK" : "NULL")}");
                 return;
             }
 
             var stats = statsProvider.GetStats();
-            Debug.Log($"[Scoreboard] Populating {stats.Count} dynamic stat row(s)");
+            if (stats == null) return;
 
             foreach (var stat in stats)
             {
@@ -501,8 +466,6 @@ namespace CosmicShore.UI
                 if (playAgainButton)     playAgainButton.SetActive(false);
                 if (rematchInvitedPanel) rematchInvitedPanel.SetActive(true);
 
-                // Invited panel auto-dismisses after 2s if opponent doesn't respond
-                // Restores play again button so local player isn't stuck waiting
                 StopAutoDismiss(ref _invitedAutoDismiss);
                 _invitedAutoDismiss = StartCoroutine(AutoDismissPanel(
                     rematchInvitedPanel,
@@ -514,9 +477,6 @@ namespace CosmicShore.UI
             }
             else if (multiplayerController != null)
             {
-                // Solo-with-AI: the game runs on the network stack, so go through the
-                // controller's replay flow to properly reset race state (_raceEnded, etc.)
-                // without showing the multiplayer rematch invitation UI.
                 multiplayerController.RequestReplay();
             }
             else
@@ -525,10 +485,6 @@ namespace CosmicShore.UI
             }
         }
 
-        /// <summary>
-        /// Called by MultiplayerMiniGameControllerBase when the OPPONENT requests a rematch.
-        /// Received panel stays until the player responds — no auto-dismiss.
-        /// </summary>
         public void ShowRematchRequest(string requesterName)
         {
             if (rematchReceivedText)
@@ -536,21 +492,14 @@ namespace CosmicShore.UI
 
             if (rematchReceivedPanel) rematchReceivedPanel.SetActive(true);
             if (playAgainButton)      playAgainButton.SetActive(false);
-            // No auto-dismiss — player must actively accept or decline
         }
 
-        /// <summary>
-        /// Bound to YES button inside rematchReceivedPanel.
-        /// </summary>
         public void OnAcceptRematch()
         {
             HideAllRematchPanels();
             multiplayerController?.RequestReplay();
         }
 
-        /// <summary>
-        /// Bound to NO button inside rematchReceivedPanel.
-        /// </summary>
         public void OnDeclineRematch()
         {
             if (rematchReceivedPanel) rematchReceivedPanel.SetActive(false);
@@ -558,13 +507,9 @@ namespace CosmicShore.UI
             multiplayerController?.NotifyRematchDeclined(gameData.LocalPlayer.Name);
         }
 
-        /// <summary>
-        /// Called by MultiplayerMiniGameControllerBase when the OPPONENT declined our request.
-        /// Denied panel auto-dismisses after 2s, then restores play again button.
-        /// </summary>
         public void ShowRematchDeclined(string declinerName)
         {
-            StopAutoDismiss(ref _invitedAutoDismiss); // cancel invited panel if still running
+            StopAutoDismiss(ref _invitedAutoDismiss);
             if (rematchInvitedPanel) rematchInvitedPanel.SetActive(false);
 
             if (rematchDeniedText)

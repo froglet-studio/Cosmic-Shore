@@ -1,8 +1,10 @@
 // MultiplayerJoustScoreboard.cs
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
-using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
@@ -11,63 +13,37 @@ namespace CosmicShore.UI
         [Header("Joust")]
         [SerializeField] private JoustCollisionTurnMonitor joustTurnMonitor;
 
-        protected override void ShowMultiplayerView()
+        /// <summary>
+        /// Golf rules — ascending sort so that players who finished (score = raceTime)
+        /// appear before those who did not (score = penaltyScoreBase + jousts left).
+        /// </summary>
+        protected override List<IRoundStats> SortPlayers(List<IRoundStats> stats)
         {
-            // Sort ascending (golf rules): winners with completion times first, losers with penalty scores last
-            if (gameData.RoundStatsList is { Count: > 0 })
-            {
-                gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
-                SetBannerForDomain(gameData.RoundStatsList[0].Domain);
-            }
-            else if (BannerText) BannerText.text = "GAME OVER";
-
-            FormatMultiplayerJoustScores();
-            PopulateTeamScorecards();
-
-            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
-            if (MultiplayerView)  MultiplayerView.gameObject.SetActive(true);
+            if (stats == null) return new List<IRoundStats>();
+            var sorted = stats.ToList();
+            sorted.Sort((a, b) => a.Score.CompareTo(b.Score));
+            return sorted;
         }
 
-        void FormatMultiplayerJoustScores()
+        protected override string FormatPlayerScore(IRoundStats stats)
         {
-            if (!joustTurnMonitor)
+            int needed = joustTurnMonitor ? joustTurnMonitor.CollisionsNeeded : 0;
+            int joustsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
+            bool thisPlayerWon = needed > 0 && joustsLeft == 0;
+
+            if (thisPlayerWon)
             {
-                CSDebug.LogError("[MultiplayerJoustScoreboard] JoustTurnMonitor is null!");
-                return;
+                TimeSpan t = TimeSpan.FromSeconds(stats.Score);
+                return $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
             }
 
-            var playerScores = gameData.RoundStatsList;
-            int needed = joustTurnMonitor.CollisionsNeeded;
+            string plural = joustsLeft == 1 ? "" : "s";
+            return $"{joustsLeft} Joust{plural} Left";
+        }
 
-            for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
-            {
-                if (PlayerNameTextFields[i])
-                    PlayerNameTextFields[i].text = playerScores[i].Name;
-
-                if (!PlayerScoreTextFields[i]) continue;
-
-                var stats = playerScores[i];
-                int joustsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
-                bool thisPlayerWon = joustsLeft == 0;
-
-                if (thisPlayerWon)
-                {
-                    TimeSpan t = TimeSpan.FromSeconds(stats.Score);
-                    PlayerScoreTextFields[i].text = $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
-                }
-                else
-                {
-                    string plural = joustsLeft == 1 ? "" : "s";
-                    PlayerScoreTextFields[i].text = $"{joustsLeft} Joust{plural} Left";
-                }
-            }
-
-            for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
-            {
-                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
-                    PlayerScoreTextFields[i].text = "";
-            }
+        protected override string FormatSecondaryStat(IRoundStats stats)
+        {
+            return $"{stats.JoustCollisions} Jousts";
         }
     }
 }

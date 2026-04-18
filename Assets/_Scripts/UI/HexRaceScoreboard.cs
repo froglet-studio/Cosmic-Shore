@@ -8,49 +8,26 @@ namespace CosmicShore.UI
 {
     public class HexRaceScoreboard : Scoreboard
     {
-        protected override void ShowMultiplayerView()
+        /// <summary>
+        /// Golf rules — ascending sort puts fastest finish time first,
+        /// then losers ordered by crystals left (fewer left = higher placement).
+        /// </summary>
+        protected override List<IRoundStats> SortPlayers(List<IRoundStats> stats)
         {
-            // Sort ascending (golf rules): winner's finish time < 10000 comes first,
-            // then losers ordered by crystals left (fewer left = higher placement).
-            if (gameData.RoundStatsList is { Count: > 0 })
-                gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
-
-            if (gameData.DomainStatsList is { Count: > 0 })
-                SetBannerForDomain(gameData.DomainStatsList[0].Domain);
-            else if (gameData.RoundStatsList is { Count: > 0 })
-                SetBannerForDomain(gameData.RoundStatsList[0].Domain);
-            else if (BannerText) BannerText.text = "GAME OVER";
-
-            base.DisplayPlayerScores();
-            FormatMultiplayerTimeOrCrystals();
-            PopulateTeamScorecards();
-
-            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
-            if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
+            if (stats == null) return new List<IRoundStats>();
+            var sorted = stats.ToList();
+            sorted.Sort((a, b) => a.Score.CompareTo(b.Score));
+            return sorted;
         }
 
         /// <summary>
-        /// Override team scorecard population with HexRace-specific time/crystal formatting.
+        /// Winners (score &lt; 10000) show MM:SS:CS finish time.
+        /// Losers (score = 10000 + crystalsLeft) show "{N} Crystals Left".
         /// </summary>
-        protected override void PopulateTeamScorecards()
+        protected override string FormatPlayerScore(IRoundStats stats)
         {
-            // Use the race-specific FormatScore for team scorecards
-            base.PopulateTeamScorecards();
-        }
+            float score = stats.Score;
 
-        void FormatMultiplayerTimeOrCrystals()
-        {
-            var playerScores = gameData.RoundStatsList;
-
-            for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
-            {
-                if (!PlayerScoreTextFields[i]) continue;
-                PlayerScoreTextFields[i].text = FormatRaceScore(playerScores[i].Score);
-            }
-        }
-
-        static string FormatRaceScore(float score)
-        {
             if (score < 10000f)
             {
                 TimeSpan t = TimeSpan.FromSeconds(score);
@@ -59,6 +36,14 @@ namespace CosmicShore.UI
 
             int crystalsLeft = Mathf.Max(0, (int)(score - 10000f));
             return $"{crystalsLeft} Crystals Left";
+        }
+
+        /// <summary>
+        /// Secondary stat: omni crystals collected.
+        /// </summary>
+        protected override string FormatSecondaryStat(IRoundStats stats)
+        {
+            return $"{stats.OmniCrystalsCollected} Crystals";
         }
     }
 }
