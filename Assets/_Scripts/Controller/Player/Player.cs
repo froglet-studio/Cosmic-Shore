@@ -17,7 +17,15 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
 
-        [Inject] private PlayerDataService playerDataService;
+        [Inject] private PlayerDataService _injectedPlayerDataService;
+
+        // Fallback to static singleton — Netcode-spawned Players (host's own player)
+        // bypass Reflex's auto-injection since they're instantiated by NetworkManager,
+        // not Instantiate() inside an injected scope.
+        private PlayerDataService playerDataService
+            => _injectedPlayerDataService != null
+                ? _injectedPlayerDataService
+                : PlayerDataService.Instance;
 
         public NetworkVariable<VesselClassType> NetDefaultVesselType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Domains> NetDomain = new(Domains.Jade, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -283,6 +291,21 @@ namespace CosmicShore.Gameplay
             // writes the chosen vessel back to NetDefaultVesselType.
             if (IsOwner)
                 NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+
+            // Refresh NetName/NetAvatarId from the now-loaded profile.
+            // OnNetworkSpawn may have run in the Auth scene before the cloud profile
+            // finished loading, leaving NetName = UGS default (e.g. "CuteAwakingLightbulb").
+            // By the time we enter a game scene, PlayerDataService is initialized and
+            // CurrentProfile holds the menu display name (e.g. "dragon").
+            if (IsLocalUser && playerDataService != null && playerDataService.IsInitialized
+                && playerDataService.CurrentProfile != null)
+            {
+                var profile = playerDataService.CurrentProfile;
+                if (!string.IsNullOrEmpty(profile.displayName) && NetName.Value.ToString() != profile.displayName)
+                    NetName.Value = profile.displayName;
+                if (NetAvatarId.Value != profile.avatarId)
+                    NetAvatarId.Value = profile.avatarId;
+            }
 
             // Reset server-writable NetworkVariables.
             if (IsServer)
