@@ -1,9 +1,11 @@
+using System;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
+    [Obsolete("Replaced by SkimmerForcefieldCracklePrismEffectSO. Kept for asset compatibility.")]
     [CreateAssetMenu(fileName = "SkimmerFXPrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerFXPrismEffectSO")]
     public class SkimmerFXPrismEffectSO : SkimmerPrismEffectSO
