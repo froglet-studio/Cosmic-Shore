@@ -176,6 +176,12 @@ namespace CosmicShore.Gameplay
                     NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
                 }
 
+                // If profile wasn't ready when we spawned, subscribe so NetName updates
+                // when the cloud profile finishes loading. Ensures menu username matches
+                // in-game username even if Player spawns before PlayerDataService init.
+                if (playerDataService != null)
+                    playerDataService.OnProfileChanged += HandleProfileLoadedAfterSpawn;
+
                 // Only set vessel type from gameData if the client hasn't already
                 // chosen a vessel via the ArcadeGameConfigureModal (which writes
                 // directly to NetDefaultVesselType). This preserves per-client
@@ -218,6 +224,25 @@ namespace CosmicShore.Gameplay
             NetDefaultVesselType.OnValueChanged -= OnNetDefaultVesselTypeChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
+
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= HandleProfileLoadedAfterSpawn;
+        }
+
+        /// <summary>
+        /// Fires when the cloud profile finishes loading after Player has already spawned.
+        /// Updates NetName/NetAvatarId so the in-game name matches the menu username.
+        /// Only the owner writes to these NetworkVariables — other clients read via replication.
+        /// </summary>
+        private void HandleProfileLoadedAfterSpawn(PlayerProfileData profile)
+        {
+            if (!IsOwner || profile == null) return;
+            if (string.IsNullOrEmpty(profile.displayName)) return;
+
+            if (NetName.Value.ToString() != profile.displayName)
+                NetName.Value = profile.displayName;
+            if (NetAvatarId.Value != profile.avatarId)
+                NetAvatarId.Value = profile.avatarId;
         }
 
 
