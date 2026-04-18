@@ -153,12 +153,11 @@ namespace CosmicShore.Gameplay
             }
 
             // --- Owner writes (owner-perm vars: NetName, NetAvatarId, NetDefaultVesselType) ---
-            // For host's own player: IsOwner=true → writes here.
-            // For client's player on server: IsOwner=false → skipped;
-            //   values arrive later via replication → OnNetNameValueChanged /
-            //   OnNetDefaultVesselTypeChanged raise the deferred spawn event.
-            // For host's player on client: IsOwner=false → skipped (correct).
-            if (IsOwner)
+            // Only the local human player writes profile data here.
+            // AI players share the host's OwnerClientId (IsOwner=true) but must NOT
+            // overwrite their names with the human's profile — the AI spawner sets their
+            // names separately after spawn. IsLocalUser filters out AI via !IsInitializedAsAI.
+            if (IsLocalUser)
             {
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)
@@ -177,8 +176,7 @@ namespace CosmicShore.Gameplay
                 }
 
                 // If profile wasn't ready when we spawned, subscribe so NetName updates
-                // when the cloud profile finishes loading. Ensures menu username matches
-                // in-game username even if Player spawns before PlayerDataService init.
+                // when the cloud profile finishes loading.
                 if (playerDataService != null)
                     playerDataService.OnProfileChanged += HandleProfileLoadedAfterSpawn;
 
@@ -236,7 +234,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void HandleProfileLoadedAfterSpawn(PlayerProfileData profile)
         {
-            if (!IsOwner || profile == null) return;
+            if (!IsLocalUser || profile == null) return;
             if (string.IsNullOrEmpty(profile.displayName)) return;
 
             if (NetName.Value.ToString() != profile.displayName)
