@@ -54,6 +54,7 @@ namespace CosmicShore.UI
         private Dictionary<string, AIProfile> _assignedAIProfiles = new();
 
         private CancellationTokenSource _lifecycleCts;
+        private bool _readyButtonUnlocked;
 
         private void OnValidate()
         {
@@ -124,6 +125,7 @@ namespace CosmicShore.UI
             _lifecycleCts?.Dispose();
             _lifecycleCts = new CancellationTokenSource();
 
+            _readyButtonUnlocked = false;
             CleanupUI();
         }
 
@@ -228,6 +230,7 @@ namespace CosmicShore.UI
                 }
 
                 Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] ToggleReadyButton(true) — Ready button visible</b></color>");
+                _readyButtonUnlocked = true;
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException)
@@ -239,6 +242,7 @@ namespace CosmicShore.UI
         private void ResetForReplay()
         {
             Show();
+            _readyButtonUnlocked = true;
             CleanupUI();
             HideLocalVesselHUD();
 
@@ -479,7 +483,14 @@ namespace CosmicShore.UI
 
         public void Show() => view.ToggleView(true);
         public void Hide() => view.ToggleView(false);
-        public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
+        public void ToggleReadyButton(bool toggle)
+        {
+            // Block all show requests until HandleClientReady explicitly unlocks.
+            // This prevents SOAP event listeners, controller SetupNewRound, and
+            // any other pathway from showing the button before the cinematic finishes.
+            if (toggle && !_readyButtonUnlocked) return;
+            view.ReadyButton.gameObject.SetActive(toggle);
+        }
 
         /// <summary>
         /// Resets UI state for re-entering the game flow after shape drawing.
