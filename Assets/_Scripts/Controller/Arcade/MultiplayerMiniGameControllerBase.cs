@@ -254,8 +254,11 @@ namespace CosmicShore.Gameplay
         protected override void SetupNewRound()
         {
             base.SetupNewRound();
-            
-            if (IsServer)
+
+            // On the first round (RoundsPlayed==0), MiniGameHUD controls
+            // ReadyButton visibility after the pre-game cinematic finishes.
+            // On subsequent rounds, show it immediately.
+            if (IsServer && gameData.RoundsPlayed > 0)
                 ShowReadyButton_ClientRpc();
         }
         

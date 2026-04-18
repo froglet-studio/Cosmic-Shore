@@ -93,7 +93,11 @@ namespace CosmicShore.Gameplay
                 readyClientCount = 0;
             }
 
-            RaiseToggleReadyButtonEvent(true);
+            // First round: MiniGameHUD shows ReadyButton after cinematic.
+            // Subsequent rounds: show it immediately.
+            if (gameData.RoundsPlayed > 0)
+                RaiseToggleReadyButtonEvent(true);
+
             base.SetupNewRound();
         }
 
