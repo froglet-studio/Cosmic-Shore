@@ -1,25 +1,37 @@
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
-using CosmicShore.UI;
-using System;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Subscribes to the VesselStatEventSO assets exposed by the local player's
-    /// VesselTelemetry subclass, caches their latest values, and supplies them
-    /// to the Scoreboard at game-end via GetStats().
+    /// Subscribes to VesselStatEventSO assets and caches their latest values
+    /// for the end-game scoreboard.
     ///
-    /// Works with any VesselTelemetry subclass — it discovers stat events via
-    /// the base class's GetAllStats() regardless of vessel type.
+    /// Supports two modes:
+    /// 1. Explicit (recommended): Wire stat SOs directly via <see cref="statsToTrack"/>.
+    ///    Subscription happens on OnEnable — no timing dependency on vessel spawn.
+    /// 2. Dynamic fallback: If <see cref="statsToTrack"/> is empty, discovers stats
+    ///    from the local vessel's VesselTelemetry at OnClientReady / OnMiniGameTurnStarted.
+    ///
+    /// Stats are only cleared on explicit reset — they persist across turn boundaries
+    /// until the game ends, so the scoreboard always shows the final values.
     /// </summary>
     public class EventDrivenStatsProvider : ScoreboardStatsProvider
     {
         [Header("Data")]
         [Inject] private GameDataSO gameData;
+
+        [Header("Stats (explicit — preferred)")]
+        [Tooltip("Wire the VesselStatEventSO assets here. If populated, overrides dynamic discovery.")]
+        [SerializeField] private List<VesselStatEventSO> statsToTrack = new();
+
+        [Header("Debug")]
+        [SerializeField] private bool verboseLogging = false;
 
         private readonly Dictionary<VesselStatEventSO, float> _latestValues = new();
         private readonly List<(VesselStatEventSO stat, System.Action<float> handler)> _subscriptions = new();
@@ -28,26 +40,49 @@ namespace CosmicShore.Gameplay
 
         private void OnEnable()
         {
+            // Subscribe immediately to explicit stats — no vessel dependency
+            if (statsToTrack != null && statsToTrack.Count > 0)
+            {
+                SubscribeToStats(statsToTrack);
+            }
+
             if (gameData == null) return;
-            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
+            gameData.OnClientReady.OnRaised         += TrySubscribeFromVessel;
+            gameData.OnMiniGameTurnStarted.OnRaised += TrySubscribeFromVessel;
+            gameData.OnResetForReplay.OnRaised      += HandleReplay;
         }
 
         private void OnDisable()
         {
-            if (gameData == null) return;
-            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            if (gameData != null)
+            {
+                gameData.OnClientReady.OnRaised         -= TrySubscribeFromVessel;
+                gameData.OnMiniGameTurnStarted.OnRaised -= TrySubscribeFromVessel;
+                gameData.OnResetForReplay.OnRaised      -= HandleReplay;
+            }
             Unsubscribe();
         }
 
         // ── Wiring ─────────────────────────────────────────────────────────────
 
-        private void OnTurnStarted()
+        /// <summary>
+        /// Fallback: discover stat SOs from the local vessel's telemetry and subscribe.
+        /// Skips if already subscribed to anything (avoids duplicate handlers).
+        /// </summary>
+        private void TrySubscribeFromVessel()
         {
-            Unsubscribe();
-            _latestValues.Clear();
+            // If explicit list is wired, we're already subscribed — skip dynamic discovery
+            if (statsToTrack != null && statsToTrack.Count > 0) return;
 
-            var vessel = gameData.LocalPlayer?.Vessel;
-            if (vessel == null) return;
+            // Already subscribed via previous call? skip.
+            if (_subscriptions.Count > 0) return;
+
+            var vessel = gameData?.LocalPlayer?.Vessel;
+            if (vessel == null)
+            {
+                if (verboseLogging) Debug.Log("[StatsProvider] Local vessel not ready yet — will retry.");
+                return;
+            }
 
             VesselTelemetry telemetry = null;
             if (vessel is Component vesselComponent)
@@ -60,23 +95,32 @@ namespace CosmicShore.Gameplay
             }
 
             var allStats = telemetry.GetAllStats();
-            Debug.Log($"[StatsProvider] Found {telemetry.GetType().Name} with {allStats.Count} stat(s)");
+            if (verboseLogging)
+                Debug.Log($"[StatsProvider] Discovered {telemetry.GetType().Name} with {allStats.Count} stat(s)");
 
-            foreach (var stat in allStats)
+            if (allStats.Count == 0)
+                CSDebug.LogWarning("[EventDrivenStatsProvider] Telemetry has zero registered stats.");
+
+            SubscribeToStats(allStats);
+        }
+
+        private void SubscribeToStats(IEnumerable<VesselStatEventSO> stats)
+        {
+            foreach (var stat in stats)
             {
                 if (stat == null) continue;
+                if (_subscriptions.Any(s => s.stat == stat)) continue; // already subscribed
 
-                _latestValues[stat] = stat.CurrentValue;
+                // Seed cache with current value (or 0)
+                if (!_latestValues.ContainsKey(stat))
+                    _latestValues[stat] = stat.CurrentValue;
 
-                // Store named handler so we can unsubscribe cleanly
                 void Handler(float value) => _latestValues[stat] = value;
                 stat.OnRaised += Handler;
                 _subscriptions.Add((stat, Handler));
-                Debug.Log($"[StatsProvider] Subscribed to: '{stat.Label}'");
-            }
 
-            if (allStats.Count == 0)
-                Debug.LogWarning("[StatsProvider] Zero stats registered — scoreboard will be empty.");
+                if (verboseLogging) Debug.Log($"[StatsProvider] Subscribed to: '{stat.Label}'");
+            }
         }
 
         private void Unsubscribe()
@@ -84,6 +128,13 @@ namespace CosmicShore.Gameplay
             foreach (var (stat, handler) in _subscriptions)
                 if (stat != null) stat.OnRaised -= handler;
             _subscriptions.Clear();
+        }
+
+        private void HandleReplay()
+        {
+            // Reset cache for replay, but keep subscriptions
+            foreach (var key in _latestValues.Keys.ToList())
+                _latestValues[key] = 0f;
         }
 
         // ── ScoreboardStatsProvider ────────────────────────────────────────────
@@ -104,9 +155,12 @@ namespace CosmicShore.Gameplay
                 });
             }
 
-            Debug.Log($"[StatsProvider] GetStats returning {result.Count} stat(s) for scoreboard");
-            foreach (var s in result)
-                Debug.Log($"[StatsProvider]   → {s.Label}: {s.Value}");
+            if (verboseLogging)
+            {
+                Debug.Log($"[StatsProvider] GetStats returning {result.Count} stat(s)");
+                foreach (var s in result)
+                    Debug.Log($"[StatsProvider]   → {s.Label}: {s.Value}");
+            }
 
             return result;
         }
