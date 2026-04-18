@@ -10,7 +10,7 @@ namespace CosmicShore.UI
         [Header("Multiplayer View")]
         [SerializeField] protected MultiplayerHUDView multiplayerView;
 
-        protected Dictionary<string, PlayerScoreCard> _playerCards = new();
+        protected Dictionary<string, PlayerScoreEntry> _playerCards = new();
 
         protected override void OnEnable()
         {
@@ -93,7 +93,7 @@ namespace CosmicShore.UI
 
         private void CreateCardForPlayer(IRoundStats stats, int staggerIndex)
         {
-            var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
+            var card = Instantiate(view.PlayerScoreEntryPrefab, view.PlayerScoreContainer);
             var isLocal = gameData.LocalPlayer != null && stats.Name == gameData.LocalPlayer.Name;
             var teamColor = view.GetColorForDomain(stats.Domain);
 

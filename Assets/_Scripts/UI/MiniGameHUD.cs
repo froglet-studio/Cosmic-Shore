@@ -48,9 +48,9 @@ namespace CosmicShore.UI
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
         protected IRoundStats localRoundStats;
-        protected Dictionary<string, PlayerScoreCard> _aiCards = new();
+        protected Dictionary<string, PlayerScoreEntry> _aiCards = new();
         private Dictionary<IRoundStats, Action> _aiScoreHandlers = new();
-        private PlayerScoreCard _localPlayerCard;
+        private PlayerScoreEntry _localPlayerCard;
         private Dictionary<string, AIProfile> _assignedAIProfiles = new();
 
         private CancellationTokenSource _lifecycleCts;
@@ -271,7 +271,7 @@ namespace CosmicShore.UI
 
         private void SetupLocalPlayerCard()
         {
-            if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null)
+            if (gameData.LocalPlayer == null || view.PlayerScoreEntryPrefab == null)
                 return;
 
             // Avoid duplicate — reuse existing card if already created
@@ -279,7 +279,7 @@ namespace CosmicShore.UI
                 return;
 
             var localPlayer = gameData.LocalPlayer;
-            var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
+            var card = Instantiate(view.PlayerScoreEntryPrefab, view.PlayerScoreContainer);
             var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
             card.Setup(localPlayer.Name, 0, teamColor, true, 0);
 
@@ -312,7 +312,7 @@ namespace CosmicShore.UI
             {
                 if (stats == localRoundStats) continue;
 
-                var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
+                var card = Instantiate(view.PlayerScoreEntryPrefab, view.PlayerScoreContainer);
                 var teamColor = view.GetColorForDomain(stats.Domain);
                 card.Setup(stats.Name, (int)stats.Score, teamColor, false, staggerIdx++);
 
@@ -470,6 +470,7 @@ namespace CosmicShore.UI
 
         private void CleanupUI()
         {
+            ToggleReadyButton(false);
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay(string.Empty);
             view.UpdateScoreUI("0");

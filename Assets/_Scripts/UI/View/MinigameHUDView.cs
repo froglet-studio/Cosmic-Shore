@@ -33,16 +33,16 @@ namespace CosmicShore.UI
         [SerializeField] private DoTweenTypewriterAnimator hackerTextAnimator;
         [SerializeField] private ConnectingDotsAnimator dotsAnimator;
 
-        [Header("Player/AI Score Cards")]
+        [Header("Player/AI Score Entries (in-game)")]
         [SerializeField] private Transform playerScoreContainer;
-        [SerializeField] private PlayerScoreCard playerScoreCardPrefab;
+        [SerializeField] private PlayerScoreEntry playerScoreEntryPrefab;
         [SerializeField] private List<DomainColorDef> domainColors;
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
         public Transform PlayerScoreContainer => playerScoreContainer;
-        public PlayerScoreCard PlayerScoreCardPrefab => playerScoreCardPrefab;
+        public PlayerScoreEntry PlayerScoreEntryPrefab => playerScoreEntryPrefab;
 
         private Tween _viewFadeTween;
         private Tween _connectingFadeTween;

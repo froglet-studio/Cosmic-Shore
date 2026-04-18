@@ -52,6 +52,12 @@ namespace CosmicShore.UI
 
         private void Awake()
         {
+            EnsureCanvasGroup();
+        }
+
+        void EnsureCanvasGroup()
+        {
+            if (_canvasGroup) return;
             _canvasGroup = GetComponent<CanvasGroup>();
             if (!_canvasGroup) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
@@ -170,6 +176,7 @@ namespace CosmicShore.UI
 
         private void PlayEntrance(int staggerIndex)
         {
+            EnsureCanvasGroup();
             _entranceSeq?.Kill();
 
             float duration = animSettings ? animSettings.cardEntranceDuration : 0.3f;
