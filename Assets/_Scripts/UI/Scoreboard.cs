@@ -393,12 +393,12 @@ namespace CosmicShore.UI
 
         Sprite ResolveAvatarSprite(IRoundStats stats)
         {
-            // AI players — look up by name in AI profile list
+            // AI players — look up by name in AI profile list (struct, not nullable)
             if (aiProfileList != null && aiProfileList.aiProfiles != null)
             {
                 foreach (var p in aiProfileList.aiProfiles)
                 {
-                    if (p != null && p.Name == stats.Name)
+                    if (p.Name == stats.Name)
                         return p.AvatarSprite;
                 }
             }
