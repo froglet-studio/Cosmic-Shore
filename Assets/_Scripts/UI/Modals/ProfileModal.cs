@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Security;
 using TMPro;
+using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
@@ -225,7 +226,25 @@ namespace CosmicShore.UI
             CacheDisplayNameLocally(newName);
             UpdatePlayerDisplayNameView(null);
 
+            // Keep the UGS account player name in sync with the Cloud Save display name,
+            // otherwise friends see the auto-generated "Pilot9898" format in their friend list
+            // instead of the name the user just set. Fire-and-forget — non-critical.
+            SyncUgsPlayerNameAsync(newName);
+
             CSDebug.Log($"Current player display name: {newName}");
+        }
+
+        async void SyncUgsPlayerNameAsync(string name)
+        {
+            try
+            {
+                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)
+                    await AuthenticationService.Instance.UpdatePlayerNameAsync(name);
+            }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[ProfileModal] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+            }
         }
 
         void CacheDisplayNameLocally(string name)

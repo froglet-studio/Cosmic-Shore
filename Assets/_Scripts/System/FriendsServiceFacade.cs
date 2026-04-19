@@ -474,7 +474,7 @@ namespace CosmicShore.Core
         static FriendData RelationshipToFriendData(Relationship relationship)
         {
             var member = relationship.Member;
-            string displayName = member.Profile?.Name ?? "Unknown Pilot";
+            string displayName = StripUgsDiscriminator(member.Profile?.Name) ?? "Unknown Pilot";
             int availability = AvailabilityToInt(member.Presence?.Availability ?? Availability.Unknown);
             string activityStatus = "";
 
@@ -490,6 +490,19 @@ namespace CosmicShore.Core
             }
 
             return new FriendData(member.Id, displayName, availability, activityStatus);
+        }
+
+        /// <summary>
+        /// UGS player names are stored as "Name#XXXX" where "#XXXX" is an auto-assigned
+        /// discriminator. The Cloud Save display name (e.g. "dragon") is set separately
+        /// via UpdatePlayerNameAsync, so we strip the discriminator here so friend UI
+        /// shows the user's chosen name, not the raw UGS format (e.g. "Pilot9898").
+        /// </summary>
+        static string StripUgsDiscriminator(string ugsName)
+        {
+            if (string.IsNullOrEmpty(ugsName)) return ugsName;
+            int hashIndex = ugsName.LastIndexOf('#');
+            return hashIndex > 0 ? ugsName.Substring(0, hashIndex) : ugsName;
         }
 
         static int AvailabilityToInt(Availability availability)

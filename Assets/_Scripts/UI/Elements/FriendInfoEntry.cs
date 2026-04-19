@@ -26,8 +26,9 @@ namespace CosmicShore.UI
         [SerializeField] private Color onlineColor = Color.white;
         [SerializeField] private Color offlineColor = new(0.5f, 0.5f, 0.5f, 1f);
         [SerializeField] private Color inMatchColor = new(0.9f, 0.2f, 0.2f, 1f);
+        [SerializeField] private Color inPartyColor = new(0.2f, 0.7f, 1f, 1f);
 
-        public enum OnlineStatus { Online, Offline, InMatch }
+        public enum OnlineStatus { Online, Offline, InMatch, InParty }
 
         string _playerId;
         Action<string> _onInvite;
@@ -87,6 +88,10 @@ namespace CosmicShore.UI
                 case OnlineStatus.InMatch:
                     text = "In a Match";
                     color = inMatchColor;
+                    break;
+                case OnlineStatus.InParty:
+                    text = "In a Party";
+                    color = inPartyColor;
                     break;
                 default:
                     text = "Offline";

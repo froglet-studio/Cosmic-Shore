@@ -59,6 +59,12 @@ namespace CosmicShore.Gameplay
             if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
 
+            // Always normalize human domains — even with 0 AI backfill (solo play).
+            // Without this, a player who picked "Random" (Unassigned) or never clicked
+            // a team keeps NetDomain = Unassigned, and the scoreboard falls through
+            // to the single-player banner color (blue) instead of the user's choice.
+            NormalizeHumanDomains(GatherHumanPlayers());
+
             // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
             // AI players fire the event during Spawn(), but since we haven't
             // subscribed yet (base.OnNetworkSpawn hasn't run), those events
@@ -113,12 +119,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Ensure all human players have valid domains for the configured team count.
-            // Party members are placed on the same team (first human's domain wins).
-            // NOTE: gameData.Players is cleared by ResetRuntimeData during scene transition,
-            // so we gather humans directly from NetworkManager.ConnectedClients.
+            // Human domains were already normalized in OnNetworkSpawn (runs for solo play too).
+            // Re-gather here to build team counts from the authoritative ConnectedClients list —
+            // gameData.Players is cleared by ResetRuntimeData during scene transition.
             var humanPlayers = GatherHumanPlayers();
-            NormalizeHumanDomains(humanPlayers);
 
             // Use AI profile list for names when available; fall back to aiInitializeDatas templates.
             List<AIProfile> profiles = null;

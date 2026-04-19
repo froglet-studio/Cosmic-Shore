@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
@@ -93,6 +94,12 @@ namespace CosmicShore.UI
                 friendsData.OnFriendRemoved.OnRaised += HandleFriendRemoved;
                 friendsData.IncomingRequests.OnItemAdded += HandleIncomingRequestAdded;
                 friendsData.IncomingRequests.OnItemRemoved += HandleIncomingRequestRemoved;
+
+                // Presence updates (e.g. a friend joins a party) cause the facade to
+                // Clear + re-Add the Friends list. Subscribe so the visible Friends
+                // tab rebuilds when availability / activity status changes.
+                friendsData.Friends.OnItemAdded += HandleFriendsListItemAdded;
+                friendsData.Friends.OnCleared += HandleFriendsListCleared;
             }
 
             SwitchTab(Tab.Online);
@@ -113,7 +120,26 @@ namespace CosmicShore.UI
                 friendsData.OnFriendRemoved.OnRaised -= HandleFriendRemoved;
                 friendsData.IncomingRequests.OnItemAdded -= HandleIncomingRequestAdded;
                 friendsData.IncomingRequests.OnItemRemoved -= HandleIncomingRequestRemoved;
+                friendsData.Friends.OnItemAdded -= HandleFriendsListItemAdded;
+                friendsData.Friends.OnCleared -= HandleFriendsListCleared;
             }
+        }
+
+        /// <summary>
+        /// The facade clears the Friends list and re-adds each friend on presence
+        /// updates (SyncFriends). Rebuild the Friends tab when a clear happens so
+        /// stale entries are removed; individual adds then refresh the list inline.
+        /// </summary>
+        void HandleFriendsListCleared()
+        {
+            if (_activeTab == Tab.Friends)
+                ClearSpawned(_spawnedFriends);
+        }
+
+        void HandleFriendsListItemAdded(FriendData friend)
+        {
+            if (_activeTab == Tab.Friends)
+                SpawnFriendEntry(friend);
         }
 
         #endregion
@@ -278,7 +304,7 @@ namespace CosmicShore.UI
             var entry = Instantiate(friendInfoPrefab, friendsContent);
             _spawnedFriends.Add(entry.gameObject);
 
-            var status = ResolveOnlineStatus(friend.Availability);
+            var status = ResolveOnlineStatus(friend.Availability, friend.ActivityStatus);
 
             entry.Populate(
                 friend.PlayerId,
@@ -434,8 +460,16 @@ namespace CosmicShore.UI
                 : null;
         }
 
-        static FriendInfoEntry.OnlineStatus ResolveOnlineStatus(int availability)
+        static FriendInfoEntry.OnlineStatus ResolveOnlineStatus(int availability, string activityStatus = null)
         {
+            // "In Party" is reported as Online availability with an activity string,
+            // so check the activity text first before falling back to the availability tier.
+            if (!string.IsNullOrEmpty(activityStatus) &&
+                activityStatus.IndexOf("Party", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return FriendInfoEntry.OnlineStatus.InParty;
+            }
+
             // UGS availability: 1=Online, 2=Busy, 3=Away, 0=Offline
             return availability switch
             {

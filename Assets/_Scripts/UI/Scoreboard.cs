@@ -4,6 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Obvious.Soap;
 using System;
@@ -11,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -85,6 +87,13 @@ namespace CosmicShore.UI
         [Tooltip("Seconds before invited/denied panels auto-dismiss")]
         [SerializeField] private float rematchPanelAutoDismissSeconds = 2f;
 
+        [Header("Host / Client Buttons")]
+        [Tooltip("Main Menu button — host only in multiplayer (host-initiated return takes everyone). Always visible in single-player.")]
+        [SerializeField] private GameObject mainMenuButton;
+
+        [Tooltip("Leave Lobby button — non-host clients only. Disconnects from the party session and returns to Menu_Main.")]
+        [SerializeField] private GameObject leaveLobbyButton;
+
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
@@ -139,6 +148,7 @@ namespace CosmicShore.UI
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
             HideAllRematchPanels();
+            ConfigureLobbyButtons();
             ShowMultiplayerView();
             PopulateDynamicStats();
 
@@ -147,6 +157,23 @@ namespace CosmicShore.UI
                 scoreboardPanel.gameObject.SetActive(true);
                 PlayEntranceAnimation();
             }
+        }
+
+        /// <summary>
+        /// Shows Main Menu for host / single-player, Leave Lobby for non-host clients.
+        /// The party lobby lives in Menu_Main — a client clicking Main Menu here would
+        /// have no effect anyway (Netcode scene management is host-driven), so we swap
+        /// in a Leave Lobby button that actually disconnects them from the party.
+        /// </summary>
+        void ConfigureLobbyButtons()
+        {
+            var nm = NetworkManager.Singleton;
+            bool isMultiplayer = gameData != null && gameData.IsMultiplayerMode;
+            bool isHost = nm != null && nm.IsServer;
+            bool isClient = isMultiplayer && !isHost;
+
+            if (mainMenuButton)  mainMenuButton.SetActive(!isClient);
+            if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
         }
 
         void HideScoreboard()
@@ -463,6 +490,16 @@ namespace CosmicShore.UI
                     return;
                 }
 
+                // Host / master restarts the game directly — no rematch request flow.
+                // Only clients need to ask the host for permission to replay.
+                var nm = NetworkManager.Singleton;
+                bool isHost = nm != null && nm.IsServer;
+                if (isHost)
+                {
+                    multiplayerController.RequestReplay();
+                    return;
+                }
+
                 if (playAgainButton)     playAgainButton.SetActive(false);
                 if (rematchInvitedPanel) rematchInvitedPanel.SetActive(true);
 
@@ -505,6 +542,24 @@ namespace CosmicShore.UI
             if (rematchReceivedPanel) rematchReceivedPanel.SetActive(false);
             if (playAgainButton)      playAgainButton.SetActive(true);
             multiplayerController?.NotifyRematchDeclined(gameData.LocalPlayer.Name);
+        }
+
+        /// <summary>
+        /// Client-side "Leave Lobby" button handler. Disconnects from the host's party
+        /// session and returns to Menu_Main. Host/single-player users see the regular
+        /// Main Menu button instead (which is wired to the SOAP main-menu event).
+        /// </summary>
+        public void OnLeaveLobbyButtonPressed()
+        {
+            if (leaveLobbyButton) leaveLobbyButton.SetActive(false);
+
+            if (PartyInviteController.Instance == null)
+            {
+                CSDebug.LogError("[Scoreboard] PartyInviteController not available — cannot leave lobby.");
+                return;
+            }
+
+            PartyInviteController.Instance.LeavePartyAndReturnToMenuAsync().Forget();
         }
 
         public void ShowRematchDeclined(string declinerName)

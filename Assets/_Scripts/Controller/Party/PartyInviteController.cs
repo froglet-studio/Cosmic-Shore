@@ -171,6 +171,70 @@ namespace CosmicShore.Gameplay
                 await HostConnectionService.Instance.DeclineInviteAsync();
         }
 
+        /// <summary>
+        /// Client-side "Leave Lobby": disconnects from the host's party session and
+        /// returns to Menu_Main, then restarts a local host so the player can send or
+        /// accept new invites. Intended for non-host clients pressing "Leave Lobby"
+        /// on the end-game scoreboard.
+        /// </summary>
+        public async UniTask LeavePartyAndReturnToMenuAsync()
+        {
+            if (_transitioning)
+            {
+                Debug.LogWarning("[PartyInviteController] Already transitioning — ignoring leave lobby.");
+                return;
+            }
+
+            _transitioning = true;
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
+            var ct = _cts.Token;
+
+            PauseSystem.TogglePauseGame(false);
+
+            try
+            {
+                Debug.Log("[PartyInviteController] Starting leave-lobby flow...");
+
+                CleanUpCurrentSession();
+                await ShutdownNetworkManagerAsync(ct);
+
+                // Clear the stale party session reference so HostConnectionService
+                // can create a fresh Relay-backed session next time.
+                HostConnectionService.Instance?.ClearStalePartySession();
+
+                // Load Menu_Main locally (no Netcode scene management — we've disconnected).
+                var activeScene = SceneManager.GetActiveScene();
+                if (activeScene.name != "Menu_Main")
+                    SceneManager.LoadScene("Menu_Main");
+
+                // Restart local host so the player can invite / be invited again.
+                var nm = NetworkManager.Singleton;
+                if (nm != null && !nm.IsListening)
+                {
+                    nm.StartHost();
+                    await UniTask.Delay(500, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                }
+
+                Debug.Log("[PartyInviteController] Leave-lobby flow completed.");
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log("[PartyInviteController] Leave-lobby flow cancelled.");
+            }
+            catch (Exception e)
+            {
+                await UniTask.SwitchToMainThread();
+                Debug.LogError($"[PartyInviteController] Leave-lobby flow failed: {e.Message}");
+                await RecoverFromFailedTransitionAsync();
+            }
+            finally
+            {
+                _transitioning = false;
+            }
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Public API: Host-side Transition (for sending first invite)
         // ─────────────────────────────────────────────────────────────────────
