@@ -28,14 +28,44 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] float nucleusScaleMultiplier = 1f;
 
-        [Header("Aggression Thresholds")]
-        [Tooltip("Live prism count at or above which the cell enters Elevated.")]
-        [SerializeField, Min(1)] int elevatedThreshold = 400;
-        [Tooltip("Live prism count at or above which the cell enters Stressed.")]
-        [SerializeField, Min(1)] int stressedThreshold = 900;
-        [Tooltip("Live prism count at or above which the cell enters Critical (growth halts).")]
-        [SerializeField, Min(1)] int criticalThreshold = 1500;
-        [Tooltip("Seconds between aggression level re-evaluations.")]
+        // ---------------------------------------------------------------------
+        // Regulation thresholds with hysteresis.
+        //
+        // The cell tracks a single prism count (_liveBlockCount) and drives five
+        // independent regulation gates along that axis. The rising and falling
+        // values differ to buffer against thrashing at the boundary:
+        //
+        //   0          - flora begin spawning with random domains   (default-on)
+        //   1000       - fauna begin spawning in the controlling color (L0)
+        //   4000       - flora stop planting
+        //   8000       - fauna escalate to L1 (opposing-centroid seeking)
+        //   10000      - flora stop growing
+        //   15000      - fauna escalate to L2 (any centroid, no friendly avoidance)
+        //
+        // Tune per-biome via CellConfigDataSO later if needed; for now these live
+        // on the Cell so per-scene tuning is possible.
+        // ---------------------------------------------------------------------
+
+        [System.Serializable]
+        public struct PrismThreshold
+        {
+            [Min(0)] public int Rising;
+            [Min(0)] public int Falling;
+        }
+
+        [Header("Regulation Thresholds (prism count, hysteresis)")]
+        [Tooltip("Count at or above which fauna begin spawning (in controlling color).")]
+        [SerializeField] PrismThreshold faunaSpawnStart = new() { Rising = 1000, Falling = 750 };
+        [Tooltip("Count at or above which flora stop planting new instances.")]
+        [SerializeField] PrismThreshold floraPlantEnd = new() { Rising = 4000, Falling = 3500 };
+        [Tooltip("Count at or above which fauna escalate to aggression Level 1.")]
+        [SerializeField] PrismThreshold faunaAggressionL1 = new() { Rising = 8000, Falling = 7000 };
+        [Tooltip("Count at or above which flora stop growing existing instances.")]
+        [SerializeField] PrismThreshold floraGrowEnd = new() { Rising = 10000, Falling = 9000 };
+        [Tooltip("Count at or above which fauna escalate to aggression Level 2 (berserk).")]
+        [SerializeField] PrismThreshold faunaAggressionL2 = new() { Rising = 15000, Falling = 13000 };
+
+        [Tooltip("Seconds between regulation state re-evaluations.")]
         [SerializeField, Min(0.1f)] float aggressionPollInterval = 1.5f;
 
 
@@ -70,21 +100,58 @@ namespace CosmicShore.Gameplay
         // Aggression state. Incremented / decremented in O(1) by AddBlock / RemoveBlock
         // so we never iterate density grids to measure pressure.
         int _liveBlockCount;
-        CellAggressionLevel _aggressionLevel = CellAggressionLevel.Calm;
+        CellAggressionLevel _aggressionLevel = CellAggressionLevel.Level0;
+        bool _floraPlantingEnabled = true;   // default on; gated down by rising threshold
+        bool _floraGrowingEnabled = true;    // default on; gated down by rising threshold
+        bool _faunaSpawningEnabled = false;  // default off; gated up by rising threshold
         Coroutine _aggressionPollRoutine;
 
         // Dedupes AddBlock/RemoveBlock across multiple call paths (flora binding,
         // HealthPrism.Initialize, future direct callers) so _liveBlockCount stays accurate.
         readonly HashSet<Prism> _registeredBlocks = new();
 
-        /// <summary>Current live prism count in this cell (enemy-tracked blocks).</summary>
+        /// <summary>Current live prism count in this cell.</summary>
         public int LiveBlockCount => _liveBlockCount;
 
-        /// <summary>Bucketed stress level driven by <see cref="LiveBlockCount"/>.</summary>
+        /// <summary>Current fauna aggression level derived from <see cref="LiveBlockCount"/> with hysteresis.</summary>
         public CellAggressionLevel AggressionLevel => _aggressionLevel;
+
+        /// <summary>Is the cell currently allowing flora to plant new instances?</summary>
+        public bool FloraPlantingEnabled => _floraPlantingEnabled;
+
+        /// <summary>Is the cell currently allowing existing flora to grow new prisms?</summary>
+        public bool FloraGrowingEnabled => _floraGrowingEnabled;
+
+        /// <summary>Is the cell currently allowing new fauna to spawn?</summary>
+        public bool FaunaSpawningEnabled => _faunaSpawningEnabled;
 
         /// <summary>Raised when <see cref="AggressionLevel"/> transitions. New level is the argument.</summary>
         public event Action<CellAggressionLevel> OnAggressionChanged;
+
+        /// <summary>
+        /// Resolves the "controlling color" for fauna spawns. Falls back to local player
+        /// domain (useful in Menu_Main where there is no scored controlling team), then
+        /// to Jade as last resort.
+        /// </summary>
+        public Domains ControllingDomain
+        {
+            get
+            {
+                if (gameData != null)
+                {
+                    var top = gameData.GetControllingTeamStatsBasedOnVolumeRemaining();
+                    if (top.Team != Domains.None && top.Team != Domains.Unassigned && top.Volume > 0f)
+                        return top.Team;
+
+                    var local = gameData.LocalRoundStats?.Domain
+                                ?? gameData.LocalPlayer?.Domain
+                                ?? Domains.Unassigned;
+                    if (local != Domains.None && local != Domains.Unassigned)
+                        return local;
+                }
+                return Domains.Jade;
+            }
+        }
 
         void OnEnable()
         {
@@ -167,8 +234,7 @@ namespace CosmicShore.Gameplay
             AssignConfig();
             ResetVolumes();
 
-            _liveBlockCount = 0;
-            _aggressionLevel = CellAggressionLevel.Calm;
+            ResetRegulationState();
             StartAggressionPoll();
 
             runtime.EnsureCellStats(ID);
@@ -223,8 +289,7 @@ namespace CosmicShore.Gameplay
             SpawnVisuals();
             ResetVolumes();
 
-            _liveBlockCount = 0;
-            _aggressionLevel = CellAggressionLevel.Calm;
+            ResetRegulationState();
             StartAggressionPoll();
 
             UpdateCellStats();
@@ -371,12 +436,34 @@ namespace CosmicShore.Gameplay
             if (_liveBlockCount > 0) _liveBlockCount--;
         }
 
-        CellAggressionLevel BucketForCount(int count)
+        // Hysteresis rule: when a gate is OPEN (default-on state), it stays open until
+        // count crosses the Rising threshold; once closed, it reopens only after count
+        // drops below the Falling threshold. Inverted for default-off gates.
+        static bool EvaluateDefaultOnGate(bool currentlyOpen, int count, PrismThreshold t)
         {
-            if (count >= criticalThreshold) return CellAggressionLevel.Critical;
-            if (count >= stressedThreshold) return CellAggressionLevel.Stressed;
-            if (count >= elevatedThreshold) return CellAggressionLevel.Elevated;
-            return CellAggressionLevel.Calm;
+            return currentlyOpen ? (count < t.Rising) : (count < t.Falling);
+        }
+
+        static bool EvaluateDefaultOffGate(bool currentlyOpen, int count, PrismThreshold t)
+        {
+            return currentlyOpen ? (count >= t.Falling) : (count >= t.Rising);
+        }
+
+        CellAggressionLevel BucketForCount(int count, CellAggressionLevel current)
+        {
+            // Each level acts like a default-off gate: cross Rising to activate, drop
+            // below Falling to deactivate. Level2 is strictly above Level1.
+            bool atLeastL1 = current >= CellAggressionLevel.Level1
+                ? count >= faunaAggressionL1.Falling
+                : count >= faunaAggressionL1.Rising;
+
+            bool atLeastL2 = current >= CellAggressionLevel.Level2
+                ? count >= faunaAggressionL2.Falling
+                : count >= faunaAggressionL2.Rising;
+
+            if (atLeastL2) return CellAggressionLevel.Level2;
+            if (atLeastL1) return CellAggressionLevel.Level1;
+            return CellAggressionLevel.Level0;
         }
 
         IEnumerator PollAggressionLevel()
@@ -384,15 +471,32 @@ namespace CosmicShore.Gameplay
             var wait = new WaitForSeconds(Mathf.Max(0.1f, aggressionPollInterval));
             while (true)
             {
-                var next = BucketForCount(_liveBlockCount);
+                int count = _liveBlockCount;
+
+                _floraPlantingEnabled = EvaluateDefaultOnGate(_floraPlantingEnabled, count, floraPlantEnd);
+                _floraGrowingEnabled  = EvaluateDefaultOnGate(_floraGrowingEnabled,  count, floraGrowEnd);
+                _faunaSpawningEnabled = EvaluateDefaultOffGate(_faunaSpawningEnabled, count, faunaSpawnStart);
+
+                var next = BucketForCount(count, _aggressionLevel);
                 if (next != _aggressionLevel)
                 {
                     _aggressionLevel = next;
                     try { OnAggressionChanged?.Invoke(next); }
                     catch (Exception e) { CSDebug.LogError($"[Cell {ID}] OnAggressionChanged listener threw: {e}"); }
                 }
+
                 yield return wait;
             }
+        }
+
+        void ResetRegulationState()
+        {
+            _liveBlockCount = 0;
+            _aggressionLevel = CellAggressionLevel.Level0;
+            _floraPlantingEnabled = true;
+            _floraGrowingEnabled = true;
+            _faunaSpawningEnabled = false;
+            _registeredBlocks.Clear();
         }
 
         void StartAggressionPoll()
@@ -408,12 +512,36 @@ namespace CosmicShore.Gameplay
                 StopCoroutine(_aggressionPollRoutine);
                 _aggressionPollRoutine = null;
             }
-            _aggressionLevel = CellAggressionLevel.Calm;
-            _liveBlockCount = 0;
-            _registeredBlocks.Clear();
+            ResetRegulationState();
         }
 
         public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();
+
+        /// <summary>
+        /// Densest region across all domain grids (color-agnostic). Used by fauna at
+        /// aggression Level 2 which seek the nearest centroid regardless of color.
+        /// Each countGrid tracks blocks-not-of-its-domain, so taking the max density
+        /// across all grids yields a reliable proxy for overall prism density.
+        /// </summary>
+        public Vector3 GetPrimaryCentroid()
+        {
+            Vector3 best = transform.position;
+            int bestDensity = -1;
+            foreach (var kvp in countGrids)
+            {
+                var grid = kvp.Value;
+                if (grid == null) continue;
+
+                var region = grid.FindDensestRegion();
+                int d = grid.GetDensityAtPosition(region);
+                if (d > bestDensity)
+                {
+                    bestDensity = d;
+                    best = region;
+                }
+            }
+            return best;
+        }
 
         public bool ContainsPosition(Vector3 position)
         {

@@ -62,11 +62,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // Cleanup urgency multipliers indexed by CellAggressionLevel:
-        // Calm, Elevated, Stressed, Critical. Values < 1 = faster cadence / wider consume / faster movement.
-        static readonly float[] CadenceByAggression   = { 1f,   0.7f, 0.45f, 0.25f };
-        static readonly float[] ConsumeRadiusByAggression = { 1f, 1.25f, 1.6f,  2.0f };
-        static readonly float[] SpeedByAggression     = { 1f,   1.15f, 1.35f, 1.6f };
+        // Cleanup urgency multipliers indexed by CellAggressionLevel (3 levels).
+        // Level0 = baseline (world feels alive), Level1 = tighter, Level2 = berserk.
+        static readonly float[] CadenceByAggression       = { 1f,   0.55f, 0.25f };
+        static readonly float[] ConsumeRadiusByAggression = { 1f,   1.4f,  1.8f  };
+        static readonly float[] SpeedByAggression         = { 1f,   1.25f, 1.6f  };
 
         float GetAggressionCadenceMultiplier()
         {
@@ -89,6 +89,8 @@ namespace CosmicShore.Gameplay
             return SpeedByAggression[idx];
         }
 
+        bool IsBerserk => cell != null && cell.AggressionLevel == CellAggressionLevel.Level2;
+
         void UpdateBehavior()
         {
             if (!data)
@@ -110,6 +112,7 @@ namespace CosmicShore.Gameplay
             float separationRadius = Mathf.Max(0f, data.separationRadius);
             float consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
 
+            bool berserk = IsBerserk;
             var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
 
             foreach (var collider in nearbyColliders)
@@ -121,14 +124,16 @@ namespace CosmicShore.Gameplay
                 if (distance <= 0f) continue;
 
                 // Handle Ships
-                if (collider.TryGetComponent(out IVesselStatus _))
+                if (collider.TryGetComponent(out IVesselStatus vessel))
                 {
                     neighborCount++;
-                    separation -= diff.normalized / distance;
+                    // Level 2: friendly avoidance disabled — don't separate from same-domain ships.
+                    if (!(berserk && vessel.Domain == domain))
+                        separation -= diff.normalized / distance;
                     continue;
                 }
 
-                // Handle other fauna/health prisms
+                // Handle other fauna / health prisms
                 var otherHealthBlock = collider.GetComponent<HealthPrism>();
                 if (otherHealthBlock)
                 {
@@ -136,7 +141,12 @@ namespace CosmicShore.Gameplay
 
                     neighborCount++;
 
-                    if (distance < separationRadius)
+                    // Same-domain health prism (e.g. friendly fauna segment): skip separation
+                    // at Level 2 so the swarm packs in instead of spreading out.
+                    bool isFriendly = otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain == domain;
+                    bool skipSeparation = berserk && isFriendly;
+
+                    if (!skipSeparation && distance < separationRadius)
                         separation += diff.normalized / distance;
 
                     if (distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
@@ -145,7 +155,10 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                // Handle blocks
+                // Handle blocks (including danger prisms — fauna consume them regardless
+                // of aggression level. The "immune to danger prisms at L2" clause in the
+                // spec is forward-looking; once a damage-to-fauna path exists, guard it
+                // with IsBerserk so Level 2 fauna bypass it).
                 Prism block = collider.GetComponent<Prism>();
                 if (block && block.Domain != domain && distance < consumeRadius)
                     block.Consume(transform, domain, PLAYER_NAME, true);

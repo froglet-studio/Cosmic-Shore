@@ -145,6 +145,22 @@ namespace CosmicShore.Gameplay
             return pop;
         }
 
+        /// <summary>
+        /// Variant that assigns an explicit domain (e.g. the cell's controlling color)
+        /// instead of rolling randomly. Used by the regulated fauna spawn loop.
+        /// </summary>
+        protected Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain)
+        {
+            if (!host || !faunaPrefab) return null;
+
+            var pop = UnityEngine.Object.Instantiate(faunaPrefab, host.transform.position, Quaternion.identity);
+            pop.domain = domain;
+            pop.Goal = goal;
+
+            RegisterSpawned(host, pop.gameObject);
+            return pop;
+        }
+
         protected float GetControllingVolume(GameDataSO gameData) =>
             gameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item2;
 

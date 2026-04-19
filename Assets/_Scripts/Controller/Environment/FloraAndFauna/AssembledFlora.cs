@@ -1,7 +1,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -81,32 +80,18 @@ namespace CosmicShore.Gameplay
         {
             if (spawnedItemCount >= maxTotalSpawnedObjects) return;
 
-            // Cell-level backpressure: when the host cell is choking on prisms, slow or halt
-            // new growth so fauna cleanup can catch up. This is the primary safety valve that
-            // prevents unbounded gyroid growth from crashing the main menu.
-            int grantedItemsPerGrow = itemsPerGrow;
-            if (cell != null)
-            {
-                switch (cell.AggressionLevel)
-                {
-                    case CellAggressionLevel.Critical:
-                        // Halt growth entirely - defer to fauna cleanup.
-                        return;
-                    case CellAggressionLevel.Stressed:
-                        grantedItemsPerGrow = Mathf.Max(1, itemsPerGrow / 3);
-                        break;
-                    case CellAggressionLevel.Elevated:
-                        grantedItemsPerGrow = Mathf.Max(1, (itemsPerGrow * 2) / 3);
-                        break;
-                }
-            }
+            // Per user spec: flora stop growing new prisms once the cell crosses its
+            // grow-end threshold (default 10000 rising / 9000 falling). Hysteresis
+            // prevents thrashing at the boundary. Below the threshold the world should
+            // still feel dynamic, so growth runs at the authored itemsPerGrow rate.
+            if (cell != null && !cell.FloraGrowingEnabled) return;
 
             List<Branch> newBranches = new List<Branch>();
             List<Branch> branchesToRemove = new List<Branch>();
 
             float itemsSpawned = 0;
             int skippedItems = 0;
-            for (int i = 0; i < activeBranches.Count && itemsSpawned < grantedItemsPerGrow; i++)
+            for (int i = 0; i < activeBranches.Count && itemsSpawned < itemsPerGrow; i++)
             {
                 Branch branch = activeBranches.ElementAt(i);
 

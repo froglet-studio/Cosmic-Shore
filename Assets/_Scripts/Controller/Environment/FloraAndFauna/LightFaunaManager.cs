@@ -25,9 +25,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] LightFaunaManagerDataSO managerData;
 
         [Header("Aggression Response")]
-        [Tooltip("Spawn-count multiplier indexed by CellAggressionLevel: [Calm, Elevated, Stressed, Critical]. " +
+        [Tooltip("Spawn-count multiplier indexed by CellAggressionLevel: [Level0, Level1, Level2]. " +
                  "Higher values grow the pack under stress so prisms get consumed faster. Cap prevents blowing up GC / physics.")]
-        [SerializeField] float[] spawnCountByAggression = { 1f, 1.35f, 1.8f, 2.25f };
+        [SerializeField] float[] spawnCountByAggression = { 1f, 1.6f, 2.25f };
         [Tooltip("Absolute cap on active LightFauna regardless of aggression, so cleanup never exacerbates the load it's relieving.")]
         [SerializeField, Min(1)] int maxActiveFauna = 48;
         [Tooltip("Seconds between aggression-driven reinforcement checks (adds fauna only if we're short of the current target count).")]

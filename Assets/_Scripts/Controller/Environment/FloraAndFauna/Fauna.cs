@@ -22,16 +22,16 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("Team")]
         public Domains domain;
         [SerializeField] float goalUpdateInterval = 5f;
-        [Tooltip("Multiplier applied to goalUpdateInterval per aggression level: [Calm, Elevated, Stressed, Critical]. " +
-                 "Lower values = faster relocation to dense prism regions under stress.")]
-        [SerializeField] float[] goalUpdateIntervalByAggression = { 1f, 0.65f, 0.4f, 0.2f };
+        [Tooltip("Multiplier applied to goalUpdateInterval per CellAggressionLevel: [Level0, Level1, Level2]. " +
+                 "Lower values = faster relocation to targeted region under stress.")]
+        [SerializeField] float[] goalUpdateIntervalByAggression = { 1f, 0.55f, 0.25f };
         public Vector3 Goal;
 
         // --- ILifeFormEntity ---
         public Domains Domain => domain;
         public GameObject GetGameObject() => gameObject;
 
-        protected Cell cell => cellData.Cell;
+        protected Cell cell => cellData ? cellData.Cell : null;
 
         protected virtual void Start()
         {
@@ -64,8 +64,37 @@ namespace CosmicShore.Gameplay
             while (true)
             {
                 yield return new WaitForSeconds(GetAggressionScaledGoalInterval());
-                if (cell != null)
-                    Goal = cell.GetExplosionTarget(domain);
+
+                if (cell == null) continue;
+                Goal = ResolveGoal();
+            }
+        }
+
+        /// <summary>
+        /// Targeting strategy by aggression level (per user spec):
+        ///   Level0 - head toward the cell's crystal
+        ///   Level1 - head toward the nearest opposing-color centroid
+        ///   Level2 - head toward the nearest centroid of ANY color
+        /// </summary>
+        protected virtual Vector3 ResolveGoal()
+        {
+            if (cell == null) return Goal;
+
+            switch (cell.AggressionLevel)
+            {
+                case CellAggressionLevel.Level2:
+                    return cell.GetPrimaryCentroid();
+
+                case CellAggressionLevel.Level1:
+                    // GetExplosionTarget(domain) finds the densest region of blocks
+                    // that are NOT of this domain - the nearest opposing centroid.
+                    return cell.GetExplosionTarget(domain);
+
+                case CellAggressionLevel.Level0:
+                default:
+                    if (cellData && cellData.CrystalTransform)
+                        return cellData.CrystalTransform.position;
+                    return cell.transform.position;
             }
         }
 
