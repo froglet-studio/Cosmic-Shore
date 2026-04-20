@@ -88,6 +88,9 @@ namespace CosmicShore.Gameplay
         private const string AVATAR_ID_KEY = "avatarId";
         private const string INVITE_TARGET_KEY = "invite_target";
         private const string INVITE_DATA_KEY = "invite_data";
+        private const string PARTY_COUNT_KEY = "partyCount";
+        private const string PARTY_MAX_KEY = "partyMax";
+        private const string MATCH_NAME_KEY = "matchName";
 
         /// <summary>
         /// Milliseconds to wait after creating a lobby before re-querying,
@@ -106,6 +109,9 @@ namespace CosmicShore.Gameplay
         private const int RATE_LIMIT_MAX_RETRIES = 3;
         private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
         private float _rateLimitBackoffUntil;
+
+        /// <summary>Last published party-size value so we only push on change.</summary>
+        private int _publishedPartyCount = -1;
 
         private static bool IsRateLimitException(Exception e)
         {
@@ -761,6 +767,9 @@ namespace CosmicShore.Gameplay
                 if (_partySession != null)
                     await RefreshPartyMembersAsync();
 
+                // ── Publish local party state to presence lobby if changed ──
+                await PublishPartyStateIfChangedAsync();
+
                 _consecutiveRefreshErrors = 0;
             }
             catch (Exception e)
@@ -811,18 +820,55 @@ namespace CosmicShore.Gameplay
 
                 string displayName = "Unknown Pilot";
                 int avatarId = 0;
+                int partyCount = 0;
+                int partyMax = 0;
+                string matchName = string.Empty;
 
                 if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn))
                     displayName = dn.Value;
                 if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
-                    int.TryParse(av.Value, out int parsed))
-                    avatarId = parsed;
+                    int.TryParse(av.Value, out int parsedAv))
+                    avatarId = parsedAv;
+                if (p.Properties.TryGetValue(PARTY_COUNT_KEY, out var pc) &&
+                    int.TryParse(pc.Value, out int parsedPc))
+                    partyCount = parsedPc;
+                if (p.Properties.TryGetValue(PARTY_MAX_KEY, out var pm) &&
+                    int.TryParse(pm.Value, out int parsedPm))
+                    partyMax = parsedPm;
+                if (p.Properties.TryGetValue(MATCH_NAME_KEY, out var mn))
+                    matchName = mn.Value ?? string.Empty;
 
-                var playerData = new PartyPlayerData(p.Id, displayName, avatarId);
+                var playerData = new PartyPlayerData(
+                    p.Id, displayName, avatarId, partyCount, partyMax, matchName);
 
-                // Add if not already present (PartyPlayerData equality is by PlayerId).
-                if (!connectionData.OnlinePlayers.Contains(playerData))
+                // Upsert: equality is by PlayerId, so we must replace to pick up
+                // updated party-state fields even if the player was already present.
+                int existingIdx = -1;
+                for (int i = 0; i < connectionData.OnlinePlayers.Count; i++)
+                {
+                    if (connectionData.OnlinePlayers[i].PlayerId == p.Id)
+                    {
+                        existingIdx = i;
+                        break;
+                    }
+                }
+
+                if (existingIdx < 0)
+                {
                     connectionData.OnlinePlayers.Add(playerData);
+                }
+                else
+                {
+                    var existing = connectionData.OnlinePlayers[existingIdx];
+                    if (existing.DisplayName != playerData.DisplayName ||
+                        existing.AvatarId != playerData.AvatarId ||
+                        existing.PartyMemberCount != playerData.PartyMemberCount ||
+                        existing.PartyMaxSlots != playerData.PartyMaxSlots ||
+                        existing.MatchName != playerData.MatchName)
+                    {
+                        connectionData.OnlinePlayers[existingIdx] = playerData;
+                    }
+                }
             }
 
             // Remove players no longer in the lobby.
@@ -1051,6 +1097,38 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Pushes the local player's current party count/max to the presence lobby
+        /// player properties, so remote clients can render this player's row with
+        /// the right status text ("IN LOBBY X/4", "LOBBY FULL", etc).
+        /// Called from within <see cref="RefreshAsync"/> while _lobbyBusy is held —
+        /// safe to call SaveCurrentPlayerData from here.
+        /// No-op when nothing has changed since the last publish.
+        /// </summary>
+        private async Task PublishPartyStateIfChangedAsync()
+        {
+            if (_presenceLobby == null) return;
+
+            int currentCount = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
+
+            if (currentCount == _publishedPartyCount) return;
+
+            try
+            {
+                _presenceLobby.CurrentPlayer.SetProperty(PARTY_COUNT_KEY,
+                    new PlayerProperty(currentCount.ToString(), VisibilityPropertyOptions.Public));
+                _presenceLobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
+                    new PlayerProperty(connectionData.MaxPartySlots.ToString(), VisibilityPropertyOptions.Public));
+
+                await SaveWithRetryAsync();
+                _publishedPartyCount = currentCount;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] PublishPartyState error: {e.Message}");
+            }
+        }
+
+        /// <summary>
         /// Clears the SENDER's own invite properties after the invited player
         /// joins the party. This stops receivers from seeing stale invite data.
         /// Always called from within RefreshAsync() which already holds _lobbyBusy —
@@ -1166,10 +1244,16 @@ namespace CosmicShore.Gameplay
 
         private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
         {
+            int partyCount = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
+            int partyMax = connectionData.MaxPartySlots;
+
             return new Dictionary<string, PlayerProperty>
             {
                 { DISPLAY_NAME_KEY, new PlayerProperty(connectionData.LocalDisplayName ?? "Pilot", VisibilityPropertyOptions.Public) },
-                { AVATAR_ID_KEY,    new PlayerProperty(connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) }
+                { AVATAR_ID_KEY,    new PlayerProperty(connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
+                { PARTY_COUNT_KEY,  new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
+                { PARTY_MAX_KEY,    new PlayerProperty(partyMax.ToString(),   VisibilityPropertyOptions.Public) },
+                { MATCH_NAME_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
         }
 

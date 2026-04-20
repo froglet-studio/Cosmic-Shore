@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -37,6 +38,10 @@ namespace CosmicShore.UI
         [Header("Timing")]
         [Tooltip("Seconds before the invite notification auto-dismisses.")]
         [SerializeField] private float autoDeclineSeconds = 30f;
+
+        [Header("Audio")]
+        [Tooltip("Menu SFX category played when an invite appears.")]
+        [SerializeField] private MenuAudioCategory inviteReceivedAudio = MenuAudioCategory.Confirmed;
 
         private PartyInviteData? _pendingInvite;
         private float _timer;
@@ -122,6 +127,8 @@ namespace CosmicShore.UI
 
             SetButtonsInteractable(true);
             ShowPanel(true);
+
+            AudioSystem.Instance?.PlayMenuAudio(inviteReceivedAudio);
         }
 
         // ─────────────────────────────────────────────────────────────────────

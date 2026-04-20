@@ -125,20 +125,40 @@ namespace CosmicShore.Gameplay
             if (friendsService == null || !friendsService.IsInitialized) return;
 
             var partySessionId = HostConnectionService.Instance?.PartySession?.Id ?? "";
+            int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
+                ? hostConnectionData.PartyMembers.Count : 0;
+            int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
+
             await friendsService.SetPresenceAsync(
                 Availability.Online,
-                new FriendPresenceActivity("In Party", "Menu_Main", "", partySessionId));
+                new FriendPresenceActivity(
+                    "In Party",
+                    "Menu_Main",
+                    "",
+                    partySessionId,
+                    memberCount,
+                    maxSlots));
         }
 
-        public async void SetPresenceInGame(string sceneName, string vesselClass)
+        public async void SetPresenceInGame(string sceneName, string vesselClass, string matchName = "")
         {
             if (friendsService == null || !friendsService.IsInitialized) return;
 
             var partySessionId = HostConnectionService.Instance?.PartySession?.Id ?? "";
+            int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
+                ? hostConnectionData.PartyMembers.Count : 0;
+            int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
 
             await friendsService.SetPresenceAsync(
                 Availability.Busy,
-                new FriendPresenceActivity("In Game", sceneName, vesselClass, partySessionId));
+                new FriendPresenceActivity(
+                    "In Game",
+                    sceneName,
+                    vesselClass,
+                    partySessionId,
+                    memberCount,
+                    maxSlots,
+                    matchName));
         }
 
         public async void SetPresenceOffline()

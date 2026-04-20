@@ -7,11 +7,14 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Row entry for the Requests tab of FriendsListPanel.
-    /// Shows incoming party/friend request with avatar, name,
-    /// time-since-sent label, and accept/decline buttons.
+    /// Handles both friend requests and incoming party invites.
+    /// Shows avatar, name, status label (e.g. "PARTY INVITE" / "FRIEND REQUEST"),
+    /// and Accept/Decline buttons.
     /// </summary>
     public class RequestInfoEntry : MonoBehaviour
     {
+        public enum Kind { FriendRequest, PartyInvite }
+
         [Header("Display")]
         [SerializeField] private Image avatarIcon;
         [SerializeField] private TMP_Text usernameText;
@@ -24,10 +27,12 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject pendingState;
 
         [Header("Status Colors")]
-        [SerializeField] private Color pendingColor = Color.white;
-        [SerializeField] private Color expiringSoonColor = new(0.9f, 0.6f, 0.2f, 1f);
+        [SerializeField] private Color friendRequestColor = Color.white;
+        [SerializeField] private Color partyInviteColor = new(1f, 0.85f, 0.2f, 1f);
+        [SerializeField] private Color expiringSoonColor = new(0.9f, 0.3f, 0.2f, 1f);
 
         string _playerId;
+        Kind _kind;
         float _receivedTime;
         float _expirationSeconds;
         Action<string> _onAccept;
@@ -37,24 +42,30 @@ namespace CosmicShore.UI
         /// <summary>The player ID this request is from.</summary>
         public string PlayerId => _playerId;
 
+        /// <summary>What kind of request this row represents.</summary>
+        public Kind EntryKind => _kind;
+
         /// <summary>
-        /// Populates the entry with incoming request data.
+        /// Populates the entry. Supports friend requests and party invites.
         /// </summary>
-        /// <param name="playerId">Requester's player ID</param>
-        /// <param name="displayName">Requester's display name</param>
-        /// <param name="avatar">Avatar sprite</param>
-        /// <param name="expirationSeconds">Seconds until auto-decline (0 = no expiry)</param>
-        /// <param name="onAccept">Callback when accept is pressed</param>
-        /// <param name="onDecline">Callback when decline is pressed</param>
+        /// <param name="playerId">Requester's player ID.</param>
+        /// <param name="displayName">Requester's display name.</param>
+        /// <param name="avatar">Avatar sprite (may be null).</param>
+        /// <param name="kind">FriendRequest or PartyInvite.</param>
+        /// <param name="expirationSeconds">Seconds until auto-decline (0 = no expiry).</param>
+        /// <param name="onAccept">Callback when accept is pressed.</param>
+        /// <param name="onDecline">Callback when decline is pressed.</param>
         public void Populate(
             string playerId,
             string displayName,
             Sprite avatar,
+            Kind kind,
             float expirationSeconds,
             Action<string> onAccept,
             Action<string> onDecline)
         {
             _playerId = playerId;
+            _kind = kind;
             _receivedTime = Time.unscaledTime;
             _expirationSeconds = expirationSeconds;
             _onAccept = onAccept;
@@ -89,7 +100,7 @@ namespace CosmicShore.UI
             if (pendingState)
                 pendingState.SetActive(false);
 
-            UpdateTimeLabel();
+            UpdateStatusLabel();
         }
 
         void Update()
@@ -106,27 +117,29 @@ namespace CosmicShore.UI
                 return;
             }
 
-            UpdateTimeLabel();
+            UpdateStatusLabel();
         }
 
-        void UpdateTimeLabel()
+        void UpdateStatusLabel()
         {
-            float elapsed = Time.unscaledTime - _receivedTime;
+            string label = _kind == Kind.PartyInvite ? "PARTY INVITE" : "FRIEND REQUEST";
+            Color baseColor = _kind == Kind.PartyInvite ? partyInviteColor : friendRequestColor;
 
-            string timeText;
-            if (elapsed < 60f)
-                timeText = $"{Mathf.FloorToInt(elapsed)}s ago";
-            else
-                timeText = $"{Mathf.FloorToInt(elapsed / 60f)}m ago";
+            if (labelText) labelText.text = label;
 
-            if (labelText)
-                labelText.text = timeText;
-
-            // Color shifts toward expiring-soon as time runs out
-            if (labelStatus && _expirationSeconds > 0f)
+            if (labelStatus)
             {
-                float t = Mathf.Clamp01(elapsed / _expirationSeconds);
-                labelStatus.color = Color.Lerp(pendingColor, expiringSoonColor, t);
+                // Shift toward expiring-soon color as the timer runs out.
+                if (_expirationSeconds > 0f)
+                {
+                    float elapsed = Time.unscaledTime - _receivedTime;
+                    float t = Mathf.Clamp01(elapsed / _expirationSeconds);
+                    labelStatus.color = Color.Lerp(baseColor, expiringSoonColor, t);
+                }
+                else
+                {
+                    labelStatus.color = baseColor;
+                }
             }
         }
 

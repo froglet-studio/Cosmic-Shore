@@ -28,20 +28,45 @@ namespace CosmicShore.ScriptableObjects
         [DataMember(Name = "partySessionId", IsRequired = false, EmitDefaultValue = true)]
         public string PartySessionId { get; set; }
 
+        [Preserve]
+        [DataMember(Name = "partyMemberCount", IsRequired = false, EmitDefaultValue = true)]
+        public int PartyMemberCount { get; set; }
+
+        [Preserve]
+        [DataMember(Name = "partyMaxSlots", IsRequired = false, EmitDefaultValue = true)]
+        public int PartyMaxSlots { get; set; }
+
+        [Preserve]
+        [DataMember(Name = "matchName", IsRequired = false, EmitDefaultValue = true)]
+        public string MatchName { get; set; }
+
         public FriendPresenceActivity()
         {
             Status = "Online";
             Scene = "";
             VesselClass = "";
             PartySessionId = "";
+            PartyMemberCount = 0;
+            PartyMaxSlots = 0;
+            MatchName = "";
         }
 
-        public FriendPresenceActivity(string status, string scene = "", string vesselClass = "", string partySessionId = "")
+        public FriendPresenceActivity(
+            string status,
+            string scene = "",
+            string vesselClass = "",
+            string partySessionId = "",
+            int partyMemberCount = 0,
+            int partyMaxSlots = 0,
+            string matchName = "")
         {
             Status = status;
             Scene = scene;
             VesselClass = vesselClass;
             PartySessionId = partySessionId;
+            PartyMemberCount = partyMemberCount;
+            PartyMaxSlots = partyMaxSlots;
+            MatchName = matchName;
         }
     }
 }
