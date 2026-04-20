@@ -13,28 +13,20 @@ namespace CosmicShore.UI
     /// <summary>
     /// Controller for the FriendListPanel in Menu_Main.
     ///
-    /// Two tabs:
-    ///   • Online  — every online player in the presence lobby. Row background is
-    ///               the invite button; yellowish tint while the invite is pending.
-    ///   • Requests — incoming friend requests AND incoming party invites combined.
+    /// Both sections render simultaneously (no tab switching):
+    ///   • Online   — every online player in the presence lobby. Row background
+    ///                is the invite button; yellowish tint while the invite is
+    ///                pending.
+    ///   • Requests — incoming friend requests AND incoming party invites
+    ///                combined, with Accept/Decline buttons.
     ///
     /// Sound plays when a party invite is received.
     /// </summary>
     public class FriendsListPanel : MonoBehaviour
     {
-        enum Tab { Online, Requests }
-
-        [Header("Tab Buttons")]
-        [SerializeField] private Button onlineHeaderButton;
-        [SerializeField] private Button requestsHeaderButton;
-
-        [Header("Tab Content Parents (ScrollRect > Viewport > Content)")]
+        [Header("Section Content Parents (ScrollRect > Viewport > Content)")]
         [SerializeField] private Transform onlineContent;
         [SerializeField] private Transform requestsContent;
-
-        [Header("Tab Roots (CanvasGroup per tab)")]
-        [SerializeField] private CanvasGroup onlineCanvasGroup;
-        [SerializeField] private CanvasGroup requestsCanvasGroup;
 
         [Header("Prefabs")]
         [SerializeField] private OnlineInfoEntry onlineInfoPrefab;
@@ -60,7 +52,6 @@ namespace CosmicShore.UI
 
         [Inject] private FriendsServiceFacade friendsService;
 
-        Tab _activeTab = Tab.Online;
         readonly List<GameObject> _spawnedOnline = new();
         readonly List<GameObject> _spawnedRequests = new();
 
@@ -74,12 +65,6 @@ namespace CosmicShore.UI
 
         void Awake()
         {
-            // Wire header tab buttons
-            if (onlineHeaderButton)
-                onlineHeaderButton.onClick.AddListener(() => SwitchTab(Tab.Online));
-            if (requestsHeaderButton)
-                requestsHeaderButton.onClick.AddListener(() => SwitchTab(Tab.Requests));
-
             if (closeButton)
                 closeButton.onClick.AddListener(Hide);
         }
@@ -87,8 +72,7 @@ namespace CosmicShore.UI
         void OnEnable()
         {
             SubscribeSoap();
-            // Re-render active tab in case data changed while panel was hidden.
-            SwitchTab(_activeTab);
+            PopulateAll();
         }
 
         void OnDisable()
@@ -175,21 +159,7 @@ namespace CosmicShore.UI
         public void Show()
         {
             gameObject.SetActive(true);
-            SwitchTab(_activeTab);
-        }
-
-        /// <summary>Opens the panel directly to the Online tab.</summary>
-        public void ShowOnlineTab()
-        {
-            gameObject.SetActive(true);
-            SwitchTab(Tab.Online);
-        }
-
-        /// <summary>Opens the panel directly to the Requests tab (e.g. on invite received).</summary>
-        public void ShowRequestsTab()
-        {
-            gameObject.SetActive(true);
-            SwitchTab(Tab.Requests);
+            PopulateAll();
         }
 
         public void Hide()
@@ -197,34 +167,26 @@ namespace CosmicShore.UI
             gameObject.SetActive(false);
         }
 
+        // Back-compat aliases for scene-wired UnityEvents that still reference
+        // the old tab-switching entry points. Both just open the panel.
+        public void ShowOnlineTab() => Show();
+        public void ShowRequestsTab() => Show();
+
         #endregion
 
-        #region Tab Switching
+        #region Rendering
 
-        void SwitchTab(Tab tab)
+        void PopulateAll()
         {
-            _activeTab = tab;
-
-            SetCanvasGroupActive(onlineCanvasGroup, tab == Tab.Online);
-            SetCanvasGroupActive(requestsCanvasGroup, tab == Tab.Requests);
-
-            if (tab == Tab.Online) PopulateOnlineTab();
-            else PopulateRequestsTab();
-        }
-
-        static void SetCanvasGroupActive(CanvasGroup cg, bool active)
-        {
-            if (!cg) return;
-            cg.alpha = active ? 1f : 0f;
-            cg.blocksRaycasts = active;
-            cg.interactable = active;
+            PopulateOnlineSection();
+            PopulateRequestsSection();
         }
 
         #endregion
 
-        #region Online Tab
+        #region Online Section
 
-        void PopulateOnlineTab()
+        void PopulateOnlineSection()
         {
             ClearSpawned(_spawnedOnline);
             if (!connectionData || !onlineContent || !onlineInfoPrefab) return;
@@ -311,7 +273,6 @@ namespace CosmicShore.UI
 
         void HandleOnlinePlayerChanged(PartyPlayerData player)
         {
-            if (_activeTab != Tab.Online) return;
             if (connectionData && player.PlayerId == connectionData.LocalPlayerId) return;
 
             // Upsert: refresh existing row if present, otherwise spawn.
@@ -324,31 +285,28 @@ namespace CosmicShore.UI
 
         void HandleOnlinePlayerRemoved(PartyPlayerData player)
         {
-            if (_activeTab != Tab.Online) return;
             RemoveEntryByPlayerId(_spawnedOnline, player.PlayerId);
         }
 
         void HandleOnlinePlayersCleared()
         {
-            if (_activeTab != Tab.Online) return;
             ClearSpawned(_spawnedOnline);
         }
 
         /// <summary>
-        /// When local party membership changes, re-render the online tab so the
+        /// When local party membership changes, re-render the online section so the
         /// "LOBBY FULL" and "invitable" states for every row update correctly.
         /// </summary>
         void HandlePartyMemberChanged(PartyPlayerData _)
         {
-            if (_activeTab == Tab.Online)
-                PopulateOnlineTab();
+            PopulateOnlineSection();
         }
 
         #endregion
 
-        #region Requests Tab
+        #region Requests Section
 
-        void PopulateRequestsTab()
+        void PopulateRequestsSection()
         {
             ClearSpawned(_spawnedRequests);
             if (!requestsContent || !requestInfoPrefab) return;
@@ -396,13 +354,11 @@ namespace CosmicShore.UI
 
         void HandleIncomingFriendRequestAdded(FriendData request)
         {
-            if (_activeTab != Tab.Requests) return;
             SpawnFriendRequestEntry(request);
         }
 
         void HandleIncomingFriendRequestRemoved(FriendData request)
         {
-            if (_activeTab != Tab.Requests) return;
             RemoveRequestEntryByKind(request.PlayerId, RequestInfoEntry.Kind.FriendRequest);
         }
 
@@ -414,13 +370,10 @@ namespace CosmicShore.UI
             // Play notification sound.
             AudioSystem.Instance?.PlayMenuAudio(inviteReceivedAudio);
 
-            if (_activeTab == Tab.Requests)
-            {
-                // If a row already exists for this sender, leave it (refresh of existing entry).
-                var existing = FindEntryByPlayerId<RequestInfoEntry>(_spawnedRequests, invite.HostPlayerId);
-                if (existing == null)
-                    SpawnPartyInviteEntry(invite);
-            }
+            // If a row already exists for this sender, leave it (refresh of existing entry).
+            var existing = FindEntryByPlayerId<RequestInfoEntry>(_spawnedRequests, invite.HostPlayerId);
+            if (existing == null)
+                SpawnPartyInviteEntry(invite);
         }
 
         #endregion
@@ -429,16 +382,14 @@ namespace CosmicShore.UI
 
         void HandleFriendAdded(FriendData friend)
         {
-            // Online tab may need to hide the add-friend button — re-populate.
-            if (_activeTab == Tab.Online)
-                PopulateOnlineTab();
+            // Online section may need to hide the add-friend button — re-populate.
+            PopulateOnlineSection();
         }
 
         void HandleFriendRemoved(FriendData friend)
         {
-            // Online tab needs the add-friend button back.
-            if (_activeTab == Tab.Online)
-                PopulateOnlineTab();
+            // Online section needs the add-friend button back.
+            PopulateOnlineSection();
         }
 
         #endregion
