@@ -25,7 +25,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Multiplier applied to goalUpdateInterval per CellAggressionLevel: [Level0, Level1, Level2]. " +
                  "Lower values = faster relocation to targeted region under stress.")]
         [SerializeField] float[] goalUpdateIntervalByAggression = { 1f, 0.55f, 0.25f };
+        [Tooltip("Each fauna picks a stable random offset on a sphere of this radius and adds it " +
+                 "to its resolved goal. Prevents the whole pack from converging onto a single point " +
+                 "(e.g. the crystal at origin), which otherwise creates a visible depletion zone " +
+                 "where fauna repeatedly consume spawn-on-impact prism configurations.")]
+        [SerializeField] float goalOrbitRadius = 60f;
         public Vector3 Goal;
+
+        // Stable per-instance offset so each fauna orbits its resolved goal at a different
+        // point. Seeded once at Start from the fauna's domain + instance id so the spread
+        // is deterministic per spawn but varied across the pack.
+        Vector3 _goalOrbitOffset;
 
         // --- ILifeFormEntity ---
         public Domains Domain => domain;
@@ -37,6 +47,8 @@ namespace CosmicShore.Gameplay
         {
             if (domain == Domains.Unassigned)
                 CSDebug.LogWarning($"{name}: Population domain is Unassigned. Assign it before spawning, or set it on the prefab.");
+
+            _goalOrbitOffset = Random.onUnitSphere * Mathf.Max(0f, goalOrbitRadius);
 
             StartCoroutine(UpdateGoalCoroutine());
         }
@@ -75,6 +87,10 @@ namespace CosmicShore.Gameplay
         ///   Level0 - head toward the cell's crystal
         ///   Level1 - head toward the nearest opposing-color centroid
         ///   Level2 - head toward the nearest centroid of ANY color
+        ///
+        /// A per-instance orbit offset is added so the pack spreads around the target
+        /// instead of piling onto a single point. Level 2 skips the offset — at berserk
+        /// aggression we want tight convergence onto the densest cleanup target.
         /// </summary>
         protected virtual Vector3 ResolveGoal()
         {
@@ -88,13 +104,14 @@ namespace CosmicShore.Gameplay
                 case CellAggressionLevel.Level1:
                     // GetExplosionTarget(domain) finds the densest region of blocks
                     // that are NOT of this domain - the nearest opposing centroid.
-                    return cell.GetExplosionTarget(domain);
+                    return cell.GetExplosionTarget(domain) + _goalOrbitOffset;
 
                 case CellAggressionLevel.Level0:
                 default:
-                    if (cellData && cellData.CrystalTransform)
-                        return cellData.CrystalTransform.position;
-                    return cell.transform.position;
+                    Vector3 anchor = cellData && cellData.CrystalTransform
+                        ? cellData.CrystalTransform.position
+                        : cell.transform.position;
+                    return anchor + _goalOrbitOffset;
             }
         }
 

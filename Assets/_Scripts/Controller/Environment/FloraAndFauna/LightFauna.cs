@@ -34,6 +34,24 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // The body rig is composed of nested HealthPrism prefab instances
+            // (e.g. MassBrittlestarFauna embeds DynamicHealthBlock children). They
+            // start at local scale 0 and only grow to their authored target scale
+            // when Prism.Initialize fires the scale animator. LifeForm does this
+            // automatically via BindEmbeddedParts, but LightFauna does not extend
+            // LifeForm — so without this step the brittlestar renders as a cluster
+            // of invisible prisms. We recolor them to the fauna's domain first, then
+            // kick off the growth animation. LifeForm is intentionally NOT set so
+            // these body prisms don't register with Cell as consumable targets.
+            var bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+            for (int i = 0; i < bodyPrisms.Length; i++)
+            {
+                var hp = bodyPrisms[i];
+                if (!hp) continue;
+                hp.ChangeTeam(domain);
+                hp.Initialize("FaunaPrefab");
+            }
+
             float minSpeed = Mathf.Max(0f, data.minSpeed);
             float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
 
