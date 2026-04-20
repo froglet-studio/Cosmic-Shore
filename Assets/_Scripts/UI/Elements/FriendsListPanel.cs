@@ -18,7 +18,7 @@ namespace CosmicShore.UI
     ///               the invite button; yellowish tint while the invite is pending.
     ///   • Requests — incoming friend requests AND incoming party invites combined.
     ///
-    /// Each tab has its own refresh button. Sound plays when a party invite is received.
+    /// Sound plays when a party invite is received.
     /// </summary>
     public class FriendsListPanel : MonoBehaviour
     {
@@ -35,10 +35,6 @@ namespace CosmicShore.UI
         [Header("Tab Roots (CanvasGroup per tab)")]
         [SerializeField] private CanvasGroup onlineCanvasGroup;
         [SerializeField] private CanvasGroup requestsCanvasGroup;
-
-        [Header("Per-Tab Refresh Buttons")]
-        [SerializeField] private Button onlineRefreshButton;
-        [SerializeField] private Button requestsRefreshButton;
 
         [Header("Prefabs")]
         [SerializeField] private OnlineInfoEntry onlineInfoPrefab;
@@ -86,11 +82,6 @@ namespace CosmicShore.UI
 
             if (closeButton)
                 closeButton.onClick.AddListener(Hide);
-
-            if (onlineRefreshButton)
-                onlineRefreshButton.onClick.AddListener(HandleOnlineRefresh);
-            if (requestsRefreshButton)
-                requestsRefreshButton.onClick.AddListener(HandleRequestsRefresh);
         }
 
         void OnEnable()
@@ -574,40 +565,6 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Decline party invite failed: {e.Message}");
             }
-        }
-
-        async void HandleOnlineRefresh()
-        {
-            if (onlineRefreshButton) onlineRefreshButton.interactable = false;
-
-            // The HostConnectionService refresh loop polls the presence lobby
-            // every ~3s. We can just force a quick re-render; backend data will
-            // catch up on the next automatic tick. If you need an immediate
-            // force-refresh, the service could expose a public method later.
-            PopulateOnlineTab();
-
-            // Small delay so the button click has visible feedback.
-            await System.Threading.Tasks.Task.Delay(250);
-
-            if (onlineRefreshButton) onlineRefreshButton.interactable = true;
-        }
-
-        async void HandleRequestsRefresh()
-        {
-            if (requestsRefreshButton) requestsRefreshButton.interactable = false;
-
-            if (friendsService != null)
-            {
-                try { await friendsService.RefreshAsync(); }
-                catch (System.Exception e)
-                {
-                    CSDebug.LogWarning($"[FriendsListPanel] Refresh failed: {e.Message}");
-                }
-            }
-
-            PopulateRequestsTab();
-
-            if (requestsRefreshButton) requestsRefreshButton.interactable = true;
         }
 
         #endregion
