@@ -515,7 +515,21 @@ namespace CosmicShore.Gameplay
             ResetRegulationState();
         }
 
-        public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();
+        public Vector3 GetExplosionTarget(Domains domain)
+        {
+            if (!countGrids.TryGetValue(domain, out var grid) || grid == null)
+                return GetCellAnchorPosition();
+
+            var region = grid.FindDensestRegion();
+            // Empty grids return the grid's bottom-left-back corner (origin minus
+            // totalLength/2), which pulls every fauna that queries an empty grid
+            // toward the world-space -x/-y/-z corner and causes them to cluster
+            // far from any actual prism. Guard by reading back the density at the
+            // returned point; if it's zero the grid had nothing to find.
+            if (grid.GetDensityAtPosition(region) <= 0)
+                return GetCellAnchorPosition();
+            return region;
+        }
 
         /// <summary>
         /// Densest region across all domain grids (color-agnostic). Used by fauna at
@@ -525,8 +539,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Vector3 GetPrimaryCentroid()
         {
-            Vector3 best = transform.position;
-            int bestDensity = -1;
+            Vector3 best = GetCellAnchorPosition();
+            int bestDensity = 0;
             foreach (var kvp in countGrids)
             {
                 var grid = kvp.Value;
@@ -540,7 +554,21 @@ namespace CosmicShore.Gameplay
                     best = region;
                 }
             }
+            // If no grid had any density, bestDensity stays 0 and we return the cell
+            // anchor (crystal or cell transform) — keeping fauna near the cell
+            // instead of drifting toward the empty-grid corner fallback.
             return best;
+        }
+
+        /// <summary>
+        /// Safe fallback position for goal resolution when density grids are empty:
+        /// the local crystal if one exists, otherwise the cell's own transform.
+        /// </summary>
+        Vector3 GetCellAnchorPosition()
+        {
+            if (runtime != null && runtime.CrystalTransform)
+                return runtime.CrystalTransform.position;
+            return transform.position;
         }
 
         public bool ContainsPosition(Vector3 position)
