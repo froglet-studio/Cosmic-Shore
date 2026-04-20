@@ -6,11 +6,10 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Row entry for the Online tab of FriendsListPanel.
+    /// Row entry for the Online section of FriendsListPanel.
     /// Shows avatar, username, lobby/match status, and acts as the invite button
     /// (the row background is the button). Click sends an invite, tinting the row
     /// yellowish until the target accepts/declines/times out.
-    /// Also has a separate Add Friend button hidden when already friends.
     /// </summary>
     public class OnlineInfoEntry : MonoBehaviour
     {
@@ -18,7 +17,6 @@ namespace CosmicShore.UI
         [SerializeField] private Image avatarIcon;
         [SerializeField] private TMP_Text usernameText;
         [SerializeField] private TMP_Text labelText;
-        [SerializeField] private Image labelStatus;
 
         [Header("Invite (whole-row button)")]
         [Tooltip("The row background image. Acts as the invite button and receives " +
@@ -27,11 +25,7 @@ namespace CosmicShore.UI
         [Tooltip("Button on the row background. Click sends an invite.")]
         [SerializeField] private Button inviteButton;
 
-        [Header("Add Friend")]
-        [SerializeField] private Button addFriendButton;
-        [SerializeField] private GameObject pendingState;
-
-        [Header("Status Colors")]
+        [Header("Status Colors (applied to Label Text)")]
         [SerializeField] private Color onlineColor = Color.white;
         [SerializeField] private Color inLobbyColor = new(0.4f, 0.8f, 1f, 1f);
         [SerializeField] private Color inMatchColor = new(0.9f, 0.2f, 0.2f, 1f);
@@ -48,7 +42,6 @@ namespace CosmicShore.UI
         public enum Status { Online, InLobby, InMatch, LobbyFull }
 
         string _playerId;
-        Action<string> _onAddFriend;
         Action<string> _onInvite;
         bool _invitable;
 
@@ -64,8 +57,6 @@ namespace CosmicShore.UI
         /// <param name="partyMemberCount">Members in their party (for InLobby/LobbyFull).</param>
         /// <param name="partyMaxSlots">Max party slots (for InLobby/LobbyFull rendering).</param>
         /// <param name="matchName">Match name text (for InMatch status).</param>
-        /// <param name="isAlreadyFriend">If true, Add Friend button is hidden.</param>
-        /// <param name="onAddFriend">Callback when Add Friend button is pressed (null hides it).</param>
         /// <param name="onInvite">Callback when the row background is clicked (null disables).</param>
         public void Populate(
             string playerId,
@@ -75,12 +66,9 @@ namespace CosmicShore.UI
             int partyMemberCount,
             int partyMaxSlots,
             string matchName,
-            bool isAlreadyFriend,
-            Action<string> onAddFriend,
             Action<string> onInvite)
         {
             _playerId = playerId;
-            _onAddFriend = onAddFriend;
             _onInvite = onInvite;
 
             if (usernameText)
@@ -108,20 +96,6 @@ namespace CosmicShore.UI
             }
 
             ApplyRowTint(_invitable ? defaultTint : disabledTint);
-
-            // Add Friend button — hidden if already a friend or no callback
-            if (addFriendButton)
-            {
-                bool showAdd = !isAlreadyFriend && onAddFriend != null;
-                addFriendButton.gameObject.SetActive(showAdd);
-                addFriendButton.interactable = true;
-                addFriendButton.onClick.RemoveAllListeners();
-                if (showAdd)
-                    addFriendButton.onClick.AddListener(HandleAddFriendClicked);
-            }
-
-            if (pendingState)
-                pendingState.SetActive(false);
         }
 
         public void SetStatus(Status status, int partyMemberCount = 0, int partyMaxSlots = 0, string matchName = null)
@@ -153,8 +127,11 @@ namespace CosmicShore.UI
                     break;
             }
 
-            if (labelText) labelText.text = text;
-            if (labelStatus) labelStatus.color = color;
+            if (labelText)
+            {
+                labelText.text = text;
+                labelText.color = color;
+            }
         }
 
         /// <summary>
@@ -174,22 +151,9 @@ namespace CosmicShore.UI
             ApplyRowTint(_invitable ? defaultTint : disabledTint);
         }
 
-        public void ResetAddFriendState()
-        {
-            if (addFriendButton) addFriendButton.interactable = true;
-            if (pendingState) pendingState.SetActive(false);
-        }
-
         void ApplyRowTint(Color c)
         {
             if (backgroundImage) backgroundImage.color = c;
-        }
-
-        void HandleAddFriendClicked()
-        {
-            if (addFriendButton) addFriendButton.interactable = false;
-            if (pendingState) pendingState.SetActive(true);
-            _onAddFriend?.Invoke(_playerId);
         }
 
         void HandleInviteClicked()

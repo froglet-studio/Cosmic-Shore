@@ -102,17 +102,10 @@ namespace CosmicShore.UI
                     connectionData.OnPartyMemberKicked.OnRaised += HandlePartyMemberChanged;
             }
 
-            if (friendsData)
+            if (friendsData && friendsData.IncomingRequests != null)
             {
-                if (friendsData.OnFriendAdded != null)
-                    friendsData.OnFriendAdded.OnRaised += HandleFriendAdded;
-                if (friendsData.OnFriendRemoved != null)
-                    friendsData.OnFriendRemoved.OnRaised += HandleFriendRemoved;
-                if (friendsData.IncomingRequests != null)
-                {
-                    friendsData.IncomingRequests.OnItemAdded += HandleIncomingFriendRequestAdded;
-                    friendsData.IncomingRequests.OnItemRemoved += HandleIncomingFriendRequestRemoved;
-                }
+                friendsData.IncomingRequests.OnItemAdded += HandleIncomingFriendRequestAdded;
+                friendsData.IncomingRequests.OnItemRemoved += HandleIncomingFriendRequestRemoved;
             }
         }
 
@@ -138,17 +131,10 @@ namespace CosmicShore.UI
                     connectionData.OnPartyMemberKicked.OnRaised -= HandlePartyMemberChanged;
             }
 
-            if (friendsData)
+            if (friendsData && friendsData.IncomingRequests != null)
             {
-                if (friendsData.OnFriendAdded != null)
-                    friendsData.OnFriendAdded.OnRaised -= HandleFriendAdded;
-                if (friendsData.OnFriendRemoved != null)
-                    friendsData.OnFriendRemoved.OnRaised -= HandleFriendRemoved;
-                if (friendsData.IncomingRequests != null)
-                {
-                    friendsData.IncomingRequests.OnItemAdded -= HandleIncomingFriendRequestAdded;
-                    friendsData.IncomingRequests.OnItemRemoved -= HandleIncomingFriendRequestRemoved;
-                }
+                friendsData.IncomingRequests.OnItemAdded -= HandleIncomingFriendRequestAdded;
+                friendsData.IncomingRequests.OnItemRemoved -= HandleIncomingFriendRequestRemoved;
             }
         }
 
@@ -209,9 +195,6 @@ namespace CosmicShore.UI
 
         void PopulateOnlineEntry(OnlineInfoEntry entry, PartyPlayerData player)
         {
-            bool isFriend = friendsService != null && friendsService.IsInitialized
-                && friendsService.IsFriend(player.PlayerId);
-
             var status = ResolveRemoteStatus(player, out int memberCount, out int maxSlots, out string matchName);
 
             entry.Populate(
@@ -222,8 +205,6 @@ namespace CosmicShore.UI
                 memberCount,
                 maxSlots,
                 matchName,
-                isFriend,
-                onAddFriend: OnAddFriendClicked,
                 onInvite: OnInviteClicked);
 
             // Preserve pending-invite tint if we have an outgoing invite in flight.
@@ -378,45 +359,7 @@ namespace CosmicShore.UI
 
         #endregion
 
-        #region Friend Added/Removed Handlers
-
-        void HandleFriendAdded(FriendData friend)
-        {
-            // Online section may need to hide the add-friend button — re-populate.
-            PopulateOnlineSection();
-        }
-
-        void HandleFriendRemoved(FriendData friend)
-        {
-            // Online section needs the add-friend button back.
-            PopulateOnlineSection();
-        }
-
-        #endregion
-
         #region Action Handlers
-
-        async void OnAddFriendClicked(string playerId)
-        {
-            if (friendsService == null || !friendsService.IsInitialized)
-            {
-                ToastNotificationAPI.Show("Friends service not ready. Try again shortly.");
-                FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetAddFriendState();
-                return;
-            }
-
-            try
-            {
-                await friendsService.SendFriendRequestAsync(playerId);
-                ToastNotificationAPI.Show("Friend request sent!");
-            }
-            catch (System.Exception e)
-            {
-                CSDebug.LogWarning($"[FriendsListPanel] Failed to send friend request: {e.Message}");
-                ToastNotificationAPI.Show($"Failed to send request: {e.Message}");
-                FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetAddFriendState();
-            }
-        }
 
         async void OnInviteClicked(string playerId)
         {

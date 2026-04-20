@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Row entry for the Requests tab of FriendsListPanel.
+    /// Row entry for the Requests section of FriendsListPanel.
     /// Handles both friend requests and incoming party invites.
     /// Shows avatar, name, status label (e.g. "PARTY INVITE" / "FRIEND REQUEST"),
     /// and Accept/Decline buttons.
@@ -19,14 +19,12 @@ namespace CosmicShore.UI
         [SerializeField] private Image avatarIcon;
         [SerializeField] private TMP_Text usernameText;
         [SerializeField] private TMP_Text labelText;
-        [SerializeField] private Image labelStatus;
 
         [Header("Actions")]
         [SerializeField] private Button acceptButton;
         [SerializeField] private Button declineButton;
-        [SerializeField] private GameObject pendingState;
 
-        [Header("Status Colors")]
+        [Header("Status Colors (applied to Label Text)")]
         [SerializeField] private Color friendRequestColor = Color.white;
         [SerializeField] private Color partyInviteColor = new(1f, 0.85f, 0.2f, 1f);
         [SerializeField] private Color expiringSoonColor = new(0.9f, 0.3f, 0.2f, 1f);
@@ -97,9 +95,6 @@ namespace CosmicShore.UI
                 declineButton.onClick.AddListener(HandleDeclineClicked);
             }
 
-            if (pendingState)
-                pendingState.SetActive(false);
-
             UpdateStatusLabel();
         }
 
@@ -122,24 +117,23 @@ namespace CosmicShore.UI
 
         void UpdateStatusLabel()
         {
+            if (!labelText) return;
+
             string label = _kind == Kind.PartyInvite ? "PARTY INVITE" : "FRIEND REQUEST";
             Color baseColor = _kind == Kind.PartyInvite ? partyInviteColor : friendRequestColor;
 
-            if (labelText) labelText.text = label;
+            labelText.text = label;
 
-            if (labelStatus)
+            // Shift toward expiring-soon color as the timer runs out.
+            if (_expirationSeconds > 0f)
             {
-                // Shift toward expiring-soon color as the timer runs out.
-                if (_expirationSeconds > 0f)
-                {
-                    float elapsed = Time.unscaledTime - _receivedTime;
-                    float t = Mathf.Clamp01(elapsed / _expirationSeconds);
-                    labelStatus.color = Color.Lerp(baseColor, expiringSoonColor, t);
-                }
-                else
-                {
-                    labelStatus.color = baseColor;
-                }
+                float elapsed = Time.unscaledTime - _receivedTime;
+                float t = Mathf.Clamp01(elapsed / _expirationSeconds);
+                labelText.color = Color.Lerp(baseColor, expiringSoonColor, t);
+            }
+            else
+            {
+                labelText.color = baseColor;
             }
         }
 
