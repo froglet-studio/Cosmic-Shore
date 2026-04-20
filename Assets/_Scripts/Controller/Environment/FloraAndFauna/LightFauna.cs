@@ -100,7 +100,12 @@ namespace CosmicShore.Gameplay
 
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
             {
-                Goal = cellData && cellData.CrystalTransform ? cellData.CrystalTransform.position : cell.transform.position;
+                if (cellData && cellData.CrystalTransform)
+                    Goal = cellData.CrystalTransform.position;
+                else if (cell != null)
+                    Goal = cell.transform.position;
+                else
+                    Goal = transform.position;
             }
 
             Vector3 goalDirection = (Goal - transform.position).normalized;

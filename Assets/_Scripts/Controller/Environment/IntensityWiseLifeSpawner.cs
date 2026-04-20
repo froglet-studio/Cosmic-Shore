@@ -97,11 +97,30 @@ namespace CosmicShore.Gameplay
             var spawnProfile = config.SpawnProfile;
             if (!spawnProfile) yield break;
             if (spawnProfile.SupportedFaunas is not { Count: > 0 })
+            {
+                // Fail loud: empty SupportedFaunas is almost always a data-wiring mistake.
+                // Without this warning fauna silently never spawn (as happened in Menu_Main).
+                CSDebug.LogWarning($"[IntensityWiseLifeSpawner] '{config.name}' SpawnProfile has no SupportedFaunas wired; fauna will never spawn in this cell.");
                 yield break;
+            }
 
             foreach (var faunaCfg in spawnProfile.SupportedFaunas)
             {
-                if (!faunaCfg || !faunaCfg.FaunaPrefab) continue;
+                if (!faunaCfg)
+                {
+                    CSDebug.LogWarning($"[IntensityWiseLifeSpawner] '{config.name}' has a null FaunaConfigurationSO entry in SupportedFaunas.");
+                    continue;
+                }
+                if (!faunaCfg.FaunaPrefab)
+                {
+                    CSDebug.LogWarning($"[IntensityWiseLifeSpawner] FaunaConfiguration '{faunaCfg.name}' has no FaunaPrefab; skipping.");
+                    continue;
+                }
+                if (faunaCfg.SpawnProbability <= 0f)
+                {
+                    CSDebug.LogWarning($"[IntensityWiseLifeSpawner] FaunaConfiguration '{faunaCfg.name}' has SpawnProbability <= 0; fauna of this type will never roll true. Set to 1 to always spawn.");
+                    continue;
+                }
                 Track(host, SpawnFaunaTypeLoop(host, runtime, spawnProfile, faunaCfg));
             }
         }

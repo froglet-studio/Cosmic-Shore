@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
   m_Name: Blob Fauna Config Data
-  m_EditorClassIdentifier: 
-  FaunaPrefab: {fileID: 0}
+  m_EditorClassIdentifier:
+  FaunaPrefab: {fileID: 1594903950002975183, guid: cf5d9d162b969ed4e92bf8388c703723, type: 3}
   InitialSpawnCount: 0
-  SpawnProbability: 0
+  SpawnProbability: 1
