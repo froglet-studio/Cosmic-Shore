@@ -29,6 +29,14 @@ namespace CosmicShore.UI
         /// <summary>Whether this is the local player's slot (slot 0).</summary>
         public bool IsLocalPlayer => _isLocalPlayer;
 
+        /// <summary>Underlying GameObject of the display-name text — used by
+        /// container widgets to detect shared-reference wiring bugs.</summary>
+        public GameObject DisplayNameTextGO => displayNameText ? displayNameText.gameObject : null;
+
+        /// <summary>Underlying GameObject of the avatar icon — used by
+        /// container widgets to detect shared-reference wiring bugs.</summary>
+        public GameObject AvatarIconGO => avatarIcon ? avatarIcon.gameObject : null;
+
         /// <summary>
         /// Configures this slot as the local player's slot.
         /// The add button is always hidden; avatar and name are shown.

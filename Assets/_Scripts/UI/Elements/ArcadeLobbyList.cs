@@ -65,6 +65,33 @@ namespace CosmicShore.UI
                     slot.BindAddButton(OnAddSlotPressed);
                 }
             }
+
+            WarnOnSharedSlotReferences();
+        }
+
+        // Detect scene-wiring bugs where two FriendInfoSlot instances share the
+        // same internal UI child references. When that happens, the last-iterated
+        // slot wins — so an empty slot's ClearSlot can overwrite an occupied
+        // slot's SetPlayer. PopulateSlots compensates with a two-pass (clear
+        // first, then set) ordering, but we also log here so future scene edits
+        // don't reintroduce the problem silently.
+        void WarnOnSharedSlotReferences()
+        {
+            if (slots == null) return;
+            for (int i = 0; i < slots.Length; i++)
+            {
+                var a = slots[i];
+                if (a == null) continue;
+                for (int j = i + 1; j < slots.Length; j++)
+                {
+                    var b = slots[j];
+                    if (b == null || a == b) continue;
+                    if (ReferenceEquals(a.DisplayNameTextGO, b.DisplayNameTextGO) && a.DisplayNameTextGO != null)
+                        Debug.LogWarning($"[ArcadeLobbyList] slots[{i}] and slots[{j}] share the same displayNameText GameObject. Rewire in the scene — names will not render correctly for both slots.", this);
+                    if (ReferenceEquals(a.AvatarIconGO, b.AvatarIconGO) && a.AvatarIconGO != null)
+                        Debug.LogWarning($"[ArcadeLobbyList] slots[{i}] and slots[{j}] share the same avatarIcon GameObject. Rewire in the scene — avatars will not render correctly for both slots.", this);
+                }
+            }
         }
 
         void OnEnable()
@@ -168,7 +195,25 @@ namespace CosmicShore.UI
                 }
             }
 
+            // Two-pass population: clear empty slots FIRST, then populate
+            // occupied slots. If the scene wiring accidentally shares a
+            // TMP_Text or Image GameObject between two slots, the occupied
+            // slot's SetPlayer / SetAsLocalPlayer activation runs last and
+            // wins over the empty slot's ClearSlot deactivation — so the
+            // visible name/avatar survive the shared-reference case.
             int slotCount = Mathf.Min(slots.Length, MAX_SLOTS);
+            for (int i = 0; i < slotCount; i++)
+            {
+                var slot = slots[i];
+                if (slot == null) continue;
+
+                if (i == 0) continue; // local slot is always occupied
+
+                int remoteIdx = i - 1;
+                if (remoteIdx >= remoteMembers.Count)
+                    slot.ClearSlot();
+            }
+
             for (int i = 0; i < slotCount; i++)
             {
                 var slot = slots[i];
@@ -185,10 +230,6 @@ namespace CosmicShore.UI
                 {
                     var member = remoteMembers[remoteIdx];
                     slot.SetPlayer(member.PlayerId, member.DisplayName, ResolveAvatar(member.AvatarId));
-                }
-                else
-                {
-                    slot.ClearSlot();
                 }
             }
         }
