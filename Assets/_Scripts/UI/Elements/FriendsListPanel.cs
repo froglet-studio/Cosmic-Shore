@@ -71,8 +71,51 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            ValidateSceneWiring();
+            RehydratePendingInviteFromService();
             SubscribeSoap();
             PopulateAll();
+        }
+
+        /// <summary>
+        /// Loud diagnostic for scene wiring gaps. Catches the case where
+        /// <see cref="onlineContent"/> / <see cref="requestsContent"/> were
+        /// left unassigned in the inspector, which silently swallows every
+        /// spawned row and leaves the panel looking empty.
+        /// </summary>
+        void ValidateSceneWiring()
+        {
+            if (onlineContent == null)
+                Debug.LogError($"[FriendsListPanel] onlineContent is null on '{name}'. " +
+                               "Online rows will NOT render. Wire the Content RectTransform " +
+                               "of the Online ScrollRect in the inspector.", this);
+            if (requestsContent == null)
+                Debug.LogError($"[FriendsListPanel] requestsContent is null on '{name}'. " +
+                               "Request rows will NOT render. Wire the Content RectTransform " +
+                               "of the Requests ScrollRect in the inspector.", this);
+            if (onlineInfoPrefab == null)
+                Debug.LogError($"[FriendsListPanel] onlineInfoPrefab is null on '{name}'.", this);
+            if (requestInfoPrefab == null)
+                Debug.LogError($"[FriendsListPanel] requestInfoPrefab is null on '{name}'.", this);
+        }
+
+        /// <summary>
+        /// Pulls the most recently-received, still-unresolved party invite from
+        /// <see cref="HostConnectionService.LastPendingInvite"/> and seeds it
+        /// into <see cref="_pendingPartyInvites"/>. This closes the gap where
+        /// an invite arrived while the panel was hidden — without this, the
+        /// OnEnable SOAP subscription would have missed the event and the
+        /// rendered Requests section would be empty on first open.
+        /// </summary>
+        void RehydratePendingInviteFromService()
+        {
+            var service = HostConnectionService.Instance;
+            if (service == null) return;
+
+            var pending = service.LastPendingInvite;
+            if (!pending.HasValue) return;
+
+            _pendingPartyInvites[pending.Value.HostPlayerId] = pending.Value;
         }
 
         void OnDisable()

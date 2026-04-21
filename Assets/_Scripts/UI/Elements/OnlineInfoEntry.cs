@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,7 +10,7 @@ namespace CosmicShore.UI
     /// Row entry for the Online section of FriendsListPanel.
     /// Shows avatar, username, lobby/match status, and acts as the invite button
     /// (the row background is the button). Click sends an invite, tinting the row
-    /// yellowish until the target accepts/declines/times out.
+    /// yellowish and pulsing until the target accepts/declines/times out.
     /// </summary>
     public class OnlineInfoEntry : MonoBehaviour
     {
@@ -34,16 +35,39 @@ namespace CosmicShore.UI
         [Header("Row Tints")]
         [Tooltip("Background tint when no invite is pending.")]
         [SerializeField] private Color defaultTint = Color.white;
-        [Tooltip("Background tint while an invite is in-flight (awaiting response).")]
-        [SerializeField] private Color pendingInviteTint = new(1f, 0.85f, 0.2f, 1f);
+        [Tooltip("Background tint while an invite is in-flight (awaiting response). Pulses between this and pendingInviteTintBright.")]
+        [SerializeField] private Color pendingInviteTint = new(1f, 0.75f, 0.1f, 1f);
+        [Tooltip("Bright end of the pending-tint pulse.")]
+        [SerializeField] private Color pendingInviteTintBright = new(1f, 0.95f, 0.5f, 1f);
         [Tooltip("Background tint when this row cannot be invited (in-match / lobby-full).")]
         [SerializeField] private Color disabledTint = new(0.35f, 0.35f, 0.35f, 1f);
+
+        [Header("Pending Pulse")]
+        [Tooltip("Seconds for one full pulse cycle (default→bright→default).")]
+        [SerializeField] private float pendingPulsePeriodSeconds = 1.1f;
+        [Tooltip("Text label shown while invite is pending.")]
+        [SerializeField] private string pendingRequestLabel = "PENDING REQUEST";
+
+        [Header("Entry Animation")]
+        [Tooltip("Seconds to fade in on spawn (uses CanvasGroup if present).")]
+        [SerializeField] private float entryFadeInSeconds = 0.25f;
+        [Tooltip("Duration of the invite-click punch scale.")]
+        [SerializeField] private float invitePressPunchSeconds = 0.2f;
+        [Tooltip("Scale multiplier at the peak of the invite-click punch.")]
+        [SerializeField] private float invitePressPunchScale = 1.08f;
 
         public enum Status { Online, InLobby, InMatch, LobbyFull }
 
         string _playerId;
         Action<string> _onInvite;
         bool _invitable;
+        Status _lastStatus;
+        int _lastPartyMemberCount;
+        int _lastPartyMaxSlots;
+        string _lastMatchName;
+        bool _isPending;
+        Coroutine _pulseCoroutine;
+        CanvasGroup _canvasGroup;
 
         public string PlayerId => _playerId;
 
@@ -95,10 +119,27 @@ namespace CosmicShore.UI
                     inviteButton.onClick.AddListener(HandleInviteClicked);
             }
 
+            // Reset visual pending state when re-populating (unless
+            // FriendsListPanel explicitly re-applies it via SetInvitePending).
+            StopPulse();
+            _isPending = false;
             ApplyRowTint(_invitable ? defaultTint : disabledTint);
         }
 
         public void SetStatus(Status status, int partyMemberCount = 0, int partyMaxSlots = 0, string matchName = null)
+        {
+            _lastStatus = status;
+            _lastPartyMemberCount = partyMemberCount;
+            _lastPartyMaxSlots = partyMaxSlots;
+            _lastMatchName = matchName;
+
+            // While pending, the label is overridden — don't clobber it.
+            if (_isPending) return;
+
+            ApplyStatusLabel(status, partyMemberCount, partyMaxSlots, matchName);
+        }
+
+        void ApplyStatusLabel(Status status, int partyMemberCount, int partyMaxSlots, string matchName)
         {
             string text;
             Color color;
@@ -135,20 +176,98 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Marks the row as "invite pending" — tints the background yellowish and
-        /// disables further invite clicks until reset.
+        /// Marks the row as "invite pending" — tints the background yellowish,
+        /// swaps the label to "PENDING REQUEST", starts the pulse animation,
+        /// and disables further invite clicks until reset.
         /// </summary>
         public void SetInvitePending()
         {
             if (inviteButton) inviteButton.interactable = false;
-            ApplyRowTint(pendingInviteTint);
+
+            _isPending = true;
+
+            if (labelText)
+            {
+                labelText.text = pendingRequestLabel;
+                labelText.color = pendingInviteTintBright;
+            }
+
+            StopPulse();
+            if (isActiveAndEnabled)
+                _pulseCoroutine = StartCoroutine(PulsePending());
+            else
+                ApplyRowTint(pendingInviteTint);
         }
 
         /// <summary>Restores the row to its post-populate state.</summary>
         public void ResetInviteState()
         {
+            StopPulse();
+            _isPending = false;
+
             if (inviteButton) inviteButton.interactable = _invitable;
             ApplyRowTint(_invitable ? defaultTint : disabledTint);
+
+            // Restore the proper status label.
+            ApplyStatusLabel(_lastStatus, _lastPartyMemberCount, _lastPartyMaxSlots, _lastMatchName);
+        }
+
+        IEnumerator PulsePending()
+        {
+            float period = Mathf.Max(0.1f, pendingPulsePeriodSeconds);
+            float elapsed = 0f;
+
+            while (_isPending)
+            {
+                // sin wave 0→1→0 over the period.
+                float t = 0.5f * (1f + Mathf.Sin((elapsed / period) * Mathf.PI * 2f - Mathf.PI * 0.5f));
+                ApplyRowTint(Color.Lerp(pendingInviteTint, pendingInviteTintBright, t));
+
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+
+        void StopPulse()
+        {
+            if (_pulseCoroutine != null)
+            {
+                StopCoroutine(_pulseCoroutine);
+                _pulseCoroutine = null;
+            }
+        }
+
+        void OnEnable()
+        {
+            if (_isPending && _pulseCoroutine == null)
+                _pulseCoroutine = StartCoroutine(PulsePending());
+
+            StartCoroutine(FadeIn());
+        }
+
+        void OnDisable()
+        {
+            StopPulse();
+        }
+
+        IEnumerator FadeIn()
+        {
+            if (entryFadeInSeconds <= 0f) yield break;
+
+            if (!_canvasGroup)
+                _canvasGroup = GetComponent<CanvasGroup>();
+            if (!_canvasGroup) yield break;
+
+            _canvasGroup.alpha = 0f;
+
+            float elapsed = 0f;
+            while (elapsed < entryFadeInSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                _canvasGroup.alpha = Mathf.Clamp01(elapsed / entryFadeInSeconds);
+                yield return null;
+            }
+            _canvasGroup.alpha = 1f;
         }
 
         void ApplyRowTint(Color c)
@@ -159,8 +278,36 @@ namespace CosmicShore.UI
         void HandleInviteClicked()
         {
             if (!_invitable) return;
+            StartCoroutine(PunchScale(transform));
             SetInvitePending();
             _onInvite?.Invoke(_playerId);
+        }
+
+        IEnumerator PunchScale(Transform target)
+        {
+            if (!target) yield break;
+
+            Vector3 baseScale = target.localScale;
+            Vector3 peakScale = baseScale * Mathf.Max(1.01f, invitePressPunchScale);
+            float half = Mathf.Max(0.02f, invitePressPunchSeconds * 0.5f);
+            float elapsed = 0f;
+
+            while (elapsed < half && target)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                target.localScale = Vector3.Lerp(baseScale, peakScale, elapsed / half);
+                yield return null;
+            }
+            if (!target) yield break;
+
+            elapsed = 0f;
+            while (elapsed < half && target)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                target.localScale = Vector3.Lerp(peakScale, baseScale, elapsed / half);
+                yield return null;
+            }
+            if (target) target.localScale = baseScale;
         }
     }
 }

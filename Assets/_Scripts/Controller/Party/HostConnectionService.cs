@@ -63,6 +63,14 @@ namespace CosmicShore.Gameplay
         private bool _joining;
         private bool _leaving;
         private PartyInviteData? _lastFiredInvite;
+        /// <summary>
+        /// Set when the user has answered <see cref="_lastFiredInvite"/> (accept or decline).
+        /// Kept alongside _lastFiredInvite so the SDK-side dedup guard (which compares
+        /// PartySessionId) still suppresses repeated SOAP raises during the window where
+        /// the sender's lobby properties are still stale, while UI queries via
+        /// <see cref="LastPendingInvite"/> correctly report "no pending invite".
+        /// </summary>
+        private bool _lastInviteResolved;
         private string _currentInviteTargetId;
         private ILogHandler _originalLogHandler;
         private Task _creatingPartySessionTask;
@@ -245,7 +253,10 @@ namespace CosmicShore.Gameplay
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (scene.name == "Menu_Main")
+            {
                 _lastFiredInvite = null;
+                _lastInviteResolved = false;
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -389,6 +400,10 @@ namespace CosmicShore.Gameplay
 
         public async Task AcceptInviteAsync(PartyInviteData invite)
         {
+            // Mark resolved up-front so a re-opened FriendsListPanel doesn't
+            // re-spawn a row for the invite the user just accepted, even if
+            // _lastFiredInvite lingers for SDK-side dedup.
+            _lastInviteResolved = true;
             try
             {
                 SyncLocalIdentity();
@@ -424,6 +439,7 @@ namespace CosmicShore.Gameplay
         public async Task DeclineInviteAsync()
         {
             _lastFiredInvite = null;
+            _lastInviteResolved = true;
             await RequestClearInviteAsync();
         }
 
@@ -463,6 +479,19 @@ namespace CosmicShore.Gameplay
         }
 
         public ISession PartySession => _partySession;
+
+        /// <summary>
+        /// Most recently detected incoming party invite, or null if no invite is
+        /// currently pending. Cleared when the user accepts/declines (via
+        /// <see cref="AcceptInviteAsync"/> or <see cref="DeclineInviteAsync"/>)
+        /// or when Menu_Main reloads.
+        ///
+        /// UI panels that subscribe to <see cref="HostConnectionDataSO.OnInviteReceived"/>
+        /// via OnEnable should also read this on show, so invites that arrived while
+        /// the panel was hidden are not missed.
+        /// </summary>
+        public PartyInviteData? LastPendingInvite =>
+            _lastInviteResolved ? null : _lastFiredInvite;
 
         /// <summary>
         /// Clears the stale party session reference so the next refresh cycle
@@ -751,6 +780,8 @@ namespace CosmicShore.Gameplay
                                     $"(sessionId: {invite.Value.PartySessionId})",
                                     Color.green);
                                 _lastFiredInvite = invite;
+                                // Reset resolved flag: this is a fresh invite, not the one we last answered.
+                                _lastInviteResolved = false;
                                 connectionData.OnInviteReceived?.Raise(invite.Value);
                             }
                         }

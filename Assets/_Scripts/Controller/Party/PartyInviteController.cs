@@ -38,6 +38,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float sceneLoadTimeoutSeconds = 15f;
 
         [Inject] private GameDataSO gameData;
+        [Inject] private SceneTransitionManager sceneTransitionManager;
 
         private CancellationTokenSource _cts;
         private bool _transitioning;
@@ -103,6 +104,22 @@ namespace CosmicShore.Gameplay
             // Without this, LobbyPatcher crashes with ArgumentOutOfRangeException.
             PauseSystem.TogglePauseGame(false);
 
+            // Fade to black up-front so the shutdown → rejoin → scene-sync
+            // window happens behind a clean curtain instead of a visible hitch.
+            bool fadedOut = false;
+            try
+            {
+                if (sceneTransitionManager != null)
+                {
+                    await sceneTransitionManager.FadeToBlack();
+                    fadedOut = true;
+                }
+            }
+            catch (Exception fadeEx)
+            {
+                Debug.LogWarning($"[PartyInviteController] Fade-to-black failed: {fadeEx.Message}");
+            }
+
             try
             {
                 Debug.Log("[PartyInviteController] Starting accept flow...");
@@ -159,6 +176,18 @@ namespace CosmicShore.Gameplay
             finally
             {
                 _transitioning = false;
+
+                // Always fade back in so the user isn't left on a black screen
+                // if recovery ran or the flow finished on a different scene.
+                if (fadedOut && sceneTransitionManager != null)
+                {
+                    try { await sceneTransitionManager.FadeFromBlack(); }
+                    catch (Exception fadeEx)
+                    {
+                        Debug.LogWarning($"[PartyInviteController] Fade-from-black failed: {fadeEx.Message}");
+                        sceneTransitionManager.SetFadeImmediate(0f);
+                    }
+                }
             }
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -28,6 +29,16 @@ namespace CosmicShore.UI
         [SerializeField] private Color friendRequestColor = Color.white;
         [SerializeField] private Color partyInviteColor = new(1f, 0.85f, 0.2f, 1f);
         [SerializeField] private Color expiringSoonColor = new(0.9f, 0.3f, 0.2f, 1f);
+
+        [Header("Entry Animation")]
+        [Tooltip("Seconds to fade in on spawn (uses CanvasGroup if present).")]
+        [SerializeField] private float entryFadeInSeconds = 0.25f;
+        [Tooltip("Duration of the button press punch scale.")]
+        [SerializeField] private float buttonPressPunchSeconds = 0.18f;
+        [Tooltip("Scale multiplier at the peak of the button press punch.")]
+        [SerializeField] private float buttonPressPunchScale = 1.15f;
+
+        CanvasGroup _canvasGroup;
 
         string _playerId;
         Kind _kind;
@@ -142,6 +153,9 @@ namespace CosmicShore.UI
             if (_responded) return;
             _responded = true;
 
+            if (acceptButton)
+                StartCoroutine(PunchButtonScale(acceptButton.transform));
+
             SetButtonsInteractable(false);
             _onAccept?.Invoke(_playerId);
         }
@@ -151,11 +165,68 @@ namespace CosmicShore.UI
             if (_responded) return;
             _responded = true;
 
+            if (declineButton)
+                StartCoroutine(PunchButtonScale(declineButton.transform));
+
             SetButtonsInteractable(false);
             _onDecline?.Invoke(_playerId);
 
             // Destroy this entry after a short delay for visual feedback
             Destroy(gameObject, 0.3f);
+        }
+
+        void OnEnable()
+        {
+            StartCoroutine(FadeIn());
+        }
+
+        IEnumerator FadeIn()
+        {
+            if (entryFadeInSeconds <= 0f) yield break;
+
+            if (!_canvasGroup)
+                _canvasGroup = GetComponent<CanvasGroup>();
+            if (!_canvasGroup) yield break;
+
+            _canvasGroup.alpha = 0f;
+
+            float elapsed = 0f;
+            while (elapsed < entryFadeInSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                _canvasGroup.alpha = Mathf.Clamp01(elapsed / entryFadeInSeconds);
+                yield return null;
+            }
+            _canvasGroup.alpha = 1f;
+        }
+
+        IEnumerator PunchButtonScale(Transform target)
+        {
+            if (!target) yield break;
+
+            Vector3 baseScale = target.localScale;
+            Vector3 peakScale = baseScale * Mathf.Max(1.01f, buttonPressPunchScale);
+            float half = Mathf.Max(0.02f, buttonPressPunchSeconds * 0.5f);
+            float elapsed = 0f;
+
+            // Up
+            while (elapsed < half && target)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                target.localScale = Vector3.Lerp(baseScale, peakScale, elapsed / half);
+                yield return null;
+            }
+            if (!target) yield break;
+
+            elapsed = 0f;
+            // Down
+            while (elapsed < half && target)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                target.localScale = Vector3.Lerp(peakScale, baseScale, elapsed / half);
+                yield return null;
+            }
+            if (target) target.localScale = baseScale;
         }
 
         void SetButtonsInteractable(bool interactable)
