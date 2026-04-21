@@ -139,8 +139,7 @@ namespace CosmicShore.Core
             PlayerPrefs.SetString(InitializedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
             PlayerPrefs.Save();
 
-            dailyChallenge = FetchDailyChallenge();
-            if (dailyChallenge == null)
+            if (!TryFetchDailyChallenge(out dailyChallenge))
                 return;
 
             if (Arcade.Instance == null)
@@ -159,8 +158,10 @@ namespace CosmicShore.Core
             ShipResources = LoadGameResourceCollection(DailyGame);
         }
 
-        DailyChallenge FetchDailyChallenge()
+        bool TryFetchDailyChallenge(out DailyChallenge challenge)
         {
+            challenge = default;
+
             // Guard against the Arcade singleton or its training game list not being
             // ready yet. Without these checks a fresh launch where the Arcade scene /
             // SO isn't fully wired throws a NullReferenceException during startup
@@ -168,14 +169,14 @@ namespace CosmicShore.Core
             if (Arcade.Instance == null || Arcade.Instance.TrainingGames == null)
             {
                 CSDebug.LogWarning("[DailyChallengeSystem] Arcade or TrainingGames not ready — daily challenge unavailable.");
-                return null;
+                return false;
             }
 
             var trainingGames = Arcade.Instance.TrainingGames.Games;
             if (trainingGames == null || trainingGames.Count == 0)
             {
                 CSDebug.LogWarning("[DailyChallengeSystem] Training game list is empty — daily challenge unavailable.");
-                return null;
+                return false;
             }
 
             // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed
@@ -188,14 +189,15 @@ namespace CosmicShore.Core
             if (dailyGame == null || dailyGame.Game == null)
             {
                 CSDebug.LogWarning("[DailyChallengeSystem] Selected training game or its Game reference is null.");
-                return null;
+                return false;
             }
 
-            var challenge = new DailyChallenge();
-            challenge.GameMode = dailyGame.Game.Mode;
-            challenge.Intensity = random.Next(4);
-
-            return challenge;
+            challenge = new DailyChallenge
+            {
+                GameMode = dailyGame.Game.Mode,
+                Intensity = random.Next(4)
+            };
+            return true;
         }
 
         public void PlayDailyChallenge()
