@@ -1141,7 +1141,8 @@ namespace CosmicShore.Gameplay
                 int partyMax = 0;
                 string matchName = string.Empty;
 
-                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn))
+                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
+                    !string.IsNullOrEmpty(dn.Value))
                     displayName = dn.Value;
                 if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
                     int.TryParse(av.Value, out int parsedAv))
@@ -1304,7 +1305,8 @@ namespace CosmicShore.Gameplay
                 string displayName = "Unknown Pilot";
                 int avatarId = 0;
 
-                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn))
+                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
+                    !string.IsNullOrEmpty(dn.Value))
                     displayName = dn.Value;
                 if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
                     int.TryParse(av.Value, out int parsed))

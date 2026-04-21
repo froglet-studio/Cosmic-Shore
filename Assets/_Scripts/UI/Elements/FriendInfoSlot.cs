@@ -125,10 +125,14 @@ namespace CosmicShore.UI
         {
             if (!displayNameText) return;
 
-            bool hasName = !string.IsNullOrEmpty(name);
-            displayNameText.text = name ?? string.Empty;
-            displayNameText.enabled = hasName;
-            displayNameText.gameObject.SetActive(hasName);
+            // Occupied slot — always surface *something* so the text GameObject
+            // doesn't stay inactive and swallow the label. Empty/null names can
+            // arrive transiently when a remote member's DISPLAY_NAME_KEY
+            // property is still propagating; show a "Pilot" placeholder until
+            // the next party refresh overwrites it.
+            displayNameText.text = string.IsNullOrEmpty(name) ? "Pilot" : name;
+            displayNameText.enabled = true;
+            displayNameText.gameObject.SetActive(true);
         }
     }
 }
