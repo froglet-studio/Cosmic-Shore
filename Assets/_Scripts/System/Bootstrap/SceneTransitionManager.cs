@@ -96,6 +96,12 @@ namespace CosmicShore.Core
 
             _isTransitioning = true;
 
+            // Guard against _cts being null (e.g. if OnDestroy ran on a stale instance
+            // during shutdown). Without this, _cts.Token below would NRE and leave the
+            // fade overlay stuck opaque with the scene never loading.
+            if (_cts == null)
+                _cts = new CancellationTokenSource();
+
             try
             {
                 var ct = _cts.Token;
@@ -103,7 +109,20 @@ namespace CosmicShore.Core
                 if (fadeOut)
                     await FadeAsync(0f, 1f, ct);
 
-                await SceneManager.LoadSceneAsync(sceneName).ToUniTask(cancellationToken: ct);
+                var op = SceneManager.LoadSceneAsync(sceneName);
+                if (op == null)
+                {
+                    // Unity returns null when the scene isn't in build settings or when
+                    // called at a disallowed lifecycle moment. Fall back to a synchronous
+                    // load so we never leave the player staring at a black overlay.
+                    Debug.LogError($"[SceneTransition] SceneManager.LoadSceneAsync('{sceneName}') " +
+                                   "returned null. Falling back to synchronous load.");
+                    SceneManager.LoadScene(sceneName);
+                }
+                else
+                {
+                    await op.ToUniTask(cancellationToken: ct);
+                }
 
                 // Let the new scene's Awake/Start complete.
                 if (_postLoadSettleDelay > 0f)
@@ -120,6 +139,25 @@ namespace CosmicShore.Core
                     await FadeAsync(1f, 0f, ct);
             }
             catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SceneTransition] LoadSceneAsync failed for '{sceneName}': {ex}. " +
+                               "Clearing overlay and attempting direct load.");
+
+                // Clear the overlay so the user isn't stuck on a black screen.
+                SetFadeImmediate(0f);
+
+                // If the target scene hasn't loaded yet, try a plain synchronous load.
+                if (SceneManager.GetActiveScene().name != sceneName)
+                {
+                    try { SceneManager.LoadScene(sceneName); }
+                    catch (Exception loadEx)
+                    {
+                        Debug.LogError($"[SceneTransition] Synchronous fallback also failed for " +
+                                       $"'{sceneName}': {loadEx}");
+                    }
+                }
+            }
             finally
             {
                 _isTransitioning = false;
@@ -139,6 +177,9 @@ namespace CosmicShore.Core
             }
 
             _isTransitioning = true;
+
+            if (_cts == null)
+                _cts = new CancellationTokenSource();
 
             try
             {
@@ -202,13 +243,20 @@ namespace CosmicShore.Core
         /// Fade the overlay to fully opaque (black screen).
         /// </summary>
         public async UniTask FadeToBlack()
-            => await FadeAsync(0f, 1f, _cts.Token);
+            => await FadeAsync(0f, 1f, EnsureCtsToken());
 
         /// <summary>
         /// Fade the overlay to fully transparent (reveal scene).
         /// </summary>
         public async UniTask FadeFromBlack()
-            => await FadeAsync(1f, 0f, _cts.Token);
+            => await FadeAsync(1f, 0f, EnsureCtsToken());
+
+        CancellationToken EnsureCtsToken()
+        {
+            if (_cts == null)
+                _cts = new CancellationTokenSource();
+            return _cts.Token;
+        }
 
         /// <summary>
         /// Set the overlay alpha immediately without animation.

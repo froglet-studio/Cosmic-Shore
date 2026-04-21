@@ -508,11 +508,35 @@ namespace CosmicShore.Core
 
             if (_sceneTransitionManager != null && !_sceneTransitionManager.IsTransitioning)
             {
-                _sceneTransitionManager.LoadSceneAsync(menuScene).Forget();
+                LoadMainMenuDirectWithFallbackAsync(menuScene).Forget();
             }
             else
             {
                 SceneManager.LoadScene(menuScene);
+            }
+        }
+
+        /// <summary>
+        /// Runs the SceneTransitionManager fade+load for Menu_Main, but guarantees
+        /// a synchronous fallback if the transition throws — otherwise a failure
+        /// inside LoadSceneAsync would leave the user stuck on a black overlay.
+        /// </summary>
+        async UniTaskVoid LoadMainMenuDirectWithFallbackAsync(string menuScene)
+        {
+            try
+            {
+                await _sceneTransitionManager.LoadSceneAsync(menuScene);
+            }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] SceneTransitionManager load failed: {ex.Message}. " +
+                    "Loading Menu_Main synchronously.");
+
+                if (_sceneTransitionManager != null)
+                    _sceneTransitionManager.SetFadeImmediate(0f);
+
+                if (SceneManager.GetActiveScene().name != menuScene)
+                    SceneManager.LoadScene(menuScene);
             }
         }
     }

@@ -140,20 +140,57 @@ namespace CosmicShore.Core
             PlayerPrefs.Save();
 
             dailyChallenge = FetchDailyChallenge();
+            if (dailyChallenge == null)
+                return;
+
+            if (Arcade.Instance == null)
+            {
+                CSDebug.LogWarning("[DailyChallengeSystem] Arcade singleton not available — skipping daily game setup.");
+                return;
+            }
+
             DailyGame = Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
+            if (DailyGame == null)
+            {
+                CSDebug.LogWarning($"[DailyChallengeSystem] No training game found for mode {dailyChallenge.GameMode} — skipping resource setup.");
+                return;
+            }
+
             ShipResources = LoadGameResourceCollection(DailyGame);
         }
 
         DailyChallenge FetchDailyChallenge()
         {
-            // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed 
+            // Guard against the Arcade singleton or its training game list not being
+            // ready yet. Without these checks a fresh launch where the Arcade scene /
+            // SO isn't fully wired throws a NullReferenceException during startup
+            // and the failure bubbles up into the auth → menu flow.
+            if (Arcade.Instance == null || Arcade.Instance.TrainingGames == null)
+            {
+                CSDebug.LogWarning("[DailyChallengeSystem] Arcade or TrainingGames not ready — daily challenge unavailable.");
+                return null;
+            }
+
+            var trainingGames = Arcade.Instance.TrainingGames.Games;
+            if (trainingGames == null || trainingGames.Count == 0)
+            {
+                CSDebug.LogWarning("[DailyChallengeSystem] Training game list is empty — daily challenge unavailable.");
+                return null;
+            }
+
+            // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed
             DateTime currentDate = DateTime.UtcNow.Date;
             long dateTicks = currentDate.Ticks;
             var random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
 
-            var trainingGames = Arcade.Instance.TrainingGames.Games;
             var index = random.Next(trainingGames.Count);
             var dailyGame = trainingGames[index];
+            if (dailyGame == null || dailyGame.Game == null)
+            {
+                CSDebug.LogWarning("[DailyChallengeSystem] Selected training game or its Game reference is null.");
+                return null;
+            }
+
             var challenge = new DailyChallenge();
             challenge.GameMode = dailyGame.Game.Mode;
             challenge.Intensity = random.Next(4);
