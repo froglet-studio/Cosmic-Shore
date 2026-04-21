@@ -437,6 +437,17 @@ namespace CosmicShore.Core
                 var nm = NetworkManager.Singleton;
                 string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
 
+                // If HostConnectionService didn't produce a Relay host in time
+                // (UGS rate limits, Relay outage, etc.), start a plain local host
+                // so Menu_Main's networked spawning still works. HostConnectionService
+                // will shut this down and take over if it eventually succeeds with
+                // Relay (see HostConnectionService.CreatePartySessionCoreAsync).
+                if ((nm == null || !nm.IsListening) && TryStartLocalHostFallback())
+                {
+                    nm = NetworkManager.Singleton;
+                    CSDebug.LogWarning($"[AuthScene] Relay host unavailable — started local host fallback.");
+                }
+
                 if (nm != null && nm.IsListening)
                 {
                     CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
@@ -444,7 +455,7 @@ namespace CosmicShore.Core
                 }
                 else
                 {
-                    CSDebug.LogError($"[AuthScene] Host not running after startup attempt. " +
+                    CSDebug.LogError($"[AuthScene] No host could be started. " +
                         $"Loading {menuScene} directly — player spawning will not work.");
                     LoadMainMenuDirect();
                 }
@@ -460,14 +471,16 @@ namespace CosmicShore.Core
         /// <summary>
         /// Waits for the network host to become ready before Menu_Main is loaded.
         /// The host is started by <see cref="HostConnectionService"/> via a
-        /// Relay-backed party session. This method does NOT start a local host —
-        /// doing so caused a race where HostConnectionService would later shut
-        /// down the local host, create a Relay host, and reload Menu_Main a
-        /// second time.
+        /// Relay-backed party session.
         ///
-        /// If the host does not start within the timeout,
-        /// <see cref="LoadMainMenuNetworkedAsync"/> falls back to a direct
-        /// (non-networked) scene load.
+        /// If the host does not come up within the timeout,
+        /// <see cref="LoadMainMenuNetworkedAsync"/> invokes
+        /// <see cref="TryStartLocalHostFallback"/> to start a plain local host
+        /// so Menu_Main's networked vessel spawning still works. The previous
+        /// race — where a local host and a Relay host both tried to own the
+        /// NetworkManager — is now handled inside
+        /// <c>HostConnectionService.CreatePartySessionCoreAsync</c>, which
+        /// shuts down any running host before creating its Relay session.
         /// </summary>
         async UniTask EnsureHostStartedAsync(CancellationToken ct)
         {
@@ -496,9 +509,43 @@ namespace CosmicShore.Core
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
-                    CSDebug.LogWarning($"[AuthScene] Host did not start within {effectiveTimeout}s. " +
-                        "Falling back to direct scene load.");
+                    CSDebug.LogWarning($"[AuthScene] Relay host did not start within {effectiveTimeout}s. " +
+                        "Will try local host fallback.");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Starts a plain local host on the existing <see cref="NetworkManager"/>
+        /// as a last-resort fallback when HostConnectionService can't produce a
+        /// Relay host in time (e.g. UGS Multiplayer rate limits, Relay outage).
+        /// Returns true if the NetworkManager is listening after the call.
+        /// </summary>
+        static bool TryStartLocalHostFallback()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
+            {
+                CSDebug.LogWarning("[AuthScene] NetworkManager.Singleton is null — cannot start local host fallback.");
+                return false;
+            }
+
+            if (nm.IsListening)
+                return true;
+
+            try
+            {
+                if (!nm.StartHost())
+                {
+                    CSDebug.LogWarning("[AuthScene] NetworkManager.StartHost() returned false.");
+                    return false;
+                }
+                return nm.IsListening;
+            }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Local host fallback failed: {ex.Message}");
+                return false;
             }
         }
 
@@ -508,11 +555,35 @@ namespace CosmicShore.Core
 
             if (_sceneTransitionManager != null && !_sceneTransitionManager.IsTransitioning)
             {
-                _sceneTransitionManager.LoadSceneAsync(menuScene).Forget();
+                LoadMainMenuDirectWithFallbackAsync(menuScene).Forget();
             }
             else
             {
                 SceneManager.LoadScene(menuScene);
+            }
+        }
+
+        /// <summary>
+        /// Runs the SceneTransitionManager fade+load for Menu_Main, but guarantees
+        /// a synchronous fallback if the transition throws — otherwise a failure
+        /// inside LoadSceneAsync would leave the user stuck on a black overlay.
+        /// </summary>
+        async UniTaskVoid LoadMainMenuDirectWithFallbackAsync(string menuScene)
+        {
+            try
+            {
+                await _sceneTransitionManager.LoadSceneAsync(menuScene);
+            }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] SceneTransitionManager load failed: {ex.Message}. " +
+                    "Loading Menu_Main synchronously.");
+
+                if (_sceneTransitionManager != null)
+                    _sceneTransitionManager.SetFadeImmediate(0f);
+
+                if (SceneManager.GetActiveScene().name != menuScene)
+                    SceneManager.LoadScene(menuScene);
             }
         }
     }
