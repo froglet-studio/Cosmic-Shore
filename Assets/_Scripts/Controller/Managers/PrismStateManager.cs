@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.speedDebuffAmount = 0.1f;
             prism.prismProperties.IsShielded = false;
 
-            materialAnimator.UpdateMaterial(
+            materialAnimator.SetMaterialImmediate(
                 _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Domain),
                 _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Domain)
             );
@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsSuperShielded = true;
             prism.prismProperties.IsDangerous = false;
 
-            materialAnimator.UpdateMaterial(
+            materialAnimator.SetMaterialImmediate(
                 _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Domain),
                 _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
             );
@@ -115,7 +115,15 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsShielded = true;
             prism.prismProperties.IsDangerous = false;
 
-            materialAnimator.UpdateMaterial(
+            // Immediate swap rather than animated. If the shield state is animated
+            // over 0.8s (the default UpdateMaterial duration), a prism that gets
+            // instantiated + shielded + consumed all inside that window is rendered
+            // with its *unshielded* sharedMaterial despite being logically shielded.
+            // That's exactly the failure mode seen on Squirrel-crystal explosion
+            // rings at the origin: fresh rings still showed the unshielded material
+            // because fauna consumed them before the 0.8s color blend could swap
+            // sharedMaterial in OnAnimationComplete.
+            materialAnimator.SetMaterialImmediate(
                 _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Domain),
                 _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
             );
@@ -133,7 +141,9 @@ namespace CosmicShore.Gameplay
         {
             var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
 
-            materialAnimator.UpdateMaterial(
+            // Same immediate-swap reasoning as ApplyShieldState — avoid the 0.8s
+            // color-blend window leaving prisms in an incorrect visual state.
+            materialAnimator.SetMaterialImmediate(
                 _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
                 _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
             );

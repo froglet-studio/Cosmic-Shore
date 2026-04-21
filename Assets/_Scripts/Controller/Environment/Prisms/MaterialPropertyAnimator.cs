@@ -175,7 +175,7 @@ namespace CosmicShore.Gameplay
             {
                 activeTransparentMaterial = transparentMaterial;
                 activeOpaqueMaterial = opaqueMaterial;
-                
+
                 if (MeshRenderer != null && cachedPrism != null &&
                     cachedPrism.prismProperties != null)
                 {
@@ -185,6 +185,37 @@ namespace CosmicShore.Gameplay
 
                 onComplete?.Invoke();
             };
+        }
+
+        /// <summary>
+        /// Synchronously swap sharedMaterial and update the cached active materials.
+        /// Bypasses the 0.8s color-blend animation run by MaterialStateManager — use
+        /// this when the visual state change must be immediate (e.g. shield engage
+        /// on a prism that may be consumed within a single fauna behavior tick).
+        /// </summary>
+        public void SetMaterialImmediate(Material transparentMaterial, Material opaqueMaterial)
+        {
+            if (!enabled || MeshRenderer == null) return;
+            if (transparentMaterial == null || opaqueMaterial == null) return;
+
+            activeTransparentMaterial = transparentMaterial;
+            activeOpaqueMaterial = opaqueMaterial;
+            materialsDirty = false;
+
+            bool useTransparent = cachedPrism != null
+                                  && cachedPrism.prismProperties != null
+                                  && cachedPrism.prismProperties.IsTransparent;
+
+            MeshRenderer.sharedMaterial = useTransparent ? transparentMaterial : opaqueMaterial;
+
+            // Kill any in-flight color animation so it doesn't overwrite the swap
+            // on the next MaterialStateManager tick.
+            if (IsAnimating)
+            {
+                IsAnimating = false;
+                AnimationProgress = 1f;
+                OnAnimationComplete = null;
+            }
         }
 
         public void SetTransparency(bool transparent)
