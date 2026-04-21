@@ -7,7 +7,8 @@ namespace CosmicShore.Gameplay
     {
         protected override void UpdateTimerUI()
         {
-            FixedString32Bytes message = GetTimeToDisplay(); 
+            if (!IsSpawned || !IsServer) return;
+            FixedString32Bytes message = GetTimeToDisplay();
             UpdateTimerUI_ClientRpc(message);
         }
 

@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Reflex.Injectors;
 using Unity.Netcode;
@@ -37,6 +39,12 @@ namespace CosmicShore.Gameplay
         [Header("AI Profiles")]
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
+
+        /// <summary>
+        /// Unified party domain computed by NormalizeHumanDomains. All humans in
+        /// the party are forced onto this domain so teammate scoring works correctly.
+        /// </summary>
+        Domains _partyDomain = Domains.Unassigned;
 
         protected override void OnNetworkSpawn()
         {
@@ -254,6 +262,12 @@ namespace CosmicShore.Gameplay
         /// Ensures all human players share one team.
         /// The first human's chosen domain is respected (even if it's Ruby or Gold).
         /// Called on the server before AI spawning so team counts are accurate.
+        ///
+        /// NOTE: NetDomain has Owner write permission, so direct server writes here
+        /// succeed only for the host's own Player. Remote clients' NetDomain stays
+        /// at its original value — the authoritative server-side unification happens
+        /// later in <see cref="UnifyHumanDomainAuthoritatively"/> after their
+        /// RoundStats has been initialized.
         /// </summary>
         void NormalizeHumanDomains(List<Player> humans)
         {
@@ -273,17 +287,68 @@ namespace CosmicShore.Gameplay
             if (partyDomain == Domains.Unassigned)
                 partyDomain = GameDataSO.TeamDomains[0];
 
-            // Assign all human players to the party domain
+            _partyDomain = partyDomain;
+
+            // Best-effort NetDomain write. Succeeds for host (IsOwner on server);
+            // fails silently for remote clients. Remote unification is completed
+            // in UnifyHumanDomainAuthoritatively via ClientRpc + direct RoundStats write.
             foreach (var player in humans)
             {
-                if (player.NetDomain.Value != partyDomain)
+                if (player.NetDomain.Value != partyDomain && player.IsOwner)
                 {
-                    Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: Reassigning {player.NetName.Value} from {player.NetDomain.Value} to {partyDomain}</color>");
+                    Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: Reassigning host {player.NetName.Value} from {player.NetDomain.Value} to {partyDomain}</color>");
                     player.NetDomain.Value = partyDomain;
                 }
             }
 
             Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeHumanDomains: {humans.Count} humans → domain={partyDomain}, teamCount={gameData.RequestedTeamCount}</color>");
+        }
+
+        /// <summary>
+        /// Server-authoritative domain unification for a single human player.
+        /// Called after <see cref="Player.InitializeForMultiplayerMode"/> has run on the
+        /// server so <see cref="RoundStats"/> exists and its server-write NetworkVariable
+        /// replicates cleanly to clients.
+        ///
+        /// Three writes:
+        ///   1. <c>player.SetDomain</c> — server-side Player.Domain property
+        ///   2. <c>player.RoundStats.Domain</c> — server-side write to n_Domain
+        ///      NetworkVariable; clients read replicated value via OnValueChanged
+        ///   3. <c>ApplyAuthoritativeDomain_ClientRpc</c> — asks the owning client
+        ///      to rewrite its own NetDomain so its local UI (domain color,
+        ///      in-game score card) matches the unified team
+        /// </summary>
+        void UnifyHumanDomainAuthoritatively(Player player)
+        {
+            if (player == null || player.NetIsAI.Value) return;
+            if (_partyDomain == Domains.Unassigned || _partyDomain == Domains.None) return;
+
+            if (player.Domain != _partyDomain)
+                player.SetDomain(_partyDomain);
+
+            if (player.RoundStats != null && player.RoundStats.Domain != _partyDomain)
+                player.RoundStats.Domain = _partyDomain;
+
+            var hostClientId = NetworkManager.Singleton.LocalClientId;
+            if (player.OwnerClientId != hostClientId)
+            {
+                var rpcParams = new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { player.OwnerClientId } }
+                };
+                player.ApplyAuthoritativeDomain_ClientRpc(_partyDomain, rpcParams);
+            }
+        }
+
+        /// <summary>
+        /// Overrides base to unify the human's domain after the base-class spawn
+        /// and initialization chain finishes. This is the only point where the
+        /// server can reliably override a remote client's team assignment.
+        /// </summary>
+        protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
+        {
+            await base.OnPlayerReadyToSpawnAsync(player, ct);
+            UnifyHumanDomainAuthoritatively(player);
         }
 
         /// <summary>

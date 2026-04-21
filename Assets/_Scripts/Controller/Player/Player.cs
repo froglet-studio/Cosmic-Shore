@@ -44,6 +44,20 @@ namespace CosmicShore.Gameplay
         {
             Domain = newDomain;
         }
+
+        /// <summary>
+        /// Server → owner client: asks the owning client to write the given domain
+        /// into its own NetDomain. Required because NetDomain has Owner write permission,
+        /// so the server cannot directly update a remote client's value. Used by
+        /// ServerPlayerVesselInitializerWithAI to unify human party domains.
+        /// </summary>
+        [ClientRpc]
+        public void ApplyAuthoritativeDomain_ClientRpc(Domains domain, ClientRpcParams rpcParams = default)
+        {
+            if (!IsOwner) return;
+            if (NetDomain.Value != domain)
+                NetDomain.Value = domain;
+        }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
         public string PlayerUUID => Name;
