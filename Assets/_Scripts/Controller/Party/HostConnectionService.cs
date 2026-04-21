@@ -140,6 +140,15 @@ namespace CosmicShore.Gameplay
         private const float BOOSTED_REFRESH_INTERVAL_SECONDS = 1f;
         private const float BOOSTED_REFRESH_WINDOW_SECONDS = 15f;
 
+        /// <summary>
+        /// Max time to wait for <see cref="PlayerDataService.IsInitialized"/>
+        /// before joining the presence lobby. CloudSave usually resolves in
+        /// a few hundred ms, so 5s covers cold starts; if we time out we
+        /// proceed with the local default name and rely on the profile-change
+        /// republish to correct it.
+        /// </summary>
+        private const int PROFILE_INIT_TIMEOUT_MS = 5000;
+
         /// <summary>Last published party-size value so we only push on change.</summary>
         private int _publishedPartyCount = -1;
 
@@ -194,8 +203,22 @@ namespace CosmicShore.Gameplay
             // to find a running host, shut it down, and reload Menu_Main.
             if (_initialized || _joining) return;
 
+            // Wait for PlayerDataService to merge the cloud profile before
+            // joining the presence lobby — otherwise we advertise the local
+            // "Pilot{XXXX}" default name until the next profile-change event
+            // forces a republish (and remote players see a stale name in the
+            // meantime). Bounded so a slow CloudSave never blocks lobby join.
+            await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
+
             SyncLocalIdentity();
             await JoinPresenceLobbyAsync();
+
+            // Defensive republish: if the profile resolved *during*
+            // JoinPresenceLobbyAsync, HandleProfileChanged's republish was
+            // a no-op (lobby was still null at that moment). Do one more
+            // sync+republish now that the lobby exists.
+            SyncLocalIdentity();
+            RepublishLocalIdentityAsync().Forget();
 
             // Create Relay-backed party session so the NetworkManager starts as a
             // Relay host. Wrapped in try-catch so a Relay failure does not block
@@ -371,12 +394,24 @@ namespace CosmicShore.Gameplay
 
             SubscribeToProfileChanges();
             SubscribeToGameLaunch();
+
+            // Wait for PlayerDataService to merge the cloud profile before
+            // SyncLocalIdentity freezes the display name — without this, a
+            // sign-in that beats cloud-save loading would advertise the local
+            // "Pilot{XXXX}" default until the next profile-change republish.
+            await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
             SyncLocalIdentity();
 
             _joining = true;
             try
             {
                 await JoinPresenceLobbyAsync();
+
+                // Catch late profile resolution (fired while _presenceLobby
+                // was still null inside JoinPresenceLobbyAsync) — re-read
+                // identity and push it to the just-joined lobby.
+                SyncLocalIdentity();
+                RepublishLocalIdentityAsync().Forget();
 
                 // Create Relay-backed party session so the NetworkManager starts as a
                 // Relay host. Failure is non-fatal — the presence lobby and refresh loop
@@ -1566,6 +1601,31 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Waits for <see cref="PlayerDataService.IsInitialized"/> (cloud
+        /// profile merge complete) or for the given timeout, whichever comes
+        /// first. No-ops if the service is null or already initialized.
+        /// </summary>
+        private async Task WaitForProfileInitAsync(int timeoutMs)
+        {
+            if (playerDataService == null) return;
+            if (playerDataService.IsInitialized) return;
+
+            int elapsed = 0;
+            const int stepMs = 100;
+            while (!playerDataService.IsInitialized && elapsed < timeoutMs)
+            {
+                await Task.Delay(stepMs);
+                elapsed += stepMs;
+            }
+
+            if (!playerDataService.IsInitialized)
+                Debug.LogWarning(
+                    $"[HostConnectionService] PlayerDataService.IsInitialized " +
+                    $"still false after {timeoutMs}ms — proceeding with local " +
+                    $"default identity; profile-change republish will correct it.");
+        }
 
         private void SyncLocalIdentity()
         {

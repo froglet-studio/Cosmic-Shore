@@ -102,6 +102,13 @@ namespace CosmicShore.UI
                 connectionData.OnPartyMemberLeft.OnRaised += HandlePartyMemberEvent;
             if (connectionData.OnPartyMemberKicked != null)
                 connectionData.OnPartyMemberKicked.OnRaised += HandlePartyMemberEvent;
+
+            // Refresh slot 0 when the cloud profile resolves — HostConnectionDataSO
+            // may have been populated with the local "Pilot{XXXX}" default at panel
+            // open time; without this, the local player's slot keeps stale text/avatar
+            // until the next party-member event forces a full repopulate.
+            if (PlayerDataService.Instance != null)
+                PlayerDataService.Instance.OnProfileChanged += HandleProfileChanged;
         }
 
         void UnsubscribeSoap()
@@ -128,6 +135,9 @@ namespace CosmicShore.UI
                 connectionData.OnPartyMemberLeft.OnRaised -= HandlePartyMemberEvent;
             if (connectionData.OnPartyMemberKicked != null)
                 connectionData.OnPartyMemberKicked.OnRaised -= HandlePartyMemberEvent;
+
+            if (PlayerDataService.Instance != null)
+                PlayerDataService.Instance.OnProfileChanged -= HandleProfileChanged;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -247,6 +257,14 @@ namespace CosmicShore.UI
             PopulateSlots();
             UpdateLeaveButtonState();
             UpdateOnlineStatus();
+        }
+
+        void HandleProfileChanged(PlayerProfileData _)
+        {
+            // Only slot 0 depends on local profile; other slots read from
+            // connectionData.PartyMembers which is owned by HostConnectionService.
+            if (slots == null || slots.Length == 0 || slots[0] == null) return;
+            PopulateLocalSlot(slots[0]);
         }
 
         // ─────────────────────────────────────────────────────────────────────

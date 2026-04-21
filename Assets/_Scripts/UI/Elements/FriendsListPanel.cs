@@ -326,9 +326,15 @@ namespace CosmicShore.UI
         /// <summary>
         /// When local party membership changes, re-render the online section so the
         /// "LOBBY FULL" and "invitable" states for every row update correctly.
+        /// Also clears any outgoing "PENDING REQUEST" tint for the player that just
+        /// joined — otherwise the sender's row stays stuck on the yellow pulse
+        /// even though the invite has been accepted.
         /// </summary>
-        void HandlePartyMemberChanged(PartyPlayerData _)
+        void HandlePartyMemberChanged(PartyPlayerData member)
         {
+            if (!string.IsNullOrEmpty(member.PlayerId))
+                _outgoingInvitePlayerIds.Remove(member.PlayerId);
+
             PopulateOnlineSection();
         }
 
