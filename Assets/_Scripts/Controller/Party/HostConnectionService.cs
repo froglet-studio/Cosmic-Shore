@@ -101,6 +101,26 @@ namespace CosmicShore.Gameplay
         private const string MATCH_NAME_KEY = "matchName";
 
         /// <summary>
+        /// Presence-lobby player property set by a client after
+        /// <see cref="AcceptInviteAsync"/> successfully joins the party session.
+        /// Value is the party session id.
+        ///
+        /// Exists as a fallback channel for the sender's
+        /// <see cref="RefreshPartyMembersAsync"/> path: UGS party-session
+        /// <c>RefreshAsync()</c> lags behind the actual join by a tick or
+        /// two, so the sender's PartyMembers list (and their
+        /// <c>partyCount</c> presence) would otherwise stay stale until the
+        /// next refresh. The sender's <see cref="RefreshAsync"/> also scans
+        /// presence-lobby players for this key and upserts matches into
+        /// PartyMembers immediately, which is what the UI (ArcadeLobbyList
+        /// etc.) keys off.
+        ///
+        /// Cleared when the client leaves the party or when the session is
+        /// cleared so stale joins don't bleed into future parties.
+        /// </summary>
+        private const string JOINED_PARTY_KEY = "joined_party";
+
+        /// <summary>
         /// Milliseconds to wait after creating a lobby before re-querying,
         /// giving a near-simultaneous second instance time to also create.
         /// If a rival lobby is detected, we merge into it.
@@ -117,6 +137,18 @@ namespace CosmicShore.Gameplay
         private const int RATE_LIMIT_MAX_RETRIES = 3;
         private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
         private float _rateLimitBackoffUntil;
+
+        /// <summary>
+        /// While <see cref="Time.unscaledTime"/> &lt; this value, the refresh
+        /// loop ticks at <see cref="BOOSTED_REFRESH_INTERVAL_SECONDS"/> instead
+        /// of <see cref="refreshIntervalSeconds"/>. Used after
+        /// <see cref="SendInviteAsync"/> so the sender's PartyMembers list
+        /// picks up the joining player within ~1s rather than 3s.
+        /// </summary>
+        private float _boostedRefreshUntil;
+
+        private const float BOOSTED_REFRESH_INTERVAL_SECONDS = 1f;
+        private const float BOOSTED_REFRESH_WINDOW_SECONDS = 15f;
 
         /// <summary>Last published party-size value so we only push on change.</summary>
         private int _publishedPartyCount = -1;
@@ -221,7 +253,10 @@ namespace CosmicShore.Gameplay
             }
 
             _refreshTimer += Time.unscaledDeltaTime;
-            if (_refreshTimer >= refreshIntervalSeconds)
+            float interval = Time.unscaledTime < _boostedRefreshUntil
+                ? BOOSTED_REFRESH_INTERVAL_SECONDS
+                : refreshIntervalSeconds;
+            if (_refreshTimer >= interval)
             {
                 _refreshTimer = 0f;
                 RefreshAsync().Forget();
@@ -423,6 +458,14 @@ namespace CosmicShore.Gameplay
                 // Push the next polling refresh a full interval out so we don't
                 // immediately hit the rate limit with a back-to-back request.
                 _refreshTimer = 0f;
+
+                // Boost the refresh cadence for a short window so the sender
+                // detects the invitee's joined_party presence (and the party
+                // session player list) within ~1s instead of ~3s. Critical for
+                // the arcade lobby list to populate promptly after a successful
+                // accept.
+                _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+
                 _lobbyBusy = false;
             }
         }
@@ -459,10 +502,73 @@ namespace CosmicShore.Gameplay
                 // Keep _lastFiredInvite set so the dedup guard prevents
                 // re-triggering if the host is slow to clear their properties.
                 Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
+
+                // Advertise this join on the presence lobby so the sender's
+                // RefreshAsync() picks us up even before their party-session
+                // Players list catches up. See JOINED_PARTY_KEY docstring.
+                PublishJoinedPartyAsync(invite.PartySessionId).Forget();
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] AcceptInvite error: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Writes <see cref="JOINED_PARTY_KEY"/> = sessionId to the presence
+        /// lobby so the party host can detect the join via their presence
+        /// refresh. Honors the <see cref="_lobbyBusy"/> mutex.
+        /// </summary>
+        private async UniTaskVoid PublishJoinedPartyAsync(string partySessionId)
+        {
+            if (_presenceLobby == null || string.IsNullOrEmpty(partySessionId)) return;
+
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
+            try
+            {
+                await _presenceLobby.RefreshAsync();
+                _presenceLobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
+                    new PlayerProperty(partySessionId, VisibilityPropertyOptions.Public));
+                await SaveWithRetryAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] PublishJoinedParty error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// Clears this client's <see cref="JOINED_PARTY_KEY"/> property so the
+        /// host's presence-scan no longer sees them as a member. Fire-and-forget
+        /// from leave/clear paths.
+        /// </summary>
+        private async UniTaskVoid ClearJoinedPartyAsync()
+        {
+            if (_presenceLobby == null) return;
+
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
+            try
+            {
+                await _presenceLobby.RefreshAsync();
+                _presenceLobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
+                    new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
+                await SaveWithRetryAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] ClearJoinedParty error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
             }
         }
 
@@ -514,6 +620,11 @@ namespace CosmicShore.Gameplay
                     connectionData.OnPartyMemberLeft.Raise(member);
                 }
             }
+
+            // If this client advertised a joined_party presence property,
+            // clear it so the host's presence scan stops treating us as a
+            // member as soon as we leave.
+            ClearJoinedPartyAsync().Forget();
 
             await controller.LeavePartyAndReturnToMenuAsync();
         }
@@ -584,6 +695,11 @@ namespace CosmicShore.Gameplay
             _lastFiredInvite = null;
             _hasReloadedMenuForRelay = false;
             connectionData.PartyMembers?.Clear();
+
+            // If we were a client advertising a joined party, clear that
+            // property so we don't get re-added to the stale host's party
+            // member list on their next presence scan.
+            ClearJoinedPartyAsync().Forget();
         }
 
         /// <summary>
@@ -844,6 +960,20 @@ namespace CosmicShore.Gameplay
                         var invite = ParseInvite(dataProp.Value);
                         if (invite.HasValue)
                         {
+                            // Suppress invites that point at a party we're already a
+                            // client in. Without this, the Menu_Main Netcode reload
+                            // (part of the accept flow) resets _lastFiredInvite, and
+                            // the next refresh would re-fire the same invite before
+                            // the sender has had a chance to clear their properties.
+                            if (_partySession != null &&
+                                !connectionData.IsHost &&
+                                _partySession.Id == invite.Value.PartySessionId)
+                            {
+                                _lastFiredInvite = invite;
+                                _lastInviteResolved = true;
+                                continue;
+                            }
+
                             bool isDuplicate = _lastFiredInvite.HasValue &&
                                 _lastFiredInvite.Value.PartySessionId == invite.Value.PartySessionId;
 
@@ -868,6 +998,14 @@ namespace CosmicShore.Gameplay
                         }
                     }
                 }
+
+                // ── Presence-lobby party-join scan (host only) ──────────────
+                // Clients advertise their party join via JOINED_PARTY_KEY so we
+                // can detect them even when the party-session Players list is
+                // still stale. This is the authoritative fast path for the
+                // sender's arcade lobby list.
+                if (_partySession != null && connectionData.IsHost)
+                    ScanPresenceForJoinedPartyMembers();
 
                 // ── Party session member tracking ───────────────────────────
                 if (_partySession != null)
@@ -982,6 +1120,75 @@ namespace CosmicShore.Gameplay
             {
                 if (!freshPlayerIds.Contains(connectionData.OnlinePlayers[i].PlayerId))
                     connectionData.OnlinePlayers.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
+        /// Host-side fallback that reads the presence lobby (not the party
+        /// session) looking for players advertising
+        /// <see cref="JOINED_PARTY_KEY"/> equal to our party session id.
+        /// Any match is upserted into <see cref="HostConnectionDataSO.PartyMembers"/>
+        /// and <see cref="HostConnectionDataSO.OnPartyMemberJoined"/> is raised.
+        ///
+        /// The UGS party-session <c>RefreshAsync</c> can lag the actual join by
+        /// a refresh tick; the presence lobby reflects the property change on
+        /// the next refresh. This keeps the sender's UI (arcade lobby list)
+        /// from showing a blank slot after a successful invite accept, and
+        /// also clears the stale invite properties as soon as the invited
+        /// player appears.
+        /// </summary>
+        private void ScanPresenceForJoinedPartyMembers()
+        {
+            if (_presenceLobby == null || _partySession == null) return;
+            if (connectionData.PartyMembers == null) return;
+
+            bool inviteTargetJoined = false;
+
+            foreach (var p in _presenceLobby.Players)
+            {
+                if (p.Id == connectionData.LocalPlayerId) continue;
+
+                if (!p.Properties.TryGetValue(JOINED_PARTY_KEY, out var joinedProp)) continue;
+                if (string.IsNullOrEmpty(joinedProp.Value)) continue;
+                if (joinedProp.Value != _partySession.Id) continue;
+
+                string displayName = "Unknown Pilot";
+                int avatarId = 0;
+
+                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
+                    !string.IsNullOrEmpty(dn.Value))
+                    displayName = dn.Value;
+                if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
+                    int.TryParse(av.Value, out int parsed))
+                    avatarId = parsed;
+
+                var memberData = new PartyPlayerData(p.Id, displayName, avatarId);
+
+                if (!connectionData.PartyMembers.Contains(memberData))
+                {
+                    connectionData.PartyMembers.Add(memberData);
+                    connectionData.OnPartyMemberJoined?.Raise(memberData);
+                    DebugExtensions.LogColored(
+                        $"[INVITE-SEND] Presence scan detected joined member '{displayName}' ({p.Id})",
+                        Color.green);
+
+                    if (p.Id == _currentInviteTargetId)
+                        inviteTargetJoined = true;
+                }
+            }
+
+            if (inviteTargetJoined)
+            {
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] Invited player '{_currentInviteTargetId}' joined via presence — clearing invite properties",
+                    Color.green);
+                _currentInviteTargetId = null;
+                // ClearSentInvitePropertiesAsync is safe to call from inside
+                // RefreshAsync (we already own _lobbyBusy) so fire it directly.
+                // Using discard instead of .Forget() because the method returns
+                // Task (not UniTaskVoid) and we don't want to depend on the
+                // UniTask Task-extension Forget being available.
+                _ = ClearSentInvitePropertiesAsync();
             }
         }
 
@@ -1364,6 +1571,31 @@ namespace CosmicShore.Gameplay
                 connectionData.LocalDisplayName = playerDataService.CurrentProfile.displayName;
                 connectionData.LocalAvatarId = playerDataService.CurrentProfile.avatarId;
             }
+
+            // Fallback chain so LocalDisplayName is NEVER empty when used to
+            // construct invite payloads or presence properties. Without this,
+            // an invite sent before the cloud profile resolves would reach the
+            // recipient with an empty host name and avatar id — causing the
+            // receiver's party slot to render blank (FriendInfoSlot disables
+            // the text label and avatar image when the string is empty).
+            if (string.IsNullOrEmpty(connectionData.LocalDisplayName))
+            {
+                try
+                {
+                    var ugsName = Unity.Services.Authentication.AuthenticationService.Instance?.PlayerName;
+                    if (!string.IsNullOrEmpty(ugsName))
+                    {
+                        int hashIndex = ugsName.LastIndexOf('#');
+                        connectionData.LocalDisplayName = hashIndex > 0
+                            ? ugsName.Substring(0, hashIndex)
+                            : ugsName;
+                    }
+                }
+                catch { /* best-effort — Authentication may not be initialized */ }
+            }
+
+            if (string.IsNullOrEmpty(connectionData.LocalDisplayName))
+                connectionData.LocalDisplayName = "Pilot";
         }
 
         /// <summary>
@@ -1503,6 +1735,7 @@ namespace CosmicShore.Gameplay
                 { PARTY_COUNT_KEY,  new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
                 { PARTY_MAX_KEY,    new PlayerProperty(partyMax.ToString(),   VisibilityPropertyOptions.Public) },
                 { MATCH_NAME_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                { JOINED_PARTY_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
         }
 
