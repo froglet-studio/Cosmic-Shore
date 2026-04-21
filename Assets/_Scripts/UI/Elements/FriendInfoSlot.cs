@@ -74,12 +74,14 @@ namespace CosmicShore.UI
             {
                 avatarIcon.sprite = null;
                 avatarIcon.enabled = false;
+                avatarIcon.gameObject.SetActive(false);
             }
 
             if (displayNameText)
             {
                 displayNameText.text = string.Empty;
                 displayNameText.enabled = false;
+                displayNameText.gameObject.SetActive(false);
             }
 
             if (addButton)
@@ -101,22 +103,32 @@ namespace CosmicShore.UI
         {
             if (!avatarIcon) return;
 
+            // Toggle the GameObject (not just Image.enabled) because empty-slot
+            // prefab instances ship with these children inactive so the "+" add
+            // button shows through a cleanly-laid-out empty cell. Without the
+            // GameObject flip, SetPlayer enables the Image component but the
+            // GameObject stays inactive and the avatar never appears.
             if (sprite)
             {
                 avatarIcon.sprite = sprite;
                 avatarIcon.enabled = true;
+                avatarIcon.gameObject.SetActive(true);
             }
             else
             {
                 avatarIcon.enabled = false;
+                avatarIcon.gameObject.SetActive(false);
             }
         }
 
         void SetDisplayName(string name)
         {
             if (!displayNameText) return;
+
+            bool hasName = !string.IsNullOrEmpty(name);
             displayNameText.text = name ?? string.Empty;
-            displayNameText.enabled = !string.IsNullOrEmpty(name);
+            displayNameText.enabled = hasName;
+            displayNameText.gameObject.SetActive(hasName);
         }
     }
 }
