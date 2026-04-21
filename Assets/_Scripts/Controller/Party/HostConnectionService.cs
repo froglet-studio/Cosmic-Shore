@@ -43,7 +43,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float refreshIntervalSeconds = 3f;
 
         [Inject] private PlayerDataService playerDataService;
-        [Inject] private SceneTransitionManager _sceneTransitionManager;
         [Inject] private GameDataSO _gameData;
 
         // ─────────────────────────────────────────────────────────────────────
@@ -81,15 +80,6 @@ namespace CosmicShore.Gameplay
         /// a refresh and a save race each other.
         /// </summary>
         private bool _lobbyBusy;
-
-        /// <summary>
-        /// Set after the first Relay party session creation triggers a Menu_Main
-        /// network-scene reload. Prevents subsequent recreations (e.g. after
-        /// returning from a game) from reloading the scene in an infinite loop.
-        /// Reset when ClearStalePartySession is called so the next fresh
-        /// session creation can reload once if needed.
-        /// </summary>
-        private bool _hasReloadedMenuForRelay;
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY = "displayName";
@@ -313,14 +303,12 @@ namespace CosmicShore.Gameplay
         ///
         /// IMPORTANT: <see cref="HostConnectionDataSO.PartyMembers"/> is an
         /// Obvious.Soap <c>ScriptableList</c>, which clears itself on every
-        /// <c>LoadSceneMode.Single</c> scene load. Any Netcode scene reload
-        /// (e.g. the Relay-host Menu_Main reload after party creation, or the
-        /// client's post-accept scene sync) therefore nukes the members list
-        /// seeded by <see cref="AcceptInviteAsync"/>. Repopulate from the
-        /// authoritative <c>_partySession.Players</c> so <c>ArcadeLobbyList</c>
-        /// renders the correct FriendInfo slots on both host and client
-        /// immediately after the scene settles — without waiting for the next
-        /// 3-second refresh tick.
+        /// <c>LoadSceneMode.Single</c> scene load. The invite flow no longer
+        /// triggers a Menu_Main reload, but returning to Menu_Main from a game
+        /// scene (<c>SceneLoader.ReturnToMainMenu</c>) still uses
+        /// <c>LoadSceneMode.Single</c> and wipes the list — so repopulate from
+        /// the authoritative <c>_partySession.Players</c> whenever Menu_Main
+        /// comes back into focus. Safe no-op when no party session exists.
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
@@ -744,7 +732,6 @@ namespace CosmicShore.Gameplay
             Debug.Log("[HostConnectionService] Clearing stale party session reference.");
             _partySession = null;
             _lastFiredInvite = null;
-            _hasReloadedMenuForRelay = false;
             connectionData.PartyMembers?.Clear();
 
             // If we were a client advertising a joined party, clear that
@@ -1402,17 +1389,13 @@ namespace CosmicShore.Gameplay
 
                     Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
 
-                    // Reload Menu_Main as a network scene so the new Relay host
-                    // serves it properly — but only on the first local→Relay
-                    // transition. Subsequent recreations (e.g. after returning
-                    // from a game) must NOT reload or we enter an infinite loop:
-                    // reload → Start() → recreate → reload → ...
-                    if (!_hasReloadedMenuForRelay)
-                    {
-                        _hasReloadedMenuForRelay = true;
-                        ReloadMenuSceneIfActive();
-                    }
-
+                    // NOTE: We intentionally do NOT reload Menu_Main as a network
+                    // scene here. Reloading caused a visible "big load time" and
+                    // broke in-menu state when a client joined (ScriptableList
+                    // OnSceneLoaded wipes PartyMembers on LoadSceneMode.Single).
+                    // The client's post-accept flow stays on its local Menu_Main;
+                    // existing NetworkObjects replicate via the normal connection-
+                    // approval spawn sync without any scene handshake.
                     return;
                 }
                 catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
@@ -1429,35 +1412,6 @@ namespace CosmicShore.Gameplay
                     await Task.Delay(delay);
                 }
             }
-        }
-
-        /// <summary>
-        /// After transitioning from local host to Relay host, reloads Menu_Main
-        /// via Netcode scene management so it is properly served to joining clients.
-        /// </summary>
-        private void ReloadMenuSceneIfActive()
-        {
-            var nm = NetworkManager.Singleton;
-            if (nm == null || !nm.IsListening || nm.SceneManager == null) return;
-
-            var activeScene = SceneManager.GetActiveScene();
-            if (activeScene.name == "Menu_Main")
-            {
-                Debug.Log("[HostConnectionService] Reloading Menu_Main as network scene (Relay host)...");
-                _sceneTransitionManager?.SetFadeImmediate(1f);
-
-                if (_gameData != null)
-                    _gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
-
-                nm.SceneManager.LoadScene("Menu_Main", LoadSceneMode.Single);
-            }
-        }
-
-        private void FadeFromSplashOnReady()
-        {
-            if (_gameData != null)
-                _gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
-            _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 
         /// <summary>

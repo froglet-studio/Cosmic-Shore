@@ -34,11 +34,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Max time (seconds) to wait for client connection after joining party session.")]
         [SerializeField] private float connectionTimeoutSeconds = 30f;
 
-        [Tooltip("Max time (seconds) to wait for the menu scene to load after connecting.")]
-        [SerializeField] private float sceneLoadTimeoutSeconds = 15f;
-
         [Inject] private GameDataSO gameData;
-        [Inject] private SceneTransitionManager sceneTransitionManager;
 
         private CancellationTokenSource _cts;
         private bool _transitioning;
@@ -76,13 +72,16 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Full accept flow:
-        ///   1. Clean up current game state (despawn vessels, reset data)
-        ///   2. Shutdown local NetworkManager host
-        ///   3. Join the inviter's party session via UGS (Relay transport auto-configures)
-        ///   4. Wait for Netcode client connection
-        ///   5. Host syncs Menu_Main scene and spawns our vessel via MenuServerPlayerVesselInitializer
-        ///   6. SOAP events update Party Area UI on all clients
+        /// Direct-join accept flow — no scene reload:
+        ///   1. Shutdown local NetworkManager host (UGS SDK will start a fresh Relay client)
+        ///   2. Join the inviter's party session via UGS (Relay transport auto-configures)
+        ///   3. Wait for Netcode client connection (best-effort)
+        ///   4. SOAP events update Party Area UI on all clients
+        ///
+        /// The host's Menu_Main is NOT reloaded via Netcode scene management, so the
+        /// client stays on its local Menu_Main. Existing NetworkObjects replicate via
+        /// the regular connection-approval spawn sync. A dedicated UI panel can be
+        /// layered over this flow later for richer transition UX.
         /// </summary>
         public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {
@@ -104,34 +103,19 @@ namespace CosmicShore.Gameplay
             // Without this, LobbyPatcher crashes with ArgumentOutOfRangeException.
             PauseSystem.TogglePauseGame(false);
 
-            // Fade to black up-front so the shutdown → rejoin → scene-sync
-            // window happens behind a clean curtain instead of a visible hitch.
-            bool fadedOut = false;
             try
             {
-                if (sceneTransitionManager != null)
-                {
-                    await sceneTransitionManager.FadeToBlack();
-                    fadedOut = true;
-                }
-            }
-            catch (Exception fadeEx)
-            {
-                Debug.LogWarning($"[PartyInviteController] Fade-to-black failed: {fadeEx.Message}");
-            }
+                Debug.Log("[PartyInviteController] Starting direct-join accept flow...");
 
-            try
-            {
-                Debug.Log("[PartyInviteController] Starting accept flow...");
-
-                // Step 1: Clean up current game state
-                CleanUpCurrentSession();
-
-                // Step 2: Shutdown local NetworkManager
+                // Step 1: Shutdown the local NetworkManager so the UGS SDK can
+                // start a fresh Relay client. Without this, StartClient fails
+                // because a host is already listening. We intentionally do NOT
+                // destroy the player/vessel or reset runtime data — the user
+                // stays in the menu and simply swaps transport.
                 await ShutdownNetworkManagerAsync(ct);
 
-                // Step 3: Join the inviter's party session via HostConnectionService
-                // JoinSessionByIdAsync with Relay auto-configures transport and starts client
+                // Step 2: Join the inviter's party session via HostConnectionService.
+                // JoinSessionByIdAsync with Relay auto-configures transport and starts client.
                 if (HostConnectionService.Instance == null)
                 {
                     Debug.LogError("[PartyInviteController] HostConnectionService not available.");
@@ -147,17 +131,15 @@ namespace CosmicShore.Gameplay
 
                 Debug.Log("[PartyInviteController] Joined party session via UGS.");
 
-                // Step 4: Wait for Netcode client connection
+                // Step 3: Wait for Netcode client connection. This does NOT wait
+                // for any scene reload — the client stays on the Menu_Main it's
+                // already running on. Spawn sync for existing NetworkObjects
+                // happens automatically on connection approval.
                 await WaitForClientConnectionAsync(ct);
                 Debug.Log("[PartyInviteController] Netcode client connected.");
 
-                // Step 5: Wait for scene sync (host loads Menu_Main for us)
-                await WaitForSceneLoadAsync(ct);
-                Debug.Log("[PartyInviteController] Menu scene loaded.");
-
-                // Step 6: Signal completion — SOAP events from the spawn chain
+                // Step 4: Signal completion — SOAP events from the spawn chain
                 // (OnPlayerNetworkSpawnedUlong, OnClientReady) handle the rest automatically.
-                // MenuServerPlayerVesselInitializer on host spawns our vessel in autopilot.
                 connectionData.OnPartyJoinCompleted?.Raise();
 
                 Debug.Log("[PartyInviteController] Accept flow completed successfully.");
@@ -176,18 +158,6 @@ namespace CosmicShore.Gameplay
             finally
             {
                 _transitioning = false;
-
-                // Always fade back in so the user isn't left on a black screen
-                // if recovery ran or the flow finished on a different scene.
-                if (fadedOut && sceneTransitionManager != null)
-                {
-                    try { await sceneTransitionManager.FadeFromBlack(); }
-                    catch (Exception fadeEx)
-                    {
-                        Debug.LogWarning($"[PartyInviteController] Fade-from-black failed: {fadeEx.Message}");
-                        sceneTransitionManager.SetFadeImmediate(0f);
-                    }
-                }
             }
         }
 
@@ -226,7 +196,15 @@ namespace CosmicShore.Gameplay
             {
                 Debug.Log("[PartyInviteController] Starting leave-lobby flow...");
 
-                CleanUpCurrentSession();
+                // Despawn any leftover game-state before swapping transports.
+                // This path is hit from the end-game scoreboard, so tearing
+                // down the player/vessel is correct — unlike AcceptInvite,
+                // which stays in the menu and keeps them intact.
+                if (gameData != null)
+                {
+                    gameData.DestroyPlayerAndVessel();
+                    gameData.ResetRuntimeData();
+                }
                 await ShutdownNetworkManagerAsync(ct);
 
                 // Clear the stale party session reference so HostConnectionService
@@ -290,14 +268,6 @@ namespace CosmicShore.Gameplay
         // Internal: Cleanup & Shutdown
         // ─────────────────────────────────────────────────────────────────────
 
-        private void CleanUpCurrentSession()
-        {
-            if (gameData == null) return;
-
-            gameData.DestroyPlayerAndVessel();
-            gameData.ResetRuntimeData();
-        }
-
         private async UniTask ShutdownNetworkManagerAsync(CancellationToken ct)
         {
             var nm = NetworkManager.Singleton;
@@ -352,72 +322,6 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning(
                     $"[PartyInviteController] Client connection not confirmed after {connectionTimeoutSeconds}s — proceeding anyway.");
-            }
-        }
-
-        private async UniTask WaitForSceneLoadAsync(CancellationToken ct)
-        {
-            var currentScene = SceneManager.GetActiveScene();
-            if (currentScene.name == "Menu_Main" && currentScene.isLoaded)
-            {
-                // Already on Menu_Main (stale, from before host shutdown).
-                // Netcode will reload it — wait for the sceneLoaded event
-                // so we don't return on the stale scene.
-                var tcs = new UniTaskCompletionSource();
-
-                void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-                {
-                    if (scene.name == "Menu_Main")
-                        tcs.TrySetResult();
-                }
-
-                SceneManager.sceneLoaded += OnSceneLoaded;
-                try
-                {
-                    // Race scene-load signal vs timeout. UniTask.Delay runs on the
-                    // PlayerLoop so the timeout continuation stays on the main thread
-                    // — AttachExternalCancellation fires on the timer thread pool,
-                    // which crashes Unity API calls in the continuation.
-                    int winner = await UniTask.WhenAny(
-                        tcs.Task,
-                        UniTask.Delay(
-                            TimeSpan.FromSeconds(sceneLoadTimeoutSeconds),
-                            DelayType.UnscaledDeltaTime,
-                            cancellationToken: ct));
-
-                    if (winner == 1)
-                    {
-                        Debug.LogWarning(
-                            "[PartyInviteController] Scene load timed out — proceeding anyway.");
-                    }
-                }
-                finally
-                {
-                    SceneManager.sceneLoaded -= OnSceneLoaded;
-                }
-            }
-            else
-            {
-                // Not on Menu_Main — wait for it to become active.
-                // WaitUntil checks the token each PlayerLoop tick (main thread),
-                // so CancelAfter firing on the timer thread is safe here.
-                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                timeoutCts.CancelAfter(TimeSpan.FromSeconds(sceneLoadTimeoutSeconds));
-
-                try
-                {
-                    await UniTask.WaitUntil(
-                        () =>
-                        {
-                            var activeScene = SceneManager.GetActiveScene();
-                            return activeScene.name == "Menu_Main" && activeScene.isLoaded;
-                        },
-                        cancellationToken: timeoutCts.Token);
-                }
-                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-                {
-                    Debug.LogWarning("[PartyInviteController] Scene load timed out — proceeding anyway.");
-                }
             }
         }
 
