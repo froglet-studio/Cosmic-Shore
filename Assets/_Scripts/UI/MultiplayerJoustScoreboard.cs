@@ -14,29 +14,41 @@ namespace CosmicShore.UI
         [SerializeField] private JoustCollisionTurnMonitor joustTurnMonitor;
 
         /// <summary>
-        /// Golf rules — ascending sort so that players who finished (score = raceTime)
-        /// appear before those who did not (score = penaltyScoreBase + jousts left).
+        /// Golf rules — ascending sort puts winning team's elapsed-time score first,
+        /// then losers ordered by Score (penalty 99999f; all equal, so tiebreaker decides).
+        /// Tiebreaker: JoustCollisions desc — in team games the finisher and their
+        /// teammate share the same Score (elapsed time), so the finisher (more jousts)
+        /// ranks above the teammate.
         /// </summary>
         protected override List<IRoundStats> SortPlayers(List<IRoundStats> stats)
         {
             if (stats == null) return new List<IRoundStats>();
             var sorted = stats.ToList();
-            sorted.Sort((a, b) => a.Score.CompareTo(b.Score));
+            sorted.Sort((a, b) =>
+            {
+                int byScore = a.Score.CompareTo(b.Score);
+                if (byScore != 0) return byScore;
+                return b.JoustCollisions.CompareTo(a.JoustCollisions);
+            });
             return sorted;
         }
 
+        /// <summary>
+        /// Winning team members (score &lt; 99999) show MM:SS:CS finish time.
+        /// Losers (score = 99999) show "{N} Jousts Left".
+        /// </summary>
         protected override string FormatPlayerScore(IRoundStats stats)
         {
-            int needed = joustTurnMonitor ? joustTurnMonitor.CollisionsNeeded : 0;
-            int joustsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
-            bool thisPlayerWon = needed > 0 && joustsLeft == 0;
+            float score = stats.Score;
 
-            if (thisPlayerWon)
+            if (score < 99999f)
             {
-                TimeSpan t = TimeSpan.FromSeconds(stats.Score);
+                TimeSpan t = TimeSpan.FromSeconds(score);
                 return $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
             }
 
+            int needed = joustTurnMonitor ? joustTurnMonitor.CollisionsNeeded : 0;
+            int joustsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
             string plural = joustsLeft == 1 ? "" : "s";
             return $"{joustsLeft} Joust{plural} Left";
         }

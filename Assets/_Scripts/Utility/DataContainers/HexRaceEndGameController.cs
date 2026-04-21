@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -10,9 +11,10 @@ namespace CosmicShore.Utility
     {
         protected override bool DetermineLocalPlayerWon()
         {
-            var localName = gameData.LocalPlayer?.Name;
-            return !string.IsNullOrEmpty(gameData.WinnerName)
-                && gameData.WinnerName == localName;
+            var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Unassigned;
+            return gameData.WinnerDomain != Domains.Unassigned
+                && gameData.WinnerDomain != Domains.None
+                && localDomain == gameData.WinnerDomain;
         }
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
@@ -37,8 +39,7 @@ namespace CosmicShore.Utility
                 yield break;
             }
 
-            bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
-                && gameData.WinnerName == localName;
+            bool didWin = DetermineLocalPlayerWon();
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
             string label;
@@ -58,9 +59,9 @@ namespace CosmicShore.Utility
                 formatAsTime = false;
             }
 
-            CSDebug.Log($"[HexRaceEndGame] Local='{localName}' Score={localStats.Score} didWin={didWin} " +
-                      $"WinnerName='{gameData.WinnerName}' " +
-                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
+            CSDebug.Log($"[HexRaceEndGame] Local='{localName}' Domain={localStats.Domain} Score={localStats.Score} didWin={didWin} " +
+                      $"WinnerName='{gameData.WinnerName}' WinnerDomain={gameData.WinnerDomain} " +
+                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.Score}"))}]");
 
             yield return view.PlayScoreRevealAnimation(
                 headerText + $"\n<size=60%>{label}</size>",

@@ -40,8 +40,8 @@ namespace CosmicShore.Gameplay
             base.OnTurnEndedCustom();
             if (!IsServer || _finalResultsSent) return;
 
-            string winnerName = DetermineWinner();
-            if (string.IsNullOrEmpty(winnerName)) return;
+            var winner = DetermineWinner();
+            if (winner == null) return;
 
             // Map CrystalsCollected → Score for all players
             foreach (var stats in gameData.RoundStatsList)
@@ -51,22 +51,29 @@ namespace CosmicShore.Gameplay
             gameData.CalculateDomainStats(UseGolfRules);
 
             _finalResultsSent = true;
-            SyncFinalScoresSnapshot(winnerName);
+            SyncFinalScoresSnapshot(winner.Name, winner.Domain);
         }
 
         /// <summary>
-        /// Highest CrystalsCollected wins — works for both time-based and crystal-target
-        /// end conditions since the turn monitor system determines when the turn ends.
+        /// Winning team = domain with highest aggregate CrystalsCollected.
+        /// Winner name = best individual on that team (used as tie-break display label
+        /// and legacy WinnerName consumers). Victory/defeat attribution in end-game
+        /// screens uses WinnerDomain, not WinnerName.
         /// </summary>
-        string DetermineWinner()
+        IRoundStats DetermineWinner()
         {
             if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0)
-                return "";
+                return null;
 
-            var winner = gameData.RoundStatsList
+            var winningDomain = gameData.RoundStatsList
+                .GroupBy(s => s.Domain)
+                .OrderByDescending(g => g.Sum(s => s.CrystalsCollected))
+                .First().Key;
+
+            return gameData.RoundStatsList
+                .Where(s => s.Domain == winningDomain)
                 .OrderByDescending(s => s.CrystalsCollected)
                 .First();
-            return winner.Name;
         }
 
         /// <summary>
@@ -82,7 +89,7 @@ namespace CosmicShore.Gameplay
 
         // ── Score sync ───────────────────────────────────────────────────
 
-        void SyncFinalScoresSnapshot(string winnerName)
+        void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
         {
             var statsList = gameData.RoundStatsList;
             int count = statsList.Count;
@@ -101,7 +108,7 @@ namespace CosmicShore.Gameplay
             }
 
             SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, crystalsArray,
-                new FixedString64Bytes(winnerName));
+                new FixedString64Bytes(winnerName), (int)winnerDomain);
         }
 
         [ClientRpc]
@@ -110,7 +117,8 @@ namespace CosmicShore.Gameplay
             float[] scores,
             int[] domains,
             int[] crystalsCollected,
-            FixedString64Bytes winnerName)
+            FixedString64Bytes winnerName,
+            int winnerDomain)
         {
             for (int i = 0; i < names.Length; i++)
             {
@@ -130,6 +138,7 @@ namespace CosmicShore.Gameplay
             // Authoritative winner — written to gameData, consumed by EndGameControllers
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
+            gameData.WinnerDomain = (Domains)winnerDomain;
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);

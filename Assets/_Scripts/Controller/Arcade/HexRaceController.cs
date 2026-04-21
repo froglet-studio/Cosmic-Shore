@@ -228,18 +228,27 @@ namespace CosmicShore.Gameplay
             // All players share the same elapsed time since turn start.
             // The score tracker updates LocalRoundStats.Score every frame with elapsed time.
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;
-            winner.Score = finishTime;
+            Domains winningDomain = winner.Domain;
 
+            // Team-aware scoring: every player on the winner's Domain inherits the
+            // finish time — they share the victory. Players on other domains get the
+            // losing penalty score based on their own crystals remaining.
             foreach (var stats in gameData.RoundStatsList)
             {
-                if (stats.Name == winner.Name) continue;
-                int crystalsLeft = Mathf.Max(0, target - stats.CrystalsCollected);
-                stats.Score = 10000f + crystalsLeft;
+                if (stats.Domain == winningDomain)
+                {
+                    stats.Score = finishTime;
+                }
+                else
+                {
+                    int crystalsLeft = Mathf.Max(0, target - stats.CrystalsCollected);
+                    stats.Score = 10000f + crystalsLeft;
+                }
             }
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
-            SyncFinalScoresSnapshot(winner.Name);
+            SyncFinalScoresSnapshot(winner.Name, winningDomain);
         }
 
         /// <summary>
@@ -259,7 +268,7 @@ namespace CosmicShore.Gameplay
             return gameData.CrystalTargetCount > 0 ? gameData.CrystalTargetCount : 39;
         }
 
-        void SyncFinalScoresSnapshot(string winnerName)
+        void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
         {
             var statsList = gameData.RoundStatsList;
             int count = statsList.Count;
@@ -278,7 +287,7 @@ namespace CosmicShore.Gameplay
             }
 
             SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, crystalsArray,
-                new FixedString64Bytes(winnerName));
+                new FixedString64Bytes(winnerName), (int)winnerDomain);
         }
 
         [ClientRpc]
@@ -287,7 +296,8 @@ namespace CosmicShore.Gameplay
             float[] scores,
             int[] domains,
             int[] crystalsCollected,
-            FixedString64Bytes winnerName)
+            FixedString64Bytes winnerName,
+            int winnerDomain)
         {
             for (int i = 0; i < names.Length; i++)
             {
@@ -307,6 +317,7 @@ namespace CosmicShore.Gameplay
             // Authoritative winner — written to gameData, consumed by EndGameControllers
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
+            gameData.WinnerDomain = (Domains)winnerDomain;
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);

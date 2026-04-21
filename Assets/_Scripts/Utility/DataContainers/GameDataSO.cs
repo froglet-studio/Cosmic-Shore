@@ -93,6 +93,14 @@ namespace CosmicShore.Utility
         [NonSerialized] public string WinnerName = "";
 
         /// <summary>
+        /// Server-authoritative winning team. Set alongside <see cref="WinnerName"/> by
+        /// game controllers in their final-score ClientRpc. In team/co-op modes, any
+        /// player whose Domain equals this value is on the winning team.
+        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public Domains WinnerDomain = Domains.Unassigned;
+
+        /// <summary>
         /// The resolved crystal collection target for the current session.
         /// Written by <see cref="NetworkCrystalCollisionTurnMonitor"/> in StartMonitor (server),
         /// synced to clients via NetworkVariable.OnValueChanged.
@@ -249,6 +257,7 @@ namespace CosmicShore.Utility
             LocalPlayer = null;
             LocalRoundStats = null;
             WinnerName = "";
+            WinnerDomain = Domains.Unassigned;
             CrystalTargetCount = 0;
             // Note: RequestedAIBackfillCount and RequestedTeamCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -265,6 +274,7 @@ namespace CosmicShore.Utility
             TurnsTakenThisRound = 0;
             _playerSpawnPoseList.Clear();
             WinnerName = "";
+            WinnerDomain = Domains.Unassigned;
             CrystalTargetCount = 0;
         }
 

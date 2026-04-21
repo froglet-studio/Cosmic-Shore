@@ -11,17 +11,25 @@ namespace CosmicShore.UI
         /// <summary>
         /// Golf rules — ascending sort puts fastest finish time first,
         /// then losers ordered by crystals left (fewer left = higher placement).
+        /// Tiebreaker: CrystalsCollected desc — in team games the finisher and their
+        /// teammate share the same Score (race time), so the finisher (more crystals)
+        /// ranks above the teammate.
         /// </summary>
         protected override List<IRoundStats> SortPlayers(List<IRoundStats> stats)
         {
             if (stats == null) return new List<IRoundStats>();
             var sorted = stats.ToList();
-            sorted.Sort((a, b) => a.Score.CompareTo(b.Score));
+            sorted.Sort((a, b) =>
+            {
+                int byScore = a.Score.CompareTo(b.Score);
+                if (byScore != 0) return byScore;
+                return b.CrystalsCollected.CompareTo(a.CrystalsCollected);
+            });
             return sorted;
         }
 
         /// <summary>
-        /// Winners (score &lt; 10000) show MM:SS:CS finish time.
+        /// Winning team members (score &lt; 10000) show MM:SS:CS finish time.
         /// Losers (score = 10000 + crystalsLeft) show "{N} Crystals Left".
         /// </summary>
         protected override string FormatPlayerScore(IRoundStats stats)
