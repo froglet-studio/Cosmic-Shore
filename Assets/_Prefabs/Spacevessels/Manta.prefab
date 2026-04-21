@@ -1537,6 +1537,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1716607888102834236}
   - component: {fileID: 7385827388877614041}
+  - component: {fileID: 3330787732666681920}
   m_Layer: 0
   m_Name: YawsteryActionExecutor
   m_TagString: Untagged
@@ -1574,6 +1575,21 @@ MonoBehaviour:
   vesselTransformer: {fileID: 7686683633640807837}
   shipAnimator: {fileID: 5658933110804061391}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+--- !u!114 &3330787732666681920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4912294615010770138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09cf0b6e8a811ff42b924e06000db455, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxYawDegPerSec: 60
+  boostMultiplierOverride: 0
+  vesselTransformer: {fileID: 7686683633640807837}
 --- !u!1 &5022817358293899131
 GameObject:
   m_ObjectHideFlags: 0
@@ -2009,7 +2025,7 @@ GameObject:
   - component: {fileID: 6733957700513663958}
   - component: {fileID: 7965853245772039612}
   - component: {fileID: 3064061082551029771}
-  - component: {fileID: 9678703874602163012}
+  - component: {fileID: 9223372036854775807}
   m_Layer: 0
   m_Name: Manta
   m_TagString: Player_Ship
@@ -2318,7 +2334,6 @@ MonoBehaviour:
   ram: 0
   drift: 0
   seekPlayers: 0
-  gameData: {fileID: 0}
   playerSeekUpdateInterval: 0.5
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
@@ -2383,6 +2398,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: e2b6ec3dc3232114cb1376a276d772a1, type: 2}
   energyResourceIndex: 0
   view: {fileID: 397713304832229907}
+  elementBars: {fileID: 0}
 --- !u!114 &3882236086036410899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2437,6 +2453,17 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   _resourceEventClassActions: []
+  _touchActionOverrides: []
+  _gamepadActionOverrides:
+  - InputEvent: 11
+    ShipActions:
+    - {fileID: 11400000, guid: 42c61c113d6a0434797cbc4b2ae97ac6, type: 2}
+  - InputEvent: 12
+    ShipActions:
+    - {fileID: 11400000, guid: 42c61c113d6a0434797cbc4b2ae97ac6, type: 2}
+  - InputEvent: 13
+    ShipActions:
+    - {fileID: 11400000, guid: 42c61c113d6a0434797cbc4b2ae97ac6, type: 2}
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -2486,8 +2513,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
-    type: 2}
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071, type: 2}
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: fed903592808c9b49b28dc65e94825fc,
     type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}
@@ -2540,6 +2566,18 @@ MonoBehaviour:
   overrideDetectionLayers:
     serializedVersion: 2
     m_Bits: 2048
+--- !u!114 &9223372036854775807
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6427700898264204751
 GameObject:
   m_ObjectHideFlags: 0
@@ -3223,6 +3261,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _executors:
   - {fileID: 7385827388877614041}
+  - {fileID: 3330787732666681920}
 --- !u!1 &7953374546544284131
 GameObject:
   m_ObjectHideFlags: 0
@@ -4176,6 +4215,7 @@ MonoBehaviour:
   highlights:
   - input: 2
     image: {fileID: 7069206601941259528}
+  animSettings: {fileID: 0}
   countText: {fileID: 1233584866538271001}
   fillImage: {fileID: 4296652247721588461}
   overchargePrismCount: {fileID: 4338819628229389481}
@@ -4789,19 +4829,6 @@ Camera:
     type: 3}
   m_PrefabInstance: {fileID: 8546359282292252367}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &9678703874602163012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!4 &8650884460702527226 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
