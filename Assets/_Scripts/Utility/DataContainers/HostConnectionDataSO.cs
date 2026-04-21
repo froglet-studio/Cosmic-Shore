@@ -70,6 +70,12 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when the local player has fully completed joining a party (Netcode connected, scene loaded).")]
         public ScriptableEventNoParam OnPartyJoinCompleted;
 
+        [Tooltip("Raised the moment the local player resolves an incoming invite " +
+                 "(accept or decline) from any source. UI panels listen to this " +
+                 "to clear stale pending-invite rows so accepting from one panel " +
+                 "also dismisses the same invite shown elsewhere.")]
+        public ScriptableEventNoParam OnInviteResolved;
+
         // ─────────────────────────────────────────────────────────────────────
         // Local Player Identity
         // ─────────────────────────────────────────────────────────────────────

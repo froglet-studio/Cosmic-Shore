@@ -137,6 +137,9 @@ namespace CosmicShore.UI
                 if (connectionData.OnInviteReceived != null)
                     connectionData.OnInviteReceived.OnRaised += HandlePartyInviteReceived;
 
+                if (connectionData.OnInviteResolved != null)
+                    connectionData.OnInviteResolved.OnRaised += HandleInviteResolved;
+
                 if (connectionData.OnPartyMemberJoined != null)
                     connectionData.OnPartyMemberJoined.OnRaised += HandlePartyMemberChanged;
                 if (connectionData.OnPartyMemberLeft != null)
@@ -165,6 +168,9 @@ namespace CosmicShore.UI
 
                 if (connectionData.OnInviteReceived != null)
                     connectionData.OnInviteReceived.OnRaised -= HandlePartyInviteReceived;
+
+                if (connectionData.OnInviteResolved != null)
+                    connectionData.OnInviteResolved.OnRaised -= HandleInviteResolved;
 
                 if (connectionData.OnPartyMemberJoined != null)
                     connectionData.OnPartyMemberJoined.OnRaised -= HandlePartyMemberChanged;
@@ -384,6 +390,31 @@ namespace CosmicShore.UI
         void HandleIncomingFriendRequestRemoved(FriendData request)
         {
             RemoveRequestEntryByKind(request.PlayerId, RequestInfoEntry.Kind.FriendRequest);
+        }
+
+        /// <summary>
+        /// Fires when an invite is accepted/declined from ANY source (this panel,
+        /// the HomeScreen notification popup, etc.). Clears every party-invite
+        /// row so the UI stays in sync regardless of where the user answered.
+        /// </summary>
+        void HandleInviteResolved()
+        {
+            if (_pendingPartyInvites.Count == 0) return;
+
+            _pendingPartyInvites.Clear();
+
+            for (int i = _spawnedRequests.Count - 1; i >= 0; i--)
+            {
+                var go = _spawnedRequests[i];
+                if (!go) { _spawnedRequests.RemoveAt(i); continue; }
+
+                var entry = go.GetComponent<RequestInfoEntry>();
+                if (entry == null) continue;
+                if (entry.EntryKind != RequestInfoEntry.Kind.PartyInvite) continue;
+
+                Destroy(go);
+                _spawnedRequests.RemoveAt(i);
+            }
         }
 
         void HandlePartyInviteReceived(PartyInviteData invite)

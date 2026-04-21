@@ -75,12 +75,37 @@ namespace CosmicShore.UI
                 DebugExtensions.LogErrorColored(
                     "[INVITE-UI] connectionData or OnInviteReceived is NULL — cannot subscribe!",
                     Color.red);
+
+            // Also dismiss the popup if the same invite is resolved from a
+            // different panel (e.g. FriendsListPanel Accept/Decline buttons).
+            if (connectionData?.OnInviteResolved != null)
+                connectionData.OnInviteResolved.OnRaised += OnInviteResolvedElsewhere;
         }
 
         void OnDisable()
         {
             if (connectionData?.OnInviteReceived != null)
                 connectionData.OnInviteReceived.OnRaised -= OnInviteReceived;
+
+            if (connectionData?.OnInviteResolved != null)
+                connectionData.OnInviteResolved.OnRaised -= OnInviteResolvedElsewhere;
+        }
+
+        /// <summary>
+        /// Called when AcceptInviteAsync or DeclineInviteAsync runs anywhere.
+        /// Cancels the pending invite this popup is showing and hides it,
+        /// so the user doesn't see a stale notification after handling the
+        /// invite in FriendsListPanel.
+        /// </summary>
+        private void OnInviteResolvedElsewhere()
+        {
+            if (!_pendingInvite.HasValue && canvasGroup != null && canvasGroup.alpha == 0f)
+                return;
+
+            _pendingInvite = null;
+            _responding = false;
+            _timer = 0f;
+            ShowPanel(false);
         }
 
         void Update()

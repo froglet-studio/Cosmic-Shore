@@ -144,6 +144,12 @@ namespace CosmicShore.Gameplay
             while (!IsAuthSignedInAndHasId())
                 await Task.Delay(300);
 
+            // Subscribe to profile changes so a name/avatar update mid-session
+            // is republished to the presence lobby. Without this, players who
+            // join before the cloud profile loads would advertise the default
+            // "Pilot" name forever.
+            SubscribeToProfileChanges();
+
             // HandleSignedInEvent may have already completed via SOAP event,
             // or may currently be running (_joining). Both paths call
             // CreatePartySessionAsync — concurrent calls cause the second
@@ -238,6 +244,7 @@ namespace CosmicShore.Gameplay
         async void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            UnsubscribeFromProfileChanges();
             UninstallLobbyLogFilter();
             await LeavePresenceLobbyAsync();
 
@@ -268,6 +275,7 @@ namespace CosmicShore.Gameplay
             if (_initialized || _joining) return;
             if (!IsAuthSignedInAndHasId()) return;
 
+            SubscribeToProfileChanges();
             SyncLocalIdentity();
 
             _joining = true;
@@ -404,6 +412,7 @@ namespace CosmicShore.Gameplay
             // re-spawn a row for the invite the user just accepted, even if
             // _lastFiredInvite lingers for SDK-side dedup.
             _lastInviteResolved = true;
+            connectionData.OnInviteResolved?.Raise();
             try
             {
                 SyncLocalIdentity();
@@ -440,7 +449,26 @@ namespace CosmicShore.Gameplay
         {
             _lastFiredInvite = null;
             _lastInviteResolved = true;
+            connectionData.OnInviteResolved?.Raise();
             await RequestClearInviteAsync();
+        }
+
+        /// <summary>
+        /// Leaves the current party and returns the local player to Menu_Main.
+        /// Delegates to <see cref="PartyInviteController"/> which handles the
+        /// Netcode shutdown + fresh host restart. Intended for UI leave-party
+        /// buttons (e.g. <c>ArcadeLobbyList</c>).
+        /// </summary>
+        public async Task LeavePartyAsync()
+        {
+            var controller = PartyInviteController.Instance;
+            if (controller == null)
+            {
+                Debug.LogWarning("[HostConnectionService] PartyInviteController not available.");
+                return;
+            }
+
+            await controller.LeavePartyAndReturnToMenuAsync();
         }
 
         /// <summary>
@@ -1270,6 +1298,79 @@ namespace CosmicShore.Gameplay
             {
                 connectionData.LocalDisplayName = playerDataService.CurrentProfile.displayName;
                 connectionData.LocalAvatarId = playerDataService.CurrentProfile.avatarId;
+            }
+        }
+
+        /// <summary>
+        /// Tracks whether we've already wired the profile-change subscription so
+        /// repeated calls (Start + HandleSignedInEvent) don't stack handlers.
+        /// </summary>
+        private bool _profileSubscribed;
+
+        /// <summary>
+        /// Subscribes to <see cref="PlayerDataService.OnProfileChanged"/> once.
+        /// Called from Start and HandleSignedInEvent. Ensures that when the
+        /// cloud profile resolves (or the user edits their name/avatar), the
+        /// presence lobby and party session both see the updated values.
+        /// </summary>
+        private void SubscribeToProfileChanges()
+        {
+            if (_profileSubscribed || playerDataService == null) return;
+            playerDataService.OnProfileChanged += HandleProfileChanged;
+            _profileSubscribed = true;
+        }
+
+        private void UnsubscribeFromProfileChanges()
+        {
+            if (!_profileSubscribed || playerDataService == null) return;
+            playerDataService.OnProfileChanged -= HandleProfileChanged;
+            _profileSubscribed = false;
+        }
+
+        private void HandleProfileChanged(PlayerProfileData profile)
+        {
+            if (profile == null) return;
+
+            SyncLocalIdentity();
+
+            // Republish identity to the presence lobby so remote players see
+            // the correct display name and avatar instead of the bootstrap
+            // "Pilot" fallback. Fire-and-forget — the refresh loop will recover
+            // from any transient error.
+            RepublishLocalIdentityAsync().Forget();
+        }
+
+        /// <summary>
+        /// Writes the current LocalDisplayName + LocalAvatarId into the presence
+        /// lobby's player properties so remote clients see the up-to-date values.
+        /// Wrapped with the <see cref="_lobbyBusy"/> mutex to avoid racing the
+        /// refresh loop or in-flight invite sends.
+        /// </summary>
+        private async UniTaskVoid RepublishLocalIdentityAsync()
+        {
+            if (_presenceLobby == null) return;
+
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
+            try
+            {
+                await _presenceLobby.RefreshAsync();
+                _presenceLobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
+                    new PlayerProperty(connectionData.LocalDisplayName ?? "Pilot",
+                        VisibilityPropertyOptions.Public));
+                _presenceLobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
+                    new PlayerProperty(connectionData.LocalAvatarId.ToString(),
+                        VisibilityPropertyOptions.Public));
+                await SaveWithRetryAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] RepublishLocalIdentity error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
             }
         }
 
