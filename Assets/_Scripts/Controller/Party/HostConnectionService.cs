@@ -121,6 +121,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Last published party-size value so we only push on change.</summary>
         private int _publishedPartyCount = -1;
 
+        /// <summary>
+        /// Last published <c>matchName</c> presence value. Sentinel "&lt;UNSET&gt;"
+        /// (rather than empty string) ensures the first publish always fires
+        /// even when the local player is not in a match.
+        /// </summary>
+        private string _publishedMatchName = "<UNSET>";
+
+        /// <summary>Tracks whether <see cref="GameDataSO.OnLaunchGame"/> is wired so we don't double-subscribe.</summary>
+        private bool _gameLaunchSubscribed;
+
         private static bool IsRateLimitException(Exception e)
         {
             return e.Message != null && e.Message.Contains("Too Many Requests");
@@ -149,6 +159,12 @@ namespace CosmicShore.Gameplay
             // join before the cloud profile loads would advertise the default
             // "Pilot" name forever.
             SubscribeToProfileChanges();
+
+            // Subscribe to OnLaunchGame so we can push MATCH_NAME_KEY presence
+            // before the scene transition suspends the refresh loop. Without
+            // this, remote players would never see "IN A MATCH — {gameMode}"
+            // for a player who just left for a game scene.
+            SubscribeToGameLaunch();
 
             // HandleSignedInEvent may have already completed via SOAP event,
             // or may currently be running (_joining). Both paths call
@@ -245,6 +261,7 @@ namespace CosmicShore.Gameplay
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             UnsubscribeFromProfileChanges();
+            UnsubscribeFromGameLaunch();
             UninstallLobbyLogFilter();
             await LeavePresenceLobbyAsync();
 
@@ -255,7 +272,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Resets invite dedup state when Menu_Main loads so stale
         /// <see cref="_lastFiredInvite"/> from a prior session doesn't
-        /// block new invite detection.
+        /// block new invite detection. Also pushes an immediate presence
+        /// publish so remote players see this user back out of the match
+        /// without waiting up to a full refresh interval.
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
@@ -263,6 +282,7 @@ namespace CosmicShore.Gameplay
             {
                 _lastFiredInvite = null;
                 _lastInviteResolved = false;
+                PublishPresenceImmediateAsync().Forget();
             }
         }
 
@@ -276,6 +296,7 @@ namespace CosmicShore.Gameplay
             if (!IsAuthSignedInAndHasId()) return;
 
             SubscribeToProfileChanges();
+            SubscribeToGameLaunch();
             SyncLocalIdentity();
 
             _joining = true;
@@ -458,6 +479,12 @@ namespace CosmicShore.Gameplay
         /// Delegates to <see cref="PartyInviteController"/> which handles the
         /// Netcode shutdown + fresh host restart. Intended for UI leave-party
         /// buttons (e.g. <c>ArcadeLobbyList</c>).
+        ///
+        /// Reuses the <see cref="HostConnectionDataSO.OnInviteResolved"/> SOAP
+        /// channel so any open invite popup (PartyInviteNotificationPanel) and
+        /// any pending-invite rows in <see cref="UI.FriendsListPanel"/> dismiss
+        /// the moment the user leaves, instead of waiting up to a full refresh
+        /// interval to repopulate. Mirrors the Accept/Decline contract.
         /// </summary>
         public async Task LeavePartyAsync()
         {
@@ -466,6 +493,26 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning("[HostConnectionService] PartyInviteController not available.");
                 return;
+            }
+
+            // Treat "leave" as a resolution event — any stale invite from the
+            // host we are leaving must not re-fire as a fresh notification, and
+            // any popup currently visible should clear.
+            _lastFiredInvite = null;
+            _lastInviteResolved = true;
+            connectionData.OnInviteResolved?.Raise();
+
+            // Locally fire OnPartyMemberLeft for every remote member so panels
+            // that key off party-membership SOAP events (ArcadeLobbyList,
+            // PartyAreaPanel, PartyArcadeView) clear their slots immediately
+            // instead of waiting for the next 3-second refresh tick.
+            if (connectionData.PartyMembers != null && connectionData.OnPartyMemberLeft != null)
+            {
+                foreach (var member in connectionData.PartyMembers.ToList())
+                {
+                    if (member.PlayerId == connectionData.LocalPlayerId) continue;
+                    connectionData.OnPartyMemberLeft.Raise(member);
+                }
             }
 
             await controller.LeavePartyAndReturnToMenuAsync();
@@ -1156,9 +1203,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Pushes the local player's current party count/max to the presence lobby
-        /// player properties, so remote clients can render this player's row with
-        /// the right status text ("IN LOBBY X/4", "LOBBY FULL", etc).
+        /// Pushes the local player's current party count/max + active match name to
+        /// the presence lobby player properties, so remote clients can render this
+        /// player's row with the right status text ("IN LOBBY X/4", "LOBBY FULL",
+        /// "IN A MATCH — {gameMode}", etc).
         /// Called from within <see cref="RefreshAsync"/> while _lobbyBusy is held —
         /// safe to call SaveCurrentPlayerData from here.
         /// No-op when nothing has changed since the last publish.
@@ -1168,8 +1216,9 @@ namespace CosmicShore.Gameplay
             if (_presenceLobby == null) return;
 
             int currentCount = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
+            string currentMatch = ResolveCurrentMatchName();
 
-            if (currentCount == _publishedPartyCount) return;
+            if (currentCount == _publishedPartyCount && currentMatch == _publishedMatchName) return;
 
             try
             {
@@ -1177,14 +1226,30 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(currentCount.ToString(), VisibilityPropertyOptions.Public));
                 _presenceLobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
                     new PlayerProperty(connectionData.MaxPartySlots.ToString(), VisibilityPropertyOptions.Public));
+                _presenceLobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,
+                    new PlayerProperty(currentMatch ?? string.Empty, VisibilityPropertyOptions.Public));
 
                 await SaveWithRetryAsync();
                 _publishedPartyCount = currentCount;
+                _publishedMatchName = currentMatch;
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] PublishPartyState error: {e.Message}");
             }
+        }
+
+        /// <summary>
+        /// Returns the friendly game-mode name when the local player is in an
+        /// active multiplayer match, or empty string when on the menu / not in a
+        /// multiplayer game. Used as the value for <see cref="MATCH_NAME_KEY"/>.
+        /// </summary>
+        private string ResolveCurrentMatchName()
+        {
+            if (_gameData == null) return string.Empty;
+            if (IsOnMenuScene()) return string.Empty;
+            if (!_gameData.IsMultiplayerMode) return string.Empty;
+            return _gameData.GameMode.ToString();
         }
 
         /// <summary>
@@ -1367,6 +1432,58 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] RepublishLocalIdentity error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// Subscribes once to <see cref="GameDataSO.OnLaunchGame"/> so we can push
+        /// <see cref="MATCH_NAME_KEY"/> presence the moment the local player launches
+        /// a multiplayer game. Without this, the refresh loop (which suspends
+        /// outside Menu_Main) would never publish the new match name and remote
+        /// players would not see "IN A MATCH — {gameMode}".
+        /// </summary>
+        private void SubscribeToGameLaunch()
+        {
+            if (_gameLaunchSubscribed || _gameData == null || _gameData.OnLaunchGame == null) return;
+            _gameData.OnLaunchGame.OnRaised += HandleGameLaunch;
+            _gameLaunchSubscribed = true;
+        }
+
+        private void UnsubscribeFromGameLaunch()
+        {
+            if (!_gameLaunchSubscribed || _gameData == null || _gameData.OnLaunchGame == null) return;
+            _gameData.OnLaunchGame.OnRaised -= HandleGameLaunch;
+            _gameLaunchSubscribed = false;
+        }
+
+        private void HandleGameLaunch() => PublishPresenceImmediateAsync().Forget();
+
+        /// <summary>
+        /// One-shot presence publish independent of the refresh interval. Used at
+        /// game-launch and on Menu_Main reload so remote players see the local
+        /// player's match-name change without waiting for the next polling tick
+        /// (and to handle the case where the refresh loop is suspended inside a
+        /// game scene). Honors the <see cref="_lobbyBusy"/> mutex to stay
+        /// serialized with refresh / invite-send / leave operations.
+        /// </summary>
+        private async UniTaskVoid PublishPresenceImmediateAsync()
+        {
+            if (_presenceLobby == null) return;
+
+            while (_lobbyBusy)
+                await Task.Yield();
+            _lobbyBusy = true;
+            try
+            {
+                await PublishPartyStateIfChangedAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] PublishPresenceImmediate error: {e.Message}");
             }
             finally
             {

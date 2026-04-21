@@ -1,9 +1,12 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -42,6 +45,8 @@ namespace CosmicShore.UI
         [Tooltip("Panel opened when an empty slot's '+' button is pressed. " +
                  "Should be the scene-wired FriendsListPanel.")]
         [SerializeField] private FriendsListPanel friendsListPanel;
+
+        [Inject] private GameDataSO gameData;
 
         /// <summary>Max slots rendered — matches <c>HostConnectionDataSO.MaxPartySlots</c> (4 by design).</summary>
         const int MAX_SLOTS = 4;
@@ -102,6 +107,16 @@ namespace CosmicShore.UI
                 connectionData.OnPartyMemberLeft.OnRaised += HandlePartyMemberEvent;
             if (connectionData.OnPartyMemberKicked != null)
                 connectionData.OnPartyMemberKicked.OnRaised += HandlePartyMemberEvent;
+
+            // Local "in a match" status flips on these — refresh the counter
+            // so the badge updates without waiting for a party-list change.
+            if (gameData != null)
+            {
+                if (gameData.OnLaunchGame != null)
+                    gameData.OnLaunchGame.OnRaised += HandleMatchStateChanged;
+                if (gameData.OnSessionEnded != null)
+                    gameData.OnSessionEnded.OnRaised += HandleMatchStateChanged;
+            }
         }
 
         void UnsubscribeSoap()
@@ -128,6 +143,14 @@ namespace CosmicShore.UI
                 connectionData.OnPartyMemberLeft.OnRaised -= HandlePartyMemberEvent;
             if (connectionData.OnPartyMemberKicked != null)
                 connectionData.OnPartyMemberKicked.OnRaised -= HandlePartyMemberEvent;
+
+            if (gameData != null)
+            {
+                if (gameData.OnLaunchGame != null)
+                    gameData.OnLaunchGame.OnRaised -= HandleMatchStateChanged;
+                if (gameData.OnSessionEnded != null)
+                    gameData.OnSessionEnded.OnRaised -= HandleMatchStateChanged;
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -206,9 +229,52 @@ namespace CosmicShore.UI
                 : 0;
             int total = remoteCount + (connectionData.IsConnected ? 1 : 0);
 
-            onlineStatusText.text = total == 1
+            string countText = total == 1
                 ? "1 Player Online"
                 : $"{total} Players Online";
+
+            string badge = ResolveLocalStatusBadge();
+            onlineStatusText.text = string.IsNullOrEmpty(badge)
+                ? countText
+                : $"{countText}  ·  {badge}";
+        }
+
+        /// <summary>
+        /// Mirrors the badge strings used by <see cref="OnlineInfoEntry"/> for remote
+        /// players, so the Arcade lobby header reads with the same vocabulary the
+        /// Friends list uses for everyone else: "IN A MATCH — {gameMode}", "LOBBY FULL",
+        /// or "IN LOBBY X/N". Returns an empty string when the local player is alone
+        /// in the party and not in a match — in that case only the player-count is shown.
+        /// </summary>
+        string ResolveLocalStatusBadge()
+        {
+            // In-match takes priority. Defensive guard: when the modal is open
+            // we are normally on Menu_Main, but the scene-transition window can
+            // briefly land here with gameData already pointing at the next match.
+            if (gameData != null && gameData.IsMultiplayerMode &&
+                !IsOnMenuScene() && gameData.GameMode != GameModes.Random)
+            {
+                return $"IN A MATCH — {gameData.GameMode.ToString().ToUpperInvariant()}";
+            }
+
+            int memberCount = connectionData.PartyMembers != null
+                ? connectionData.PartyMembers.Count
+                : 0;
+            int maxSlots = connectionData.MaxPartySlots;
+
+            if (maxSlots > 0 && memberCount >= maxSlots)
+                return "LOBBY FULL";
+
+            if (memberCount > 1 && maxSlots > 0)
+                return $"IN LOBBY {memberCount}/{maxSlots}";
+
+            return string.Empty;
+        }
+
+        static bool IsOnMenuScene()
+        {
+            var name = SceneManager.GetActiveScene().name;
+            return name == "Menu_Main" || name == "Authentication";
         }
 
         void UpdateLeaveButtonState()
@@ -242,7 +308,10 @@ namespace CosmicShore.UI
         {
             PopulateSlots();
             UpdateLeaveButtonState();
+            UpdateOnlineStatus();
         }
+
+        void HandleMatchStateChanged() => UpdateOnlineStatus();
 
         // ─────────────────────────────────────────────────────────────────────
         // Button Callbacks
