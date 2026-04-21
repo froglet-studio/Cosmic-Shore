@@ -45,11 +45,10 @@ namespace CosmicShore.Game.Arcade
         void OnReadyClicked_ServerRpc()
         {
             readyClientCount++;
-            
-            // Debug log to help track this state if issues persist
-            Debug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}");
 
-            if (!readyClientCount.Equals(gameData.SelectedPlayerCount))
+            Debug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount.Value}");
+
+            if (readyClientCount != gameData.SelectedPlayerCount.Value)
                 return;
 
             readyClientCount = 0;
