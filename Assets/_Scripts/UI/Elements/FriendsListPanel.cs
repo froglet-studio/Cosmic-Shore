@@ -425,6 +425,13 @@ namespace CosmicShore.UI
             // Play notification sound.
             AudioSystem.Instance?.PlayMenuAudio(inviteReceivedAudio);
 
+            // Auto-open the panel so the user sees the incoming invite row
+            // immediately — without this, the spawned RequestInfoEntry lives
+            // under an inactive panel and the recipient has no visual cue
+            // beyond the notification popup.
+            if (!gameObject.activeSelf)
+                Show();
+
             // If a row already exists for this sender, leave it (refresh of existing entry).
             var existing = FindEntryByPlayerId<RequestInfoEntry>(_spawnedRequests, invite.HostPlayerId);
             if (existing == null)

@@ -310,6 +310,17 @@ namespace CosmicShore.Gameplay
         /// block new invite detection. Also pushes an immediate presence
         /// publish so remote players see this user back out of the match
         /// without waiting up to a full refresh interval.
+        ///
+        /// IMPORTANT: <see cref="HostConnectionDataSO.PartyMembers"/> is an
+        /// Obvious.Soap <c>ScriptableList</c>, which clears itself on every
+        /// <c>LoadSceneMode.Single</c> scene load. Any Netcode scene reload
+        /// (e.g. the Relay-host Menu_Main reload after party creation, or the
+        /// client's post-accept scene sync) therefore nukes the members list
+        /// seeded by <see cref="AcceptInviteAsync"/>. Repopulate from the
+        /// authoritative <c>_partySession.Players</c> so <c>ArcadeLobbyList</c>
+        /// renders the correct FriendInfo slots on both host and client
+        /// immediately after the scene settles — without waiting for the next
+        /// 3-second refresh tick.
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
@@ -318,6 +329,46 @@ namespace CosmicShore.Gameplay
                 _lastFiredInvite = null;
                 _lastInviteResolved = false;
                 PublishPresenceImmediateAsync().Forget();
+                RepopulatePartyMembersFromSession();
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds <see cref="HostConnectionDataSO.PartyMembers"/> from the
+        /// current <see cref="_partySession"/>'s Players list. Fires
+        /// <see cref="HostConnectionDataSO.OnPartyMemberJoined"/> for each
+        /// re-added remote member so subscribed UI (<c>ArcadeLobbyList</c>,
+        /// <c>FriendsListPanel</c>) re-renders slots. Safe to call with a null
+        /// session — no-op.
+        /// </summary>
+        private void RepopulatePartyMembersFromSession()
+        {
+            if (_partySession == null || connectionData == null || connectionData.PartyMembers == null)
+                return;
+
+            connectionData.PartyMembers.Clear();
+            connectionData.PartyMembers.Add(connectionData.LocalPlayerData);
+
+            foreach (var p in _partySession.Players)
+            {
+                if (p.Id == connectionData.LocalPlayerId) continue;
+
+                string displayName = "Unknown Pilot";
+                int avatarId = 0;
+
+                if (p.Properties != null)
+                {
+                    if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
+                        !string.IsNullOrEmpty(dn.Value))
+                        displayName = dn.Value;
+                    if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
+                        int.TryParse(av.Value, out int parsed))
+                        avatarId = parsed;
+                }
+
+                var memberData = new PartyPlayerData(p.Id, displayName, avatarId);
+                connectionData.PartyMembers.Add(memberData);
+                connectionData.OnPartyMemberJoined?.Raise(memberData);
             }
         }
 
