@@ -12,6 +12,7 @@ using System.Linq;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -34,7 +35,9 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
         [Header("References")]
-        [SerializeField] private MultiplayerMiniGameControllerBase multiplayerController;
+        [Tooltip("Game controller for this mode. Wire the scene's MiniGameControllerBase subclass (SP or MP).")]
+        [FormerlySerializedAs("multiplayerController")]
+        [SerializeField] private MiniGameControllerBase gameController;
         [SerializeField] private GameObject endGameObject;
 
         [Header("UI Containers")]
@@ -442,15 +445,9 @@ namespace CosmicShore.UI
             if (UGSStatsManager.Instance != null)
                 UGSStatsManager.Instance.TrackPlayAgain();
 
-            // Prefer the serialized MP reference; fall back to a scene-level lookup
-            // so singleplayer scenes (which don't wire this field) also work.
-            MiniGameControllerBase controller = multiplayerController;
-            if (controller == null)
-                controller = FindAnyObjectByType<MiniGameControllerBase>();
-
-            if (controller == null)
+            if (gameController == null)
             {
-                CSDebug.LogError("[Scoreboard] No MiniGameControllerBase in scene — cannot restart.");
+                CSDebug.LogError("[Scoreboard] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
                 return;
             }
 
@@ -466,7 +463,7 @@ namespace CosmicShore.UI
                 }
             }
 
-            controller.RequestReplay();
+            gameController.RequestReplay();
         }
 
         /// <summary>

@@ -32,6 +32,9 @@ namespace CosmicShore.UI
         [Tooltip("Replay button — hidden for non-host clients in multiplayer. Leave unassigned if the prefab has no replay button.")]
         [SerializeField] GameObject replayButton;
 
+        [Tooltip("Game controller for the active scene. Required for the Replay button to work. Wire the scene's MiniGameControllerBase subclass.")]
+        [SerializeField] MiniGameControllerBase gameController;
+
         [Inject] GameSetting gameSetting;
         [Inject] AudioSystem audioSystem;
 
@@ -57,16 +60,15 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnClickReplayButton()
         {
-            var controller = FindAnyObjectByType<MiniGameControllerBase>();
-            if (controller == null)
+            if (gameController == null)
             {
-                CSDebug.LogError("[PauseMenu] No MiniGameControllerBase in scene — cannot restart.");
+                CSDebug.LogError("[PauseMenu] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
                 return;
             }
 
             PauseSystem.TogglePauseGame(false);
             Hide();
-            controller.RequestReplay();
+            gameController.RequestReplay();
         }
 
         public void OnClickMultiplayerResumeGameButton()
