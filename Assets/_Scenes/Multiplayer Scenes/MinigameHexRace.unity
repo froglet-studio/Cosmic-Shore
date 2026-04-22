@@ -177,6 +177,16 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2258531489856876751, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: replayButton
+      value: 
+      objectReference: {fileID: 330573868}
+    - target: {fileID: 2258531489856876751, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: gameController
+      value: 
+      objectReference: {fileID: 1078953729}
     - target: {fileID: 2281884070549701652, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -724,18 +734,12 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 330573866}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &330573868 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+--- !u!1 &330573868 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4014406041637916944, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 330573866}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 99f3625d5fec4367851e0f69076ff617, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &330573869 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6776421237982909725, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -1389,7 +1393,6 @@ MonoBehaviour:
   countdownTimer: {fileID: 330573869}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  localScoreboard: {fileID: 330573868}
   segmentSpawner: {fileID: 1881177335}
   baseNumberOfSegments: 1
   baseStraightLineLength: 1
