@@ -2,6 +2,7 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 
 public class ElementalFloatEditor : EditorWindow

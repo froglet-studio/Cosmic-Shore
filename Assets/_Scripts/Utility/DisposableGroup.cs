@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     public class DisposableGroup : IDisposable
     {

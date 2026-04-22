@@ -1,0 +1,53 @@
+using CosmicShore.ScriptableObjects;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+using CosmicShore.Utility;
+
+namespace CosmicShore.UI
+{
+    public class HangarAbilitiesView : View
+    {
+        [SerializeField] TMP_Text ClassName;
+        [SerializeField] Image ClassLockedImage;
+        [SerializeField] TMP_Text AbilityName;
+        [SerializeField] TMP_Text AbilityDescription;
+        [SerializeField] GameObject AbilityPreviewWindow;
+        [SerializeField] Vector2 PreviewDimensions = new(256, 144);
+        [SerializeField] Button TrainButton;
+        [SerializeField] Button GoToStoreButton;
+
+        void Start()
+        {
+            if (AbilityName == null) CSDebug.LogWarning("HangarAbilitiesView - AbilityName Serialized Field is not set");
+            if (AbilityDescription == null) CSDebug.LogWarning("HangarAbilitiesView - ShipDescription Serialized Field is not set");
+            if (AbilityPreviewWindow == null) CSDebug.LogWarning("HangarAbilitiesView - AbilityPreviewWindow Serialized Field is not set");
+            if (ClassName == null) CSDebug.LogWarning("HangarAbilitiesView - ClassName Serialized Field is not set");
+            if (ClassLockedImage == null) CSDebug.LogWarning("HangarAbilitiesView - ClassLockedImage Serialized Field is not set");
+            if (TrainButton == null) CSDebug.LogWarning("HangarAbilitiesView - TrainButton Serialized Field is not set");
+            if (GoToStoreButton == null) CSDebug.LogWarning("HangarAbilitiesView - GoToStoreButton Serialized Field is not set");
+        }
+
+        public override void UpdateView()
+        {
+            var model = SelectedModel as SO_VesselAbility;
+
+            if (ClassName != null) ClassName.text = model.Vessel.Name;
+            if (ClassLockedImage != null) ClassLockedImage.gameObject.SetActive(model.Vessel.IsLocked);
+            if (AbilityName != null) AbilityName.text = model.Name;
+            if (AbilityDescription != null) AbilityDescription.text = model.Description;
+            if (AbilityPreviewWindow != null)
+            {
+                for (var i = 0; i < AbilityPreviewWindow.transform.childCount; i++)
+                    Destroy(AbilityPreviewWindow.transform.GetChild(i).gameObject);
+
+                var preview = Instantiate(model.PreviewClip, AbilityPreviewWindow.transform);
+                preview.GetComponent<RawImage>().rectTransform.sizeDelta = PreviewDimensions;
+                AbilityPreviewWindow.SetActive(true);
+                Canvas.ForceUpdateCanvases();
+            }
+            if (TrainButton != null) TrainButton.gameObject.SetActive(!model.Vessel.IsLocked);
+            if (GoToStoreButton != null) GoToStoreButton.gameObject.SetActive(model.Vessel.IsLocked);
+        }
+    }
+}

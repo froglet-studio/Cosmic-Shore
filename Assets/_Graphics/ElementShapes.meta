@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/_Scripts/Controller/XP.meta
+guid: 73aa899cabea17447aa4cf28f10fb613
+========
 guid: a45ffe36fe4a8bb42895d544557b5c97
+>>>>>>>> origin/development:Assets/_Graphics/ElementShapes.meta
 folderAsset: yes
 DefaultImporter:
   externalObjects: {}

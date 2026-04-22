@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace CosmicShore.Utility.ClassExtensions
+namespace CosmicShore.Utility
 {
     public static class GameObjectExtension
     {

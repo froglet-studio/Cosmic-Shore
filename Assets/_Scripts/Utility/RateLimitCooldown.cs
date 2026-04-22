@@ -1,7 +1,7 @@
 
 using UnityEngine;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     public class RateLimitCooldown
     {

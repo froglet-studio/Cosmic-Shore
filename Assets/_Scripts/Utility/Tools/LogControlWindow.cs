@@ -3,15 +3,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.App.Profile;
-using CosmicShore.App.Systems.CloudData;
-using CosmicShore.App.Systems.VesselUnlock;
-using CosmicShore.Game.Progression;
+using CosmicShore.Data;
+using CosmicShore.UI;
+using CosmicShore.Core;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-namespace CosmicShore.Utility.Tools
+namespace CosmicShore.Utility
 {
     public class LogControlWindow : EditorWindow
     {

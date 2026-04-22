@@ -24,10 +24,10 @@ MonoBehaviour:
   SceneName: MinigameCurvatious
   Captains:
   - {fileID: 11400000, guid: 83f99cf219c1bdf43b51c94855ee2328, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 1
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 1
   MinIntensity: 2
   MaxIntensity: 2
-  CallToActionTargetType: 407
+  CallToActionTargetType: 436
   ViewUserAction: 0
   PlayUserAction: 0

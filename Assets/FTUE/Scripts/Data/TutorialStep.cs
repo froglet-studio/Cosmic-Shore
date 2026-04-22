@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace CosmicShore.FTUE
+namespace CosmicShore.Core
 {
-    [CreateAssetMenu(fileName = "TutorialStep", menuName = "CosmicShore/FTUE/Tutorial Step", order = 0)]
+    [CreateAssetMenu(fileName = "TutorialStep", menuName = "ScriptableObjects/FTUE/Tutorial Step", order = 0)]
     public class TutorialStep : ScriptableObject
     {
         public TutorialStepType stepType = TutorialStepType.None;

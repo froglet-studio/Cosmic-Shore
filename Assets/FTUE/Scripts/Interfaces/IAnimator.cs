@@ -1,7 +1,10 @@
 using System.Collections;
 
-public interface IAnimator
+namespace CosmicShore.Core
 {
-    IEnumerator PlayIntro();
-    IEnumerator PlayOutro();
+    public interface IAnimator
+    {
+        IEnumerator PlayIntro();
+        IEnumerator PlayOutro();
+    }
 }

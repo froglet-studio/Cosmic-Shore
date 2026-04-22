@@ -1,16 +1,15 @@
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Gameplay;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
-
-namespace CosmicShore.Soap
+using CosmicShore.Data;
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(
-        fileName = "scriptable_variable_" + nameof(CellRuntimeDataSO),
-        menuName = "ScriptableObjects/DataContainers/" + nameof(CellRuntimeDataSO))]
+        fileName = "DataContainer_" + nameof(CellRuntimeDataSO),
+        menuName = "ScriptableObjects/Data Containers/" + nameof(CellRuntimeDataSO))]
     public class CellRuntimeDataSO : ScriptableObject
     {
         // ---------------------------------------------------------------------
@@ -49,7 +48,7 @@ namespace CosmicShore.Soap
             CellItems.Add(crystal);
             Crystals.Add(crystal);
 
-            OnCellItemsUpdated?.Raise();
+            OnCellItemsUpdated.Raise();
         }
         
         public bool TryRemoveItem(CellItem item)

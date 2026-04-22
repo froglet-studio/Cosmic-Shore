@@ -3,7 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-namespace CosmicShore.Utility.ClassExtensions
+namespace CosmicShore.Utility
 {
     public static class UniTaskExtensions
     {

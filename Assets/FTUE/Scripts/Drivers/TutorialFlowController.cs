@@ -1,11 +1,11 @@
-using CosmicShore.App.Systems.CTA;
-using CosmicShore.Events;
+using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Data;
 
-namespace CosmicShore.FTUE
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Drives the FTUE by delegating each TutorialStep to its ITutorialStepHandler
@@ -93,7 +93,7 @@ namespace CosmicShore.FTUE
         }
 
         /// <summary>
-        /// Called by each handler when it’s done.
+        /// Called by each handler when itï¿½s done.
         /// </summary>
         public void StepCompleted()
         {

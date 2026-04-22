@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 976040136872667664}
   - component: {fileID: 8451722324218373610}
   - component: {fileID: 8183650989283269597}
+  - component: {fileID: 2741035802910471503}
   m_Layer: 0
   m_Name: BlueBlock
   m_TagString: Untagged
@@ -149,6 +150,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -236,6 +239,77 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   impactorObject: {fileID: 8451722324218373610}
+--- !u!114 &2741035802910471503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fec7b8b004e422ba6d7cab97404b4b7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  boxCollider: {fileID: 6724784892155022458}
+  shieldMeshCollider: {fileID: 0}
+  meshFilter: {fileID: 1981306459138289011}
+  shieldMaterialOverride: {fileID: 0}
+  rb: {fileID: 0}
+  density: -1
+  massRatioShielded: 4.5
+  engageDuration: 0.35
+  engageCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 2
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  shatterDuration: 0.6
+  shatterMaxOffset: 3
+  shatterCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 2
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  shieldScale: 3

@@ -1,17 +1,20 @@
-﻿using System.Collections;
+using System.Collections;
+using System.Linq;
 using CosmicShore.Core;
-using CosmicShore.Game.Analytics; // [Visual Note] For StatsManager
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.Arcade.Scoring;
-using UnityEngine;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using CosmicShore.Utility;
-
-namespace CosmicShore.Game.Cinematics
+using Reflex.Attributes;
+using UnityEngine;
+namespace CosmicShore.Utility
 {
     public class WildlifeBlitzEndGameCinematicController : EndGameCinematicController
     {
         [Header("Wildlife Blitz Specific")]
         [SerializeField] private SinglePlayerWildlifeBlitzScoreTracker singlePlayerWildlifeBlitzScoreTracker;
+
+        [Inject] UGSStatsManager ugsStatsManager;
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
@@ -23,11 +26,11 @@ namespace CosmicShore.Game.Cinematics
             var stats = GetWildlifeBlitzStats();
             int currentScore = Mathf.Max(0, (int)stats.elapsedTime);
 
-            if (UGSStatsManager.Instance)
+            if (ugsStatsManager)
             {
-                float bestFloat = UGSStatsManager.Instance.GetEvaluatedHighScore(
-                    GameModes.WildlifeBlitz, 
-                    gameData.SelectedIntensity.Value, 
+                float bestFloat = ugsStatsManager.GetEvaluatedHighScore(
+                    GameModes.WildlifeBlitz,
+                    gameData.SelectedIntensity.Value,
                     currentScore
                 );
                 

@@ -1,7 +1,8 @@
-using CosmicShore.Core;
+using CosmicShore.Utility;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using UnityEngine.SceneManagement;
+using CosmicShore.Gameplay;
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Object pool manager for prism explosion effects.
@@ -16,6 +17,22 @@ namespace CosmicShore.Game
         {
             base.Awake();
             EnsureBuffer(MinPrewarm);
+        }
+
+        private void OnEnable()
+        {
+            SceneManager.activeSceneChanged += HandleActiveSceneChanged;
+        }
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+            SceneManager.activeSceneChanged -= HandleActiveSceneChanged;
+        }
+
+        private void HandleActiveSceneChanged(Scene oldScene, Scene newScene)
+        {
+            ReleaseAllActive();
         }
 
         public override PrismExplosion Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)

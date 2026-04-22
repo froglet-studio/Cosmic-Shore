@@ -1,10 +1,10 @@
-using CosmicShore.App.UI;
+using CosmicShore.UI;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.Core
 {
     public class ArcadeDPadNav : MonoBehaviour
     {

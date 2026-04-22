@@ -26,10 +26,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
   - {fileID: 11400000, guid: 47ecdb78312b0be4d8785da5ebaced42, type: 2}
   - {fileID: 11400000, guid: 93969af9015d6d347848a9231cb52743, type: 2}
-  MinPlayers: 0
-  MaxPlayers: 1
+  MinPlayersAllowed: 0
+  MaxPlayersAllowed: 1
   MinIntensity: 2
   MaxIntensity: 2
-  CallToActionTargetType: 410
+  CallToActionTargetType: 435
   ViewUserAction: 0
   PlayUserAction: 0
