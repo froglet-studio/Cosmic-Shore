@@ -1553,12 +1553,6 @@ PrefabInstance:
       propertyPath: domainColors.Array.data[3].Color.r
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 4446903459644244966, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _onClickToRestartButton
-      value: 
-      objectReference: {fileID: 11400000, guid: 0066317e1b0d3f64baeead3311cd4970,
-        type: 2}
     - target: {fileID: 5054612726784394718, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
