@@ -313,6 +313,16 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2258531489856876751, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: replayButton
+      value: 
+      objectReference: {fileID: 377908209}
+    - target: {fileID: 2258531489856876751, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: gameController
+      value: 
+      objectReference: {fileID: 1628508346}
     - target: {fileID: 2281884070549701652, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -928,7 +938,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &377908209 stripped
 GameObject:
-  m_CorrespondingSourceObject: {fileID: 5267627385057931498, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+  m_CorrespondingSourceObject: {fileID: 4014406041637916944, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 377908207}
   m_PrefabAsset: {fileID: 0}
@@ -980,42 +990,6 @@ MonoBehaviour:
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   multiplayerView: {fileID: 377908211}
---- !u!114 &377908213 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1138702273259042168, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 377908207}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!1 &377908214 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3077184441755355337, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 377908207}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &377908215 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8279426013274152358, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 377908207}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!1 &377908216 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5268792048780358750, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 377908207}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &377908217 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4643758576692609692, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -1118,18 +1092,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b511b9bcb0249f6b4ab9a9103a0ec66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &377908245 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6776421237982909725, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 377908207}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6dc248f311f840449b1976241e718871, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &377908229 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7920757144409270738, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -1165,6 +1127,18 @@ MonoBehaviour:
   crystalFadeDuration: 0.5
   delegateCrystalRewardToScoreboard: 1
   joustTurnMonitor: {fileID: 1628508345}
+--- !u!114 &377908245 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6776421237982909725, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 377908207}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6dc248f311f840449b1976241e718871, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
@@ -1724,7 +1698,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  multiplayerController: {fileID: 1628508346}
+  gameController: {fileID: 1628508346}
   endGameObject: {fileID: 377908223}
   scoreboardPanel: {fileID: 377908217}
   statsContainer: {fileID: 377908219}
@@ -1744,13 +1718,9 @@ MonoBehaviour:
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   winnerCrystalReward: 5
-  rematchInvitedPanel: {fileID: 377908209}
-  rematchReceivedPanel: {fileID: 377908216}
-  rematchReceivedText: {fileID: 377908215}
-  rematchDeniedPanel: {fileID: 377908214}
-  rematchDeniedText: {fileID: 377908213}
   playAgainButton: {fileID: 377908218}
-  rematchPanelAutoDismissSeconds: 2
+  mainMenuButton: {fileID: 0}
+  leaveLobbyButton: {fileID: 0}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
   joustTurnMonitor: {fileID: 1628508345}
 --- !u!1 &1074736316
@@ -2236,7 +2206,6 @@ MonoBehaviour:
   countdownTimer: {fileID: 377908245}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  localScoreboard: {fileID: 0}
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0
