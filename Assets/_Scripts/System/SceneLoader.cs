@@ -12,11 +12,10 @@ using UnityEngine.SceneManagement;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Persistent scene-loading and game-restart service.
+    /// Persistent scene-loading service.
     ///
     /// Handles:
     ///   - Launching gameplay scenes (local + network-aware)
-    ///   - Restarting the current game (delegates to GameDataSO reset + SOAP event)
     ///   - Returning to the main menu
     ///   - Application quit cleanup
     ///
@@ -25,8 +24,9 @@ namespace CosmicShore.Core
     /// Subscribes to SOAP events in code — no per-scene EventListenerNoParam wiring needed.
     ///
     /// Note: This is a plain MonoBehaviour (not NetworkBehaviour). Network-aware
-    /// config sync is handled by MultiplayerMiniGameControllerBase.OnNetworkSpawn(),
-    /// and restart RPCs are handled by MultiplayerMiniGameControllerBase.RequestReplay().
+    /// config sync is handled by MultiplayerMiniGameControllerBase.OnNetworkSpawn().
+    /// Replay / restart is owned by MiniGameControllerBase.RequestReplay() — both
+    /// the scoreboard and the pause menu call it directly.
     /// </summary>
     public class SceneLoader : MonoBehaviour
     {
@@ -35,7 +35,6 @@ namespace CosmicShore.Core
         [Header("SOAP Events (wired in Bootstrap inspector)")]
         [SerializeField] ScriptableEventNoParam _onClickToMainMenuButton;
         [SerializeField] ScriptableEventNoParam _onActiveSessionEnd;
-        [SerializeField] ScriptableEventNoParam _onClickToRestartButton;
 
         [Inject] GameDataSO gameData;
         [Inject] SceneNameListSO _sceneNames;
@@ -66,8 +65,6 @@ namespace CosmicShore.Core
                 _onClickToMainMenuButton.OnRaised += ReturnToMainMenu;
             if (_onActiveSessionEnd)
                 _onActiveSessionEnd.OnRaised += HandleActiveSessionEnd;
-            if (_onClickToRestartButton)
-                _onClickToRestartButton.OnRaised += RestartGame;
         }
 
         void OnDisable()
@@ -82,8 +79,6 @@ namespace CosmicShore.Core
                 _onClickToMainMenuButton.OnRaised -= ReturnToMainMenu;
             if (_onActiveSessionEnd)
                 _onActiveSessionEnd.OnRaised -= HandleActiveSessionEnd;
-            if (_onClickToRestartButton)
-                _onClickToRestartButton.OnRaised -= RestartGame;
         }
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -254,24 +249,6 @@ namespace CosmicShore.Core
             }
 
             gameData.Vessels.Clear();
-        }
-
-        #endregion
-
-        #region Restart / Replay
-
-        /// <summary>
-        /// Restart the current game. In multiplayer, the game controller handles
-        /// network-synced restart via MultiplayerMiniGameControllerBase.RequestReplay().
-        /// This method handles the local (host / singleplayer) path.
-        /// </summary>
-        public void RestartGame()
-        {
-            gameData.ResetStatsDataForReplay();
-            gameData.ResetForReplay();
-
-            if (CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
 
         #endregion

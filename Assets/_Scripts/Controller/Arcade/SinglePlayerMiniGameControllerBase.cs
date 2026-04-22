@@ -31,11 +31,20 @@ namespace CosmicShore.Gameplay
             gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
         }
-        
+
         protected override void OnCountdownTimerEnded()
         {
             gameData.SetPlayersActive();
             gameData.StartTurn();
+        }
+
+        public override void RequestReplay()
+        {
+            gameData.ResetStatsDataForReplay();
+            gameData.ResetForReplay();
+
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
     }
 }
