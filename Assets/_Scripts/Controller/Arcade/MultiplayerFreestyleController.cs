@@ -49,8 +49,14 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc(FixedString128Bytes playerName)
         {
-            gameData.SetNewPlayerActive(playerName.ToString());
-            gameData.StartTurn(); 
+            string name = playerName.ToString();
+            gameData.SetNewPlayerActive(name);
+            gameData.StartTurn();
+
+            // If it's the local player who just activated, force their input live
+            // so a replay-race leaves them controllable.
+            if (gameData.LocalPlayer != null && gameData.LocalPlayer.Name == name)
+                EnsureLocalHumanCanMove();
         }
 
         [ServerRpc(RequireOwnership = false)]

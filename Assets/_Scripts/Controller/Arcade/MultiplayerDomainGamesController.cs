@@ -33,6 +33,7 @@ namespace CosmicShore.Gameplay
             Debug.Log("<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc — SetPlayersActive + StartTurn</color>");
             gameData.SetPlayersActive();
             gameData.StartTurn();
+            EnsureLocalHumanCanMove();
         }
 
         [ServerRpc(RequireOwnership = false)]

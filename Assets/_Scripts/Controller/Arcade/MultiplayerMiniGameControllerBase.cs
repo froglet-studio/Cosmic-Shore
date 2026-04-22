@@ -155,6 +155,30 @@ namespace CosmicShore.Gameplay
         {
             gameData.SetPlayersActive();
             gameData.StartTurn();
+            EnsureLocalHumanCanMove();
+        }
+
+        /// <summary>
+        /// Defensive: after replay, <see cref="Player.StartPlayer"/> sometimes
+        /// races with the pair-initialization pipeline and the Paused NetworkVariable
+        /// write from <see cref="Player.ResetForPlay"/> (Paused=true) isn't reliably
+        /// cleared before input is needed on a non-host client. Explicitly drive
+        /// the local human's input state to active here so the client can move
+        /// their vessel as soon as the turn starts.
+        /// </summary>
+        protected void EnsureLocalHumanCanMove()
+        {
+            var local = gameData.LocalPlayer;
+            if (local == null || local.IsInitializedAsAI) return;
+
+            var inputController = local.InputController;
+            if (inputController == null) return;
+
+            inputController.SetPause(false);
+            inputController.SetIdle(false);
+
+            if (local.Vessel != null)
+                local.Vessel.VesselStatus.IsStationary = false;
         }
         
         /// <summary>
