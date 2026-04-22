@@ -442,31 +442,31 @@ namespace CosmicShore.UI
             if (UGSStatsManager.Instance != null)
                 UGSStatsManager.Instance.TrackPlayAgain();
 
+            // Prefer the serialized MP reference; fall back to a scene-level lookup
+            // so singleplayer scenes (which don't wire this field) also work.
+            MiniGameControllerBase controller = multiplayerController;
+            if (controller == null)
+                controller = FindAnyObjectByType<MiniGameControllerBase>();
+
+            if (controller == null)
+            {
+                CSDebug.LogError("[Scoreboard] No MiniGameControllerBase in scene — cannot restart.");
+                return;
+            }
+
+            // Defense in depth: non-host clients don't see the button
+            // (ConfigureLobbyButtons gates it), but guard the call path too.
             if (gameData.IsMultiplayerMode)
             {
-                if (multiplayerController == null)
-                {
-                    CSDebug.LogError("[Scoreboard] multiplayerController not assigned!");
-                    return;
-                }
-
                 var nm = NetworkManager.Singleton;
                 if (nm == null || !nm.IsServer)
                 {
                     CSDebug.LogWarning("[Scoreboard] Play Again ignored — only the host can restart the game.");
                     return;
                 }
+            }
 
-                multiplayerController.RequestReplay();
-            }
-            else if (multiplayerController != null)
-            {
-                multiplayerController.RequestReplay();
-            }
-            else
-            {
-                gameData.ResetForReplay();
-            }
+            controller.RequestReplay();
         }
 
         /// <summary>

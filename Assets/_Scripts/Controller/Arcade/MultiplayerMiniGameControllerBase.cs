@@ -270,10 +270,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Public entry point for Scoreboard "Play Again" button.
+        /// Entry point for Scoreboard / PauseMenu "Play Again" button.
         /// Only the host can trigger a replay — all clients are forced to follow.
         /// </summary>
-        public void RequestReplay()
+        public override void RequestReplay()
         {
             if (!IsServer)
             {

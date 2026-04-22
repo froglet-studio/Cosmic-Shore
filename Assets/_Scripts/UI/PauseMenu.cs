@@ -6,6 +6,7 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
+using Unity.Netcode;
 using UnityEngine.Serialization;
 
 /// <summary>
@@ -21,15 +22,15 @@ namespace CosmicShore.UI
         ScriptableEventNoParam _onClickToMainMenu;
 
         [SerializeField]
-        ScriptableEventNoParam _onClickToRestartButton;
-
-        [SerializeField]
         GameDataSO gameData;
 
         [FormerlySerializedAs("canvasGroup")]
         [SerializeField] GameObject pauseMenuPanel;
         [SerializeField]
         ModalWindowManager settingsModalWindowManager;
+
+        [Tooltip("Replay button — hidden for non-host clients in multiplayer. Leave unassigned if the prefab has no replay button.")]
+        [SerializeField] GameObject replayButton;
 
         [Inject] GameSetting gameSetting;
         [Inject] AudioSystem audioSystem;
@@ -49,7 +50,24 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnClickToggleInvertY() => gameSetting.ChangeInvertYEnabledStatus();
 
-        public void OnClickReplayButton() => _onClickToRestartButton.Raise();
+        /// <summary>
+        /// Routes the restart through the active MiniGameController — the same path
+        /// the scoreboard's Play Again uses. In multiplayer, non-host clients are
+        /// filtered out by the controller (and the button is hidden by Show()).
+        /// </summary>
+        public void OnClickReplayButton()
+        {
+            var controller = FindAnyObjectByType<MiniGameControllerBase>();
+            if (controller == null)
+            {
+                CSDebug.LogError("[PauseMenu] No MiniGameControllerBase in scene — cannot restart.");
+                return;
+            }
+
+            PauseSystem.TogglePauseGame(false);
+            Hide();
+            controller.RequestReplay();
+        }
 
         public void OnClickMultiplayerResumeGameButton()
         {
@@ -92,9 +110,27 @@ namespace CosmicShore.UI
 
         public void Show()
         {
+            ConfigureReplayButtonVisibility();
             pauseMenuPanel.gameObject.SetActive(true);
             settingsModalWindowManager.ModalWindowIn();
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
+        }
+
+        /// <summary>
+        /// Host-only gating for the replay button in multiplayer. Mirrors the
+        /// Scoreboard's ConfigureLobbyButtons logic so non-host clients can't
+        /// trigger a restart they don't have authority to execute.
+        /// </summary>
+        void ConfigureReplayButtonVisibility()
+        {
+            if (!replayButton) return;
+
+            var nm = NetworkManager.Singleton;
+            bool isMultiplayer = gameData != null && gameData.IsMultiplayerMode;
+            bool isHost = nm != null && nm.IsServer;
+            bool isClient = isMultiplayer && !isHost;
+
+            replayButton.SetActive(!isClient);
         }
 
         public void Hide()

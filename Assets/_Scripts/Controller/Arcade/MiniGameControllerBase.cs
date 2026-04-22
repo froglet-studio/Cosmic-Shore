@@ -110,7 +110,14 @@ namespace CosmicShore.Gameplay
         {
             SetupNewRound();
         }
-        
+
+        /// <summary>
+        /// Entry point for Play Again / Restart. Unified across singleplayer and
+        /// multiplayer: the scoreboard and pause menu both call this. Subclasses
+        /// decide how to execute the reset (local vs. network-authoritative).
+        /// </summary>
+        public abstract void RequestReplay();
+
         protected virtual void ResetEnvironmentForReplay()
         {
             CSDebug.Log("[MiniGameControllerBase] ResetEnvironmentForReplay - Override in subclass");
