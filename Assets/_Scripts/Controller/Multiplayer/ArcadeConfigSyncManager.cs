@@ -28,6 +28,7 @@ namespace CosmicShore.Gameplay
 
         readonly HashSet<ulong> _readyClients = new();
         int _expectedHumanCount;
+        bool _disconnectCallbackWired;
 
         /// <summary>
         /// Raised on clients when the host opens the arcade config modal.
@@ -79,7 +80,59 @@ namespace CosmicShore.Gameplay
             // to guard against stale PartyMembers data.
             _expectedHumanCount = Mathf.Max(humanCount, NetworkManager.Singleton.ConnectedClientsIds.Count);
 
+            WireDisconnectCallback();
             OpenConfigOnClients_ClientRpc(gameMode, intensity, playerCount, maxPlayers);
+        }
+
+        /// <summary>
+        /// Subscribes (once) to Netcode disconnect events so a client dropping
+        /// during the ready flow doesn't leave the host waiting forever for a
+        /// confirmation that'll never come. On disconnect we shrink the
+        /// expected count and re-evaluate the ready gate.
+        /// </summary>
+        void WireDisconnectCallback()
+        {
+            if (_disconnectCallbackWired) return;
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return;
+            nm.OnClientDisconnectCallback += HandleClientDisconnected;
+            _disconnectCallbackWired = true;
+        }
+
+        void UnwireDisconnectCallback()
+        {
+            if (!_disconnectCallbackWired) return;
+            var nm = NetworkManager.Singleton;
+            if (nm != null)
+                nm.OnClientDisconnectCallback -= HandleClientDisconnected;
+            _disconnectCallbackWired = false;
+        }
+
+        void HandleClientDisconnected(ulong clientId)
+        {
+            if (!IsServer) return;
+            if (_expectedHumanCount <= 0) return;
+
+            _readyClients.Remove(clientId);
+            _expectedHumanCount = Mathf.Max(1, _expectedHumanCount - 1);
+
+            Debug.Log($"[ArcadeConfigSync] Client {clientId} disconnected during ready flow — " +
+                      $"expected count shrunk to {_expectedHumanCount}, ready={_readyClients.Count}");
+
+            SyncReadyCount_ClientRpc(_readyClients.Count, _expectedHumanCount);
+
+            // A disconnection might have been the last blocker. Re-evaluate.
+            if (_readyClients.Count >= _expectedHumanCount && _readyClients.Count > 0)
+            {
+                Debug.Log("[ArcadeConfigSync] Ready threshold met after disconnect — launching game");
+                AllPlayersReady_ClientRpc();
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            UnwireDisconnectCallback();
+            base.OnNetworkDespawn();
         }
 
         /// <summary>
@@ -90,6 +143,8 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return;
             _readyClients.Clear();
+            _expectedHumanCount = 0;
+            UnwireDisconnectCallback();
             CloseConfigOnClients_ClientRpc();
         }
 

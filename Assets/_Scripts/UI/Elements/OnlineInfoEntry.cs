@@ -48,6 +48,12 @@ namespace CosmicShore.UI
         [Tooltip("Text label shown while invite is pending.")]
         [SerializeField] private string pendingRequestLabel = "PENDING REQUEST";
 
+        [Header("Pending Expiration")]
+        [Tooltip("Seconds before a pending invite auto-clears. Label counts down each second. " +
+                 "Prevents the row from getting stuck in PENDING forever when UGS drops the " +
+                 "invite send (common in 3+ player parties).")]
+        [SerializeField] private float pendingExpirationSeconds = 30f;
+
         [Header("Entry Animation")]
         [Tooltip("Seconds to fade in on spawn (uses CanvasGroup if present).")]
         [SerializeField] private float entryFadeInSeconds = 0.25f;
@@ -60,6 +66,7 @@ namespace CosmicShore.UI
 
         string _playerId;
         Action<string> _onInvite;
+        Action<string> _onInviteExpired;
         bool _invitable;
         Status _lastStatus;
         int _lastPartyMemberCount;
@@ -67,6 +74,7 @@ namespace CosmicShore.UI
         string _lastMatchName;
         bool _isPending;
         Coroutine _pulseCoroutine;
+        Coroutine _expirationCoroutine;
         CanvasGroup _canvasGroup;
 
         public string PlayerId => _playerId;
@@ -90,10 +98,12 @@ namespace CosmicShore.UI
             int partyMemberCount,
             int partyMaxSlots,
             string matchName,
-            Action<string> onInvite)
+            Action<string> onInvite,
+            Action<string> onInviteExpired = null)
         {
             _playerId = playerId;
             _onInvite = onInvite;
+            _onInviteExpired = onInviteExpired;
 
             if (usernameText)
                 usernameText.text = displayName ?? "Unknown";
@@ -177,8 +187,12 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Marks the row as "invite pending" — tints the background yellowish,
-        /// swaps the label to "PENDING REQUEST", starts the pulse animation,
-        /// and disables further invite clicks until reset.
+        /// swaps the label to a "PENDING REQUEST 30s" countdown, starts the
+        /// pulse animation, and disables further invite clicks until the timer
+        /// expires or the target joins. Expiration fires the optional
+        /// <c>onInviteExpired</c> callback supplied to <see cref="Populate"/>
+        /// so the owning panel can also clear its outgoing-invite bookkeeping
+        /// and cancel the lobby-side invite properties.
         /// </summary>
         public void SetInvitePending()
         {
@@ -186,23 +200,29 @@ namespace CosmicShore.UI
 
             _isPending = true;
 
-            if (labelText)
-            {
-                labelText.text = pendingRequestLabel;
-                labelText.color = pendingInviteTintBright;
-            }
-
             StopPulse();
+            StopExpirationCountdown();
+
             if (isActiveAndEnabled)
+            {
                 _pulseCoroutine = StartCoroutine(PulsePending());
+                if (pendingExpirationSeconds > 0f)
+                    _expirationCoroutine = StartCoroutine(PendingExpiration());
+                else
+                    UpdatePendingLabel(-1f);
+            }
             else
+            {
                 ApplyRowTint(pendingInviteTint);
+                UpdatePendingLabel(pendingExpirationSeconds);
+            }
         }
 
         /// <summary>Restores the row to its post-populate state.</summary>
         public void ResetInviteState()
         {
             StopPulse();
+            StopExpirationCountdown();
             _isPending = false;
 
             if (inviteButton) inviteButton.interactable = _invitable;
@@ -228,6 +248,48 @@ namespace CosmicShore.UI
             }
         }
 
+        IEnumerator PendingExpiration()
+        {
+            float remaining = pendingExpirationSeconds;
+            UpdatePendingLabel(remaining);
+
+            while (_isPending && remaining > 0f)
+            {
+                remaining -= Time.unscaledDeltaTime;
+                UpdatePendingLabel(remaining);
+                yield return null;
+            }
+
+            _expirationCoroutine = null;
+
+            if (!_isPending) yield break;
+
+            // Timer hit zero — hand off to the owning panel so it can clear the
+            // lobby-side invite properties and its outgoing-invite bookkeeping.
+            // If no callback is wired, at least reset the row locally so the
+            // user can try again without being stuck in PENDING forever.
+            string playerId = _playerId;
+            var callback = _onInviteExpired;
+            ResetInviteState();
+            callback?.Invoke(playerId);
+        }
+
+        void UpdatePendingLabel(float remainingSeconds)
+        {
+            if (!labelText) return;
+
+            if (remainingSeconds < 0f)
+            {
+                labelText.text = pendingRequestLabel;
+            }
+            else
+            {
+                int secs = Mathf.Max(0, Mathf.CeilToInt(remainingSeconds));
+                labelText.text = $"{pendingRequestLabel} {secs}s";
+            }
+            labelText.color = pendingInviteTintBright;
+        }
+
         void StopPulse()
         {
             if (_pulseCoroutine != null)
@@ -237,10 +299,22 @@ namespace CosmicShore.UI
             }
         }
 
+        void StopExpirationCountdown()
+        {
+            if (_expirationCoroutine != null)
+            {
+                StopCoroutine(_expirationCoroutine);
+                _expirationCoroutine = null;
+            }
+        }
+
         void OnEnable()
         {
             if (_isPending && _pulseCoroutine == null)
                 _pulseCoroutine = StartCoroutine(PulsePending());
+
+            if (_isPending && _expirationCoroutine == null && pendingExpirationSeconds > 0f)
+                _expirationCoroutine = StartCoroutine(PendingExpiration());
 
             StartCoroutine(FadeIn());
         }
@@ -248,6 +322,7 @@ namespace CosmicShore.UI
         void OnDisable()
         {
             StopPulse();
+            StopExpirationCountdown();
         }
 
         IEnumerator FadeIn()

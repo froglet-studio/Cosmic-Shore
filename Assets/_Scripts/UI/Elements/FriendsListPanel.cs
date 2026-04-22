@@ -260,11 +260,28 @@ namespace CosmicShore.UI
                 memberCount,
                 maxSlots,
                 matchName,
-                onInvite: OnInviteClicked);
+                onInvite: OnInviteClicked,
+                onInviteExpired: OnInviteExpired);
 
             // Preserve pending-invite tint if we have an outgoing invite in flight.
             if (_outgoingInvitePlayerIds.Contains(player.PlayerId))
                 entry.SetInvitePending();
+        }
+
+        /// <summary>
+        /// Called by <see cref="OnlineInfoEntry"/> when its pending-request
+        /// countdown hits zero. Clears the outgoing bookkeeping and the
+        /// lobby-side invite properties so the sender can try again without
+        /// being stuck on PENDING — this is the recovery path for the
+        /// "3+ player invite silently dropped" case.
+        /// </summary>
+        void OnInviteExpired(string playerId)
+        {
+            _outgoingInvitePlayerIds.Remove(playerId);
+
+            var service = HostConnectionService.Instance;
+            if (service == null) return;
+            _ = service.CancelOutgoingInviteAsync(playerId);
         }
 
         /// <summary>
@@ -322,6 +339,18 @@ namespace CosmicShore.UI
         void HandleOnlinePlayerRemoved(PartyPlayerData player)
         {
             RemoveEntryByPlayerId(_spawnedOnline, player.PlayerId);
+
+            // Target left the presence lobby (quit / disconnected). Drop any
+            // outgoing invite bookkeeping so the sender isn't stuck with a
+            // ghost PENDING row once the target comes back online, and clear
+            // the lobby-side invite properties so a stale invite_target
+            // doesn't linger after the invitee is gone.
+            if (_outgoingInvitePlayerIds.Remove(player.PlayerId))
+            {
+                var service = HostConnectionService.Instance;
+                if (service != null)
+                    _ = service.CancelOutgoingInviteAsync(player.PlayerId);
+            }
         }
 
         void HandleOnlinePlayersCleared()

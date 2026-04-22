@@ -693,6 +693,35 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Cancels the local player's outgoing party invite. Clears the
+        /// <c>invite_target</c> / <c>invite_data</c> presence properties and
+        /// resets <see cref="_currentInviteTargetId"/>, so the row on the
+        /// sender side can return to a clean state and the recipient stops
+        /// seeing a stale invite on their next presence poll.
+        ///
+        /// The <paramref name="targetPlayerId"/> is a best-effort consistency
+        /// check: if we are already targeting someone else (race with a fresh
+        /// invite click), skip the clear so we don't nuke an in-flight invite
+        /// the UI doesn't know about. Pass null to force-clear unconditionally.
+        ///
+        /// Safe to call from UI code; honors the existing lobby mutex.
+        /// </summary>
+        public async Task CancelOutgoingInviteAsync(string targetPlayerId = null)
+        {
+            if (_presenceLobby == null) return;
+
+            if (targetPlayerId != null &&
+                !string.IsNullOrEmpty(_currentInviteTargetId) &&
+                _currentInviteTargetId != targetPlayerId)
+            {
+                return;
+            }
+
+            _currentInviteTargetId = null;
+            await RequestClearInviteAsync();
+        }
+
+        /// <summary>
         /// Leaves the current party and returns the local player to Menu_Main.
         /// Delegates to <see cref="PartyInviteController"/> which handles the
         /// Netcode shutdown + fresh host restart. Intended for UI leave-party

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -30,7 +31,19 @@ namespace CosmicShore.Core
     /// </summary>
     public class SceneLoader : MonoBehaviour
     {
-        [SerializeField] float waitBeforeLoading = 0.5f;
+        [Tooltip("Pre-load delay giving clients a tick to process the fade-to-black SOAP event " +
+                 "before the scene swaps. Kept small on purpose — every millisecond here is a " +
+                 "window where a client's Relay transport can silently drop, and if we load the " +
+                 "scene after they've gone we end up with the 'host plays alone' symptom.")]
+        [SerializeField] float waitBeforeLoading = 0.1f;
+
+        [Tooltip("Seconds the server will wait for every connected client to confirm they " +
+                 "finished loading the game scene before logging a warning. The scene flow " +
+                 "still proceeds regardless — this only surfaces the 'host plays alone' " +
+                 "symptom with a concrete list of clients that never arrived.")]
+        [SerializeField] float clientSceneLoadTimeoutSeconds = 12f;
+
+        bool _watchingSceneEvents;
 
         [Header("SOAP Events (wired in Bootstrap inspector)")]
         [SerializeField] ScriptableEventNoParam _onClickToMainMenuButton;
@@ -209,11 +222,91 @@ namespace CosmicShore.Core
 
             if (nm.IsServer && nm.SceneManager != null)
             {
+                // Snapshot the clients we expect to follow us into the scene.
+                // If one silently dropped between Ready and scene-load, we want
+                // a loud log rather than silently playing alone on the host.
+                var expectedClients = new List<ulong>(nm.ConnectedClientsIds);
+                Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] Loading '{sceneName}' for {expectedClients.Count} clients: " +
+                          $"[{string.Join(", ", expectedClients)}]</color>");
+
+                ArmClientSceneLoadWatchdog(nm, sceneName, expectedClients);
                 nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
             }
             else
             {
                 Debug.LogWarning("[SceneLoader] Not server or SceneManager null — cannot load network scene.");
+            }
+        }
+
+        /// <summary>
+        /// Subscribes to <c>NetworkSceneManager.OnSceneEvent</c> once per load so
+        /// we can emit a warning for any connected client that fails to confirm
+        /// <c>LoadComplete</c> within <see cref="clientSceneLoadTimeoutSeconds"/>.
+        ///
+        /// Surfaces the "host plays alone" symptom with exact client ids
+        /// instead of a silent soft-failure. The scene flow itself is driven by
+        /// Netcode — this is purely observability.
+        /// </summary>
+        void ArmClientSceneLoadWatchdog(NetworkManager nm, string sceneName, List<ulong> expectedClients)
+        {
+            if (_watchingSceneEvents) return;
+            _watchingSceneEvents = true;
+
+            var remaining = new HashSet<ulong>(expectedClients);
+            remaining.Remove(nm.LocalClientId); // server is its own client
+
+            void OnSceneEvent(Unity.Netcode.SceneEvent se)
+            {
+                if (se.SceneName != sceneName) return;
+
+                if (se.SceneEventType == Unity.Netcode.SceneEventType.LoadComplete)
+                {
+                    remaining.Remove(se.ClientId);
+                }
+                else if (se.SceneEventType == Unity.Netcode.SceneEventType.LoadEventCompleted)
+                {
+                    nm.SceneManager.OnSceneEvent -= OnSceneEvent;
+                    _watchingSceneEvents = false;
+
+                    if (remaining.Count > 0)
+                    {
+                        Debug.LogWarning($"[SceneLoader] Scene '{sceneName}' LoadEventCompleted but " +
+                                         $"{remaining.Count} client(s) never reported LoadComplete: " +
+                                         $"[{string.Join(", ", remaining)}]. They will likely be stuck " +
+                                         "on Menu_Main. Check their Relay transport / party-session " +
+                                         "connectivity.");
+                    }
+                }
+            }
+
+            nm.SceneManager.OnSceneEvent += OnSceneEvent;
+
+            // Hard deadline: if LoadEventCompleted never fires (e.g. a client is
+            // permanently stalled), warn and detach so the subscription doesn't
+            // leak across multiple launches.
+            ScheduleWatchdogTimeout(nm, sceneName, remaining, OnSceneEvent).Forget();
+        }
+
+        async UniTaskVoid ScheduleWatchdogTimeout(
+            NetworkManager nm, string sceneName, HashSet<ulong> remaining,
+            Action<Unity.Netcode.SceneEvent> handler)
+        {
+            await UniTask.Delay(
+                TimeSpan.FromSeconds(clientSceneLoadTimeoutSeconds),
+                DelayType.UnscaledDeltaTime);
+
+            if (!_watchingSceneEvents) return;
+
+            nm.SceneManager.OnSceneEvent -= handler;
+            _watchingSceneEvents = false;
+
+            if (remaining.Count > 0)
+            {
+                Debug.LogWarning($"[SceneLoader] Scene '{sceneName}' watchdog fired " +
+                                 $"({clientSceneLoadTimeoutSeconds}s) — {remaining.Count} client(s) " +
+                                 $"never completed load: [{string.Join(", ", remaining)}]. Host is " +
+                                 "likely playing alone; consider returning to menu and restarting " +
+                                 "the party.");
             }
         }
 
