@@ -7,8 +7,6 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Obvious.Soap;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -69,23 +67,9 @@ namespace CosmicShore.UI
         [Tooltip("Crystals awarded to the winning player's card (+N indicator). Set 0 to disable.")]
         [SerializeField] protected int winnerCrystalReward = 5;
 
-        [Header("Multiplayer Rematch")]
-        [Tooltip("Shown to the player who SENT the request — auto-dismisses after 2s if no response")]
-        [SerializeField] private GameObject rematchInvitedPanel;
-
-        [Tooltip("Shown to the player who RECEIVED the request — stays until Yes/No pressed")]
-        [SerializeField] private GameObject rematchReceivedPanel;
-        [SerializeField] private TMP_Text rematchReceivedText;
-
-        [Tooltip("Shown to the requester when DENIED — auto-dismisses after 2s")]
-        [SerializeField] private GameObject rematchDeniedPanel;
-        [SerializeField] private TMP_Text rematchDeniedText;
-
-        [Tooltip("Play Again button — hidden while rematch request is pending")]
+        [Header("Play Again")]
+        [Tooltip("Play Again button — host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
         [SerializeField] private GameObject playAgainButton;
-
-        [Tooltip("Seconds before invited/denied panels auto-dismiss")]
-        [SerializeField] private float rematchPanelAutoDismissSeconds = 2f;
 
         [Header("Host / Client Buttons")]
         [Tooltip("Main Menu button — host only in multiplayer (host-initiated return takes everyone). Always visible in single-player.")]
@@ -102,8 +86,6 @@ namespace CosmicShore.UI
         #region Private Fields
 
         private ScoreboardStatsProvider statsProvider;
-        private Coroutine _invitedAutoDismiss;
-        private Coroutine _deniedAutoDismiss;
         private CanvasGroup _scoreboardCanvasGroup;
         private RectTransform _scoreboardRect;
         private Sequence _entranceSeq;
@@ -147,7 +129,6 @@ namespace CosmicShore.UI
         {
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
-            HideAllRematchPanels();
             ConfigureLobbyButtons();
             ShowMultiplayerView();
             PopulateDynamicStats();
@@ -160,10 +141,9 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Shows Main Menu for host / single-player, Leave Lobby for non-host clients.
-        /// The party lobby lives in Menu_Main — a client clicking Main Menu here would
-        /// have no effect anyway (Netcode scene management is host-driven), so we swap
-        /// in a Leave Lobby button that actually disconnects them from the party.
+        /// Shows Main Menu + Play Again for host / single-player, Leave Lobby for non-host clients.
+        /// Non-host clients cannot restart the game — the host's Play Again forces everyone to replay,
+        /// so exposing the button to clients would be misleading.
         /// </summary>
         void ConfigureLobbyButtons()
         {
@@ -172,8 +152,9 @@ namespace CosmicShore.UI
             bool isHost = nm != null && nm.IsServer;
             bool isClient = isMultiplayer && !isHost;
 
-            if (mainMenuButton)  mainMenuButton.SetActive(!isClient);
+            if (mainMenuButton)   mainMenuButton.SetActive(!isClient);
             if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
+            if (playAgainButton)  playAgainButton.SetActive(!isClient);
         }
 
         void HideScoreboard()
@@ -181,33 +162,7 @@ namespace CosmicShore.UI
             _entranceSeq?.Kill();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
             if (endGameObject) endGameObject.SetActive(false);
-            HideAllRematchPanels();
             ClearPlayerCards();
-        }
-
-        void HideAllRematchPanels()
-        {
-            StopAutoDismiss(ref _invitedAutoDismiss);
-            StopAutoDismiss(ref _deniedAutoDismiss);
-
-            if (rematchInvitedPanel)  rematchInvitedPanel.SetActive(false);
-            if (rematchReceivedPanel) rematchReceivedPanel.SetActive(false);
-            if (rematchDeniedPanel)   rematchDeniedPanel.SetActive(false);
-            if (playAgainButton)      playAgainButton.SetActive(true);
-        }
-
-        void StopAutoDismiss(ref Coroutine coroutine)
-        {
-            if (coroutine == null) return;
-            StopCoroutine(coroutine);
-            coroutine = null;
-        }
-
-        IEnumerator AutoDismissPanel(GameObject panel, float delay, Action onDismiss = null)
-        {
-            yield return new WaitForSeconds(delay);
-            if (panel) panel.SetActive(false);
-            onDismiss?.Invoke();
         }
 
         void PlayEntranceAnimation()
@@ -475,8 +430,13 @@ namespace CosmicShore.UI
 
         #endregion
 
-        #region Play Again / Rematch
+        #region Play Again
 
+        /// <summary>
+        /// Play Again is host-only in multiplayer — non-host clients don't see the button
+        /// (see <see cref="ConfigureLobbyButtons"/>). A host click forces everyone to replay
+        /// through the controller's server-authoritative reset pipeline.
+        /// </summary>
         public void OnPlayAgainButtonPressed()
         {
             if (UGSStatsManager.Instance != null)
@@ -490,27 +450,14 @@ namespace CosmicShore.UI
                     return;
                 }
 
-                // Host / master restarts the game directly — no rematch request flow.
-                // Only clients need to ask the host for permission to replay.
                 var nm = NetworkManager.Singleton;
-                bool isHost = nm != null && nm.IsServer;
-                if (isHost)
+                if (nm == null || !nm.IsServer)
                 {
-                    multiplayerController.RequestReplay();
+                    CSDebug.LogWarning("[Scoreboard] Play Again ignored — only the host can restart the game.");
                     return;
                 }
 
-                if (playAgainButton)     playAgainButton.SetActive(false);
-                if (rematchInvitedPanel) rematchInvitedPanel.SetActive(true);
-
-                StopAutoDismiss(ref _invitedAutoDismiss);
-                _invitedAutoDismiss = StartCoroutine(AutoDismissPanel(
-                    rematchInvitedPanel,
-                    rematchPanelAutoDismissSeconds,
-                    onDismiss: () => { if (playAgainButton) playAgainButton.SetActive(true); }
-                ));
-
-                multiplayerController.RequestRematch(gameData.LocalPlayer.Name);
+                multiplayerController.RequestReplay();
             }
             else if (multiplayerController != null)
             {
@@ -520,28 +467,6 @@ namespace CosmicShore.UI
             {
                 gameData.ResetForReplay();
             }
-        }
-
-        public void ShowRematchRequest(string requesterName)
-        {
-            if (rematchReceivedText)
-                rematchReceivedText.text = $"{requesterName} wants a rematch!";
-
-            if (rematchReceivedPanel) rematchReceivedPanel.SetActive(true);
-            if (playAgainButton)      playAgainButton.SetActive(false);
-        }
-
-        public void OnAcceptRematch()
-        {
-            HideAllRematchPanels();
-            multiplayerController?.RequestReplay();
-        }
-
-        public void OnDeclineRematch()
-        {
-            if (rematchReceivedPanel) rematchReceivedPanel.SetActive(false);
-            if (playAgainButton)      playAgainButton.SetActive(true);
-            multiplayerController?.NotifyRematchDeclined(gameData.LocalPlayer.Name);
         }
 
         /// <summary>
@@ -560,24 +485,6 @@ namespace CosmicShore.UI
             }
 
             PartyInviteController.Instance.LeavePartyAndReturnToMenuAsync().Forget();
-        }
-
-        public void ShowRematchDeclined(string declinerName)
-        {
-            StopAutoDismiss(ref _invitedAutoDismiss);
-            if (rematchInvitedPanel) rematchInvitedPanel.SetActive(false);
-
-            if (rematchDeniedText)
-                rematchDeniedText.text = $"{declinerName} declined the rematch.";
-
-            if (rematchDeniedPanel) rematchDeniedPanel.SetActive(true);
-
-            StopAutoDismiss(ref _deniedAutoDismiss);
-            _deniedAutoDismiss = StartCoroutine(AutoDismissPanel(
-                rematchDeniedPanel,
-                rematchPanelAutoDismissSeconds,
-                onDismiss: () => { if (playAgainButton) playAgainButton.SetActive(true); }
-            ));
         }
 
         #endregion
