@@ -1454,7 +1454,6 @@ MonoBehaviour:
   countdownTimer: {fileID: 778382903}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  localScoreboard: {fileID: 2113049460}
 --- !u!114 &1628508346
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1792,6 +1791,16 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2258531489856876751, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: replayButton
+      value: 
+      objectReference: {fileID: 2113049461}
+    - target: {fileID: 2258531489856876751, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: gameController
+      value: 
+      objectReference: {fileID: 1628508345}
     - target: {fileID: 2281884070549701652, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -2392,7 +2401,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  multiplayerController: {fileID: 1628508345}
+  gameController: {fileID: 1628508345}
   endGameObject: {fileID: 2113049471}
   scoreboardPanel: {fileID: 2113049466}
   statsContainer: {fileID: 2113049468}
@@ -2412,53 +2421,13 @@ MonoBehaviour:
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   winnerCrystalReward: 5
-  rematchInvitedPanel: {fileID: 2113049461}
-  rematchReceivedPanel: {fileID: 2113049465}
-  rematchReceivedText: {fileID: 2113049464}
-  rematchDeniedPanel: {fileID: 2113049463}
-  rematchDeniedText: {fileID: 2113049462}
   playAgainButton: {fileID: 2113049467}
-  rematchPanelAutoDismissSeconds: 2
+  mainMenuButton: {fileID: 0}
+  leaveLobbyButton: {fileID: 0}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
 --- !u!1 &2113049461 stripped
 GameObject:
-  m_CorrespondingSourceObject: {fileID: 5267627385057931498, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2113049457}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2113049462 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1138702273259042168, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2113049457}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!1 &2113049463 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3077184441755355337, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2113049457}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2113049464 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8279426013274152358, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2113049457}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!1 &2113049465 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5268792048780358750, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+  m_CorrespondingSourceObject: {fileID: 4014406041637916944, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 2113049457}
   m_PrefabAsset: {fileID: 0}
