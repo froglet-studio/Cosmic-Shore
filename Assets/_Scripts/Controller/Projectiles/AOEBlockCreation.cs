@@ -131,10 +131,11 @@ namespace CosmicShore.Gameplay
 
             block.ownerID = OwnerIdBase + ownerSuffix + position;
             block.TargetScale = blockScale;
+            block.ChangeTeam(Domain);
 
             if (shielded)
                 block.prismProperties.IsShielded = true;
-            
+
             block.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
             trail.Add(block);
             return block;

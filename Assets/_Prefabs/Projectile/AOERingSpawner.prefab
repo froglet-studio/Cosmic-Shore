@@ -72,9 +72,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 414fcf206e4583345b215f396a39445f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  domain: 3
+  m_Name:
+  m_EditorClassIdentifier:
+  domain: 0
   intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: 5e0149b915fc095448e82496cd02dde8, type: 3}
   ringCount: 1

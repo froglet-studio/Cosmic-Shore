@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
                 { Domains.Ruby,   RedTeamMaterialSet },
                 { Domains.Blue,  BlueTeamMaterialSet },
                 { Domains.Gold,  GoldTeamMaterialSet },
-                { Domains.Unassigned,  BlueTeamMaterialSet },
+                { Domains.Unassigned,  GreenTeamMaterialSet },
             };
         }
 

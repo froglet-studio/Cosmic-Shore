@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
             get => teamManager?.Domain ?? Domains.Unassigned;
             set
             {
-                if (teamManager) teamManager.SetInitialTeam(value);
+                if (teamManager) teamManager.ChangeTeam(value);
             }
         }
 

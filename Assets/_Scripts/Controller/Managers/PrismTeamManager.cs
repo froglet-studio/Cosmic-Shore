@@ -39,18 +39,6 @@ namespace CosmicShore.Gameplay
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
         }
 
-        public void SetInitialTeam(Domains domain)
-        {
-            if (currentDomain == Domains.Unassigned)
-            {
-                Domain = domain;
-                materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentBlockMaterial(domain),
-                    _themeManagerData.GetTeamBlockMaterial(domain)
-                );
-            }
-        }
-
         public void ChangeTeam(Domains newDomain)
         {
             if (Domain != newDomain)
