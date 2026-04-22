@@ -3,11 +3,9 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
-using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.UI;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 
@@ -17,9 +15,6 @@ namespace CosmicShore.Gameplay
     {
         [Inject] protected MultiplayerSetup multiplayerSetup;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
-
-        [Header("Rematch")]
-        [SerializeField] private Scoreboard localScoreboard;
 
         protected virtual int InitDelayMs => 1000;
         private bool _isResetting;
@@ -276,23 +271,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Public entry point for Scoreboard "Play Again" button.
-        /// Handles Client->Server permission request.
+        /// Only the host can trigger a replay — all clients are forced to follow.
         /// </summary>
         public void RequestReplay()
         {
-            if (IsServer)
+            if (!IsServer)
             {
-                ExecuteReplaySequence();
+                CSDebug.LogWarning("[MultiplayerController] RequestReplay ignored — only the host can restart the game.");
+                return;
             }
-            else
-            {
-                RequestReplay_ServerRpc();
-            }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void RequestReplay_ServerRpc()
-        {
             ExecuteReplaySequence();
         }
 
@@ -315,50 +302,59 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTaskVoid ExecuteSceneReloadReplay()
         {
-            gameData.IsReplayReload = true;
-
-            // Fade to black on all clients before scene reload
-            PrepareForSceneReload_ClientRpc();
-
-            // Wait for fade to complete
-            await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
-
-            foreach (var player in gameData.Players)
+            try
             {
-                if (player is Player netPlayer && netPlayer.IsSpawned)
-                    netPlayer.NetVesselId.Value = 0;
-            }
+                gameData.IsReplayReload = true;
 
-            // AI players/vessels are spawned with destroyWithScene=false and must be
-            // explicitly despawned before the reload, otherwise SpawnAIs creates duplicates.
-            // Despawn players before vessels — same order as SceneLoader.ClearPlayerVesselReferences.
-            for (int i = gameData.Players.Count - 1; i >= 0; i--)
-            {
-                if (gameData.Players[i] is Player aiPlayer
-                    && aiPlayer.IsSpawned
-                    && aiPlayer.NetIsAI.Value)
+                // Fade to black on all clients before scene reload
+                PrepareForSceneReload_ClientRpc();
+
+                // Wait for fade to complete
+                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
+
+                foreach (var player in gameData.Players)
                 {
-                    aiPlayer.NetworkObject.Despawn(true);
+                    if (player is Player netPlayer && netPlayer.IsSpawned)
+                        netPlayer.NetVesselId.Value = 0;
+                }
+
+                // AI players/vessels are spawned with destroyWithScene=false and must be
+                // explicitly despawned before the reload, otherwise SpawnAIs creates duplicates.
+                // Despawn players before vessels — same order as SceneLoader.ClearPlayerVesselReferences.
+                for (int i = gameData.Players.Count - 1; i >= 0; i--)
+                {
+                    if (gameData.Players[i] is Player aiPlayer
+                        && aiPlayer.IsSpawned
+                        && aiPlayer.NetIsAI.Value)
+                    {
+                        aiPlayer.NetworkObject.Despawn(true);
+                    }
+                }
+
+                for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
+                {
+                    var vessel = gameData.Vessels[i];
+                    if (vessel is VesselController vc && vc.IsSpawned)
+                        vc.NetworkObject.Despawn(true);
+                }
+                gameData.Vessels.Clear();
+
+                gameData.ResetRuntimeData();
+
+                // Server-authoritative scene reload — all clients follow automatically
+                var nm = NetworkManager.Singleton;
+                if (nm != null && nm.IsServer && nm.SceneManager != null)
+                {
+                    Debug.Log($"[MultiplayerController] Scene reload replay — loading {gameData.SceneName}");
+                    nm.SceneManager.LoadScene(gameData.SceneName, LoadSceneMode.Single);
                 }
             }
-
-            for (int i = gameData.Vessels.Count - 1; i >= 0; i--)
+            finally
             {
-                var vessel = gameData.Vessels[i];
-                if (vessel is VesselController vc && vc.IsSpawned)
-                    vc.NetworkObject.Despawn(true);
-            }
-            gameData.Vessels.Clear();
-
-            gameData.ResetRuntimeData();
-            _isResetting = false;
-
-            // Server-authoritative scene reload — all clients follow automatically
-            var nm = NetworkManager.Singleton;
-            if (nm != null && nm.IsServer && nm.SceneManager != null)
-            {
-                Debug.Log($"[MultiplayerController] Scene reload replay — loading {gameData.SceneName}");
-                nm.SceneManager.LoadScene(gameData.SceneName, LoadSceneMode.Single);
+                // Release the gate regardless of outcome. On the happy path the scene
+                // reload destroys this NetworkBehaviour anyway; on exception paths this
+                // prevents the button from being permanently bricked.
+                _isResetting = false;
             }
         }
 
@@ -409,66 +405,6 @@ namespace CosmicShore.Gameplay
         }
 
         protected virtual void OnResetForReplayCustom() { }
-
-        // ---------------- Rematch ----------------
-
-        /// <summary>
-        /// Called by Scoreboard when local player presses Play Again.
-        /// Broadcasts rematch request to opponent.
-        /// </summary>
-        public void RequestRematch(string requesterName)
-        {
-            RequestRematch_ServerRpc(new FixedString64Bytes(requesterName));
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void RequestRematch_ServerRpc(FixedString64Bytes requesterName)
-        {
-            RequestRematch_ClientRpc(requesterName);
-        }
-
-        [ClientRpc]
-        void RequestRematch_ClientRpc(FixedString64Bytes requesterName)
-        {
-            string name = requesterName.ToString();
-
-            // Don't show the panel to the player who sent the request
-            if (gameData.LocalPlayer?.Name == name) return;
-
-            if (localScoreboard != null)
-                localScoreboard.ShowRematchRequest(name);
-            else
-                CSDebug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch request.");
-        }
-
-        /// <summary>
-        /// Called by Scoreboard when local player declines a rematch request.
-        /// Notifies the requester.
-        /// </summary>
-        public void NotifyRematchDeclined(string declinerName)
-        {
-            NotifyRematchDeclined_ServerRpc(new FixedString64Bytes(declinerName));
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void NotifyRematchDeclined_ServerRpc(FixedString64Bytes declinerName)
-        {
-            NotifyRematchDeclined_ClientRpc(declinerName);
-        }
-
-        [ClientRpc]
-        void NotifyRematchDeclined_ClientRpc(FixedString64Bytes declinerName)
-        {
-            string name = declinerName.ToString();
-
-            // Only show denied panel to the player whose request was rejected
-            if (gameData.LocalPlayer?.Name == name) return;
-
-            if (localScoreboard != null)
-                localScoreboard.ShowRematchDeclined(name);
-            else
-                CSDebug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch declined.");
-        }
 
         // ---------------- Game Config Sync ----------------
 
