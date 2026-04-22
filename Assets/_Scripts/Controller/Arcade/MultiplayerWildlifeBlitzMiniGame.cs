@@ -51,6 +51,7 @@ namespace CosmicShore.Gameplay
         {
             gameData.SetPlayersActive();
             gameData.StartTurn();
+            EnsureLocalHumanCanMove();
         }
 
         protected override void SetupNewRound()
