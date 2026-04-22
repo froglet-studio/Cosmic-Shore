@@ -98,6 +98,12 @@ namespace CosmicShore.UI
         {
             SubscribeSoap();
             PopulateAll();
+
+            // Pull fresh lobby data the moment the arcade panel opens so the
+            // "N Players Online" counter and party slots reflect server state
+            // instead of whatever snapshot happened to be cached when the user
+            // last navigated away. Debounced inside HostConnectionService.
+            HostConnectionService.Instance?.ForceRefreshNow();
         }
 
         void OnDisable()
@@ -129,6 +135,15 @@ namespace CosmicShore.UI
                 connectionData.OnPartyMemberLeft.OnRaised += HandlePartyMemberEvent;
             if (connectionData.OnPartyMemberKicked != null)
                 connectionData.OnPartyMemberKicked.OnRaised += HandlePartyMemberEvent;
+
+            // Auto-open the friends panel when an incoming party invite arrives
+            // while the arcade lobby is visible. Without this, the recipient has
+            // to notice the overlay popup and navigate to Arcade → Add slot
+            // themselves — the friends panel is already where the Accept/Decline
+            // controls live, so surfacing it proactively matches the expected
+            // AAA "notification pulls the relevant panel forward" behavior.
+            if (connectionData.OnInviteReceived != null)
+                connectionData.OnInviteReceived.OnRaised += HandleInviteReceived;
 
             // Refresh slot 0 when the cloud profile resolves — HostConnectionDataSO
             // may have been populated with the local "Pilot{XXXX}" default at panel
@@ -163,8 +178,17 @@ namespace CosmicShore.UI
             if (connectionData.OnPartyMemberKicked != null)
                 connectionData.OnPartyMemberKicked.OnRaised -= HandlePartyMemberEvent;
 
+            if (connectionData.OnInviteReceived != null)
+                connectionData.OnInviteReceived.OnRaised -= HandleInviteReceived;
+
             if (PlayerDataService.Instance != null)
                 PlayerDataService.Instance.OnProfileChanged -= HandleProfileChanged;
+        }
+
+        void HandleInviteReceived(PartyInviteData _)
+        {
+            if (friendsListPanel != null && !friendsListPanel.gameObject.activeSelf)
+                friendsListPanel.Show();
         }
 
         // ─────────────────────────────────────────────────────────────────────

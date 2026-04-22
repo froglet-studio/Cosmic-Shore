@@ -39,8 +39,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Max simultaneous players in the global presence lobby.")]
         [SerializeField] private int presenceLobbyMaxPlayers = 100;
 
-        [Tooltip("How often (seconds) to refresh the online player list and check for invites.")]
-        [SerializeField] private float refreshIntervalSeconds = 3f;
+        [Tooltip("How often (seconds) to refresh the online player list and check for invites. " +
+                 "UGS lobby read rate limit is ~1/s per client, so 1.5s keeps us safely under " +
+                 "while staying responsive enough that invite arrival and member joins feel instant.")]
+        [SerializeField] private float refreshIntervalSeconds = 1.5f;
 
         [Inject] private PlayerDataService playerDataService;
         [Inject] private GameDataSO _gameData;
@@ -137,8 +139,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private float _boostedRefreshUntil;
 
-        private const float BOOSTED_REFRESH_INTERVAL_SECONDS = 1f;
+        private const float BOOSTED_REFRESH_INTERVAL_SECONDS = 0.75f;
         private const float BOOSTED_REFRESH_WINDOW_SECONDS = 15f;
+
+        /// <summary>
+        /// Minimum gap between consecutive <see cref="ForceRefreshNow"/> requests.
+        /// Prevents bursty UI open / invite / accept cascades from slamming the
+        /// lobby service past its per-client rate limit.
+        /// </summary>
+        private const float FORCE_REFRESH_COOLDOWN_SECONDS = 0.5f;
+        private float _nextForcedRefreshAllowed;
 
         /// <summary>
         /// Max time to wait for <see cref="PlayerDataService.IsInitialized"/>
@@ -577,6 +587,12 @@ namespace CosmicShore.Gameplay
                 // re-triggering if the host is slow to clear their properties.
                 Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
 
+                // Stay in fast-poll mode long enough for the party-session
+                // Players list to replicate so remote members (including the
+                // host) appear in the local arcade list within ~1s instead of
+                // waiting up to the full slow-polling interval.
+                _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+
                 // Advertise this join on the presence lobby so the sender's
                 // RefreshAsync() picks us up even before their party-session
                 // Players list catches up. See JOINED_PARTY_KEY docstring.
@@ -739,6 +755,28 @@ namespace CosmicShore.Gameplay
         }
 
         public ISession PartySession => _partySession;
+
+        /// <summary>
+        /// On-demand refresh trigger. Safe to call from any UI code (panel open,
+        /// user pressed refresh, just-accepted an invite, just-sent an invite).
+        /// Respects the <see cref="FORCE_REFRESH_COOLDOWN_SECONDS"/> debounce and
+        /// the existing <see cref="_lobbyBusy"/> mutex, so a burst of calls
+        /// collapses to at most one actual lobby hit. Also extends the boost
+        /// window so the next few polling ticks are fast.
+        /// </summary>
+        public void ForceRefreshNow()
+        {
+            if (!_initialized || _presenceLobby == null) return;
+
+            _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+
+            if (Time.unscaledTime < _nextForcedRefreshAllowed) return;
+            _nextForcedRefreshAllowed = Time.unscaledTime + FORCE_REFRESH_COOLDOWN_SECONDS;
+
+            _refreshTimer = 0f;
+            if (_lobbyBusy) return;
+            RefreshAsync().Forget();
+        }
 
         /// <summary>
         /// Most recently detected incoming party invite, or null if no invite is
@@ -1061,6 +1099,13 @@ namespace CosmicShore.Gameplay
                                 // Reset resolved flag: this is a fresh invite, not the one we last answered.
                                 _lastInviteResolved = false;
                                 connectionData.OnInviteReceived?.Raise(invite.Value);
+
+                                // Keep the recipient in fast-poll mode while an invite is
+                                // pending. Without this, the lobby returns to the slow
+                                // (1.5s) cadence the moment the invite is raised, so UI
+                                // updates to the sender's presence ("joined party",
+                                // "cancelled") lag by a full tick on the receiver side.
+                                _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
                             }
                         }
                         else

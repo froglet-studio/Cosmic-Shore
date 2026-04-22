@@ -75,6 +75,12 @@ namespace CosmicShore.UI
             RehydratePendingInviteFromService();
             SubscribeSoap();
             PopulateAll();
+
+            // Pull fresh presence/invite data the moment the panel opens so the
+            // user never sees stale "X Players Online" or a missing invite row
+            // that was added between polling ticks. Debounced and mutex-aware
+            // inside HostConnectionService, so bursty opens are safe.
+            HostConnectionService.Instance?.ForceRefreshNow();
         }
 
         /// <summary>

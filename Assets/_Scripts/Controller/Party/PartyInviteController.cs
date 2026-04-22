@@ -28,11 +28,15 @@ namespace CosmicShore.Gameplay
         [SerializeField] private HostConnectionDataSO connectionData;
 
         [Header("Timing")]
-        [Tooltip("Max time (seconds) to wait for NetworkManager shutdown.")]
-        [SerializeField] private float shutdownTimeoutSeconds = 5f;
+        [Tooltip("Max time (seconds) to wait for NetworkManager shutdown. Netcode typically " +
+                 "settles in <500ms; a long ceiling only mattered for rare edge cases where " +
+                 "the transport hung, and those should fail fast rather than stall the accept flow.")]
+        [SerializeField] private float shutdownTimeoutSeconds = 2f;
 
-        [Tooltip("Max time (seconds) to wait for client connection after joining party session.")]
-        [SerializeField] private float connectionTimeoutSeconds = 30f;
+        [Tooltip("Max time (seconds) to wait for client connection after joining party session. " +
+                 "Relay handshake + Netcode client connect is sub-second in practice; the old " +
+                 "30s ceiling was effectively infinite from a user-perception standpoint.")]
+        [SerializeField] private float connectionTimeoutSeconds = 8f;
 
         [Inject] private GameDataSO gameData;
 
@@ -141,6 +145,12 @@ namespace CosmicShore.Gameplay
                 // Step 4: Signal completion — SOAP events from the spawn chain
                 // (OnPlayerNetworkSpawnedUlong, OnClientReady) handle the rest automatically.
                 connectionData.OnPartyJoinCompleted?.Raise();
+
+                // Kick the presence/party refresh loop immediately so the arcade
+                // lobby list on the joining client populates with the host and any
+                // existing remote members inside one tick instead of waiting for
+                // the next scheduled poll.
+                HostConnectionService.Instance?.ForceRefreshNow();
 
                 Debug.Log("[PartyInviteController] Accept flow completed successfully.");
             }
@@ -295,8 +305,11 @@ namespace CosmicShore.Gameplay
                 Debug.LogWarning("[PartyInviteController] NetworkManager shutdown timed out — forcing.");
             }
 
-            // Brief settle delay for transport cleanup
-            await UniTask.Delay(200, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            // Brief settle delay for transport cleanup. Transport cleanup is
+            // effectively instant once NetworkManager.IsListening flips false;
+            // we only need enough time for any queued send buffers to drain
+            // before we open a new Relay client on top.
+            await UniTask.Delay(50, DelayType.UnscaledDeltaTime, cancellationToken: ct);
         }
 
         // ─────────────────────────────────────────────────────────────────────
