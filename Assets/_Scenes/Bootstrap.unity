@@ -170,8 +170,6 @@ MonoBehaviour:
     type: 2}
   _onActiveSessionEnd: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a,
     type: 2}
-  _onClickToRestartButton: {fileID: 11400000, guid: 0066317e1b0d3f64baeead3311cd4970,
-    type: 2}
 --- !u!114 &7845464
 MonoBehaviour:
   m_ObjectHideFlags: 0
