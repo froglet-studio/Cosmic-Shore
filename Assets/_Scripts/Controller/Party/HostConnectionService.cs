@@ -478,12 +478,32 @@ namespace CosmicShore.Gameplay
             while (_lobbyBusy)
                 await Task.Yield();
             _lobbyBusy = true;
+
+            PartyInviteData? mutualInviteToAccept = null;
             try
             {
                 SyncLocalIdentity();
                 DebugExtensions.LogColored(
                     $"[INVITE-SEND] LocalPlayerId: {connectionData.LocalPlayerId}, " +
                     $"DisplayName: {connectionData.LocalDisplayName}", Color.cyan);
+
+                // Pre-send mutual-invite check: if the target already invited us,
+                // there's no reason to start a second parallel session — both
+                // players would then be hosts of empty parties pointing at each
+                // other. Collapse the two clicks into a single accept of their
+                // invite so both players end up in the same lobby.
+                try { await _presenceLobby.RefreshAsync(); }
+                catch { /* non-fatal — we'll still attempt with whatever we have cached */ }
+
+                if (TryFindIncomingInviteFrom(targetPlayerId, out var incomingInvite))
+                {
+                    DebugExtensions.LogColored(
+                        $"[INVITE-SEND] Target '{targetPlayerId}' has already invited us — " +
+                        "converting this send into an Accept of their invite.",
+                        Color.cyan);
+                    mutualInviteToAccept = incomingInvite;
+                    return;
+                }
 
                 if (_partySession == null)
                 {
@@ -500,12 +520,6 @@ namespace CosmicShore.Gameplay
                 DebugExtensions.LogColored(
                     $"[INVITE-SEND] Setting properties — invite_target: '{targetPlayerId}', " +
                     $"invite_data: '{inviteData}'", Color.cyan);
-
-                // Best-effort refresh to sync SDK player list cache before setting
-                // properties. Without this, SaveCurrentPlayerDataAsync can fail
-                // silently if the SDK's internal player index is stale.
-                try { await _presenceLobby.RefreshAsync(); }
-                catch { /* non-fatal — SaveWithRetryAsync handles stale state */ }
 
                 _presenceLobby.CurrentPlayer.SetProperty(INVITE_TARGET_KEY,
                     new PlayerProperty(targetPlayerId, VisibilityPropertyOptions.Public));
@@ -552,6 +566,14 @@ namespace CosmicShore.Gameplay
 
                 _lobbyBusy = false;
             }
+
+            // Resolved outside the mutex: AcceptInviteAsync shuts down our
+            // NetworkManager and starts a Relay client. Leaving _lobbyBusy
+            // held across that transition would block the refresh loop for
+            // the duration of the shutdown + connect (~1s), and the accept
+            // flow does its own presence operations through this service.
+            if (mutualInviteToAccept.HasValue)
+                await ResolveMutualInviteAsync(mutualInviteToAccept.Value);
         }
 
         public async Task AcceptInviteAsync(PartyInviteData invite)
@@ -1042,6 +1064,7 @@ namespace CosmicShore.Gameplay
 
             _lobbyBusy = true;
             bool shouldReconnect = false;
+            PartyInviteData? mutualInviteToAccept = null;
             try
             {
                 await _presenceLobby.RefreshAsync();
@@ -1082,6 +1105,45 @@ namespace CosmicShore.Gameplay
                             {
                                 _lastFiredInvite = invite;
                                 _lastInviteResolved = true;
+                                continue;
+                            }
+
+                            // Mutual-invite race: both players clicked "invite" on each
+                            // other before either refresh detected the other's invite.
+                            // We have an outgoing invite to THIS sender and now see
+                            // their invite to us. Resolve deterministically so both
+                            // clients converge into a single party (the lower PlayerId
+                            // keeps their host role, the other auto-accepts).
+                            bool isMutualRace =
+                                !string.IsNullOrEmpty(_currentInviteTargetId) &&
+                                _currentInviteTargetId == p.Id;
+                            if (isMutualRace)
+                            {
+                                int cmp = string.CompareOrdinal(connectionData.LocalPlayerId, p.Id);
+                                if (cmp < 0)
+                                {
+                                    // Our PlayerId is lower — we stay as host. Suppress
+                                    // the popup; the other side will auto-accept ours
+                                    // on their next refresh and end up in our party.
+                                    _lastFiredInvite = invite;
+                                    _lastInviteResolved = true;
+                                    DebugExtensions.LogColored(
+                                        $"[INVITE-RECV] Mutual invite detected with '{p.Id}' — " +
+                                        "we are host (lower id), suppressing their invite.",
+                                        Color.yellow);
+                                    continue;
+                                }
+
+                                // Our PlayerId is higher — we become the client. Skip
+                                // the popup entirely and schedule an auto-accept of
+                                // their invite once the lobby mutex is released.
+                                _lastFiredInvite = invite;
+                                _lastInviteResolved = true;
+                                mutualInviteToAccept = invite;
+                                DebugExtensions.LogColored(
+                                    $"[INVITE-RECV] Mutual invite detected with '{p.Id}' — " +
+                                    "we are client (higher id), auto-accepting their invite.",
+                                    Color.yellow);
                                 continue;
                             }
 
@@ -1162,6 +1224,12 @@ namespace CosmicShore.Gameplay
             // Reconnect outside the try/finally so _lobbyBusy is released first.
             if (shouldReconnect)
                 await JoinPresenceLobbyAsync();
+
+            // Auto-accept a mutual-invite race winner outside the mutex too —
+            // ResolveMutualInviteAsync drives the full Netcode shutdown + Relay
+            // join path, which acquires _lobbyBusy itself.
+            if (mutualInviteToAccept.HasValue)
+                await ResolveMutualInviteAsync(mutualInviteToAccept.Value);
         }
 
         /// <summary>
@@ -1642,6 +1710,75 @@ namespace CosmicShore.Gameplay
             finally
             {
                 _lobbyBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// Scans the presence lobby for a player with id <paramref name="senderId"/>
+        /// whose <c>invite_target</c> points at the local player, and returns the
+        /// parsed invite payload if found. Used by <see cref="SendInviteAsync"/> to
+        /// collapse a mutual-invite click pair into a single accept, and callable
+        /// from any context that already has fresh presence data.
+        /// </summary>
+        private bool TryFindIncomingInviteFrom(string senderId, out PartyInviteData invite)
+        {
+            invite = default;
+            if (_presenceLobby == null || string.IsNullOrEmpty(senderId)) return false;
+            if (string.IsNullOrEmpty(connectionData?.LocalPlayerId)) return false;
+
+            foreach (var p in _presenceLobby.Players)
+            {
+                if (p.Id != senderId) continue;
+                if (!p.Properties.TryGetValue(INVITE_TARGET_KEY, out var targetProp)) return false;
+                if (targetProp.Value != connectionData.LocalPlayerId) return false;
+                if (!p.Properties.TryGetValue(INVITE_DATA_KEY, out var dataProp)) return false;
+                var parsed = ParseInvite(dataProp.Value);
+                if (!parsed.HasValue) return false;
+                invite = parsed.Value;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Resolves a mutual-invite race by accepting the other player's invite.
+        /// Clears our own outgoing-invite properties first so remote players stop
+        /// seeing stale data pointing at the party we just abandoned, then hands
+        /// off to <see cref="PartyInviteController.AcceptInviteAsync"/> for the
+        /// full Netcode shutdown + Relay client join. The inviter's presence scan
+        /// (<see cref="ScanPresenceForJoinedPartyMembers"/>) picks up our
+        /// <c>joined_party</c> publish on their next refresh, so the UI on both
+        /// sides converges to a single party within one polling tick.
+        /// </summary>
+        private async Task ResolveMutualInviteAsync(PartyInviteData invite)
+        {
+            // Clear our stale outgoing invite — our old _partySession is about to
+            // be orphaned and any remote client that saw our invite_target would
+            // otherwise try to join a party we no longer host.
+            try { await RequestClearInviteAsync(); }
+            catch { /* best-effort — the invite will still auto-clear on next scene load */ }
+
+            _currentInviteTargetId = null;
+
+            // RequestClearInviteAsync nulls _lastFiredInvite, so re-seed the dedup
+            // guard with the invite we are about to accept. Without this, a
+            // presence refresh that fires before the accept completes would
+            // re-raise OnInviteReceived and pop the notification panel for the
+            // invite we just auto-resolved.
+            _lastFiredInvite = invite;
+            _lastInviteResolved = true;
+
+            var controller = PartyInviteController.Instance;
+            if (controller != null)
+            {
+                await controller.AcceptInviteAsync(invite);
+            }
+            else
+            {
+                // Fallback for contexts where the controller isn't present (tests,
+                // unusual scene loads). AcceptInviteAsync still performs the join,
+                // just without the Netcode-shutdown orchestration.
+                await AcceptInviteAsync(invite);
             }
         }
 
