@@ -12,9 +12,10 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Menu-specific MiniGameHUD for freestyle mode in Menu_Main.
-    /// Provides the Volume/Pause button that opens the vessel selection panel
-    /// (matching the MinigameFreestyle scene pattern), vessel HUD reparenting
-    /// via the onShipHUDInitialized SOAP event, and PauseMenu instantiation.
+    /// Provides the Volume/Pause button that exits freestyle and returns to
+    /// the main menu by invoking <see cref="MenuCrystalClickHandler.ToggleTransition"/>.
+    /// Also handles vessel HUD reparenting via the onShipHUDInitialized SOAP
+    /// event and PauseMenu instantiation.
     ///
     /// Subscribes to <see cref="MenuFreestyleEventsContainerSO"/> transition
     /// bracket events to show/hide the local player's per-vessel HUD when
@@ -29,9 +30,8 @@ namespace CosmicShore.UI
 
         [Header("Volume / Pause Button")]
         [SerializeField] Button volumePauseButton;
-
-        [Header("Vessel Selection")]
-        [SerializeField] MenuVesselSelectionPanelController vesselSelectionPanel;
+        [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
+        [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
         [Header("SOAP Events")]
         [SerializeField] ScriptableEventShipHUDData onShipHUDInitialized;
@@ -108,8 +108,7 @@ namespace CosmicShore.UI
 
         void OnVolumePauseClicked()
         {
-            vesselSelectionPanel.Open();
-            Hide();
+            crystalClickHandler.ToggleTransition();
         }
 
         public void Show()
