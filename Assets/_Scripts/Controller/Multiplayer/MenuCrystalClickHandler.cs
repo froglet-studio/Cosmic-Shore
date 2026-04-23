@@ -41,9 +41,24 @@ namespace CosmicShore.Gameplay
         [Header("Settings")]
         [SerializeField] float fadeDuration = 0.5f;
 
-        [SerializeField, Tooltip("How long the camera blend takes (should match MainMenuCameraController). " +
-                                 "The toggle is blocked for this duration to prevent click spam.")]
+        [SerializeField, Tooltip("Fallback transition duration, used when no MainMenuCameraController " +
+                                 "is assigned (or for initial warm-up). When a controller is wired " +
+                                 "below, its per-mode ActiveTransitionDuration takes precedence.")]
         float cameraTransitionDuration = 2f;
+
+        [SerializeField, Tooltip("Camera controller on the Game GameObject. If assigned, its " +
+                                 "ActiveTransitionDuration (per-mode) is used so CrystalOrbit reads " +
+                                 "~2s while VesselFollow / VesselChaseTight / VesselFixedAim read " +
+                                 "~0.5s. Leave null to always use the fallback duration above.")]
+        MainMenuCameraController cameraController;
+
+        [SerializeField, Tooltip("Keep player input paused until after the camera blend completes. " +
+                                 "With AI off and input paused, the vessel has no steering input and " +
+                                 "cruises forward on its own minimum-speed throttle — producing a " +
+                                 "seamless \"vessel settles in before you drive\" feel during the " +
+                                 "transition. Especially useful with vessel-follow camera modes where " +
+                                 "the camera barely moves and stray input would be the most jarring thing.")]
+        bool lockInputDuringEnterTransition = true;
 
         bool _isInFreestyle;
         bool _isTransitioning;
@@ -114,7 +129,14 @@ namespace CosmicShore.Gameplay
                 PauseSystem.TogglePauseGame(false);
 
             player.Vessel.ToggleAIPilot(false);
-            player.InputController.SetPause(false);
+
+            // Hand steering to the player either now or after the blend, depending on the flag.
+            // With AI off and input still paused, the vessel cruises forward on MinimumSpeed —
+            // no erratic AI steering, no stray player input — producing the "forward only
+            // during transition" feel that keeps the camera blend reading cleanly.
+            if (!lockInputDuringEnterTransition)
+                player.InputController.SetPause(false);
+
             _isInFreestyle = true;
 
             // Save current menu alphas so we can restore them exactly when exiting freestyle.
@@ -125,12 +147,17 @@ namespace CosmicShore.Gameplay
             // The UI fade and camera blend then run in parallel.
             freestyleEvents.OnGameStateTransitionStart.Raise();
 
-            // Run UI fade and camera transition duration in parallel.
+            // Run UI fade and camera transition duration in parallel. The camera controller
+            // picks the duration per current mode — CrystalOrbit = long, vessel modes = short.
             // _isTransitioning stays true until both complete — prevents click spam.
             await UniTask.WhenAll(
                 FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct),
-                UniTask.Delay((int)(cameraTransitionDuration * 1000),
+                UniTask.Delay((int)(CurrentTransitionDuration() * 1000),
                               ignoreTimeScale: true, cancellationToken: ct));
+
+            // Release control to the player once the camera has settled.
+            if (lockInputDuringEnterTransition)
+                player.InputController.SetPause(false);
 
             freestyleEvents.OnGameStateTransitionEnd.Raise();
             _isTransitioning = false;
@@ -156,7 +183,7 @@ namespace CosmicShore.Gameplay
             // _isTransitioning stays true until both complete — prevents click spam.
             await UniTask.WhenAll(
                 FadeToSavedMenuAlphas(ct),
-                UniTask.Delay((int)(cameraTransitionDuration * 1000),
+                UniTask.Delay((int)(CurrentTransitionDuration() * 1000),
                               ignoreTimeScale: true, cancellationToken: ct));
 
             freestyleEvents.OnMenuStateTransitionEnd.Raise();
@@ -165,6 +192,17 @@ namespace CosmicShore.Gameplay
         }
 
         #endregion
+
+        /// <summary>
+        /// Blend duration to use for this transition. When a MainMenuCameraController is
+        /// wired, its ActiveTransitionDuration (per-mode) wins — so CrystalOrbit reads long
+        /// while vessel-follow modes read short. Otherwise falls back to the serialized value.
+        /// </summary>
+        float CurrentTransitionDuration()
+        {
+            if (cameraController) return cameraController.ActiveTransitionDuration;
+            return cameraTransitionDuration;
+        }
 
         #region Multiplayer Helpers
 
