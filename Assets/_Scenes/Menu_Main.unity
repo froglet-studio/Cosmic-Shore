@@ -61256,6 +61256,8 @@ MonoBehaviour:
   - {fileID: 1799603820}
   fadeDuration: 0.5
   cameraTransitionDuration: 2
+  cameraController: {fileID: 0}
+  lockInputDuringEnterTransition: 1
 --- !u!114 &1486013851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61312,9 +61314,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32a7a343565d3e743af4c0d44b8701bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _orbitRadius: 150
+  _mode: 0
+  _crystalOrbitTransitionDuration: 2
+  _vesselFollowTransitionDuration: 0.5
+  _overrideBrainBlendForVesselModes: 1
+  _fovPunchDegrees: 3
+  _orbitRadius: 130
   _orbitHeight: 30
   _orbitSpeed: 5
+  _vesselFollowOffset: {x: 0, y: 14, z: -28}
+  _vesselFollowPositionDamping: 0.05
+  _vesselFollowRotationDamping: 0.05
+  _vesselFollowBindingMode: 5
+  _vesselChaseTightOffset: {x: 0, y: 6, z: -14}
+  _fixedAimAnchorDistance: 60
+  _fixedAimAnchorHeight: 20
+  _fixedAimRotationDamping: 0.5
+  _randomSwitchEnabled: 1
+  _randomSwitchModes: 000000000100000002000000
+  _randomSwitchIntervalMin: 20
+  _randomSwitchIntervalMax: 30
   _cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
 --- !u!114 &1486013854
 MonoBehaviour:
