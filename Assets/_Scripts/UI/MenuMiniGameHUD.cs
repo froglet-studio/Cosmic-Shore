@@ -87,12 +87,14 @@ namespace CosmicShore.UI
         void HandleGameStateTransitionStart()
         {
             _isInFreestyle = true;
+            Show();
             ShowLocalVesselHUD();
         }
 
         void HandleMenuStateTransitionStart()
         {
             _isInFreestyle = false;
+            Hide();
             HideLocalVesselHUD();
         }
 
@@ -150,7 +152,10 @@ namespace CosmicShore.UI
             data.ShipHUD.gameObject.SetActive(true);
 
             if (_isInFreestyle)
+            {
+                Show();
                 ShowLocalVesselHUD();
+            }
         }
 
         void InstantiatePauseMenu()
