@@ -125,12 +125,12 @@ namespace CosmicShore.Gameplay
                  "the vessel banks or yaws sharply under AI control.")]
         float _vesselFollowRotationDamping = 0.3f;
 
-        [SerializeField, Tooltip("Binding mode for the vessel-follow vCam. SimpleFollowWithWorldUp is " +
-                                 "the default because it keeps world-up (camera doesn't roll with the " +
-                                 "vessel) and trails behind in screen-space — smooth for fast AI pilots. " +
-                                 "LockToTargetWithWorldUp yaws with the vessel; LockToTarget copies full " +
-                                 "orientation (can feel choppy under aggressive AI).")]
-        BindingMode _vesselFollowBindingMode = BindingMode.SimpleFollowWithWorldUp;
+        [SerializeField, Tooltip("Binding mode for the vessel-follow vCam. LazyFollow is the default " +
+                                 "because it keeps world-up (camera doesn't roll with the vessel) and " +
+                                 "trails behind in screen-space — smooth for fast AI pilots. " +
+                                 "LockToTargetWithWorldUp yaws with the vessel; LockToTarget copies " +
+                                 "full orientation (can feel choppy under aggressive AI).")]
+        BindingMode _vesselFollowBindingMode = BindingMode.LazyFollow;
 
         [Header("Vessel Chase Tight (VesselChaseTight mode)")]
         [SerializeField, Tooltip("Zero-damping chase offset. Tight, responsive, good for multiplayer " +
@@ -552,7 +552,7 @@ namespace CosmicShore.Gameplay
                     offset = _vesselChaseTightOffset;
                     posDamp = Vector3.zero;
                     rotDamp = Vector3.zero;
-                    binding = BindingMode.SimpleFollowWithWorldUp;
+                    binding = BindingMode.LazyFollow;
                     break;
 
                 case MenuCameraMode.VesselFixedAim:
