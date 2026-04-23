@@ -24,6 +24,17 @@ namespace CosmicShore.Gameplay
         /// vessel with a cinematic offset. Transition is a small offset tightening
         /// — near-instant handoff with minimal camera motion.</summary>
         VesselFollow = 1,
+
+        /// <summary>Tight snap-behind camera — zero damping, tight offset.
+        /// Multiplayer-friendly: responds instantly to the vessel regardless of
+        /// its speed, so you don't get the "camera lags then catches up" stutter.</summary>
+        VesselChaseTight = 2,
+
+        /// <summary>Camera stays stationary at a world anchor point and only
+        /// rotates to aim at the vessel. Immune to target-speed choppiness
+        /// because the camera never translates. Good for multiplayer where
+        /// several vessels may frame independently.</summary>
+        VesselFixedAim = 3,
     }
 
     /// <summary>
@@ -66,6 +77,28 @@ namespace CosmicShore.Gameplay
                                  "Can be switched at runtime — the active vCam updates immediately.")]
         MenuCameraMode _mode = MenuCameraMode.CrystalOrbit;
 
+        [Header("Transition Tuning")]
+        [SerializeField, Range(0.1f, 5f),
+         Tooltip("How long the menu→freestyle blend lasts in CrystalOrbit mode. " +
+                 "The crystal-to-vessel spatial distance is large, so this wants ~2s.")]
+        float _crystalOrbitTransitionDuration = 2f;
+
+        [SerializeField, Range(0.1f, 5f),
+         Tooltip("How long the menu→freestyle blend lasts in any vessel-follow mode. " +
+                 "The camera is already near the vessel, so 0.4–0.6s reads tighter than a long blend.")]
+        float _vesselFollowTransitionDuration = 0.5f;
+
+        [SerializeField, Tooltip("While transitioning in a vessel-follow mode, temporarily override " +
+                                 "CinemachineBrain.DefaultBlend with a snappy Cut/EaseInOut to match " +
+                                 "the shorter transition duration. Restored after the blend completes.")]
+        bool _overrideBrainBlendForVesselModes = true;
+
+        [SerializeField, Range(0f, 10f),
+         Tooltip("Subtle FOV punch-in applied to the bridge vCam during the blend. Narrows the lens " +
+                 "by this many degrees as the camera locks onto the vessel, then restores — a free " +
+                 "'lock on' cue. Set to 0 to disable.")]
+        float _fovPunchDegrees = 3f;
+
         [Header("Menu Camera Orbit (CrystalOrbit mode)")]
         [SerializeField, Tooltip("Orbit radius from crystal center.")]
         float _orbitRadius = 80f;
@@ -84,13 +117,59 @@ namespace CosmicShore.Gameplay
 
         [SerializeField, Range(0f, 5f),
          Tooltip("Position damping for the menu vessel-follow vCam (seconds of lag). " +
-                 "Higher = smoother/more cinematic trailing. Zero = rigid attachment.")]
-        float _vesselFollowPositionDamping = 1.2f;
+                 "Lower = camera sticks closer to a fast vessel (less stutter). Higher = smoother trail.")]
+        float _vesselFollowPositionDamping = 0.4f;
 
         [SerializeField, Range(0f, 5f),
-         Tooltip("Rotation damping for the menu vessel-follow vCam (seconds of lag). " +
-                 "Higher = smoother rotation tracking.")]
-        float _vesselFollowRotationDamping = 0.8f;
+         Tooltip("Rotation damping for the menu vessel-follow vCam. Low values reduce choppiness when " +
+                 "the vessel banks or yaws sharply under AI control.")]
+        float _vesselFollowRotationDamping = 0.3f;
+
+        [SerializeField, Tooltip("Binding mode for the vessel-follow vCam. SimpleFollowWithWorldUp is " +
+                                 "the default because it keeps world-up (camera doesn't roll with the " +
+                                 "vessel) and trails behind in screen-space — smooth for fast AI pilots. " +
+                                 "LockToTargetWithWorldUp yaws with the vessel; LockToTarget copies full " +
+                                 "orientation (can feel choppy under aggressive AI).")]
+        BindingMode _vesselFollowBindingMode = BindingMode.SimpleFollowWithWorldUp;
+
+        [Header("Vessel Chase Tight (VesselChaseTight mode)")]
+        [SerializeField, Tooltip("Zero-damping chase offset. Tight, responsive, good for multiplayer " +
+                                 "where you don't want the camera to lag behind a fast vessel.")]
+        Vector3 _vesselChaseTightOffset = new(0f, 6f, -14f);
+
+        [Header("Vessel Fixed Aim (VesselFixedAim mode)")]
+        [SerializeField, Tooltip("Distance from the vessel at which the fixed-aim anchor sits. The " +
+                                 "camera stays at this anchor and only rotates to aim at the vessel — " +
+                                 "immune to vessel-speed choppiness because the camera never translates.")]
+        float _fixedAimAnchorDistance = 60f;
+
+        [SerializeField, Tooltip("Vertical offset of the fixed-aim anchor, relative to the vessel at " +
+                                 "mode entry. Positive = camera sits above.")]
+        float _fixedAimAnchorHeight = 20f;
+
+        [SerializeField, Range(0f, 3f),
+         Tooltip("Rotation damping for the fixed-aim mode. 0 = rigid aim, higher = smoother.")]
+        float _fixedAimRotationDamping = 0.5f;
+
+        [Header("Randomized Mode Switching")]
+        [SerializeField, Tooltip("If enabled, the mode rotates through RandomSwitchModes while in menu " +
+                                 "state (skipped during freestyle). Switches cross-blend via Cinemachine " +
+                                 "so the change isn't jarring.")]
+        bool _randomSwitchEnabled = false;
+
+        [SerializeField, Tooltip("Pool of modes to pick from when auto-switching. Empty = no switching.")]
+        MenuCameraMode[] _randomSwitchModes = {
+            MenuCameraMode.CrystalOrbit,
+            MenuCameraMode.VesselFollow,
+        };
+
+        [SerializeField, Range(1f, 120f),
+         Tooltip("Minimum seconds between automatic mode switches.")]
+        float _randomSwitchIntervalMin = 20f;
+
+        [SerializeField, Range(1f, 120f),
+         Tooltip("Maximum seconds between automatic mode switches.")]
+        float _randomSwitchIntervalMax = 45f;
 
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
 
@@ -112,6 +191,20 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>How long the menu↔freestyle blend should last for the active mode.
+        /// Read by <see cref="MenuCrystalClickHandler"/> so both sides agree on pacing.</summary>
+        public float ActiveTransitionDuration =>
+            _mode == MenuCameraMode.CrystalOrbit
+                ? _crystalOrbitTransitionDuration
+                : _vesselFollowTransitionDuration;
+
+        /// <summary>True for any mode whose menu vCam is already vessel-relative —
+        /// the blend is a small tighten rather than a cross-scene dolly.</summary>
+        bool IsVesselMode =>
+            _mode == MenuCameraMode.VesselFollow ||
+            _mode == MenuCameraMode.VesselChaseTight ||
+            _mode == MenuCameraMode.VesselFixedAim;
+
         // Cached menu vCam hierarchy (lives on CameraManager)
         CinemachineCamera _menuVCam;
         CinemachineFollow _menuFollow;
@@ -119,15 +212,31 @@ namespace CosmicShore.Gameplay
         RotateAroundOrigin _followTargetRotator;
         Transform _crystalTarget;
 
-        // Vessel-follow menu vCam (created at runtime on CameraManager) — used in VesselFollow mode.
+        // Vessel-follow menu vCam (created at runtime on CameraManager). Reused across
+        // all vessel modes (VesselFollow, VesselChaseTight, VesselFixedAim) by reconfiguring
+        // its offset, damping, and binding mode per-mode.
         CinemachineCamera _menuVesselFollowVCam;
         CinemachineFollow _menuVesselFollowFollow;
         CinemachineMatchTargetOrientation _menuVesselFollowAim;
+
+        // Fixed-aim mode anchor — a scene-space Transform the vCam follows with zero damping.
+        // Positioned once at mode entry and left alone, so the camera never translates
+        // regardless of how fast the vessel moves (only its rotation changes to aim).
+        Transform _fixedAimAnchor;
 
         // Bridge vCam for smooth transitions (created at runtime on CameraManager)
         CinemachineCamera _bridgeVCam;
         CinemachineFollow _bridgeFollow;
         CinemachineMatchTargetOrientation _bridgeAim;
+
+        // State saved at transition start so we can restore after the blend.
+        CinemachineBlendDefinition _savedBrainBlend;
+        bool _brainBlendSaved;
+        float _bridgeSavedFov;
+        bool _bridgeFovSaved;
+
+        // Random switch loop — owned by _cts so it dies with the component.
+        CancellationTokenSource _randomSwitchCts;
 
         // Cached player camera (CM PlayerCam)
         CustomCameraController _playerCameraController;
@@ -152,11 +261,15 @@ namespace CosmicShore.Gameplay
             CacheBrain();
             EnsureBridgeVCam();
             EnsureMenuVesselFollowVCam();
+            EnsureFixedAimAnchor();
             SubscribeEvents();
+            StartRandomSwitchLoopIfEnabled();
         }
 
         void OnDestroy()
         {
+            _randomSwitchCts?.Cancel();
+            _randomSwitchCts?.Dispose();
             _transitionCts?.Cancel();
             _transitionCts?.Dispose();
             _cts?.Cancel();
@@ -164,8 +277,13 @@ namespace CosmicShore.Gameplay
 
             UnsubscribeEvents();
 
-            // Restore Brain's IgnoreTimeScale so gameplay scenes use scaled time for blends
-            if (_brain) _brain.IgnoreTimeScale = false;
+            // Restore Brain state — IgnoreTimeScale + any saved DefaultBlend override.
+            if (_brain)
+            {
+                if (_brainBlendSaved) _brain.DefaultBlend = _savedBrainBlend;
+                _brain.IgnoreTimeScale = false;
+            }
+            _brainBlendSaved = false;
 
             // Re-enable RotateAroundOrigin in case CameraManager is reused across scenes
             if (_followTargetRotator) _followTargetRotator.enabled = true;
@@ -178,6 +296,9 @@ namespace CosmicShore.Gameplay
 
             if (_bridgeVCam)
                 _bridgeVCam.gameObject.SetActive(false);
+
+            if (_fixedAimAnchor)
+                Destroy(_fixedAimAnchor.gameObject);
         }
 
         void Update()
@@ -190,17 +311,27 @@ namespace CosmicShore.Gameplay
 #if UNITY_EDITOR
         void OnValidate()
         {
-            // When the mode is changed in the inspector during play mode, apply immediately
+            // Keep min ≤ max for the random-switch interval.
+            if (_randomSwitchIntervalMax < _randomSwitchIntervalMin)
+                _randomSwitchIntervalMax = _randomSwitchIntervalMin;
+
+            // When values change in the inspector during play mode, apply immediately
             // so we can A/B test feels without re-entering play.
             if (!Application.isPlaying) return;
             ApplyModeChange();
             ApplyMenuVesselFollowConfig();
+
+            // Restart or cancel the random-switch loop so the toggle takes effect live.
+            if (_randomSwitchEnabled) StartRandomSwitchLoopIfEnabled();
+            else { _randomSwitchCts?.Cancel(); _randomSwitchCts?.Dispose(); _randomSwitchCts = null; }
         }
 #endif
 
-        /// <summary>The menu-side vCam for the current mode.</summary>
+        /// <summary>The menu-side vCam for the current mode. All three vessel modes reuse
+        /// <see cref="_menuVesselFollowVCam"/> — <see cref="ApplyMenuVesselFollowConfig"/>
+        /// reconfigures it per-mode.</summary>
         CinemachineCamera ActiveMenuVCam =>
-            _mode == MenuCameraMode.VesselFollow ? _menuVesselFollowVCam : _menuVCam;
+            IsVesselMode ? _menuVesselFollowVCam : _menuVCam;
 
         // ── Event Wiring ────────────────────────────────────────────────
 
@@ -351,27 +482,111 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Applies the serialized cinematic offset/damping to the vessel-follow menu vCam.
-        /// Called on creation and whenever inspector values change during play mode.
+        /// Creates the scene-space anchor the VesselFixedAim vCam follows. The anchor is
+        /// parented under CameraManager but positioned in world space; because the vCam
+        /// follows it with zero damping and the anchor doesn't move once placed, the
+        /// camera never translates during fixed-aim mode — only its rotation changes
+        /// (via LookAt) to track the vessel. This neutralises target-speed choppiness.
+        /// </summary>
+        void EnsureFixedAimAnchor()
+        {
+            if (_fixedAimAnchor) return;
+            if (!CameraManager.Instance) return;
+
+            var parent = CameraManager.Instance.transform;
+            var existing = parent.Find("CM Menu Fixed Aim Anchor");
+
+            if (existing)
+            {
+                _fixedAimAnchor = existing;
+            }
+            else
+            {
+                var go = new GameObject("CM Menu Fixed Aim Anchor");
+                go.transform.SetParent(parent, worldPositionStays: true);
+                _fixedAimAnchor = go.transform;
+            }
+        }
+
+        /// <summary>
+        /// Positions the fixed-aim anchor in world space relative to the current vessel
+        /// position. Called when VesselFixedAim becomes the active mode — the anchor is
+        /// then left alone, producing a stationary camera.
+        /// </summary>
+        void PlaceFixedAimAnchor(Transform vesselFollowTarget)
+        {
+            if (!_fixedAimAnchor || !vesselFollowTarget) return;
+
+            // Anchor sits behind the vessel's current facing (slight offset so we don't
+            // frame the vessel directly head-on) and above it. World-space so the camera
+            // doesn't drift.
+            var vesselPos = vesselFollowTarget.position;
+            var back = -vesselFollowTarget.forward;
+            back.y = 0f;
+            if (back.sqrMagnitude < 0.001f) back = Vector3.back;
+            else back.Normalize();
+
+            _fixedAimAnchor.position = vesselPos
+                                       + back * _fixedAimAnchorDistance
+                                       + Vector3.up * _fixedAimAnchorHeight;
+            _fixedAimAnchor.rotation = Quaternion.identity;
+        }
+
+        /// <summary>
+        /// Applies the serialized cinematic offset/damping to the vessel-follow menu vCam,
+        /// choosing per-mode values. Called on creation, when the mode changes, and when
+        /// inspector values change during play mode.
         /// </summary>
         void ApplyMenuVesselFollowConfig()
         {
             if (!_menuVesselFollowFollow) return;
 
-            _menuVesselFollowFollow.FollowOffset = _vesselFollowOffset;
+            Vector3 offset;
+            Vector3 posDamp;
+            Vector3 rotDamp;
+            BindingMode binding;
 
+            switch (_mode)
+            {
+                case MenuCameraMode.VesselChaseTight:
+                    offset = _vesselChaseTightOffset;
+                    posDamp = Vector3.zero;
+                    rotDamp = Vector3.zero;
+                    binding = BindingMode.SimpleFollowWithWorldUp;
+                    break;
+
+                case MenuCameraMode.VesselFixedAim:
+                    // vCam's Tracker follows the stationary anchor with zero damping — the
+                    // camera stays put. LookAt handles aiming at the vessel (see below).
+                    offset = Vector3.zero;
+                    posDamp = Vector3.zero;
+                    rotDamp = Vector3.one * _fixedAimRotationDamping;
+                    binding = BindingMode.WorldSpace;
+                    break;
+
+                default: // VesselFollow
+                    offset = _vesselFollowOffset;
+                    posDamp = Vector3.one * _vesselFollowPositionDamping;
+                    rotDamp = Vector3.one * _vesselFollowRotationDamping;
+                    binding = _vesselFollowBindingMode;
+                    break;
+            }
+
+            _menuVesselFollowFollow.FollowOffset = offset;
             var tracker = _menuVesselFollowFollow.TrackerSettings;
-            tracker.BindingMode = BindingMode.LockToTarget;
-            tracker.PositionDamping = Vector3.one * _vesselFollowPositionDamping;
-            tracker.RotationDamping = Vector3.one * _vesselFollowRotationDamping;
+            tracker.BindingMode = binding;
+            tracker.PositionDamping = posDamp;
+            tracker.RotationDamping = rotDamp;
             _menuVesselFollowFollow.TrackerSettings = tracker;
 
             if (_menuVesselFollowAim)
-                _menuVesselFollowAim.Damping = _vesselFollowRotationDamping;
+                _menuVesselFollowAim.Damping = rotDamp.x;
         }
 
         /// <summary>
-        /// Configures the vessel-follow menu vCam to track the local player's vessel.
+        /// Configures the vessel-follow menu vCam for the current vessel-based mode.
+        /// VesselFollow/VesselChaseTight: tracks the vessel follow target.
+        /// VesselFixedAim: tracks the stationary anchor; LookAt points at the vessel.
         /// Safe to call repeatedly (e.g. after vessel swap).
         /// </summary>
         void ConfigureMenuVesselFollowTarget()
@@ -383,11 +598,23 @@ namespace CosmicShore.Gameplay
             if (!followTarget) return;
 
             var target = _menuVesselFollowVCam.Target;
-            target.TrackingTarget = followTarget;
-            target.LookAtTarget = null;
-            target.CustomLookAtTarget = false;
-            _menuVesselFollowVCam.Target = target;
 
+            if (_mode == MenuCameraMode.VesselFixedAim)
+            {
+                EnsureFixedAimAnchor();
+                PlaceFixedAimAnchor(followTarget);
+                target.TrackingTarget = _fixedAimAnchor;
+                target.LookAtTarget = followTarget;
+                target.CustomLookAtTarget = true;
+            }
+            else
+            {
+                target.TrackingTarget = followTarget;
+                target.LookAtTarget = null;
+                target.CustomLookAtTarget = false;
+            }
+
+            _menuVesselFollowVCam.Target = target;
             ApplyMenuVesselFollowConfig();
         }
 
@@ -403,6 +630,103 @@ namespace CosmicShore.Gameplay
 
             EnsureMenuVesselFollowVCam();
             ActivateMenuCameraImmediate();
+        }
+
+        // ── Brain Blend Override + FOV Punch (transition polish) ────────
+
+        /// <summary>
+        /// If <see cref="_overrideBrainBlendForVesselModes"/> is on and we're in a vessel mode,
+        /// temporarily shorten the Brain's DefaultBlend to match <see cref="_vesselFollowTransitionDuration"/>.
+        /// Saved state is restored by <see cref="RestoreBrainBlend"/>.
+        /// </summary>
+        void MaybeOverrideBrainBlend()
+        {
+            if (!_brain) return;
+            if (!_overrideBrainBlendForVesselModes || !IsVesselMode) return;
+            if (_brainBlendSaved) return;
+
+            _savedBrainBlend = _brain.DefaultBlend;
+            _brainBlendSaved = true;
+            _brain.DefaultBlend = new CinemachineBlendDefinition(
+                CinemachineBlendDefinition.Styles.EaseInOut,
+                _vesselFollowTransitionDuration);
+        }
+
+        void RestoreBrainBlend()
+        {
+            if (!_brain || !_brainBlendSaved) return;
+            _brain.DefaultBlend = _savedBrainBlend;
+            _brainBlendSaved = false;
+        }
+
+        /// <summary>
+        /// Narrows the bridge vCam's FOV by <see cref="_fovPunchDegrees"/> to sell a subtle
+        /// "lock on" at the moment camera control locks onto the vessel. Paired with
+        /// <see cref="RestoreBridgeFov"/> after the blend completes.
+        /// </summary>
+        void ApplyBridgeFovPunch()
+        {
+            if (!_bridgeVCam || _fovPunchDegrees <= 0f) return;
+            if (_bridgeFovSaved) return;
+
+            var lens = _bridgeVCam.Lens;
+            _bridgeSavedFov = lens.FieldOfView;
+            _bridgeFovSaved = true;
+            lens.FieldOfView = Mathf.Max(1f, _bridgeSavedFov - _fovPunchDegrees);
+            _bridgeVCam.Lens = lens;
+        }
+
+        void RestoreBridgeFov()
+        {
+            if (!_bridgeVCam || !_bridgeFovSaved) return;
+            var lens = _bridgeVCam.Lens;
+            lens.FieldOfView = _bridgeSavedFov;
+            _bridgeVCam.Lens = lens;
+            _bridgeFovSaved = false;
+        }
+
+        // ── Random Mode Switching ───────────────────────────────────────
+
+        void StartRandomSwitchLoopIfEnabled()
+        {
+            if (!_randomSwitchEnabled) return;
+            if (_randomSwitchModes == null || _randomSwitchModes.Length < 2) return;
+
+            _randomSwitchCts?.Cancel();
+            _randomSwitchCts?.Dispose();
+            _randomSwitchCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+            RandomSwitchLoopAsync(_randomSwitchCts.Token).Forget();
+        }
+
+        async UniTaskVoid RandomSwitchLoopAsync(CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                var interval = Mathf.Max(1f,
+                    Random.Range(_randomSwitchIntervalMin, _randomSwitchIntervalMax));
+
+                try
+                {
+                    await UniTask.Delay(
+                        System.TimeSpan.FromSeconds(interval),
+                        ignoreTimeScale: true,
+                        cancellationToken: ct);
+                }
+                catch (System.OperationCanceledException) { return; }
+
+                // Skip the switch if we're mid-freestyle or a transition is already running —
+                // the blend machinery is busy.
+                if (_isInFreestyle) continue;
+                if (_randomSwitchModes == null || _randomSwitchModes.Length < 2) continue;
+
+                // Pick a mode different from the current one.
+                MenuCameraMode next = _mode;
+                for (int guard = 0; guard < 8 && next == _mode; guard++)
+                    next = _randomSwitchModes[Random.Range(0, _randomSwitchModes.Length)];
+
+                if (next != _mode)
+                    Mode = next; // setter calls ApplyModeChange()
+            }
         }
 
         // ── Menu Camera Orbit ───────────────────────────────────────────
@@ -462,7 +786,7 @@ namespace CosmicShore.Gameplay
 
             CameraManager.Instance.SetMainMenuCameraActive();
 
-            if (_mode == MenuCameraMode.VesselFollow)
+            if (IsVesselMode)
             {
                 // Disable the crystal-orbit vCam so priorities don't fight.
                 if (_menuVCam) _menuVCam.gameObject.SetActive(false);
@@ -502,6 +826,12 @@ namespace CosmicShore.Gameplay
             _transitionCts?.Cancel();
             _transitionCts?.Dispose();
             _transitionCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+
+            // Any prior transition that got cancelled mid-blend may have left the Brain
+            // and bridge in an overridden state — restore before starting fresh.
+            RestoreBrainBlend();
+            RestoreBridgeFov();
+
             return _transitionCts.Token;
         }
 
@@ -531,6 +861,10 @@ namespace CosmicShore.Gameplay
             // The "from" side of the blend is whichever menu vCam is active for the current mode.
             var menuVCam = ActiveMenuVCam;
 
+            // Vessel modes want a snappier blend — override the Brain's DefaultBlend to match
+            // the shorter transition duration. Restored at the end.
+            MaybeOverrideBrainBlend();
+
             // 1. Configure bridge to track vessel with matching camera offset
             ConfigureBridgeForVessel(followTarget, player.Vessel.VesselStatus.VesselCameraCustomizer);
             _bridgeVCam.PreviousStateIsValid = false;
@@ -540,6 +874,9 @@ namespace CosmicShore.Gameplay
             _bridgeVCam.gameObject.SetActive(true);
             SetVCamPriority(_bridgeVCam, HighPriority + 1);
             if (menuVCam) SetVCamPriority(menuVCam, HighPriority);
+
+            // Subtle FOV punch-in — narrows the lens as we lock onto the vessel.
+            ApplyBridgeFovPunch();
 
             // 3. Wait for Brain blend to actually complete.
             //    Yield one frame first — the Brain hasn't evaluated the priority
@@ -551,11 +888,13 @@ namespace CosmicShore.Gameplay
             // 4. Hand off to CustomCameraController
             //    Bridge and PlayerCam both compute the same position and LookAt rotation,
             //    so the swap is seamless.
+            RestoreBridgeFov();
             _bridgeVCam.gameObject.SetActive(false);
             if (_menuVCam) _menuVCam.gameObject.SetActive(false);
             if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
 
+            RestoreBrainBlend();
             _isInFreestyle = true;
         }
 
@@ -610,9 +949,16 @@ namespace CosmicShore.Gameplay
             // Let the Brain evaluate with CUT blend.
             await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
-            // 4. Restore blend setting for the B→A transition.
+            // 4. Pick the blend for the B→A transition. Vessel modes want a shorter
+            //    EaseInOut; other modes restore the original blend curve.
             if (_brain)
-                _brain.DefaultBlend = savedBlend;
+            {
+                _brain.DefaultBlend = (_overrideBrainBlendForVesselModes && IsVesselMode)
+                    ? new CinemachineBlendDefinition(
+                        CinemachineBlendDefinition.Styles.EaseInOut,
+                        _vesselFollowTransitionDuration)
+                    : savedBlend;
+            }
 
             // 5. Deactivate PlayerCam — Brain scene camera is at bridge pose (same as
             //    PlayerCam was), so the swap is invisible.
@@ -621,7 +967,7 @@ namespace CosmicShore.Gameplay
             // 6. Activate the mode-appropriate menu vCam at higher priority → Brain blends
             //    bridge (B) → menu (A). Bridge keeps tracking vessel every frame — live "from" side.
             CinemachineCamera menuVCam = null;
-            if (_mode == MenuCameraMode.VesselFollow)
+            if (IsVesselMode)
             {
                 // Ensure the crystal-orbit vCam is off so it doesn't contend for priority.
                 if (_menuVCam) _menuVCam.gameObject.SetActive(false);
@@ -658,6 +1004,10 @@ namespace CosmicShore.Gameplay
             // 8. Clean up bridge and normalize menu priority.
             _bridgeVCam.gameObject.SetActive(false);
             if (menuVCam) SetVCamPriority(menuVCam, HighPriority);
+
+            // Restore the Brain's original DefaultBlend so gameplay scenes use the original
+            // curve next time. (We overrode it to EaseInOut for vessel modes in step 4.)
+            if (_brain) _brain.DefaultBlend = savedBlend;
 
             _isInFreestyle = false;
         }
