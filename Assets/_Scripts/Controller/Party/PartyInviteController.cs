@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
@@ -38,6 +39,12 @@ namespace CosmicShore.Gameplay
                  "30s ceiling was effectively infinite from a user-perception standpoint.")]
         [SerializeField] private float connectionTimeoutSeconds = 8f;
 
+        [Tooltip("Max seconds to wait for Netcode's automatic Menu_Main reload after joining " +
+                 "the host's party session. The host loaded Menu_Main via nm.SceneManager.LoadScene, " +
+                 "so clients get an automatic reload because scene handles don't match. Typically " +
+                 "completes in 1-2s; the timeout is a fail-soft floor if no reload is triggered.")]
+        [SerializeField] private float sceneSyncTimeoutSeconds = 5f;
+
         [Inject] private GameDataSO gameData;
 
         private CancellationTokenSource _cts;
@@ -76,16 +83,19 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Direct-join accept flow — no scene reload:
-        ///   1. Shutdown local NetworkManager host (UGS SDK will start a fresh Relay client)
-        ///   2. Join the inviter's party session via UGS (Relay transport auto-configures)
-        ///   3. Wait for Netcode client connection (best-effort)
-        ///   4. SOAP events update Party Area UI on all clients
+        /// Accept-invite flow:
+        ///   1.  Shutdown local NetworkManager host (UGS SDK will start a fresh Relay client)
+        ///   1b. Clear stale SOAP refs the shutdown left behind (LocalPlayer, Vessels, Players)
+        ///   2.  Join the inviter's party session via UGS (Relay transport auto-configures)
+        ///   3.  Wait for Netcode client connection
+        ///   3b. Wait for Netcode's automatic Menu_Main reload to complete
+        ///   4.  Raise OnPartyJoinCompleted so Party Area UI refreshes
         ///
-        /// The host's Menu_Main is NOT reloaded via Netcode scene management, so the
-        /// client stays on its local Menu_Main. Existing NetworkObjects replicate via
-        /// the regular connection-approval spawn sync. A dedicated UI panel can be
-        /// layered over this flow later for richer transition UX.
+        /// The host's Menu_Main is a networked scene (loaded via nm.SceneManager.LoadScene
+        /// in AuthenticationSceneController). When the client connects via Relay, Netcode
+        /// auto-reloads Menu_Main on the client because scene handles differ. We wait for
+        /// that reload to complete before raising OnPartyJoinCompleted so UI consumers
+        /// observe the post-reload state, not a mid-reload snapshot.
         /// </summary>
         public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {
@@ -113,10 +123,22 @@ namespace CosmicShore.Gameplay
 
                 // Step 1: Shutdown the local NetworkManager so the UGS SDK can
                 // start a fresh Relay client. Without this, StartClient fails
-                // because a host is already listening. We intentionally do NOT
-                // destroy the player/vessel or reset runtime data — the user
-                // stays in the menu and simply swaps transport.
+                // because a host is already listening. Destroying gameplay
+                // runtime data is deferred to step 1b below.
                 await ShutdownNetworkManagerAsync(ct);
+
+                // Step 1b: Clear stale SOAP references the NM shutdown left behind.
+                // Player.OnNetworkDespawn removes from gameData.Players but leaves
+                // gameData.LocalPlayer and gameData.Vessels pointing at destroyed
+                // objects. Without this, ClientPlayerVesselInitializer.ReRegisterPersistentPlayers()
+                // and AddPlayer() race against ghosts after the upcoming Netcode
+                // Menu_Main reload (see step 3b). See commit b74a311c for the
+                // history of why a narrower reset is preferred here.
+                if (gameData != null)
+                {
+                    gameData.ResetRuntimeDataForPartyJoin();
+                    Debug.Log("[PartyInviteController] Cleared stale runtime refs for party join.");
+                }
 
                 // Step 2: Join the inviter's party session via HostConnectionService.
                 // JoinSessionByIdAsync with Relay auto-configures transport and starts client.
@@ -135,16 +157,23 @@ namespace CosmicShore.Gameplay
 
                 Debug.Log("[PartyInviteController] Joined party session via UGS.");
 
-                // Step 3: Wait for Netcode client connection. This does NOT wait
-                // for any scene reload — the client stays on the Menu_Main it's
-                // already running on. Spawn sync for existing NetworkObjects
-                // happens automatically on connection approval.
+                // Step 3: Wait for Netcode client connection.
                 await WaitForClientConnectionAsync(ct);
                 Debug.Log("[PartyInviteController] Netcode client connected.");
 
+                // Step 3b: Wait for Netcode's automatic Menu_Main reload before
+                // raising OnPartyJoinCompleted. The host's Menu_Main is a networked
+                // scene (loaded via nm.SceneManager.LoadScene in AuthenticationSceneController),
+                // so the client's differing scene handle triggers a reload under
+                // ClientSynchronizationMode=Single. Raising OnPartyJoinCompleted
+                // before the reload completes races InitializeAllPlayersAndVessels_ClientRpc
+                // against a mid-reload ClientPlayerVesselInitializer.
+                Debug.Log("[PartyInviteController] Awaiting client scene-sync...");
+                await WaitForClientSceneSyncAsync(ct);
+
                 // Step 4: Signal completion — SOAP events from the spawn chain
                 // (OnPlayerNetworkSpawnedUlong, OnClientReady) handle the rest automatically.
-                connectionData.OnPartyJoinCompleted?.Raise();
+                connectionData.OnPartyJoinCompleted.Raise();
 
                 // Kick the presence/party refresh loop immediately so the arcade
                 // lobby list on the joining client populates with the host and any
@@ -335,6 +364,58 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning(
                     $"[PartyInviteController] Client connection not confirmed after {connectionTimeoutSeconds}s — proceeding anyway.");
+            }
+        }
+
+        /// <summary>
+        /// Waits for the first Single-mode Netcode scene-load event after the
+        /// client connects. This is the host-driven Menu_Main reload that happens
+        /// automatically because the client's scene handle differs from the host's
+        /// (ClientSynchronizationMode = Single). Raising OnPartyJoinCompleted
+        /// before this completes races InitializeAllPlayersAndVessels_ClientRpc
+        /// against a mid-reload ClientPlayerVesselInitializer.
+        ///
+        /// Uses OnLoadEventCompleted (project convention, see NetworkObjectSpawner).
+        /// Fail-soft: if nothing fires within <see cref="sceneSyncTimeoutSeconds"/>,
+        /// log a warning and continue — the spawn chain may have completed without
+        /// a reload for edge cases where Netcode decides scenes match.
+        /// </summary>
+        private async UniTask WaitForClientSceneSyncAsync(CancellationToken ct)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || nm.SceneManager == null)
+            {
+                Debug.LogWarning("[PartyInviteController] No SceneManager — skipping scene-sync wait.");
+                return;
+            }
+
+            var tcs = new UniTaskCompletionSource<string>();
+            void Handler(string sceneName, LoadSceneMode mode,
+                         List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+            {
+                if (mode == LoadSceneMode.Single) tcs.TrySetResult(sceneName);
+            }
+            nm.SceneManager.OnLoadEventCompleted += Handler;
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(sceneSyncTimeoutSeconds));
+
+            try
+            {
+                var sceneName = await tcs.Task.AttachExternalCancellation(timeoutCts.Token);
+                Debug.Log($"[PartyInviteController] Client scene-sync completed: {sceneName}");
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                Debug.LogWarning(
+                    $"[PartyInviteController] Scene-sync not observed in {sceneSyncTimeoutSeconds}s — " +
+                    "proceeding (host may not have triggered a scene load).");
+            }
+            finally
+            {
+                var nmNow = NetworkManager.Singleton;
+                if (nmNow != null && nmNow.SceneManager != null)
+                    nmNow.SceneManager.OnLoadEventCompleted -= Handler;
             }
         }
 

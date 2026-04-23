@@ -266,6 +266,24 @@ namespace CosmicShore.Utility
             // They are reset in ResetAllData() instead.
         }
 
+        /// <summary>
+        /// Narrower reset used by PartyInviteController.AcceptInviteAsync after the
+        /// client's NetworkManager shuts down. The client's own Player/Vessel
+        /// NetworkObjects have already been despawned by the shutdown, but
+        /// Player.OnNetworkDespawn only removes from Players — it leaves LocalPlayer
+        /// and Vessels pointing at destroyed objects. Clearing these SOAP references
+        /// prevents ClientPlayerVesselInitializer.ReRegisterPersistentPlayers() and
+        /// AddPlayer() from racing against ghosts after the host-driven Menu_Main
+        /// reload. Does NOT touch round/turn/stats state (unlike ResetRuntimeData)
+        /// because the menu accept flow never entered a game round.
+        /// </summary>
+        public void ResetRuntimeDataForPartyJoin()
+        {
+            Players.Clear();
+            Vessels.Clear();
+            LocalPlayer = null;
+        }
+
         void ResetRuntimeDataForReplay()
         {
             IsTurnRunning = false;
