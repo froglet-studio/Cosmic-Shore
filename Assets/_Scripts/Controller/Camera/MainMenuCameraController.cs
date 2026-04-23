@@ -11,10 +11,30 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// Which camera behavior to use while the menu is in autopilot state.
+    /// Switchable at runtime via the inspector — use this to compare feels.
+    /// </summary>
+    public enum MenuCameraMode
+    {
+        /// <summary>"CM Main Menu" vCam orbits the crystal. Transition travels
+        /// a long spatial distance to reach the vessel — cinematic but jarring.</summary>
+        CrystalOrbit = 0,
+
+        /// <summary>"CM Menu Vessel Follow" vCam (created at runtime) trails the
+        /// vessel with a cinematic offset. Transition is a small offset tightening
+        /// — near-instant handoff with minimal camera motion.</summary>
+        VesselFollow = 1,
+    }
+
+    /// <summary>
     /// Manages cameras for the Menu_Main scene with smooth Cinemachine-blended transitions.
     ///
-    /// Two camera endpoints:
-    ///   A = "CM Main Menu" CinemachineCamera — orbits the crystal
+    /// Two selectable menu camera modes (see <see cref="MenuCameraMode"/>):
+    ///   • CrystalOrbit — "CM Main Menu" orbits the crystal.
+    ///   • VesselFollow — "CM Menu Vessel Follow" trails the vessel cinematically.
+    ///
+    /// Transition endpoints:
+    ///   A = the active menu vCam (depends on mode)
     ///   B = "CM Freestyle Bridge" CinemachineCamera — tracks the vessel via CinemachineFollow
     ///       (same offset/damping as <see cref="CustomCameraController"/>)
     ///
@@ -41,7 +61,12 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class MainMenuCameraController : MonoBehaviour
     {
-        [Header("Menu Camera Orbit")]
+        [Header("Camera Mode")]
+        [SerializeField, Tooltip("Which camera behaviour to use while in menu/autopilot state. " +
+                                 "Can be switched at runtime — the active vCam updates immediately.")]
+        MenuCameraMode _mode = MenuCameraMode.CrystalOrbit;
+
+        [Header("Menu Camera Orbit (CrystalOrbit mode)")]
         [SerializeField, Tooltip("Orbit radius from crystal center.")]
         float _orbitRadius = 80f;
 
@@ -51,6 +76,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Orbit speed in degrees per second.")]
         float _orbitSpeed = 5f;
 
+        [Header("Menu Vessel Follow (VesselFollow mode)")]
+        [SerializeField, Tooltip("Cinematic offset from the vessel follow target while in menu state. " +
+                                 "Typically pulled farther back and slightly higher than the gameplay offset " +
+                                 "so entering freestyle produces a gentle tighten-in rather than a big move.")]
+        Vector3 _vesselFollowOffset = new(0f, 14f, -28f);
+
+        [SerializeField, Range(0f, 5f),
+         Tooltip("Position damping for the menu vessel-follow vCam (seconds of lag). " +
+                 "Higher = smoother/more cinematic trailing. Zero = rigid attachment.")]
+        float _vesselFollowPositionDamping = 1.2f;
+
+        [SerializeField, Range(0f, 5f),
+         Tooltip("Rotation damping for the menu vessel-follow vCam (seconds of lag). " +
+                 "Higher = smoother rotation tracking.")]
+        float _vesselFollowRotationDamping = 0.8f;
+
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
 
         [SerializeField, Tooltip("Cell runtime data — provides crystal transform and spawn event.")]
@@ -58,12 +99,30 @@ namespace CosmicShore.Gameplay
 
         [Inject] GameDataSO _gameData;
 
+        /// <summary>Active menu camera behaviour. Setting this at runtime re-activates
+        /// the correct vCam if the menu is currently visible.</summary>
+        public MenuCameraMode Mode
+        {
+            get => _mode;
+            set
+            {
+                if (_mode == value) return;
+                _mode = value;
+                ApplyModeChange();
+            }
+        }
+
         // Cached menu vCam hierarchy (lives on CameraManager)
         CinemachineCamera _menuVCam;
         CinemachineFollow _menuFollow;
         Transform _menuFollowTarget;
         RotateAroundOrigin _followTargetRotator;
         Transform _crystalTarget;
+
+        // Vessel-follow menu vCam (created at runtime on CameraManager) — used in VesselFollow mode.
+        CinemachineCamera _menuVesselFollowVCam;
+        CinemachineFollow _menuVesselFollowFollow;
+        CinemachineMatchTargetOrientation _menuVesselFollowAim;
 
         // Bridge vCam for smooth transitions (created at runtime on CameraManager)
         CinemachineCamera _bridgeVCam;
@@ -92,6 +151,7 @@ namespace CosmicShore.Gameplay
             CachePlayerCamera();
             CacheBrain();
             EnsureBridgeVCam();
+            EnsureMenuVesselFollowVCam();
             SubscribeEvents();
         }
 
@@ -113,14 +173,34 @@ namespace CosmicShore.Gameplay
             if (_menuVCam)
                 _menuVCam.gameObject.SetActive(false);
 
+            if (_menuVesselFollowVCam)
+                _menuVesselFollowVCam.gameObject.SetActive(false);
+
             if (_bridgeVCam)
                 _bridgeVCam.gameObject.SetActive(false);
         }
 
         void Update()
         {
-            UpdateMenuOrbit();
+            // Orbit only matters in CrystalOrbit mode.
+            if (_mode == MenuCameraMode.CrystalOrbit)
+                UpdateMenuOrbit();
         }
+
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            // When the mode is changed in the inspector during play mode, apply immediately
+            // so we can A/B test feels without re-entering play.
+            if (!Application.isPlaying) return;
+            ApplyModeChange();
+            ApplyMenuVesselFollowConfig();
+        }
+#endif
+
+        /// <summary>The menu-side vCam for the current mode.</summary>
+        CinemachineCamera ActiveMenuVCam =>
+            _mode == MenuCameraMode.VesselFollow ? _menuVesselFollowVCam : _menuVCam;
 
         // ── Event Wiring ────────────────────────────────────────────────
 
@@ -229,6 +309,102 @@ namespace CosmicShore.Gameplay
             _bridgeVCam.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// Creates or finds the vessel-follow menu CinemachineCamera used by
+        /// <see cref="MenuCameraMode.VesselFollow"/>. Unlike the bridge (zero damping,
+        /// tight gameplay offset), this vCam trails the vessel cinematically —
+        /// pulled-back offset with moderate damping.
+        /// </summary>
+        void EnsureMenuVesselFollowVCam()
+        {
+            if (_menuVesselFollowVCam) return;
+            if (!CameraManager.Instance) return;
+
+            var parent = CameraManager.Instance.transform;
+            var existing = parent.Find("CM Menu Vessel Follow");
+
+            if (existing)
+            {
+                _menuVesselFollowVCam = existing.GetComponent<CinemachineCamera>();
+                _menuVesselFollowFollow = existing.GetComponent<CinemachineFollow>();
+                _menuVesselFollowAim = existing.GetComponent<CinemachineMatchTargetOrientation>();
+                if (!_menuVesselFollowAim)
+                    _menuVesselFollowAim = existing.gameObject.AddComponent<CinemachineMatchTargetOrientation>();
+            }
+            else
+            {
+                var go = new GameObject("CM Menu Vessel Follow");
+                go.transform.SetParent(parent, false);
+
+                _menuVesselFollowVCam = go.AddComponent<CinemachineCamera>();
+                _menuVesselFollowFollow = go.AddComponent<CinemachineFollow>();
+                _menuVesselFollowAim = go.AddComponent<CinemachineMatchTargetOrientation>();
+
+                var tracker = _menuVesselFollowFollow.TrackerSettings;
+                tracker.BindingMode = BindingMode.LockToTarget;
+                _menuVesselFollowFollow.TrackerSettings = tracker;
+            }
+
+            ApplyMenuVesselFollowConfig();
+            SetVCamPriority(_menuVesselFollowVCam, LowPriority);
+            _menuVesselFollowVCam.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// Applies the serialized cinematic offset/damping to the vessel-follow menu vCam.
+        /// Called on creation and whenever inspector values change during play mode.
+        /// </summary>
+        void ApplyMenuVesselFollowConfig()
+        {
+            if (!_menuVesselFollowFollow) return;
+
+            _menuVesselFollowFollow.FollowOffset = _vesselFollowOffset;
+
+            var tracker = _menuVesselFollowFollow.TrackerSettings;
+            tracker.BindingMode = BindingMode.LockToTarget;
+            tracker.PositionDamping = Vector3.one * _vesselFollowPositionDamping;
+            tracker.RotationDamping = Vector3.one * _vesselFollowRotationDamping;
+            _menuVesselFollowFollow.TrackerSettings = tracker;
+
+            if (_menuVesselFollowAim)
+                _menuVesselFollowAim.Damping = _vesselFollowRotationDamping;
+        }
+
+        /// <summary>
+        /// Configures the vessel-follow menu vCam to track the local player's vessel.
+        /// Safe to call repeatedly (e.g. after vessel swap).
+        /// </summary>
+        void ConfigureMenuVesselFollowTarget()
+        {
+            if (!_menuVesselFollowVCam) return;
+
+            var player = _gameData?.LocalPlayer;
+            var followTarget = player?.Vessel?.VesselStatus?.CameraFollowTarget;
+            if (!followTarget) return;
+
+            var target = _menuVesselFollowVCam.Target;
+            target.TrackingTarget = followTarget;
+            target.LookAtTarget = null;
+            target.CustomLookAtTarget = false;
+            _menuVesselFollowVCam.Target = target;
+
+            ApplyMenuVesselFollowConfig();
+        }
+
+        /// <summary>
+        /// Called when <see cref="Mode"/> changes at runtime. Swaps which menu vCam
+        /// is active if we're currently in menu state.
+        /// </summary>
+        void ApplyModeChange()
+        {
+            // If we're in freestyle, nothing to do — PlayerCam is driving.
+            // The new mode will take effect on the next exit-freestyle blend.
+            if (_isInFreestyle) return;
+
+            EnsureMenuVesselFollowVCam();
+            ActivateMenuCameraImmediate();
+        }
+
         // ── Menu Camera Orbit ───────────────────────────────────────────
 
         void SetMenuVCamTarget()
@@ -286,10 +462,30 @@ namespace CosmicShore.Gameplay
 
             CameraManager.Instance.SetMainMenuCameraActive();
 
-            if (_menuVCam)
+            if (_mode == MenuCameraMode.VesselFollow)
             {
-                SetMenuVCamTarget();
-                _menuVCam.gameObject.SetActive(true);
+                // Disable the crystal-orbit vCam so priorities don't fight.
+                if (_menuVCam) _menuVCam.gameObject.SetActive(false);
+
+                EnsureMenuVesselFollowVCam();
+                if (_menuVesselFollowVCam)
+                {
+                    ConfigureMenuVesselFollowTarget();
+                    _menuVesselFollowVCam.PreviousStateIsValid = false;
+                    SetVCamPriority(_menuVesselFollowVCam, HighPriority);
+                    _menuVesselFollowVCam.gameObject.SetActive(true);
+                }
+            }
+            else // CrystalOrbit
+            {
+                // Disable the vessel-follow vCam so priorities don't fight.
+                if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
+
+                if (_menuVCam)
+                {
+                    SetMenuVCamTarget();
+                    _menuVCam.gameObject.SetActive(true);
+                }
             }
 
             _isInFreestyle = false;
@@ -332,15 +528,18 @@ namespace CosmicShore.Gameplay
             EnsureBridgeVCam();
             if (!_bridgeVCam) { FallbackActivateGameplayCamera(followTarget); return; }
 
+            // The "from" side of the blend is whichever menu vCam is active for the current mode.
+            var menuVCam = ActiveMenuVCam;
+
             // 1. Configure bridge to track vessel with matching camera offset
             ConfigureBridgeForVessel(followTarget, player.Vessel.VesselStatus.VesselCameraCustomizer);
             _bridgeVCam.PreviousStateIsValid = false;
 
-            // 2. Activate bridge at higher priority → Brain blends menu orbit (A) → bridge (B)
+            // 2. Activate bridge at higher priority → Brain blends menu (A) → bridge (B)
             //    Both vCams evaluated every frame — bridge tracks moving vessel throughout.
             _bridgeVCam.gameObject.SetActive(true);
             SetVCamPriority(_bridgeVCam, HighPriority + 1);
-            SetVCamPriority(_menuVCam, HighPriority);
+            if (menuVCam) SetVCamPriority(menuVCam, HighPriority);
 
             // 3. Wait for Brain blend to actually complete.
             //    Yield one frame first — the Brain hasn't evaluated the priority
@@ -354,6 +553,7 @@ namespace CosmicShore.Gameplay
             //    so the swap is seamless.
             _bridgeVCam.gameObject.SetActive(false);
             if (_menuVCam) _menuVCam.gameObject.SetActive(false);
+            if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
 
             _isInFreestyle = true;
@@ -418,14 +618,36 @@ namespace CosmicShore.Gameplay
             //    PlayerCam was), so the swap is invisible.
             CameraManager.Instance.DeactivateAllCameras();
 
-            // 6. Activate menu vCam at higher priority → Brain blends bridge (B) → orbit (A).
-            //    Bridge keeps tracking vessel every frame — live "from" side.
-            if (_menuVCam)
+            // 6. Activate the mode-appropriate menu vCam at higher priority → Brain blends
+            //    bridge (B) → menu (A). Bridge keeps tracking vessel every frame — live "from" side.
+            CinemachineCamera menuVCam = null;
+            if (_mode == MenuCameraMode.VesselFollow)
             {
-                SetMenuVCamTarget();
-                _menuVCam.gameObject.SetActive(true);
+                // Ensure the crystal-orbit vCam is off so it doesn't contend for priority.
+                if (_menuVCam) _menuVCam.gameObject.SetActive(false);
+
+                EnsureMenuVesselFollowVCam();
+                if (_menuVesselFollowVCam)
+                {
+                    ConfigureMenuVesselFollowTarget();
+                    _menuVesselFollowVCam.PreviousStateIsValid = false;
+                    _menuVesselFollowVCam.gameObject.SetActive(true);
+                    menuVCam = _menuVesselFollowVCam;
+                }
             }
-            SetVCamPriority(_menuVCam, HighPriority + 1);
+            else // CrystalOrbit
+            {
+                if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
+
+                if (_menuVCam)
+                {
+                    SetMenuVCamTarget();
+                    _menuVCam.gameObject.SetActive(true);
+                    menuVCam = _menuVCam;
+                }
+            }
+
+            if (menuVCam) SetVCamPriority(menuVCam, HighPriority + 1);
 
             // 7. Wait for Brain blend to actually complete.
             //    Yield one frame first so Brain detects the priority change.
@@ -435,7 +657,7 @@ namespace CosmicShore.Gameplay
 
             // 8. Clean up bridge and normalize menu priority.
             _bridgeVCam.gameObject.SetActive(false);
-            SetVCamPriority(_menuVCam, HighPriority);
+            if (menuVCam) SetVCamPriority(menuVCam, HighPriority);
 
             _isInFreestyle = false;
         }
@@ -446,6 +668,7 @@ namespace CosmicShore.Gameplay
         void FallbackActivateGameplayCamera(Transform followTarget)
         {
             if (_menuVCam) _menuVCam.gameObject.SetActive(false);
+            if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
             CameraManager.Instance.SetupGamePlayCameras(followTarget);
             _isInFreestyle = true;
         }

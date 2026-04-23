@@ -45,6 +45,14 @@ namespace CosmicShore.Gameplay
                                  "The toggle is blocked for this duration to prevent click spam.")]
         float cameraTransitionDuration = 2f;
 
+        [SerializeField, Tooltip("Keep player input paused until after the camera blend completes. " +
+                                 "With AI off and input paused, the vessel has no steering input and " +
+                                 "cruises forward on its own minimum-speed throttle — producing a " +
+                                 "seamless \"vessel settles in before you drive\" feel during the " +
+                                 "transition. Especially useful with MenuCameraMode.VesselFollow where " +
+                                 "the camera barely moves and stray input would be the most jarring thing.")]
+        bool lockInputDuringEnterTransition = true;
+
         bool _isInFreestyle;
         bool _isTransitioning;
         CancellationTokenSource _cts;
@@ -114,7 +122,14 @@ namespace CosmicShore.Gameplay
                 PauseSystem.TogglePauseGame(false);
 
             player.Vessel.ToggleAIPilot(false);
-            player.InputController.SetPause(false);
+
+            // Hand steering to the player either now or after the blend, depending on the flag.
+            // With AI off and input still paused, the vessel cruises forward on MinimumSpeed —
+            // no erratic AI steering, no stray player input — producing the "forward only
+            // during transition" feel that keeps the camera blend reading cleanly.
+            if (!lockInputDuringEnterTransition)
+                player.InputController.SetPause(false);
+
             _isInFreestyle = true;
 
             // Save current menu alphas so we can restore them exactly when exiting freestyle.
@@ -131,6 +146,10 @@ namespace CosmicShore.Gameplay
                 FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct),
                 UniTask.Delay((int)(cameraTransitionDuration * 1000),
                               ignoreTimeScale: true, cancellationToken: ct));
+
+            // Release control to the player once the camera has settled.
+            if (lockInputDuringEnterTransition)
+                player.InputController.SetPause(false);
 
             freestyleEvents.OnGameStateTransitionEnd.Raise();
             _isTransitioning = false;
