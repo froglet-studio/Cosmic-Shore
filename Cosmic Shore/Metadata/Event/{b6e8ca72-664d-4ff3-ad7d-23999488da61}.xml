@@ -37,6 +37,9 @@
 			<destination>{38824e48-e42a-48a6-ba15-fcf9f471501b}</destination>
 			<destination>{204ccc36-cc52-4afb-b259-b9f8a6b03ec5}</destination>
 		</relationship>
+		<relationship name="banks">
+			<destination>{3b7e8e6a-defe-46c2-8201-c749ea9220ba}</destination>
+		</relationship>
 	</object>
 	<object class="EventMixer" id="{9849efbb-b73e-454e-a188-1a3937a2776a}">
 		<relationship name="masterBus">
@@ -249,7 +252,6 @@
 		<property name="timelockedOffset">
 			<value>1.625</value>
 		</property>
-		<property name="name" />
 		<property name="pitch">
 			<value>2.60000014</value>
 		</property>

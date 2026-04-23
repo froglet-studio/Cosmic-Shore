@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.02.00">
 	<object class="Event" id="{2b9d52ee-bcc0-45e3-83d6-7cbe8e848f9e}">
 		<property name="name">
-			<value>AEROJet_Airplane Jet_S6k01-50</value>
+			<value>Layer 2</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>
@@ -37,6 +37,9 @@
 			<destination>{0d606c40-26f6-41af-8f12-34187c28ded2}</destination>
 			<destination>{2e29d693-b6f3-4309-9719-1f2052d2e91f}</destination>
 		</relationship>
+		<relationship name="banks">
+			<destination>{3b7e8e6a-defe-46c2-8201-c749ea9220ba}</destination>
+		</relationship>
 	</object>
 	<object class="EventMixer" id="{1c4656cc-2b2b-4cd8-913c-388e56a30133}">
 		<relationship name="masterBus">
@@ -59,7 +62,11 @@
 			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
 		</relationship>
 	</object>
-	<object class="EventAutomatableProperties" id="{5a68495a-f095-4cd7-9b29-6db47bb59332}" />
+	<object class="EventAutomatableProperties" id="{5a68495a-f095-4cd7-9b29-6db47bb59332}">
+		<property name="maximumDistance">
+			<value>10000</value>
+		</property>
+	</object>
 	<object class="MarkerTrack" id="{aa1b075e-d599-47c3-8e14-fd6feb31a0d1}" />
 	<object class="GroupTrack" id="{5e4b21bd-4277-41e7-8219-b84583033c44}">
 		<relationship name="automationTracks">
@@ -91,7 +98,7 @@
 			<destination>{49434d5c-6546-448c-868a-f76bbd1d4faf}</destination>
 		</relationship>
 		<relationship name="markers">
-			<destination>{08a994ba-5edc-4428-b06d-62cc37ab2a00}</destination>
+			<destination>{0fb1ad40-4f15-480b-b353-115f637ea191}</destination>
 		</relationship>
 	</object>
 	<object class="ParameterProxy" id="{fde35b7d-d08b-4949-a12a-75c76cb6f46e}">
@@ -224,7 +231,7 @@
 			<destination>{9ae6b8fa-c2ae-495e-8e74-d28f224c442b}</destination>
 		</relationship>
 	</object>
-	<object class="LoopRegion" id="{08a994ba-5edc-4428-b06d-62cc37ab2a00}">
+	<object class="LoopRegion" id="{0fb1ad40-4f15-480b-b353-115f637ea191}">
 		<property name="position">
 			<value>0</value>
 		</property>
@@ -277,7 +284,11 @@
 	</object>
 	<object class="MixerBusPanner" id="{735976e1-24aa-4a9d-9886-a20e125c77cb}" />
 	<object class="MixerBusFader" id="{637422dc-159d-4a34-970c-9425a555202e}" />
-	<object class="SpatialiserEffect" id="{eb983f76-8f36-4afd-bdec-7a78db47c04f}" />
+	<object class="SpatialiserEffect" id="{eb983f76-8f36-4afd-bdec-7a78db47c04f}">
+		<property name="maximumDistance">
+			<value>10000</value>
+		</property>
+	</object>
 	<object class="SFXReverbEffect" id="{5231e331-8b43-4cb9-8c36-e1fcc24daa46}">
 		<property name="bypass">
 			<value>true</value>

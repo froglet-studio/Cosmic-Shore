@@ -1254,6 +1254,7 @@ GameObject:
   - component: {fileID: 5649393235309590662}
   - component: {fileID: 8755860699239805343}
   - component: {fileID: 6248787816825736170}
+  - component: {fileID: -736748447347085499}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -1803,6 +1804,56 @@ MonoBehaviour:
   onCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c, type: 2}
   onJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
     type: 2}
+--- !u!114 &-736748447347085499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65ce5cb9ea9864391ae3f1530a7c906b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  engineEvent:
+    Guid:
+      Data1: -1809053689
+      Data2: 1230251534
+      Data3: 566434957
+      Data4: -1286293035
+    Path: event:/Engine stuff/space ship engine main
+  additionalEngineLayers: []
+  speedParameterName: Speed
+  tiltParameterName: Tilt Acel
+  maxShipVelocity: 100
+  paramAtZeroVelocity: 60
+  paramAtMaxVelocity: 100
+  velocitySmoothing: 6
+  maxTiltRate: 180
+  paramAtMaxTilt: 100
+  paramAtMinTilt: -100
+  paramAtZeroTilt: 0
+  pitchWeight: 1
+  yawWeight: 1
+  tiltSmoothing: 8
+  driftSlowdownMultiplier: 0.6
+  driftSmoothingRate: 8
+  onlyAudibleToController: 1
+  forceAttachToListener: 1
+  driveElementalParams: 1
+  chargeParameterName: Charge
+  massParameterName: Mass
+  spaceParameterName: Space
+  timeParameterName: Time
+  elementParamAtMin: 0
+  elementParamAtMax: 100
+  elementSmoothing: 6
+  extraParameters:
+  - parameterName: energy
+    value: 100
+    setOnceAtStart: 1
+  debugLog: 1
 --- !u!1 &6744437363404699704
 GameObject:
   m_ObjectHideFlags: 0

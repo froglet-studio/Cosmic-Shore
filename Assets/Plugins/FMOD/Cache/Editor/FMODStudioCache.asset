@@ -16,10 +16,213 @@ MonoBehaviour:
   StudioPath: 
   Min: 0
   Max: 100
-  Default: 0
+  Default: 40
   ID:
     data1: 1366480875
     data2: 3835641574
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &-6931841520263017280
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Layer 2/Tilt Acel
+  m_EditorClassIdentifier: 
+  Name: Tilt Acel
+  StudioPath: 
+  Min: -100
+  Max: 100
+  Default: 0
+  ID:
+    data1: 2218582845
+    data2: 581143856
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &-6883429049410665872
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Mass/Space
+  m_EditorClassIdentifier: 
+  Name: Space
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 1433689343
+    data2: 1640004235
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-6858399822003720745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Engine stuff/Base sounds/Charge
+  m_EditorClassIdentifier: 
+  Path: event:/Engine stuff/Base sounds/Charge
+  Guid:
+    Data1: -992548387
+    Data2: 1311689931
+    Data3: 66836611
+    Data4: 1763573628
+  Banks:
+  - {fileID: 2229235417559971525}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters:
+  - {fileID: -1466523080046532572}
+  - {fileID: 2155875736713692370}
+  - {fileID: 1638020840581151358}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 22000
+--- !u!114 &-6592341966298839515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Engine stuff/Base sounds/Stress
+  m_EditorClassIdentifier: 
+  Path: event:/Engine stuff/Base sounds/Stress
+  Guid:
+    Data1: -1226257806
+    Data2: 1341351501
+    Data3: -1725727315
+    Data4: 1641711764
+  Banks:
+  - {fileID: 2229235417559971525}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters:
+  - {fileID: 8466293382258240293}
+  - {fileID: -2329065476478442398}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 52284
+--- !u!114 &-5285111348935745751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Mass/Tilt Acel
+  m_EditorClassIdentifier: 
+  Name: Tilt Acel
+  StudioPath: 
+  Min: -100
+  Max: 100
+  Default: 0
+  ID:
+    data1: 2218582845
+    data2: 581143856
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &-4987813005488880836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Layer 2/Energy
+  m_EditorClassIdentifier: 
+  Name: Energy
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 100
+  ID:
+    data1: 567385679
+    data2: 3171644588
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-4213068965733156652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Time/Tilt Acel
+  m_EditorClassIdentifier: 
+  Name: Tilt Acel
+  StudioPath: 
+  Min: -100
+  Max: 100
+  Default: 0
+  ID:
+    data1: 2218582845
+    data2: 581143856
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &-3533942139719429129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/space ship engine main/Charge
+  m_EditorClassIdentifier: 
+  Name: Charge
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 2153512234
+    data2: 4040939292
   Type: 0
   IsGlobal: 0
   Labels: []
@@ -39,10 +242,82 @@ MonoBehaviour:
   Path: Cosmic Shore/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639110857834322206
+  lastModified: 639125492418426530
   FileSizes:
   - Name: Desktop
-    Value: 1036
+    Value: 1380
+  Exists: 1
+--- !u!114 &-2329065476478442398
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Stress/Energy
+  m_EditorClassIdentifier: 
+  Name: Energy
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 100
+  ID:
+    data1: 567385679
+    data2: 3171644588
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-2121138815994149293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Mass/Mass
+  m_EditorClassIdentifier: 
+  Name: Mass
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 346117257
+    data2: 2562847568
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-1979063647234439020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Mass/Speed
+  m_EditorClassIdentifier: 
+  Name: Speed
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 40
+  ID:
+    data1: 1366480875
+    data2: 3835641574
+  Type: 0
+  IsGlobal: 1
+  Labels: []
   Exists: 1
 --- !u!114 &-1842030532461206166
 MonoBehaviour:
@@ -66,6 +341,54 @@ MonoBehaviour:
     data2: 3171644588
   Type: 0
   IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-1724602381518997828
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/space ship engine main/Mass
+  m_EditorClassIdentifier: 
+  Name: Mass
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 346117257
+    data2: 2562847568
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-1466523080046532572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Charge/Tilt Acel
+  m_EditorClassIdentifier: 
+  Name: Tilt Acel
+  StudioPath: 
+  Min: -100
+  Max: 100
+  Default: 0
+  ID:
+    data1: 2218582845
+    data2: 581143856
+  Type: 0
+  IsGlobal: 1
   Labels: []
   Exists: 1
 --- !u!114 &-524415787151964159
@@ -130,16 +453,138 @@ MonoBehaviour:
   - {fileID: 2229235417559971525}
   EditorEvents:
   - {fileID: 697990551436639957}
-  EditorParameters: []
+  - {fileID: -6592341966298839515}
+  - {fileID: 3278318678898650548}
+  - {fileID: 424230825658184698}
+  - {fileID: 1591523960150812359}
+  - {fileID: -6858399822003720745}
+  - {fileID: 8820783537063344046}
+  EditorParameters:
+  - {fileID: 480999009809782278}
+  - {fileID: 4416175666418059640}
   MasterBanks:
   - {fileID: -3244727801118479257}
   StringsBanks:
   - {fileID: 3442764693141491147}
   cacheVersion: 131858
-  cacheTime: 639110857834499557
+  cacheTime: 639125492419217847
   SerializableEventsDict:
   - key: event:/Engine stuff/space ship engine main
     index: 0
+  - key: event:/Engine stuff/Base sounds/Stress
+    index: 1
+  - key: event:/Engine stuff/Base sounds/Space
+    index: 2
+  - key: event:/Engine stuff/Base sounds/Time
+    index: 3
+  - key: event:/Engine stuff/Base sounds/Mass
+    index: 4
+  - key: event:/Engine stuff/Base sounds/Charge
+    index: 5
+  - key: event:/Engine stuff/Base sounds/Layer 2
+    index: 6
+--- !u!114 &119656504181485858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Time/Speed
+  m_EditorClassIdentifier: 
+  Name: Speed
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 40
+  ID:
+    data1: 1366480875
+    data2: 3835641574
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &198926157560897355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/space ship engine main/Time
+  m_EditorClassIdentifier: 
+  Name: Time
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 1734484090
+    data2: 1324788632
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &424230825658184698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Engine stuff/Base sounds/Time
+  m_EditorClassIdentifier: 
+  Path: event:/Engine stuff/Base sounds/Time
+  Guid:
+    Data1: 1278786475
+    Data2: 1119863692
+    Data3: 742370446
+    Data4: 119891399
+  Banks:
+  - {fileID: 2229235417559971525}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters:
+  - {fileID: -4213068965733156652}
+  - {fileID: 119656504181485858}
+  - {fileID: 1426869434479938405}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 24000
+--- !u!114 &480999009809782278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Tilt Acel
+  m_EditorClassIdentifier: 
+  Name: Tilt Acel
+  StudioPath: parameter:/Tilt Acel
+  Min: -100
+  Max: 100
+  Default: 0
+  ID:
+    data1: 2218582845
+    data2: 581143856
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
 --- !u!114 &697990551436639957
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -167,9 +612,37 @@ MonoBehaviour:
   - {fileID: -7020671797055058963}
   - {fileID: 3095411445609796784}
   - {fileID: 6284272464644009772}
+  - {fileID: -1724602381518997828}
+  - {fileID: -3533942139719429129}
+  - {fileID: 198926157560897355}
+  - {fileID: 931852016864715244}
   MinDistance: 1
-  MaxDistance: 20
-  Length: 27444
+  MaxDistance: 10000
+  Length: 42000
+--- !u!114 &931852016864715244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/space ship engine main/Space
+  m_EditorClassIdentifier: 
+  Name: Space
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 1433689343
+    data2: 1640004235
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &987109191165740167
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190,6 +663,133 @@ MonoBehaviour:
   - Name: Desktop
     Value: 1036
   Exists: 1
+--- !u!114 &1426869434479938405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Time/Time
+  m_EditorClassIdentifier: 
+  Name: Time
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 1734484090
+    data2: 1324788632
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &1473543943175849651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Layer 2/Speed
+  m_EditorClassIdentifier: 
+  Name: Speed
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 40
+  ID:
+    data1: 1366480875
+    data2: 3835641574
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &1591523960150812359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Engine stuff/Base sounds/Mass
+  m_EditorClassIdentifier: 
+  Path: event:/Engine stuff/Base sounds/Mass
+  Guid:
+    Data1: 2102330039
+    Data2: 1295040626
+    Data3: -1092798844
+    Data4: -1215409677
+  Banks:
+  - {fileID: 2229235417559971525}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters:
+  - {fileID: -6883429049410665872}
+  - {fileID: -5285111348935745751}
+  - {fileID: -2121138815994149293}
+  - {fileID: -1979063647234439020}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 16000
+--- !u!114 &1638020840581151358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Charge/Speed
+  m_EditorClassIdentifier: 
+  Name: Speed
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 40
+  ID:
+    data1: 1366480875
+    data2: 3835641574
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &2155875736713692370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Charge/Charge
+  m_EditorClassIdentifier: 
+  Name: Charge
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 2153512234
+    data2: 4040939292
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &2229235417559971525
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -205,10 +805,10 @@ MonoBehaviour:
   Path: Cosmic Shore/Build/Desktop/SFX.bank
   Name: SFX
   StudioPath: bank:/SFX
-  lastModified: 639110857834499557
+  lastModified: 639125492419217847
   FileSizes:
   - Name: Desktop
-    Value: 1975488
+    Value: 4668576
   Exists: 1
 --- !u!114 &3095411445609796784
 MonoBehaviour:
@@ -231,9 +831,39 @@ MonoBehaviour:
     data1: 2218582845
     data2: 581143856
   Type: 0
-  IsGlobal: 0
+  IsGlobal: 1
   Labels: []
   Exists: 1
+--- !u!114 &3278318678898650548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Engine stuff/Base sounds/Space
+  m_EditorClassIdentifier: 
+  Path: event:/Engine stuff/Base sounds/Space
+  Guid:
+    Data1: 96943772
+    Data2: 1243469142
+    Data3: 1826777250
+    Data4: -1370217448
+  Banks:
+  - {fileID: 2229235417559971525}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters:
+  - {fileID: 7100673483902130680}
+  - {fileID: 4186622754287336263}
+  - {fileID: 7215208158157437777}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 32000
 --- !u!114 &3442764693141491147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -249,10 +879,58 @@ MonoBehaviour:
   Path: Cosmic Shore/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639110857834340823
+  lastModified: 639125492418453632
   FileSizes:
   - Name: Desktop
-    Value: 986
+    Value: 1438
+  Exists: 1
+--- !u!114 &4186622754287336263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Space/Tilt Acel
+  m_EditorClassIdentifier: 
+  Name: Tilt Acel
+  StudioPath: 
+  Min: -100
+  Max: 100
+  Default: 0
+  ID:
+    data1: 2218582845
+    data2: 581143856
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &4416175666418059640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Speed
+  m_EditorClassIdentifier: 
+  Name: Speed
+  StudioPath: parameter:/Speed
+  Min: 0
+  Max: 100
+  Default: 40
+  ID:
+    data1: 1366480875
+    data2: 3835641574
+  Type: 0
+  IsGlobal: 1
+  Labels: []
   Exists: 1
 --- !u!114 &4783083420880153051
 MonoBehaviour:
@@ -314,9 +992,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/space ship engine main/Spaceship health
+  m_Name: parameter:/space ship engine main/Energy
   m_EditorClassIdentifier: 
-  Name: Spaceship health
+  Name: Energy
   StudioPath: 
   Min: 0
   Max: 100
@@ -326,6 +1004,78 @@ MonoBehaviour:
     data2: 3171644588
   Type: 0
   IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &7100673483902130680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Space/Space
+  m_EditorClassIdentifier: 
+  Name: Space
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 0
+  ID:
+    data1: 1433689343
+    data2: 1640004235
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &7215208158157437777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Space/Speed
+  m_EditorClassIdentifier: 
+  Name: Speed
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 40
+  ID:
+    data1: 1366480875
+    data2: 3835641574
+  Type: 0
+  IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &8466293382258240293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Stress/Speed
+  m_EditorClassIdentifier: 
+  Name: Speed
+  StudioPath: 
+  Min: 0
+  Max: 100
+  Default: 40
+  ID:
+    data1: 1366480875
+    data2: 3835641574
+  Type: 0
+  IsGlobal: 1
   Labels: []
   Exists: 1
 --- !u!114 &8489098965300690164
@@ -352,3 +1102,33 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
+--- !u!114 &8820783537063344046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Engine stuff/Base sounds/Layer 2
+  m_EditorClassIdentifier: 
+  Path: event:/Engine stuff/Base sounds/Layer 2
+  Guid:
+    Data1: 731730670
+    Data2: 1172552896
+    Data3: -1099114877
+    Data4: -1634761586
+  Banks:
+  - {fileID: 2229235417559971525}
+  IsStream: 1
+  Is3D: 1
+  IsOneShot: 0
+  Parameters:
+  - {fileID: -6931841520263017280}
+  - {fileID: -4987813005488880836}
+  - {fileID: 1473543943175849651}
+  MinDistance: 1
+  MaxDistance: 10000
+  Length: 7375
