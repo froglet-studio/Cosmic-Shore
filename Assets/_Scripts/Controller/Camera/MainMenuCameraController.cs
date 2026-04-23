@@ -30,11 +30,11 @@ namespace CosmicShore.Gameplay
         /// its speed, so you don't get the "camera lags then catches up" stutter.</summary>
         VesselChaseTight = 2,
 
-        /// <summary>Camera stays stationary at a world anchor point and only
-        /// rotates to aim at the vessel. Immune to target-speed choppiness
-        /// because the camera never translates. Good for multiplayer where
-        /// several vessels may frame independently.</summary>
-        VesselFixedAim = 3,
+        /// <summary>Elevated pan camera — sits high above the vessel and looks down
+        /// at it with damped trailing. The "further top-down" framing reads almost
+        /// like a map view and is very forgiving of fast vessel motion because most
+        /// of the motion vector projects onto a short camera-space direction.</summary>
+        VesselTopDownPan = 3,
     }
 
     /// <summary>
@@ -137,19 +137,25 @@ namespace CosmicShore.Gameplay
                                  "where you don't want the camera to lag behind a fast vessel.")]
         Vector3 _vesselChaseTightOffset = new(0f, 6f, -14f);
 
-        [Header("Vessel Fixed Aim (VesselFixedAim mode)")]
-        [SerializeField, Tooltip("Distance from the vessel at which the fixed-aim anchor sits. The " +
-                                 "camera stays at this anchor and only rotates to aim at the vessel — " +
-                                 "immune to vessel-speed choppiness because the camera never translates.")]
-        float _fixedAimAnchorDistance = 60f;
+        [Header("Vessel Top-Down Pan (VesselTopDownPan mode)")]
+        [SerializeField, Tooltip("Height above the vessel for the top-down pan camera. Higher = more " +
+                                 "map-like framing.")]
+        float _topDownHeight = 70f;
 
-        [SerializeField, Tooltip("Vertical offset of the fixed-aim anchor, relative to the vessel at " +
-                                 "mode entry. Positive = camera sits above.")]
-        float _fixedAimAnchorHeight = 20f;
+        [SerializeField, Tooltip("Horizontal back-offset from the vessel. Zero = pure straight-down. " +
+                                 "A small negative Z gives a slight 3/4 tilt so you can read vessel " +
+                                 "facing at a glance.")]
+        float _topDownBackOffset = -12f;
 
-        [SerializeField, Range(0f, 3f),
-         Tooltip("Rotation damping for the fixed-aim mode. 0 = rigid aim, higher = smoother.")]
-        float _fixedAimRotationDamping = 0.5f;
+        [SerializeField, Range(0f, 5f),
+         Tooltip("Position damping for the top-down pan. Moderate damping (0.8–1.5) gives a smooth " +
+                 "cinematic pan rather than a rigid stick-to-target feel.")]
+        float _topDownPositionDamping = 1.0f;
+
+        [SerializeField, Range(0f, 5f),
+         Tooltip("Rotation damping for the top-down pan. The camera looks at the vessel with this " +
+                 "smoothing — higher values hide sharp AI maneuvers.")]
+        float _topDownRotationDamping = 0.6f;
 
         [Header("Randomized Mode Switching")]
         [SerializeField, Tooltip("If enabled, the mode rotates through RandomSwitchModes while in menu " +
@@ -203,7 +209,7 @@ namespace CosmicShore.Gameplay
         bool IsVesselMode =>
             _mode == MenuCameraMode.VesselFollow ||
             _mode == MenuCameraMode.VesselChaseTight ||
-            _mode == MenuCameraMode.VesselFixedAim;
+            _mode == MenuCameraMode.VesselTopDownPan;
 
         // Cached menu vCam hierarchy (lives on CameraManager)
         CinemachineCamera _menuVCam;
@@ -213,16 +219,11 @@ namespace CosmicShore.Gameplay
         Transform _crystalTarget;
 
         // Vessel-follow menu vCam (created at runtime on CameraManager). Reused across
-        // all vessel modes (VesselFollow, VesselChaseTight, VesselFixedAim) by reconfiguring
-        // its offset, damping, and binding mode per-mode.
+        // all vessel modes (VesselFollow, VesselChaseTight, VesselTopDownPan) by reconfiguring
+        // its offset, damping, binding mode, and LookAt per-mode.
         CinemachineCamera _menuVesselFollowVCam;
         CinemachineFollow _menuVesselFollowFollow;
         CinemachineMatchTargetOrientation _menuVesselFollowAim;
-
-        // Fixed-aim mode anchor — a scene-space Transform the vCam follows with zero damping.
-        // Positioned once at mode entry and left alone, so the camera never translates
-        // regardless of how fast the vessel moves (only its rotation changes to aim).
-        Transform _fixedAimAnchor;
 
         // Bridge vCam for smooth transitions (created at runtime on CameraManager)
         CinemachineCamera _bridgeVCam;
@@ -261,7 +262,6 @@ namespace CosmicShore.Gameplay
             CacheBrain();
             EnsureBridgeVCam();
             EnsureMenuVesselFollowVCam();
-            EnsureFixedAimAnchor();
             SubscribeEvents();
             StartRandomSwitchLoopIfEnabled();
         }
@@ -296,9 +296,6 @@ namespace CosmicShore.Gameplay
 
             if (_bridgeVCam)
                 _bridgeVCam.gameObject.SetActive(false);
-
-            if (_fixedAimAnchor)
-                Destroy(_fixedAimAnchor.gameObject);
         }
 
         void Update()
@@ -482,57 +479,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Creates the scene-space anchor the VesselFixedAim vCam follows. The anchor is
-        /// parented under CameraManager but positioned in world space; because the vCam
-        /// follows it with zero damping and the anchor doesn't move once placed, the
-        /// camera never translates during fixed-aim mode — only its rotation changes
-        /// (via LookAt) to track the vessel. This neutralises target-speed choppiness.
-        /// </summary>
-        void EnsureFixedAimAnchor()
-        {
-            if (_fixedAimAnchor) return;
-            if (!CameraManager.Instance) return;
-
-            var parent = CameraManager.Instance.transform;
-            var existing = parent.Find("CM Menu Fixed Aim Anchor");
-
-            if (existing)
-            {
-                _fixedAimAnchor = existing;
-            }
-            else
-            {
-                var go = new GameObject("CM Menu Fixed Aim Anchor");
-                go.transform.SetParent(parent, worldPositionStays: true);
-                _fixedAimAnchor = go.transform;
-            }
-        }
-
-        /// <summary>
-        /// Positions the fixed-aim anchor in world space relative to the current vessel
-        /// position. Called when VesselFixedAim becomes the active mode — the anchor is
-        /// then left alone, producing a stationary camera.
-        /// </summary>
-        void PlaceFixedAimAnchor(Transform vesselFollowTarget)
-        {
-            if (!_fixedAimAnchor || !vesselFollowTarget) return;
-
-            // Anchor sits behind the vessel's current facing (slight offset so we don't
-            // frame the vessel directly head-on) and above it. World-space so the camera
-            // doesn't drift.
-            var vesselPos = vesselFollowTarget.position;
-            var back = -vesselFollowTarget.forward;
-            back.y = 0f;
-            if (back.sqrMagnitude < 0.001f) back = Vector3.back;
-            else back.Normalize();
-
-            _fixedAimAnchor.position = vesselPos
-                                       + back * _fixedAimAnchorDistance
-                                       + Vector3.up * _fixedAimAnchorHeight;
-            _fixedAimAnchor.rotation = Quaternion.identity;
-        }
-
-        /// <summary>
         /// Applies the serialized cinematic offset/damping to the vessel-follow menu vCam,
         /// choosing per-mode values. Called on creation, when the mode changes, and when
         /// inspector values change during play mode.
@@ -555,12 +501,15 @@ namespace CosmicShore.Gameplay
                     binding = BindingMode.LazyFollow;
                     break;
 
-                case MenuCameraMode.VesselFixedAim:
-                    // vCam's Tracker follows the stationary anchor with zero damping — the
-                    // camera stays put. LookAt handles aiming at the vessel (see below).
-                    offset = Vector3.zero;
-                    posDamp = Vector3.zero;
-                    rotDamp = Vector3.one * _fixedAimRotationDamping;
+                case MenuCameraMode.VesselTopDownPan:
+                    // Camera is parked high above the vessel with a small back-offset so the
+                    // vessel's facing direction reads at a glance. WorldSpace binding keeps the
+                    // offset a stable world vector (no roll/yaw inheritance from the vessel),
+                    // and LookAt (wired in ConfigureMenuVesselFollowTarget) points the camera at
+                    // the vessel. Moderate damping gives the slow "map-pan" feel.
+                    offset = new Vector3(0f, _topDownHeight, _topDownBackOffset);
+                    posDamp = Vector3.one * _topDownPositionDamping;
+                    rotDamp = Vector3.one * _topDownRotationDamping;
                     binding = BindingMode.WorldSpace;
                     break;
 
@@ -585,8 +534,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Configures the vessel-follow menu vCam for the current vessel-based mode.
-        /// VesselFollow/VesselChaseTight: tracks the vessel follow target.
-        /// VesselFixedAim: tracks the stationary anchor; LookAt points at the vessel.
+        /// VesselFollow / VesselChaseTight: tracks the vessel follow target (no LookAt — the
+        ///   follow offset defines both position and orientation via the binding mode).
+        /// VesselTopDownPan: tracks the vessel via a high world-space offset, and LookAt
+        ///   aims the camera down at the vessel.
         /// Safe to call repeatedly (e.g. after vessel swap).
         /// </summary>
         void ConfigureMenuVesselFollowTarget()
@@ -598,18 +549,17 @@ namespace CosmicShore.Gameplay
             if (!followTarget) return;
 
             var target = _menuVesselFollowVCam.Target;
+            target.TrackingTarget = followTarget;
 
-            if (_mode == MenuCameraMode.VesselFixedAim)
+            if (_mode == MenuCameraMode.VesselTopDownPan)
             {
-                EnsureFixedAimAnchor();
-                PlaceFixedAimAnchor(followTarget);
-                target.TrackingTarget = _fixedAimAnchor;
+                // Top-down mode needs an explicit LookAt so the camera aims down at the vessel
+                // instead of keeping the initial world-forward orientation.
                 target.LookAtTarget = followTarget;
                 target.CustomLookAtTarget = true;
             }
             else
             {
-                target.TrackingTarget = followTarget;
                 target.LookAtTarget = null;
                 target.CustomLookAtTarget = false;
             }
