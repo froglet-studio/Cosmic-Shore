@@ -519,6 +519,13 @@ namespace CosmicShore.UI
             if (!_pendingPartyInvites.TryGetValue(hostPlayerId, out var invite)) return;
             _pendingPartyInvites.Remove(hostPlayerId);
 
+            // Optimistic UI: destroy the row now rather than waiting for
+            // HostConnectionService.AcceptInviteAsync to raise OnInviteResolved.
+            // That raise runs AFTER the ~100-500ms NetworkManager shutdown +
+            // stale-ref reset in PartyInviteController.AcceptInviteAsync, so
+            // without this the invite row lingers visibly through the transition.
+            RemoveRequestEntryByKind(hostPlayerId, RequestInfoEntry.Kind.PartyInvite);
+
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
@@ -540,6 +547,9 @@ namespace CosmicShore.UI
         async void OnDeclinePartyInviteClicked(string hostPlayerId)
         {
             _pendingPartyInvites.Remove(hostPlayerId);
+
+            // Optimistic UI: same rationale as OnAcceptPartyInviteClicked.
+            RemoveRequestEntryByKind(hostPlayerId, RequestInfoEntry.Kind.PartyInvite);
 
             var controller = PartyInviteController.Instance;
             if (controller == null) return;

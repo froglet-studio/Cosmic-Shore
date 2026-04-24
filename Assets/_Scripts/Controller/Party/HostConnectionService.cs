@@ -1229,7 +1229,19 @@ namespace CosmicShore.Gameplay
                         existing.PartyMaxSlots != playerData.PartyMaxSlots ||
                         existing.MatchName != playerData.MatchName)
                     {
-                        connectionData.OnlinePlayers[existingIdx] = playerData;
+                        // Obvious.Soap's ScriptableList<T> indexer set
+                        // (_list[index] = value) silently mutates without
+                        // raising any event, so subscribers like
+                        // FriendsListPanel.HandleOnlinePlayerChanged never
+                        // observe the update — the user has to close+reopen
+                        // the panel for PopulateOnlineSection to re-read the
+                        // fresh partyCount/partyMax/matchName. RemoveAt +
+                        // Insert fires OnItemRemoved then OnItemAdded at the
+                        // same index, so the panel's handlers (which already
+                        // do an in-place re-Populate on upsert) update the
+                        // row in real time without flicker.
+                        connectionData.OnlinePlayers.RemoveAt(existingIdx);
+                        connectionData.OnlinePlayers.Insert(existingIdx, playerData);
                     }
                 }
             }
