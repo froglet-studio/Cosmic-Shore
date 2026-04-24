@@ -173,13 +173,26 @@ namespace CosmicShore.Gameplay
 
                 // Step 4: Signal completion — SOAP events from the spawn chain
                 // (OnPlayerNetworkSpawnedUlong, OnClientReady) handle the rest automatically.
-                connectionData.OnPartyJoinCompleted.Raise();
+                // Isolated try/catch so an EventListener throwing during scene-reload
+                // teardown can't roll back the outer flow into the error path — the
+                // accept itself has already succeeded by this point.
+                try
+                {
+                    connectionData.OnPartyJoinCompleted.Raise();
 
-                // Kick the presence/party refresh loop immediately so the arcade
-                // lobby list on the joining client populates with the host and any
-                // existing remote members inside one tick instead of waiting for
-                // the next scheduled poll.
-                HostConnectionService.Instance?.ForceRefreshNow();
+                    // Kick the presence/party refresh loop immediately so the arcade
+                    // lobby list on the joining client populates with the host and any
+                    // existing remote members inside one tick instead of waiting for
+                    // the next scheduled poll.
+                    HostConnectionService.Instance?.ForceRefreshNow();
+                }
+                catch (Exception postEx)
+                {
+                    Debug.LogWarning(
+                        $"[PartyInviteController] Post-accept signal failed " +
+                        $"({postEx.GetType().Name}): {postEx.Message} — " +
+                        "accept already succeeded, continuing.");
+                }
 
                 Debug.Log("[PartyInviteController] Accept flow completed successfully.");
             }
@@ -190,8 +203,14 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 // Ensure main thread — timeout continuations can land on the thread pool.
+                // Yield one frame to move past any in-flight scene-load tick; otherwise
+                // Unity's internal DebugLogHandler calls Application.isPlaying which
+                // produces a spurious "can only be called from the main thread" warning
+                // when the Menu_Main scene reload (step 3b) is still settling.
                 await UniTask.SwitchToMainThread();
-                Debug.LogError($"[PartyInviteController] Accept flow failed: {e.Message}");
+                await UniTask.Yield();
+                Debug.LogError($"[PartyInviteController] Accept flow failed " +
+                               $"({e.GetType().Name}): {e}");
                 await RecoverFromFailedTransitionAsync();
             }
             finally
@@ -272,7 +291,9 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 await UniTask.SwitchToMainThread();
-                Debug.LogError($"[PartyInviteController] Leave-lobby flow failed: {e.Message}");
+                await UniTask.Yield();
+                Debug.LogError($"[PartyInviteController] Leave-lobby flow failed " +
+                               $"({e.GetType().Name}): {e}");
                 await RecoverFromFailedTransitionAsync();
             }
             finally
