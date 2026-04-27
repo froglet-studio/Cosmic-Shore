@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   subdivisions: 4
-  radius: 1000
+  radius: 1200
   capsuleMesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
   capsuleScale: {x: 8, y: 60, z: 5}
   placementJitter: 0.15
