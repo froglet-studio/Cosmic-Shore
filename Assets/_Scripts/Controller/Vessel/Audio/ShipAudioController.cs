@@ -197,17 +197,32 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField] string timeParameterName = "Time";
 
         [SerializeField, Tooltip(
-            "FMOD parameter value when the elemental level is at its minimum " +
-            "(normalized 0). Most events want 0 here so the track is silent " +
-            "when the element is depleted.")]
+            "Vessel level value (read from ResourceSystem.*Level — full range " +
+            "is [-0.5, 1.5]) that maps to elementParamAtMin. Default 0 = an " +
+            "empty bar drives the FMOD parameter to its minimum, matching the " +
+            "visible bar UI. Set to -0.5 if you want depleted/negative " +
+            "territory to drag the parameter below the baseline.")]
+        float elementSourceMin = 0f;
+
+        [SerializeField, Tooltip(
+            "Vessel level value that maps to elementParamAtMax. Default 1 = a " +
+            "fully-lit bar drives the FMOD parameter to its maximum, matching " +
+            "the visible bar UI. Set to 1.5 if you want supercharged territory " +
+            "to push the parameter above its bar-full value.")]
+        float elementSourceMax = 1f;
+
+        [SerializeField, Tooltip(
+            "FMOD parameter value when the bar is empty (level = elementSourceMin). " +
+            "Use 0 for tracks that should be silent when the element is depleted.")]
         float elementParamAtMin = 0f;
 
         [SerializeField, Tooltip(
-            "FMOD parameter value when the elemental level is at its maximum " +
-            "(normalized 1). Set this to match the maximum the FMOD parameter " +
-            "expects — typically 100 for percentage-style params or 10 if the " +
-            "event was built around the integer ElementalLevels scale.")]
-        float elementParamAtMax = 100f;
+            "FMOD parameter value when the bar is full (level = elementSourceMax). " +
+            "Match this to the maximum the FMOD parameter expects on the event. " +
+            "Common conventions: 1 (normalized 0..1 param — the default), 100 " +
+            "(percentage-style), or 10 (matches ResourceSystem's integer " +
+            "ElementalLevels scale).")]
+        float elementParamAtMax = 1f;
 
         [SerializeField, Range(0f, 30f), Tooltip(
             "Exponential smoothing rate for elemental level -> FMOD parameter " +
@@ -938,17 +953,26 @@ namespace CosmicShore.Gameplay.Audio
         }
 
         /// <summary>
-        /// Pushes a smoothed elemental level (already normalised 0..1) into
-        /// its FMOD parameter, mapping through <see cref="elementParamAtMin"/>
-        /// / <see cref="elementParamAtMax"/> for the event's expected range.
+        /// Pushes a vessel-frame elemental level (raw <see cref="ResourceSystem"/>
+        /// value, range [-0.5, 1.5]) into its FMOD parameter. The level is
+        /// remapped from [<see cref="elementSourceMin"/>, <see cref="elementSourceMax"/>]
+        /// onto [<see cref="elementParamAtMin"/>, <see cref="elementParamAtMax"/>],
+        /// matching the visible HUD bar fill so the track responds the way
+        /// the player would expect.
         /// </summary>
-        void PushElementParam(ref ElementParamRuntime runtime, float normalisedLevel, float dt)
+        void PushElementParam(ref ElementParamRuntime runtime, float vesselLevel, float dt)
         {
             if (!runtime.found) return;
 
-            float target = Mathf.Clamp01(normalisedLevel);
+            // Remap the vessel level to a 0..1 fill ratio against the configured
+            // source range, then clamp so values outside [sourceMin, sourceMax]
+            // don't push the FMOD param past its bar-full / bar-empty endpoints.
+            float fill = !Mathf.Approximately(elementSourceMax, elementSourceMin)
+                ? Mathf.Clamp01((vesselLevel - elementSourceMin) / (elementSourceMax - elementSourceMin))
+                : 0f;
+
             float alpha = elementSmoothing > 0f ? 1f - Mathf.Exp(-dt * elementSmoothing) : 1f;
-            runtime.smoothed = Mathf.Lerp(runtime.smoothed, target, alpha);
+            runtime.smoothed = Mathf.Lerp(runtime.smoothed, fill, alpha);
 
             float paramValue = Mathf.Lerp(elementParamAtMin, elementParamAtMax, runtime.smoothed);
             SetParam(runtime.id, paramValue, runtime.isGlobal);

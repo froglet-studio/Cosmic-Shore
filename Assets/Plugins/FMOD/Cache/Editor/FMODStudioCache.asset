@@ -21,14 +21,14 @@ MonoBehaviour:
   Banks:
   - {fileID: 2669257767515345516}
   IsStream: 1
-  Is3D: 0
+  Is3D: 1
   IsOneShot: 0
   Parameters:
   - {fileID: -367374202780579585}
   - {fileID: -4823041095809058301}
   - {fileID: 960568159201392437}
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 7400
   Length: 24000
 --- !u!114 &-8499236112492877448
 MonoBehaviour:
@@ -109,14 +109,14 @@ MonoBehaviour:
   Banks:
   - {fileID: 2669257767515345516}
   IsStream: 1
-  Is3D: 0
+  Is3D: 1
   IsOneShot: 0
   Parameters:
   - {fileID: 29988008976998001}
   - {fileID: 296796105185356565}
   - {fileID: -4287967429800944702}
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 10000
   Length: 32000
 --- !u!114 &-4823041095809058301
 MonoBehaviour:
@@ -229,7 +229,7 @@ MonoBehaviour:
   Name: Mass
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 346117257
@@ -253,10 +253,10 @@ MonoBehaviour:
   Path: ../Cosmic-Shore/Cosmic Shore/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639125492418453632
+  lastModified: 639128992825308661
   FileSizes:
   - Name: Desktop
-    Value: 1438
+    Value: 1494
   Exists: 1
 --- !u!114 &-2898098963403389220
 MonoBehaviour:
@@ -273,7 +273,7 @@ MonoBehaviour:
   Name: Charge
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 2153512234
@@ -375,7 +375,7 @@ MonoBehaviour:
   Banks:
   - {fileID: 2669257767515345516}
   IsStream: 1
-  Is3D: 0
+  Is3D: 1
   IsOneShot: 0
   Parameters:
   - {fileID: 881847837449610486}
@@ -383,7 +383,7 @@ MonoBehaviour:
   - {fileID: -3319074155761019500}
   - {fileID: -4253750831444107599}
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 10000
   Length: 16000
 --- !u!114 &-1226293708520814148
 MonoBehaviour:
@@ -400,7 +400,7 @@ MonoBehaviour:
   Name: Mass
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 346117257
@@ -448,7 +448,7 @@ MonoBehaviour:
   Name: Time
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 1734484090
@@ -549,7 +549,7 @@ MonoBehaviour:
   Path: ../Cosmic-Shore/Cosmic Shore/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639125492418426530
+  lastModified: 639128992825251720
   FileSizes:
   - Name: Desktop
     Value: 1380
@@ -569,7 +569,7 @@ MonoBehaviour:
   Name: Charge
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 2153512234
@@ -610,7 +610,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: -3131177848503663656}
   cacheVersion: 131859
-  cacheTime: 639125492419217847
+  cacheTime: 639128992833383090
   SerializableEventsDict:
   - key: event:/Engine stuff/space ship engine main
     index: 0
@@ -641,7 +641,7 @@ MonoBehaviour:
   Name: Space
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 1433689343
@@ -761,7 +761,7 @@ MonoBehaviour:
   Name: Space
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 1433689343
@@ -785,7 +785,7 @@ MonoBehaviour:
   Name: Time
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 1734484090
@@ -809,10 +809,10 @@ MonoBehaviour:
   Path: ../Cosmic-Shore/Cosmic Shore/Build/Desktop/SFX.bank
   Name: SFX
   StudioPath: bank:/SFX
-  lastModified: 639125492419217847
+  lastModified: 639128992833383090
   FileSizes:
   - Name: Desktop
-    Value: 4668576
+    Value: 4932832
   Exists: 1
 --- !u!114 &3177413822022256382
 MonoBehaviour:
@@ -859,14 +859,14 @@ MonoBehaviour:
   Banks:
   - {fileID: 2669257767515345516}
   IsStream: 1
-  Is3D: 0
+  Is3D: 1
   IsOneShot: 0
   Parameters:
   - {fileID: 3177413822022256382}
   - {fileID: -2898098963403389220}
   - {fileID: 181268100331638183}
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 10000
   Length: 22000
 --- !u!114 &4266650262508875086
 MonoBehaviour:
@@ -883,7 +883,7 @@ MonoBehaviour:
   Name: Space
   StudioPath: 
   Min: 0
-  Max: 100
+  Max: 1
   Default: 0
   ID:
     data1: 1433689343
