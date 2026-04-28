@@ -153,10 +153,6 @@ namespace CosmicShore.Game
                                                                              Mathf.PerlinNoise(nc.x + time * 0.6f, nc.y + time * 0.4f) * 2f - 1f
                                                                                             );
 
-
-
-
-
                 float r = baseRadii[i];// + noise * noiseAmplitude;
                 Quaternion eulerNoise = Quaternion.Euler(noiseAmplitude * noiseVec);
                 rotations[i] = Quaternion.LookRotation(eulerNoise * baseDirections[i], eulerNoise * Vector3.Cross(baseDirections[i], Vector3.up).normalized);
