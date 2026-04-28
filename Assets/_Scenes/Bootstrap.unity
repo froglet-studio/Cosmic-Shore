@@ -2740,6 +2740,16 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: 3ce47e799622a4c668c8dfba6cb742a6, type: 3}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: DriftEndAudioClip
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: DriftStartAudioClip
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: OptionClickAudioClip
       value: 
       objectReference: {fileID: 8300000, guid: 07911b8944c854e89b848896b102e7f3, type: 3}

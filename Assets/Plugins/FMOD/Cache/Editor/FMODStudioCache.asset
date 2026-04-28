@@ -21,7 +21,7 @@ MonoBehaviour:
   Banks:
   - {fileID: 2669257767515345516}
   IsStream: 1
-  Is3D: 1
+  Is3D: 0
   IsOneShot: 0
   Parameters:
   - {fileID: -367374202780579585}
@@ -64,6 +64,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 10000
   Length: 42000
+--- !u!114 &-8067155813002620129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/trigger off
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/trigger off
+  Guid:
+    Data1: -1579691313
+    Data2: 1086872641
+    Data3: 763564937
+    Data4: -488243266
+  Banks:
+  - {fileID: 2669257767515345516}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4000
 --- !u!114 &-6589065179775185146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86,6 +113,30 @@ MonoBehaviour:
     data2: 3835641574
   Type: 0
   IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &-6380583648682859589
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Drift/Drift amount
+  m_EditorClassIdentifier: 
+  Name: Drift amount
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 743574991
+    data2: 772200720
+  Type: 0
+  IsGlobal: 0
   Labels: []
   Exists: 1
 --- !u!114 &-6147370303096878585
@@ -214,6 +265,33 @@ MonoBehaviour:
   IsGlobal: 1
   Labels: []
   Exists: 1
+--- !u!114 &-3952022822819500620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Crystal_Collision_Amplified
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Crystal_Collision_Amplified
+  Guid:
+    Data1: 1232779908
+    Data2: 1241063617
+    Data3: 1702576795
+    Data4: -1248198021
+  Banks:
+  - {fileID: 2669257767515345516}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1500
 --- !u!114 &-3319074155761019500
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -253,10 +331,10 @@ MonoBehaviour:
   Path: ../Cosmic-Shore/Cosmic Shore/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639128992825308661
+  lastModified: 639129823206562548
   FileSizes:
   - Name: Desktop
-    Value: 1494
+    Value: 1658
   Exists: 1
 --- !u!114 &-2898098963403389220
 MonoBehaviour:
@@ -328,6 +406,30 @@ MonoBehaviour:
     data2: 581143856
   Type: 0
   IsGlobal: 1
+  Labels: []
+  Exists: 1
+--- !u!114 &-2487876138766651678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Drift/Trigger let go
+  m_EditorClassIdentifier: 
+  Name: Trigger let go
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 0
+  ID:
+    data1: 4013590786
+    data2: 791904857
+  Type: 1
+  IsGlobal: 0
   Labels: []
   Exists: 1
 --- !u!114 &-2410086471529683757
@@ -549,7 +651,7 @@ MonoBehaviour:
   Path: ../Cosmic-Shore/Cosmic Shore/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639128992825251720
+  lastModified: 639129823206552179
   FileSizes:
   - Name: Desktop
     Value: 1380
@@ -602,6 +704,9 @@ MonoBehaviour:
   - {fileID: -2197766182726259067}
   - {fileID: 3513506984241840763}
   - {fileID: 5399106846392038120}
+  - {fileID: 3668541416006998571}
+  - {fileID: -3952022822819500620}
+  - {fileID: -8067155813002620129}
   EditorParameters:
   - {fileID: -4411549869780059157}
   - {fileID: -2637500406339686724}
@@ -610,7 +715,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: -3131177848503663656}
   cacheVersion: 131859
-  cacheTime: 639128992833383090
+  cacheTime: 639129823207653260
   SerializableEventsDict:
   - key: event:/Engine stuff/space ship engine main
     index: 0
@@ -626,6 +731,12 @@ MonoBehaviour:
     index: 5
   - key: event:/Engine stuff/Base sounds/Layer 2
     index: 6
+  - key: event:/SFX/Drift
+    index: 7
+  - key: event:/SFX/Crystal_Collision_Amplified
+    index: 8
+  - key: event:/SFX/trigger off
+    index: 9
 --- !u!114 &29988008976998001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -809,10 +920,10 @@ MonoBehaviour:
   Path: ../Cosmic-Shore/Cosmic Shore/Build/Desktop/SFX.bank
   Name: SFX
   StudioPath: bank:/SFX
-  lastModified: 639128992833383090
+  lastModified: 639129823207653260
   FileSizes:
   - Name: Desktop
-    Value: 4932832
+    Value: 5078624
   Exists: 1
 --- !u!114 &3177413822022256382
 MonoBehaviour:
@@ -868,6 +979,35 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 10000
   Length: 22000
+--- !u!114 &3668541416006998571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Drift
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Drift
+  Guid:
+    Data1: 283230740
+    Data2: 1265577227
+    Data3: -1670033751
+    Data4: 522332312
+  Banks:
+  - {fileID: 2669257767515345516}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters:
+  - {fileID: -2487876138766651678}
+  - {fileID: -6380583648682859589}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 12066
 --- !u!114 &4266650262508875086
 MonoBehaviour:
   m_ObjectHideFlags: 0

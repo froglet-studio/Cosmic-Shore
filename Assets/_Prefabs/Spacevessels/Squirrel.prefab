@@ -8668,6 +8668,7 @@ GameObject:
   - component: {fileID: 8755860699239805343}
   - component: {fileID: 6248787816825736170}
   - component: {fileID: 7493233358666389145}
+  - component: {fileID: -5794394637923133565}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -9269,10 +9270,53 @@ MonoBehaviour:
   massParameterName: Mass
   spaceParameterName: Space
   timeParameterName: Time
+  elementSourceMin: 0
+  elementSourceMax: 1
   elementParamAtMin: 0
   elementParamAtMax: 100
   elementSmoothing: 6
   extraParameters: []
+  debugLog: 0
+--- !u!114 &-5794394637923133565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c60d4d8af5894e23a818d119516c513, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  driftEvent:
+    Guid:
+      Data1: 283230740
+      Data2: 1265577227
+      Data3: -1670033751
+      Data4: 522332312
+    Path: event:/SFX/Drift
+  driftAmountParameterName: Drift Amount
+  releaseEvent:
+    Guid:
+      Data1: -1579691313
+      Data2: 1086872641
+      Data3: 763564937
+      Data4: -488243266
+    Path: event:/SFX/trigger off
+  attachReleaseEventToShip: 1
+  driveParamToOneOnRelease: 0
+  triggerDeadzone: 0.05
+  useAnalogScaling: 0
+  amountSmoothing: 10
+  releaseSmoothing: 20
+  releaseHoldSeconds: 0
+  onlyAudibleToController: 1
+  forceAttachToListener: 1
+  tieVolumeToSFXSlider: 1
+  baseVolumeMultiplier: 1
+  restrictToVesselClass: 1
+  targetVesselClass: 6
   debugLog: 0
 --- !u!1 &6514516964945388952
 GameObject:
