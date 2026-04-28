@@ -193,9 +193,9 @@ namespace CosmicShore.Gameplay
             // For dual mouse, pitch and roll are swapped relative to gamepad:
             // both mice fore/aft together = roll, differential = pitch.
             inputStatus.XSum = Ease(rightStick.x + leftStick.x);
-            inputStatus.YSum = Ease(rightStick.y - leftStick.y);
-            inputStatus.XDiff = (rightStick.x - leftStick.x + 2) / 4;
-            inputStatus.YDiff = -Ease(rightStick.y + leftStick.y);
+            inputStatus.YSum = Ease(rightStick.y + leftStick.y);
+            inputStatus.XDiff = (leftStick.x - rightStick.x + 2) / 4;
+            inputStatus.YDiff = Ease(rightStick.y - leftStick.y);
 
             if (inputStatus.InvertYEnabled)
             {
