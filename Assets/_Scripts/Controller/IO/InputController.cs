@@ -29,6 +29,12 @@ namespace CosmicShore.Gameplay
         private MultiMouseService multiMouseService;
         private DeviceOrientationHandler orientationHandler;
 
+        // Dual-mouse opt-in: defaults to off so a normal mouse click on UI
+        // doesn't drag the player back into flight. Engages on simultaneous
+        // LMB press across both physical mice; disengages on escape.
+        private bool dualMouseEngaged;
+        private bool prevBothLeftButtonsHeld;
+
         private bool isInitialized;
 
         private void Awake()
@@ -80,10 +86,41 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // 4) Otherwise, handle normal player input:
+            // Tick once per frame here so engagement detection and the
+            // strategy itself read the same per-frame snapshot.
+            multiMouseService?.Tick();
+            UpdateDualMouseEngagement();
+
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
             orientationHandler.Update();
+        }
+
+        private void UpdateDualMouseEngagement()
+        {
+            if (multiMouseService == null || !multiMouseService.HasTwoMice)
+            {
+                dualMouseEngaged = false;
+                prevBothLeftButtonsHeld = false;
+                return;
+            }
+
+            var left = multiMouseService.GetDevice(0);
+            var right = multiMouseService.GetDevice(1);
+            if (left == null || right == null) return;
+
+            // Engage on the rising edge of both LMBs being held at the same
+            // time. Once engaged, the user has to release at least one and
+            // re-press to re-trigger this — releasing escape afterward leaves
+            // the gesture state pre-armed but does not auto re-engage.
+            bool bothHeld = left.LeftButton && right.LeftButton;
+            if (bothHeld && !prevBothLeftButtonsHeld)
+                dualMouseEngaged = true;
+            prevBothLeftButtonsHeld = bothHeld;
+
+            var kb = Keyboard.current;
+            if (dualMouseEngaged && kb != null && kb.escapeKey.wasPressedThisFrame)
+                dualMouseEngaged = false;
         }
 
         // public void Initialize(IVessel vessel, bool isOwner = true)
@@ -156,10 +193,7 @@ namespace CosmicShore.Gameplay
                 return gamepadStrategy;
             if (SystemInfo.deviceType == DeviceType.Handheld)
                 return touchStrategy;
-            // Tick the service so it discovers / enumerates mice before we
-            // decide. Cheap on the no-mouse path.
-            multiMouseService?.Tick();
-            if (multiMouseService != null && multiMouseService.HasTwoMice)
+            if (dualMouseEngaged && multiMouseService != null && multiMouseService.HasTwoMice)
                 return dualMouseStrategy;
             return keyboardStrategy;
         }

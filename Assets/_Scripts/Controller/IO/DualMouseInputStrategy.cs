@@ -56,6 +56,28 @@ namespace CosmicShore.Gameplay
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
             ResetInput();
+
+            // Snapshot current button state into prev* so the engagement
+            // gesture itself (both LMB held) doesn't fire a phantom press
+            // edge on the first frame after activation. Also drain any
+            // pre-engagement cursor delta so the first frame doesn't snap
+            // the virtual sticks.
+            if (mice != null && mice.DeviceCount >= 2)
+            {
+                var l = mice.GetDevice(0);
+                var r = mice.GetDevice(1);
+                if (l != null && r != null)
+                {
+                    prevLeftLmb = l.LeftButton;
+                    prevRightLmb = r.LeftButton;
+                    prevLeftRmb = l.RightButton;
+                    prevRightRmb = r.RightButton;
+                    prevAnyMmb = l.MiddleButton || r.MiddleButton;
+
+                    l.ConsumeDelta();
+                    r.ConsumeDelta();
+                }
+            }
         }
 
         public override void OnStrategyDeactivated()
