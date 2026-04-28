@@ -72,7 +72,7 @@ namespace CosmicShore.Gameplay.MultiMouse
         public void Refresh()
         {
             devices.Clear();
-            foreach (var m in InputSystem.devices)
+            foreach (var m in Mouse.all)
                 devices.Add(new Device(m));
         }
 
@@ -83,6 +83,10 @@ namespace CosmicShore.Gameplay.MultiMouse
 
         public void Tick()
         {
+            // Cheap re-enumerate while we don't yet have a stable pair —
+            // catches mice plugged in after the game starts.
+            if (devices.Count < 2) Refresh();
+
             for (int i = 0; i < devices.Count; i++)
                 devices[i].Tick();
         }
