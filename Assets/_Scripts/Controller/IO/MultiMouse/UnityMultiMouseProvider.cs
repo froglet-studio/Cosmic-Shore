@@ -72,8 +72,9 @@ namespace CosmicShore.Gameplay.MultiMouse
         public void Refresh()
         {
             devices.Clear();
-            foreach (var m in InputSystem.devices)
-                devices.Add(new Device(m));
+            foreach (var device in InputSystem.devices)
+                if (device is Mouse m)
+                    devices.Add(new Device(m));
         }
 
         public IMultiMouseDevice GetDevice(int index)
