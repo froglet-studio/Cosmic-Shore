@@ -1,6 +1,7 @@
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
+using CosmicShore.Gameplay.MultiMouse;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.Utility;
@@ -24,6 +25,8 @@ namespace CosmicShore.Gameplay
         private GamepadInputStrategy gamepadStrategy;
         private KeyboardInputStrategy keyboardStrategy;
         private TouchInputStrategy touchStrategy;
+        private DualMouseInputStrategy dualMouseStrategy;
+        private MultiMouseService multiMouseService;
         private DeviceOrientationHandler orientationHandler;
 
         private bool isInitialized;
@@ -45,10 +48,13 @@ namespace CosmicShore.Gameplay
         {
             if (!isInitialized)
                 return;
-            
+
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus -= OnToggleInvertThrottle;
             EnhancedTouchSupport.Disable();
+
+            multiMouseService?.Shutdown();
+            multiMouseService = null;
         }
 
         private void Update()
@@ -123,27 +129,39 @@ namespace CosmicShore.Gameplay
 
         private void SetInitialStrategy()
         {
-            if (Gamepad.current != null)
-                currentStrategy = gamepadStrategy;
-            else if (SystemInfo.deviceType == DeviceType.Handheld)
-                currentStrategy = touchStrategy;
-            else
-                currentStrategy = keyboardStrategy;
-
+            currentStrategy = SelectStrategy();
             currentStrategy?.OnStrategyActivated();
         }
 
         private void InitializeStrategies()
         {
+            multiMouseService = new MultiMouseService();
+
             touchStrategy = new TouchInputStrategy();
             gamepadStrategy = new GamepadInputStrategy();
             keyboardStrategy = new KeyboardInputStrategy();
+            dualMouseStrategy = new DualMouseInputStrategy(multiMouseService);
             orientationHandler = new DeviceOrientationHandler();
 
             touchStrategy.Initialize(InputStatus);
             gamepadStrategy.Initialize(InputStatus);
             keyboardStrategy.Initialize(InputStatus);
+            dualMouseStrategy.Initialize(InputStatus);
             orientationHandler.Initialize(InputStatus, this);
+        }
+
+        private IInputStrategy SelectStrategy()
+        {
+            if (Gamepad.current != null)
+                return gamepadStrategy;
+            if (SystemInfo.deviceType == DeviceType.Handheld)
+                return touchStrategy;
+            // Tick the service so it discovers / enumerates mice before we
+            // decide. Cheap on the no-mouse path.
+            multiMouseService?.Tick();
+            if (multiMouseService != null && multiMouseService.HasTwoMice)
+                return dualMouseStrategy;
+            return keyboardStrategy;
         }
 
         // TODO - Try remove IVessel reference from the method below
@@ -160,21 +178,14 @@ namespace CosmicShore.Gameplay
 
         private void UpdateInputStrategy()
         {
-            IInputStrategy newStrategy;
-
-            if (Gamepad.current != null)
-                newStrategy = gamepadStrategy;
-            else if (SystemInfo.deviceType == DeviceType.Handheld)
-                newStrategy = touchStrategy;
-            else
-                newStrategy = keyboardStrategy;
+            IInputStrategy newStrategy = SelectStrategy();
 
             if (newStrategy != null && newStrategy != currentStrategy)
             {
                 currentStrategy?.OnStrategyDeactivated();
                 currentStrategy = newStrategy;
                 currentStrategy.OnStrategyActivated();
-                
+
                 // Re-sync settings when switching strategies
                 SyncInvertSettings();
             }
