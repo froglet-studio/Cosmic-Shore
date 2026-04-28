@@ -23,9 +23,9 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class DualMouseInputStrategy : BaseInputStrategy
     {
-        private const float MOUSE_TO_STICK = 0.005f;   // pixels of delta → stick units
-        private const float STICK_RECENTER_RATE = 6f;  // exponential pull toward 0 when idle
-        private const float DEAD_ZONE = 0.03f;
+        private const float MOUSE_TO_STICK = 0.007f;   // pixels of delta → stick units
+        private const float STICK_RECENTER_RATE = 1f;  // exponential pull toward 0 when idle
+        private const float DEAD_ZONE = 0.01f;
 
         private readonly MultiMouseService mice;
 
