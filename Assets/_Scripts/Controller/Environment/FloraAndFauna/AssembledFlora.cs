@@ -80,12 +80,6 @@ namespace CosmicShore.Gameplay
         {
             if (spawnedItemCount >= maxTotalSpawnedObjects) return;
 
-            // Cell-level prism budget. When the cell is over its prism cap
-            // (Cell.maxLiveBlocks), pause growth until consumption brings the count
-            // back below the hysteresis floor (Cell.resumeGrowingBelow). This keeps
-            // the gyroid flora from snowballing past what the renderer can sustain.
-            if (cell && !cell.FloraGrowingEnabled) return;
-
             List<Branch> newBranches = new List<Branch>();
             List<Branch> branchesToRemove = new List<Branch>();
 
