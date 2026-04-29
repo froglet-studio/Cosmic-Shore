@@ -37761,95 +37761,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   navGroupType: 1
   navLinkContainer: {fileID: 853405454}
---- !u!1001 &857778091
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 1243749158}
-    m_Modifications:
-    - target: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_Name
-      value: SkyboxModel
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 2000
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalScale.y
-      value: 2000
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 2000
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 8b8886c5e424ace48980294a663d65a3, type: 3}
---- !u!4 &857778092 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
-    type: 3}
-  m_PrefabInstance: {fileID: 857778091}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &860627926
 GameObject:
   m_ObjectHideFlags: 0
@@ -52912,7 +52823,6 @@ Transform:
   m_Children:
   - {fileID: 1422060010}
   - {fileID: 2038804567}
-  - {fileID: 857778092}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1244232582
@@ -61322,16 +61232,17 @@ MonoBehaviour:
   _orbitRadius: 130
   _orbitHeight: 30
   _orbitSpeed: 5
-  _vesselFollowOffset: {x: 0, y: 14, z: -28}
-  _vesselFollowPositionDamping: 0.05
-  _vesselFollowRotationDamping: 0.05
+  _vesselFollowOffset: {x: 30, y: 50, z: -80}
+  _vesselFollowPositionDamping: 1
+  _vesselFollowRotationDamping: 1
   _vesselFollowBindingMode: 5
-  _vesselChaseTightOffset: {x: 0, y: 6, z: -14}
-  _fixedAimAnchorDistance: 60
-  _fixedAimAnchorHeight: 20
-  _fixedAimRotationDamping: 0.5
+  _vesselChaseTightOffset: {x: 0, y: 50, z: -80}
+  _topDownHeight: 70
+  _topDownBackOffset: -12
+  _topDownPositionDamping: 1
+  _topDownRotationDamping: 0.6
   _randomSwitchEnabled: 1
-  _randomSwitchModes: 000000000100000002000000
+  _randomSwitchModes: 00000000010000000200000003000000
   _randomSwitchIntervalMin: 20
   _randomSwitchIntervalMax: 30
   _cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}

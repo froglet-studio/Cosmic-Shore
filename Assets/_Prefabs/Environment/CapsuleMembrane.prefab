@@ -47,6 +47,12 @@ MonoBehaviour:
   subdivisions: 4
   radius: 1000
   capsuleMesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
-  capsuleScale: {x: 12, y: 30, z: 12}
+  capsuleScale: {x: 8, y: 60, z: 5}
+  placementJitter: 0.15
+  radialJitter: 0.05
+  seed: 42
+  noiseFrequency: 0.6
+  noiseAmplitude: 10
+  pulseSpeed: 0.4
   membraneMaterial: {fileID: 2100000, guid: 4f44fa5c7514a2c45b5af7f45bc51acd, type: 2}
   renderingLayerMask: 1
