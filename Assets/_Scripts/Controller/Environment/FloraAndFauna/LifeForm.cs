@@ -88,8 +88,8 @@ namespace CosmicShore.Gameplay
             initialized = true;
 
             this.cell = cell;
-            // Pass cell into the tracker so Add/Remove/CleanupDeadRefs forward to
-            // Cell.AddBlock/RemoveBlock and keep Cell.LiveBlockCount accurate.
+            // Pass cell to the tracker so Add/Remove/CleanupDeadRefs forward to
+            // Cell.AddBlock/RemoveBlock and feed Cell.LiveBlockCount.
             healthTracker = new HealthBlockTracker(healthBlocksForMaturity, minHealthBlocks, cell);
             spindleTracker = new SpindleTracker();
 
@@ -267,8 +267,9 @@ namespace CosmicShore.Gameplay
         {
             isCleaningUp = true;
             StopAllCoroutines();
-            // Decrement Cell.LiveBlockCount for any blocks that bypass Die()/RemoveHealthBlock
-            // when the round ends (we Destroy(gameObject) immediately rather than running death).
+            // Drain still-living blocks to the cell counter — turn-end Destroys the
+            // gameObject without running Die()/RemoveHealthBlock, so without this
+            // Cell.LiveBlockCount drifts upward across rounds.
             if (cell != null && healthTracker != null)
                 foreach (var hp in healthTracker.All)
                     if (hp) cell.RemoveBlock(hp);

@@ -116,13 +116,13 @@ namespace CosmicShore.Gameplay
                 var newPosition = CalculateGlobalBondSite(bondMateData.Substrate);
                 var newRotation = CalculateRotation(CreateGyroidBondMate(this, BlockType, growthSite));
 
-                // Use TargetScale (authored size) instead of transform.localScale, which is
-                // the *current* animating scale and starts at Vector3.zero in
-                // PrismScaleAnimator.Awake. Using localScale meant the parent was checking
-                // a near-zero box for the entire grow-in window and missed real overlaps,
-                // so siblings were stacking on top of each other. Pad by 0.25 to also cover
-                // the ~0.6s window where a freshly-spawned sibling has its collider disabled
-                // (Prism.CreateBlockCoroutine waitTime) and is invisible to Physics.CheckBox.
+                // Use Prism.TargetScale (authored size from PrismScaleAnimator) instead of
+                // transform.localScale, which is the *current* animating value and starts at
+                // Vector3.zero in PrismScaleAnimator.Awake. With localScale the probe was
+                // near-zero through the entire grow-in window and missed real overlaps, so
+                // siblings stacked on top of each other. Pad by 0.25 so the ~0.6s window
+                // where a freshly-spawned sibling has its collider disabled (Prism.CreateBlockCoroutine
+                // waitTime) doesn't slip overlapping children past Physics.CheckBox.
                 Vector3 checkHalfExtents = Prism.TargetScale * 0.5f + Vector3.one * 0.25f;
                 if (!Physics.CheckBox(newPosition, checkHalfExtents))
                     return new GyroidGrowthInfo

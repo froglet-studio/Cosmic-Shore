@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            int count = Mathf.Max(0, managerData.spawnCount);
+            int count = ComputeBatchSize();
             float radius = Mathf.Max(0f, managerData.spawnRadius);
 
             for (int i = 0; i < count; i++)
@@ -94,8 +94,37 @@ namespace CosmicShore.Gameplay
                 Destroy(fauna.gameObject);
             }
 
-            if (managerData && activeFauna.Count < Mathf.Max(0, managerData.spawnCount / 2))
+            // Replenish when the live count drops below half of what cell load currently
+            // calls for. This makes the trigger respond to prism availability — a cell
+            // saturated with prisms repopulates fauna sooner than a sparse one.
+            if (managerData && activeFauna.Count < ComputeBatchSize() / 2)
                 SpawnGroup();
+        }
+
+        /// <summary>
+        /// Target batch size as a function of live prism load in the host cell.
+        /// Implements the Fauna fundamental's response to its food supply: more food → more
+        /// fauna → more consumption → equilibrium. Falls back to the static spawnCount
+        /// baseline when no cell is wired or extraFaunaPerHundredPrisms is zero.
+        /// </summary>
+        int ComputeBatchSize()
+        {
+            if (!managerData) return 0;
+
+            int baseCount = Mathf.Max(0, managerData.spawnCount);
+            int extra = 0;
+
+            // Guard cellData explicitly — Fauna.cell property dereferences cellData.Cell
+            // and would NRE if the SO link isn't wired in the inspector.
+            if (cellData != null && cellData.Cell != null && managerData.extraFaunaPerHundredPrisms > 0)
+                extra = (cellData.Cell.LiveBlockCount / 100) * managerData.extraFaunaPerHundredPrisms;
+
+            int total = baseCount + extra;
+
+            int ceiling = Mathf.Max(0, managerData.maxFaunaPerGroup);
+            if (ceiling > 0 && total > ceiling) total = ceiling;
+
+            return total;
         }
     }
 }

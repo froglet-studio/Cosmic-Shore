@@ -1,6 +1,7 @@
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
+using CosmicShore.Gameplay.MultiMouse;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.Utility;
@@ -24,7 +25,15 @@ namespace CosmicShore.Gameplay
         private GamepadInputStrategy gamepadStrategy;
         private KeyboardInputStrategy keyboardStrategy;
         private TouchInputStrategy touchStrategy;
+        private DualMouseInputStrategy dualMouseStrategy;
+        private MultiMouseService multiMouseService;
         private DeviceOrientationHandler orientationHandler;
+
+        // Dual-mouse opt-in: defaults to off so a normal mouse click on UI
+        // doesn't drag the player back into flight. Engages on simultaneous
+        // LMB press across both physical mice; disengages on escape.
+        private bool dualMouseEngaged;
+        private bool prevBothLeftButtonsHeld;
 
         private bool isInitialized;
 
@@ -45,10 +54,13 @@ namespace CosmicShore.Gameplay
         {
             if (!isInitialized)
                 return;
-            
+
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus -= OnToggleInvertThrottle;
             EnhancedTouchSupport.Disable();
+
+            multiMouseService?.Shutdown();
+            multiMouseService = null;
         }
 
         private void Update()
@@ -74,10 +86,41 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // 4) Otherwise, handle normal player input:
+            // Tick once per frame here so engagement detection and the
+            // strategy itself read the same per-frame snapshot.
+            multiMouseService?.Tick();
+            UpdateDualMouseEngagement();
+
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
             orientationHandler.Update();
+        }
+
+        private void UpdateDualMouseEngagement()
+        {
+            if (multiMouseService == null || !multiMouseService.HasTwoMice)
+            {
+                dualMouseEngaged = false;
+                prevBothLeftButtonsHeld = false;
+                return;
+            }
+
+            var left = multiMouseService.GetDevice(0);
+            var right = multiMouseService.GetDevice(1);
+            if (left == null || right == null) return;
+
+            // Engage on the rising edge of both LMBs being held at the same
+            // time. Once engaged, the user has to release at least one and
+            // re-press to re-trigger this — releasing escape afterward leaves
+            // the gesture state pre-armed but does not auto re-engage.
+            bool bothHeld = left.LeftButton && right.LeftButton;
+            if (bothHeld && !prevBothLeftButtonsHeld)
+                dualMouseEngaged = true;
+            prevBothLeftButtonsHeld = bothHeld;
+
+            var kb = Keyboard.current;
+            if (dualMouseEngaged && kb != null && kb.escapeKey.wasPressedThisFrame)
+                dualMouseEngaged = false;
         }
 
         // public void Initialize(IVessel vessel, bool isOwner = true)
@@ -123,27 +166,36 @@ namespace CosmicShore.Gameplay
 
         private void SetInitialStrategy()
         {
-            if (Gamepad.current != null)
-                currentStrategy = gamepadStrategy;
-            else if (SystemInfo.deviceType == DeviceType.Handheld)
-                currentStrategy = touchStrategy;
-            else
-                currentStrategy = keyboardStrategy;
-
+            currentStrategy = SelectStrategy();
             currentStrategy?.OnStrategyActivated();
         }
 
         private void InitializeStrategies()
         {
+            multiMouseService = new MultiMouseService();
+
             touchStrategy = new TouchInputStrategy();
             gamepadStrategy = new GamepadInputStrategy();
             keyboardStrategy = new KeyboardInputStrategy();
+            dualMouseStrategy = new DualMouseInputStrategy(multiMouseService);
             orientationHandler = new DeviceOrientationHandler();
 
             touchStrategy.Initialize(InputStatus);
             gamepadStrategy.Initialize(InputStatus);
             keyboardStrategy.Initialize(InputStatus);
+            dualMouseStrategy.Initialize(InputStatus);
             orientationHandler.Initialize(InputStatus, this);
+        }
+
+        private IInputStrategy SelectStrategy()
+        {
+            if (Gamepad.current != null)
+                return gamepadStrategy;
+            if (SystemInfo.deviceType == DeviceType.Handheld)
+                return touchStrategy;
+            if (dualMouseEngaged && multiMouseService != null && multiMouseService.HasTwoMice)
+                return dualMouseStrategy;
+            return keyboardStrategy;
         }
 
         // TODO - Try remove IVessel reference from the method below
@@ -160,21 +212,14 @@ namespace CosmicShore.Gameplay
 
         private void UpdateInputStrategy()
         {
-            IInputStrategy newStrategy;
-
-            if (Gamepad.current != null)
-                newStrategy = gamepadStrategy;
-            else if (SystemInfo.deviceType == DeviceType.Handheld)
-                newStrategy = touchStrategy;
-            else
-                newStrategy = keyboardStrategy;
+            IInputStrategy newStrategy = SelectStrategy();
 
             if (newStrategy != null && newStrategy != currentStrategy)
             {
                 currentStrategy?.OnStrategyDeactivated();
                 currentStrategy = newStrategy;
                 currentStrategy.OnStrategyActivated();
-                
+
                 // Re-sync settings when switching strategies
                 SyncInvertSettings();
             }

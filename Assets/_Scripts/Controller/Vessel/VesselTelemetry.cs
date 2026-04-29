@@ -27,6 +27,11 @@ namespace CosmicShore.Gameplay
         [Header("Stat Events — Combat (all vessels)")]
         [SerializeField] private VesselStatEventSO prismsDamagedStat;
 
+        [Header("Tracking Thresholds")]
+        [Tooltip("Minimum BoostMultiplier required while IsBoosting for boost time to count toward Max Boost. " +
+                 "Tune per vessel — e.g. Squirrel's ChargeBoost peaks at 2x, so a 4x threshold would never fire.")]
+        [SerializeField] private float boostMultiplierThreshold = 1.5f;
+
         // ── Public records ─────────────────────────────────────────────────────
 
         public float MaxDriftTime    { get; private set; }
@@ -61,6 +66,7 @@ namespace CosmicShore.Gameplay
 
         private float _currentDriftTime;
         private float _currentBoostTime;
+        private bool  _subscribed;
 
         // ── Lifecycle ──────────────────────────────────────────────────────────
 
@@ -79,22 +85,33 @@ namespace CosmicShore.Gameplay
                 $"prismsDmg={(prismsDamagedStat != null ? "OK" : "NULL")}");
         }
 
-        protected virtual void OnEnable()
+        protected virtual void OnEnable() => TrySubscribe();
+
+        private void Start() => TrySubscribe();
+
+        private void TrySubscribe()
         {
-            if (gameData == null) return;
+            // Vessels are instantiated at runtime, so OnEnable can fire before Reflex
+            // injection populates gameData. Retry in Start, which always runs after injection.
+            if (_subscribed || gameData == null) return;
+
             gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised     += HandleTurnEnded;
-
             VesselDamagePrismEffectSO.OnVesselDamagedPrism += HandlePrismDamaged;
+            _subscribed = true;
         }
 
         protected virtual void OnDisable()
         {
-            if (gameData == null) return;
-            gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
-            gameData.OnMiniGameTurnEnd.OnRaised     -= HandleTurnEnded;
+            if (!_subscribed) return;
 
+            if (gameData != null)
+            {
+                gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
+                gameData.OnMiniGameTurnEnd.OnRaised     -= HandleTurnEnded;
+            }
             VesselDamagePrismEffectSO.OnVesselDamagedPrism -= HandlePrismDamaged;
+            _subscribed = false;
         }
 
         private void Update()
@@ -168,7 +185,7 @@ namespace CosmicShore.Gameplay
 
         private void TrackBoost()
         {
-            bool isHighBoost = Vessel.IsBoosting && Vessel.BoostMultiplier >= 4.0f;
+            bool isHighBoost = Vessel.IsBoosting && Vessel.BoostMultiplier >= boostMultiplierThreshold;
             if (isHighBoost)
                 _currentBoostTime += Time.deltaTime;
             else

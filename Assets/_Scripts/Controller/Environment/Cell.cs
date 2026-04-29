@@ -26,12 +26,6 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] float nucleusScaleMultiplier = 1f;
 
-        [Header("Prism Population Control")]
-        [Tooltip("Hard cap on live tracked prisms in this cell. When exceeded, FloraGrowingEnabled flips false so flora stops adding more growth and IntensityWiseLifeSpawner stops seeding new plants.")]
-        [SerializeField] int maxLiveBlocks = 1500;
-        [Tooltip("Hysteresis floor. Flora resumes growing once consumption brings the count back down to this number.")]
-        [SerializeField] int resumeGrowingBelow = 1300;
-
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
         GameObject membrane;
@@ -55,13 +49,14 @@ namespace CosmicShore.Gameplay
 
         readonly List<GameObject> spawnedLifeForms = new();
         readonly HashSet<Prism> trackedBlocks = new();
-        bool floraGrowingEnabled = true;
-
-        public int LiveBlockCount => trackedBlocks.Count;
-        public int MaxLiveBlocks => maxLiveBlocks;
-        public bool FloraGrowingEnabled => floraGrowingEnabled;
-
         SnowChanger spawnedCytoplasm;
+
+        /// <summary>
+        /// Live count of unique prisms tracked through Add/RemoveBlock. Read-only signal
+        /// for systems that respond to prism load (e.g., LightFaunaManager scales its
+        /// fauna population with this so consumption keeps pace with growth).
+        /// </summary>
+        public int LiveBlockCount => trackedBlocks.Count;
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
@@ -138,7 +133,6 @@ namespace CosmicShore.Gameplay
             }
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
-            floraGrowingEnabled = true;
 
             if (spawnedCytoplasm)
             {
@@ -193,7 +187,6 @@ namespace CosmicShore.Gameplay
         {
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
-            floraGrowingEnabled = true;
 
             // Bind runtime -> this cell
             runtime.Cell = this;
@@ -326,8 +319,9 @@ namespace CosmicShore.Gameplay
 
         public void AddBlock(Prism block)
         {
-            // Use C# null check (`is null`) rather than `!block` so destroyed Unity refs
-            // can still be removed from trackedBlocks via the matching RemoveBlock path.
+            // `is null` (not `!block`) so destroyed-but-non-null Unity refs can still be
+            // removed from trackedBlocks via the matching RemoveBlock path; otherwise
+            // LiveBlockCount drifts upward when prisms die outside the normal flow.
             if (block is null) return;
             if (!trackedBlocks.Add(block)) return; // already counted
 
@@ -337,8 +331,6 @@ namespace CosmicShore.Gameplay
                 foreach (var t in teams)
                     if (t != block.Domain) countGrids[t].AddBlock(block);
             }
-
-            UpdateGrowGate();
         }
 
         public void RemoveBlock(Prism block)
@@ -352,17 +344,6 @@ namespace CosmicShore.Gameplay
                 foreach (Domains t in teams)
                     if (t != block.Domain) countGrids[t].RemoveBlock(block);
             }
-
-            UpdateGrowGate();
-        }
-
-        void UpdateGrowGate()
-        {
-            int count = trackedBlocks.Count;
-            if (floraGrowingEnabled && count >= maxLiveBlocks)
-                floraGrowingEnabled = false;
-            else if (!floraGrowingEnabled && count <= resumeGrowingBelow)
-                floraGrowingEnabled = true;
         }
 
         public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();

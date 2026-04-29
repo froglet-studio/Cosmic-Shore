@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
         readonly HashSet<HealthPrism> healthBlocks = new();
         readonly int healthBlocksForMaturity;
         readonly int minHealthBlocks;
-        Cell cell;
+        readonly Cell cell;
 
         public int Count => healthBlocks.Count;
         public bool IsMature { get; private set; }
@@ -30,8 +30,8 @@ namespace CosmicShore.Gameplay
         public void Add(HealthPrism hp, LifeForm owner, Domains domain)
         {
             if (!hp) return;
-            // HashSet.Add returns true only if the entry is new; forward to the cell so
-            // Cell.LiveBlockCount tracks unique prisms, not double-counted re-adds.
+            // HashSet.Add returns true only on a new entry, so forward only once per prism
+            // and Cell.LiveBlockCount counts unique prisms (not double-counted re-adds).
             if (healthBlocks.Add(hp) && cell)
                 cell.AddBlock(hp);
             hp.ChangeTeam(domain);
@@ -57,8 +57,8 @@ namespace CosmicShore.Gameplay
         public void CleanupDeadRefs()
         {
             // Forward each dead ref to the cell before discarding so Cell.LiveBlockCount
-            // doesn't drift upward when prisms are destroyed without going through Remove
-            // (e.g., scene unload, parent destruction, AOE chains that bypass Damage).
+            // doesn't drift upward when prisms die outside the normal Damage path
+            // (scene unload, parent destruction, AOE chains that bypass HealthPrism).
             if (cell != null)
             {
                 healthBlocks.RemoveWhere(h =>
