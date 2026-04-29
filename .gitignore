@@ -80,3 +80,8 @@ crashlytics-build.properties
 /.utmp/
 /.editorconfig
 Assets/Unity Assests/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Electronic Highway Sign SDF.asset
+
+# FMOD runtime/editor logs (regenerated per session, per OS)
+fmod_editor.log
+fmod_profiler.log
+fmod*.log
