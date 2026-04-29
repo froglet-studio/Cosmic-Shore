@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] float nucleusScaleMultiplier = 1f;
 
+        [Header("Prism Population Control")]
+        [Tooltip("Hard cap on live tracked prisms in this cell. When exceeded, FloraGrowingEnabled flips false so flora stops adding more growth and IntensityWiseLifeSpawner stops seeding new plants.")]
+        [SerializeField] int maxLiveBlocks = 1500;
+        [Tooltip("Hysteresis floor. Flora resumes growing once consumption brings the count back down to this number.")]
+        [SerializeField] int resumeGrowingBelow = 1300;
+
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
         GameObject membrane;
@@ -48,6 +54,13 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Domains, float> teamVolumes = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
+        readonly HashSet<Prism> trackedBlocks = new();
+        bool floraGrowingEnabled = true;
+
+        public int LiveBlockCount => trackedBlocks.Count;
+        public int MaxLiveBlocks => maxLiveBlocks;
+        public bool FloraGrowingEnabled => floraGrowingEnabled;
+
         SnowChanger spawnedCytoplasm;
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
@@ -124,6 +137,8 @@ namespace CosmicShore.Gameplay
                 if (spawnedLifeForms[i]) Destroy(spawnedLifeForms[i]);
             }
             spawnedLifeForms.Clear();
+            trackedBlocks.Clear();
+            floraGrowingEnabled = true;
 
             if (spawnedCytoplasm)
             {
@@ -177,6 +192,8 @@ namespace CosmicShore.Gameplay
         void Initialize()
         {
             spawnedLifeForms.Clear();
+            trackedBlocks.Clear();
+            floraGrowingEnabled = true;
 
             // Bind runtime -> this cell
             runtime.Cell = this;
@@ -309,16 +326,43 @@ namespace CosmicShore.Gameplay
 
         public void AddBlock(Prism block)
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            foreach (var t in teams)
-                if (t != block.Domain) countGrids[t].AddBlock(block);
+            // Use C# null check (`is null`) rather than `!block` so destroyed Unity refs
+            // can still be removed from trackedBlocks via the matching RemoveBlock path.
+            if (block is null) return;
+            if (!trackedBlocks.Add(block)) return; // already counted
+
+            if (block)
+            {
+                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                foreach (var t in teams)
+                    if (t != block.Domain) countGrids[t].AddBlock(block);
+            }
+
+            UpdateGrowGate();
         }
 
         public void RemoveBlock(Prism block)
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            foreach (Domains t in teams)
-                if (t != block.Domain) countGrids[t].RemoveBlock(block);
+            if (block is null) return;
+            if (!trackedBlocks.Remove(block)) return; // not counted
+
+            if (block)
+            {
+                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                foreach (Domains t in teams)
+                    if (t != block.Domain) countGrids[t].RemoveBlock(block);
+            }
+
+            UpdateGrowGate();
+        }
+
+        void UpdateGrowGate()
+        {
+            int count = trackedBlocks.Count;
+            if (floraGrowingEnabled && count >= maxLiveBlocks)
+                floraGrowingEnabled = false;
+            else if (!floraGrowingEnabled && count <= resumeGrowingBelow)
+                floraGrowingEnabled = true;
         }
 
         public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();

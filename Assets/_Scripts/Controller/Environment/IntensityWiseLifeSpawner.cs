@@ -87,6 +87,11 @@ namespace CosmicShore.Gameplay
                 else
                     yield return null;
 
+                // Don't seed a fresh plant when the cell is already over its prism budget.
+                // Existing flora keep their state and resume growing once consumption
+                // (fauna, vessels) brings Cell.LiveBlockCount back below the hysteresis floor.
+                if (host && !host.FloraGrowingEnabled) continue;
+
                 SpawnFlora(host, floraCfg.FloraPrefab, excluded);
             }
         }

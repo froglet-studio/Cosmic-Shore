@@ -87,11 +87,13 @@ namespace CosmicShore.Gameplay
             if (initialized) return;
             initialized = true;
 
-            healthTracker = new HealthBlockTracker(healthBlocksForMaturity, minHealthBlocks);
+            this.cell = cell;
+            // Pass cell into the tracker so Add/Remove/CleanupDeadRefs forward to
+            // Cell.AddBlock/RemoveBlock and keep Cell.LiveBlockCount accurate.
+            healthTracker = new HealthBlockTracker(healthBlocksForMaturity, minHealthBlocks, cell);
             spindleTracker = new SpindleTracker();
 
             crystal = GetComponentInChildren<Crystal>();
-            this.cell = cell;
 
             BindEmbeddedParts();
 
@@ -265,6 +267,11 @@ namespace CosmicShore.Gameplay
         {
             isCleaningUp = true;
             StopAllCoroutines();
+            // Decrement Cell.LiveBlockCount for any blocks that bypass Die()/RemoveHealthBlock
+            // when the round ends (we Destroy(gameObject) immediately rather than running death).
+            if (cell != null && healthTracker != null)
+                foreach (var hp in healthTracker.All)
+                    if (hp) cell.RemoveBlock(hp);
             if (gameObject) Destroy(gameObject);
         }
     }
