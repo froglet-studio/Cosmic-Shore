@@ -116,15 +116,22 @@ namespace CosmicShore.Gameplay
                 var newPosition = CalculateGlobalBondSite(bondMateData.Substrate);
                 var newRotation = CalculateRotation(CreateGyroidBondMate(this, BlockType, growthSite));
 
-                // Check if there is already a block at the new position using Physics.CheckBox
-                if (!Physics.CheckBox(newPosition, Prism.transform.localScale / 2f))
+                // Use Prism.TargetScale (authored size from PrismScaleAnimator) instead of
+                // transform.localScale, which is the *current* animating value and starts at
+                // Vector3.zero in PrismScaleAnimator.Awake. With localScale the probe was
+                // near-zero through the entire grow-in window and missed real overlaps, so
+                // siblings stacked on top of each other. Pad by 0.25 so the ~0.6s window
+                // where a freshly-spawned sibling has its collider disabled (Prism.CreateBlockCoroutine
+                // waitTime) doesn't slip overlapping children past Physics.CheckBox.
+                Vector3 checkHalfExtents = Prism.TargetScale * 0.5f + Vector3.one * 0.25f;
+                if (!Physics.CheckBox(newPosition, checkHalfExtents))
                     return new GyroidGrowthInfo
                     {
                         CanGrow = true,
                         Position = newPosition,
                         Rotation = newRotation,
                         BlockType = bondMateData.BlockType,
-                        IsDangerous = 
+                        IsDangerous =
                             bondMateData.BlockType == GyroidBlockType.GEs ||
                             bondMateData.BlockType == GyroidBlockType.DE ||
                             bondMateData.BlockType == GyroidBlockType.EG ||

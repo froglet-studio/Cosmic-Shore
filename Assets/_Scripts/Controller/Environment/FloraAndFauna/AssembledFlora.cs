@@ -136,6 +136,7 @@ namespace CosmicShore.Gameplay
 
                 newBranches.Add(newBranch);
                 itemsSpawned++;
+                spawnedItemCount++;
 
                 if (branch.depth >= maxDepth - 1 || branch.assembler.IsFullyBonded())
                 {
