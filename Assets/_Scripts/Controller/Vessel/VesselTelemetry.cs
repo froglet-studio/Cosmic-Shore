@@ -66,6 +66,7 @@ namespace CosmicShore.Gameplay
 
         private float _currentDriftTime;
         private float _currentBoostTime;
+        private bool  _subscribed;
 
         // ── Lifecycle ──────────────────────────────────────────────────────────
 
@@ -84,22 +85,33 @@ namespace CosmicShore.Gameplay
                 $"prismsDmg={(prismsDamagedStat != null ? "OK" : "NULL")}");
         }
 
-        protected virtual void OnEnable()
+        protected virtual void OnEnable() => TrySubscribe();
+
+        private void Start() => TrySubscribe();
+
+        private void TrySubscribe()
         {
-            if (gameData == null) return;
+            // Vessels are instantiated at runtime, so OnEnable can fire before Reflex
+            // injection populates gameData. Retry in Start, which always runs after injection.
+            if (_subscribed || gameData == null) return;
+
             gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised     += HandleTurnEnded;
-
             VesselDamagePrismEffectSO.OnVesselDamagedPrism += HandlePrismDamaged;
+            _subscribed = true;
         }
 
         protected virtual void OnDisable()
         {
-            if (gameData == null) return;
-            gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
-            gameData.OnMiniGameTurnEnd.OnRaised     -= HandleTurnEnded;
+            if (!_subscribed) return;
 
+            if (gameData != null)
+            {
+                gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
+                gameData.OnMiniGameTurnEnd.OnRaised     -= HandleTurnEnded;
+            }
             VesselDamagePrismEffectSO.OnVesselDamagedPrism -= HandlePrismDamaged;
+            _subscribed = false;
         }
 
         private void Update()
