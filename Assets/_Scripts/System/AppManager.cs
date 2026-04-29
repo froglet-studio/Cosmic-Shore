@@ -127,6 +127,10 @@ namespace CosmicShore.Core
                 return;
             }
 
+            // Reset _resolved so a DontDestroyOnLoad AppManager that persists
+            // across editor play sessions re-resolves stale manager references.
+            _resolved = false;
+
             DontDestroyOnLoad(gameObject);
             ConfigurePlatform();
             TryResolveManagersEarly();
@@ -423,8 +427,11 @@ namespace CosmicShore.Core
 
         static void EnsurePersistent(Component component)
         {
-            if (!component.TryGetComponent<DontDestroyOnLoad>(out _))
-                component.gameObject.AddComponent<DontDestroyOnLoad>();
+            // Call Unity's DontDestroyOnLoad directly rather than adding a
+            // MonoBehaviour component, so persistence takes effect immediately
+            // (before the component's own Awake would run). This eliminates
+            // the window where Bootstrap unloads before the component persists.
+            UnityEngine.Object.DontDestroyOnLoad(component.gameObject);
         }
 
         #endregion
