@@ -1,4 +1,5 @@
-﻿using Obvious.Soap;
+﻿using CosmicShore.Gameplay;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
