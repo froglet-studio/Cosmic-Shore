@@ -27,6 +27,11 @@ namespace CosmicShore.Gameplay
         [Header("Stat Events — Combat (all vessels)")]
         [SerializeField] private VesselStatEventSO prismsDamagedStat;
 
+        [Header("Tracking Thresholds")]
+        [Tooltip("Minimum BoostMultiplier required while IsBoosting for boost time to count toward Max Boost. " +
+                 "Tune per vessel — e.g. Squirrel's ChargeBoost peaks at 2x, so a 4x threshold would never fire.")]
+        [SerializeField] private float boostMultiplierThreshold = 1.5f;
+
         // ── Public records ─────────────────────────────────────────────────────
 
         public float MaxDriftTime    { get; private set; }
@@ -168,7 +173,7 @@ namespace CosmicShore.Gameplay
 
         private void TrackBoost()
         {
-            bool isHighBoost = Vessel.IsBoosting && Vessel.BoostMultiplier >= 4.0f;
+            bool isHighBoost = Vessel.IsBoosting && Vessel.BoostMultiplier >= boostMultiplierThreshold;
             if (isHighBoost)
                 _currentBoostTime += Time.deltaTime;
             else
