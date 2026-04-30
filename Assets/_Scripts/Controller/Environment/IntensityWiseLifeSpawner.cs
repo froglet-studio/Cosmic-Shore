@@ -68,7 +68,10 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < initialCount; i++)
             {
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                // Phase gate: skip individual spawns in the initial batch if the cell is
+                // already past Settled (e.g., a replay reset retains prism count for a tick).
+                if (!host || host.Phase < CellPhase.Settled)
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
 
                 if (initialInterval > 0f && i < initialCount - 1)
                     yield return new WaitForSeconds(initialInterval);
@@ -86,6 +89,11 @@ namespace CosmicShore.Gameplay
                     yield return new WaitForSeconds(waitPeriod);
                 else
                     yield return null;
+
+                // Phase gate: planting stops once the cell crosses the Settled threshold
+                // (default 4000 prisms). The loop keeps ticking so spawning resumes if the
+                // count falls back across the SettledExit hysteresis floor.
+                if (host && host.Phase >= CellPhase.Settled) continue;
 
                 SpawnFlora(host, floraCfg.FloraPrefab, excluded);
             }

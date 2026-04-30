@@ -28,6 +28,7 @@ namespace CosmicShore.Gameplay
 
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
+        public CellConfigDataSO Config => cellConfigData;
         GameObject membrane;
         GameObject nucleus;
 
@@ -46,17 +47,70 @@ namespace CosmicShore.Gameplay
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
         readonly Dictionary<Domains, float> teamVolumes = new();
+        readonly Dictionary<Domains, int> domainBlockCounts = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
         readonly HashSet<Prism> trackedBlocks = new();
         SnowChanger spawnedCytoplasm;
 
+        CellPhase phase = CellPhase.Sprout;
+
         /// <summary>
         /// Live count of unique prisms tracked through Add/RemoveBlock. Read-only signal
         /// for systems that respond to prism load (e.g., LightFaunaManager scales its
-        /// fauna population with this so consumption keeps pace with growth).
+        /// fauna population with this so consumption keeps pace with growth, and the
+        /// phase system gates flora and fauna behavior on it).
         /// </summary>
         public int LiveBlockCount => trackedBlocks.Count;
+
+        /// <summary>
+        /// Live leader by per-domain prism count. Recomputed on demand so the answer
+        /// always reflects the current Add/RemoveBlock-driven counts. Returns
+        /// <see cref="Domains.None"/> when the cell has no prisms tracked yet.
+        /// Ties resolve in fixed order (Jade > Ruby > Gold > Blue) so two clients with
+        /// the same per-domain counts pick the same leader.
+        /// </summary>
+        public Domains DominantDomain
+        {
+            get
+            {
+                Domains leader = Domains.None;
+                int leaderCount = 0;
+                Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+                foreach (var d in order)
+                {
+                    if (!domainBlockCounts.TryGetValue(d, out int c)) continue;
+                    if (c > leaderCount)
+                    {
+                        leader = d;
+                        leaderCount = c;
+                    }
+                }
+                return leader;
+            }
+        }
+
+        /// <summary>
+        /// Current phase. Written exclusively by <see cref="CellNetworkSync"/> via
+        /// <see cref="ApplyAuthoritativePhaseAndDomain"/> — the server's compute on a
+        /// networked cell, or the local-only fallback in single-player. Cell never
+        /// recomputes phase itself; it just exposes the inputs.
+        /// </summary>
+        public CellPhase Phase => phase;
+
+        /// <summary>
+        /// Sole entry point for phase mutation. Updates the local field and the
+        /// runtime SO's per-cell stats; the runtime SO raises <c>OnPhaseChanged</c>
+        /// when the value transitions. Both <see cref="CellNetworkSync"/>'s server
+        /// tick and its <c>OnValueChanged</c> client listener route through here so
+        /// the runtime SO is the single observable source of truth on every machine.
+        /// </summary>
+        public void ApplyAuthoritativePhaseAndDomain(CellPhase newPhase, Domains newDominantDomain)
+        {
+            phase = newPhase;
+            if (runtime != null)
+                runtime.WriteCellRuntimeStats(ID, LiveBlockCount, newPhase, newDominantDomain);
+        }
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
@@ -133,6 +187,8 @@ namespace CosmicShore.Gameplay
             }
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            phase = CellPhase.Sprout;
 
             if (spawnedCytoplasm)
             {
@@ -187,6 +243,8 @@ namespace CosmicShore.Gameplay
         {
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            phase = CellPhase.Sprout;
 
             // Bind runtime -> this cell
             runtime.Cell = this;
@@ -247,6 +305,11 @@ namespace CosmicShore.Gameplay
             countGrids.Clear();
             foreach (Domains t in teams)
                 countGrids[t] = new BlockCountDensityGrid(t);
+
+            // None-keyed grid accumulates every block regardless of domain so
+            // GetDensestRegionAnyDomain() can answer aggression-2 fauna's "head toward
+            // nearest centroid" goal — friendly + enemy mass both count.
+            countGrids[Domains.None] = new BlockCountDensityGrid(Domains.None);
         }
 
         void SpawnVisuals()
@@ -330,6 +393,12 @@ namespace CosmicShore.Gameplay
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (var t in teams)
                     if (t != block.Domain) countGrids[t].AddBlock(block);
+
+                if (countGrids.TryGetValue(Domains.None, out var anyGrid))
+                    anyGrid.AddBlock(block);
+
+                domainBlockCounts.TryGetValue(block.Domain, out int count);
+                domainBlockCounts[block.Domain] = count + 1;
             }
         }
 
@@ -343,10 +412,29 @@ namespace CosmicShore.Gameplay
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (Domains t in teams)
                     if (t != block.Domain) countGrids[t].RemoveBlock(block);
+
+                if (countGrids.TryGetValue(Domains.None, out var anyGrid))
+                    anyGrid.RemoveBlock(block);
+
+                if (domainBlockCounts.TryGetValue(block.Domain, out int count) && count > 0)
+                    domainBlockCounts[block.Domain] = count - 1;
             }
         }
 
         public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();
+
+        /// <summary>
+        /// Densest region across all domains, used by aggression-2 fauna whose goal
+        /// drops the opposing-domain qualifier and seeks the heaviest mass concentration
+        /// regardless of who owns it. Falls back to the cell's transform position if
+        /// the all-domain grid wasn't initialized (defensive — Initialize seeds it).
+        /// </summary>
+        public Vector3 GetDensestRegionAnyDomain()
+        {
+            if (countGrids.TryGetValue(Domains.None, out var anyGrid))
+                return anyGrid.FindDensestRegion();
+            return transform.position;
+        }
 
         public bool ContainsPosition(Vector3 position)
         {

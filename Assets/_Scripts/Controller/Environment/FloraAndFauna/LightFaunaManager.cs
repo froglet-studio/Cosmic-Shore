@@ -28,6 +28,42 @@ namespace CosmicShore.Gameplay
         protected override void Start()
         {
             base.Start();
+
+            // Initial spawn only happens if the cell is already past Quiet (e.g., a
+            // designer placed the manager in a scene that starts above the threshold,
+            // or a replay reset began with prism count above the floor). Otherwise the
+            // OnPhaseChanged subscription below triggers spawn the moment the cell
+            // crosses Quiet for the first time.
+            MaybeSpawnGroup();
+        }
+
+        void OnEnable()
+        {
+            // Match the project's SOAP wiring pattern: guard the runtime SO ref but
+            // fail loud on a missing event ref (CLAUDE.md SOAP policy).
+            if (cellData != null)
+                cellData.OnPhaseChanged.OnRaised += HandleCellPhaseChanged;
+        }
+
+        void OnDisable()
+        {
+            if (cellData != null)
+                cellData.OnPhaseChanged.OnRaised -= HandleCellPhaseChanged;
+        }
+
+        void HandleCellPhaseChanged(CellPhase newPhase)
+        {
+            // Phase rises into Quiet → seed the population. Phase falls below Quiet
+            // (hysteresis exit) → existing fauna stay alive and continue consuming
+            // until they're individually removed; we don't cull on phase regression.
+            if (newPhase >= CellPhase.Quiet)
+                MaybeSpawnGroup();
+        }
+
+        void MaybeSpawnGroup()
+        {
+            if (activeFauna.Count > 0) return;
+            if (!cell || cell.Phase < CellPhase.Quiet) return;
             SpawnGroup();
         }
 
@@ -48,6 +84,15 @@ namespace CosmicShore.Gameplay
             int count = ComputeBatchSize();
             float radius = Mathf.Max(0f, managerData.spawnRadius);
 
+            // Fauna spawn in the cell's dominant domain — the live leader by per-domain
+            // prism count. Falls back to the manager's own domain when the cell hasn't
+            // accrued enough prisms to pick a leader (DominantDomain returns None on an
+            // empty cell, but we shouldn't be spawning there anyway thanks to the phase
+            // gate). Existing fauna keep their assigned domain even as the cell's
+            // dominant shifts — only newly-spawned fauna track the live leader.
+            Domains spawnDomain = cell ? cell.DominantDomain : Domains.None;
+            if (spawnDomain == Domains.None) spawnDomain = domain;
+
             for (int i = 0; i < count; i++)
             {
                 Vector3 randomOffset = Random.insideUnitSphere * radius;
@@ -56,7 +101,7 @@ namespace CosmicShore.Gameplay
                 Vector3 spawnPosition = transform.position + randomOffset;
 
                 LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
-                fauna.domain = domain;
+                fauna.domain = spawnDomain;
                 fauna.LightFaunaManager = this;
                 fauna.Phase = managerData.phaseIncrease * i;
                 fauna.Initialize(cell);
@@ -102,14 +147,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Target batch size as a function of live prism load in the host cell.
-        /// Implements the Fauna fundamental's response to its food supply: more food → more
-        /// fauna → more consumption → equilibrium. Falls back to the static spawnCount
-        /// baseline when no cell is wired or extraFaunaPerHundredPrisms is zero.
+        /// Target batch size as a function of phase + live prism load in the host cell.
+        /// Returns 0 below Quiet (no fauna in pre-fauna phases), then layers the
+        /// per-100-prism scaling on top once Quiet is reached so consumption keeps pace
+        /// with growth. Falls back to the static spawnCount baseline when no cell is
+        /// wired or extraFaunaPerHundredPrisms is zero.
         /// </summary>
         int ComputeBatchSize()
         {
             if (!managerData) return 0;
+
+            // Phase gate: no fauna below Quiet (default 1000 prisms). The manager's
+            // OnPhaseChanged subscription will re-trigger SpawnGroup once we cross.
+            if (cellData != null && cellData.Cell != null && cellData.Cell.Phase < CellPhase.Quiet)
+                return 0;
 
             int baseCount = Mathf.Max(0, managerData.spawnCount);
             int extra = 0;

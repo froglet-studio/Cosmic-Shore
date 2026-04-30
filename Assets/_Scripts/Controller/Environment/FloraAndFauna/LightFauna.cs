@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using System.Linq;
@@ -24,6 +25,14 @@ namespace CosmicShore.Gameplay
         [HideInInspector] public float Phase;
 
         public LightFaunaManager LightFaunaManager { get; set; }
+
+        /// <summary>
+        /// True when the host cell's phase is <see cref="CellPhase.Rabid"/>: aggression-2
+        /// fauna ignore danger-prism damage. Read by impactor pipelines that would
+        /// otherwise debuff/damage the fauna on dangerous-prism contact. Centralizing
+        /// the rule here keeps the impact code path from re-deriving phase semantics.
+        /// </summary>
+        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Rabid;
 
         public override void Initialize(Cell cell)
         {
@@ -67,6 +76,23 @@ namespace CosmicShore.Gameplay
 
             Vector3 separation = Vector3.zero;
 
+            // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
+            // systems, so the same fauna instance can transition through aggression levels
+            // as the cell's phase changes around it.
+            //   Quiet/Settled: aggression 0 — head toward crystal
+            //   Restless/Frozen: aggression 1 — head toward nearest opposing-color centroid
+            //   Rabid: aggression 2 — head toward nearest centroid (any domain)
+            var phase = cell ? cell.Phase : CellPhase.Sprout;
+            Goal = phase switch
+            {
+                CellPhase.Restless => cell.GetExplosionTarget(domain),
+                CellPhase.Frozen => cell.GetExplosionTarget(domain),
+                CellPhase.Rabid => cell.GetDensestRegionAnyDomain(),
+                _ => (cellData && cellData.CrystalTransform)
+                       ? cellData.CrystalTransform.position
+                       : (cell ? cell.transform.position : transform.position),
+            };
+
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
             {
                 Goal = cellData && cellData.CrystalTransform ? cellData.CrystalTransform.position : cell.transform.position;
@@ -80,6 +106,11 @@ namespace CosmicShore.Gameplay
             float detectionRadius = Mathf.Max(0f, data.detectionRadius);
             float separationRadius = Mathf.Max(0f, data.separationRadius);
             float consumeRadius = Mathf.Max(0f, data.consumeRadius);
+
+            // Aggression 2 drops friendly avoidance (other same-domain fauna and any
+            // same-domain HealthPrisms stop contributing to separation). Cross-domain
+            // entities still push us away so we don't clip through enemy mass.
+            bool dropFriendlyAvoidance = phase >= CellPhase.Rabid;
 
             var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
 
@@ -107,7 +138,9 @@ namespace CosmicShore.Gameplay
 
                     neighborCount++;
 
-                    if (distance < separationRadius)
+                    bool sameDomain = otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain == domain;
+
+                    if (distance < separationRadius && !(dropFriendlyAvoidance && sameDomain))
                         separation += diff.normalized / distance;
 
                     if (distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
