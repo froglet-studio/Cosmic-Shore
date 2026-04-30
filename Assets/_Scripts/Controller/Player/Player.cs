@@ -395,12 +395,30 @@ namespace CosmicShore.Gameplay
         void ToggleInputIdle(bool toggle) =>
             InputController.SetIdle(toggle);
         
-        void OnNetDomainChanged(Domains previousValue, Domains newValue) =>
+        void OnNetDomainChanged(Domains previousValue, Domains newValue)
+        {
             Domain = newValue;
-        
+
+            // Propagate the new Domain to the server-authoritative RoundStats.Domain so
+            // n_Domain replicates the change to all clients. Without this, RoundStats.Domain
+            // is only set once during InitializeForMultiplayerMode and can become stale —
+            // resulting in clients displaying Color.white on the player score card when
+            // a player picks a team after their Player+Vessel pair has already initialized.
+            if (IsServer && _roundStats != null && _roundStats.IsSpawned)
+                _roundStats.Domain = newValue;
+        }
+
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {
             Name = newValue.ToString();
+
+            // Mirror Name to RoundStats so the score-card lookup key stays in sync when
+            // NetName changes (e.g. cloud profile loads after spawn — see
+            // HandleProfileLoadedAfterSpawn). Without this, the card was registered under
+            // the old name and live updates fail to match.
+            if (IsServer && _roundStats != null && _roundStats.IsSpawned)
+                _roundStats.Name = Name;
+
             TryRaiseDeferredSpawnEvent();
         }
 
