@@ -22,7 +22,10 @@ namespace CosmicShore.UI
         private void HandleCrystalStatChanged(IRoundStats updatedStats)
         {
             if (updatedStats == null) return;
-            UpdatePlayerCard(updatedStats.Name, updatedStats.OmniCrystalsCollected);
+            // Use the stats-reference-keyed update path so live score updates still
+            // land on the right card even if NetName replicates after the card was
+            // created (which would have made the legacy name-keyed lookup miss).
+            UpdatePlayerCard(updatedStats, updatedStats.OmniCrystalsCollected);
         }
     }
 }

@@ -10,6 +10,9 @@ namespace CosmicShore.UI
         [Header("Multiplayer View")]
         [SerializeField] protected MultiplayerHUDView multiplayerView;
 
+        // Cards are keyed by the IRoundStats reference (stable across name changes)
+        // and a parallel name-keyed map exists for legacy callers (UpdatePlayerCard).
+        protected Dictionary<IRoundStats, PlayerScoreEntry> _cardsByStats = new();
         protected Dictionary<string, PlayerScoreEntry> _playerCards = new();
 
         protected override void OnEnable()
@@ -42,13 +45,21 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// Defensive refresh on turn start: re-applies team color AND score to every
+        /// card from the current authoritative <see cref="IRoundStats"/>, in case the
+        /// card was built with stale values during the replication race window
+        /// (Domain or score landed after CreateCardForPlayer ran).
+        /// </summary>
         void RefreshAllPlayerCards()
         {
             if (gameData?.RoundStatsList == null) return;
 
             foreach (var stats in gameData.RoundStatsList.Where(s => s != null))
             {
-                UpdatePlayerCard(stats.Name, GetInitialCardValue(stats));
+                if (!_cardsByStats.TryGetValue(stats, out var card) || card == null) continue;
+                card.SetDomainColor(view.GetColorForDomain(stats.Domain));
+                card.UpdateScore(GetInitialCardValue(stats));
             }
         }
 
@@ -77,12 +88,14 @@ namespace CosmicShore.UI
             UnsubscribeFromAllStats();
             UnsubscribeFromGameSpecificEvents();
             _playerCards.Clear();
+            _cardsByStats.Clear();
         }
 
         private void InitializePlayerCards()
         {
             view.ClearPlayerList();
             _playerCards.Clear();
+            _cardsByStats.Clear();
             AssignAIProfiles();
 
             for (int i = 0; i < gameData.RoundStatsList.Count; i++)
@@ -113,6 +126,7 @@ namespace CosmicShore.UI
             card.SetAvatar(avatarSprite);
 
             _playerCards[stats.Name] = card;
+            _cardsByStats[stats] = card;
 
             // Refresh team-color when stats.Domain replicates after the card was created.
             // RoundStats.n_Domain replication can land after the turn-start UI build,
@@ -135,10 +149,14 @@ namespace CosmicShore.UI
         private void HandleDomainChanged(IRoundStats updatedStats)
         {
             if (updatedStats == null) return;
-            if (!_playerCards.TryGetValue(updatedStats.Name, out var card) || card == null)
+            // Look up by stats reference first (stable), fall back to name for backward compat.
+            if (_cardsByStats.TryGetValue(updatedStats, out var card) && card != null)
+            {
+                card.SetDomainColor(view.GetColorForDomain(updatedStats.Domain));
                 return;
-
-            card.SetDomainColor(view.GetColorForDomain(updatedStats.Domain));
+            }
+            if (_playerCards.TryGetValue(updatedStats.Name, out card) && card != null)
+                card.SetDomainColor(view.GetColorForDomain(updatedStats.Domain));
         }
 
         protected abstract int GetInitialCardValue(IRoundStats stats);
@@ -153,6 +171,17 @@ namespace CosmicShore.UI
             {
                 card.UpdateScore(newValue);
             }
+        }
+
+        /// <summary>
+        /// Stable update path that doesn't depend on the player's Name matching the
+        /// dictionary key — useful when NetName replicates after the card was created.
+        /// </summary>
+        protected void UpdatePlayerCard(IRoundStats stats, int newValue)
+        {
+            if (stats == null) return;
+            if (_cardsByStats.TryGetValue(stats, out var card) && card != null)
+                card.UpdateScore(newValue);
         }
     }
 }
