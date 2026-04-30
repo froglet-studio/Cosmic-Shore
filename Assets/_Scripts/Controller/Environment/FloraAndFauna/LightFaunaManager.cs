@@ -25,6 +25,9 @@ namespace CosmicShore.Gameplay
 
         private readonly List<LightFauna> activeFauna = new();
 
+        const float MaybeSpawnPollInterval = 0.5f;
+        float _nextMaybeSpawnAt;
+
         protected override void Start()
         {
             base.Start();
@@ -49,6 +52,18 @@ namespace CosmicShore.Gameplay
         {
             if (cellData != null)
                 cellData.OnPhaseChanged.OnRaised -= HandleCellPhaseChanged;
+        }
+
+        void Update()
+        {
+            // Poll fallback: covers two scenarios where OnPhaseChanged won't reach us —
+            // (1) the SOAP event asset isn't wired into CellRuntimeDataSO so Raise NREs
+            // before the listener gets called, and (2) the manager started after the
+            // cell already crossed Quiet (subscription missed the transition).
+            // Cheap: two enum compares + a Count check after the interval gate.
+            if (Time.time < _nextMaybeSpawnAt) return;
+            _nextMaybeSpawnAt = Time.time + MaybeSpawnPollInterval;
+            MaybeSpawnGroup();
         }
 
         void HandleCellPhaseChanged(CellPhase newPhase)

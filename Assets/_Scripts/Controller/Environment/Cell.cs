@@ -26,6 +26,14 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] float nucleusScaleMultiplier = 1f;
 
+        // Local phase recompute interval. Constant rather than a serialized field so
+        // existing scene-placed Cells deserialized before this tick existed don't end
+        // up with phaseTickIntervalSeconds=0 (the default(float) for new serialized
+        // fields), which would silently disable phase advancement.
+        const float PhaseTickIntervalSeconds = 0.5f;
+
+        float _nextPhaseTickAt;
+
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
         public CellConfigDataSO Config => cellConfigData;
@@ -110,6 +118,34 @@ namespace CosmicShore.Gameplay
             phase = newPhase;
             if (runtime != null)
                 runtime.WriteCellRuntimeStats(ID, LiveBlockCount, newPhase, newDominantDomain);
+        }
+
+        void Update()
+        {
+            // Drive phase locally every tick interval. Server-authoritative replication
+            // (CellNetworkSync) overlays this on networked clients via OnValueChanged
+            // — server's compute wins when the two diverge — but for single-player and
+            // for the server itself this is the only path that advances phase. Without
+            // it, no fauna ever spawn because phase stays at Sprout forever.
+            if (Time.time < _nextPhaseTickAt) return;
+            _nextPhaseTickAt = Time.time + PhaseTickIntervalSeconds;
+
+            var thresholds = ResolveThresholds();
+            var newPhase = CellPhaseRules.Compute(LiveBlockCount, phase, in thresholds);
+            ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
+        }
+
+        CellPhaseThresholds ResolveThresholds()
+        {
+            var cfg = cellConfigData;
+            if (!cfg) return CellPhaseThresholds.Default;
+
+            // Existing CellConfig assets serialized before PhaseThresholds existed
+            // deserialize as struct zero — Unity does not apply the C# initializer.
+            // Substitute the Default table so legacy biomes don't snap to Rabid the
+            // moment the first prism is added.
+            var t = cfg.PhaseThresholds;
+            return t.IsAllZero ? CellPhaseThresholds.Default : t;
         }
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
