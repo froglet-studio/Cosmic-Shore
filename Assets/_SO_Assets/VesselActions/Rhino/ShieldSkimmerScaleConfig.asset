@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 179e407d1d9d40babefd4e314ae7e59f, type: 3}
+  m_Name: ShieldSkimmerScaleConfig
+  m_EditorClassIdentifier: 
+  baseScale: 30
+  maxScale: 120
+  prismMaxScale: 100
+  stepScaleUnits: 5
+  tickSeconds: 1
+  resetDelaySeconds: 5
+  crystalHoldSeconds: 9
+  prismGrowSpeed: 30
+  crystalGrowSpeed: 40
+  shrinkSpeed: 10
+  maxHoldEpsilon: 0.05

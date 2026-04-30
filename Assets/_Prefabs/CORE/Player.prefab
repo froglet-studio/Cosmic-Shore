@@ -130,9 +130,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  NetDefaultShipType:
+  NetDefaultVesselType:
     m_InternalValue: 0
-  NetTeam:
+  NetDomain:
     m_InternalValue: 0
   NetName:
     m_InternalValue:
@@ -271,6 +271,12 @@ MonoBehaviour:
         byte0123: 0
         byte0124: 0
         byte0125: 0
+  NetVesselId:
+    m_InternalValue: 0
+  NetIsAI:
+    m_InternalValue: 0
+  NetAvatarId:
+    m_InternalValue: 0
 --- !u!114 &5412461276864172139
 MonoBehaviour:
   m_ObjectHideFlags: 0

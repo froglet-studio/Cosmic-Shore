@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
-
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles the display of Popup messages. 
@@ -27,7 +27,7 @@ namespace CosmicShore.Utilities
         {
             if (_instance != null)
             {
-                Debug.LogWarning("PopupManager Invalid State, instance already exists");
+                CSDebug.LogWarning("PopupManager Invalid State, instance already exists");
                 return;
             }
 
@@ -53,7 +53,7 @@ namespace CosmicShore.Utilities
                 return _instance.DisplayPopupPanel(titleText, mainText, closeableByUser);
             }
 
-            Debug.LogError($"No popuppanel instance found. Cannot display message: {titleText}: {mainText}");
+            CSDebug.LogError($"No popuppanel instance found. Cannot display message: {titleText}: {mainText}");
             return null;
         }
 

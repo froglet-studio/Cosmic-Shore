@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Stores sprite/icon references for all vessel types in the game.
@@ -51,7 +53,7 @@ namespace CosmicShore.Game.Cinematics
                 }
             }
 
-            Debug.LogWarning($"No icon found for vessel type: {vesselType}. Using default icon.");
+            CSDebug.LogWarning($"No icon found for vessel type: {vesselType}. Using default icon.");
             return defaultIcon;
         }
 

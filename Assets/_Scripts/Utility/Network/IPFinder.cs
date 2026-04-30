@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 
 
-namespace CosmicShore.Utilities.Network
+namespace CosmicShore.Utility
 {
     public static class IPFinder
     {

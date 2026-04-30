@@ -14,7 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 6
   Name: Squirrel
-  Description: Get in your flow and stay there. Hard decisions are for other classes. You’re here to bounce around and ride your speed tubes, leaving a wake of creation and destruction.
+  Description: "Get in your flow and stay there. Hard decisions are for other classes.
+    You\u2019re here to bounce around and ride your speed tubes, leaving a wake of
+    creation and destruction."
+  PrimaryElement: 3
+  Element: {fileID: 11400000, guid: 5fb31ca899377b14896945c643e92320, type: 2}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
   IconActive: {fileID: 21300000, guid: 5d8f022f56d65ef4fae2cea4428a990f, type: 3}
   IconInactive: {fileID: 21300000, guid: c7a15d77edb2723429254cf708d9d20c, type: 3}
   PreviewImage: {fileID: 21300000, guid: 99bcc774a1bc5ad42bff1539ddc45a7f, type: 3}
@@ -29,11 +38,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b576710e788f4dd4883e6be348736384, type: 2}
   - {fileID: 11400000, guid: c3a4ef83059cf574b8680f2d145dbd09, type: 2}
   - {fileID: 11400000, guid: 112dccf5b2caf5e4fa81e73077e96997, type: 2}
-  Captains:
-  - {fileID: 11400000, guid: 10c8a11b812b71744b4f5a845490b95a, type: 2}
-  - {fileID: 11400000, guid: d8fdc5ad35460e94b816497b65d2909e, type: 2}
-  - {fileID: 11400000, guid: a7f735bb64ac87341a6e476d77d0c93e, type: 2}
-  - {fileID: 11400000, guid: 95d53b4da5bd8dd4a805458d4f59bb24, type: 2}
   Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
@@ -53,3 +57,5 @@ MonoBehaviour:
     LeftHandLabel: Solo
     RightHandLabel: Social
     Value: 0.1
+  UnlockedByDefault: 1
+  UnlockCost: 100

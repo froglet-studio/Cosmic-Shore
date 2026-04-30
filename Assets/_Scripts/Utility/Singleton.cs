@@ -1,5 +1,7 @@
+using CosmicShore.Core;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 /*
         Generic classes for the use of singleton
@@ -9,7 +11,7 @@ using UnityEngine;
         - Persistent -> when we need to make sure that the object is not destroyed during the session.
 */
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     public class Singleton<T> : MonoBehaviour where T : Component
     {
@@ -20,13 +22,9 @@ namespace CosmicShore.Utilities
             if (Instance == null)
             {
                 Instance = this as T;
-
-                print("Instantiate Singleton : " + Instance);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
-                print("Destroy Singleton: " + gameObject.name);
-
                 Destroy(gameObject);
             }
         }
@@ -42,13 +40,9 @@ namespace CosmicShore.Utilities
             {
                 Instance = this as T;
                 DontDestroyOnLoad(this);
-
-                print("Instantiate SingletonPersistent : " + Instance);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
-                print("Destroy SingletonPersistent: " + gameObject.name);
-
                 Destroy(gameObject);
             }
         }
@@ -63,13 +57,9 @@ namespace CosmicShore.Utilities
             if (Instance == null)
             {
                 Instance = this as T;
-
-                print("Instantiate SingletonNetwork: " + Instance);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
-                print("Destroy SingletonNetwork: " + Instance);
-
                 Destroy(gameObject);
             }
         }
@@ -85,13 +75,9 @@ namespace CosmicShore.Utilities
             {
                 Instance = this as T;
                 DontDestroyOnLoad(this);
-
-                print("Instantiate SingletonNetworkPersistent: " + Instance);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
-                print("Destroy SingletonNetworkPersistent: " + Instance);
-
                 Destroy(gameObject);
             }
         }
@@ -110,13 +96,13 @@ namespace CosmicShore.Utilities
                     T[] results = Resources.FindObjectsOfTypeAll<T>();
                     if (results.Length == 0)
                     {
-                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" + typeof(T).ToString() + ".");
+                        CSDebug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" + typeof(T).ToString() + ".");
                         return null;
 
                     }
                     if (results.Length > 1)
                     {
-                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is greater than for type" + typeof(T).ToString() + ".");
+                        CSDebug.LogError("SingletonScriptableObject -> Instance -> results length is greater than for type" + typeof(T).ToString() + ".");
                         return null;
 
                     }

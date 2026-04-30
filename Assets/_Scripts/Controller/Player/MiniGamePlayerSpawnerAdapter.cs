@@ -1,0 +1,63 @@
+using CosmicShore.UI;
+using Reflex.Attributes;
+using UnityEngine;
+using CosmicShore.Data;
+
+namespace CosmicShore.Gameplay
+{
+    public class MiniGamePlayerSpawnerAdapter : PlayerSpawnerAdapterBase
+    {
+        [Inject] private PlayerDataService playerDataService;
+        [SerializeField] private bool _spawnAIAtStart = false;
+
+        private void Start()
+        {
+            _gameData.OnInitializeGame.OnRaised += InitializeGame;
+            AddSpawnPosesToGameData();
+
+            if (_spawnAIAtStart)
+                SpawnDefaultPlayersAndAddToGameData();
+        }
+
+        private void OnDisable()
+        {
+            _gameData.OnInitializeGame.OnRaised -= InitializeGame;
+        }
+
+        void InitializeGame()
+        {
+            DomainAssigner.Initialize();
+            SpawnCustomPlayerAndAddToGameData(InitializePlayerData());
+            SpawnDefaultPlayersAndAddToGameData();
+        }
+
+        private IPlayer.InitializeData InitializePlayerData()
+        {
+            // Resolve display name and avatar from PlayerDataService if available
+            string displayName = "HumanJade";
+            int avatarId = 0;
+
+            if (playerDataService != null && playerDataService.IsInitialized && playerDataService.CurrentProfile != null)
+            {
+                displayName = playerDataService.CurrentProfile.displayName;
+                avatarId = playerDataService.CurrentProfile.avatarId;
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(_gameData.LocalPlayerDisplayName))
+                    displayName = _gameData.LocalPlayerDisplayName;
+                if (_gameData.LocalPlayerAvatarId != 0)
+                    avatarId = _gameData.LocalPlayerAvatarId;
+            }
+
+            return new IPlayer.InitializeData
+            {
+                vesselClass    = _gameData.selectedVesselClass.Value,
+                PlayerName     = displayName,
+                AvatarId       = avatarId,
+                AllowSpawning  = true,
+                IsAI           = false,
+            };
+        }
+    }
+}

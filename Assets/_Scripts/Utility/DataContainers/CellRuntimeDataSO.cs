@@ -1,15 +1,15 @@
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Gameplay;
 using Obvious.Soap;
 using UnityEngine;
-
-namespace CosmicShore.Soap
+using CosmicShore.Utility;
+using CosmicShore.Data;
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(
-        fileName = "scriptable_variable_" + nameof(CellRuntimeDataSO),
-        menuName = "ScriptableObjects/DataContainers/" + nameof(CellRuntimeDataSO))]
+        fileName = "DataContainer_" + nameof(CellRuntimeDataSO),
+        menuName = "ScriptableObjects/Data Containers/" + nameof(CellRuntimeDataSO))]
     public class CellRuntimeDataSO : ScriptableObject
     {
         // ---------------------------------------------------------------------
@@ -48,7 +48,7 @@ namespace CosmicShore.Soap
             CellItems.Add(crystal);
             Crystals.Add(crystal);
 
-            OnCellItemsUpdated?.Raise();
+            OnCellItemsUpdated.Raise();
         }
         
         public bool TryRemoveItem(CellItem item)
@@ -73,7 +73,7 @@ namespace CosmicShore.Soap
             {
                 if (!TryGetLocalCrystal(out Crystal crystal))
                 {
-                    Debug.LogWarning("[CellRuntimeDataSO] No local crystal found!");
+                    CSDebug.LogWarning("[CellRuntimeDataSO] No local crystal found!");
                     return null;
                 }
                 return crystal.transform;
@@ -154,7 +154,7 @@ namespace CosmicShore.Soap
         /// </summary>
         public void ResetRuntimeData()
         {
-            Debug.Log("<color=yellow>[CellRuntimeDataSO] Resetting runtime data</color>");
+            CSDebug.Log("<color=yellow>[CellRuntimeDataSO] Resetting runtime data</color>");
 
             Cell = null;
 
@@ -164,7 +164,7 @@ namespace CosmicShore.Soap
                 {
                     if (Crystals[i] && Crystals[i].gameObject)
                     {
-                        Debug.Log($"<color=yellow>[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}</color>");
+                        CSDebug.Log($"<color=yellow>[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}</color>");
                         Object.Destroy(Crystals[i].gameObject);
                     }
                 }
@@ -173,7 +173,7 @@ namespace CosmicShore.Soap
 
             CellItems?.Clear();
 
-            Debug.Log("<color=green>[CellRuntimeDataSO] Runtime data reset complete</color>");
+            CSDebug.Log("<color=green>[CellRuntimeDataSO] Runtime data reset complete</color>");
         }
     }
 }

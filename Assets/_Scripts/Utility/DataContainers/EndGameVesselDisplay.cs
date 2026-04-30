@@ -2,8 +2,10 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
+using System.Linq;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Individual vessel display component for end-game screen.
@@ -54,7 +56,7 @@ namespace CosmicShore.Game.Cinematics
         {
             if (isInitialized)
             {
-                Debug.LogWarning("VesselDisplay already initialized!");
+                CSDebug.LogWarning("VesselDisplay already initialized!");
                 return;
             }
 
@@ -144,7 +146,7 @@ namespace CosmicShore.Game.Cinematics
         {
             if (!canvasGroup)
             {
-                Debug.LogWarning("CanvasGroup not assigned, cannot fade in!");
+                CSDebug.LogWarning("CanvasGroup not assigned, cannot fade in!");
                 return;
             }
 

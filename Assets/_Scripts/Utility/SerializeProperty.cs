@@ -95,3 +95,7 @@ public class SerializeProperty : PropertyAttribute
         }
     }
 #endif
+
+namespace CosmicShore.Utility
+{
+}

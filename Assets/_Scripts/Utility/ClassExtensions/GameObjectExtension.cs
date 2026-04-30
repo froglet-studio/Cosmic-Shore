@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace CosmicShore.Utility.ClassExtensions
+namespace CosmicShore.Utility
 {
     public static class GameObjectExtension
     {
@@ -47,7 +47,7 @@ namespace CosmicShore.Utility.ClassExtensions
 
             if (layer == -1)
             {
-                Debug.LogError($"Layer - {layerName} not found.");
+                CSDebug.LogError($"Layer - {layerName} not found.");
             }
 
             return gameObject.layer == layer;

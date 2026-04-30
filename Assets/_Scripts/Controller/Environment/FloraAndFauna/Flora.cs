@@ -1,0 +1,61 @@
+using System.Collections;
+using CosmicShore.Gameplay;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Abstract base for plant-like lifeforms.
+    /// Provides periodic growth cycles and planting behavior on top of LifeForm's
+    /// health/spindle infrastructure.
+    /// </summary>
+    public abstract class Flora : LifeForm
+    {
+        [Header("Flora Settings")]
+        [SerializeField] Vector3 leafSize = new Vector3(4f, 4f, 1f);
+        [SerializeField] protected float growPeriod = 3f;
+        [SerializeField] public float PlantPeriod = 15f;
+        [SerializeField] float stunDuration = 1f;
+
+        protected bool isGrowing = true;
+
+        public abstract void Grow();
+        public abstract void Plant();
+
+        public override void AddHealthBlock(HealthPrism healthPrism)
+        {
+            base.AddHealthBlock(healthPrism);
+            healthPrism.TargetScale = leafSize;
+        }
+
+        public override void Initialize(Cell cell)
+        {
+            base.Initialize(cell);
+            Plant();
+            StartCoroutine(GrowCoroutine());
+        }
+
+        public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")
+        {
+            base.RemoveHealthBlock(healthPrism);
+            isGrowing = false;
+        }
+
+        IEnumerator GrowCoroutine()
+        {
+            while (true)
+            {
+                if (isGrowing)
+                {
+                    Grow();
+                    yield return new WaitForSeconds(growPeriod);
+                }
+                else
+                {
+                    isGrowing = true;
+                    yield return new WaitForSeconds(stunDuration);
+                }
+            }
+        }
+    }
+}

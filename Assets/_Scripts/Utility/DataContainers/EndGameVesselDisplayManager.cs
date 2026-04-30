@@ -1,10 +1,13 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Soap;
+using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using UnityEngine;
+using CosmicShore.Utility;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Manages spawning and displaying vessel icons for end-game screen.
@@ -14,7 +17,7 @@ namespace CosmicShore.Game.Cinematics
     public class EndGameVesselDisplayManager : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] private VesselIconLibrarySO vesselIconLibrary;
 
         [Header("Vessel Display")]
@@ -41,7 +44,7 @@ namespace CosmicShore.Game.Cinematics
         {
             if (isDisplaying)
             {
-                Debug.LogWarning("Already displaying vessels!");
+                CSDebug.LogWarning("Already displaying vessels!");
                 return;
             }
 
@@ -60,7 +63,7 @@ namespace CosmicShore.Game.Cinematics
 
             if (vesselDataList.Count == 0)
             {
-                Debug.LogWarning("No vessel data to display!");
+                CSDebug.LogWarning("No vessel data to display!");
                 isDisplaying = false;
                 yield break;
             }
@@ -94,7 +97,7 @@ namespace CosmicShore.Game.Cinematics
 
             if (gameData.Players == null || gameData.Players.Count == 0)
             {
-                Debug.LogWarning("No players found in game data!");
+                CSDebug.LogWarning("No players found in game data!");
                 return vesselData;
             }
 
@@ -108,7 +111,7 @@ namespace CosmicShore.Game.Cinematics
                 var player = gameData.Players[i];
                 if (player?.Vessel == null)
                 {
-                    Debug.LogWarning($"Player {i} has no vessel!");
+                    CSDebug.LogWarning($"Player {i} has no vessel!");
                     continue;
                 }
 

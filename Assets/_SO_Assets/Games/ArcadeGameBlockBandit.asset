@@ -26,8 +26,8 @@ MonoBehaviour:
   SceneName: MinigameBlockBandit
   Captains:
   - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 3
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 407

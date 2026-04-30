@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using CosmicShore.Utility;
 
 public class ForceReserializeScriptableObjects
 {
-    [MenuItem("FrogletTools/Force Re-Serialize All ScriptableObjects")]
+    [MenuItem("FrogletTools/Legacy/Force Re-Serialize All ScriptableObjects")]
     public static void ReserializeAllScriptableObjects()
     {
         // Find all ScriptableObject asset GUIDs in the project
@@ -18,7 +19,7 @@ public class ForceReserializeScriptableObjects
             if (obj != null)
             {
                 // Log the asset being processed
-                Debug.Log("Re-serializing: " + assetPath);
+                CSDebug.Log("Re-serializing: " + assetPath);
 
                 // Mark the asset as dirty to force it to be saved
                 EditorUtility.SetDirty(obj);
@@ -31,6 +32,6 @@ public class ForceReserializeScriptableObjects
         // Optionally, force Unity to reimport all assets (if still needed)
         AssetDatabase.Refresh();
 
-        Debug.Log("Re-serialization of all ScriptableObjects complete.");
+        CSDebug.Log("Re-serialization of all ScriptableObjects complete.");
     }
 }

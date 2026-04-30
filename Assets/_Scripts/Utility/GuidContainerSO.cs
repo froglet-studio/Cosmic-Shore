@@ -1,7 +1,8 @@
 ﻿using System;
 using UnityEngine;
+using CosmicShore.Utility;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// An abstract scriptable object class for the container of scriptable objects with Guid
@@ -41,7 +42,7 @@ namespace CosmicShore.Utilities
         {
             foreach (var data in m_DataList)
             {
-                Debug.Log($"{data.name} Guid: {data.Guid}");
+                CSDebug.Log($"{data.name} Guid: {data.Guid}");
             }
         }
     }

@@ -18,7 +18,10 @@ MonoBehaviour:
     speedMultiplier: 3
     enhanceTrail: 1
     fadeLoserTrail: 1
-  scoreRevealToastString: ALL LIFEFORMS DELETED
+  victoryToastStrings:
+  - ALL LIFEFORMS DELETED
+  defeatToastStrings:
+  - ALL LIFEFORMS DELETED
   showVictoryToast: 1
   toastSettings:
     yOffset: 1

@@ -59,3 +59,22 @@
 #*.RTF   diff=astextplain
 *.so filter=lfs diff=lfs merge=lfs -text
 *.bundle filter=lfs diff=lfs merge=lfs -text
+
+###############################################################################
+# FMOD native libraries
+#
+# Mark all FMOD binary libraries as binary so git never normalizes line
+# endings on Windows checkout (autocrlf=true). Without these rules, the
+# `* text=auto` default treats them as text and CRLF conversion corrupts
+# the binaries, which causes Unity's "Repair FMOD Libraries" prompt on
+# Windows. macOS .bundle packages are directories - the binary lives at
+# Contents/MacOS/<name> with no extension, so the `*.bundle` rule above
+# does not cover it.
+###############################################################################
+*.dll                                              binary
+*.a                                                binary
+*.jar                                              binary
+*.dylib                                            binary
+**/*.bundle/Contents/MacOS/**                      binary
+**/*.bundle/Contents/_CodeSignature/CodeResources  binary
+**/*.bundle/Contents/Info.plist                    binary

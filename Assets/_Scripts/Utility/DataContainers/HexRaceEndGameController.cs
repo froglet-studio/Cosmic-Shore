@@ -1,14 +1,21 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Linq;
-using CosmicShore.Game.Cinematics;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
+using CosmicShore.Utility;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Utility
 {
     public class HexRaceEndGameController : EndGameCinematicController
     {
-        [Header("Hex Race")]
-        [SerializeField] private HexRaceController hexRaceController;
+        protected override bool DetermineLocalPlayerWon()
+        {
+            var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Unassigned;
+            return gameData.WinnerDomain != Domains.Unassigned
+                && gameData.WinnerDomain != Domains.None
+                && localDomain == gameData.WinnerDomain;
+        }
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
@@ -20,22 +27,19 @@ namespace CosmicShore.Game.Arcade
             var localName = gameData.LocalPlayer?.Name;
             if (string.IsNullOrEmpty(localName))
             {
-                Debug.LogError("[HexRaceEndGame] LocalPlayer.Name is null or empty.");
+                CSDebug.LogError("[HexRaceEndGame] LocalPlayer.Name is null or empty.");
                 yield break;
             }
 
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null)
             {
-                Debug.LogError($"[HexRaceEndGame] Could not find RoundStats for '{localName}'. " +
+                CSDebug.LogError($"[HexRaceEndGame] Could not find RoundStats for '{localName}'. " +
                                $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                 yield break;
             }
 
-            // Single source of truth — the controller received this authoritatively from the server
-            bool didWin = hexRaceController != null
-                && hexRaceController.RaceResultsReady
-                && hexRaceController.WinnerName == localName;
+            bool didWin = DetermineLocalPlayerWon();
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
             string label;
@@ -55,9 +59,9 @@ namespace CosmicShore.Game.Arcade
                 formatAsTime = false;
             }
 
-            Debug.Log($"[HexRaceEndGame] Local='{localName}' Score={localStats.Score} didWin={didWin} " +
-                      $"WinnerName='{hexRaceController?.WinnerName}' " +
-                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
+            CSDebug.Log($"[HexRaceEndGame] Local='{localName}' Domain={localStats.Domain} Score={localStats.Score} didWin={didWin} " +
+                      $"WinnerName='{gameData.WinnerName}' WinnerDomain={gameData.WinnerDomain} " +
+                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.Score}"))}]");
 
             yield return view.PlayScoreRevealAnimation(
                 headerText + $"\n<size=60%>{label}</size>",

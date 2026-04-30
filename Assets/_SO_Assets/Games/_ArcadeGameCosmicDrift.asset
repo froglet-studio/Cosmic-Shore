@@ -23,8 +23,8 @@ MonoBehaviour:
   GolfScoring: 0
   SceneName: MinigameDriftCourse
   Captains: []
-  MinPlayers: 1
-  MaxPlayers: 3
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 406

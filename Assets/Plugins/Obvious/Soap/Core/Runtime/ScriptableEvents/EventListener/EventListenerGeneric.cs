@@ -42,7 +42,7 @@ namespace Obvious.Soap
                 if (gameObject.activeInHierarchy)
                     StartCoroutine(Cr_DelayInvokeResponse(eventRaised, eventResponse, param, debug));
                 else
-                    DelayInvokeResponseAsync(eventRaised, eventResponse, param, debug, _cancellationTokenSource.Token);
+                    DelayInvokeResponseAsync(eventRaised, eventResponse, param, debug, CancellationToken);
             }
             else
                 InvokeResponse(eventRaised, eventResponse, param, debug);
