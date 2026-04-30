@@ -46,13 +46,23 @@ namespace CosmicShore.UI
                 _baseTextColor = scoreText.color;
             }
 
+            SetDomainColor(domainColor);
+
+            PlayEntrance(staggerIndex);
+        }
+
+        /// <summary>
+        /// Updates the team color indicator without re-running the entrance animation.
+        /// Used when a player's Domain replicates after the card has already been
+        /// created (race between RoundStats.n_Domain replication and turn-start UI build).
+        /// </summary>
+        public void SetDomainColor(Color domainColor)
+        {
             if (domainIndicatorImage)
             {
                 domainIndicatorImage.gameObject.SetActive(true);
                 domainIndicatorImage.color = domainColor;
             }
-
-            PlayEntrance(staggerIndex);
         }
 
         public void SetAvatar(Sprite avatarSprite)

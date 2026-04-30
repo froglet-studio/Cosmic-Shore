@@ -114,6 +114,11 @@ namespace CosmicShore.UI
 
             _playerCards[stats.Name] = card;
 
+            // Refresh team-color when stats.Domain replicates after the card was created.
+            // RoundStats.n_Domain replication can land after the turn-start UI build,
+            // which would otherwise leave non-owner cards showing the default Color.white.
+            stats.OnDomainChanged += HandleDomainChanged;
+
             SubscribeToPlayerStats(stats);
         }
 
@@ -121,8 +126,19 @@ namespace CosmicShore.UI
         {
             foreach (var stats in gameData.RoundStatsList)
             {
+                if (stats != null)
+                    stats.OnDomainChanged -= HandleDomainChanged;
                 UnsubscribeFromPlayerStats(stats);
             }
+        }
+
+        private void HandleDomainChanged(IRoundStats updatedStats)
+        {
+            if (updatedStats == null) return;
+            if (!_playerCards.TryGetValue(updatedStats.Name, out var card) || card == null)
+                return;
+
+            card.SetDomainColor(view.GetColorForDomain(updatedStats.Domain));
         }
 
         protected abstract int GetInitialCardValue(IRoundStats stats);

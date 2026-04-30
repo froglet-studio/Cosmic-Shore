@@ -14,6 +14,8 @@ namespace CosmicShore.Data
 
         public event Action OnScoreChanged;
 
+        public event Action<IRoundStats> OnDomainChanged;
+
         public event Action<IRoundStats> OnBlocksCreatedChanged;
         public event Action<IRoundStats> OnBlocksDestroyedChanged;
         public event Action<IRoundStats> OnBlocksRestoredChanged;
@@ -220,8 +222,15 @@ namespace CosmicShore.Data
             get => _domainLocal;
             set
             {
+                bool changed = _domainLocal != value;
                 _domainLocal = value;
                 if (IsSpawned && IsServer) n_Domain.Value = value;
+
+                // Server-side and non-networked: raise immediately. The client side
+                // raises from n_Domain.OnValueChanged so it fires after replication
+                // (skipping the duplicate raise here when IsSpawned).
+                if (!IsSpawned && changed)
+                    RaiseSpecific(OnDomainChanged);
             }
         }
 
@@ -682,7 +691,14 @@ namespace CosmicShore.Data
             // --- Replication callbacks: sync local field, then fire event ---
 
             n_Name.OnValueChanged   += (_, v) => _nameLocal = v.ToString();
-            n_Domain.OnValueChanged += (_, v) => _domainLocal = v;
+            n_Domain.OnValueChanged += (_, v) =>
+            {
+                _domainLocal = v;
+                // Replicated change — raise on every machine that sees the new value
+                // (server already raised from the property setter, but the property
+                // setter's no-event path skips when IsSpawned, so we raise here).
+                RaiseSpecific(OnDomainChanged);
+            };
 
             n_Score.OnValueChanged += (_, v) =>
             {

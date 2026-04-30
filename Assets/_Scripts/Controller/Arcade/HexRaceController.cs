@@ -220,28 +220,52 @@ namespace CosmicShore.Gameplay
             if (!IsServer || _raceEnded) return;
 
             int target = ResolveCrystalsToFinishTarget();
-            var winner = gameData.RoundStatsList.FirstOrDefault(s => s.CrystalsCollected >= target);
-            if (winner == null) return;
+
+            // Team-aware win detection: the first Domain whose POOLED CrystalsCollected
+            // reaches the target wins. In co-op (multiple humans share a Domain) this
+            // means teammates' contributions are added together; in independent-team
+            // play each player is their own Domain so this collapses to "first individual
+            // to target" — same as the legacy behavior.
+            var winningGroup = gameData.RoundStatsList
+                .Where(s => s != null && s.Domain != Domains.Unassigned && s.Domain != Domains.None)
+                .GroupBy(s => s.Domain)
+                .FirstOrDefault(g => g.Sum(s => s.CrystalsCollected) >= target);
+
+            if (winningGroup == null) return;
+
+            Domains winningDomain = winningGroup.Key;
+
+            // The "winner" name is the highest individual contributor on the winning team —
+            // used as the tie-break label and legacy WinnerName consumer. Victory/defeat
+            // attribution in end-game screens uses WinnerDomain (domain equality), not name,
+            // so teammates correctly see the victory cinematic.
+            var winner = winningGroup.OrderByDescending(s => s.CrystalsCollected).First();
 
             _raceEnded = true;
 
             // All players share the same elapsed time since turn start.
             // The score tracker updates LocalRoundStats.Score every frame with elapsed time.
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;
-            Domains winningDomain = winner.Domain;
 
-            // Team-aware scoring: every player on the winner's Domain inherits the
+            // Team-aware scoring: every player on the winning Domain inherits the
             // finish time — they share the victory. Players on other domains get the
-            // losing penalty score based on their own crystals remaining.
+            // losing penalty score based on their TEAM's pooled crystals remaining,
+            // so co-op losing-team members display a single shared "X Crystals Left"
+            // value instead of each member showing their own individual deficit.
             foreach (var stats in gameData.RoundStatsList)
             {
+                if (stats == null) continue;
+
                 if (stats.Domain == winningDomain)
                 {
                     stats.Score = finishTime;
                 }
                 else
                 {
-                    int crystalsLeft = Mathf.Max(0, target - stats.CrystalsCollected);
+                    int teamTotal = gameData.RoundStatsList
+                        .Where(s => s != null && s.Domain == stats.Domain)
+                        .Sum(s => s.CrystalsCollected);
+                    int crystalsLeft = Mathf.Max(0, target - teamTotal);
                     stats.Score = 10000f + crystalsLeft;
                 }
             }

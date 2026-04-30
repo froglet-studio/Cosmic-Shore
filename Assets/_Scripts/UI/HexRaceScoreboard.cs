@@ -47,7 +47,10 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Secondary stat: omni crystals collected.
+        /// Secondary stat: each player's individual omni crystal contribution.
+        /// In co-op the cards' primary score shows the shared finish time; the
+        /// secondary line preserves per-player contribution so teammates can see
+        /// who carried the team.
         /// </summary>
         protected override string FormatSecondaryStat(IRoundStats stats)
         {
