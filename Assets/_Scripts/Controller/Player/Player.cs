@@ -404,8 +404,9 @@ namespace CosmicShore.Gameplay
             // is only set once during InitializeForMultiplayerMode and can become stale —
             // resulting in clients displaying Color.white on the player score card when
             // a player picks a team after their Player+Vessel pair has already initialized.
-            if (IsServer && _roundStats != null && _roundStats.IsSpawned)
-                _roundStats.Domain = newValue;
+            // Use the RoundStats property so the cached reference is lazy-initialized.
+            if (IsServer && RoundStats is RoundStats rs && rs.IsSpawned)
+                rs.Domain = newValue;
         }
 
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
@@ -416,8 +417,9 @@ namespace CosmicShore.Gameplay
             // NetName changes (e.g. cloud profile loads after spawn — see
             // HandleProfileLoadedAfterSpawn). Without this, the card was registered under
             // the old name and live updates fail to match.
-            if (IsServer && _roundStats != null && _roundStats.IsSpawned)
-                _roundStats.Name = Name;
+            // Use the RoundStats property so the cached reference is lazy-initialized.
+            if (IsServer && RoundStats is RoundStats rs && rs.IsSpawned)
+                rs.Name = Name;
 
             TryRaiseDeferredSpawnEvent();
         }
