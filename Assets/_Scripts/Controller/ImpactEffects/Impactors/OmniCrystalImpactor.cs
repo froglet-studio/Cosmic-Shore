@@ -23,7 +23,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual bool IsDomainMatching(Domains domain) => true;
 
-        bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
+        /// <summary>
+        /// True when this machine is a non-server client in an active networked session.
+        /// Querying <see cref="NetworkManager.Singleton"/> directly (instead of going
+        /// through <see cref="Crystal.CrystalManager"/>) avoids a class of races where
+        /// CrystalManager hadn't finished spawning yet, the IsSpawned check returned
+        /// false, and the client mistakenly processed the trigger locally — silently
+        /// double-counting crystals on the client while the server tracked them too.
+        /// </summary>
+        bool IsNetworkClient()
+        {
+            var nm = NetworkManager.Singleton;
+            return nm != null && nm.IsListening && !nm.IsServer;
+        }
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
