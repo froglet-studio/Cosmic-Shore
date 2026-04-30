@@ -48,7 +48,15 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Domains, float> teamVolumes = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
+        readonly HashSet<Prism> trackedBlocks = new();
         SnowChanger spawnedCytoplasm;
+
+        /// <summary>
+        /// Live count of unique prisms tracked through Add/RemoveBlock. Read-only signal
+        /// for systems that respond to prism load (e.g., LightFaunaManager scales its
+        /// fauna population with this so consumption keeps pace with growth).
+        /// </summary>
+        public int LiveBlockCount => trackedBlocks.Count;
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
@@ -124,6 +132,7 @@ namespace CosmicShore.Gameplay
                 if (spawnedLifeForms[i]) Destroy(spawnedLifeForms[i]);
             }
             spawnedLifeForms.Clear();
+            trackedBlocks.Clear();
 
             if (spawnedCytoplasm)
             {
@@ -177,6 +186,7 @@ namespace CosmicShore.Gameplay
         void Initialize()
         {
             spawnedLifeForms.Clear();
+            trackedBlocks.Clear();
 
             // Bind runtime -> this cell
             runtime.Cell = this;
@@ -309,16 +319,31 @@ namespace CosmicShore.Gameplay
 
         public void AddBlock(Prism block)
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            foreach (var t in teams)
-                if (t != block.Domain) countGrids[t].AddBlock(block);
+            // `is null` (not `!block`) so destroyed-but-non-null Unity refs can still be
+            // removed from trackedBlocks via the matching RemoveBlock path; otherwise
+            // LiveBlockCount drifts upward when prisms die outside the normal flow.
+            if (block is null) return;
+            if (!trackedBlocks.Add(block)) return; // already counted
+
+            if (block)
+            {
+                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                foreach (var t in teams)
+                    if (t != block.Domain) countGrids[t].AddBlock(block);
+            }
         }
 
         public void RemoveBlock(Prism block)
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            foreach (Domains t in teams)
-                if (t != block.Domain) countGrids[t].RemoveBlock(block);
+            if (block is null) return;
+            if (!trackedBlocks.Remove(block)) return; // not counted
+
+            if (block)
+            {
+                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                foreach (Domains t in teams)
+                    if (t != block.Domain) countGrids[t].RemoveBlock(block);
+            }
         }
 
         public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();
