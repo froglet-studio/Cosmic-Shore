@@ -36,6 +36,12 @@ namespace CosmicShore.Utility
         internal bool IsGrowing { get; private set; }
         internal Renderer Renderer => prismRenderer;
 
+        // Wall-clock start time, used by the watchdog. Tracking via Time.time (not the
+        // manager-driven Elapsed counter) is robust against state-reset bugs that
+        // would otherwise keep Elapsed pinned at 0 and starve the natural completion path.
+        float _activatedAtTime;
+        const float WatchdogDurationMultiplier = 2f;
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -78,6 +84,11 @@ namespace CosmicShore.Utility
                 return;
             }
 
+            // Re-entry on an already-active instance: this should not happen during
+            // normal pool flow (Get always returns an inactive instance), but it does
+            // happen if the prefab's OnMiniGameTurnEnd EventListener interleaves with
+            // a fresh Implode call. Unregister cleanly so RegisterImplosion below
+            // doesn't dedup-skip and the instance gets a fresh tick cadence.
             if (IsActive)
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
 
@@ -90,6 +101,7 @@ namespace CosmicShore.Utility
             IsGrowing = false;
             GrowDelayRemaining = 0f;
             IsActive = true;
+            _activatedAtTime = Time.time;
 
             // Set initial shader state
             prismRenderer.GetPropertyBlock(mpb);
@@ -122,6 +134,7 @@ namespace CosmicShore.Utility
             IsGrowing = true;
             GrowDelayRemaining = growDelay;
             IsActive = true;
+            _activatedAtTime = Time.time;
 
             // Set initial collapsed state
             prismRenderer.GetPropertyBlock(mpb);
@@ -169,12 +182,46 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Called by PrismEffectsManager when the animation finishes naturally.
-        /// Cleans up and notifies pool.
+        /// Cleans up, notifies pool, and force-deactivates the GameObject as a
+        /// safety net so the implosion VFX can never visually loop even if the
+        /// pool callback chain is broken (e.g., OnReturnToPool was nulled by an
+        /// external owner like ShapeDrawingManager, or a duplicate Get/Release
+        /// cycle left subscriptions in an inconsistent state).
         /// </summary>
         internal void OnEffectComplete()
         {
             CompleteEffect();
-            OnReturnToPool?.Invoke(this);
+
+            // Snapshot + clear before invoke. Prevents a re-entrant Invoke (e.g., a
+            // listener that triggers another Implode on the same instance) from
+            // re-firing the same callbacks on a partially-completed implosion.
+            var callback = OnReturnToPool;
+            OnReturnToPool = null;
+            callback?.Invoke(this);
+
+            // Force-deactivate as a safety net. The pool callback above normally
+            // does this via OnReleaseToPool → SetActive(false). If that path failed
+            // for any reason, the GameObject would remain active and the shader
+            // animation would visibly continue / loop on the next StartImplosion
+            // call against the same instance. This is a no-op when the pool ran cleanly.
+            if (gameObject.activeSelf)
+                gameObject.SetActive(false);
+        }
+
+        void Update()
+        {
+            // Wall-clock watchdog: independent of the manager-driven Elapsed counter
+            // so it survives any state-reset bug that would otherwise keep an
+            // implosion stuck in the active list. Triggers force-completion after
+            // 2x the configured duration — the implosion has visibly finished long
+            // before this fires, so completing here just frees the GameObject.
+            if (!IsActive) return;
+            if (Time.time - _activatedAtTime <= implosionDuration * WatchdogDurationMultiplier) return;
+
+            CSDebug.LogWarning($"[PrismImplosion] Watchdog force-completed implosion on '{name}' " +
+                               $"after {Time.time - _activatedAtTime:F2}s (duration={implosionDuration}). " +
+                               "Likely cause: OnReturnToPool subscription was lost or duplicated.");
+            OnEffectComplete();
         }
     }
 }
