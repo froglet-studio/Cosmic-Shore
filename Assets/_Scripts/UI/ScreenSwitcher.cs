@@ -235,6 +235,7 @@ namespace CosmicShore.UI
 
             CacheScreenComponents();
             LayoutScreensToViewport();
+            EnsureNavBarChildrenActive();
 
             panelLocation = transform.position;
 
@@ -683,6 +684,18 @@ namespace CosmicShore.UI
         #endregion
 
         #region NavBar & Icons
+
+        private void EnsureNavBarChildrenActive()
+        {
+            if (!NavBar) return;
+
+            for (var i = 0; i < NavBar.childCount; i++)
+            {
+                var child = NavBar.GetChild(i).gameObject;
+                if (!child.activeSelf)
+                    child.SetActive(true);
+            }
+        }
 
         private void UpdateNavBar(int index)
         {
