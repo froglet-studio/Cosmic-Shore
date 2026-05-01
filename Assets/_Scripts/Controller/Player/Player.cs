@@ -194,6 +194,22 @@ namespace CosmicShore.Gameplay
                 // vessel selection in multiplayer.
                 if (!IsValidVesselTypeForSpawn(NetDefaultVesselType.Value))
                     NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+
+                // Owner-write NetworkVariables can land at default(T) on the owner
+                // side post-spawn even when the field initializer specifies a
+                // non-default value: Netcode's spawn-message deserialization
+                // overwrites m_InternalValue with default(Domains) = Unassigned for
+                // owner-write vars on the owner. Without this owner-side write,
+                // server's view stays at Unassigned forever (no replication signal,
+                // because owner never wrote), the score-card team color falls
+                // through to Color.white, and PrepareForNewScene's RPC carries
+                // Unassigned into RoundStats.Domain on every client.
+                // Re-establish the field-initializer's intended Jade default so
+                // owner-write replication picks it up immediately. Subsequent team
+                // selections through MenuVesselSelectionPanelController or the
+                // ArcadeGameConfigureModal overwrite this normally.
+                if (NetDomain.Value == Domains.Unassigned || NetDomain.Value == Domains.None)
+                    NetDomain.Value = Domains.Jade;
             }
 
             // --- Raise spawn event AFTER all local writes ---
