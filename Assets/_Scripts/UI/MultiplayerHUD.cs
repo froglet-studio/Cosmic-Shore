@@ -128,6 +128,10 @@ namespace CosmicShore.UI
             _playerCards[stats.Name] = card;
             _cardsByStats[stats] = card;
 
+            Debug.Log($"<color=#FFFF00>[FLOW-CARD] CreateCardForPlayer — name='{stats.Name}', " +
+                $"statsHash={stats.GetHashCode()}, initialValue={GetInitialCardValue(stats)}, " +
+                $"domain={stats.Domain}, _cardsByStats.Count={_cardsByStats.Count}</color>");
+
             // Refresh team-color when stats.Domain replicates after the card was created.
             // RoundStats.n_Domain replication can land after the turn-start UI build,
             // which would otherwise leave non-owner cards showing the default Color.white.
@@ -180,7 +184,11 @@ namespace CosmicShore.UI
         protected void UpdatePlayerCard(IRoundStats stats, int newValue)
         {
             if (stats == null) return;
-            if (_cardsByStats.TryGetValue(stats, out var card) && card != null)
+            bool found = _cardsByStats.TryGetValue(stats, out var card);
+            Debug.Log($"<color=#FFFF00>[FLOW-CARD] UpdatePlayerCard(stats) — name='{stats.Name}', " +
+                $"statsHash={stats.GetHashCode()}, newValue={newValue}, found={found}, " +
+                $"cardNull={card == null}, _cardsByStats.Count={_cardsByStats.Count}</color>");
+            if (found && card != null)
                 card.UpdateScore(newValue);
         }
     }
