@@ -281,6 +281,21 @@ namespace CosmicShore.Gameplay
             // update NetworkVariables on the server. Name/Domain are re-set below.
             RoundStats.Cleanup();
 
+            // Broadcast the reset to all clients. Without this, stats that the client
+            // accumulated locally in menu mode (or that drifted between server and
+            // client local fields) would persist into the game scene — NetworkVariable
+            // replication is skipped when the new value equals the current value, so
+            // a server-side reset of an already-zero NetworkVariable doesn't reach
+            // clients with non-zero local fields. The RPC also pushes the
+            // authoritative Domain + Name so the client's RoundStats local fields
+            // align even when n_Domain / n_Name replication is a no-op.
+            if (IsServer)
+            {
+                ResetStatsLocal_ClientRpc(
+                    NetDomain.Value,
+                    new Unity.Collections.FixedString64Bytes(NetName.Value.ToString()));
+            }
+
             // Reset input state (joystick positions, throttle, flags).
             InputStatus?.ResetForReplay();
 
@@ -333,6 +348,36 @@ namespace CosmicShore.Gameplay
                 return;
             }
             Destroy(gameObject);
+        }
+
+        /// <summary>
+        /// Called on every client (and host) to reset the local <see cref="RoundStats"/>
+        /// fields when entering a new scene. RoundStats lives on a persistent Player
+        /// NetworkObject (DestroyWithScene=false), so its local <c>_xxxLocal</c> fields
+        /// can carry values from the menu scene (or from earlier code that incremented
+        /// stats client-side). Cleanup() resets all local fields immediately on this
+        /// machine; on the server it also writes 0 through every NetworkVariable, but
+        /// Netcode skips replication when the new value equals the current value, so
+        /// the client's locally-drifted fields wouldn't otherwise be cleared.
+        /// </summary>
+        [ClientRpc]
+        void ResetStatsLocal_ClientRpc(Domains domain, Unity.Collections.FixedString64Bytes name)
+        {
+            // RoundStats getter lazy-creates the component. Cleanup() runs through the
+            // property setters, which on a non-server client take the !IsSpawned-or-server
+            // path that writes only the local field — exactly what we want here.
+            var rs = RoundStats;
+            if (rs == null) return;
+            rs.Cleanup();
+
+            // Push the authoritative Domain + Name as well. Cleanup() doesn't touch
+            // these (they aren't gameplay stats), but on the client side they can be
+            // stale: the initial spawn sync caught a default value before the server
+            // wrote n_Domain/n_Name, and subsequent server writes of the same value
+            // never replicated. Writing through the property setter on a non-server
+            // client updates the local field without re-touching the NetworkVariable.
+            rs.Domain = domain;
+            rs.Name = name.ToString();
         }
 
         public void StartPlayer()
