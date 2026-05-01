@@ -971,20 +971,24 @@ namespace CosmicShore.Tests
             var type = typeof(CosmicShore.Gameplay.HostConnectionService);
             var flags = BindingFlags.Static | BindingFlags.NonPublic;
 
-            var inviteTarget = type.GetField("INVITE_TARGET_KEY", flags);
-            var inviteData = type.GetField("INVITE_DATA_KEY", flags);
+            var inviteTargetPrefix = type.GetField("INVITE_TARGET_KEY_PREFIX", flags);
+            var inviteDataPrefix = type.GetField("INVITE_DATA_KEY_PREFIX", flags);
             var displayName = type.GetField("DISPLAY_NAME_KEY", flags);
             var avatarId = type.GetField("AVATAR_ID_KEY", flags);
+            var slotCount = type.GetField("INVITE_SLOT_COUNT", flags);
 
-            Assert.IsNotNull(inviteTarget, "INVITE_TARGET_KEY constant should exist.");
-            Assert.IsNotNull(inviteData, "INVITE_DATA_KEY constant should exist.");
+            Assert.IsNotNull(inviteTargetPrefix, "INVITE_TARGET_KEY_PREFIX constant should exist.");
+            Assert.IsNotNull(inviteDataPrefix, "INVITE_DATA_KEY_PREFIX constant should exist.");
             Assert.IsNotNull(displayName, "DISPLAY_NAME_KEY constant should exist.");
             Assert.IsNotNull(avatarId, "AVATAR_ID_KEY constant should exist.");
+            Assert.IsNotNull(slotCount, "INVITE_SLOT_COUNT constant should exist.");
 
-            Assert.AreEqual("invite_target", inviteTarget.GetValue(null));
-            Assert.AreEqual("invite_data", inviteData.GetValue(null));
+            Assert.AreEqual("invite_target_", inviteTargetPrefix.GetValue(null));
+            Assert.AreEqual("invite_data_", inviteDataPrefix.GetValue(null));
             Assert.AreEqual("displayName", displayName.GetValue(null));
             Assert.AreEqual("avatarId", avatarId.GetValue(null));
+            Assert.GreaterOrEqual((int)slotCount.GetValue(null), 1,
+                "INVITE_SLOT_COUNT must be at least 1 for the invite system to function.");
         }
 
         [Test]
