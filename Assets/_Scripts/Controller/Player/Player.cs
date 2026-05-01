@@ -297,21 +297,40 @@ namespace CosmicShore.Gameplay
             // update NetworkVariables on the server. Name/Domain are re-set below.
             RoundStats.Cleanup();
 
-            // Broadcast the reset to all clients. Without this, stats that the client
-            // accumulated locally in menu mode (or that drifted between server and
-            // client local fields) would persist into the game scene — NetworkVariable
-            // replication is skipped when the new value equals the current value, so
-            // a server-side reset of an already-zero NetworkVariable doesn't reach
-            // clients with non-zero local fields. The RPC also pushes the
-            // authoritative Domain + Name so the client's RoundStats local fields
-            // align even when n_Domain / n_Name replication is a no-op.
+            // Server-authoritative reset + domain assignment for the joining/persistent
+            // player. The owner-write NetDomain has a Netcode quirk in MPPM where the
+            // spawn-message deserialization swallows the field-initializer's Jade value
+            // and seats m_InternalValue at default(Domains)=Unassigned, with no
+            // OnValueChanged because the owner's "no write" looks like no change. The
+            // server then can't read NetDomain reliably and the score card falls
+            // through to Color.white.
+            //
+            // Bypass NetDomain on the gameplay side entirely: the server picks the
+            // canonical domain (preferring NetDomain when valid, falling back to
+            // DomainAssigner for unique-team-per-player), force-writes it through the
+            // server-write RoundStats.Domain (no permission issue, no spawn quirk),
+            // and broadcasts the same value in the ClientRpc so each client's local
+            // RoundStats._domainLocal aligns immediately. Clients still see whatever
+            // owner-write value NetDomain ends up with, but the score card uses
+            // RoundStats.Domain (n_Domain) which is always server-authoritative.
             if (IsServer)
             {
-                Debug.Log($"<color=#FFA500>[FLOW-4] [Player.PrepareForNewScene] Server reads " +
-                    $"NetDomain.Value={NetDomain.Value} for Player '{NetName.Value}' " +
-                    $"(OwnerClientId={OwnerClientId}, IsLocalUser={IsLocalUser})</color>");
+                var domain = NetDomain.Value;
+                bool fromNetDomain = domain != Domains.Unassigned && domain != Domains.None;
+
+                if (!fromNetDomain)
+                    domain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+
+                Debug.Log($"<color=#FFA500>[FLOW-4] [Player.PrepareForNewScene] Server-authoritative domain " +
+                    $"assignment for '{NetName.Value}' (OwnerClientId={OwnerClientId}): " +
+                    $"NetDomain.Value={NetDomain.Value} → using {domain} " +
+                    $"(source={(fromNetDomain ? "NetDomain" : "DomainAssigner")})</color>");
+
+                if (RoundStats is RoundStats rs && rs.IsSpawned)
+                    rs.Domain = domain;
+
                 ResetStatsLocal_ClientRpc(
-                    NetDomain.Value,
+                    domain,
                     new Unity.Collections.FixedString64Bytes(NetName.Value.ToString()));
             }
 
