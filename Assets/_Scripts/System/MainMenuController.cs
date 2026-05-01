@@ -55,6 +55,13 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Game intensity for the menu background scene.")]
         int menuIntensity = 1;
 
+        [SerializeField, Tooltip("Domain (team color) to force on the menu autopilot vessel. " +
+                 "Jade by default so the Squirrel renders in green and the cell's flora/fauna " +
+                 "have a non-local domain to react to. Without this override, NetDomain stays " +
+                 "at its serialized default and can drift to whatever Unity loads from the " +
+                 "prefab — fauna then read the wrong color and avoid the autopilot's trail.")]
+        Domains menuVesselDomain = Domains.Jade;
+
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
         [Inject] GameDataSO _gameData;
 
@@ -218,9 +225,39 @@ namespace CosmicShore.Core
             var player = _gameData.LocalPlayer;
             if (player?.Vessel == null) return;
 
+            // Force the menu vessel into the configured domain. NetDomain is owner-writable
+            // and the host owns its own player, so this propagates to all subsystems via
+            // OnNetDomainChanged → Player.SetDomain. Also write Player.Domain and
+            // RoundStats.Domain directly because OnNetDomainChanged only updates Player.Domain
+            // (RoundStats.Domain is set once at InitializeForMultiplayerMode and stays stale
+            // through subsequent NetDomain writes). All three writes together keep the
+            // ship material, fauna controlling-color reads, and gameData.LocalRoundStats
+            // consistent without waiting for replication.
+            ApplyMenuDomain(player);
+
             player.StartPlayer();
             player.Vessel.ToggleAIPilot(true);
             player.InputController?.SetPause(true);
+        }
+
+        void ApplyMenuDomain(IPlayer player)
+        {
+            if (player is not Player p) return;
+
+            if (p.IsOwner && p.NetDomain != null && p.NetDomain.Value != menuVesselDomain)
+                p.NetDomain.Value = menuVesselDomain;
+
+            p.SetDomain(menuVesselDomain);
+            if (p.RoundStats != null)
+                p.RoundStats.Domain = menuVesselDomain;
+
+            // ShipHelper.SetShipProperties was already called during VesselController.Initialize
+            // (read whatever domain was set at that point). Re-run it now so the ship material,
+            // skimmer material, AOE materials, and silhouette prefab all match the menu domain.
+            // Without this the vessel keeps the original (possibly default-Blue) materials even
+            // though Player.Domain has switched.
+            if (p.Vessel != null && _gameData != null && _gameData.ThemeManagerData != null)
+                ShipHelper.SetShipProperties(_gameData.ThemeManagerData, p.Vessel);
         }
 
         // ── State Machine ───────────────────────────────────────────────
