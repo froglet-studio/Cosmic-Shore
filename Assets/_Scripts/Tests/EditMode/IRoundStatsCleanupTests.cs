@@ -26,6 +26,7 @@ namespace CosmicShore.Tests
 #pragma warning disable CS0067 // Interface-required events unused in test mock
             public event Action<IRoundStats> OnAnyStatChanged;
             public event Action OnScoreChanged;
+            public event Action<IRoundStats> OnDomainChanged;
             public event Action<IRoundStats> OnBlocksCreatedChanged;
             public event Action<IRoundStats> OnBlocksDestroyedChanged;
             public event Action<IRoundStats> OnBlocksRestoredChanged;

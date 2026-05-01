@@ -34,7 +34,64 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// Server-write mirror of the owner's NetDomain. Exists because Netcode 2.x
+        /// owner-write NetworkVariable replication is unreliable in MPPM — the spawn-
+        /// deserialization swallows the field initializer and subsequent owner writes
+        /// don't always reach the server. Owners explicitly push their team to this
+        /// var via SyncDomainToServer_ServerRpc, so the server (and the score card,
+        /// which reads RoundStats.Domain seeded from this var) always has the
+        /// authoritative value the owner actually picked. Default Jade so even if
+        /// the ServerRpc never fires, the score card still has a valid color.
+        /// </summary>
+        public NetworkVariable<Domains> NetServerDomain = new(Domains.Jade, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
         public Domains Domain { get; private set; } = Domains.Jade;
+
+        /// <summary>
+        /// Owner-side helper: sets the local NetDomain (so the local vessel/crystal
+        /// systems pick up the new team color immediately) AND pushes the value to
+        /// the server's authoritative NetServerDomain. Use this from any UI that
+        /// changes the player's team (TeamSelectionPanel, MenuVesselSelectionPanel
+        /// Controller, ArcadeGameConfigureModal) instead of writing NetDomain.Value
+        /// directly — the direct-write path doesn't replicate to the server in
+        /// MPPM, leaving the score card's team color stuck on the field-initializer
+        /// default.
+        /// </summary>
+        public void RequestDomainChange(Domains domain)
+        {
+            if (!IsOwner) return;
+            NetDomain.Value = domain;
+            if (!IsServer)
+                SyncDomainToServer_ServerRpc(domain);
+            else if (NetServerDomain.Value != domain)
+                NetServerDomain.Value = domain;
+        }
+
+        /// <summary>
+        /// Owner-only ServerRpc that mirrors the owner's chosen NetDomain into the
+        /// server-write NetServerDomain. Server validates by checking the sender
+        /// owns this NetworkObject (RequireOwnership=true). The score card's
+        /// authoritative team color flows from this NetworkVariable through
+        /// RoundStats.Domain in PrepareForNewScene.
+        /// </summary>
+        [ServerRpc(RequireOwnership = true)]
+        void SyncDomainToServer_ServerRpc(Domains domain)
+        {
+            if (NetServerDomain.Value != domain)
+                NetServerDomain.Value = domain;
+
+            // Mirror to local Player.Domain so server-side systems that read
+            // Player.Domain (NetworkCrystalManager domain assignment, score
+            // tracker, etc.) see the right value without waiting for the next
+            // OnNetDomainChanged tick.
+            Domain = domain;
+
+            // Mirror to RoundStats.Domain too if the component is already spawned —
+            // makes the score card on remote clients refresh immediately.
+            if (RoundStats is RoundStats rs && rs.IsSpawned)
+                rs.Domain = domain;
+        }
 
         /// <summary>
         /// Changes the player's domain at runtime. Used by shape mode to match
@@ -194,6 +251,34 @@ namespace CosmicShore.Gameplay
                 // vessel selection in multiplayer.
                 if (!IsValidVesselTypeForSpawn(NetDefaultVesselType.Value))
                     NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+
+                // Owner-write NetworkVariables can land at default(T) on the owner
+                // side post-spawn even when the field initializer specifies a
+                // non-default value: Netcode's spawn-message deserialization
+                // overwrites m_InternalValue with default(Domains) = Unassigned for
+                // owner-write vars on the owner. Without this owner-side write,
+                // server's view stays at Unassigned forever (no replication signal,
+                // because owner never wrote), the score-card team color falls
+                // through to Color.white, and PrepareForNewScene's RPC carries
+                // Unassigned into RoundStats.Domain on every client.
+                // Re-establish the field-initializer's intended Jade default so
+                // owner-write replication picks it up immediately. Subsequent team
+                // selections through MenuVesselSelectionPanelController or the
+                // ArcadeGameConfigureModal overwrite this normally.
+                if (NetDomain.Value == Domains.Unassigned || NetDomain.Value == Domains.None)
+                    NetDomain.Value = Domains.Jade;
+
+                // Owner-write NetDomain replication is unreliable in MPPM (Netcode
+                // 2.x spawn-deserialization quirk leaves the server-side view at
+                // Unassigned). Push the local value to the server via a direct
+                // ServerRpc so the server's RoundStats.Domain (server-write,
+                // visible to the score card) is always seeded with what the owner
+                // actually wrote — regardless of whether NetDomain replication
+                // catches up. This is the authoritative path going forward; team
+                // selection panels also call SyncDomainToServer_ServerRpc when the
+                // user picks.
+                if (!IsServer)
+                    SyncDomainToServer_ServerRpc(NetDomain.Value);
             }
 
             // --- Raise spawn event AFTER all local writes ---
@@ -281,6 +366,58 @@ namespace CosmicShore.Gameplay
             // update NetworkVariables on the server. Name/Domain are re-set below.
             RoundStats.Cleanup();
 
+            // Server-authoritative reset + domain assignment for the joining/persistent
+            // player. NetDomain is owner-write and unreliable in MPPM (Netcode 2.x
+            // spawn-deserialization quirk leaves the server-side view at Unassigned).
+            // NetServerDomain is server-write, populated by the owner via
+            // SyncDomainToServer_ServerRpc — that value is always correct on the
+            // server because the owner explicitly pushed it.
+            //
+            // Domain priority (most-trusted first):
+            //   1. NetServerDomain.Value — owner pushed via ServerRpc, definitive
+            //   2. NetDomain.Value       — fallback for older code paths that
+            //                              haven't been updated to call
+            //                              SyncDomainToServer_ServerRpc
+            //   3. DomainAssigner        — last resort if neither var has a real team
+            //
+            // The chosen domain is force-written to RoundStats.Domain (server-write,
+            // replicates reliably to all clients) and also broadcast in the RPC so
+            // the client-side _local fields align immediately.
+            if (IsServer)
+            {
+                var domain = NetServerDomain.Value;
+                string source = "NetServerDomain";
+
+                if (domain == Domains.Unassigned || domain == Domains.None)
+                {
+                    domain = NetDomain.Value;
+                    source = "NetDomain";
+                }
+
+                if (domain == Domains.Unassigned || domain == Domains.None)
+                {
+                    domain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                    source = "DomainAssigner";
+                }
+
+                Debug.Log($"<color=#FFA500>[FLOW-4] [Player.PrepareForNewScene] Server-authoritative domain " +
+                    $"for '{NetName.Value}' (OwnerClientId={OwnerClientId}): " +
+                    $"NetServerDomain={NetServerDomain.Value}, NetDomain={NetDomain.Value} → using {domain} " +
+                    $"(source={source})</color>");
+
+                if (RoundStats is RoundStats rs && rs.IsSpawned)
+                    rs.Domain = domain;
+
+                // Also update NetServerDomain so subsequent reads (and clients
+                // reading this var directly) see the canonical chosen value.
+                if (NetServerDomain.Value != domain)
+                    NetServerDomain.Value = domain;
+
+                ResetStatsLocal_ClientRpc(
+                    domain,
+                    new Unity.Collections.FixedString64Bytes(NetName.Value.ToString()));
+            }
+
             // Reset input state (joystick positions, throttle, flags).
             InputStatus?.ResetForReplay();
 
@@ -333,6 +470,88 @@ namespace CosmicShore.Gameplay
                 return;
             }
             Destroy(gameObject);
+        }
+
+        /// <summary>
+        /// Server-only entry point that wipes RoundStats one more time right at
+        /// turn start, after the pre-game cinematic finished. Cinematic-time
+        /// vessel/crystal collisions get processed by the server's StatsManager
+        /// even though gameplay hasn't officially started; this leaves the score
+        /// cards (created at OnMiniGameTurnStarted) initialized with non-zero
+        /// values. Re-running Cleanup + the ResetStatsLocal_ClientRpc broadcast
+        /// here lets the cards read 0 at creation.
+        /// </summary>
+        public void ResetStatsForTurnStart()
+        {
+            if (!IsServer) return;
+            // Cleanup() is a default interface method on IRoundStats — call through
+            // the interface type, not the concrete RoundStats class.
+            var rs = RoundStats;
+            if (rs != null && rs is RoundStats concrete && concrete.IsSpawned)
+            {
+                rs.Cleanup();
+                // Preserve domain (server-write n_Domain) — it's the canonical
+                // value computed in PrepareForNewScene from NetServerDomain or
+                // DomainAssigner. Don't disturb it with a re-write.
+            }
+
+            // Broadcast the same Cleanup to all clients via the existing RPC so
+            // their _local fields and HUD subscribers are aligned at zero.
+            ResetStatsLocal_ClientRpc(
+                NetServerDomain.Value,
+                new Unity.Collections.FixedString64Bytes(NetName.Value.ToString()));
+        }
+
+        /// <summary>
+        /// Called on every client (and host) to reset the local <see cref="RoundStats"/>
+        /// fields when entering a new scene. RoundStats lives on a persistent Player
+        /// NetworkObject (DestroyWithScene=false), so its local <c>_xxxLocal</c> fields
+        /// can carry values from the menu scene (or from earlier code that incremented
+        /// stats client-side). Cleanup() resets all local fields immediately on this
+        /// machine; on the server it also writes 0 through every NetworkVariable, but
+        /// Netcode skips replication when the new value equals the current value, so
+        /// the client's locally-drifted fields wouldn't otherwise be cleared.
+        /// </summary>
+        [ClientRpc]
+        void ResetStatsLocal_ClientRpc(Domains domain, Unity.Collections.FixedString64Bytes name)
+        {
+            // RoundStats getter lazy-creates the component. Cleanup() runs through the
+            // property setters, which on a non-server client take the !IsSpawned-or-server
+            // path that writes only the local field — exactly what we want here.
+            // Cleanup() is a default interface method on IRoundStats, so we keep the
+            // interface-typed reference for that call and downcast for the concrete
+            // RoundStats.NotifyAllStatsChanged() call afterwards.
+            var rs = RoundStats;
+            if (rs == null) return;
+
+            int beforeOmni = rs.OmniCrystalsCollected;
+            int beforeCrystals = rs.CrystalsCollected;
+            var beforeDomain = rs.Domain;
+
+            rs.Cleanup();
+
+            // Push the authoritative Domain + Name as well. Cleanup() doesn't touch
+            // these (they aren't gameplay stats), but on the client side they can be
+            // stale: the initial spawn sync caught a default value before the server
+            // wrote n_Domain/n_Name, and subsequent server writes of the same value
+            // never replicated. Writing through the property setter on a non-server
+            // client updates the local field without re-touching the NetworkVariable.
+            rs.Domain = domain;
+            rs.Name = name.ToString();
+
+            // Force-fire every OnXxxChanged event so HUD subscribers (score cards)
+            // refresh their cached _displayedScore and team color — without this the
+            // property setters' !IsSpawned guard suppresses event raising on a spawned
+            // client, leaving the card showing menu-mode leftovers indefinitely
+            // because n_xxx.OnValueChanged only fires on actual NetworkVariable
+            // value changes (and our reset-to-0 may equal the existing server value).
+            (rs as RoundStats)?.NotifyAllStatsChanged();
+
+            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] ResetStatsLocal_ClientRpc on '{Name}' " +
+                $"(IsServer={IsServer}, IsOwner={IsOwner}) — " +
+                $"OmniCrystals: {beforeOmni}→{rs.OmniCrystalsCollected}, " +
+                $"Crystals: {beforeCrystals}→{rs.CrystalsCollected}, " +
+                $"Domain: {beforeDomain}→{rs.Domain}</color>");
         }
 
         public void StartPlayer()
@@ -395,12 +614,32 @@ namespace CosmicShore.Gameplay
         void ToggleInputIdle(bool toggle) =>
             InputController.SetIdle(toggle);
         
-        void OnNetDomainChanged(Domains previousValue, Domains newValue) =>
+        void OnNetDomainChanged(Domains previousValue, Domains newValue)
+        {
             Domain = newValue;
-        
+
+            // Propagate the new Domain to the server-authoritative RoundStats.Domain so
+            // n_Domain replicates the change to all clients. Without this, RoundStats.Domain
+            // is only set once during InitializeForMultiplayerMode and can become stale —
+            // resulting in clients displaying Color.white on the player score card when
+            // a player picks a team after their Player+Vessel pair has already initialized.
+            // Use the RoundStats property so the cached reference is lazy-initialized.
+            if (IsServer && RoundStats is RoundStats rs && rs.IsSpawned)
+                rs.Domain = newValue;
+        }
+
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {
             Name = newValue.ToString();
+
+            // Mirror Name to RoundStats so the score-card lookup key stays in sync when
+            // NetName changes (e.g. cloud profile loads after spawn — see
+            // HandleProfileLoadedAfterSpawn). Without this, the card was registered under
+            // the old name and live updates fail to match.
+            // Use the RoundStats property so the cached reference is lazy-initialized.
+            if (IsServer && RoundStats is RoundStats rs && rs.IsSpawned)
+                rs.Name = Name;
+
             TryRaiseDeferredSpawnEvent();
         }
 

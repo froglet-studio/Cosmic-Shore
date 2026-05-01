@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Data;
 using Unity.Netcode;
 using Unity.Collections;
+using UnityEngine;
 namespace CosmicShore.Data
 {
     public class RoundStats : NetworkBehaviour, IRoundStats
@@ -13,6 +14,8 @@ namespace CosmicShore.Data
         public event Action<IRoundStats> OnAnyStatChanged;
 
         public event Action OnScoreChanged;
+
+        public event Action<IRoundStats> OnDomainChanged;
 
         public event Action<IRoundStats> OnBlocksCreatedChanged;
         public event Action<IRoundStats> OnBlocksDestroyedChanged;
@@ -191,6 +194,37 @@ namespace CosmicShore.Data
         }
 
         /// <summary>
+        /// Forces every per-stat OnXxxChanged event to fire. Used after a server-driven
+        /// reset (Player.ResetStatsLocal_ClientRpc) when the property setters wrote
+        /// new local values without going through the n_xxx.OnValueChanged callback —
+        /// HUD subscribers (score cards) would otherwise keep their cached display
+        /// values until the next legitimate NetworkVariable change.
+        /// </summary>
+        public void NotifyAllStatsChanged()
+        {
+            OnScoreChanged?.Invoke();
+            RaiseSpecific(OnDomainChanged);
+            RaiseSpecific(OnBlocksCreatedChanged);
+            RaiseSpecific(OnBlocksDestroyedChanged);
+            RaiseSpecific(OnBlocksRestoredChanged);
+            RaiseSpecific(OnPrismsStolenChanged);
+            RaiseSpecific(OnPrismsRemainingChanged);
+            RaiseSpecific(OnFriendlyPrismsDestroyedChanged);
+            RaiseSpecific(OnHostilePrismsDestroyedChanged);
+            RaiseSpecific(OnVolumeCreatedChanged);
+            RaiseSpecific(OnTotalVolumeDestroyedChanged);
+            RaiseSpecific(OnFriendlyVolumeDestroyedChanged);
+            RaiseSpecific(OnHostileVolumeDestroyedChanged);
+            RaiseSpecific(OnVolumeRestoredChanged);
+            RaiseSpecific(OnVolumeStolenChanged);
+            RaiseSpecific(OnVolumeRemainingChanged);
+            RaiseSpecific(OnCrystalsCollectedChanged);
+            RaiseSpecific(OnOmniCrystalsCollectedChanged);
+            RaiseSpecific(OnElementalCrystalsCollectedChanged);
+            RaiseSpecific(OnJoustCollisionChanged);
+        }
+
+        /// <summary>
         /// Allows external callers (e.g. StatsManager) to fire OnJoustCollisionChanged
         /// without needing access to the private event backing field.
         /// </summary>
@@ -220,8 +254,23 @@ namespace CosmicShore.Data
             get => _domainLocal;
             set
             {
+                bool changed = _domainLocal != value;
                 _domainLocal = value;
                 if (IsSpawned && IsServer) n_Domain.Value = value;
+
+                // Raise OnDomainChanged on any local write that actually changed the
+                // value. The server side typically also gets a duplicate raise from
+                // n_Domain.OnValueChanged when its own write replicates back, but
+                // OnValueChanged only fires on actual value changes — so a same-value
+                // write on the server, or a forced server-side correction (see
+                // Player.PrepareForNewScene), would otherwise miss the event.
+                // Non-server clients also need this path: ResetStatsLocal_ClientRpc
+                // writes the property locally without touching n_Domain, so the
+                // OnValueChanged path doesn't fire either; without this raise, the
+                // HUD card subscribed to OnDomainChanged would not refresh its
+                // team color when the RPC fixes a stale local domain.
+                if (changed)
+                    RaiseSpecific(OnDomainChanged);
             }
         }
 
@@ -682,7 +731,14 @@ namespace CosmicShore.Data
             // --- Replication callbacks: sync local field, then fire event ---
 
             n_Name.OnValueChanged   += (_, v) => _nameLocal = v.ToString();
-            n_Domain.OnValueChanged += (_, v) => _domainLocal = v;
+            n_Domain.OnValueChanged += (_, v) =>
+            {
+                _domainLocal = v;
+                // Replicated change — raise on every machine that sees the new value
+                // (server already raised from the property setter, but the property
+                // setter's no-event path skips when IsSpawned, so we raise here).
+                RaiseSpecific(OnDomainChanged);
+            };
 
             n_Score.OnValueChanged += (_, v) =>
             {
@@ -784,6 +840,8 @@ namespace CosmicShore.Data
             n_OmniCrystalsCollected.OnValueChanged += (_, v) =>
             {
                 _omniCrystalsCollectedLocal = v;
+                Debug.Log($"<color=#00BFFF>[FLOW-STATS] n_OmniCrystalsCollected.OnValueChanged for '{_nameLocal}' " +
+                    $"(IsServer={IsServer}, IsOwner={IsOwner}) → _local={v}</color>");
                 RaiseSpecific(OnOmniCrystalsCollectedChanged);
             };
 

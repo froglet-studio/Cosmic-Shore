@@ -24,6 +24,20 @@ namespace CosmicShore.Gameplay
                 return;
 
             Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) — activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
+
+            // Cinematic-time crystal collisions (vessel moves through the spawned
+            // crystals during the pre-game cinematic) inflate RoundStats before the
+            // turn officially starts. Wipe each player's stats one more time here,
+            // server-side, so the score cards created in OnMiniGameTurnStarted read
+            // 0 instead of whatever leaked in during the cinematic. Each Player has
+            // its own ResetStatsLocal_ClientRpc that broadcasts the cleanup to all
+            // clients including the host.
+            for (int i = gameData.Players.Count - 1; i >= 0; i--)
+            {
+                if (gameData.Players[i] is Player p && p.IsSpawned)
+                    p.ResetStatsForTurnStart();
+            }
+
             OnCountdownTimerEnded_ClientRpc();
         }
 

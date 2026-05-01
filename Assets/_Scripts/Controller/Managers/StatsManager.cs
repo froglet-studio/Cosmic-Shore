@@ -49,7 +49,28 @@ namespace CosmicShore.Gameplay
         [SerializeField]
         NetcodeHooks _netcodeHooks;
 
-        bool _allowRecord = true;
+        /// <summary>
+        /// True when this machine is allowed to mutate stats. In multiplayer, only the
+        /// server records — clients receive replicated values via NetworkVariable.
+        /// In singleplayer (no NetworkManager listening), every machine records its own.
+        ///
+        /// We query <see cref="Unity.Netcode.NetworkManager"/> directly instead of relying
+        /// on a cached flag set by <see cref="OnNetworkSpawn"/>: <see cref="StatsManager"/>
+        /// lives in the Bootstrap scene (DontDestroyOnLoad), and its <see cref="NetcodeHooks"/>
+        /// NetworkObject is not part of any network-loaded scene, so its OnNetworkSpawn
+        /// callback is unreliable. Without this fix, the cached flag stayed at the default
+        /// <c>true</c> on clients and the client locally double-incremented every crystal
+        /// collection — manifesting as "client shows 8, host shows 0" desync.
+        /// </summary>
+        bool AllowRecord
+        {
+            get
+            {
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                if (nm == null || !nm.IsListening) return true; // singleplayer or no network yet
+                return nm.IsServer;                              // multiplayer: server only
+            }
+        }
 
         void OnEnable()
         {
@@ -65,18 +86,13 @@ namespace CosmicShore.Gameplay
 
         void OnNetworkSpawn()
         {
-            if (_netcodeHooks.IsServer)
-            {
-                _allowRecord = true;
-                return;
-            }
-
-            _allowRecord = false;
+            // No-op — kept for backward compatibility with existing inspector wiring.
+            // Authoritative gating now lives in the AllowRecord property.
         }
 
         public void LifeformCreated(int cellID)
         {
-            if (!_allowRecord || cellData == null) return;
+            if (!AllowRecord || cellData == null) return;
 
             var cellStatsList = cellData.CellStatsList;
 
@@ -90,7 +106,7 @@ namespace CosmicShore.Gameplay
 
         public void LifeformDestroyed(int cellID)
         {
-            if (!_allowRecord || cellData == null) return;
+            if (!AllowRecord || cellData == null) return;
 
             var cellStatsList = cellData.CellStatsList;
 
@@ -104,7 +120,7 @@ namespace CosmicShore.Gameplay
 
         public void CrystalCollected(CrystalStats crystalStats)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             var playerName = crystalStats.PlayerName;
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats))
@@ -160,7 +176,7 @@ namespace CosmicShore.Gameplay
 
         public void ExecuteSkimmerShipCollision(string skimmerPlayerName)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             if (!gameData.TryGetRoundStats(skimmerPlayerName, out var roundStats))
                 return;
@@ -169,7 +185,7 @@ namespace CosmicShore.Gameplay
 
         public void ExecuteJoustCollision(string joustPlayerName)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats))
             {
@@ -184,7 +200,7 @@ namespace CosmicShore.Gameplay
 
         public void PrismCreated(PrismStats prismStats)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             if (!gameData.TryGetRoundStats(prismStats.OwnName, out var roundStats))
                 return;
@@ -197,7 +213,7 @@ namespace CosmicShore.Gameplay
 
         public void PrismDestroyed(PrismStats prismStats)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             var attackingPlayerName = prismStats.AttackerName;
             var victimPlayerName = prismStats.OwnName;
@@ -233,7 +249,7 @@ namespace CosmicShore.Gameplay
 
         public void PrismRestored(PrismStats prismStats)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             var restoringPlayerName = prismStats.OwnName;
 
@@ -248,7 +264,7 @@ namespace CosmicShore.Gameplay
 
         public void PrismVolumeModified(PrismStats prismStats)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             var ownerPlayerName = prismStats.OwnName;
 
@@ -261,7 +277,7 @@ namespace CosmicShore.Gameplay
 
         public void PrismStolen(PrismStats prismStats)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             var stealingPlayerName = prismStats.OwnName;
             if (!gameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
@@ -282,7 +298,7 @@ namespace CosmicShore.Gameplay
 
         public void RegisterAbilityExecuted(AbilityStats abilityStats)
         {
-            if (!_allowRecord) return;
+            if (!AllowRecord) return;
 
             if (!gameData.TryGetRoundStats(abilityStats.PlayerName, out IRoundStats playerStats))
                 return;

@@ -144,7 +144,12 @@ namespace CosmicShore.Gameplay
         {
             if (Player is not Player player) return;
             if (!player.IsOwner) return;
-            player.NetDomain.Value = domain;
+            // RequestDomainChange writes NetDomain locally AND pushes the value
+            // to the server via SyncDomainToServer_ServerRpc — owner-write
+            // NetDomain replication isn't reliable in MPPM, so the explicit
+            // ServerRpc is what actually gets the team to the server's score-card
+            // pipeline (RoundStats.Domain).
+            player.RequestDomainChange(domain);
         }
 
         // ---------------------------------------------------------

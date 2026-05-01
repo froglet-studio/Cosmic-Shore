@@ -11,6 +11,14 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnAnyStatChanged;
         event Action OnScoreChanged;
 
+        /// <summary>
+        /// Fires when <see cref="Domain"/> changes — including via NetworkVariable
+        /// replication on the client. Listeners (e.g. the player score card) use this
+        /// to refresh team-color UI when the host's Domain replicates after the card
+        /// was created.
+        /// </summary>
+        event Action<IRoundStats> OnDomainChanged;
+
         // Prism count events
         event Action<IRoundStats> OnBlocksCreatedChanged;
         event Action<IRoundStats> OnBlocksDestroyedChanged;
