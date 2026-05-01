@@ -404,7 +404,10 @@ namespace CosmicShore.Gameplay
             // RoundStats getter lazy-creates the component. Cleanup() runs through the
             // property setters, which on a non-server client take the !IsSpawned-or-server
             // path that writes only the local field — exactly what we want here.
-            var rs = RoundStats as RoundStats;
+            // Cleanup() is a default interface method on IRoundStats, so we keep the
+            // interface-typed reference for that call and downcast for the concrete
+            // RoundStats.NotifyAllStatsChanged() call afterwards.
+            var rs = RoundStats;
             if (rs == null) return;
 
             int beforeOmni = rs.OmniCrystalsCollected;
@@ -428,7 +431,7 @@ namespace CosmicShore.Gameplay
             // client, leaving the card showing menu-mode leftovers indefinitely
             // because n_xxx.OnValueChanged only fires on actual NetworkVariable
             // value changes (and our reset-to-0 may equal the existing server value).
-            rs.NotifyAllStatsChanged();
+            (rs as RoundStats)?.NotifyAllStatsChanged();
 
             Debug.Log($"<color=#00FF00>[FLOW-4] [Player] ResetStatsLocal_ClientRpc on '{Name}' " +
                 $"(IsServer={IsServer}, IsOwner={IsOwner}) — " +
