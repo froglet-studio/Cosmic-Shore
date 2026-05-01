@@ -693,12 +693,17 @@ namespace CosmicShore.UI
             {
                 var child = NavBar.GetChild(i).gameObject;
                 if (!child.activeSelf)
+                {
+                    Debug.LogWarning($"[ScreenSwitcher] NavBar child '{child.name}' was deactivated — re-enabling. Caller stack will show who disabled it.");
                     child.SetActive(true);
+                }
             }
         }
 
         private void UpdateNavBar(int index)
         {
+            EnsureNavBarChildrenActive();
+
             if (NavBar)
             {
                 for (var i = 0; i < NavBar.childCount; i++)

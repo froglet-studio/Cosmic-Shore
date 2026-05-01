@@ -62,6 +62,32 @@ namespace CosmicShore.UI
 
         Action SummoningProfileMenu;
 
+        bool _ugsSubscribed;
+
+        void Awake()
+        {
+            // ProfileModal's MonoBehaviour starts disabled in the scene (m_Enabled=0),
+            // so Start() never runs and the [Inject] field is never read here. Awake DOES
+            // run on disabled components of active GameObjects, and PlayerDataService.Instance
+            // is set in Bootstrap (DontDestroyOnLoad) — so it's available now.
+            TrySubscribeToUgsProfile();
+        }
+
+        void TrySubscribeToUgsProfile()
+        {
+            if (_ugsSubscribed) return;
+
+            var ds = playerDataService ?? PlayerDataService.Instance;
+            if (ds == null) return;
+
+            playerDataService = ds;
+            ds.OnProfileChanged += OnUgsProfileChanged;
+            _ugsSubscribed = true;
+
+            if (ds.CurrentProfile != null)
+                OnUgsProfileChanged(ds.CurrentProfile);
+        }
+
         protected override void Start()
         {
             if (setDisplayNameButton)
@@ -81,13 +107,7 @@ namespace CosmicShore.UI
 
             PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
 
-            if (playerDataService != null)
-            {
-                playerDataService.OnProfileChanged += OnUgsProfileChanged;
-
-                if (playerDataService.CurrentProfile != null)
-                    OnUgsProfileChanged(playerDataService.CurrentProfile);
-            }
+            TrySubscribeToUgsProfile();
 
             base.Start();
         }
@@ -96,7 +116,7 @@ namespace CosmicShore.UI
         {
             PlayerDataController.OnProfileLoaded -= InitializePlayerDisplayNameView;
 
-            if (playerDataService != null)
+            if (playerDataService != null && _ugsSubscribed)
                 playerDataService.OnProfileChanged -= OnUgsProfileChanged;
         }
 
