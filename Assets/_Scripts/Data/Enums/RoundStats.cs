@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Data;
 using Unity.Netcode;
 using Unity.Collections;
+using UnityEngine;
 namespace CosmicShore.Data
 {
     public class RoundStats : NetworkBehaviour, IRoundStats
