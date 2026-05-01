@@ -1,46 +1,68 @@
-using CosmicShore.Core;
-using System.Linq;
-using UnityEngine;
-using UnityEngine.UI;
-using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
-    [RequireComponent (typeof (Image))]
+    [RequireComponent(typeof(Image))]
     public class ProfileImage : MonoBehaviour
     {
         [SerializeField] SO_ProfileIconList ProfileIcons;
 
-        void OnEnable()
-        {
-            PlayerDataController.OnProfileLoaded += SetSprite;
-            PlayerDataController.OnPlayerAvatarUpdated += SetSprite;
-        }
+        [Inject] PlayerDataService playerDataService;
 
-        void OnDisable()
+        Image _image;
+
+        void Awake()
         {
-            PlayerDataController.OnProfileLoaded -= SetSprite;
-            PlayerDataController.OnPlayerAvatarUpdated -= SetSprite;
+            _image = GetComponent<Image>();
         }
 
         void Start()
         {
-            SetSprite();
+            if (playerDataService == null) return;
+
+            playerDataService.OnProfileChanged += OnProfileChanged;
+
+            if (playerDataService.CurrentProfile != null)
+                ApplySprite(playerDataService.CurrentProfile.avatarId);
         }
 
-        void SetSprite()
+        void OnDestroy()
         {
-            var image = GetComponent<Image>();
-            image.sprite = GetProfileImage();
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= OnProfileChanged;
         }
 
-        public Sprite GetProfileImage()
+        void OnProfileChanged(PlayerProfileData profile)
         {
-            var profileIconId = PlayerDataController.PlayerProfile.ProfileIconId;
-            CSDebug.Log($"ProfileImage - GetProfileImage - {profileIconId}");
-            return ProfileIcons.profileIcons.FirstOrDefault(x => x.Id == profileIconId).IconSprite;
+            if (profile == null) return;
+            ApplySprite(profile.avatarId);
+        }
+
+        void ApplySprite(int avatarId)
+        {
+            if (_image == null) _image = GetComponent<Image>();
+            if (ProfileIcons == null || ProfileIcons.profileIcons == null) return;
+
+            Sprite sprite = null;
+            foreach (var icon in ProfileIcons.profileIcons)
+            {
+                if (icon.Id == avatarId)
+                {
+                    sprite = icon.IconSprite;
+                    break;
+                }
+            }
+            if (sprite == null && ProfileIcons.profileIcons.Count > 0)
+                sprite = ProfileIcons.profileIcons[0].IconSprite;
+
+            _image.sprite = sprite;
+            _image.enabled = sprite != null;
+
+            CSDebug.Log($"ProfileImage - applied sprite for avatarId={avatarId}");
         }
     }
 }

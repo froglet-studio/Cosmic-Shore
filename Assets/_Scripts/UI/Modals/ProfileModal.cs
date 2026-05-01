@@ -62,6 +62,32 @@ namespace CosmicShore.UI
 
         Action SummoningProfileMenu;
 
+        bool _ugsSubscribed;
+
+        void Awake()
+        {
+            // ProfileModal's MonoBehaviour starts disabled in the scene (m_Enabled=0),
+            // so Start() never runs and the [Inject] field is never read here. Awake DOES
+            // run on disabled components of active GameObjects, and PlayerDataService.Instance
+            // is set in Bootstrap (DontDestroyOnLoad) — so it's available now.
+            TrySubscribeToUgsProfile();
+        }
+
+        void TrySubscribeToUgsProfile()
+        {
+            if (_ugsSubscribed) return;
+
+            var ds = playerDataService ?? PlayerDataService.Instance;
+            if (ds == null) return;
+
+            playerDataService = ds;
+            ds.OnProfileChanged += OnUgsProfileChanged;
+            _ugsSubscribed = true;
+
+            if (ds.CurrentProfile != null)
+                OnUgsProfileChanged(ds.CurrentProfile);
+        }
+
         protected override void Start()
         {
             if (setDisplayNameButton)
@@ -81,7 +107,50 @@ namespace CosmicShore.UI
 
             PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
 
+            TrySubscribeToUgsProfile();
+
             base.Start();
+        }
+
+        void OnDestroy()
+        {
+            PlayerDataController.OnProfileLoaded -= InitializePlayerDisplayNameView;
+
+            if (playerDataService != null && _ugsSubscribed)
+                playerDataService.OnProfileChanged -= OnUgsProfileChanged;
+        }
+
+        void OnUgsProfileChanged(PlayerProfileData profile)
+        {
+            if (profile == null) return;
+
+            if (profileNameLabel)
+                profileNameLabel.text = profile.displayName;
+
+            if (displayNameInputField && !displayNameInputField.isFocused)
+                displayNameInputField.text = profile.displayName;
+
+            ApplyAvatarSpriteFromUgs(profile.avatarId);
+        }
+
+        void ApplyAvatarSpriteFromUgs(int avatarId)
+        {
+            if (!profileIconImage || profileIconList == null ||
+                profileIconList.profileIcons == null || profileIconList.profileIcons.Count == 0)
+                return;
+
+            ProfileIcon chosen = profileIconList.profileIcons[0];
+            foreach (var icon in profileIconList.profileIcons)
+            {
+                if (icon.Id == avatarId)
+                {
+                    chosen = icon;
+                    break;
+                }
+            }
+
+            profileIconImage.enabled = true;
+            profileIconImage.sprite = chosen.IconSprite;
         }
 
         #region Email Input Field Operations (unchanged)
