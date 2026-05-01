@@ -42,6 +42,25 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // The fauna body is composed of nested HealthPrism prefab instances
+            // (e.g. MassBrittlestarFauna embeds DynamicHealthBlock children). They
+            // start at local scale 0 and only grow to their authored target scale
+            // when Prism.Initialize fires the scale animator. LifeForm does this
+            // automatically via BindEmbeddedParts, but LightFauna does NOT extend
+            // LifeForm — without this step the brittlestar / shark renders as a
+            // cluster of invisible prisms. Recolor to the fauna's domain first,
+            // then kick off the growth animation. LifeForm is intentionally not
+            // assigned so these body prisms don't register with Cell as
+            // consumable targets.
+            var bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+            for (int i = 0; i < bodyPrisms.Length; i++)
+            {
+                var hp = bodyPrisms[i];
+                if (!hp) continue;
+                hp.ChangeTeam(domain);
+                hp.Initialize("FaunaPrefab");
+            }
+
             float minSpeed = Mathf.Max(0f, data.minSpeed);
             float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
 
@@ -64,10 +83,40 @@ namespace CosmicShore.Gameplay
                 if (!data)
                     yield break;
 
-                yield return new WaitForSeconds(Mathf.Max(0f, data.behaviorUpdateRate + Phase));
+                float cadence = Mathf.Max(0.05f, data.behaviorUpdateRate + Phase) * GetAggressionCadenceMultiplier();
+                yield return new WaitForSeconds(cadence);
                 UpdateBehavior();
             }
         }
+
+        // Cleanup urgency multipliers indexed by CellAggressionLevel (3 levels).
+        // Level0 = baseline (world feels alive), Level1 = tighter, Level2 = berserk.
+        static readonly float[] CadenceByAggression       = { 1f,   0.55f, 0.25f };
+        static readonly float[] ConsumeRadiusByAggression = { 1f,   1.4f,  1.8f  };
+        static readonly float[] SpeedByAggression         = { 1f,   1.25f, 1.6f  };
+
+        float GetAggressionCadenceMultiplier()
+        {
+            if (cell == null) return 1f;
+            int idx = Mathf.Clamp((int)cell.AggressionLevel, 0, CadenceByAggression.Length - 1);
+            return CadenceByAggression[idx];
+        }
+
+        float GetAggressionConsumeRadiusMultiplier()
+        {
+            if (cell == null) return 1f;
+            int idx = Mathf.Clamp((int)cell.AggressionLevel, 0, ConsumeRadiusByAggression.Length - 1);
+            return ConsumeRadiusByAggression[idx];
+        }
+
+        float GetAggressionSpeedMultiplier()
+        {
+            if (cell == null) return 1f;
+            int idx = Mathf.Clamp((int)cell.AggressionLevel, 0, SpeedByAggression.Length - 1);
+            return SpeedByAggression[idx];
+        }
+
+        bool IsBerserk => cell != null && cell.AggressionLevel == CellAggressionLevel.Level2;
 
         void UpdateBehavior()
         {
@@ -105,11 +154,11 @@ namespace CosmicShore.Gameplay
 
             float detectionRadius = Mathf.Max(0f, data.detectionRadius);
             float separationRadius = Mathf.Max(0f, data.separationRadius);
-            float consumeRadius = Mathf.Max(0f, data.consumeRadius);
+            float consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
 
-            // Aggression 2 drops friendly avoidance (other same-domain fauna and any
-            // same-domain HealthPrisms stop contributing to separation). Cross-domain
-            // entities still push us away so we don't clip through enemy mass.
+            // Aggression 2 drops friendly avoidance (same-domain ships, fauna, and
+            // health prisms stop contributing to separation). Cross-domain entities
+            // still push us away so we don't clip through enemy mass.
             bool dropFriendlyAvoidance = phase >= CellPhase.Rabid;
 
             var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
@@ -123,10 +172,12 @@ namespace CosmicShore.Gameplay
                 if (distance <= 0f) continue;
 
                 // Handle Ships
-                if (collider.TryGetComponent(out IVesselStatus _))
+                if (collider.TryGetComponent(out IVesselStatus vessel))
                 {
                     neighborCount++;
-                    separation -= diff.normalized / distance;
+                    // Level 2: skip separation from same-domain ships.
+                    if (!(dropFriendlyAvoidance && vessel.Domain == domain))
+                        separation -= diff.normalized / distance;
                     continue;
                 }
 
@@ -164,8 +215,9 @@ namespace CosmicShore.Gameplay
 
             desiredDirection = ((separation * separationWeight) + (goalDirection * goalWeight)).normalized;
 
-            float minSpeed = Mathf.Max(0f, data.minSpeed);
-            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
+            float speedMult = GetAggressionSpeedMultiplier();
+            float minSpeed = Mathf.Max(0f, data.minSpeed) * speedMult;
+            float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed * speedMult);
 
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
 

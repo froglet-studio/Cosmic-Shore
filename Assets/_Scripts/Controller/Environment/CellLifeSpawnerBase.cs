@@ -141,6 +141,30 @@ namespace CosmicShore.Gameplay
             pop.domain = PickRandomDomain(excludedDomain);
             pop.Goal = goal;
 
+            // Subclasses (notably LightFauna) do real work in Initialize: body-prism
+            // ChangeTeam + scale animation. Without this call brittlestar/shark bodies
+            // render as invisible scale-0 prisms.
+            pop.Initialize(host);
+
+            RegisterSpawned(host, pop.gameObject);
+            return pop;
+        }
+
+        /// <summary>
+        /// Variant that assigns an explicit domain (e.g. the cell's controlling color)
+        /// instead of rolling randomly. Used by the regulated fauna spawn loop so new
+        /// fauna track the live leader rather than producing inconsistent domain mixes.
+        /// </summary>
+        protected Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain)
+        {
+            if (!host || !faunaPrefab) return null;
+
+            var pop = UnityEngine.Object.Instantiate(faunaPrefab, host.transform.position, Quaternion.identity);
+            pop.domain = domain;
+            pop.Goal = goal;
+
+            pop.Initialize(host);
+
             RegisterSpawned(host, pop.gameObject);
             return pop;
         }

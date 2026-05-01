@@ -106,6 +106,68 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public CellPhase Phase => phase;
 
+        // ---------------------------------------------------------------------
+        // Derived gates — orthogonal projections of Phase the consumers actually
+        // care about. The user spec mixes flora and fauna events along a single
+        // prism-count axis; these properties decouple the two systems' rules so
+        // each consumer reads only what it needs.
+        // ---------------------------------------------------------------------
+
+        /// <summary>True while the cell still allows new flora to be planted (Phase &lt; Settled).</summary>
+        public bool FloraPlantingEnabled => phase < CellPhase.Settled;
+
+        /// <summary>True while existing flora may still grow new prisms (Phase &lt; Frozen).</summary>
+        public bool FloraGrowingEnabled => phase < CellPhase.Frozen;
+
+        /// <summary>True once the cell has crossed the fauna-spawn threshold (Phase &gt;= Quiet).</summary>
+        public bool FaunaSpawningEnabled => phase >= CellPhase.Quiet;
+
+        /// <summary>
+        /// Fauna aggression level derived from <see cref="Phase"/>:
+        ///   Sprout/Quiet/Settled → Level0  (head toward crystal, normal cadence)
+        ///   Restless/Frozen      → Level1  (head toward opposing-color centroid)
+        ///   Rabid                → Level2  (any-domain centroid, drop friendly avoidance)
+        /// </summary>
+        public CellAggressionLevel AggressionLevel => phase switch
+        {
+            CellPhase.Restless => CellAggressionLevel.Level1,
+            CellPhase.Frozen => CellAggressionLevel.Level1,
+            CellPhase.Rabid => CellAggressionLevel.Level2,
+            _ => CellAggressionLevel.Level0,
+        };
+
+        /// <summary>
+        /// "Controlling color" for fauna spawns. Prefers the cell's live
+        /// <see cref="DominantDomain"/> (per-domain prism count leader), then falls
+        /// back to gameData's controlling team by remaining volume, then to the local
+        /// player's domain (useful in Menu_Main where there is no scored controlling
+        /// team), then to Jade as a last resort. Never returns None or Unassigned —
+        /// callers can use it directly without further branching.
+        /// </summary>
+        public Domains ControllingDomain
+        {
+            get
+            {
+                var dominant = DominantDomain;
+                if (dominant != Domains.None && dominant != Domains.Unassigned)
+                    return dominant;
+
+                if (gameData != null)
+                {
+                    var top = gameData.GetControllingTeamStatsBasedOnVolumeRemaining();
+                    if (top.Team != Domains.None && top.Team != Domains.Unassigned && top.Volume > 0f)
+                        return top.Team;
+
+                    var local = gameData.LocalRoundStats?.Domain
+                                ?? gameData.LocalPlayer?.Domain
+                                ?? Domains.Unassigned;
+                    if (local != Domains.None && local != Domains.Unassigned)
+                        return local;
+                }
+                return Domains.Jade;
+            }
+        }
+
         /// <summary>
         /// Sole entry point for phase mutation. Updates the local field and the
         /// runtime SO's per-cell stats; the runtime SO raises <c>OnPhaseChanged</c>
@@ -457,18 +519,57 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();
+        /// <summary>
+        /// Densest region of all blocks NOT belonging to the given domain — the
+        /// "nearest opposing-color centroid" for fauna at aggression Level 1.
+        /// Empty grids default to the cell anchor (crystal or cell transform)
+        /// instead of the grid's bottom-corner sentinel, which otherwise pulled
+        /// every fauna querying an empty grid to the world-space −X/−Y/−Z corner.
+        /// </summary>
+        public Vector3 GetExplosionTarget(Domains domain)
+        {
+            if (!countGrids.TryGetValue(domain, out var grid) || grid == null)
+                return GetCellAnchorPosition();
+
+            var region = grid.FindDensestRegion();
+            if (grid.GetDensityAtPosition(region) <= 0)
+                return GetCellAnchorPosition();
+            return region;
+        }
 
         /// <summary>
-        /// Densest region across all domains, used by aggression-2 fauna whose goal
-        /// drops the opposing-domain qualifier and seeks the heaviest mass concentration
-        /// regardless of who owns it. Falls back to the cell's transform position if
-        /// the all-domain grid wasn't initialized (defensive — Initialize seeds it).
+        /// Densest region across all domains — the "nearest centroid of any color"
+        /// goal for fauna at aggression Level 2. Reads the synthesized
+        /// countGrids[Domains.None] grid that <see cref="AddBlock"/> populates with
+        /// every block regardless of its domain.
         /// </summary>
         public Vector3 GetDensestRegionAnyDomain()
         {
-            if (countGrids.TryGetValue(Domains.None, out var anyGrid))
-                return anyGrid.FindDensestRegion();
+            if (!countGrids.TryGetValue(Domains.None, out var anyGrid) || anyGrid == null)
+                return GetCellAnchorPosition();
+
+            var region = anyGrid.FindDensestRegion();
+            if (anyGrid.GetDensityAtPosition(region) <= 0)
+                return GetCellAnchorPosition();
+            return region;
+        }
+
+        /// <summary>
+        /// Alias for <see cref="GetDensestRegionAnyDomain"/> — historical name from
+        /// the gyroid-overflow regulation work, kept so external callers can use
+        /// either spelling.
+        /// </summary>
+        public Vector3 GetPrimaryCentroid() => GetDensestRegionAnyDomain();
+
+        /// <summary>
+        /// Fallback position for goal resolution when density grids are empty:
+        /// the local crystal if one exists, otherwise the cell's own transform.
+        /// Keeps fauna near the cell instead of drifting to the empty-grid corner.
+        /// </summary>
+        Vector3 GetCellAnchorPosition()
+        {
+            if (runtime != null && runtime.CrystalTransform)
+                return runtime.CrystalTransform.position;
             return transform.position;
         }
 
