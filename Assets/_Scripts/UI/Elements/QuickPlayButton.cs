@@ -57,11 +57,13 @@ namespace CosmicShore.UI
             if (gameData.SelectedIntensity)
                 gameData.SelectedIntensity.Value = 1;
 
-            // Assign random domain to local player
+            // Assign random domain to local player. RequestDomainChange writes
+            // NetDomain locally AND pushes to the server's NetServerDomain via
+            // ServerRpc — owner-write replication isn't reliable in MPPM.
             if (gameData.LocalPlayer is Player localPlayer && localPlayer.IsOwner)
             {
                 var randomDomain = GetRandomDomain();
-                localPlayer.NetDomain.Value = randomDomain;
+                localPlayer.RequestDomainChange(randomDomain);
             }
 
             // Hand off the party session so MultiplayerSetup reuses the existing Relay connection

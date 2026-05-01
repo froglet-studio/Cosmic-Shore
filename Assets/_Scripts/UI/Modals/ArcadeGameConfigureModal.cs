@@ -526,7 +526,11 @@ namespace CosmicShore.UI
         {
             if (gameData.LocalPlayer is not Player player) return;
             if (!player.IsOwner) return;
-            player.NetDomain.Value = domain;
+            // RequestDomainChange writes NetDomain locally AND pushes the value
+            // to the server via SyncDomainToServer_ServerRpc — owner-write
+            // replication isn't reliable in MPPM, so the explicit ServerRpc is
+            // what actually gets the team to the server's score-card pipeline.
+            player.RequestDomainChange(domain);
         }
 
         #endregion
@@ -646,9 +650,12 @@ namespace CosmicShore.UI
             if (config != null)
                 config.SelectedDomain = domain;
 
-            // Write to local player's NetworkVariable
+            // Write to local player's NetworkVariable AND push to server.
+            // RequestDomainChange does both — owner-write replication for
+            // NetDomain is unreliable in MPPM, so we have to push to the
+            // server-write NetServerDomain explicitly via ServerRpc.
             if (gameData != null && gameData.LocalPlayer is Player player && player.IsOwner)
-                player.NetDomain.Value = domain;
+                player.RequestDomainChange(domain);
 
             SyncGameDataDomain();
             RefreshDomainButtons();
