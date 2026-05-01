@@ -165,6 +165,33 @@ namespace CosmicShore.Core
             // SelectedPlayerCount is NOT set here — menu autopilot spawns exactly 1 Player
             // via the Netcode pipeline. The game-launch path sets it via ConfigurePlayerCounts().
             _gameData.SelectedIntensity.Value = menuIntensity;
+
+            // The host's Player NetworkObject was spawned in the Auth scene, where
+            // gameData.selectedVesselClass was Squirrel (set by AppManager.ConfigureGameData).
+            // That value got locked into NetDefaultVesselType in Player.OnNetworkSpawn before
+            // Menu_Main loaded. ServerPlayerVesselInitializer's retry loop only overwrites
+            // NetDefaultVesselType when the current value is INVALID (Random/Any) — Squirrel
+            // is valid, so the menu's selection (e.g. Serpent) never reaches the spawn chain.
+            // Explicitly push the menu's selection onto the host's NetDefaultVesselType here
+            // so the spawn chain spawns whatever the inspector dropdown says.
+            ApplyMenuVesselClassToHost();
+        }
+
+        void ApplyMenuVesselClassToHost()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return;
+
+            // The host owns its own player object. NetDefaultVesselType is owner-writable,
+            // so the host can rewrite it directly. Remote clients in a party session manage
+            // their own vessel type via the team/vessel selection panel.
+            var localClient = nm.LocalClient;
+            if (localClient == null || localClient.PlayerObject == null) return;
+            if (!localClient.PlayerObject.TryGetComponent<Player>(out var hostPlayer)) return;
+            if (!hostPlayer.IsOwner) return;
+
+            if (hostPlayer.NetDefaultVesselType.Value != menuVesselClass)
+                hostPlayer.NetDefaultVesselType.Value = menuVesselClass;
         }
 
         // ── Event Handlers ──────────────────────────────────────────────
