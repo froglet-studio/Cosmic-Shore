@@ -124,8 +124,9 @@ namespace CosmicShore.Gameplay
             if (activeImplosions.Count > 0) ProcessImplosions(dt);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            // Safety audit: detect explosions with enabled renderers that aren't actively managed.
-            // This catches "zombie" objects that escaped the pool lifecycle.
+            // Safety audit: detect explosion / implosion VFX with enabled renderers
+            // that aren't actively managed. Catches "zombie" pool instances whose
+            // OnReturnToPool callback chain failed to deactivate the GameObject.
             if (Time.frameCount % 60 == 0) // Check once per ~second at 60fps
             {
                 var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
@@ -133,6 +134,18 @@ namespace CosmicShore.Gameplay
                 {
                     if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
                         exp.Renderer.enabled = false;
+                }
+
+                var allImplosions = FindObjectsByType<PrismImplosion>(FindObjectsSortMode.None);
+                foreach (var imp in allImplosions)
+                {
+                    // Active GameObject + script's IsActive=false = orphaned by the pool
+                    // callback chain (StartImplosion finished or never ran on this re-enable).
+                    // Force the GameObject inactive so it stops rendering and the watchdog
+                    // doesn't have to chew through 4s of wall-clock time first.
+                    if (!imp) continue;
+                    if (imp.gameObject.activeSelf && !imp.IsActive)
+                        imp.gameObject.SetActive(false);
                 }
             }
 #endif

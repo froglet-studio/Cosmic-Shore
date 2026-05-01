@@ -58,6 +58,16 @@ namespace CosmicShore.Utility
             mpb = new MaterialPropertyBlock();
         }
 
+        private void OnEnable()
+        {
+            // Backstop the watchdog timer for the case where the pool re-activates
+            // a GameObject but the consumer never gets to call StartImplosion (e.g.,
+            // an exception in PrismFactory between pool.Get and StartImplosion).
+            // StartImplosion / StartGrow overwrite this with their own timestamps so
+            // the legitimate path still uses the activation moment of the effect itself.
+            _activatedAtTime = Time.time;
+        }
+
         private void OnDisable()
         {
             if (IsActive)
@@ -210,17 +220,19 @@ namespace CosmicShore.Utility
 
         void Update()
         {
-            // Wall-clock watchdog: independent of the manager-driven Elapsed counter
-            // so it survives any state-reset bug that would otherwise keep an
-            // implosion stuck in the active list. Triggers force-completion after
-            // 2x the configured duration — the implosion has visibly finished long
-            // before this fires, so completing here just frees the GameObject.
-            if (!IsActive) return;
+            // Wall-clock watchdog: fires for ANY active GameObject that's been alive
+            // longer than 2x the configured duration. We deliberately do NOT gate on
+            // IsActive because the dominant failure mode is an instance whose IsActive
+            // was cleared by OnDisable but whose GameObject was reactivated through
+            // the pool without StartImplosion ever running again — those leak past
+            // an IsActive-only check. Tracking via Time.time (set in OnEnable as a
+            // backstop, refreshed in StartImplosion / StartGrow) is the only signal
+            // that survives all the state-reset failure modes.
             if (Time.time - _activatedAtTime <= implosionDuration * WatchdogDurationMultiplier) return;
 
             CSDebug.LogWarning($"[PrismImplosion] Watchdog force-completed implosion on '{name}' " +
-                               $"after {Time.time - _activatedAtTime:F2}s (duration={implosionDuration}). " +
-                               "Likely cause: OnReturnToPool subscription was lost or duplicated.");
+                               $"after {Time.time - _activatedAtTime:F2}s (duration={implosionDuration}, " +
+                               $"IsActive={IsActive}). Likely cause: OnReturnToPool subscription was lost or duplicated.");
             OnEffectComplete();
         }
     }
