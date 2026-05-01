@@ -81,7 +81,56 @@ namespace CosmicShore.UI
 
             PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
 
+            if (playerDataService != null)
+            {
+                playerDataService.OnProfileChanged += OnUgsProfileChanged;
+
+                if (playerDataService.CurrentProfile != null)
+                    OnUgsProfileChanged(playerDataService.CurrentProfile);
+            }
+
             base.Start();
+        }
+
+        void OnDestroy()
+        {
+            PlayerDataController.OnProfileLoaded -= InitializePlayerDisplayNameView;
+
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= OnUgsProfileChanged;
+        }
+
+        void OnUgsProfileChanged(PlayerProfileData profile)
+        {
+            if (profile == null) return;
+
+            if (profileNameLabel)
+                profileNameLabel.text = profile.displayName;
+
+            if (displayNameInputField && !displayNameInputField.isFocused)
+                displayNameInputField.text = profile.displayName;
+
+            ApplyAvatarSpriteFromUgs(profile.avatarId);
+        }
+
+        void ApplyAvatarSpriteFromUgs(int avatarId)
+        {
+            if (!profileIconImage || profileIconList == null ||
+                profileIconList.profileIcons == null || profileIconList.profileIcons.Count == 0)
+                return;
+
+            ProfileIcon chosen = profileIconList.profileIcons[0];
+            foreach (var icon in profileIconList.profileIcons)
+            {
+                if (icon.Id == avatarId)
+                {
+                    chosen = icon;
+                    break;
+                }
+            }
+
+            profileIconImage.enabled = true;
+            profileIconImage.sprite = chosen.IconSprite;
         }
 
         #region Email Input Field Operations (unchanged)
