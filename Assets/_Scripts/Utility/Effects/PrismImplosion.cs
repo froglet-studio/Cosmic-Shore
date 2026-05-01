@@ -230,9 +230,10 @@ namespace CosmicShore.Utility
             // that survives all the state-reset failure modes.
             if (Time.time - _activatedAtTime <= implosionDuration * WatchdogDurationMultiplier) return;
 
-            CSDebug.LogWarning($"[PrismImplosion] Watchdog force-completed implosion on '{name}' " +
-                               $"after {Time.time - _activatedAtTime:F2}s (duration={implosionDuration}, " +
-                               $"IsActive={IsActive}). Likely cause: OnReturnToPool subscription was lost or duplicated.");
+            CSDebug.LogWarning($"[PrismImplosion] Watchdog force-completed '{name}' " +
+                               $"at world {transform.position} after {Time.time - _activatedAtTime:F2}s " +
+                               $"(duration={implosionDuration}, IsActive={IsActive}, target={TargetPosition}). " +
+                               "Likely cause: OnReturnToPool subscription was lost or duplicated.");
             OnEffectComplete();
         }
     }

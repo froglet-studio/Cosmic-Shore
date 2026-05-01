@@ -137,15 +137,38 @@ namespace CosmicShore.Gameplay
                 }
 
                 var allImplosions = FindObjectsByType<PrismImplosion>(FindObjectsSortMode.None);
+                int activeGameObjects = 0;
+                int zombies = 0;
+                int healthy = 0;
                 foreach (var imp in allImplosions)
                 {
-                    // Active GameObject + script's IsActive=false = orphaned by the pool
-                    // callback chain (StartImplosion finished or never ran on this re-enable).
-                    // Force the GameObject inactive so it stops rendering and the watchdog
-                    // doesn't have to chew through 4s of wall-clock time first.
                     if (!imp) continue;
-                    if (imp.gameObject.activeSelf && !imp.IsActive)
+                    bool goActive = imp.gameObject.activeSelf;
+                    if (!goActive) continue;
+
+                    activeGameObjects++;
+                    if (!imp.IsActive)
+                    {
+                        zombies++;
+                        // Active GameObject + IsActive=false = orphaned by the pool
+                        // callback chain. Force-deactivate immediately rather than
+                        // waiting 4s for the per-instance watchdog.
                         imp.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        healthy++;
+                    }
+                }
+
+                // Periodic stats: lets us distinguish "many legitimate implosions
+                // playing at once" (expected when the squirrel circles the crystal
+                // and fauna swarm-eat its trail) from "leak accumulating zombies".
+                // Only log when count is interesting (>0 zombies or >32 healthy)
+                // so the console isn't spammy on quiet scenes.
+                if (zombies > 0 || activeGameObjects > 32)
+                {
+                    Debug.Log($"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies} (manager-tracked={activeImplosions.Count})");
                 }
             }
 #endif
