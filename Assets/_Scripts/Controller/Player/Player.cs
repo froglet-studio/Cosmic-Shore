@@ -368,6 +368,11 @@ namespace CosmicShore.Gameplay
             // path that writes only the local field — exactly what we want here.
             var rs = RoundStats;
             if (rs == null) return;
+
+            int beforeOmni = rs.OmniCrystalsCollected;
+            int beforeCrystals = rs.CrystalsCollected;
+            var beforeDomain = rs.Domain;
+
             rs.Cleanup();
 
             // Push the authoritative Domain + Name as well. Cleanup() doesn't touch
@@ -378,6 +383,12 @@ namespace CosmicShore.Gameplay
             // client updates the local field without re-touching the NetworkVariable.
             rs.Domain = domain;
             rs.Name = name.ToString();
+
+            Debug.Log($"<color=#00FF00>[FLOW-4] [Player] ResetStatsLocal_ClientRpc on '{Name}' " +
+                $"(IsServer={IsServer}, IsOwner={IsOwner}) — " +
+                $"OmniCrystals: {beforeOmni}→{rs.OmniCrystalsCollected}, " +
+                $"Crystals: {beforeCrystals}→{rs.CrystalsCollected}, " +
+                $"Domain: {beforeDomain}→{rs.Domain}</color>");
         }
 
         public void StartPlayer()
