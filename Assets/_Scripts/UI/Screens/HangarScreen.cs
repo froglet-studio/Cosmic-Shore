@@ -31,7 +31,6 @@ namespace CosmicShore.UI
         [SerializeField] private HangarVesselDetailView detailView;
 
         [Header("Legacy Views (kept for backward compatibility)")]
-        [SerializeField] private HangarOverviewView OverviewView;
         [SerializeField] private HangarAbilitiesView AbilitiesView;
         [SerializeField] private HangarTrainingModal HangarTrainingModal;
         [SerializeField] private NavGroup TopNav;
@@ -217,8 +216,6 @@ namespace CosmicShore.UI
 
         void LoadViewLegacy()
         {
-            if (OverviewView)
-                OverviewView.AssignModels(Ships.ConvertAll(x => (ScriptableObject)x));
             PopulateShipSelectionList();
         }
 
@@ -275,11 +272,6 @@ namespace CosmicShore.UI
         void UpdateLegacyViews(SO_Vessel ship)
         {
             if (!ship) return;
-
-            int shipIndex = Ships.IndexOf(ship);
-
-            if (OverviewView && shipIndex >= 0)
-                OverviewView.Select(shipIndex);
 
             if (AbilitiesView && ship.Abilities != null)
             {
