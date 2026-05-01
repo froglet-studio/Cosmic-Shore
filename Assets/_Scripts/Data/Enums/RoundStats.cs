@@ -839,6 +839,8 @@ namespace CosmicShore.Data
             n_OmniCrystalsCollected.OnValueChanged += (_, v) =>
             {
                 _omniCrystalsCollectedLocal = v;
+                Debug.Log($"<color=#00BFFF>[FLOW-STATS] n_OmniCrystalsCollected.OnValueChanged for '{_nameLocal}' " +
+                    $"(IsServer={IsServer}, IsOwner={IsOwner}) → _local={v}</color>");
                 RaiseSpecific(OnOmniCrystalsCollectedChanged);
             };
 
