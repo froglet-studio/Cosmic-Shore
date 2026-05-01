@@ -484,7 +484,10 @@ namespace CosmicShore.Gameplay
         public void ResetStatsForTurnStart()
         {
             if (!IsServer) return;
-            if (RoundStats is RoundStats rs && rs.IsSpawned)
+            // Cleanup() is a default interface method on IRoundStats — call through
+            // the interface type, not the concrete RoundStats class.
+            var rs = RoundStats;
+            if (rs != null && rs is RoundStats concrete && concrete.IsSpawned)
             {
                 rs.Cleanup();
                 // Preserve domain (server-write n_Domain) — it's the canonical
