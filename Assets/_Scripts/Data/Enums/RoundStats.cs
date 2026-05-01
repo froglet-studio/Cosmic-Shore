@@ -193,6 +193,37 @@ namespace CosmicShore.Data
         }
 
         /// <summary>
+        /// Forces every per-stat OnXxxChanged event to fire. Used after a server-driven
+        /// reset (Player.ResetStatsLocal_ClientRpc) when the property setters wrote
+        /// new local values without going through the n_xxx.OnValueChanged callback —
+        /// HUD subscribers (score cards) would otherwise keep their cached display
+        /// values until the next legitimate NetworkVariable change.
+        /// </summary>
+        public void NotifyAllStatsChanged()
+        {
+            OnScoreChanged?.Invoke();
+            RaiseSpecific(OnDomainChanged);
+            RaiseSpecific(OnBlocksCreatedChanged);
+            RaiseSpecific(OnBlocksDestroyedChanged);
+            RaiseSpecific(OnBlocksRestoredChanged);
+            RaiseSpecific(OnPrismsStolenChanged);
+            RaiseSpecific(OnPrismsRemainingChanged);
+            RaiseSpecific(OnFriendlyPrismsDestroyedChanged);
+            RaiseSpecific(OnHostilePrismsDestroyedChanged);
+            RaiseSpecific(OnVolumeCreatedChanged);
+            RaiseSpecific(OnTotalVolumeDestroyedChanged);
+            RaiseSpecific(OnFriendlyVolumeDestroyedChanged);
+            RaiseSpecific(OnHostileVolumeDestroyedChanged);
+            RaiseSpecific(OnVolumeRestoredChanged);
+            RaiseSpecific(OnVolumeStolenChanged);
+            RaiseSpecific(OnVolumeRemainingChanged);
+            RaiseSpecific(OnCrystalsCollectedChanged);
+            RaiseSpecific(OnOmniCrystalsCollectedChanged);
+            RaiseSpecific(OnElementalCrystalsCollectedChanged);
+            RaiseSpecific(OnJoustCollisionChanged);
+        }
+
+        /// <summary>
         /// Allows external callers (e.g. StatsManager) to fire OnJoustCollisionChanged
         /// without needing access to the private event backing field.
         /// </summary>
