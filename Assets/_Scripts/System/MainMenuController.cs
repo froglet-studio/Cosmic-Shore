@@ -251,13 +251,23 @@ namespace CosmicShore.Core
             if (p.RoundStats != null)
                 p.RoundStats.Domain = menuVesselDomain;
 
-            // ShipHelper.SetShipProperties was already called during VesselController.Initialize
-            // (read whatever domain was set at that point). Re-run it now so the ship material,
-            // skimmer material, AOE materials, and silhouette prefab all match the menu domain.
-            // Without this the vessel keeps the original (possibly default-Blue) materials even
-            // though Player.Domain has switched.
+            // ShipHelper.SetShipProperties was already called once during
+            // VesselController.Initialize (using whatever domain was set at that point).
+            // Re-run it now so the ship material, skimmer material, AOE materials, and
+            // silhouette prefab references all match the menu domain.
+            //
+            // Critically, SetShipProperties only updates the ShipMaterial *reference*
+            // on VesselStatus. The actual mesh paint happens in
+            // VesselCustomization.Initialize (which is one-shot). RefreshShipMaterial()
+            // re-paints the mesh renderers — without it the vessel mesh keeps its
+            // original material even though VesselStatus.ShipMaterial now points to
+            // the new domain's set. This was the root cause of the squirrel still
+            // rendering Blue even after the trail prisms switched to Jade.
             if (p.Vessel != null && _gameData != null && _gameData.ThemeManagerData != null)
+            {
                 ShipHelper.SetShipProperties(_gameData.ThemeManagerData, p.Vessel);
+                p.Vessel.VesselStatus?.Customization?.RefreshShipMaterial();
+            }
         }
 
         // ── State Machine ───────────────────────────────────────────────

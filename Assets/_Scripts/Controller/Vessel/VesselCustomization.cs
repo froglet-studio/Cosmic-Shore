@@ -30,6 +30,20 @@ namespace CosmicShore.Gameplay
             ApplyShipMaterial(this.vesselStatus.ShipMaterial);
         }
 
+        /// <summary>
+        /// Re-applies the current <see cref="IVesselStatus.ShipMaterial"/> to the
+        /// ship geometry mesh renderers. Use this when something downstream changes
+        /// the vessel's domain (and thus material reference) AFTER
+        /// <see cref="Initialize"/> has already painted the mesh — e.g., the menu
+        /// autopilot's domain swap. Without this, the mesh keeps the original
+        /// material even though <c>vesselStatus.ShipMaterial</c> points to a new one.
+        /// </summary>
+        public void RefreshShipMaterial()
+        {
+            if (vesselStatus == null) return;
+            ApplyShipMaterial(vesselStatus.ShipMaterial);
+        }
+
         void ApplyShipMaterial(Material material) =>
             ShipHelper.ApplyShipMaterial(material, _shipGeometries);
 
