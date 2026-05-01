@@ -289,10 +289,26 @@ namespace CosmicShore.Gameplay
             // clients with non-zero local fields. The RPC also pushes the
             // authoritative Domain + Name so the client's RoundStats local fields
             // align even when n_Domain / n_Name replication is a no-op.
+            //
+            // NetDomain is owner-writable, so the server's view of a remote client's
+            // NetDomain can be Domains.Unassigned (the C# default(T)) when the client
+            // never picked a team or when initial-sync hasn't propagated by this
+            // point. Fall back to Jade so the score card always renders a valid team
+            // color (Color.white otherwise — there is no Unassigned entry in the HUD
+            // inspector palette).
             if (IsServer)
             {
+                var domain = NetDomain.Value;
+                if (domain == Domains.Unassigned || domain == Domains.None)
+                    domain = Domains.Jade;
+
+                // Force-write through the server-write n_Domain so all clients receive
+                // the corrected value even if NetDomain itself stays at Unassigned.
+                if (RoundStats is RoundStats rs && rs.IsSpawned)
+                    rs.Domain = domain;
+
                 ResetStatsLocal_ClientRpc(
-                    NetDomain.Value,
+                    domain,
                     new Unity.Collections.FixedString64Bytes(NetName.Value.ToString()));
             }
 

@@ -226,10 +226,18 @@ namespace CosmicShore.Data
                 _domainLocal = value;
                 if (IsSpawned && IsServer) n_Domain.Value = value;
 
-                // Server-side and non-networked: raise immediately. The client side
-                // raises from n_Domain.OnValueChanged so it fires after replication
-                // (skipping the duplicate raise here when IsSpawned).
-                if (!IsSpawned && changed)
+                // Raise OnDomainChanged on any local write that actually changed the
+                // value. The server side typically also gets a duplicate raise from
+                // n_Domain.OnValueChanged when its own write replicates back, but
+                // OnValueChanged only fires on actual value changes — so a same-value
+                // write on the server, or a forced server-side correction (see
+                // Player.PrepareForNewScene), would otherwise miss the event.
+                // Non-server clients also need this path: ResetStatsLocal_ClientRpc
+                // writes the property locally without touching n_Domain, so the
+                // OnValueChanged path doesn't fire either; without this raise, the
+                // HUD card subscribed to OnDomainChanged would not refresh its
+                // team color when the RPC fixes a stale local domain.
+                if (changed)
                     RaiseSpecific(OnDomainChanged);
             }
         }
