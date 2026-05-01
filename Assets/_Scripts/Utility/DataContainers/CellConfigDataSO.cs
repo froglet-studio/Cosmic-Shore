@@ -17,10 +17,15 @@ namespace CosmicShore.Utility
         public GameObject NucleusPrefab;
         public SnowChanger CytoplasmPrefab;
         
-        [Header("Mechanical Properties")] 
+        [Header("Mechanical Properties")]
         public List<CellModifier> CellModifiers = new();
-        
-        [Header("Spawn Profiles")] 
+
+        [Header("Spawn Profiles")]
         public SpawnProfileSO SpawnProfile;
+
+        [Header("Phase Thresholds")]
+        [Tooltip("Per-biome up/down prism-count thresholds that drive phase transitions. "
+               + "The gap between Up and Down for each phase is the hysteresis band.")]
+        public CellPhaseThresholds PhaseThresholds = CellPhaseThresholds.Default;
     }
 }

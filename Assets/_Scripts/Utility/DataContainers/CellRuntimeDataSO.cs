@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -21,6 +22,7 @@ namespace CosmicShore.Utility
         [SerializeField] public ScriptableEventNoParam OnResetForReplay;
         [SerializeField] public ScriptableEventNoParam OnCrystalSpawned;
         [SerializeField] public ScriptableEventNoParam OnCellItemsUpdated;
+        [SerializeField] public ScriptableEventCellPhase OnPhaseChanged;
         
         [Header("Run Time References")]
         public CellConfigDataSO Config; // <- your "CellConfigData"
@@ -139,13 +141,42 @@ namespace CosmicShore.Utility
                 CellStatsList = new Dictionary<int, CellStats>();
 
             if (!CellStatsList.ContainsKey(cellId))
-                CellStatsList[cellId] = new CellStats { LifeFormsInCell = 0 };
+                CellStatsList[cellId] = new CellStats
+                {
+                    LifeFormsInCell = 0,
+                    LiveBlockCount = 0,
+                    Phase = CellPhase.Sprout,
+                    DominantDomain = Domains.None,
+                };
         }
 
         public int GetLifeFormsInCellSafe(int cellId)
         {
             EnsureCellStats(cellId);
             return CellStatsList[cellId].LifeFormsInCell;
+        }
+
+        /// <summary>
+        /// Server-side write of phase + dominant domain + live block count for the
+        /// addressed cell. Raises <see cref="OnPhaseChanged"/> when the phase actually
+        /// transitions so consumers can react. The server calls this directly via
+        /// <see cref="Cell"/>; clients route through <c>CellNetworkSync.OnValueChanged</c>
+        /// so the same final state is observed everywhere.
+        /// </summary>
+        public void WriteCellRuntimeStats(int cellId, int liveBlockCount, CellPhase phase, Domains dominantDomain)
+        {
+            EnsureCellStats(cellId);
+
+            var stats = CellStatsList[cellId];
+            var previousPhase = stats.Phase;
+
+            stats.LiveBlockCount = liveBlockCount;
+            stats.Phase = phase;
+            stats.DominantDomain = dominantDomain;
+            CellStatsList[cellId] = stats;
+
+            if (phase != previousPhase)
+                OnPhaseChanged.Raise(phase);
         }
 
         /// <summary>
@@ -172,6 +203,7 @@ namespace CosmicShore.Utility
             }
 
             CellItems?.Clear();
+            CellStatsList?.Clear();
 
             CSDebug.Log("<color=green>[CellRuntimeDataSO] Runtime data reset complete</color>");
         }

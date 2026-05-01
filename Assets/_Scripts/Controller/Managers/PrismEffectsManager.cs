@@ -124,8 +124,9 @@ namespace CosmicShore.Gameplay
             if (activeImplosions.Count > 0) ProcessImplosions(dt);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            // Safety audit: detect explosions with enabled renderers that aren't actively managed.
-            // This catches "zombie" objects that escaped the pool lifecycle.
+            // Safety audit: detect explosion / implosion VFX with enabled renderers
+            // that aren't actively managed. Catches "zombie" pool instances whose
+            // OnReturnToPool callback chain failed to deactivate the GameObject.
             if (Time.frameCount % 60 == 0) // Check once per ~second at 60fps
             {
                 var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
@@ -133,6 +134,41 @@ namespace CosmicShore.Gameplay
                 {
                     if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
                         exp.Renderer.enabled = false;
+                }
+
+                var allImplosions = FindObjectsByType<PrismImplosion>(FindObjectsSortMode.None);
+                int activeGameObjects = 0;
+                int zombies = 0;
+                int healthy = 0;
+                foreach (var imp in allImplosions)
+                {
+                    if (!imp) continue;
+                    bool goActive = imp.gameObject.activeSelf;
+                    if (!goActive) continue;
+
+                    activeGameObjects++;
+                    if (!imp.IsActive)
+                    {
+                        zombies++;
+                        // Active GameObject + IsActive=false = orphaned by the pool
+                        // callback chain. Force-deactivate immediately rather than
+                        // waiting 4s for the per-instance watchdog.
+                        imp.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        healthy++;
+                    }
+                }
+
+                // Periodic stats: lets us distinguish "many legitimate implosions
+                // playing at once" (expected when the squirrel circles the crystal
+                // and fauna swarm-eat its trail) from "leak accumulating zombies".
+                // Only log when count is interesting (>0 zombies or >32 healthy)
+                // so the console isn't spammy on quiet scenes.
+                if (zombies > 0 || activeGameObjects > 32)
+                {
+                    Debug.Log($"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies} (manager-tracked={activeImplosions.Count})");
                 }
             }
 #endif
