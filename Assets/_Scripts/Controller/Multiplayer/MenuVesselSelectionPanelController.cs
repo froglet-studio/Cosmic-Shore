@@ -29,7 +29,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] VesselSelectionPanelUI ui;
         [SerializeField] MenuServerPlayerVesselInitializer serverInitializer;
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
-        [SerializeField] TeamSelectionPanel teamSelectionPanel;
+        [UnityEngine.Serialization.FormerlySerializedAs("teamSelectionPanel")]
+        [SerializeField] DomainSelectionPanel domainSelectionPanel;
 
         [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
@@ -61,16 +62,16 @@ namespace CosmicShore.Gameplay
             _cts = new CancellationTokenSource();
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised += OnMenuStateTransitionStart;
-            if (teamSelectionPanel)
-                teamSelectionPanel.OnTeamSelected += OnTeamSelected;
+            if (domainSelectionPanel)
+                domainSelectionPanel.OnDomainSelected += OnDomainSelected;
         }
 
         void OnDisable()
         {
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised -= OnMenuStateTransitionStart;
-            if (teamSelectionPanel)
-                teamSelectionPanel.OnTeamSelected -= OnTeamSelected;
+            if (domainSelectionPanel)
+                domainSelectionPanel.OnDomainSelected -= OnDomainSelected;
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
@@ -97,9 +98,9 @@ namespace CosmicShore.Gameplay
             DetermineCurrentSelection();
             EnsureFallbackSelection();
 
-            // Sync team panel to player's current domain
-            if (teamSelectionPanel && Player is Player player)
-                teamSelectionPanel.SetSelection(player.NetDomain.Value);
+            // Sync domain panel to player's current domain
+            if (domainSelectionPanel && Player is Player player)
+                domainSelectionPanel.SetSelection(player.NetDomain.Value);
 
             ui.Show();
         }
@@ -138,13 +139,13 @@ namespace CosmicShore.Gameplay
         public void OnCloseButtonClicked() => CloseAndRestoreFreestyle();
 
         // ---------------------------------------------------------
-        // TEAM SELECTION
+        // DOMAIN SELECTION
         // ---------------------------------------------------------
-        void OnTeamSelected(Domains domain)
+        void OnDomainSelected(Domains domain)
         {
             if (Player is not Player player) return;
             if (!player.IsOwner) return;
-            player.NetDomain.Value = domain;
+            player.RequestSetDomain_ServerRpc(domain);
         }
 
         // ---------------------------------------------------------

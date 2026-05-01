@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
                 : PlayerDataService.Instance;
 
         public NetworkVariable<VesselClassType> NetDefaultVesselType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        public NetworkVariable<Domains> NetDomain = new(Domains.Jade, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<Domains> NetDomain = new(Domains.Jade, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<ulong> NetVesselId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -43,6 +43,28 @@ namespace CosmicShore.Gameplay
         public void SetDomain(Domains newDomain)
         {
             Domain = newDomain;
+        }
+
+        /// <summary>
+        /// Owner-initiated request to change this player's domain.
+        /// NetDomain is server-write, so clients route their selections through this RPC.
+        /// The server validates the requested domain is in <see cref="GameDataSO.ActiveDomains"/>
+        /// (rejects None, Unassigned, Blue, garbage values) before writing.
+        /// </summary>
+        [ServerRpc] // RequireOwnership = true is the default — only the player's owner may request
+        public void RequestSetDomain_ServerRpc(Domains domain)
+        {
+            bool valid = false;
+            foreach (var d in GameDataSO.ActiveDomains)
+            {
+                if (d == domain) { valid = true; break; }
+            }
+            if (!valid)
+            {
+                Debug.LogWarning($"[Player] RequestSetDomain_ServerRpc rejected invalid domain {domain} for {NetName.Value}");
+                return;
+            }
+            NetDomain.Value = domain;
         }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }

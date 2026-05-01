@@ -7,6 +7,7 @@ using Obvious.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
+using UnityEngine.Serialization;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using IPlayer = CosmicShore.Gameplay.IPlayer;
@@ -71,13 +72,14 @@ namespace CosmicShore.Utility
         public int RequestedAIBackfillCount;
 
         /// <summary>
-        /// Number of teams configured by the host (1-3).
-        /// 1 = all players on same team, 2 = Jade + Ruby, 3 = Jade + Ruby + Gold.
-        /// Used by BuildTeamCounts() to limit available teams and by AI spawning
-        /// to assign AI to the correct teams.
+        /// Number of domains configured by the host (1-3).
+        /// 1 = all players on same domain, 2 = Jade + Ruby, 3 = Jade + Ruby + Gold.
+        /// Used by BuildDomainCounts() to limit available domains and by AI spawning
+        /// to assign AI to the correct domains.
         /// Default is 3 for backward compatibility.
         /// </summary>
-        public int RequestedTeamCount = 3;
+        [FormerlySerializedAs("RequestedTeamCount")]
+        public int RequestedDomainCount = 3;
 
         /// <summary>
         /// Whether the current game uses golf-style scoring (lower = better).
@@ -259,7 +261,7 @@ namespace CosmicShore.Utility
             WinnerName = "";
             WinnerDomain = Domains.Unassigned;
             CrystalTargetCount = 0;
-            // Note: RequestedAIBackfillCount and RequestedTeamCount are intentionally
+            // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
             // in SceneLoader.LoadSceneAsync() so the game scene can read them.
@@ -655,25 +657,25 @@ namespace CosmicShore.Utility
         }
         
         // -----------------------------------------------------------------------------------------
-        // Team Balancing
+        // Domain Balancing
 
         /// <summary>
-        /// All available team domains in order. Index 0 = 1st team, etc.
+        /// All available playable domains in order. Index 0 = 1st domain, etc.
         /// </summary>
-        public static readonly Domains[] TeamDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+        public static readonly Domains[] ActiveDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
         /// <summary>
-        /// Counts how many players are on each team, limited to RequestedTeamCount.
-        /// Used by AI spawning to assign AI to the team with the fewest players.
-        /// Players on domains outside the active team set are counted on the first team.
+        /// Counts how many players are on each domain, limited to RequestedDomainCount.
+        /// Used by AI spawning to assign AI to the domain with the fewest players.
+        /// Players on domains outside the active domain set are counted on the first domain.
         /// </summary>
-        public Dictionary<Domains, int> BuildTeamCounts()
+        public Dictionary<Domains, int> BuildDomainCounts()
         {
-            int teamCount = Mathf.Clamp(RequestedTeamCount, 1, TeamDomains.Length);
+            int domainCount = Mathf.Clamp(RequestedDomainCount, 1, ActiveDomains.Length);
             var counts = new Dictionary<Domains, int>();
 
-            for (int i = 0; i < teamCount; i++)
-                counts[TeamDomains[i]] = 0;
+            for (int i = 0; i < domainCount; i++)
+                counts[ActiveDomains[i]] = 0;
 
             foreach (var p in Players)
             {
@@ -686,8 +688,8 @@ namespace CosmicShore.Utility
                 }
                 else
                 {
-                    // Player has a domain outside the active set — count on first team
-                    counts[TeamDomains[0]]++;
+                    // Player has a domain outside the active set — count on first domain
+                    counts[ActiveDomains[0]]++;
                 }
             }
 

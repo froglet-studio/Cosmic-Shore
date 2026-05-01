@@ -6,13 +6,14 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Three-button team selector (Jade, Ruby, Gold).
-    /// Each owner picks their own team. The selected domain is written
-    /// to the local player's NetDomain NetworkVariable (owner-writable).
+    /// Three-button domain selector (Jade, Ruby, Gold).
+    /// Each owner picks their own domain. The selection is forwarded via
+    /// <see cref="OnDomainSelected"/> and applied to the player's NetDomain
+    /// NetworkVariable through the server (see Player.RequestSetDomain_ServerRpc).
     /// </summary>
-    public class TeamSelectionPanel : MonoBehaviour
+    public class DomainSelectionPanel : MonoBehaviour
     {
-        [Header("Team Buttons")]
+        [Header("Domain Buttons")]
         [SerializeField] Button jadeButton;
         [SerializeField] Button rubyButton;
         [SerializeField] Button goldButton;
@@ -27,7 +28,7 @@ namespace CosmicShore.UI
 
         public Domains SelectedDomain => _selectedDomain;
 
-        public event Action<Domains> OnTeamSelected;
+        public event Action<Domains> OnDomainSelected;
 
         void OnEnable()
         {
@@ -57,7 +58,7 @@ namespace CosmicShore.UI
         {
             _selectedDomain = domain;
             RefreshIndicators();
-            OnTeamSelected?.Invoke(domain);
+            OnDomainSelected?.Invoke(domain);
         }
 
         void RefreshIndicators()
