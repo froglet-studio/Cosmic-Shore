@@ -473,6 +473,33 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Server-only entry point that wipes RoundStats one more time right at
+        /// turn start, after the pre-game cinematic finished. Cinematic-time
+        /// vessel/crystal collisions get processed by the server's StatsManager
+        /// even though gameplay hasn't officially started; this leaves the score
+        /// cards (created at OnMiniGameTurnStarted) initialized with non-zero
+        /// values. Re-running Cleanup + the ResetStatsLocal_ClientRpc broadcast
+        /// here lets the cards read 0 at creation.
+        /// </summary>
+        public void ResetStatsForTurnStart()
+        {
+            if (!IsServer) return;
+            if (RoundStats is RoundStats rs && rs.IsSpawned)
+            {
+                rs.Cleanup();
+                // Preserve domain (server-write n_Domain) — it's the canonical
+                // value computed in PrepareForNewScene from NetServerDomain or
+                // DomainAssigner. Don't disturb it with a re-write.
+            }
+
+            // Broadcast the same Cleanup to all clients via the existing RPC so
+            // their _local fields and HUD subscribers are aligned at zero.
+            ResetStatsLocal_ClientRpc(
+                NetServerDomain.Value,
+                new Unity.Collections.FixedString64Bytes(NetName.Value.ToString()));
+        }
+
+        /// <summary>
         /// Called on every client (and host) to reset the local <see cref="RoundStats"/>
         /// fields when entering a new scene. RoundStats lives on a persistent Player
         /// NetworkObject (DestroyWithScene=false), so its local <c>_xxxLocal</c> fields
