@@ -318,8 +318,19 @@ namespace CosmicShore.Gameplay
             });
         }
 
+        // Idempotency guard for Damage/Consume. Multiple destruction sources can resolve
+        // against the same prism in a single frame: two fauna iterating cached
+        // OverlapSphere snapshots, AOE damage, and trail collisions all hit the same
+        // prism before the disabled collider drops out of the next physics tick. Without
+        // this gate, the second hit re-runs SetupDestruction (re-raising the destroyed
+        // event, bumping AOE registry state) and Implode/Explode spawns a duplicate VFX
+        // that has to play out its full duration in PrismEffectsManager — that's the
+        // accumulating "garbage" the user observes (fauna swarm-eat trail blocks → 64-128
+        // concurrent implosions). Once destroyed, hits become no-ops until Restore /
+        // ResetState clears the flag.
         public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
+            if (destroyed) return;
             if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
                 DeactivateShields();
             else
@@ -328,6 +339,7 @@ namespace CosmicShore.Gameplay
 
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false)
         {
+            if (destroyed) return;
             if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
                 DeactivateShields();
             else
