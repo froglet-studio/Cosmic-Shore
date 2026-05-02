@@ -71,7 +71,8 @@ namespace CosmicShore.Game
 
         protected Domains PickRandomDomain(Domains? excluded)
         {
-            var candidates = new List<Domains>(4) { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+            // Only Jade, Ruby, and Gold can control a cell and spawn fauna.
+            var candidates = new List<Domains>(3) { Domains.Jade, Domains.Ruby, Domains.Gold };
             if (excluded.HasValue) candidates.Remove(excluded.Value);
 
             return candidates.Count == 0

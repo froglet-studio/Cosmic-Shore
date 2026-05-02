@@ -103,9 +103,9 @@ public class LightFauna : Fauna
                 continue;
             }
 
-            // Handle blocks
+            // Handle blocks. Rabid fauna also consume their own domain's mass.
             Prism block = collider.GetComponent<Prism>();
-            if (block && block.Domain != domain && distance < consumeRadius)
+            if (block && distance < consumeRadius && (IsRabid || block.Domain != domain))
                 block.Consume(transform, domain, PLAYER_NAME, true);
         }
 

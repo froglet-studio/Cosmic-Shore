@@ -29,8 +29,13 @@ namespace CosmicShore.Game
         GameObject membrane;
 
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
+        public Dictionary<Domains, BlockCountDensityGrid> selfDensityGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
         readonly Dictionary<Domains, float> teamVolumes = new();
+        readonly Dictionary<Domains, int> prismCounts = new();
+
+        static readonly List<Cell> ActiveCells = new();
+        static readonly Domains[] FaunaDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
         readonly List<GameObject> spawnedLifeForms = new();
 
@@ -41,6 +46,8 @@ namespace CosmicShore.Game
 
         void OnEnable()
         {
+            if (!ActiveCells.Contains(this)) ActiveCells.Add(this);
+
             if (gameData != null)
                 gameData.OnInitializeGame += Initialize;
 
@@ -56,6 +63,8 @@ namespace CosmicShore.Game
 
         void OnDisable()
         {
+            ActiveCells.Remove(this);
+
             if (gameData != null)
                 gameData.OnInitializeGame -= Initialize;
 
@@ -168,10 +177,15 @@ namespace CosmicShore.Game
 
         void SetupDensityGrids()
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
             countGrids.Clear();
-            foreach (Domains t in teams)
+            selfDensityGrids.Clear();
+            prismCounts.Clear();
+            foreach (Domains t in FaunaDomains)
+            {
                 countGrids[t] = new BlockCountDensityGrid(t);
+                selfDensityGrids[t] = new BlockCountDensityGrid(t);
+                prismCounts[t] = 0;
+            }
         }
 
         void SpawnVisuals()
@@ -188,10 +202,8 @@ namespace CosmicShore.Game
 
         void ResetVolumes()
         {
-            teamVolumes[Domains.Jade] = 0;
-            teamVolumes[Domains.Ruby] = 0;
-            teamVolumes[Domains.Gold] = 0;
-            teamVolumes[Domains.Blue] = 0;
+            foreach (Domains t in FaunaDomains)
+                teamVolumes[t] = 0;
         }
 
         void ApplyModifiers()
@@ -235,19 +247,67 @@ namespace CosmicShore.Game
 
         public void AddBlock(Prism block)
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            foreach (var t in teams)
-                if (t != block.Domain) countGrids[t].AddBlock(block);
+            if (!block) return;
+
+            foreach (var t in FaunaDomains)
+                if (t != block.Domain && countGrids.TryGetValue(t, out var hostileGrid))
+                    hostileGrid.AddBlock(block);
+
+            if (selfDensityGrids.TryGetValue(block.Domain, out var selfGrid))
+                selfGrid.AddBlock(block);
+
+            if (prismCounts.ContainsKey(block.Domain))
+                prismCounts[block.Domain]++;
         }
 
         public void RemoveBlock(Prism block)
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            foreach (Domains t in teams)
-                if (t != block.Domain) countGrids[t].RemoveBlock(block);
+            if (!block) return;
+
+            foreach (Domains t in FaunaDomains)
+                if (t != block.Domain && countGrids.TryGetValue(t, out var hostileGrid))
+                    hostileGrid.RemoveBlock(block);
+
+            if (selfDensityGrids.TryGetValue(block.Domain, out var selfGrid))
+                selfGrid.RemoveBlock(block);
+
+            if (prismCounts.ContainsKey(block.Domain))
+                prismCounts[block.Domain] = Mathf.Max(0, prismCounts[block.Domain] - 1);
         }
 
-        public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();
+        public Vector3 GetExplosionTarget(Domains domain) =>
+            countGrids.TryGetValue(domain, out var grid) ? grid.FindDensestRegion() : transform.position;
+
+        // Densest cluster of own-domain prisms - used by rabid fauna to seek their own mass.
+        public Vector3 GetSelfDomainTarget(Domains domain) =>
+            selfDensityGrids.TryGetValue(domain, out var grid) ? grid.FindDensestRegion() : transform.position;
+
+        public int GetPrismCount(Domains domain) =>
+            prismCounts.TryGetValue(domain, out var count) ? count : 0;
+
+        public static Cell FindContainingCell(Vector3 position)
+        {
+            for (int i = 0; i < ActiveCells.Count; i++)
+            {
+                var cell = ActiveCells[i];
+                if (cell && cell.ContainsPosition(position)) return cell;
+            }
+            return null;
+        }
+
+        public static void RegisterPrism(Prism prism)
+        {
+            if (!prism) return;
+            var cell = FindContainingCell(prism.transform.position);
+            if (cell) cell.AddBlock(prism);
+        }
+
+        public static void UnregisterPrism(Prism prism)
+        {
+            if (!prism) return;
+            var cell = FindContainingCell(prism.transform.position);
+            if (cell) cell.RemoveBlock(prism);
+        }
 
         public bool ContainsPosition(Vector3 position)
         {
@@ -270,8 +330,7 @@ namespace CosmicShore.Game
         internal Domains GetHostileDomainToLocalLegacy()
         {
             var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
-            var candidates = new[] { Domains.Ruby, Domains.Gold, Domains.Blue, Domains.Jade };
-            return candidates.First(d => d != local);
+            return FaunaDomains.First(d => d != local);
         }
     }
 }

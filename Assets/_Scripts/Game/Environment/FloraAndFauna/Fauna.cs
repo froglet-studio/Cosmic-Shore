@@ -10,14 +10,20 @@ namespace CosmicShore
     {
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
-        
+
         [SerializeField] protected CellRuntimeDataSO cellData;
         [FormerlySerializedAs("Team")] public Domains domain;
         [SerializeField] float goalUpdateInterval = 5f;
+
+        [Header("Rabid State")]
+        [Tooltip("Own-domain prism count above which this fauna goes rabid and consumes same-domain mass.")]
+        [SerializeField] int rabidPrismThreshold = 50;
+
         public Vector3 Goal;
-        //public List<float> Weights;
+        public bool IsRabid { get; private set; }
+
         protected Cell cell => cellData.Cell;
-        
+
         protected virtual void Start()
         {
             if (domain == Domains.Unassigned)
@@ -51,9 +57,13 @@ namespace CosmicShore
             while (true)
             {
                 yield return new WaitForSeconds(goalUpdateInterval);
-                Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
-                Goal = highDensityPosition;
-                //CalculateTeamWeights();
+
+                if (!cell) continue;
+
+                IsRabid = cell.GetPrismCount(domain) > rabidPrismThreshold;
+
+                // Rabid fauna seek dense clusters of their own domain's mass; otherwise hunt hostile prisms.
+                Goal = IsRabid ? cell.GetSelfDomainTarget(domain) : cell.GetExplosionTarget(domain);
             }
         }
 
