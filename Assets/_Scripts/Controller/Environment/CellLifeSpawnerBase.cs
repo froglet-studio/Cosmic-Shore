@@ -73,7 +73,15 @@ namespace CosmicShore.Gameplay
 
         protected Domains PickRandomDomain(Domains? excluded)
         {
-            var candidates = new List<Domains>(4) { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+            // Only Jade, Ruby, and Gold can control cells — Blue is reserved for
+            // environmental decoration (gyroids, spawnable shapes, walls) and is
+            // explicitly excluded from player assignment by DomainAssigner. Spawning
+            // Blue flora here was the root cause of Blue fauna appearing in
+            // Menu_Main: random Blue flora produced Blue prisms, Blue prism count
+            // overtook the player's domain in domainBlockCounts, Cell.DominantDomain
+            // returned Blue, and IntensityWiseLifeSpawner.TrySpawnFauna read
+            // host.ControllingDomain → Blue.
+            var candidates = new List<Domains>(3) { Domains.Jade, Domains.Ruby, Domains.Gold };
             if (excluded.HasValue) candidates.Remove(excluded.Value);
 
             return candidates.Count == 0

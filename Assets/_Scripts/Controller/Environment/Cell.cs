@@ -75,8 +75,13 @@ namespace CosmicShore.Gameplay
         /// Live leader by per-domain prism count. Recomputed on demand so the answer
         /// always reflects the current Add/RemoveBlock-driven counts. Returns
         /// <see cref="Domains.None"/> when the cell has no prisms tracked yet.
-        /// Ties resolve in fixed order (Jade > Ruby > Gold > Blue) so two clients with
+        /// Ties resolve in fixed order (Jade > Ruby > Gold) so two clients with
         /// the same per-domain counts pick the same leader.
+        /// Only player-controllable domains are eligible — Blue is reserved for
+        /// environmental decoration (gyroids, spawnable shapes) and is excluded
+        /// from cell control even when Blue prisms exist in the cell. Without this
+        /// filter, environmental Blue prisms would gradually elect Blue as the
+        /// dominant domain and trigger Blue fauna spawns in Menu_Main.
         /// </summary>
         public Domains DominantDomain
         {
@@ -84,7 +89,7 @@ namespace CosmicShore.Gameplay
             {
                 Domains leader = Domains.None;
                 int leaderCount = 0;
-                Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+                Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (var d in order)
                 {
                     if (!domainBlockCounts.TryGetValue(d, out int c)) continue;
@@ -141,32 +146,37 @@ namespace CosmicShore.Gameplay
         /// <see cref="DominantDomain"/> (per-domain prism count leader), then falls
         /// back to gameData's controlling team by remaining volume, then to the local
         /// player's domain (useful in Menu_Main where there is no scored controlling
-        /// team), then to Jade as a last resort. Never returns None or Unassigned —
-        /// callers can use it directly without further branching.
+        /// team), then to Jade as a last resort. Never returns None, Unassigned, or
+        /// Blue — callers can use it directly without further branching.
+        /// Blue is reserved for environmental decoration and is never a valid
+        /// controlling domain regardless of which fallback layer answers.
         /// </summary>
         public Domains ControllingDomain
         {
             get
             {
                 var dominant = DominantDomain;
-                if (dominant != Domains.None && dominant != Domains.Unassigned)
+                if (IsValidControllingDomain(dominant))
                     return dominant;
 
                 if (gameData != null)
                 {
                     var top = gameData.GetControllingTeamStatsBasedOnVolumeRemaining();
-                    if (top.Team != Domains.None && top.Team != Domains.Unassigned && top.Volume > 0f)
+                    if (IsValidControllingDomain(top.Team) && top.Volume > 0f)
                         return top.Team;
 
                     var local = gameData.LocalRoundStats?.Domain
                                 ?? gameData.LocalPlayer?.Domain
                                 ?? Domains.Unassigned;
-                    if (local != Domains.None && local != Domains.Unassigned)
+                    if (IsValidControllingDomain(local))
                         return local;
                 }
                 return Domains.Jade;
             }
         }
+
+        static bool IsValidControllingDomain(Domains d) =>
+            d == Domains.Jade || d == Domains.Ruby || d == Domains.Gold;
 
         /// <summary>
         /// Sole entry point for phase mutation. Updates the local field and the
@@ -399,7 +409,12 @@ namespace CosmicShore.Gameplay
 
         void SetupDensityGrids()
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+            // Only the player-controllable domains get per-domain "opposing mass"
+            // grids — Blue is environmental decoration only and never spawns fauna,
+            // so a Blue grid would never be queried. (Cell.AddBlock still increments
+            // domainBlockCounts[Blue] for environmental Blue prisms, but Blue is
+            // filtered out of DominantDomain so it can't elect Blue control.)
+            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
             foreach (Domains t in teams)
                 countGrids[t] = new BlockCountDensityGrid(t);
@@ -594,7 +609,7 @@ namespace CosmicShore.Gameplay
         internal Domains GetHostileDomainToLocalLegacy()
         {
             var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
-            var candidates = new[] { Domains.Ruby, Domains.Gold, Domains.Blue, Domains.Jade };
+            var candidates = new[] { Domains.Ruby, Domains.Gold, Domains.Jade };
             return candidates.First(d => d != local);
         }
     }

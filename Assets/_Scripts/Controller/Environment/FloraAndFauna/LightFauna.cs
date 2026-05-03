@@ -161,6 +161,15 @@ namespace CosmicShore.Gameplay
             // still push us away so we don't clip through enemy mass.
             bool dropFriendlyAvoidance = phase >= CellPhase.Rabid;
 
+            // Rabid fauna also consume same-domain mass — the cell has crossed the
+            // overload threshold (default 15,000 prisms) and needs any available
+            // mouth to bring it back down. Without this, a Jade-only cell can climb
+            // arbitrarily high without ever triggering consumption: rabid Jade fauna
+            // would head to the densest Jade region (via GetDensestRegionAnyDomain)
+            // but the Domain != domain check would silently skip every Jade prism
+            // they reach, leaving them to circle the centroid forever.
+            bool consumeAnyDomain = phase >= CellPhase.Rabid;
+
             var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
 
             foreach (var collider in nearbyColliders)
@@ -194,7 +203,7 @@ namespace CosmicShore.Gameplay
                     if (distance < separationRadius && !(dropFriendlyAvoidance && sameDomain))
                         separation += diff.normalized / distance;
 
-                    if (distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    if (distance < consumeRadius && otherHealthBlock.LifeForm && (!sameDomain || consumeAnyDomain))
                         otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
 
                     continue;
@@ -202,7 +211,7 @@ namespace CosmicShore.Gameplay
 
                 // Handle blocks
                 Prism block = collider.GetComponent<Prism>();
-                if (block && block.Domain != domain && distance < consumeRadius)
+                if (block && distance < consumeRadius && (block.Domain != domain || consumeAnyDomain))
                     block.Consume(transform, domain, PLAYER_NAME, true);
             }
 
