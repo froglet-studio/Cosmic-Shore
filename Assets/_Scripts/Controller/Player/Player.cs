@@ -37,6 +37,14 @@ namespace CosmicShore.Gameplay
         public Domains Domain { get; private set; } = Domains.Jade;
 
         /// <summary>
+        /// Theme data stashed by <see cref="ClientPlayerVesselInitializer"/> at vessel
+        /// spawn/swap. Used by <see cref="OnNetDomainChanged"/> to repaint the vessel
+        /// when domain replicates after spawn (modal Blue reset, server NormalizeUnassignedHumans,
+        /// shape-mode SetDomain, etc).
+        /// </summary>
+        internal ThemeManagerDataContainerSO _vesselThemeManagerData;
+
+        /// <summary>
         /// Changes the player's domain at runtime. Used by shape mode to match
         /// the player's prism color to the collided shape's domain.
         /// </summary>
@@ -46,25 +54,54 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Server-only: clears this player's domain pick by resetting NetDomain to
+        /// the Blue sentinel. Called by <see cref="ArcadeConfigSyncManager"/> when
+        /// the host opens the configure modal so the per-domain avatar strip starts
+        /// empty for everyone.
+        /// </summary>
+        internal void ServerClearDomainPick()
+        {
+            if (IsServer)
+                NetDomain.Value = Domains.Blue;
+        }
+
+        /// <summary>
         /// Owner-initiated request to change this player's domain.
         /// NetDomain is server-write, so clients route their selections through this RPC.
-        /// The server validates the requested domain is in <see cref="GameDataSO.ActiveDomains"/>
-        /// (rejects None, Unassigned, Blue, garbage values) before writing.
+        /// Accepts Blue (the "no pick / cleared" sentinel) or any active domain whose
+        /// index in <see cref="GameDataSO.ActiveDomains"/> is within the host's
+        /// <see cref="GameDataSO.RequestedDomainCount"/>. Out-of-range or garbage
+        /// domains are rejected.
         /// </summary>
         [ServerRpc] // RequireOwnership = true is the default — only the player's owner may request
         public void RequestSetDomain_ServerRpc(Domains domain)
         {
-            bool valid = false;
-            foreach (var d in GameDataSO.ActiveDomains)
+            // Blue is the explicit "cleared / random" pick — always allowed.
+            if (domain == Domains.Blue)
             {
-                if (d == domain) { valid = true; break; }
-            }
-            if (!valid)
-            {
-                Debug.LogWarning($"[Player] RequestSetDomain_ServerRpc rejected invalid domain {domain} for {NetName.Value}");
+                NetDomain.Value = Domains.Blue;
                 return;
             }
-            NetDomain.Value = domain;
+
+            // Otherwise the domain must be in the active set AND within the host's
+            // currently-allowed range (RequestedDomainCount).
+            int allowed = Mathf.Clamp(
+                gameData != null ? gameData.RequestedDomainCount : GameDataSO.ActiveDomains.Length,
+                1,
+                GameDataSO.ActiveDomains.Length);
+
+            for (int i = 0; i < allowed; i++)
+            {
+                if (GameDataSO.ActiveDomains[i] == domain)
+                {
+                    NetDomain.Value = domain;
+                    return;
+                }
+            }
+
+            Debug.LogWarning(
+                $"[Player] RequestSetDomain_ServerRpc rejected out-of-range domain {domain} " +
+                $"for {NetName.Value} (allowed={allowed}/{GameDataSO.ActiveDomains.Length})");
         }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
@@ -255,6 +292,9 @@ namespace CosmicShore.Gameplay
 
             if (playerDataService != null)
                 playerDataService.OnProfileChanged -= HandleProfileLoadedAfterSpawn;
+
+            // Drop the theme reference so the next spawn re-stashes a fresh one.
+            _vesselThemeManagerData = null;
         }
 
         /// <summary>
@@ -417,8 +457,23 @@ namespace CosmicShore.Gameplay
         void ToggleInputIdle(bool toggle) =>
             InputController.SetIdle(toggle);
         
-        void OnNetDomainChanged(Domains previousValue, Domains newValue) =>
+        void OnNetDomainChanged(Domains previousValue, Domains newValue)
+        {
             Domain = newValue;
+
+            // (a) Server keeps RoundStats authoritative; clients receive the change
+            // via RoundStats.n_Domain.OnValueChanged — so writing here on the server
+            // alone keeps every consumer of RoundStats.Domain (scoreboards, end-game
+            // controllers, GameFeedAPI colorers) live across modal re-picks,
+            // NormalizeUnassignedHumans rerolls, and shape-mode SetDomain calls.
+            if (IsServer && _roundStats)
+                _roundStats.Domain = newValue;
+
+            // (b) Repaint the vessel materials. Skipped pre-spawn (no themeManagerData
+            // stashed yet) and on Players whose vessel is null between scene transitions.
+            if (Vessel != null && _vesselThemeManagerData != null)
+                ShipHelper.SetShipProperties(_vesselThemeManagerData, Vessel);
+        }
         
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {

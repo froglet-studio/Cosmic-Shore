@@ -241,6 +241,10 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
             }
+
+            // Drop NetDomain / NetAvatarId subscriptions if the modal is being
+            // disabled while still open (scene transition, OnDestroy, etc).
+            UnsubscribeFromAllPlayers();
         }
 
         #endregion
@@ -281,6 +285,11 @@ namespace CosmicShore.UI
                     selectedGame.MaxPlayersAllowed,
                     CurrentPartyHumanCount);
             }
+
+            // Watch every player's NetDomain + NetAvatarId so the per-domain avatar
+            // strip repaints reactively as picks come in. Cleared on modal close.
+            SubscribeToAllPlayers();
+            RefreshDomainButtons();
         }
 
         #endregion
@@ -643,7 +652,7 @@ namespace CosmicShore.UI
         void InitializeDomainSelection()
         {
             if (config != null)
-                config.SelectedDomain = Domains.Unassigned;
+                config.SelectedDomain = Domains.Blue;
             RefreshDomainButtons();
         }
 
@@ -661,20 +670,148 @@ namespace CosmicShore.UI
             RaiseConfigChanged();
         }
 
+        // Players currently watched by RefreshDomainButtons. Only valid between modal
+        // open and modal close; cleared on close. Each entry has live OnValueChanged
+        // subscriptions on NetDomain + NetAvatarId so the avatar strip repaints
+        // within ~1 frame of any replicated change.
+        readonly List<Player> _watchedPlayers = new();
+        bool _watchingPlayerSpawnEvent;
+
+        void SubscribeToAllPlayers()
+        {
+            if (gameData == null) return;
+            UnsubscribeFromAllPlayers();
+
+            foreach (var ip in gameData.Players)
+            {
+                if (ip is Player p && !p.NetIsAI.Value)
+                    HookPlayerForRefresh(p);
+            }
+
+            // New humans joining the party mid-modal still need their avatars to show
+            // up. Hook the spawn event so we can subscribe to their NetworkVariables
+            // as soon as their Player object replicates.
+            if (gameData.OnPlayerNetworkSpawnedUlong != null && !_watchingPlayerSpawnEvent)
+            {
+                gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerSpawnedDuringModal;
+                _watchingPlayerSpawnEvent = true;
+            }
+        }
+
+        void UnsubscribeFromAllPlayers()
+        {
+            foreach (var p in _watchedPlayers)
+            {
+                if (p == null) continue;
+                p.NetDomain.OnValueChanged -= OnWatchedPlayerDomainChanged;
+                p.NetAvatarId.OnValueChanged -= OnWatchedPlayerAvatarChanged;
+            }
+            _watchedPlayers.Clear();
+
+            if (_watchingPlayerSpawnEvent && gameData != null
+                && gameData.OnPlayerNetworkSpawnedUlong != null)
+            {
+                gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerSpawnedDuringModal;
+            }
+            _watchingPlayerSpawnEvent = false;
+        }
+
+        void HookPlayerForRefresh(Player p)
+        {
+            if (p == null || _watchedPlayers.Contains(p)) return;
+            p.NetDomain.OnValueChanged += OnWatchedPlayerDomainChanged;
+            p.NetAvatarId.OnValueChanged += OnWatchedPlayerAvatarChanged;
+            _watchedPlayers.Add(p);
+        }
+
+        void HandlePlayerSpawnedDuringModal(ulong ownerClientId)
+        {
+            // Resolve the new Player object and hook it. Late-replicated Players
+            // can also re-trigger this for a client that was already in gameData.Players,
+            // so HookPlayerForRefresh is dedup-safe.
+            if (gameData == null) return;
+            foreach (var ip in gameData.Players)
+            {
+                if (ip is Player p && p.OwnerClientId == ownerClientId && !p.NetIsAI.Value)
+                {
+                    HookPlayerForRefresh(p);
+                    break;
+                }
+            }
+            RefreshDomainButtons();
+        }
+
+        void OnWatchedPlayerDomainChanged(Domains _, Domains __) => RefreshDomainButtons();
+        void OnWatchedPlayerAvatarChanged(int _, int __) => RefreshDomainButtons();
+
         void RefreshDomainButtons()
         {
-            var selected = config ? config.SelectedDomain : Domains.Unassigned;
+            if (config == null || gameData == null) return;
 
-            Sprite avatarSprite = null;
+            var selected = config.SelectedDomain;
+            int allowed = Mathf.Clamp(config.DomainCount, 1, GameDataSO.ActiveDomains.Length);
+            ulong localId = NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL;
             var dataService = PlayerDataService.Instance;
-            if (dataService != null)
-                avatarSprite = dataService.GetAvatarSprite(dataService.CurrentProfile.avatarId);
+
+            // Group all human players by their NetDomain. The Blue tile (sentinel)
+            // shows everyone whose pick is currently cleared — explicitly clicked
+            // Blue OR never picked since the modal opened.
+            var byDomain = new Dictionary<Domains, List<(Sprite, bool)>>();
+            var unpicked = new List<(Sprite, bool)>();
+
+            // Defensive: Player.OnNetworkDespawn removes itself from gameData.Players,
+            // but a stale reference can leak in some edge cases (mid-disconnect).
+            for (int i = gameData.Players.Count - 1; i >= 0; i--)
+            {
+                if (gameData.Players[i] is not Player p2 || p2.NetworkObject == null)
+                    gameData.Players.RemoveAt(i);
+            }
+
+            foreach (var ip in gameData.Players)
+            {
+                if (ip is not Player p || p.NetIsAI.Value) continue;
+
+                Sprite sprite = dataService != null
+                    ? dataService.GetAvatarSprite(p.NetAvatarId.Value)
+                    : null;
+                bool isLocal = p.OwnerClientId == localId;
+                var entry = (sprite, isLocal);
+
+                var d = p.NetDomain.Value;
+                if (d == Domains.Blue)
+                {
+                    unpicked.Add(entry);
+                }
+                else
+                {
+                    if (!byDomain.TryGetValue(d, out var list))
+                    {
+                        list = new List<(Sprite, bool)>();
+                        byDomain[d] = list;
+                    }
+                    list.Add(entry);
+                }
+            }
 
             foreach (var item in domainInfoItems)
             {
                 if (!item) continue;
+
+                int idx = System.Array.IndexOf(GameDataSO.ActiveDomains, item.Domain);
+                bool inActive = idx >= 0 && idx < allowed;
+                bool isRandom = item.Domain == Domains.Blue;
+
+                item.gameObject.SetActive(inActive || isRandom);
+                if (!item.gameObject.activeSelf) continue;
+
                 item.SetSelected(item.Domain == selected);
-                item.SetAvatarSprite(avatarSprite);
+
+                if (isRandom)
+                    item.SetAvatars(unpicked);
+                else if (byDomain.TryGetValue(item.Domain, out var list))
+                    item.SetAvatars(list);
+                else
+                    item.SetAvatars(System.Array.Empty<(Sprite, bool)>());
             }
         }
 
@@ -1086,6 +1223,11 @@ namespace CosmicShore.UI
             // Clients skip the config screen (intensity/player count) and go
             // directly to vessel selection since only the host controls those.
             ShowGameDetailScreen();
+
+            // Same subscription pattern as the host path so clients see live
+            // avatar movement on the per-domain strip.
+            SubscribeToAllPlayers();
+            RefreshDomainButtons();
         }
 
         /// <summary>
@@ -1094,6 +1236,7 @@ namespace CosmicShore.UI
         void HandleConfigClosedOnClient()
         {
             _isClientMode = false;
+            UnsubscribeFromAllPlayers();
             ModalWindowOut();
         }
 
@@ -1134,6 +1277,10 @@ namespace CosmicShore.UI
             if (playerCountStepper)
                 playerCountStepper.SetValue(playerCount);
             RefreshPlayerCountStepper();
+
+            // Domain count may have shifted (host's domain stepper) — re-render the
+            // per-domain buttons so out-of-range tiles hide and avatars regroup.
+            RefreshDomainButtons();
         }
 
         /// <summary>

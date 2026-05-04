@@ -255,7 +255,7 @@ namespace CosmicShore.UI
                 return gameData.DomainStatsList[0].Domain;
             if (orderedStats is { Count: > 0 })
                 return orderedStats[0].Domain;
-            return Domains.Unassigned;
+            return Domains.Blue;
         }
 
         /// <summary>

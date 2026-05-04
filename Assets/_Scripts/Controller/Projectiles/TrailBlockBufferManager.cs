@@ -40,10 +40,11 @@ namespace CosmicShore.Gameplay
 
         private void InitializeTeamBuffers()
         {
-            // Initialize buffers for each team
+            // Initialize buffers for each real team. Blue is the "no team" sentinel
+            // and never has trail blocks of its own, so skip it.
             foreach (Domains team in System.Enum.GetValues(typeof(Domains)))
             {
-                if (team != Domains.Unassigned && team != Domains.None)
+                if (team != Domains.Blue)
                 {
                     teamBuffers[team] = new Queue<Prism>();
                     instantiateTimers[team] = 0f;

@@ -32,7 +32,7 @@ namespace CosmicShore.UI
         [SerializeField] private float shieldFlashDuration = 1f;
 
         private IVesselStatus _vesselStatus;
-        private Domains _lastSourceDomain = Domains.None;
+        private Domains _lastSourceDomain = Domains.Blue;
         private Tween _joustFlashTween;
         private Tween _shieldFlashTween;
 
@@ -120,7 +120,7 @@ namespace CosmicShore.UI
 
             // Persist source domain across decay frames so the stolen color holds
             Domains effectiveDomain = payload.SourceDomain;
-            if (effectiveDomain != Domains.None && effectiveDomain != Domains.Unassigned)
+            if (effectiveDomain != Domains.Blue)
             {
                 _lastSourceDomain = effectiveDomain;
             }
@@ -130,12 +130,11 @@ namespace CosmicShore.UI
             }
             else
             {
-                _lastSourceDomain = Domains.None;
+                _lastSourceDomain = Domains.Blue;
             }
 
             Color sourceColor = Color.white;
-            bool hasSourceDomain = effectiveDomain != Domains.None
-                                   && effectiveDomain != Domains.Unassigned;
+            bool hasSourceDomain = effectiveDomain != Domains.Blue;
             if (hasSourceDomain && domainColors != null)
                 sourceColor = domainColors.Get(effectiveDomain);
 

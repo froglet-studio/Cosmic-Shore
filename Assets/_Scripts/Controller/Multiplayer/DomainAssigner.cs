@@ -12,8 +12,9 @@ namespace CosmicShore.Gameplay
         private static List<Domains> availableDomains = new ();
 
         /// <summary>
-        /// Picks a unique random team from all Domains (excluding None, Unassigned, Blue).
-        /// If all are already assigned, logs an error and returns Domains.Unassigned.
+        /// Picks a unique random team from all Domains (excluding Blue, the
+        /// "no team / unassigned / neutral" sentinel). If all are already
+        /// assigned, logs an error and returns Domains.Blue.
         /// </summary>
         static Domains GetAvailableDomain()
         {
@@ -41,7 +42,7 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogWarning("[DomainAssigner] No domains left in pool. " +
                                  "Call Initialize() before assigning domains for a new session.");
-                return Domains.Unassigned;
+                return Domains.Blue;
             }
 
             // Considering in co-op modes, all local users will be assigned to Jade Domain
@@ -57,7 +58,7 @@ namespace CosmicShore.Gameplay
             // Get all valid teams (excluding reserved ones)
             availableDomains = Enum.GetValues(typeof(Domains))
                 .Cast<Domains>()
-                .Where(t => t is not (Domains.None or Domains.Unassigned or Domains.Blue))
+                .Where(t => t != Domains.Blue)
                 .ToList();
             CSDebug.Log("[DomainAssigner] 🔄 Cleared assigned domains cache.");
         }

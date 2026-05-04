@@ -245,7 +245,7 @@ namespace CosmicShore.Gameplay
                 position = position,
                 velocity = direction,
                 goalDirection = globalGoal.position - position,
-                team = (int)Domains.None
+                team = (int)Domains.Blue
             };
 
             entities.Add(newEntity);

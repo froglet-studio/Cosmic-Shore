@@ -49,8 +49,8 @@ namespace CosmicShore.Gameplay
 
         protected virtual void Start()
         {
-            if (domain == Domains.Unassigned)
-                CSDebug.LogWarning($"{name}: Population domain is Unassigned. Assign it before spawning, or set it on the prefab.");
+            if (domain == Domains.Blue)
+                CSDebug.LogWarning($"{name}: Population domain is Blue (sentinel). Assign a real domain before spawning, or set it on the prefab.");
 
             _goalOrbitOffset = Random.onUnitSphere * Mathf.Max(0f, goalOrbitRadius);
 
