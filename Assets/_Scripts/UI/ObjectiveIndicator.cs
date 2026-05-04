@@ -6,14 +6,14 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Edge-of-screen pointer that highlights an off-screen objective. The
-    /// objective is supplied by an <see cref="IObjectiveProvider"/> assigned in
-    /// the inspector — the indicator is game-mode-agnostic and only handles the
-    /// world-to-screen math and the show/hide/rotate behaviour.
+    /// objective is supplied by an <see cref="IObjectiveProvider"/> — wired in
+    /// the inspector or via <see cref="Configure"/> at runtime. The indicator
+    /// is game-mode-agnostic: it only handles world-to-screen math, edge
+    /// clamping, rotation, and show/hide.
     ///
-    /// Place the icon as a child of a full-screen RectTransform under your HUD
-    /// canvas. While the objective is on-screen the icon is hidden; while it is
-    /// off-screen the icon clamps to the parent rect's edge in the direction of
-    /// the target and rotates to point at it.
+    /// While the objective is on-screen the icon is hidden; while it is
+    /// off-screen the icon clamps to the parent rect's edge in the direction
+    /// of the target and rotates to point at it.
     /// </summary>
     [DisallowMultipleComponent]
     public class ObjectiveIndicator : MonoBehaviour
@@ -40,7 +40,7 @@ namespace CosmicShore.UI
         [Tooltip("Pixels of inset from the parent rect edge.")]
         [SerializeField] float edgePadding = 60f;
 
-        [Tooltip("Sprite art that points UP by default needs +0; sprite that points RIGHT needs -90.")]
+        [Tooltip("Sprite art that points UP by default needs -90; sprite that points RIGHT needs 0.")]
         [SerializeField] float spriteRotationOffset = -90f;
 
         [Header("Lifecycle")]
@@ -55,10 +55,29 @@ namespace CosmicShore.UI
         IObjectiveProvider Provider =>
             _providerCached ??= provider as IObjectiveProvider;
 
+        /// <summary>
+        /// Wires a provider at runtime. Use when constructing the indicator
+        /// programmatically rather than wiring via the inspector.
+        /// </summary>
+        public void Configure(IObjectiveProvider providerInstance)
+        {
+            _providerCached = providerInstance;
+        }
+
         void Awake()
         {
             _parentRect = icon != null ? icon.parent as RectTransform : null;
             _canvas = GetComponentInParent<Canvas>();
+
+            // Force consistent anchoring so anchoredPosition is "offset from
+            // parent's centre, in parent's local pixels" — independent of the
+            // parent's pivot or the icon's original anchor settings.
+            if (icon != null)
+            {
+                icon.anchorMin = icon.anchorMax = new Vector2(0.5f, 0.5f);
+                icon.pivot = new Vector2(0.5f, 0.5f);
+            }
+
             SetVisible(false);
         }
 
@@ -123,10 +142,8 @@ namespace CosmicShore.UI
             Vector2 dirScreen = (Vector2)screenPos - centerScreen;
             if (dirScreen.sqrMagnitude < 1e-4f) dirScreen = Vector2.up;
 
-            // Convert direction from screen-space pixels to the parent rect's
-            // local space. Going through ScreenPointToLocalPointInRectangle with
-            // the centre and the offset gives us a local-space vector that
-            // accounts for canvas scaling / rotation.
+            // Convert the screen-space direction into parent-rect local pixels
+            // so canvas scaling / rotation is handled correctly.
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 _parentRect, centerScreen, canvasCam, out Vector2 localCenter);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -146,11 +163,9 @@ namespace CosmicShore.UI
             float ty = Mathf.Abs(unit.y) > 1e-4f ? halfH / Mathf.Abs(unit.y) : float.PositiveInfinity;
             float t = Mathf.Min(tx, ty);
 
-            // The parent rect's centre in its own local space is rect.center
-            // (pivot-aware). Use it so non-centred pivots still place the icon
-            // at the visual centre of the rect.
-            Vector2 anchored = rect.center + unit * t;
-            icon.anchoredPosition = anchored;
+            // Icon is anchored at parent's centre (forced in Awake), so
+            // anchoredPosition is offset from that centre in parent pixels.
+            icon.anchoredPosition = unit * t;
 
             float angleDeg = Mathf.Atan2(unit.y, unit.x) * Mathf.Rad2Deg + spriteRotationOffset;
             icon.localRotation = Quaternion.Euler(0f, 0f, angleDeg);
@@ -187,6 +202,51 @@ namespace CosmicShore.UI
             {
                 icon.gameObject.SetActive(visible);
             }
+        }
+
+        // ── Runtime construction ─────────────────────────────────────────
+
+        /// <summary>
+        /// Builds a fully configured indicator at runtime: a full-screen
+        /// container under <paramref name="parent"/> with an arrow icon child.
+        /// Use when no editor-wired indicator exists in the scene.
+        /// </summary>
+        public static ObjectiveIndicator CreateRuntime(Transform parent, IObjectiveProvider providerInstance)
+        {
+            var rootGo = new GameObject("ObjectiveIndicator", typeof(RectTransform));
+            var rootRect = rootGo.GetComponent<RectTransform>();
+            rootRect.SetParent(parent, false);
+            rootRect.anchorMin = Vector2.zero;
+            rootRect.anchorMax = Vector2.one;
+            rootRect.offsetMin = Vector2.zero;
+            rootRect.offsetMax = Vector2.zero;
+            rootRect.localScale = Vector3.one;
+            rootRect.SetAsLastSibling();
+
+            var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(CanvasGroup));
+            var iconRect = iconGo.GetComponent<RectTransform>();
+            iconRect.SetParent(rootRect, false);
+            iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.5f);
+            iconRect.pivot = new Vector2(0.5f, 0.5f);
+            iconRect.sizeDelta = new Vector2(80f, 80f);
+
+            var iconCg = iconGo.GetComponent<CanvasGroup>();
+            iconCg.alpha = 0f;
+            iconCg.interactable = false;
+            iconCg.blocksRaycasts = false;
+
+            var arrowText = iconGo.AddComponent<TextMeshProUGUI>();
+            arrowText.text = "▲"; // ▲
+            arrowText.fontSize = 60f;
+            arrowText.alignment = TextAlignmentOptions.Center;
+            arrowText.raycastTarget = false;
+            arrowText.color = new Color(1f, 0.85f, 0.2f, 1f);
+
+            var indicator = rootGo.AddComponent<ObjectiveIndicator>();
+            indicator.icon = iconRect;
+            indicator.canvasGroup = iconCg;
+            indicator.Configure(providerInstance);
+            return indicator;
         }
     }
 }
