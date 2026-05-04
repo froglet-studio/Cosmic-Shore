@@ -101,8 +101,8 @@ namespace CosmicShore.Tests
         [Test]
         [TestCase(Domains.Jade, 1)]
         [TestCase(Domains.Ruby, 2)]
-        [TestCase(Domains.Gold, 3)]
-        [TestCase(Domains.Blue, 4)]
+        [TestCase(Domains.Blue, 3)]
+        [TestCase(Domains.Gold, 4)]
         public void Domains_HasCorrectIntegerValue(Domains domain, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)domain,
