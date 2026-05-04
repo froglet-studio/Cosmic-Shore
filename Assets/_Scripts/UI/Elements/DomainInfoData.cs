@@ -33,6 +33,7 @@ namespace CosmicShore.UI
         [SerializeField] private DomainAvatarChip chipPrefab;
 
         readonly List<DomainAvatarChip> _chipPool = new();
+        bool _poolInitialized;
 
         public Domains Domain => domain;
         public Button Button => button;
@@ -47,20 +48,54 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Lazy one-shot adoption. Any DomainAvatarChip GameObjects already parented
+        /// under <see cref="avatarStrip"/> in the prefab (e.g., hand-placed in the
+        /// Editor for layout preview) are pulled into the managed pool so the runtime
+        /// shows/hides them like instantiated ones — instead of stranding them as
+        /// permanently-visible siblings while my pool grows underneath.
+        /// </summary>
+        void EnsurePoolInitialized()
+        {
+            if (_poolInitialized) return;
+            _poolInitialized = true;
+
+            if (avatarStrip == null) return;
+
+            foreach (Transform child in avatarStrip.transform)
+            {
+                if (child.TryGetComponent(out DomainAvatarChip chip))
+                {
+                    _chipPool.Add(chip);
+                    chip.Hide();
+                }
+            }
+        }
+
+        /// <summary>
         /// Renders the per-player avatars currently attached to this domain. Pool grows
         /// on demand; chips are never destroyed (just disabled when unused). Pass an
         /// empty list to clear.
         /// </summary>
         public void SetAvatars(IReadOnlyList<(Sprite sprite, bool isLocal)> entries)
         {
-            if (!avatarStrip || !chipPrefab)
+            if (!avatarStrip)
                 return;
+
+            EnsurePoolInitialized();
 
             int needed = entries?.Count ?? 0;
 
-            // Grow pool as needed.
+            // Grow pool as needed. chipPrefab is only required when we actually
+            // need MORE chips than the prefab already provides.
             while (_chipPool.Count < needed)
             {
+                if (!chipPrefab)
+                {
+                    Debug.LogWarning($"[DomainInfoData '{name}'] Need {needed} chips but " +
+                                     "Chip Prefab is not wired and pool only has " +
+                                     $"{_chipPool.Count}. Wire DomainAvatarChip.prefab in the inspector.");
+                    break;
+                }
                 var chip = Instantiate(chipPrefab, avatarStrip.transform);
                 chip.Hide();
                 _chipPool.Add(chip);
