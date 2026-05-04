@@ -1255,7 +1255,7 @@ namespace CosmicShore.Gameplay
         /// targets the local player. Returns true and sets <paramref name="invite"/>
         /// to the parsed payload on the first hit; false otherwise.
         /// </summary>
-        private bool TryFindIncomingInvite(Unity.Services.Multiplayer.IPlayer sender, out PartyInviteData invite)
+        private bool TryFindIncomingInvite(Unity.Services.Multiplayer.IReadOnlyPlayer sender, out PartyInviteData invite)
         {
             invite = default;
             for (int slot = 0; slot < INVITE_SLOT_COUNT; slot++)
