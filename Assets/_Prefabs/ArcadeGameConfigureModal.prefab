@@ -15322,7 +15322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8377878a0e884704ba3c40235cb5fc37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  domain: 0
+  domain: 3
   button: {fileID: 623152613501326273}
   backgroundImage: {fileID: 2355459334683365817}
   selectedSprite: {fileID: 21300000, guid: a46749acf1cd6904b8a5a6920473ac5a, type: 3}
