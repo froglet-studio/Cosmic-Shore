@@ -133,7 +133,7 @@ MonoBehaviour:
   NetDefaultVesselType:
     m_InternalValue: 0
   NetDomain:
-    m_InternalValue: 0
+    m_InternalValue: 1
   NetName:
     m_InternalValue:
       utf8LengthInBytes: 0
