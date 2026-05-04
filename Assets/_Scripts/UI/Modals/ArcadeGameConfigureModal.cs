@@ -12,6 +12,7 @@ using Reflex.Attributes;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
@@ -58,17 +59,22 @@ namespace CosmicShore.UI
         [SerializeField] private Button playerCountIncrementButton;
         [SerializeField] private TMP_Text playerCountValueText;
 
-        [Header("Screen 1 – Team Count Stepper")]
-        [SerializeField] private Button teamCountDecrementButton;
-        [SerializeField] private Button teamCountIncrementButton;
-        [SerializeField] private TMP_Text teamsValueText;
+        [Header("Screen 1 – Domain Count Stepper")]
+        [FormerlySerializedAs("domainCountDecrementButton")]
+        [SerializeField] private Button domainCountDecrementButton;
+        [FormerlySerializedAs("domainCountIncrementButton")]
+        [SerializeField] private Button domainCountIncrementButton;
+        [FormerlySerializedAs("domainsValueText")]
+        [SerializeField] private TMP_Text domainsValueText;
 
-        [Header("Screen 1 – Team Selection")]
-        [SerializeField] private TeamSelectionPanel teamSelectionPanel;
+        [Header("Screen 1 – Domain Selection")]
+        [FormerlySerializedAs("domainSelectionPanel")]
+        [SerializeField] private DomainSelectionPanel domainSelectionPanel;
 
-        [Header("Screen 2 – Domain (Team) Selection")]
-        [Tooltip("One TeamInfoData per selectable team. First entry should be the RANDOM option (Domain = Unassigned).")]
-        [SerializeField] private List<TeamInfoData> teamInfoItems = new();
+        [Header("Screen 2 – Domain Selection")]
+        [Tooltip("One DomainInfoData per selectable domain. First entry should be the RANDOM option (Domain = Unassigned).")]
+        [FormerlySerializedAs("domainInfoItems")]
+        [SerializeField] private List<DomainInfoData> domainInfoItems = new();
 
         [Header("Screen 2 – Selected Vessel Summary")]
         [SerializeField] private Image    shipPlaceholderIcon;
@@ -101,10 +107,10 @@ namespace CosmicShore.UI
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
-        // Hard cap on the number of players/teams the game supports
+        // Hard cap on the number of players/domains the game supports
         const int MaxSupportedPlayers = 4;
-        const int MaxSupportedTeams = 3;
-        const int MinTeams = 1;
+        const int MaxSupportedDomains = 3;
+        const int MinDomains = 1;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
@@ -159,14 +165,14 @@ namespace CosmicShore.UI
             if (playerCountIncrementButton)
                 playerCountIncrementButton.onClick.AddListener(OnPlayerCountIncrement);
 
-            // Team count buttons
-            if (teamCountDecrementButton)
-                teamCountDecrementButton.onClick.AddListener(OnTeamCountDecrement);
-            if (teamCountIncrementButton)
-                teamCountIncrementButton.onClick.AddListener(OnTeamCountIncrement);
+            // Domain count buttons
+            if (domainCountDecrementButton)
+                domainCountDecrementButton.onClick.AddListener(OnDomainCountDecrement);
+            if (domainCountIncrementButton)
+                domainCountIncrementButton.onClick.AddListener(OnDomainCountIncrement);
 
-            // Domain / team info buttons
-            foreach (var item in teamInfoItems)
+            // Domain info buttons
+            foreach (var item in domainInfoItems)
             {
                 if (!item || !item.Button) continue;
                 var captured = item.Domain;
@@ -176,8 +182,8 @@ namespace CosmicShore.UI
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
 
-            if (teamSelectionPanel)
-                teamSelectionPanel.OnTeamSelected += HandleTeamSelected;
+            if (domainSelectionPanel)
+                domainSelectionPanel.OnDomainSelected += HandlePanelDomainSelected;
 
             if (arcadeConfigSyncManager)
             {
@@ -210,12 +216,12 @@ namespace CosmicShore.UI
             if (playerCountIncrementButton)
                 playerCountIncrementButton.onClick.RemoveListener(OnPlayerCountIncrement);
 
-            if (teamCountDecrementButton)
-                teamCountDecrementButton.onClick.RemoveListener(OnTeamCountDecrement);
-            if (teamCountIncrementButton)
-                teamCountIncrementButton.onClick.RemoveListener(OnTeamCountIncrement);
+            if (domainCountDecrementButton)
+                domainCountDecrementButton.onClick.RemoveListener(OnDomainCountDecrement);
+            if (domainCountIncrementButton)
+                domainCountIncrementButton.onClick.RemoveListener(OnDomainCountIncrement);
 
-            foreach (var item in teamInfoItems)
+            foreach (var item in domainInfoItems)
             {
                 if (item && item.Button)
                     item.Button.onClick.RemoveAllListeners();
@@ -224,8 +230,8 @@ namespace CosmicShore.UI
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
 
-            if (teamSelectionPanel)
-                teamSelectionPanel.OnTeamSelected -= HandleTeamSelected;
+            if (domainSelectionPanel)
+                domainSelectionPanel.OnDomainSelected -= HandlePanelDomainSelected;
 
             if (arcadeConfigSyncManager)
             {
@@ -251,7 +257,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = selectedGame;
-            config.TeamCount    = 1; // default to 1 team — user can adjust via stepper
+            config.DomainCount  = 1; // default to 1 domain — user can adjust via stepper
 
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
@@ -265,7 +271,7 @@ namespace CosmicShore.UI
             ShowConfigurationScreen();
             RaiseConfigChanged();
 
-            // Notify all clients to open their own modal with team + vessel selection
+            // Notify all clients to open their own modal with domain + vessel selection
             if (arcadeConfigSyncManager)
             {
                 arcadeConfigSyncManager.NotifyConfigOpened(
@@ -374,11 +380,11 @@ namespace CosmicShore.UI
             // Inline stepper UI (development UI)
             RefreshPlayerCountStepper();
 
-            // Team count stepper
-            RefreshTeamCountStepper();
+            // Domain count stepper
+            RefreshDomainCountStepper();
 
-            if (teamSelectionPanel && gameData != null && gameData.LocalPlayer is Player localPlayer)
-                teamSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
+            if (domainSelectionPanel && gameData != null && gameData.LocalPlayer is Player localPlayer)
+                domainSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -522,11 +528,11 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
         }
 
-        void HandleTeamSelected(Domains domain)
+        void HandlePanelDomainSelected(Domains domain)
         {
             if (gameData.LocalPlayer is not Player player) return;
             if (!player.IsOwner) return;
-            player.NetDomain.Value = domain;
+            player.RequestSetDomain_ServerRpc(domain);
         }
 
         #endregion
@@ -590,49 +596,49 @@ namespace CosmicShore.UI
 
         #endregion
 
-        #region Team count stepper
+        #region Domain count stepper
 
-        public void OnTeamCountIncrement()
+        public void OnDomainCountIncrement()
         {
             if (config == null) return;
 
-            int next = Mathf.Min(config.TeamCount + 1, MaxSupportedTeams);
-            SetTeamCount(next);
+            int next = Mathf.Min(config.DomainCount + 1, MaxSupportedDomains);
+            SetDomainCount(next);
         }
 
-        public void OnTeamCountDecrement()
+        public void OnDomainCountDecrement()
         {
             if (config == null) return;
 
-            int next = Mathf.Max(config.TeamCount - 1, MinTeams);
-            SetTeamCount(next);
+            int next = Mathf.Max(config.DomainCount - 1, MinDomains);
+            SetDomainCount(next);
         }
 
-        void SetTeamCount(int teamCount)
+        void SetDomainCount(int domainCount)
         {
-            if (config.TeamCount == teamCount) return;
+            if (config.DomainCount == domainCount) return;
 
-            config.TeamCount = teamCount;
-            RefreshTeamCountStepper();
+            config.DomainCount = domainCount;
+            RefreshDomainCountStepper();
             SyncGameDataConfig();
             RaiseConfigChanged();
         }
 
-        void RefreshTeamCountStepper()
+        void RefreshDomainCountStepper()
         {
-            if (teamsValueText)
-                teamsValueText.text = config.TeamCount.ToString();
+            if (domainsValueText)
+                domainsValueText.text = config.DomainCount.ToString();
 
-            if (teamCountDecrementButton)
-                teamCountDecrementButton.interactable = config.TeamCount > MinTeams;
+            if (domainCountDecrementButton)
+                domainCountDecrementButton.interactable = config.DomainCount > MinDomains;
 
-            if (teamCountIncrementButton)
-                teamCountIncrementButton.interactable = config.TeamCount < MaxSupportedTeams;
+            if (domainCountIncrementButton)
+                domainCountIncrementButton.interactable = config.DomainCount < MaxSupportedDomains;
         }
 
         #endregion
 
-        #region Domain (team) selection via TeamInfoData
+        #region Domain selection via DomainInfoData
 
         void InitializeDomainSelection()
         {
@@ -646,9 +652,9 @@ namespace CosmicShore.UI
             if (config != null)
                 config.SelectedDomain = domain;
 
-            // Write to local player's NetworkVariable
+            // Request a server-authoritative domain update for the local player
             if (gameData != null && gameData.LocalPlayer is Player player && player.IsOwner)
-                player.NetDomain.Value = domain;
+                player.RequestSetDomain_ServerRpc(domain);
 
             SyncGameDataDomain();
             RefreshDomainButtons();
@@ -664,7 +670,7 @@ namespace CosmicShore.UI
             if (dataService != null)
                 avatarSprite = dataService.GetAvatarSprite(dataService.CurrentProfile.avatarId);
 
-            foreach (var item in teamInfoItems)
+            foreach (var item in domainInfoItems)
             {
                 if (!item) continue;
                 item.SetSelected(item.Domain == selected);
@@ -885,7 +891,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Start/Confirm button — called by ALL players (host and clients).
-        /// Confirms the player's team + vessel choices and enters the waiting state.
+        /// Confirms the player's domain + vessel choices and enters the waiting state.
         /// When all human players have confirmed, the host auto-launches the game.
         /// </summary>
         public void OnStartGameClicked()
@@ -958,8 +964,8 @@ namespace CosmicShore.UI
             // Single source of truth — GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
-            // Team count — controls how many teams AI can be assigned to
-            gameData.RequestedTeamCount = config.TeamCount;
+            // Domain count — controls how many domains AI can be assigned to
+            gameData.RequestedDomainCount = config.DomainCount;
 
             Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
@@ -1062,7 +1068,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = game;
-            config.TeamCount    = 1; // clients inherit host's team count via UI sync
+            config.DomainCount  = 1; // clients inherit host's domain count via UI sync
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 
@@ -1078,7 +1084,7 @@ namespace CosmicShore.UI
             ModalWindowIn();
 
             // Clients skip the config screen (intensity/player count) and go
-            // directly to domain + vessel selection since only the host controls those.
+            // directly to vessel selection since only the host controls those.
             ShowGameDetailScreen();
         }
 
@@ -1133,7 +1139,7 @@ namespace CosmicShore.UI
         /// <summary>
         /// Disables host-only controls when in client mode.
         /// Intensity buttons and player count stepper become non-interactable.
-        /// Team selection, vessel selection, and the Start/Confirm button remain
+        /// Domain selection, vessel selection, and the Start/Confirm button remain
         /// interactive for all players (host and clients).
         /// </summary>
         void ApplyHostOnlyInteractability()
@@ -1158,11 +1164,11 @@ namespace CosmicShore.UI
             if (playerCountIncrementButton)
                 playerCountIncrementButton.interactable = isHost;
 
-            // Team count buttons
-            if (teamCountDecrementButton)
-                teamCountDecrementButton.interactable = isHost;
-            if (teamCountIncrementButton)
-                teamCountIncrementButton.interactable = isHost;
+            // Domain count buttons
+            if (domainCountDecrementButton)
+                domainCountDecrementButton.interactable = isHost;
+            if (domainCountIncrementButton)
+                domainCountIncrementButton.interactable = isHost;
         }
 
         /// <summary>

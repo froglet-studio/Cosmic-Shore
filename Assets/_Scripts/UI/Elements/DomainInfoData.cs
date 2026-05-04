@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
-    public class TeamInfoData : MonoBehaviour
+    public class DomainInfoData : MonoBehaviour
     {
         [Header("Domain")]
         [SerializeField] private Domains domain = Domains.Unassigned;
@@ -24,7 +24,7 @@ namespace CosmicShore.UI
         [SerializeField] private Color unselectedTextColor = Color.gray;
 
         [Header("Avatar Icon")]
-        [Tooltip("The AvatarIcon container GameObject. Enabled only on the selected team.")]
+        [Tooltip("The AvatarIcon container GameObject. Enabled only on the selected domain.")]
         [SerializeField] private GameObject avatarIconContainer;
 
         [Tooltip("The child Image inside avatarIconContainer that displays the avatar sprite.")]

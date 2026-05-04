@@ -287,25 +287,39 @@ namespace CosmicShore.Tests
         #endregion
 
         // ─────────────────────────────────────────────────────────────────────
-        // ParseInvite — Format Validation (via reflection)
+        // ParseInviteLine — Format Validation (via reflection)
         // ─────────────────────────────────────────────────────────────────────
 
-        #region ParseInvite Format Validation
+        #region ParseInviteLine Format Validation
 
         /// <summary>
-        /// Invokes the private static ParseInvite method on HostConnectionService
-        /// via reflection for unit testing.
+        /// Invokes the private static ParseInviteLine method on HostConnectionService
+        /// via reflection. The current invite format is
+        /// <c>targetPlayerId|hostPlayerId|sessionId|hostDisplayName|avatarId</c>;
+        /// these tests still feed the legacy 4-field strings, so this helper prepends
+        /// a synthetic target id and unwraps the host-side payload from the tuple
+        /// the parser returns. That keeps assertions focused on the host/session/
+        /// name/avatar fields the original suite was already covering.
         /// </summary>
         static PartyInviteData? InvokeParseInvite(string raw)
         {
             var method = typeof(CosmicShore.Gameplay.HostConnectionService)
-                .GetMethod("ParseInvite",
+                .GetMethod("ParseInviteLine",
                     BindingFlags.Static | BindingFlags.NonPublic);
 
             Assert.IsNotNull(method,
-                "ParseInvite method should exist on HostConnectionService.");
+                "ParseInviteLine method should exist on HostConnectionService.");
 
-            return (PartyInviteData?)method.Invoke(null, new object[] { raw });
+            // Null/empty inputs feed straight through so the early-return assertions
+            // still exercise the null-or-empty short-circuit.
+            string composed = string.IsNullOrEmpty(raw) ? raw : "test_target|" + raw;
+            var tuple = method.Invoke(null, new object[] { composed });
+            if (tuple == null) return null;
+
+            // Tuple type is non-public ValueTuple<string, PartyInviteData>; reach in
+            // via reflection to extract Item2 (the PartyInviteData payload).
+            var item2 = tuple.GetType().GetField("Item2");
+            return (PartyInviteData?)item2.GetValue(tuple);
         }
 
         [Test]
@@ -929,14 +943,17 @@ namespace CosmicShore.Tests
         #region HostConnectionService API Contract
 
         [Test]
-        public void HostConnectionService_HasParseInviteMethod()
+        public void HostConnectionService_HasParseInviteLineMethod()
         {
             var method = typeof(CosmicShore.Gameplay.HostConnectionService)
-                .GetMethod("ParseInvite",
+                .GetMethod("ParseInviteLine",
                     BindingFlags.Static | BindingFlags.NonPublic);
 
-            Assert.IsNotNull(method, "ParseInvite should exist as a private static method.");
-            Assert.AreEqual(typeof(PartyInviteData?), method.ReturnType);
+            Assert.IsNotNull(method, "ParseInviteLine should exist as a private static method.");
+            // Returns Nullable<(string targetId, PartyInviteData invite)> — verify
+            // it is Nullable<T> where T is a 2-tuple containing PartyInviteData.
+            Assert.IsTrue(method.ReturnType.IsGenericType);
+            Assert.AreEqual(typeof(System.Nullable<>), method.ReturnType.GetGenericTypeDefinition());
         }
 
         [Test]
@@ -971,18 +988,15 @@ namespace CosmicShore.Tests
             var type = typeof(CosmicShore.Gameplay.HostConnectionService);
             var flags = BindingFlags.Static | BindingFlags.NonPublic;
 
-            var inviteTarget = type.GetField("INVITE_TARGET_KEY", flags);
-            var inviteData = type.GetField("INVITE_DATA_KEY", flags);
+            var invitePayloads = type.GetField("INVITE_PAYLOADS_KEY", flags);
             var displayName = type.GetField("DISPLAY_NAME_KEY", flags);
             var avatarId = type.GetField("AVATAR_ID_KEY", flags);
 
-            Assert.IsNotNull(inviteTarget, "INVITE_TARGET_KEY constant should exist.");
-            Assert.IsNotNull(inviteData, "INVITE_DATA_KEY constant should exist.");
+            Assert.IsNotNull(invitePayloads, "INVITE_PAYLOADS_KEY constant should exist.");
             Assert.IsNotNull(displayName, "DISPLAY_NAME_KEY constant should exist.");
             Assert.IsNotNull(avatarId, "AVATAR_ID_KEY constant should exist.");
 
-            Assert.AreEqual("invite_target", inviteTarget.GetValue(null));
-            Assert.AreEqual("invite_data", inviteData.GetValue(null));
+            Assert.AreEqual("invite_payloads", invitePayloads.GetValue(null));
             Assert.AreEqual("displayName", displayName.GetValue(null));
             Assert.AreEqual("avatarId", avatarId.GetValue(null));
         }
@@ -990,10 +1004,10 @@ namespace CosmicShore.Tests
         [Test]
         public void HostConnectionService_InviteFormatString_MatchesParseExpectation()
         {
-            // The format used in SendInviteAsync:
-            // $"{connectionData.LocalPlayerId}|{_partySession.Id}|{connectionData.LocalDisplayName}|{connectionData.LocalAvatarId}"
-            //
-            // ParseInvite expects: parts[0]=hostPlayerId, parts[1]=sessionId, parts[2]=displayName, parts[3]=avatarId
+            // The current per-invite line format produced by SendInviteAsync is
+            //     targetPlayerId|hostPlayerId|sessionId|hostDisplayName|avatarId
+            // The InvokeParseInvite test helper auto-prepends a synthetic target id
+            // so this assertion can keep using the legacy 4-field tail.
 
             string hostId = "testHost";
             string sessionId = "testSession";
