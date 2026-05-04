@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: beb0cb3d1601424aa921d70177c06424, type: 3}
+  m_Name: YawsteryAction-Right
+  m_EditorClassIdentifier: 
+  steerDirection: 1
+  maxYawDegPerSec: 80
+  rampInSeconds: 0.35
+  rampOutSeconds: 0.25
+  speedScale: 1
+  speedExp: 0.25
+  lockToAngle: 0
+  maxTurnDegrees: 45
+  animatorParamFloat: 
+  animatorParamTriggerStart: 
+  animatorParamTriggerEnd: 

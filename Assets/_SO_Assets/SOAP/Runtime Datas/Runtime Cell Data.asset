@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ee853b7a8af463d97a65225b3a26674, type: 3}
+  m_Name: Runtime Cell Data
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  Config: {fileID: 0}
+  OnResetForReplay: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}
+  OnCrystalSpawned: {fileID: 11400000, guid: 0f33b889f8371184789d1453649aabf2, type: 2}
+  OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
+  Cell: {fileID: 0}
+  CellItems: []
+  Crystals: []
