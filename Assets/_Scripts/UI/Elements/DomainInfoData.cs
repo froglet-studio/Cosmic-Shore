@@ -24,16 +24,9 @@ namespace CosmicShore.UI
         [SerializeField] private Color selectedTextColor = Color.white;
         [SerializeField] private Color unselectedTextColor = Color.gray;
 
-        [Header("Avatar Icon (legacy single-avatar slot, kept for back-compat)")]
-        [Tooltip("The AvatarIcon container GameObject. Enabled only on the selected domain.")]
-        [SerializeField] private GameObject avatarIconContainer;
-
-        [Tooltip("The child Image inside avatarIconContainer that displays the avatar sprite.")]
-        [SerializeField] private Image avatarIconImage;
-
-        [Header("Avatar Strip (multi-player live display)")]
-        [Tooltip("LayoutGroup container for per-player avatar chips. Leave null on screens that " +
-                 "still use the legacy single-avatar slot above.")]
+        [Header("Avatar Strip")]
+        [Tooltip("LayoutGroup container that holds one DomainAvatarChip per player " +
+                 "currently picking this domain. Chips are pooled.")]
         [SerializeField] private HorizontalLayoutGroup avatarStrip;
 
         [Tooltip("Prefab for one avatar chip. Pooled — never destroyed at runtime.")]
@@ -51,29 +44,6 @@ namespace CosmicShore.UI
 
             if (labelText)
                 labelText.color = selected ? selectedTextColor : unselectedTextColor;
-
-            if (avatarIconContainer)
-                avatarIconContainer.SetActive(selected);
-        }
-
-        /// <summary>
-        /// Legacy single-avatar setter. Still used by menu-side code paths that haven't
-        /// migrated to the avatar strip (vessel selection, single-player flows). New
-        /// code should prefer <see cref="SetAvatars"/>.
-        /// </summary>
-        public void SetAvatarSprite(Sprite sprite)
-        {
-            if (!avatarIconImage) return;
-
-            if (sprite != null)
-            {
-                avatarIconImage.sprite = sprite;
-                avatarIconImage.enabled = true;
-            }
-            else
-            {
-                avatarIconImage.enabled = false;
-            }
         }
 
         /// <summary>
