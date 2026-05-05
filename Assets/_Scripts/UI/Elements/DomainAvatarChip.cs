@@ -15,10 +15,14 @@ namespace CosmicShore.UI
 
         public void Set(Sprite sprite, bool isLocal)
         {
+            // Keep the Image enabled even when sprite is null — that way a chip with
+            // a missing/loading avatar still shows the prefab's placeholder sprite
+            // instead of disappearing entirely.
             if (avatarImage)
             {
-                avatarImage.sprite = sprite;
-                avatarImage.enabled = sprite != null;
+                if (sprite != null)
+                    avatarImage.sprite = sprite;
+                avatarImage.enabled = true;
             }
 
             if (localPlayerOutline)

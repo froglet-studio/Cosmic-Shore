@@ -79,26 +79,33 @@ namespace CosmicShore.UI
         public void SetAvatars(IReadOnlyList<(Sprite sprite, bool isLocal)> entries)
         {
             if (!avatarStrip)
+            {
+                Debug.LogWarning($"[DomainInfoData '{name}' (domain={domain})] Avatar Strip " +
+                                 "is NOT wired in the inspector. Cannot show chips.");
                 return;
+            }
 
             EnsurePoolInitialized();
 
             int needed = entries?.Count ?? 0;
+            int instantiated = 0;
 
             // Grow pool as needed. chipPrefab is only required when we actually
-            // need MORE chips than the prefab already provides.
+            // need MORE chips than the pool already provides.
             while (_chipPool.Count < needed)
             {
                 if (!chipPrefab)
                 {
-                    Debug.LogWarning($"[DomainInfoData '{name}'] Need {needed} chips but " +
-                                     "Chip Prefab is not wired and pool only has " +
-                                     $"{_chipPool.Count}. Wire DomainAvatarChip.prefab in the inspector.");
+                    Debug.LogWarning($"[DomainInfoData '{name}' (domain={domain})] Need " +
+                                     $"{needed} chips but Chip Prefab is NOT wired and pool " +
+                                     $"only has {_chipPool.Count}. Wire DomainAvatarChip.prefab " +
+                                     "in the inspector.");
                     break;
                 }
                 var chip = Instantiate(chipPrefab, avatarStrip.transform);
                 chip.Hide();
                 _chipPool.Add(chip);
+                instantiated++;
             }
 
             // Populate first N, hide the rest.
@@ -114,6 +121,10 @@ namespace CosmicShore.UI
                     _chipPool[i].Hide();
                 }
             }
+
+            Debug.Log($"[DomainInfoData '{name}' (domain={domain})] SetAvatars: needed={needed}, " +
+                      $"poolSize={_chipPool.Count}, instantiatedThisCall={instantiated}, " +
+                      $"strip={avatarStrip.name}, chipPrefab={(chipPrefab ? chipPrefab.name : "NULL")}");
         }
     }
 }

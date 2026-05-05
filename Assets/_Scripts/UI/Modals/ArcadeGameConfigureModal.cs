@@ -746,7 +746,11 @@ namespace CosmicShore.UI
 
         void RefreshDomainButtons()
         {
-            if (config == null || gameData == null) return;
+            if (config == null || gameData == null)
+            {
+                Debug.Log($"[DomainPicker] RefreshDomainButtons EARLY-OUT — config={config}, gameData={gameData}");
+                return;
+            }
 
             var selected = config.SelectedDomain;
             int allowed = Mathf.Clamp(config.DomainCount, 1, GameDataSO.ActiveDomains.Length);
@@ -767,6 +771,7 @@ namespace CosmicShore.UI
                     gameData.Players.RemoveAt(i);
             }
 
+            int humanCount = 0;
             foreach (var ip in gameData.Players)
             {
                 if (ip is not Player p || p.NetIsAI.Value) continue;
@@ -776,6 +781,7 @@ namespace CosmicShore.UI
                     : null;
                 bool isLocal = p.OwnerClientId == localId;
                 var entry = (sprite, isLocal);
+                humanCount++;
 
                 var d = p.NetDomain.Value;
                 if (d == Domains.Blue)
@@ -793,6 +799,11 @@ namespace CosmicShore.UI
                 }
             }
 
+            Debug.Log($"[DomainPicker] RefreshDomainButtons — humans={humanCount}, " +
+                      $"unpicked={unpicked.Count}, " +
+                      $"byDomain=[{string.Join(",", byDomain.Select(kv => $"{kv.Key}:{kv.Value.Count}"))}], " +
+                      $"selected={selected}, allowed={allowed}, dataService={dataService}");
+
             foreach (var item in domainInfoItems)
             {
                 if (!item) continue;
@@ -806,12 +817,17 @@ namespace CosmicShore.UI
 
                 item.SetSelected(item.Domain == selected);
 
+                IReadOnlyList<(Sprite, bool)> entries;
                 if (isRandom)
-                    item.SetAvatars(unpicked);
+                    entries = unpicked;
                 else if (byDomain.TryGetValue(item.Domain, out var list))
-                    item.SetAvatars(list);
+                    entries = list;
                 else
-                    item.SetAvatars(System.Array.Empty<(Sprite, bool)>());
+                    entries = System.Array.Empty<(Sprite, bool)>();
+
+                Debug.Log($"[DomainPicker]   tile {item.Domain} (active={item.gameObject.activeSelf}, " +
+                          $"isRandom={isRandom}) → SetAvatars(count={entries.Count})");
+                item.SetAvatars(entries);
             }
         }
 
