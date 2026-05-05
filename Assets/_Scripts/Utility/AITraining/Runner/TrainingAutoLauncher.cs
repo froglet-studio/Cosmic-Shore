@@ -55,6 +55,7 @@ namespace CosmicShore.Utility.AITraining
 
         Coroutine _launchCo;
         Coroutine _hostAutopilotCo;
+        Coroutine _safetyCo;
 
         public TrainingScenarioSO Scenario => Control != null ? Control.Scenario : null;
 
@@ -68,12 +69,18 @@ namespace CosmicShore.Utility.AITraining
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             UnhookAppState();
+            UnhookGameDataEvents();
         }
 
         void Start()
         {
             ResolveProjectAssets();
+            HookGameDataEvents();
             HookAppState();
+            Debug.Log($"[TrainingAutoLauncher] Started. " +
+                      $"GameData={(_gameData != null ? _gameData.name : "null")}, " +
+                      $"AppState={(_appState != null ? _appState.name : "null")}, " +
+                      $"Scenario={(Scenario != null ? Scenario.Key : "null")}");
         }
 
         // ── Reference resolution ───────────────────────
@@ -96,14 +103,23 @@ namespace CosmicShore.Utility.AITraining
         }
 
         // ── App state events ───────────────────────────
+        // AppState.MainMenu transitions BEFORE Menu_Main scene loads and BEFORE
+        // MainMenuController.Start runs. Configuring + launching from here races
+        // MainMenuController.ConfigureMenuGameData (which writes its own values
+        // to GameDataSO and stomps ours) and InvokeGameLaunch fires before
+        // SceneLoader has its OnLaunchGame listener live for the new scene.
+        //
+        // The right primary trigger is gameData.OnClientReady — see HookGameDataEvents.
+        // The AppState handler stays as a SAFETY NET: if OnClientReady never fires
+        // within 12s of MainMenu (e.g. misconfigured menu prefab), we launch anyway.
         void HookAppState()
         {
-            if (_appState == null || _appState.Value == null || _appState.Value.OnStateChanged == null) return;
+            if (_appState == null || _appState.Value == null || _appState.Value.OnStateChanged == null)
+            {
+                Debug.LogWarning("[TrainingAutoLauncher] ApplicationStateData.OnStateChanged not wired; will rely on OnClientReady only.");
+                return;
+            }
             _appState.Value.OnStateChanged.OnRaised += HandleAppStateChanged;
-
-            // If we joined late (state already MainMenu by the time we listen),
-            // dispatch ourselves so the launch can proceed without waiting for
-            // a state machine that's already settled.
             if (_appState.Value.State == ApplicationState.MainMenu)
                 HandleAppStateChanged(ApplicationState.MainMenu);
         }
@@ -124,26 +140,92 @@ namespace CosmicShore.Utility.AITraining
                 return;
             }
 
+            Debug.Log("[TrainingAutoLauncher] AppState=MainMenu — waiting for OnClientReady (12s safety timeout).");
+            if (_safetyCo == null) _safetyCo = StartCoroutine(SafetyTimeout());
+        }
+
+        IEnumerator SafetyTimeout()
+        {
+            yield return new WaitForSeconds(12f);
+            if (_hasLaunched) yield break;
+            Debug.LogWarning("[TrainingAutoLauncher] OnClientReady didn't fire within 12s; launching anyway.");
             _hasLaunched = true;
+            yield return ConfigureAndLaunch();
+        }
+
+        // ── Game data events ───────────────────────────
+        void HookGameDataEvents()
+        {
+            if (_gameData == null)
+            {
+                Debug.LogError("[TrainingAutoLauncher] GameDataSO not found in project; auto-launch will not work.");
+                return;
+            }
+            if (_gameData.OnClientReady == null)
+            {
+                Debug.LogWarning("[TrainingAutoLauncher] GameDataSO.OnClientReady is null; falling back to AppState-only trigger.");
+                return;
+            }
+            _gameData.OnClientReady.OnRaised += HandleClientReady;
+        }
+
+        void UnhookGameDataEvents()
+        {
+            if (_gameData == null || _gameData.OnClientReady == null) return;
+            _gameData.OnClientReady.OnRaised -= HandleClientReady;
+        }
+
+        void HandleClientReady()
+        {
+            if (_hasLaunched) return;
+            // OnClientReady fires every match (game scenes raise it after the local
+            // player vessel spawns). Only treat the menu invocation as the launch
+            // trigger; in-game invocations are a no-op for us.
+            string activeScene = SceneManager.GetActiveScene().name;
+            if (!IsMenuScene(activeScene))
+            {
+                Debug.Log($"[TrainingAutoLauncher] OnClientReady in '{activeScene}' (not menu) — ignoring.");
+                return;
+            }
+            if (Scenario == null)
+            {
+                Debug.LogError("[TrainingAutoLauncher] No scenario assigned on TrainingControlSO; cannot launch.");
+                return;
+            }
+
+            _hasLaunched = true;
+            Debug.Log($"[TrainingAutoLauncher] OnClientReady in '{activeScene}' — configuring + launching {Scenario.Key}.");
             _launchCo = StartCoroutine(ConfigureAndLaunch());
+        }
+
+        static bool IsMenuScene(string sceneName)
+        {
+            return !string.IsNullOrEmpty(sceneName)
+                && sceneName.IndexOf("menu", System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         // ── Launch ─────────────────────────────────────
         IEnumerator ConfigureAndLaunch()
         {
-            // Give MainMenuController a frame to finish its own initialisation.
-            // It writes default vessel/intensity into GameDataSO during Initialising,
-            // and we want to overwrite those AFTER it's done so our values stick.
+            // OnClientReady fires after MainMenuController.HandleMenuReady finishes
+            // its own work, so by here MainMenuController has already written its
+            // menu defaults into GameDataSO. Two yields gives any same-frame listeners
+            // time to settle before we overwrite.
             yield return null;
             yield return null;
 
             ConfigureGameData();
-
-            // One more frame so listeners see the configured values before launch.
             yield return null;
+
+            if (_gameData.OnLaunchGame == null)
+            {
+                Debug.LogError("[TrainingAutoLauncher] GameDataSO.OnLaunchGame is null; cannot launch. Check the GameDataSO inspector.");
+                yield break;
+            }
             _gameData.InvokeGameLaunch();
-            Debug.Log($"[TrainingAutoLauncher] Launched {_gameData.GameMode} ({_gameData.SceneName}) " +
-                      $"with {_gameData.SelectedPlayerCount.Value} players, {_gameData.RequestedAIBackfillCount} AI backfill.");
+            Debug.Log($"[TrainingAutoLauncher] Launched {_gameData.GameMode} (scene='{_gameData.SceneName}') " +
+                      $"with {_gameData.SelectedPlayerCount?.Value} players, {_gameData.RequestedAIBackfillCount} AI backfill, " +
+                      $"vessel={_gameData.selectedVesselClass?.Value}, intensity={_gameData.SelectedIntensity?.Value}.");
         }
 
         void ConfigureGameData()
