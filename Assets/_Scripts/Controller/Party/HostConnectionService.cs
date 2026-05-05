@@ -877,14 +877,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Host-only. Scans the presence lobby for players who have set
+        /// Scans the presence lobby for players who have set
         /// <see cref="ACCEPTED_INVITE_KEY"/> = our player id AND still appear
         /// in <see cref="_outgoingInvites"/>. On first detection, lazily creates
         /// the Relay party session and republishes all pending invite payloads
         /// with the real session id so recipients can join.
         /// Called from <see cref="RefreshAsync"/> while <see cref="_lobbyBusy"/>
-        /// is held; <see cref="CreatePartySessionAsync"/> manages its own NM
-        /// lifecycle safely within that context.
+        /// is held. <see cref="CreatePartySessionAsync"/> does NOT acquire
+        /// <see cref="_lobbyBusy"/>; it manages its own NM lifecycle, so holding
+        /// the mutex through the await is correct (refresh ticks are blocked
+        /// while the Relay session is being created — fine, it's a one-shot).
         /// </summary>
         private async Task ScanForAcceptanceSignalsAsync()
         {
@@ -899,21 +901,7 @@ namespace CosmicShore.Gameplay
                 Debug.Log($"[ACCEPT-SCAN] Acceptance signal from {p.Id} — creating party session...");
 
                 if (_partySession == null)
-                {
-                    // Release the lobby mutex before calling CreatePartySessionAsync,
-                    // which acquires its own NM-shutdown/Relay-create pipeline and may
-                    // take several seconds. RefreshAsync re-acquires _lobbyBusy after
-                    // this await via normal flow.
-                    _lobbyBusy = false;
-                    try
-                    {
-                        await CreatePartySessionAsync();
-                    }
-                    finally
-                    {
-                        _lobbyBusy = true;
-                    }
-                }
+                    await CreatePartySessionAsync();
 
                 await RepublishOutgoingInvitesWithRealSessionIdAsync();
                 return;
@@ -1356,7 +1344,12 @@ namespace CosmicShore.Gameplay
                 // all pending invites with the real session id so recipients can join.
                 // Must run BEFORE the JOINED_PARTY_KEY scan below because recipients
                 // won't set JOINED_PARTY_KEY until after they read the real session id.
-                if (connectionData.IsHost && _outgoingInvites.Count > 0)
+                //
+                // Gate on _outgoingInvites.Count > 0 (NOT connectionData.IsHost):
+                // IsHost is set only AFTER CreatePartySessionAsync succeeds, but
+                // with lazy session creation we haven't reached that point yet.
+                // Having outgoing invites IS the prospective-host signal.
+                if (_outgoingInvites.Count > 0)
                     await ScanForAcceptanceSignalsAsync();
 
                 // ── Presence-lobby party-join scan (host only) ──────────────
