@@ -845,35 +845,60 @@ namespace CosmicShore.Gameplay
         private async Task<string> WaitForRealSessionIdAsync(string hostPlayerId, float timeoutSeconds = 7f)
         {
             float deadline = Time.unscaledTime + timeoutSeconds;
+            int pollCount = 0;
             while (Time.unscaledTime < deadline)
             {
                 await Task.Delay(400);
-                if (_presenceLobby == null) continue;
+                pollCount++;
 
+                if (_presenceLobby == null)
+                {
+                    Debug.LogWarning("[HostConnectionService] WaitForRealSessionId: _presenceLobby is null — lobby may have been reset.");
+                    continue;
+                }
+
+                bool hostFound = false;
                 foreach (var p in _presenceLobby.Players)
                 {
                     if (p.Id != hostPlayerId) continue;
-                    if (!p.Properties.TryGetValue(INVITE_PAYLOADS_KEY, out var prop)) break;
-                    if (string.IsNullOrEmpty(prop?.Value)) break;
+                    hostFound = true;
 
+                    if (!p.Properties.TryGetValue(INVITE_PAYLOADS_KEY, out var prop))
+                    {
+                        if (pollCount % 5 == 1) Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: host found but no {INVITE_PAYLOADS_KEY} property yet.");
+                        break;
+                    }
+                    if (string.IsNullOrEmpty(prop?.Value))
+                    {
+                        if (pollCount % 5 == 1) Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: {INVITE_PAYLOADS_KEY} is empty.");
+                        break;
+                    }
+
+                    bool foundForUs = false;
                     foreach (var line in prop.Value.Split(INVITE_LINE_SEPARATOR))
                     {
                         var parsed = ParseInviteLine(line);
                         if (!parsed.HasValue) continue;
                         if (parsed.Value.targetId != connectionData.LocalPlayerId) continue;
+                        foundForUs = true;
 
                         var sid = parsed.Value.invite.PartySessionId;
                         if (!string.IsNullOrEmpty(sid) && sid != PENDING_SESSION_ID)
                         {
-                            Debug.Log($"[HostConnectionService] Real session id resolved: {sid}");
+                            Debug.Log($"[HostConnectionService] WaitForRealSessionId resolved after {pollCount} polls: {sid}");
                             return sid;
                         }
+                        if (pollCount % 5 == 1) Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: session id still PENDING.");
                     }
+                    if (!foundForUs && pollCount % 5 == 1)
+                        Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: payloads key present but no line targeting us in '{prop.Value}'.");
                     break;
                 }
+                if (!hostFound && pollCount % 5 == 1)
+                    Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: host {hostPlayerId} not in _presenceLobby.Players ({_presenceLobby.Players.Count} players total).");
             }
             throw new TimeoutException(
-                $"[HostConnectionService] Host {hostPlayerId} did not publish a real session id within {timeoutSeconds}s.");
+                $"[HostConnectionService] Host {hostPlayerId} did not publish a real session id within {timeoutSeconds}s (after {pollCount} polls).");
         }
 
         /// <summary>
@@ -896,13 +921,22 @@ namespace CosmicShore.Gameplay
                 if (!_outgoingInvites.ContainsKey(p.Id)) continue;
 
                 if (!p.Properties.TryGetValue(ACCEPTED_INVITE_KEY, out var prop)) continue;
-                if (prop?.Value != connectionData.LocalPlayerId) continue;
+                string acceptedValue = prop?.Value ?? string.Empty;
+
+                if (acceptedValue != connectionData.LocalPlayerId)
+                {
+                    // Property exists but targets a different host — not for us.
+                    if (!string.IsNullOrEmpty(acceptedValue))
+                        Debug.Log($"[ACCEPT-SCAN] Player {p.Id} has accepted_invite='{acceptedValue}' but we are '{connectionData.LocalPlayerId}' — skipping.");
+                    continue;
+                }
 
                 Debug.Log($"[ACCEPT-SCAN] Acceptance signal from {p.Id} — creating party session...");
 
                 if (_partySession == null)
                     await CreatePartySessionAsync();
 
+                Debug.Log($"[ACCEPT-SCAN] Party session ready (id={_partySession?.Id ?? "null"}) — republishing payloads.");
                 await RepublishOutgoingInvitesWithRealSessionIdAsync();
                 return;
             }
@@ -924,6 +958,14 @@ namespace CosmicShore.Gameplay
                 entry.Payload = BuildInvitePayload(targetId); // now uses _partySession.Id
                 _outgoingInvites[targetId] = entry;
             }
+
+            // CreatePartySessionAsync can take 2-3s (NM shutdown + Relay allocation).
+            // The lobby SDK's internal player index grows stale during that window.
+            // Refresh here — same pattern as SendInviteAsync, PublishJoinedPartyAsync,
+            // and PublishAcceptanceSignalAsync — to prevent SaveCurrentPlayerDataAsync
+            // from failing with ArgumentOutOfRangeException on the first attempt.
+            try { await _presenceLobby.RefreshAsync(); }
+            catch (Exception e) { Debug.LogWarning($"[HostConnectionService] RepublishInvites pre-save refresh failed (non-fatal): {e.Message}"); }
 
             PublishInvitePayloadsToCurrentPlayer();
             await SaveWithRetryAsync();
