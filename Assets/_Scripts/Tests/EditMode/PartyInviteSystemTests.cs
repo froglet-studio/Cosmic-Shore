@@ -1002,6 +1002,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ParseInviteLine_AcceptsPendingSentinel()
+        {
+            // A 5-field line with "PENDING" in the sessionId slot must round-trip
+            // through ParseInviteLine without throwing. Recipients see this format
+            // while the host's Relay session is not yet created.
+            var result = InvokeParseInvite("host123|PENDING|HostPilot|2");
+
+            Assert.IsTrue(result.HasValue,
+                "PENDING sentinel in sessionId slot should parse successfully.");
+            Assert.AreEqual("host123", result.Value.HostPlayerId);
+            Assert.AreEqual("PENDING", result.Value.PartySessionId,
+                "PartySessionId must carry the PENDING sentinel string verbatim.");
+            Assert.AreEqual("HostPilot", result.Value.HostDisplayName);
+            Assert.AreEqual(2, result.Value.HostAvatarId);
+        }
+
+        [Test]
         public void HostConnectionService_InviteFormatString_MatchesParseExpectation()
         {
             // The current per-invite line format produced by SendInviteAsync is
