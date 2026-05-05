@@ -72,9 +72,15 @@ namespace CosmicShore.UI
         [SerializeField] private DomainSelectionPanel domainSelectionPanel;
 
         [Header("Screen 2 – Domain Selection")]
-        [Tooltip("One DomainInfoData per selectable domain. First entry should be the RANDOM option (Domain = Unassigned).")]
+        [Tooltip("One DomainInfoData per selectable domain. The Blue tile (Domain = Blue) " +
+                 "doubles as the 'Random / not yet picked' home — chips spawn there at modal open.")]
         [FormerlySerializedAs("domainInfoItems")]
         [SerializeField] private List<DomainInfoData> domainInfoItems = new();
+
+        [Tooltip("Avatar chip prefab. One instance is created per human player when the " +
+                 "modal opens, parented to the Blue tile's strip. Reparented to the picked " +
+                 "tile's strip on each player's NetDomain.OnValueChanged.")]
+        [SerializeField] private DomainAvatarChip chipPrefab;
 
         [Header("Screen 2 – Selected Vessel Summary")]
         [SerializeField] private Image    shipPlaceholderIcon;
@@ -241,6 +247,10 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
             }
+
+            // Drop NetDomain / NetAvatarId subscriptions if the modal is being
+            // disabled while still open (scene transition, OnDestroy, etc).
+            DespawnAllChips();
         }
 
         #endregion
@@ -281,6 +291,12 @@ namespace CosmicShore.UI
                     selectedGame.MaxPlayersAllowed,
                     CurrentPartyHumanCount);
             }
+
+            // Spawn one chip per player on the Blue tile, hook each player's
+            // NetDomain.OnValueChanged so that future picks reparent the right chip
+            // to the right tile. No periodic refresh — strictly event-driven.
+            SpawnChipsForAllPlayers();
+            RefreshTileVisibility();
         }
 
         #endregion
@@ -643,8 +659,8 @@ namespace CosmicShore.UI
         void InitializeDomainSelection()
         {
             if (config != null)
-                config.SelectedDomain = Domains.Unassigned;
-            RefreshDomainButtons();
+                config.SelectedDomain = Domains.Blue;
+            RefreshTileVisibility();
         }
 
         void HandleDomainSelected(Domains domain)
@@ -652,29 +668,170 @@ namespace CosmicShore.UI
             if (config != null)
                 config.SelectedDomain = domain;
 
-            // Request a server-authoritative domain update for the local player
+            // Request a server-authoritative domain update for the local player.
+            // The chip movement is purely event-driven — Player.NetDomain.OnValueChanged
+            // fires on every client (including the host) and triggers the surgical
+            // reparent in HandlePlayerDomainChanged. No refresh-everything-each-event.
             if (gameData != null && gameData.LocalPlayer is Player player && player.IsOwner)
                 player.RequestSetDomain_ServerRpc(domain);
 
             SyncGameDataDomain();
-            RefreshDomainButtons();
+            RefreshTileVisibility();
             RaiseConfigChanged();
         }
 
-        void RefreshDomainButtons()
-        {
-            var selected = config ? config.SelectedDomain : Domains.Unassigned;
+        // ── Per-player chip lifecycle ─────────────────────────────────────────
+        // One DomainAvatarChip is instantiated per human player when the modal
+        // opens, parented to the Blue tile's strip. Each player's own chip is
+        // reparented to whichever tile they pick on NetDomain.OnValueChanged.
+        // Chips are destroyed on modal close.
 
-            Sprite avatarSprite = null;
+        readonly Dictionary<Player, DomainAvatarChip> _playerChips = new();
+        readonly Dictionary<Player, NetworkVariable<Domains>.OnValueChangedDelegate> _domainHandlers = new();
+        bool _watchingPlayerSpawnEvent;
+
+        void SpawnChipsForAllPlayers()
+        {
+            DespawnAllChips();
+            if (gameData == null) return;
+
+            if (chipPrefab == null)
+            {
+                Debug.LogWarning("[DomainPicker] Chip Prefab is not wired on ArcadeGameConfigureModal — cannot spawn chips.");
+                return;
+            }
+
+            ClearStaleChipsFromAllStrips();
+
+            ulong localId = NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL;
             var dataService = PlayerDataService.Instance;
-            if (dataService != null)
-                avatarSprite = dataService.GetAvatarSprite(dataService.CurrentProfile.avatarId);
+
+            foreach (var ip in gameData.Players)
+            {
+                if (ip is Player p && !p.NetIsAI.Value)
+                    SpawnChipForPlayer(p, localId, dataService);
+            }
+
+            // Late-joiner support — new humans get a chip as soon as their Player object replicates.
+            if (gameData.OnPlayerNetworkSpawnedUlong != null && !_watchingPlayerSpawnEvent)
+            {
+                gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerSpawnedDuringModal;
+                _watchingPlayerSpawnEvent = true;
+            }
+        }
+
+        void SpawnChipForPlayer(Player p, ulong localId, PlayerDataService dataService)
+        {
+            if (p == null || _playerChips.ContainsKey(p)) return;
+
+            var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Blue);
+            if (startTile == null || startTile.AvatarStripTransform == null)
+            {
+                Debug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} — chip not spawned.");
+                return;
+            }
+
+            var chip = Instantiate(chipPrefab, startTile.AvatarStripTransform);
+            Sprite sprite = dataService != null ? dataService.GetAvatarSprite(p.NetAvatarId.Value) : null;
+            chip.Set(sprite, p.OwnerClientId == localId);
+            _playerChips[p] = chip;
+
+            // Hook for future domain changes — closure captures the player so we know
+            // whose chip to move when this fires.
+            NetworkVariable<Domains>.OnValueChangedDelegate handler =
+                (_, newDomain) => HandlePlayerDomainChanged(p, newDomain);
+            p.NetDomain.OnValueChanged += handler;
+            _domainHandlers[p] = handler;
+        }
+
+        void HandlePlayerDomainChanged(Player p, Domains newDomain)
+        {
+            if (!_playerChips.TryGetValue(p, out var chip) || chip == null) return;
+            var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Blue);
+            if (tile == null || tile.AvatarStripTransform == null) return;
+            chip.transform.SetParent(tile.AvatarStripTransform, worldPositionStays: false);
+        }
+
+        void DespawnAllChips()
+        {
+            foreach (var kv in _domainHandlers)
+            {
+                if (kv.Key != null && kv.Key.NetDomain != null)
+                    kv.Key.NetDomain.OnValueChanged -= kv.Value;
+            }
+            _domainHandlers.Clear();
+
+            foreach (var chip in _playerChips.Values)
+                if (chip) Destroy(chip.gameObject);
+            _playerChips.Clear();
+
+            if (_watchingPlayerSpawnEvent && gameData != null
+                && gameData.OnPlayerNetworkSpawnedUlong != null)
+            {
+                gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerSpawnedDuringModal;
+            }
+            _watchingPlayerSpawnEvent = false;
+        }
+
+        void HandlePlayerSpawnedDuringModal(ulong ownerClientId)
+        {
+            if (gameData == null) return;
+            ulong localId = NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL;
+            var dataService = PlayerDataService.Instance;
+
+            foreach (var ip in gameData.Players)
+            {
+                if (ip is Player p && p.OwnerClientId == ownerClientId && !p.NetIsAI.Value)
+                {
+                    SpawnChipForPlayer(p, localId, dataService);
+                    break;
+                }
+            }
+        }
+
+        DomainInfoData FindTileForDomain(Domains d)
+        {
+            foreach (var item in domainInfoItems)
+                if (item && item.Domain == d) return item;
+            return null;
+        }
+
+        /// <summary>
+        /// Destroys any DomainAvatarChip GameObjects already parented under tile strips
+        /// (e.g. from a previous modal session, or hand-placed editor chips). Keeps
+        /// the strip clean for our managed chip set.
+        /// </summary>
+        void ClearStaleChipsFromAllStrips()
+        {
+            foreach (var item in domainInfoItems)
+            {
+                if (!item || item.AvatarStripTransform == null) continue;
+                for (int i = item.AvatarStripTransform.childCount - 1; i >= 0; i--)
+                {
+                    var child = item.AvatarStripTransform.GetChild(i);
+                    if (child.TryGetComponent<DomainAvatarChip>(out _))
+                        Destroy(child.gameObject);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the selected-vs-unselected sprite on each tile from the local pick.
+        /// All 4 tiles (Random/Jade/Ruby/Gold) are always visible — the host can pick
+        /// any. Does not touch chip lifecycle.
+        /// </summary>
+        void RefreshTileVisibility()
+        {
+            if (config == null) return;
+
+            var selected = config.SelectedDomain;
 
             foreach (var item in domainInfoItems)
             {
                 if (!item) continue;
+
+                item.gameObject.SetActive(true);
                 item.SetSelected(item.Domain == selected);
-                item.SetAvatarSprite(avatarSprite);
             }
         }
 
@@ -1086,6 +1243,11 @@ namespace CosmicShore.UI
             // Clients skip the config screen (intensity/player count) and go
             // directly to vessel selection since only the host controls those.
             ShowGameDetailScreen();
+
+            // Same chip-spawn pattern as the host path so clients see live
+            // chip movement when any player picks.
+            SpawnChipsForAllPlayers();
+            RefreshTileVisibility();
         }
 
         /// <summary>
@@ -1094,6 +1256,7 @@ namespace CosmicShore.UI
         void HandleConfigClosedOnClient()
         {
             _isClientMode = false;
+            DespawnAllChips();
             ModalWindowOut();
         }
 
@@ -1134,6 +1297,11 @@ namespace CosmicShore.UI
             if (playerCountStepper)
                 playerCountStepper.SetValue(playerCount);
             RefreshPlayerCountStepper();
+
+            // Domain count may have shifted (host's domain stepper) — re-evaluate
+            // per-tile active state. Chip movement is unaffected; reparenting is
+            // driven by NetDomain.OnValueChanged independently.
+            RefreshTileVisibility();
         }
 
         /// <summary>

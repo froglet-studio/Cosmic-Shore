@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
 
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
-        private Domains currentDomain = Domains.Unassigned;
+        private Domains currentDomain = Domains.Blue;
 
         public Domains Domain
         {
@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
 
         public void SetInitialTeam(Domains domain)
         {
-            if (currentDomain == Domains.Unassigned)
+            if (currentDomain == Domains.Blue)
             {
                 Domain = domain;
                 materialAnimator.UpdateMaterial(

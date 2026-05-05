@@ -191,9 +191,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Returns the active domain with the fewest players. Ties are broken
-        /// by random selection among all domains tied at the minimum, with
-        /// candidate ordering anchored to <see cref="GameDataSO.ActiveDomains"/>
-        /// for cross-machine determinism under a shared RNG seed.
+        /// deterministically by <see cref="GameDataSO.ActiveDomains"/> enum order
+        /// (Jade → Ruby → Gold), so identical inputs produce identical AI
+        /// distributions across machines without needing a shared RNG seed.
         /// </summary>
         static Domains GetBalancedDomain(Dictionary<Domains, int> counts)
         {
@@ -201,20 +201,16 @@ namespace CosmicShore.Gameplay
             foreach (var v in counts.Values)
                 if (v < min) min = v;
 
-            var candidates = new List<Domains>();
+            // Iterate ActiveDomains in order so the first match (== smallest team
+            // with the lowest enum index) wins ties deterministically.
             foreach (var d in GameDataSO.ActiveDomains)
                 if (counts.TryGetValue(d, out var c) && c == min)
-                    candidates.Add(d);
+                    return d;
 
-            if (candidates.Count == 0)
-            {
-                // Should never happen if counts is initialized from BuildInitialCounts,
-                // but degrade gracefully rather than throw.
-                CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] GetBalancedDomain: counts dict is empty");
-                return GameDataSO.ActiveDomains[0];
-            }
-
-            return candidates[Random.Range(0, candidates.Count)];
+            // Should never happen if counts is initialized from BuildInitialCounts,
+            // but degrade gracefully rather than throw.
+            CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] GetBalancedDomain: counts dict is empty");
+            return GameDataSO.ActiveDomains[0];
         }
 
         /// <summary>

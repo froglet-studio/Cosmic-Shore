@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     public class MineImpactor : ImpactorBase
     {
         public Mine Mine;
-        public override Domains OwnDomain => Domains.None;
+        public override Domains OwnDomain => Domains.Blue;
 
         VesselMineEffectSO[] mineShipEffects;
         ExplosionMineEffectSO[] mineExplosionEffects;

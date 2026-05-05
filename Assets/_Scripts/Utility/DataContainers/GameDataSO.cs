@@ -100,7 +100,7 @@ namespace CosmicShore.Utility
         /// player whose Domain equals this value is on the winning team.
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
-        [NonSerialized] public Domains WinnerDomain = Domains.Unassigned;
+        [NonSerialized] public Domains WinnerDomain = Domains.Blue;
 
         /// <summary>
         /// The resolved crystal collection target for the current session.
@@ -259,7 +259,7 @@ namespace CosmicShore.Utility
             LocalPlayer = null;
             LocalRoundStats = null;
             WinnerName = "";
-            WinnerDomain = Domains.Unassigned;
+            WinnerDomain = Domains.Blue;
             CrystalTargetCount = 0;
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -294,7 +294,7 @@ namespace CosmicShore.Utility
             TurnsTakenThisRound = 0;
             _playerSpawnPoseList.Clear();
             WinnerName = "";
-            WinnerDomain = Domains.Unassigned;
+            WinnerDomain = Domains.Blue;
             CrystalTargetCount = 0;
         }
 
@@ -356,7 +356,7 @@ namespace CosmicShore.Utility
             if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
 
-            OnPlayerAdded?.Invoke(p.Name, p.RoundStats?.Domain ?? Domains.Unassigned);
+            OnPlayerAdded?.Invoke(p.Name, p.RoundStats?.Domain ?? Domains.Blue);
         }
         
         public void SortRoundStats(bool golfRules)

@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
 
         readonly NetworkVariable<int> _netLiveBlockCount = new(0);
         readonly NetworkVariable<CellPhase> _netPhase = new(CellPhase.Sprout);
-        readonly NetworkVariable<Domains> _netDominantDomain = new(Domains.None);
+        readonly NetworkVariable<Domains> _netDominantDomain = new(Domains.Blue);
 
         float _nextMirrorAt;
 

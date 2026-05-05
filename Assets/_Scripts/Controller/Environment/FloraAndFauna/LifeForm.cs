@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
             if (!string.IsNullOrEmpty(killerName))
                 OnLifeFormDeath?.Invoke(killerName, cellId);
 
-            healthTracker.DamageAll(Domains.None);
+            healthTracker.DamageAll(Domains.Blue);
             spindleTracker.ForceWitherAll(gameObject);
 
             if (cell)

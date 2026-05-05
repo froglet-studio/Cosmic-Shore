@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
 
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
         
-        public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
+        public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.Blue || ownDomain == shipDomain;
 
         public struct ExplodeParams
         {
@@ -194,7 +194,7 @@ namespace CosmicShore.Gameplay
         {
             if (ownDomain == newDomain)
                 return;
-            if (newDomain == Domains.None)
+            if (newDomain == Domains.Blue)
             {
                 for (int i = 0; i < crystalModels.Count; i++)
                 {
@@ -214,7 +214,7 @@ namespace CosmicShore.Gameplay
         IEnumerator DecayingTheftCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            ChangeDomain(Domains.None);
+            ChangeDomain(Domains.Blue);
         }
 
         protected IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)

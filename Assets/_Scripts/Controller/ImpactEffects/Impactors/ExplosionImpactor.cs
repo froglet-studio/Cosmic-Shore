@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
             }
             
             if (explosion.AnonymousExplosion) // Vessel Status will be null here
-                prism.Damage(impactVector, Domains.None, "🔥GuyFawkes🔥", devastating);
+                prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating);
             else
             {
                 var shipStatus = explosion.Vessel.VesselStatus;
