@@ -74,15 +74,14 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Live leader by per-domain prism count. Recomputed on demand so the answer
         /// always reflects the current Add/RemoveBlock-driven counts. Returns
-        /// <see cref="Domains.None"/> when the cell has no prisms tracked yet.
-        /// Ties resolve in fixed order (Jade > Ruby > Gold > Blue) so two clients with
-        /// the same per-domain counts pick the same leader.
+        /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the cell has no
+        /// prisms tracked yet. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
         /// </summary>
         public Domains DominantDomain
         {
             get
             {
-                Domains leader = Domains.None;
+                Domains leader = Domains.Blue;
                 int leaderCount = 0;
                 Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
                 foreach (var d in order)
@@ -141,27 +140,27 @@ namespace CosmicShore.Gameplay
         /// <see cref="DominantDomain"/> (per-domain prism count leader), then falls
         /// back to gameData's controlling team by remaining volume, then to the local
         /// player's domain (useful in Menu_Main where there is no scored controlling
-        /// team), then to Jade as a last resort. Never returns None or Unassigned —
-        /// callers can use it directly without further branching.
+        /// team), then to Jade as a last resort. Never returns Blue (the "no team"
+        /// sentinel) — callers can use it directly without further branching.
         /// </summary>
         public Domains ControllingDomain
         {
             get
             {
                 var dominant = DominantDomain;
-                if (dominant != Domains.None && dominant != Domains.Unassigned)
+                if (dominant != Domains.Blue)
                     return dominant;
 
                 if (gameData != null)
                 {
                     var top = gameData.GetControllingTeamStatsBasedOnVolumeRemaining();
-                    if (top.Team != Domains.None && top.Team != Domains.Unassigned && top.Volume > 0f)
+                    if (top.Team != Domains.Blue && top.Volume > 0f)
                         return top.Team;
 
                     var local = gameData.LocalRoundStats?.Domain
                                 ?? gameData.LocalPlayer?.Domain
-                                ?? Domains.Unassigned;
-                    if (local != Domains.None && local != Domains.Unassigned)
+                                ?? Domains.Blue;
+                    if (local != Domains.Blue)
                         return local;
                 }
                 return Domains.Jade;
@@ -399,15 +398,16 @@ namespace CosmicShore.Gameplay
 
         void SetupDensityGrids()
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
             foreach (Domains t in teams)
                 countGrids[t] = new BlockCountDensityGrid(t);
 
-            // None-keyed grid accumulates every block regardless of domain so
+            // Blue-keyed grid accumulates every block regardless of domain so
             // GetDensestRegionAnyDomain() can answer aggression-2 fauna's "head toward
-            // nearest centroid" goal — friendly + enemy mass both count.
-            countGrids[Domains.None] = new BlockCountDensityGrid(Domains.None);
+            // nearest centroid" goal — friendly + enemy mass both count. Blue is the
+            // "no specific team" sentinel; this grid does double duty as the wildcard.
+            countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue);
         }
 
         void SpawnVisuals()
@@ -492,7 +492,7 @@ namespace CosmicShore.Gameplay
                 foreach (var t in teams)
                     if (t != block.Domain) countGrids[t].AddBlock(block);
 
-                if (countGrids.TryGetValue(Domains.None, out var anyGrid))
+                if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.AddBlock(block);
 
                 domainBlockCounts.TryGetValue(block.Domain, out int count);
@@ -511,7 +511,7 @@ namespace CosmicShore.Gameplay
                 foreach (Domains t in teams)
                     if (t != block.Domain) countGrids[t].RemoveBlock(block);
 
-                if (countGrids.TryGetValue(Domains.None, out var anyGrid))
+                if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.RemoveBlock(block);
 
                 if (domainBlockCounts.TryGetValue(block.Domain, out int count) && count > 0)
@@ -540,12 +540,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Densest region across all domains — the "nearest centroid of any color"
         /// goal for fauna at aggression Level 2. Reads the synthesized
-        /// countGrids[Domains.None] grid that <see cref="AddBlock"/> populates with
-        /// every block regardless of its domain.
+        /// countGrids[Domains.Blue] grid that <see cref="AddBlock"/> populates with
+        /// every block regardless of its domain (Blue serves double-duty as the
+        /// "no specific team" sentinel and the all-domain wildcard bucket).
         /// </summary>
         public Vector3 GetDensestRegionAnyDomain()
         {
-            if (!countGrids.TryGetValue(Domains.None, out var anyGrid) || anyGrid == null)
+            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
                 return GetCellAnchorPosition();
 
             var region = anyGrid.FindDensestRegion();

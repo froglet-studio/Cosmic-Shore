@@ -318,7 +318,7 @@ namespace CosmicShore.Gameplay
             int expDomain = (int)explosionDomain;
 
             // Cache vessel info to avoid repeated interface property access
-            Domains vesselDomain = Domains.None;
+            Domains vesselDomain = Domains.Blue;
             string vesselPlayerName = null;
             if (!anonymous && vessel != null)
             {
@@ -381,7 +381,7 @@ namespace CosmicShore.Gameplay
 
                 // Deal damage
                 if (anonymous)
-                    prism.Damage(impactVector, Domains.None, "🔥GuyFawkes🔥", devastating);
+                    prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating);
                 else
                     prism.Damage(impactVector, vesselDomain, vesselPlayerName, devastating);
 

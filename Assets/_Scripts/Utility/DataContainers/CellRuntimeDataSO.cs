@@ -84,18 +84,19 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Get crystal for local player.
-        /// Tries local domain, then Domains.None, then first crystal.
+        /// Tries local domain, then Blue (the "no team" sentinel — uncommitted crystals),
+        /// then first crystal.
         /// </summary>
         public bool TryGetLocalCrystal(out Crystal crystal)
         {
             crystal = null;
 
-            var ownDomain = gameData?.LocalPlayer?.Domain ?? Domains.None;
+            var ownDomain = gameData?.LocalPlayer?.Domain ?? Domains.Blue;
 
             if (TryGetCrystalByDomain(ownDomain, out crystal))
                 return true;
 
-            if (TryGetCrystalByDomain(Domains.None, out crystal))
+            if (TryGetCrystalByDomain(Domains.Blue, out crystal))
                 return true;
 
             if (Crystals != null && Crystals.Count > 0 && Crystals[0])
@@ -146,7 +147,7 @@ namespace CosmicShore.Utility
                     LifeFormsInCell = 0,
                     LiveBlockCount = 0,
                     Phase = CellPhase.Sprout,
-                    DominantDomain = Domains.None,
+                    DominantDomain = Domains.Blue,
                 };
         }
 

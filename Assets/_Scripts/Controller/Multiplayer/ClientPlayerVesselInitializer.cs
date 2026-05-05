@@ -261,6 +261,10 @@ namespace CosmicShore.Gameplay
             player.InitializeForMultiplayerMode(vessel);
             vessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, vessel);
+            // Stash the theme reference on Player so OnNetDomainChanged can repaint
+            // the vessel materials when NetDomain replicates after spawn (modal Blue
+            // reset, NormalizeUnassignedHumans reroll, shape-mode SetDomain, etc).
+            if (player is Player p) p._vesselThemeManagerData = themeManagerData;
             gameData.AddPlayer(player);
             Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}</color>");
 
@@ -292,6 +296,8 @@ namespace CosmicShore.Gameplay
             player.ChangeVessel(newVessel);
             newVessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, newVessel);
+            // Re-stash so a later NetDomain change keeps the SWAPPED vessel in sync.
+            if (player is Player p) p._vesselThemeManagerData = themeManagerData;
 
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();

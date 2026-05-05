@@ -274,19 +274,12 @@ namespace CosmicShore.Gameplay
             SyncLocalIdentity();
             RepublishLocalIdentityAsync().Forget();
 
-            // Create Relay-backed party session so the NetworkManager starts as a
-            // Relay host. Wrapped in try-catch so a Relay failure does not block
-            // _initialized — the presence lobby and refresh loop must always work.
-            // SendInviteAsync has a lazy-creation fallback if _partySession is null.
-            try
-            {
-                await CreatePartySessionAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] Party session creation failed (Relay may be unavailable). " +
-                    $"Invite send will retry on demand. Error: {e.Message}");
-            }
+            // NOTE: party session is created lazily on first SendInviteAsync
+            // (which triggers nm.Shutdown + Relay-backed StartHost — destroys
+            // and respawns every vessel). Eagerly creating it here would do
+            // that on every app launch, and recreating it on every refresh
+            // failure would do it periodically forever. Lazy is the only sane
+            // policy: solo menu = local host = stable vessels.
 
             _initialized = true;
             DebugExtensions.LogColored(
@@ -305,19 +298,16 @@ namespace CosmicShore.Gameplay
             if (!_initialized || _presenceLobby == null || _lobbyBusy) return;
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
 
-            // Only run party session recreation and lobby refresh while on
-            // Menu_Main. During game scenes the party session is irrelevant
-            // and recreation would shut down / restart the NetworkManager,
-            // destroying in-flight network objects and flashing stale UI.
+            // Only run lobby refresh while on Menu_Main. During game scenes the
+            // party session is irrelevant.
             if (!IsOnMenuScene()) return;
 
-            // If the party session was cleared (e.g. after returning from a game),
-            // recreate it so Menu_Main gets a live Relay host for vessel spawning.
-            if (_partySession == null && _creatingPartySessionTask == null
-                && Time.unscaledTime >= _nextRecreationAttemptTime)
-            {
-                RecreatePartySessionAsync().Forget();
-            }
+            // NOTE: party session is NOT auto-recreated here. Each recreation
+            // calls nm.Shutdown + Relay-backed StartHost, which destroys and
+            // respawns every vessel — flashing stale UI on each refresh-failure
+            // cycle. The session is created lazily on first SendInviteAsync;
+            // if it dies, it stays dead until the next outgoing invite. Keeps
+            // the menu's local-host vessel stable indefinitely.
 
             // Drop expired outgoing invites before scheduling the next refresh so
             // the slot is reusable as soon as the timeout window closes. We don't
@@ -371,23 +361,6 @@ namespace CosmicShore.Gameplay
             return sceneName == "Menu_Main" || sceneName == "Authentication";
         }
 
-        /// <summary>Time before next recreation attempt after a failure.</summary>
-        private float _nextRecreationAttemptTime;
-
-        private async UniTaskVoid RecreatePartySessionAsync()
-        {
-            try
-            {
-                Debug.Log("[HostConnectionService] Party session is null — recreating...");
-                await CreatePartySessionAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] Party session recreation failed: {e.Message}");
-                // Back off to avoid tight retry loops if Relay is unavailable.
-                _nextRecreationAttemptTime = Time.unscaledTime + refreshIntervalSeconds * 2;
-            }
-        }
 
         async void OnDestroy()
         {
@@ -497,18 +470,9 @@ namespace CosmicShore.Gameplay
                 SyncLocalIdentity();
                 RepublishLocalIdentityAsync().Forget();
 
-                // Create Relay-backed party session so the NetworkManager starts as a
-                // Relay host. Failure is non-fatal — the presence lobby and refresh loop
-                // must always work. SendInviteAsync has a lazy-creation fallback.
-                try
-                {
-                    await CreatePartySessionAsync();
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[HostConnectionService] Party session creation failed (Relay may be unavailable). " +
-                        $"Invite send will retry on demand. Error: {e.Message}");
-                }
+                // Party session is created lazily on first SendInviteAsync —
+                // see Start() for the rationale. Don't burn a Relay allocation
+                // (and a vessel respawn) just because we signed in.
 
                 _initialized = true;
                 DebugExtensions.LogColored(
@@ -1526,15 +1490,16 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning($"[HostConnectionService] Party session refresh error: {e.Message}");
 
-                // Rate limits are transient — back off and retry next cycle.
-                // Only null the session for non-transient errors (session deleted,
-                // auth failure, etc.) so the Update() loop can recreate it.
                 if (IsRateLimitException(e))
                 {
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     return;
                 }
 
+                // Non-recoverable error — drop the session reference. There is no
+                // auto-recreate; the user must re-invite to spin one up. This is
+                // intentional: every recreation costs a NetworkManager Shutdown+StartHost
+                // and a vessel respawn, so silent background recreation is forbidden.
                 _partySession = null;
                 connectionData.PartyMembers?.Clear();
                 return;

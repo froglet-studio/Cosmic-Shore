@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
         
         public Domains Domain
         {
-            get => teamManager?.Domain ?? Domains.Unassigned;
+            get => teamManager?.Domain ?? Domains.Blue;
             set
             {
                 if (teamManager) teamManager.SetInitialTeam(value);

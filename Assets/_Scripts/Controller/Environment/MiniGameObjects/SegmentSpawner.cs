@@ -283,7 +283,7 @@ namespace CosmicShore.Gameplay
             {
                 var domains = gameData.Players
                     .Select(p => p.Domain)
-                    .Where(d => d is not (Domains.None or Domains.Unassigned))
+                    .Where(d => d != Domains.Blue)
                     .Distinct()
                     .ToList();
 

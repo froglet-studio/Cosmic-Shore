@@ -101,12 +101,12 @@ namespace CosmicShore.Gameplay
 
             // Fauna spawn in the cell's dominant domain — the live leader by per-domain
             // prism count. Falls back to the manager's own domain when the cell hasn't
-            // accrued enough prisms to pick a leader (DominantDomain returns None on an
-            // empty cell, but we shouldn't be spawning there anyway thanks to the phase
-            // gate). Existing fauna keep their assigned domain even as the cell's
-            // dominant shifts — only newly-spawned fauna track the live leader.
-            Domains spawnDomain = cell ? cell.DominantDomain : Domains.None;
-            if (spawnDomain == Domains.None) spawnDomain = domain;
+            // accrued enough prisms to pick a leader (DominantDomain returns Blue, the
+            // "no team" sentinel, on an empty cell, but we shouldn't be spawning there
+            // anyway thanks to the phase gate). Existing fauna keep their assigned domain
+            // even as the cell's dominant shifts — only newly-spawned fauna track it.
+            Domains spawnDomain = cell ? cell.DominantDomain : Domains.Blue;
+            if (spawnDomain == Domains.Blue) spawnDomain = domain;
 
             for (int i = 0; i < count; i++)
             {
