@@ -47,6 +47,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] public float RotationAmount;
         [HideInInspector] public int DifficultyAngle = 90;
 
+        [Header("Super-Shield Testing")]
+        [Tooltip("Diagnostic: super-shield every spawned track prism with a PrismStellatedOctahedronShield. " +
+                 "Used to test the stellated octahedron (Stella Octangula) shield system on the track.")]
+        [SerializeField] bool superShieldTrackPrisms = false;
+
+        [Tooltip("If true, super-shield engages instantly (skip bloom morph). If false, plays the per-face bloom transition on spawn.")]
+        [SerializeField] bool superShieldEngageInstant = true;
+
         // Runtime state
         private GameObject SpawnedSegmentContainer;
         private List<Trail> trails = new();
@@ -172,6 +180,34 @@ namespace CosmicShore.Gameplay
                 SpawnAndLayout(spawnable, currentIntensity, layoutIndex);
                 layoutIndex++;
             }
+
+            if (superShieldTrackPrisms)
+                SuperShieldSpawnedPrisms();
+        }
+
+        /// <summary>
+        /// Diagnostic helper: walks every prism in every spawned trail and
+        /// attaches a <see cref="PrismStellatedOctahedronShield"/>, then
+        /// engages it. Used to test the stellated octahedron super-shield
+        /// system on the live track without authoring shielded variants of
+        /// the prism prefabs.
+        /// </summary>
+        void SuperShieldSpawnedPrisms()
+        {
+            int shielded = 0;
+            foreach (var trail in trails)
+            {
+                if (trail?.TrailList == null) continue;
+                foreach (var prism in trail.TrailList)
+                {
+                    if (prism == null) continue;
+                    var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
+                                 ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
+                    shield.Engage(instant: superShieldEngageInstant);
+                    shielded++;
+                }
+            }
+            Debug.Log($"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
         }
 
         void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
