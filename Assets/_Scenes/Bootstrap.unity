@@ -2760,7 +2760,7 @@ PrefabInstance:
         type: 3}
       propertyPath: ShieldDeactivateAudioClip
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 8300000, guid: 1ce48d93fbeaa47df916bd45eb9ca748, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
