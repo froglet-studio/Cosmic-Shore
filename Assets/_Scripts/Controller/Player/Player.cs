@@ -85,7 +85,7 @@ namespace CosmicShore.Gameplay
                     Debug.LogWarning("[Player] Random pick requested but ActiveDomains is empty.");
                     return;
                 }
-                NetDomain.Value = actives[Random.Range(0, actives.Length)];
+                NetDomain.Value = actives[UnityEngine.Random.Range(0, actives.Length)];
                 return;
             }
 
