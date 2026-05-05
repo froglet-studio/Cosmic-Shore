@@ -164,12 +164,12 @@ namespace CosmicShore.Gameplay
                     (item.ItemType != ItemType.Debuff || item.ownDomain == myDomain)) continue;
 
                 // Skip buff items that belong to another player's domain.
-                // Only target items with no domain (None) or matching our own domain.
-                // When our domain is Unassigned (e.g. Menu_Main autopilot), skip this
-                // check so the vessel still chases crystals freely.
+                // Only target items with no domain (Blue sentinel) or matching our own domain.
+                // When our domain is Blue (e.g. Menu_Main autopilot before pick),
+                // skip this check so the vessel still chases crystals freely.
                 if (item.ItemType == ItemType.Buff
-                    && myDomain != Domains.Unassigned
-                    && item.ownDomain != Domains.None
+                    && myDomain != Domains.Blue
+                    && item.ownDomain != Domains.Blue
                     && item.ownDomain != myDomain)
                     continue;
 

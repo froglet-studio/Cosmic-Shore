@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     public class MultiplayerJoustController : MultiplayerDomainGamesController
     {
         private bool _finalResultsSent;
-        private Domains _winningDomain = Domains.Unassigned;
+        private Domains _winningDomain = Domains.Blue;
 
         protected override bool UseGolfRules => true;
 
@@ -59,14 +59,14 @@ namespace CosmicShore.Gameplay
                 .FirstOrDefault();
 
             string winnerName = winner?.Name ?? "";
-            Domains winningDomain = winner?.Domain ?? Domains.Unassigned;
+            Domains winningDomain = winner?.Domain ?? Domains.Blue;
 
             CSDebug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Domain={winningDomain} Time={currentTime:F2}s " +
                       $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.JoustCollisions}j"))}]");
 
             foreach (var stats in gameData.RoundStatsList)
             {
-                if (winningDomain != Domains.Unassigned && stats.Domain == winningDomain)
+                if (winningDomain != Domains.Blue && stats.Domain == winningDomain)
                     stats.Score = currentTime;
                 else if (stats.Name == winnerName)
                     stats.Score = currentTime;
@@ -163,7 +163,7 @@ namespace CosmicShore.Gameplay
         {
             base.OnResetForReplayCustom();
             _finalResultsSent = false;
-            _winningDomain = Domains.Unassigned;
+            _winningDomain = Domains.Blue;
 
             foreach (var s in gameData.RoundStatsList)
             {

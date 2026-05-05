@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
                     RecursiveRaycastDestruction(hitPrism, status);
                 }
             }
-            prism.Damage(damage, Domains.None, status.PlayerName, devastate: true);
+            prism.Damage(damage, Domains.Blue, status.PlayerName, devastate: true);
         }
 
         private async UniTaskVoid BlowUpPrismsOverTime(

@@ -43,7 +43,7 @@ namespace CosmicShore.UI
 
             var message = $"<color=#{atkHex}><b>{attackerName}</b></color> jousted <color=#{defHex}><b>{targetName}</b></color>";
 
-            Post(message, Domains.Unassigned, GameFeedType.JoustHit);
+            Post(message, Domains.Blue, GameFeedType.JoustHit);
         }
 
         public static Color GetDomainColor(Domains domain)

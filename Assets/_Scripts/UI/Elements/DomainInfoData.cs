@@ -5,10 +5,16 @@ using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// Per-domain tile inside the configure modal. Owns its own visual state
+    /// (selected sprite + label color) and exposes the strip Transform that
+    /// <see cref="ArcadeGameConfigureModal"/> reparents avatar chips into.
+    /// Chip lifecycle and instancing are entirely the modal's responsibility.
+    /// </summary>
     public class DomainInfoData : MonoBehaviour
     {
         [Header("Domain")]
-        [SerializeField] private Domains domain = Domains.Unassigned;
+        [SerializeField] private Domains domain = Domains.Blue;
 
         [Header("Button")]
         [SerializeField] private Button button;
@@ -23,15 +29,14 @@ namespace CosmicShore.UI
         [SerializeField] private Color selectedTextColor = Color.white;
         [SerializeField] private Color unselectedTextColor = Color.gray;
 
-        [Header("Avatar Icon")]
-        [Tooltip("The AvatarIcon container GameObject. Enabled only on the selected domain.")]
-        [SerializeField] private GameObject avatarIconContainer;
-
-        [Tooltip("The child Image inside avatarIconContainer that displays the avatar sprite.")]
-        [SerializeField] private Image avatarIconImage;
+        [Header("Avatar Strip")]
+        [Tooltip("Container under which the modal reparents DomainAvatarChips for " +
+                 "each player currently picking this domain. Modal owns the chip lifecycle.")]
+        [SerializeField] private HorizontalLayoutGroup avatarStrip;
 
         public Domains Domain => domain;
         public Button Button => button;
+        public Transform AvatarStripTransform => avatarStrip ? avatarStrip.transform : null;
 
         public void SetSelected(bool selected)
         {
@@ -40,24 +45,6 @@ namespace CosmicShore.UI
 
             if (labelText)
                 labelText.color = selected ? selectedTextColor : unselectedTextColor;
-
-            if (avatarIconContainer)
-                avatarIconContainer.SetActive(selected);
-        }
-
-        public void SetAvatarSprite(Sprite sprite)
-        {
-            if (!avatarIconImage) return;
-
-            if (sprite != null)
-            {
-                avatarIconImage.sprite = sprite;
-                avatarIconImage.enabled = true;
-            }
-            else
-            {
-                avatarIconImage.enabled = false;
-            }
         }
     }
 }

@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.SupportedFloras is not { Count: > 0 })
                 yield break;
 
-            var excluded = GetExcludedDomain(spawnProfile.FloraExcludeLocalDomain, gameData, fallbackLocal: Domains.None);
+            var excluded = GetExcludedDomain(spawnProfile.FloraExcludeLocalDomain, gameData, fallbackLocal: Domains.Blue);
 
             foreach (var floraCfg in spawnProfile.SupportedFloras)
             {
