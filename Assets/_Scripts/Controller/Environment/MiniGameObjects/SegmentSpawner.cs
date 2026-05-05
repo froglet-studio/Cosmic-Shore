@@ -186,26 +186,53 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Diagnostic helper: walks every prism in every spawned trail and
+        /// Diagnostic helper: walks every prism in the spawned hierarchy and
         /// attaches a <see cref="PrismStellatedOctahedronShield"/>, then
         /// engages it. Used to test the stellated octahedron super-shield
         /// system on the live track without authoring shielded variants of
         /// the prism prefabs.
+        ///
+        /// Uses <c>GetComponentsInChildren&lt;Prism&gt;</c> rather than walking
+        /// trail.TrailList — some spawnables ship prisms via nested
+        /// PrefabInstance children (e.g. Manta Prism contains a Rhino Prism
+        /// child), and we want every renderable prism shielded regardless of
+        /// trail registration.
+        ///
+        /// Resets the legacy <c>IsShielded</c>/<c>IsSuperShielded</c> flags
+        /// before engaging. Some authored prefabs (notably
+        /// ShieldedSpawnablePrism, used as the regular HexRace track block)
+        /// ship with <c>prismProperties.IsShielded = true</c>, which causes
+        /// <c>Prism.Initialize()</c> to call <c>ActivateShield()</c> →
+        /// <c>materialAnimator.UpdateMaterial()</c>. That swap to the
+        /// transparent shield material rendered over the top of the stellated
+        /// mesh effectively hid the stellation on regular track blocks while
+        /// the larger waypoint markers (Manta Prism, IsShielded=false) still
+        /// read clearly. <see cref="Prism.DeactivateShields"/> kicks the
+        /// state machine back to Normal and restores the opaque material.
         /// </summary>
         void SuperShieldSpawnedPrisms()
         {
+            if (SpawnedSegmentContainer == null) return;
+
+            var prisms = SpawnedSegmentContainer.GetComponentsInChildren<Prism>(includeInactive: true);
             int shielded = 0;
-            foreach (var trail in trails)
+            foreach (var prism in prisms)
             {
-                if (trail?.TrailList == null) continue;
-                foreach (var prism in trail.TrailList)
+                if (prism == null) continue;
+
+                // Clear legacy shield flags + revert material so the stellated
+                // mesh reads as the dominant visual.
+                if (prism.prismProperties != null)
                 {
-                    if (prism == null) continue;
-                    var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
-                                 ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
-                    shield.Engage(instant: superShieldEngageInstant);
-                    shielded++;
+                    prism.prismProperties.IsShielded = false;
+                    prism.prismProperties.IsSuperShielded = false;
                 }
+                prism.DeactivateShields();
+
+                var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
+                             ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
+                shield.Engage(instant: superShieldEngageInstant);
+                shielded++;
             }
             Debug.Log($"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
         }
