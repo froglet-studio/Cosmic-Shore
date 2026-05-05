@@ -118,8 +118,23 @@ namespace CosmicShore.Utility.AITraining
             if (!_running) return;
             _running = false;
 
-            EndEpisodeInternal(timedOut: false, force: true);
+            // CRITICAL: do NOT record the in-progress episode. Its fitness is a
+            // fraction of what a complete run would produce and would poison both
+            // the rolling-mean fitness on the genome and the hall-of-fame best.
+            // Just unwind any active pilots and unhook events.
+            if (_episodeActive)
+            {
+                _episodeActive = false;
+                for (int i = 0; i < _activePilots.Count; i++)
+                {
+                    var pilot = _activePilots[i];
+                    if (pilot != null) pilot.EndEpisode();
+                }
+                _activePilots.Clear();
+            }
+
             UnhookGameDataEvents();
+            PersistState(forceSave: true);
 
             if (telemetry != null)
             {
@@ -127,6 +142,22 @@ namespace CosmicShore.Utility.AITraining
                 telemetry.OnSessionStopped?.Raise();
                 telemetry.RaiseAnyChange();
             }
+        }
+
+        /// <summary>
+        /// Marks the session-state asset dirty and flushes to disk. Called after
+        /// every completed episode so that an interrupt never costs more than the
+        /// last in-flight match. forceSave = true forces an immediate AssetDatabase
+        /// save; otherwise the save piggybacks on Unity's next batch flush so we
+        /// don't IO-thrash during overnight runs.
+        /// </summary>
+        void PersistState(bool forceSave)
+        {
+#if UNITY_EDITOR
+            if (state != null) UnityEditor.EditorUtility.SetDirty(state);
+            if (archive != null) UnityEditor.EditorUtility.SetDirty(archive);
+            if (forceSave) UnityEditor.AssetDatabase.SaveAssets();
+#endif
         }
 
         public void DeployBestToArchive()
@@ -280,12 +311,14 @@ namespace CosmicShore.Utility.AITraining
                 EndEpisodeInternal(timedOut: false, force: true);
             }
 
-            // Periodic auto-deploy so overnight runs always have a recent archive on disk.
+            // Periodic full AssetDatabase flush. Per-episode persistence already marks
+            // assets dirty; this just makes sure they hit the disk every few minutes
+            // even on a long overnight run with no other editor activity.
             int now = (int)Time.realtimeSinceStartup;
-            if (deployBestToArchive && now - _lastDeploySecond >= deployEverySeconds)
+            if (now - _lastDeploySecond >= deployEverySeconds)
             {
                 _lastDeploySecond = now;
-                DeployBestToArchive();
+                PersistState(forceSave: true);
             }
         }
 
@@ -399,10 +432,16 @@ namespace CosmicShore.Utility.AITraining
 
         bool ShouldTrainPlayer(IPlayer player)
         {
-            // Default policy: train every AI in the scene. The scenario may want to
-            // train only the trainee and leave opponents on their default AIPilot —
-            // expose that as a flag on TrainingScenarioSO if/when needed.
-            return player.IsInitializedAsAI;
+            if (player == null || player.Vessel == null) return false;
+
+            // Train everything that's running on AI. This includes:
+            //   1. Players spawned with IsInitializedAsAI (the AI backfill pipeline).
+            //   2. The host's player when the auto-launcher has flipped its vessel
+            //      onto autopilot for AI-vs-AI training (so all 3 vessels in a HexRace
+            //      session train, not just the 2 spawned as AI).
+            if (player.IsInitializedAsAI) return true;
+            var status = player.Vessel.VesselStatus;
+            return status != null && status.AIPilot != null && status.AutoPilotEnabled;
         }
 
         FitnessProfileSO _fallbackProfile;
@@ -492,6 +531,12 @@ namespace CosmicShore.Utility.AITraining
                 telemetry.OnEpisodeEnded?.Raise();
                 telemetry.RaiseAnyChange();
             }
+
+            // Save state and deploy after every completed episode. This is what makes
+            // "interrupt at any time and keep everything but the in-progress match" work:
+            // by the time the next match starts, the previous one is durable on disk.
+            if (deployBestToArchive) DeployBestToArchive();
+            PersistState(forceSave: false);
 
             if (force && gameData != null && _running)
                 gameData.InvokeGameTurnConditionsMet();    // Same path AITrainingController used.

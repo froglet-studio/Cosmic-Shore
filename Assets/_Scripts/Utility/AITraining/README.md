@@ -61,27 +61,71 @@ _Scripts/Utility/AITraining/
 └── Tests/Editor/                    Edit-mode tests for the search-side primitives
 ```
 
-## Quick start (4 clicks)
+## One-click training: press Learn and walk away
 
-1. **`FrogletTools → AI Training → Quick Setup`** — creates a complete set
-   of default assets at `Assets/_SO_Assets/AI Training/`:
-   `Scenario_HexRace_Manta`, `SessionState`, `Archive`, `Telemetry`,
-   `FitnessProfile_Default`. Idempotent — running it twice does not
-   overwrite existing assets, just re-fills any empty cross-references.
-2. **Open a game scene** that already spawns AI players (e.g.
-   `MinigameHexRace`).
-3. **Press Play in Unity.**
-4. **Press Start Session in the AI Training window.** The runner installs
-   a `TrainingPilot` on each AI vessel, hands them genomes, watches for the
-   game to end, scores them, and loops.
+1. **`FrogletTools → AI Training`** to open the window.
+2. **Press the big "Learn" button.**
 
-The session writes state every generation and auto-deploys the best
-genome to the archive every 5 minutes (configurable).
+That's it. The button:
 
-### Customizing
+- Creates a default asset set under `Assets/_SO_Assets/AI Training/`
+  (`Scenario_HexRace_Manta`, `SessionState`, `Archive`, `Telemetry`,
+  `FitnessProfile_Default`, `TrainingControl`) if they're not there yet.
+- Flips the control asset's `AutoStartOnPlay` flag.
+- Enters Play mode.
 
-- The window auto-discovers existing AI Training assets when opened,
-  so the four reference slots fill in by themselves.
+From that point on, an editor play-mode hook spawns a
+`TrainingAutoLauncher` GameObject. The launcher:
+
+- Lets `AppManager` boot (Bootstrap → Auth → Menu_Main) exactly as it
+  would for a normal launch.
+- When `ApplicationState` reaches `MainMenu`, configures
+  `GameDataSO` for an all-AI HexRace match (3 racers, intensity 4)
+  and calls `gameData.InvokeGameLaunch()` — the same entry point the
+  arcade configure modal uses, so the rest of the pipeline runs
+  unchanged (host start, AI backfill, scene load, controller spawn).
+- After the game scene loads, ensures a `TrainingSessionRunner` is
+  present and starts it.
+- Polls `gameData.Players` for the host's human player and flips its
+  vessel onto autopilot, so the host's slot trains too — three
+  AI-vs-AI racers per match instead of two AI plus one idle host.
+
+Each completed match:
+
+- Writes the genome's fitness back to the population.
+- Updates the hall-of-fame best.
+- Marks both the session-state asset and the archive dirty.
+- Calls `gameData.ResetForReplay()` to start the next match.
+
+When the user presses **Stop** (in the window or Unity's Play button),
+the runner abandons the in-flight match without recording its
+incomplete fitness, then flushes session state and archive to disk.
+Press Stop after dozens of matches and you keep the dozens, not 99% of
+the dozens minus one corrupted measurement.
+
+### Player-vs-trained-AI deployment
+
+When the user later plays HexRace normally (not in training mode),
+the trained genome from the archive automatically runs the AI
+opponents. This is wired by `TrainingDeploymentService`, an auto-installed
+DontDestroyOnLoad component that:
+
+- Listens to `gameData.OnPlayerPairInitialized`.
+- Skips when `gameData.IsTraining == true` (the runner owns those
+  vessels).
+- For every AI player, looks up the best matching archive entry for
+  the (vessel × game mode × intensity 4) bucket.
+- Replaces the legacy `AIPilot` with a `TrainingPilot` that runs the
+  trained genome. Lower intensities are produced via runtime dithering.
+
+Toggle it off via `TrainingControlSO.DeployArchiveInNormalPlay`.
+
+### Manual / advanced flow
+
+- **Quick Setup** button creates the assets without entering Play.
+- **Re-Discover Assets** scans the project and refills empty slots in
+  the window.
+- The window auto-discovers existing AI Training assets when opened.
 - A scenario without a `FitnessProfile` falls back to an in-memory
   recipe picked by game mode — racing recipe for HexRace / Freestyle,
   Joust recipe for joust modes, Cellular recipe for capture/duel

@@ -126,7 +126,9 @@ namespace CosmicShore.Utility.AITraining.Editor
             {
                 _runScroll = scope.scrollPosition;
 
-                EditorGUILayout.Space(6);
+                DrawLearnHero();
+
+                EditorGUILayout.Space(8);
                 EditorGUILayout.LabelField("Asset Wiring", EditorStyles.boldLabel);
                 _scenario = (TrainingScenarioSO)EditorGUILayout.ObjectField("Scenario", _scenario, typeof(TrainingScenarioSO), false);
                 _state = (TrainingSessionStateSO)EditorGUILayout.ObjectField("Session State", _state, typeof(TrainingSessionStateSO), false);
@@ -136,15 +138,14 @@ namespace CosmicShore.Utility.AITraining.Editor
                 EditorGUILayout.Space(4);
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button(new GUIContent("Quick Setup",
-                        "Creates a complete set of default training assets at " +
-                        "Assets/_SO_Assets/AI Training and wires them in. Press Play, " +
-                        "then Start Session, and walk away."), GUILayout.Height(24)))
+                    if (GUILayout.Button(new GUIContent("Quick Setup (advanced)",
+                        "Creates the default asset set without entering Play mode. Use Learn for the one-click flow."),
+                        GUILayout.Height(22)))
                     {
                         QuickSetup();
                     }
                     if (GUILayout.Button(new GUIContent("Re-Discover Assets",
-                        "Searches the project for the four assets and assigns the first match in each empty slot."), GUILayout.Height(24)))
+                        "Searches the project for the assets and assigns the first match in each empty slot."), GUILayout.Height(22)))
                     {
                         AutoDiscoverAssets();
                     }
@@ -153,8 +154,7 @@ namespace CosmicShore.Utility.AITraining.Editor
                 if (_scenario == null)
                 {
                     EditorGUILayout.HelpBox(
-                        "No scenario assigned. Press Quick Setup to create a default set of assets, " +
-                        "or right-click in Project: Create → ScriptableObjects → AI Training → Scenario.",
+                        "No scenario assigned. Press Learn for the one-click flow, or Quick Setup to create the assets without entering play mode.",
                         MessageType.Info);
                     return;
                 }
@@ -248,6 +248,93 @@ namespace CosmicShore.Utility.AITraining.Editor
         }
 
         // ─────────────────────────────────────────────
+        //  Learn (one-click)
+        // ─────────────────────────────────────────────
+        void DrawLearnHero()
+        {
+            EditorGUILayout.Space(6);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("One-Click Training", EditorStyles.boldLabel);
+
+                bool isPlaying = Application.isPlaying;
+                bool hasSession = isPlaying && _activeRunner != null && _activeRunner.IsRunning;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (new EditorGUI.DisabledScope(hasSession))
+                    {
+                        var label = isPlaying
+                            ? new GUIContent("Learn (running)", "Training is already running.")
+                            : new GUIContent("Learn",
+                                "Creates default assets if needed, marks the active scenario for auto-launch, " +
+                                "enters Play mode, and runs AI-vs-AI matches forever. Press Stop or Unity's " +
+                                "Stop button to interrupt — everything except the in-progress match is preserved.");
+                        if (GUILayout.Button(label, GUILayout.Height(40)))
+                            StartLearn();
+                    }
+
+                    using (new EditorGUI.DisabledScope(!isPlaying))
+                    {
+                        if (GUILayout.Button(new GUIContent("Stop",
+                            "Stops the running session and exits Play mode. The in-progress match is discarded; " +
+                            "all completed matches are already saved."), GUILayout.Height(40), GUILayout.Width(120)))
+                            StopLearn();
+                    }
+                }
+
+                if (!isPlaying)
+                {
+                    EditorGUILayout.HelpBox(
+                        "Press Learn. The tool will create defaults, enter Play, drive Bootstrap → Auth → Menu → " +
+                        "the scenario's game scene, and run AI-vs-AI matches in a loop. Walk away. Come back. " +
+                        "Press Stop. Your archive holds the best of every completed match.",
+                        MessageType.None);
+                }
+                else if (hasSession)
+                {
+                    EditorGUILayout.LabelField($"Generation {_telemetry?.Generation ?? 0}, " +
+                        $"Episode {_telemetry?.EpisodesCompleted ?? 0}, " +
+                        $"Best fitness {_telemetry?.CurrentBestFitness ?? 0:F1}");
+                }
+            }
+        }
+
+        void StartLearn()
+        {
+            // Step 1: ensure default assets exist.
+            RunQuickSetup(focusWindow: false);
+            AutoDiscoverAssets();
+
+            // Step 2: ensure a TrainingControlSO exists, point it at the active scenario,
+            // and flip AutoStartOnPlay. The play-mode hook (TrainingPlayModeHook) reads
+            // this when EnteredPlayMode fires and creates the auto-launcher.
+            var control = TrainingPlayModeHook.FindControlAsset();
+            if (control == null)
+                control = LoadOrCreateAsset<TrainingControlSO>(QuickSetupRoot + "/TrainingControl.asset", _ => { });
+            control.Scenario = _scenario;
+            control.State = _state;
+            control.Archive = _archive;
+            control.Telemetry = _telemetry;
+            control.AutoStartOnPlay = true;
+            EditorUtility.SetDirty(control);
+            AssetDatabase.SaveAssets();
+
+            // Step 3: enter Play mode. Unity loads the first scene in the build settings,
+            // which is Bootstrap; from there AppManager → Auth → Menu → game scene runs
+            // exactly as a normal launch would, just without ever waiting on user input.
+            EditorApplication.isPlaying = true;
+        }
+
+        void StopLearn()
+        {
+            if (_activeRunner != null && _activeRunner.IsRunning)
+                _activeRunner.StopSession();
+            // Exiting play mode triggers the hook's HandleExiting which clears AutoStartOnPlay.
+            EditorApplication.isPlaying = false;
+        }
+
+        // ─────────────────────────────────────────────
         //  Quick Setup
         // ─────────────────────────────────────────────
 
@@ -294,8 +381,17 @@ namespace CosmicShore.Utility.AITraining.Editor
             var state = LoadOrCreateAsset<TrainingSessionStateSO>(QuickSetupRoot + "/SessionState.asset",
                 so => so.ResetForScenario(scenario.Key, scenario));
 
-            LoadOrCreateAsset<TrainingArchiveSO>(QuickSetupRoot + "/Archive.asset", _ => { });
-            LoadOrCreateAsset<TrainingTelemetrySO>(QuickSetupRoot + "/Telemetry.asset", _ => { });
+            var archive = LoadOrCreateAsset<TrainingArchiveSO>(QuickSetupRoot + "/Archive.asset", _ => { });
+            var telemetry = LoadOrCreateAsset<TrainingTelemetrySO>(QuickSetupRoot + "/Telemetry.asset", _ => { });
+
+            // Wire up the control asset so the Learn button + play-mode hook know
+            // which scenario to drive. AutoStartOnPlay stays false until Learn is pressed.
+            var control = LoadOrCreateAsset<TrainingControlSO>(QuickSetupRoot + "/TrainingControl.asset", _ => { });
+            if (control.Scenario == null) control.Scenario = scenario;
+            if (control.State == null) control.State = state;
+            if (control.Archive == null) control.Archive = archive;
+            if (control.Telemetry == null) control.Telemetry = telemetry;
+            EditorUtility.SetDirty(control);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
