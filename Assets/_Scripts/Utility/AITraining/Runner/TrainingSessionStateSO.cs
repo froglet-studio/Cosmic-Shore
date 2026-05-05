@@ -64,7 +64,21 @@ namespace CosmicShore.Utility.AITraining
             }
         }
 
-        public void Reset(string scenarioKey, TrainingScenarioSO scenario)
+        /// <summary>
+        /// Unity calls this at asset creation. Initialises the population so the
+        /// asset is usable without anyone having to right-click → Initialise.
+        /// </summary>
+        void Reset()
+        {
+            ResetForScenario(scenarioKey: "", scenario: null);
+        }
+
+        /// <summary>
+        /// Wipes run state and (optionally) re-applies population settings from a
+        /// scenario. Called by the runner whenever it sees the state has drifted
+        /// out of sync with the scenario it's about to train.
+        /// </summary>
+        public void ResetForScenario(string scenarioKey, TrainingScenarioSO scenario)
         {
             ScenarioKey = scenarioKey;
             EpisodesCompleted = 0;

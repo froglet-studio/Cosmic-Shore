@@ -55,6 +55,73 @@ namespace CosmicShore.Utility.AITraining
         [Header("Components")]
         public List<Entry> Entries = new();
 
+        /// <summary>
+        /// Called by Unity at asset creation. Pre-populates with a sensible
+        /// "race + collect + don't crash" recipe so a fresh asset trains
+        /// usefully out of the box for crystal-collection minigames.
+        /// </summary>
+        void Reset()
+        {
+            ApplyRacingDefaults();
+        }
+
+        public void ApplyRacingDefaults()
+        {
+            Description = "Default racing/collection recipe: rewards crystal pickup, score, and " +
+                          "high-speed time; penalizes elapsed time and friendly-fire damage.";
+            Entries = new List<Entry>
+            {
+                new() { Kind = ComponentKind.CrystalCollection,              Weight = 100f, Label = "Crystals" },
+                new() { Kind = ComponentKind.ScoreFromRoundStats,            Weight = 0.1f, Label = "Score" },
+                new() { Kind = ComponentKind.BoostUseBonus,                  Weight = 5f,   Label = "BoostTime" },
+                new() { Kind = ComponentKind.TimePenalty,                    Weight = 1f,   Label = "TimePenalty" },
+                new() { Kind = ComponentKind.VolumeDestroyedFriendlyPenalty, Weight = 50f,  Label = "FriendlyFire" },
+            };
+        }
+
+        public void ApplyJoustDefaults()
+        {
+            Description = "Joust / vessel-combat recipe: rewards enemy collisions and survival, " +
+                          "penalizes time so passive pilots lose to aggressive ones.";
+            Entries = new List<Entry>
+            {
+                new() { Kind = ComponentKind.JoustCollisions,            Weight = 100f, Label = "JoustHits" },
+                new() { Kind = ComponentKind.EnemyVesselCollisions,      Weight = 30f,  Label = "EnemyContact" },
+                new() { Kind = ComponentKind.SurvivalBonus,              Weight = 2f,   Label = "Survived" },
+                new() { Kind = ComponentKind.AbilityUseBonus,            Weight = 4f,   Label = "AbilityUse" },
+                new() { Kind = ComponentKind.TimePenalty,                Weight = 0.5f, Label = "TimePenalty" },
+            };
+        }
+
+        public void ApplyCellularCaptureDefaults()
+        {
+            Description = "Crystal Capture / cell-control recipe: rewards volume created and " +
+                          "hostile-volume destroyed; heavily penalizes friendly-fire damage.";
+            Entries = new List<Entry>
+            {
+                new() { Kind = ComponentKind.VolumeCreated,                  Weight = 50f,  Label = "VolumeBuilt" },
+                new() { Kind = ComponentKind.VolumeDestroyedHostile,         Weight = 30f,  Label = "VolumeKilledEnemy" },
+                new() { Kind = ComponentKind.VolumeRestored,                 Weight = 20f,  Label = "VolumeRestored" },
+                new() { Kind = ComponentKind.VolumeDestroyedFriendlyPenalty, Weight = 80f,  Label = "FriendlyFire" },
+                new() { Kind = ComponentKind.CrystalCollection,              Weight = 10f,  Label = "Crystals" },
+                new() { Kind = ComponentKind.TimePenalty,                    Weight = 0.5f, Label = "TimePenalty" },
+            };
+        }
+
+        public void ApplyFreestyleDefaults()
+        {
+            Description = "Freestyle / exploration recipe: rewards distance, ability use, and " +
+                          "high-speed time so the AI flies expressively rather than sitting still.";
+            Entries = new List<Entry>
+            {
+                new() { Kind = ComponentKind.DistanceTravelled, Weight = 1f,   Label = "Distance" },
+                new() { Kind = ComponentKind.HighSpeedTime,     Weight = 5f,   Label = "FastTime" },
+                new() { Kind = ComponentKind.BoostUseBonus,     Weight = 3f,   Label = "Boost" },
+                new() { Kind = ComponentKind.AbilityUseBonus,   Weight = 2f,   Label = "Abilities" },
+                new() { Kind = ComponentKind.SurvivalBonus,     Weight = 0.5f, Label = "Survived" },
+            };
+        }
+
         public List<IFitnessComponent> Build()
         {
             var built = new List<IFitnessComponent>(Entries.Count);

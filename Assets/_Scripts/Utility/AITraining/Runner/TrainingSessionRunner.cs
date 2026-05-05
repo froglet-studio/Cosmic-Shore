@@ -148,8 +148,34 @@ namespace CosmicShore.Utility.AITraining
         // ── Lifecycle ──────────────────────────────────
         void OnEnable()
         {
+            // Auto-find any unassigned references from the project. Lets a runner
+            // dropped into a scene work without anyone wiring four serialized fields,
+            // which is what the editor window's Quick Setup relies on.
+            AutoResolveReferences();
             if (startOnEnable) StartSession();
         }
+
+        void AutoResolveReferences()
+        {
+#if UNITY_EDITOR
+            if (gameData == null) gameData = FirstAssetOfType<GameDataSO>();
+            if (cellData == null) cellData = FirstAssetOfType<CellRuntimeDataSO>();
+            if (scenario == null) scenario = FirstAssetOfType<TrainingScenarioSO>();
+            if (state == null) state = FirstAssetOfType<TrainingSessionStateSO>();
+            if (archive == null) archive = FirstAssetOfType<TrainingArchiveSO>();
+            if (telemetry == null) telemetry = FirstAssetOfType<TrainingTelemetrySO>();
+#endif
+        }
+
+#if UNITY_EDITOR
+        static T FirstAssetOfType<T>() where T : ScriptableObject
+        {
+            var guids = UnityEditor.AssetDatabase.FindAssets("t:" + typeof(T).Name);
+            if (guids == null || guids.Length == 0) return null;
+            var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+            return UnityEditor.AssetDatabase.LoadAssetAtPath<T>(path);
+        }
+#endif
 
         void OnDisable()
         {
@@ -161,7 +187,7 @@ namespace CosmicShore.Utility.AITraining
             if (state.Population == null || state.Population.PopulationSize == 0
                 || state.ScenarioKey != scenario.Key)
             {
-                state.Reset(scenario.Key, scenario);
+                state.ResetForScenario(scenario.Key, scenario);
                 if (overrideScenarioDefaults)
                 {
                     state.Population.ConfiguredSize = populationSize;
@@ -334,9 +360,13 @@ namespace CosmicShore.Utility.AITraining
                 pilot.PopulationIndex = popIdx;
                 pilot.BeginEpisode(popIdx);
 
-                var components = scenario.FitnessProfile != null
-                    ? scenario.FitnessProfile.Build()
-                    : new List<IFitnessComponent>();
+                // Fall back to an in-memory racing recipe so a scenario without a
+                // FitnessProfile asset still trains usefully. This is what makes
+                // Quick Setup → Press Play → Press Start work without any manual wiring.
+                var fitnessProfile = scenario.FitnessProfile != null
+                    ? scenario.FitnessProfile
+                    : EnsureFallbackFitnessProfile();
+                var components = fitnessProfile.Build();
                 _fitnessComponents[pilot] = components;
                 _populationIndices[pilot] = popIdx;
                 _roundStatsByPilot[pilot] = player.RoundStats;
@@ -375,6 +405,35 @@ namespace CosmicShore.Utility.AITraining
             return player.IsInitializedAsAI;
         }
 
+        FitnessProfileSO _fallbackProfile;
+        FitnessProfileSO EnsureFallbackFitnessProfile()
+        {
+            // Build once per session. Picks a recipe based on the scenario's game mode so
+            // the fallback isn't completely off-target if the user forgot to assign one.
+            if (_fallbackProfile != null) return _fallbackProfile;
+            _fallbackProfile = ScriptableObject.CreateInstance<FitnessProfileSO>();
+            _fallbackProfile.name = "Fallback Fitness (in-memory)";
+            switch (scenario != null ? scenario.GameMode : CosmicShore.Data.GameModes.Random)
+            {
+                case CosmicShore.Data.GameModes.MultiplayerJoust:
+                    _fallbackProfile.ApplyJoustDefaults();
+                    break;
+                case CosmicShore.Data.GameModes.MultiplayerCrystalCapture:
+                case CosmicShore.Data.GameModes.MultiplayerCellularDuel:
+                case CosmicShore.Data.GameModes.CellularDuel:
+                    _fallbackProfile.ApplyCellularCaptureDefaults();
+                    break;
+                case CosmicShore.Data.GameModes.Freestyle:
+                case CosmicShore.Data.GameModes.MultiplayerFreestyle:
+                    _fallbackProfile.ApplyFreestyleDefaults();
+                    break;
+                default:
+                    _fallbackProfile.ApplyRacingDefaults();
+                    break;
+            }
+            return _fallbackProfile;
+        }
+
         // ── Episode end ────────────────────────────────
         void EndEpisodeInternal(bool timedOut, bool force)
         {
@@ -395,9 +454,12 @@ namespace CosmicShore.Utility.AITraining
                     TimedOut = timedOut
                 };
                 var ctx = pilot.GetCurrentContextOrNull();
-                if (ctx != null && scenario.FitnessProfile != null)
+                if (ctx != null)
                 {
-                    var entries = scenario.FitnessProfile.Entries;
+                    // Match weights from the active profile (asset or fallback) so the
+                    // breakdown reported in telemetry matches what selection actually used.
+                    var profile = scenario.FitnessProfile != null ? scenario.FitnessProfile : EnsureFallbackFitnessProfile();
+                    var entries = profile.Entries;
                     for (int c = 0; c < components.Count; c++)
                     {
                         var raw = components[c].Evaluate(ctx, stats);

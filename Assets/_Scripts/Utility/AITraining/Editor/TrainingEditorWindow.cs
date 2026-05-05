@@ -59,6 +59,27 @@ namespace CosmicShore.Utility.AITraining.Editor
         void OnEnable()
         {
             PolicyBootstrap.EnsureInitialized();
+            AutoDiscoverAssets();
+        }
+
+        /// <summary>
+        /// Looks for matching SO assets anywhere in the project so the user doesn't
+        /// have to drag four references in by hand on first open. Runs at every
+        /// OnEnable but only assigns slots that are currently empty.
+        /// </summary>
+        void AutoDiscoverAssets()
+        {
+            if (_scenario == null) _scenario = FirstAssetOfType<TrainingScenarioSO>();
+            if (_state == null) _state = FirstAssetOfType<TrainingSessionStateSO>();
+            if (_archive == null) _archive = FirstAssetOfType<TrainingArchiveSO>();
+            if (_telemetry == null) _telemetry = FirstAssetOfType<TrainingTelemetrySO>();
+        }
+
+        static T FirstAssetOfType<T>() where T : ScriptableObject
+        {
+            var guids = AssetDatabase.FindAssets("t:" + typeof(T).Name);
+            if (guids.Length == 0) return null;
+            return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[0]));
         }
 
         void Update()
@@ -112,9 +133,29 @@ namespace CosmicShore.Utility.AITraining.Editor
                 _archive = (TrainingArchiveSO)EditorGUILayout.ObjectField("Archive", _archive, typeof(TrainingArchiveSO), false);
                 _telemetry = (TrainingTelemetrySO)EditorGUILayout.ObjectField("Telemetry", _telemetry, typeof(TrainingTelemetrySO), false);
 
+                EditorGUILayout.Space(4);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button(new GUIContent("Quick Setup",
+                        "Creates a complete set of default training assets at " +
+                        "Assets/_SO_Assets/AI Training and wires them in. Press Play, " +
+                        "then Start Session, and walk away."), GUILayout.Height(24)))
+                    {
+                        QuickSetup();
+                    }
+                    if (GUILayout.Button(new GUIContent("Re-Discover Assets",
+                        "Searches the project for the four assets and assigns the first match in each empty slot."), GUILayout.Height(24)))
+                    {
+                        AutoDiscoverAssets();
+                    }
+                }
+
                 if (_scenario == null)
                 {
-                    EditorGUILayout.HelpBox("Assign a TrainingScenarioSO. Right-click in Project: Create → ScriptableObjects → AI Training → Scenario.", MessageType.Info);
+                    EditorGUILayout.HelpBox(
+                        "No scenario assigned. Press Quick Setup to create a default set of assets, " +
+                        "or right-click in Project: Create → ScriptableObjects → AI Training → Scenario.",
+                        MessageType.Info);
                     return;
                 }
 
@@ -204,6 +245,90 @@ namespace CosmicShore.Utility.AITraining.Editor
             runner.Configure(_scenario, _state, _archive, _telemetry, gameData, cellData);
             runner.StartSession();
             _activeRunner = runner;
+        }
+
+        // ─────────────────────────────────────────────
+        //  Quick Setup
+        // ─────────────────────────────────────────────
+
+        const string QuickSetupRoot = "Assets/_SO_Assets/AI Training";
+
+        [MenuItem("FrogletTools/AI Training/Quick Setup", false, 22)]
+        public static void QuickSetupMenuItem() => RunQuickSetup(focusWindow: true);
+
+        void QuickSetup()
+        {
+            RunQuickSetup(focusWindow: false);
+            // After setup, snap the just-created assets into our wiring slots.
+            _scenario = FirstAssetOfType<TrainingScenarioSO>();
+            _state = FirstAssetOfType<TrainingSessionStateSO>();
+            _archive = FirstAssetOfType<TrainingArchiveSO>();
+            _telemetry = FirstAssetOfType<TrainingTelemetrySO>();
+            Repaint();
+        }
+
+        /// <summary>
+        /// Creates (or loads) the standard default asset set under
+        /// <see cref="QuickSetupRoot"/>: a Scenario, a Session State, an Archive, a
+        /// Telemetry container, and a Fitness Profile. Wires them together so the
+        /// Run tab is one click away from training.
+        ///
+        /// Idempotent — running it twice does not overwrite existing assets, just
+        /// re-fills any empty cross-references.
+        /// </summary>
+        public static void RunQuickSetup(bool focusWindow)
+        {
+            EnsureFolder(QuickSetupRoot);
+
+            var fitness = LoadOrCreateAsset<FitnessProfileSO>(QuickSetupRoot + "/FitnessProfile_Default.asset",
+                so => so.ApplyRacingDefaults());
+
+            var scenario = LoadOrCreateAsset<TrainingScenarioSO>(QuickSetupRoot + "/Scenario_HexRace_Manta.asset",
+                _ => { /* TrainingScenarioSO.Reset already populates defaults */ });
+            if (scenario.FitnessProfile == null)
+            {
+                scenario.FitnessProfile = fitness;
+                EditorUtility.SetDirty(scenario);
+            }
+
+            var state = LoadOrCreateAsset<TrainingSessionStateSO>(QuickSetupRoot + "/SessionState.asset",
+                so => so.ResetForScenario(scenario.Key, scenario));
+
+            LoadOrCreateAsset<TrainingArchiveSO>(QuickSetupRoot + "/Archive.asset", _ => { });
+            LoadOrCreateAsset<TrainingTelemetrySO>(QuickSetupRoot + "/Telemetry.asset", _ => { });
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            if (focusWindow)
+            {
+                var w = GetWindow<TrainingEditorWindow>("AI Training");
+                w.AutoDiscoverAssets();
+                w.Repaint();
+            }
+
+            Debug.Log($"[AI Training] Quick Setup complete. Assets at: {QuickSetupRoot}\n" +
+                      $"Scenario: {scenario.name}, State: {state.name}, Fitness: {fitness.name}.");
+        }
+
+        static T LoadOrCreateAsset<T>(string path, System.Action<T> initialize) where T : ScriptableObject
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (existing != null) return existing;
+
+            var so = ScriptableObject.CreateInstance<T>();
+            initialize?.Invoke(so);
+            AssetDatabase.CreateAsset(so, path);
+            return so;
+        }
+
+        static void EnsureFolder(string assetPath)
+        {
+            if (AssetDatabase.IsValidFolder(assetPath)) return;
+            var parent = System.IO.Path.GetDirectoryName(assetPath).Replace('\\', '/');
+            var leaf = System.IO.Path.GetFileName(assetPath);
+            EnsureFolder(parent);
+            AssetDatabase.CreateFolder(parent, leaf);
         }
 
         static CosmicShore.Utility.GameDataSO FindGameData()

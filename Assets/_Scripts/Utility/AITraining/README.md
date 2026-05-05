@@ -61,24 +61,35 @@ _Scripts/Utility/AITraining/
 └── Tests/Editor/                    Edit-mode tests for the search-side primitives
 ```
 
-## Quick start
+## Quick start (4 clicks)
 
-1. **Create assets.** Right-click in Project, then:
-   - `Create → ScriptableObjects → AI Training → Scenario` — defines what to train
-   - `Create → ScriptableObjects → AI Training → Session State` — survives crashes
-   - `Create → ScriptableObjects → AI Training → Archive` — deployable trained pilots
-   - `Create → ScriptableObjects → AI Training → Telemetry` — runtime status surface
-   - `Create → ScriptableObjects → AI Training → Fitness Profile` — per-game scoring
-2. **Configure the scenario.** Set the vessel, game mode, intensity (start
-   at 4), max episode seconds, and the fitness profile.
-3. **Open a game scene** that already spawns AI players (e.g. `MinigameHexRace`).
-4. **FrogletTools → AI Training.** Assign the four assets in the Run tab.
-5. **Press Play in Unity.**
-6. **Press Start Session in the window.** The runner installs a
-   `TrainingPilot` on each AI vessel, hands them genomes, watches for the
+1. **`FrogletTools → AI Training → Quick Setup`** — creates a complete set
+   of default assets at `Assets/_SO_Assets/AI Training/`:
+   `Scenario_HexRace_Manta`, `SessionState`, `Archive`, `Telemetry`,
+   `FitnessProfile_Default`. Idempotent — running it twice does not
+   overwrite existing assets, just re-fills any empty cross-references.
+2. **Open a game scene** that already spawns AI players (e.g.
+   `MinigameHexRace`).
+3. **Press Play in Unity.**
+4. **Press Start Session in the AI Training window.** The runner installs
+   a `TrainingPilot` on each AI vessel, hands them genomes, watches for the
    game to end, scores them, and loops.
-7. **Walk away.** The session writes session state every generation and
-   auto-deploys the best genome to the archive every 5 minutes (configurable).
+
+The session writes state every generation and auto-deploys the best
+genome to the archive every 5 minutes (configurable).
+
+### Customizing
+
+- The window auto-discovers existing AI Training assets when opened,
+  so the four reference slots fill in by themselves.
+- A scenario without a `FitnessProfile` falls back to an in-memory
+  recipe picked by game mode — racing recipe for HexRace / Freestyle,
+  Joust recipe for joust modes, Cellular recipe for capture/duel
+  modes. Assigning a custom profile always overrides the fallback.
+- `FitnessProfileSO` ships with four named presets accessible from
+  code (`ApplyRacingDefaults`, `ApplyJoustDefaults`,
+  `ApplyCellularCaptureDefaults`, `ApplyFreestyleDefaults`) and via
+  the asset's `Reset` context-menu item.
 
 To deploy at runtime, drop a `TrainingAIDeploymentBridge` on the AI vessel
 prefab next to its `AIPilot`, point it at your `TrainingArchiveSO`, and the

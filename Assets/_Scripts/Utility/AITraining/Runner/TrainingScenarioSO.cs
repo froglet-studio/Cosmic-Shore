@@ -76,5 +76,39 @@ namespace CosmicShore.Utility.AITraining
         }
 
         public string Key => $"{Vessel}_{GameMode}_I{Intensity}";
+
+        /// <summary>
+        /// Called by Unity at asset creation. Field initializers already pick sensible
+        /// numeric defaults; this just gives the asset a human-readable display name and
+        /// adds a single early-exit condition that ends races as soon as a player wins,
+        /// which is the difference between an asset that trains usefully out of the box
+        /// and one that always runs to the timeout.
+        /// </summary>
+        void Reset()
+        {
+            DisplayName = "HexRace · Manta · Flawless";
+            GameMode = GameModes.HexRace;
+            Vessel = VesselClassType.Manta;
+            Intensity = 4;
+            PopulationSize = 24;
+            EliteCount = 4;
+            NumericMutationRate = 0.3f;
+            NumericMutationStrength = 0.18f;
+            StructuralMutationRate = 0.04f;
+            NoveltyWeight = 0.15f;
+            MaxEpisodeSeconds = 120f;
+            MinEpisodeSeconds = 5f;
+            OpponentCount = 3;
+            OpponentsUseTrainedGenome = false;
+            TargetMode = TargetSensor.TargetMode.ClosestCrystal;
+            UseResetForReplay = true;
+            DelayBetweenEpisodes = 1f;
+            EarlyExitConditions = new List<EarlyExit>
+            {
+                // HexRace ends at 39 crystals by default; this lets a winning rollout
+                // close out cleanly instead of waiting for the watchdog.
+                new() { Kind = TerminationKind.CrystalsAtLeast, IntegerThreshold = 39, FloatThreshold = 0f }
+            };
+        }
     }
 }
