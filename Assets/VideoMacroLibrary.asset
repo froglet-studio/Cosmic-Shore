@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e537d22ad017c6488e73e1b1addf57c, type: 3}
+  m_Name: VideoMacroLibrary
+  m_EditorClassIdentifier: 
+  Macros:
+  - Name: membrane flip
+    TriggerKey: 27
+    Actions:
+    - rid: 3908379116289392747
+  references:
+    version: 2
+    RefIds:
+    - rid: 3908379116289392747
+      type: {class: ToggleCellMembraneAction, ns: CosmicShore.Utility.Recording, asm: Assembly-CSharp}
+      data:
+        cellRuntime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
+        membraneA: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
+          type: 3}
+        membraneB: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5,
+          type: 3}
