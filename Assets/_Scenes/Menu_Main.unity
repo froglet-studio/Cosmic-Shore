@@ -9861,8 +9861,6 @@ MonoBehaviour:
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   avatarStrip: {fileID: 1754746468}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
 --- !u!224 &211505307
 RectTransform:
   m_ObjectHideFlags: 0
@@ -30640,8 +30638,6 @@ MonoBehaviour:
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   avatarStrip: {fileID: 1391414275}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
 --- !u!1 &673228693
 GameObject:
   m_ObjectHideFlags: 0
@@ -48488,8 +48484,6 @@ MonoBehaviour:
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   avatarStrip: {fileID: 294858726}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
 --- !u!1 &1159734681
 GameObject:
   m_ObjectHideFlags: 0
@@ -76599,6 +76593,7 @@ MonoBehaviour:
   domainsValueText: {fileID: 0}
   domainSelectionPanel: {fileID: 0}
   domainInfoItems: []
+  chipPrefab: {fileID: 0}
   shipPlaceholderIcon: {fileID: 777058466}
   shipNameText: {fileID: 48527129}
   shipConfigurationText: {fileID: 65168839}
@@ -88818,6 +88813,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
+      propertyPath: chipPrefab
+      value: 
+      objectReference: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
+        type: 3}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
       propertyPath: screenSwitcher
       value: 
       objectReference: {fileID: 2057023445}
@@ -88853,6 +88854,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
+      propertyPath: domainInfoItems.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
       propertyPath: 'teamInfoItems.Array.data[0]'
       value: 
       objectReference: {fileID: 2098022935}
@@ -88869,6 +88875,26 @@ PrefabInstance:
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: 'teamInfoItems.Array.data[3]'
+      value: 
+      objectReference: {fileID: 211505306}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: 'domainInfoItems.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2098022935}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: 'domainInfoItems.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1156556884}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: 'domainInfoItems.Array.data[2]'
+      value: 
+      objectReference: {fileID: 666256587}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: 'domainInfoItems.Array.data[3]'
       value: 
       objectReference: {fileID: 211505306}
     - target: {fileID: 5440107228895143991, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
@@ -89274,8 +89300,6 @@ MonoBehaviour:
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   avatarStrip: {fileID: 2098022925}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
 --- !u!114 &2098022936
 MonoBehaviour:
   m_ObjectHideFlags: 0
