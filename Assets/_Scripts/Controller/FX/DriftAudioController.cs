@@ -392,38 +392,25 @@ namespace CosmicShore.Gameplay.Audio
 
         /// <summary>
         /// Plays the configured release one-shot event ('trigger off') at
-        /// the ship's position. Independent of the main drift instance —
-        /// FMOD owns its lifetime and frees it after the event finishes
-        /// (RuntimeManager.PlayOneShotAttached / PlayOneShot release the
-        /// instance internally on completion).
+        /// the ship's position with the SFX slider volume applied.
+        /// Independent of the main drift instance — FMOD owns its lifetime
+        /// and frees the instance after playback finishes.
+        ///
+        /// Routed through <see cref="FMODOneShotVolumeHelper"/> rather than
+        /// <see cref="RuntimeManager.PlayOneShotAttached(EventReference, GameObject)"/>
+        /// because the latter has no per-instance setVolume() seam and so
+        /// would ignore <c>GameSetting.SFXLevel</c>. The helper short-
+        /// circuits when <see cref="ResolveSFXVolume"/> returns 0, covering
+        /// both the muted case and the slider-at-zero case in one path.
         /// </summary>
         void FireReleaseOneShot()
         {
-            if (releaseEvent.IsNull) return;
+            float volume = ResolveSFXVolume();
 
-            // Skip if SFX is muted — PlayOneShot doesn't go through the
-            // SFX volume pipeline we use for the looping drift instance,
-            // so we manually gate it on the slider state to keep parity.
-            if (tieVolumeToSFXSlider)
-            {
-                var gs = GameSetting.Instance;
-                if (gs != null && !gs.SFXEnabled) return;
-            }
-
-            try
-            {
-                if (attachReleaseEventToShip)
-                    RuntimeManager.PlayOneShotAttached(releaseEvent, gameObject);
-                else
-                    RuntimeManager.PlayOneShot(releaseEvent, transform.position);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning(
-                    $"[DriftAudioController] '{name}' failed to play release " +
-                    $"event '{releaseEvent}': {ex.Message}",
-                    this);
-            }
+            if (attachReleaseEventToShip)
+                FMODOneShotVolumeHelper.PlaySFXOneShotAttached(releaseEvent, gameObject, volume);
+            else
+                FMODOneShotVolumeHelper.PlaySFXOneShot(releaseEvent, transform.position, volume);
         }
 
         void TickRelease(float dt)

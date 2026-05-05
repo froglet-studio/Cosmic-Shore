@@ -357,36 +357,26 @@ namespace CosmicShore.Gameplay.Audio
         }
 
         /// <summary>
-        /// Plays the configured tick one-shot event at the ship's position.
-        /// Independent of the loop instance — FMOD owns its lifetime and
-        /// frees it after the event finishes.
+        /// Plays the configured tick one-shot event at the ship's position
+        /// with the SFX slider volume applied. Independent of the loop
+        /// instance — FMOD owns its lifetime and frees the instance after
+        /// playback finishes.
+        ///
+        /// Routed through <see cref="FMODOneShotVolumeHelper"/> rather than
+        /// <see cref="RuntimeManager.PlayOneShotAttached(EventReference, GameObject)"/>
+        /// because the latter has no per-instance setVolume() seam and so
+        /// would ignore <c>GameSetting.SFXLevel</c>. The helper short-
+        /// circuits when <see cref="ResolveSFXVolume"/> returns 0, covering
+        /// both the muted case and the slider-at-zero case in one path.
         /// </summary>
         void FireTickOneShot()
         {
-            if (boostTickEvent.IsNull) return;
+            float volume = ResolveSFXVolume();
 
-            // Manually gate on the SFX slider since PlayOneShot bypasses
-            // our loop instance's volume pipeline.
-            if (tieVolumeToSFXSlider)
-            {
-                var gs = GameSetting.Instance;
-                if (gs != null && !gs.SFXEnabled) return;
-            }
-
-            try
-            {
-                if (attachTickEventToShip)
-                    RuntimeManager.PlayOneShotAttached(boostTickEvent, gameObject);
-                else
-                    RuntimeManager.PlayOneShot(boostTickEvent, transform.position);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning(
-                    $"[ProximityBoostAudio] '{name}' failed to play tick event " +
-                    $"'{boostTickEvent}': {ex.Message}",
-                    this);
-            }
+            if (attachTickEventToShip)
+                FMODOneShotVolumeHelper.PlaySFXOneShotAttached(boostTickEvent, gameObject, volume);
+            else
+                FMODOneShotVolumeHelper.PlaySFXOneShot(boostTickEvent, transform.position, volume);
         }
 
         void EnsureLoopStarted()
