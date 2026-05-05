@@ -5044,7 +5044,13 @@ MonoBehaviour:
   domainCountIncrementButton: {fileID: 0}
   domainsValueText: {fileID: 0}
   domainSelectionPanel: {fileID: 0}
-  domainInfoItems: []
+  domainInfoItems:
+  - {fileID: 2615246662668428641}
+  - {fileID: 1972478871911278400}
+  - {fileID: 7867743887188552611}
+  - {fileID: 6362954428316335250}
+  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
+    type: 3}
   shipPlaceholderIcon: {fileID: 2115834972852952068}
   shipNameText: {fileID: 7541145887286517389}
   shipConfigurationText: {fileID: 5235719914525348115}
@@ -5709,8 +5715,6 @@ MonoBehaviour:
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   avatarStrip: {fileID: 4856757578174076698}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
 --- !u!1 &3887968740003115635
 GameObject:
   m_ObjectHideFlags: 0
@@ -8155,8 +8159,6 @@ MonoBehaviour:
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   avatarStrip: {fileID: 6359658668924837327}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
 --- !u!1 &5520966174744312760
 GameObject:
   m_ObjectHideFlags: 0
@@ -8301,8 +8303,6 @@ MonoBehaviour:
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   avatarStrip: {fileID: 7369231115266611697}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
 --- !u!1 &5696422172704105266
 GameObject:
   m_ObjectHideFlags: 0
@@ -14673,8 +14673,6 @@ MonoBehaviour:
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   avatarStrip: {fileID: 3195507945476696798}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
 --- !u!1 &8973344895712343885
 GameObject:
   m_ObjectHideFlags: 0
