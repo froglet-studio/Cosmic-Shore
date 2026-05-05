@@ -8669,6 +8669,7 @@ GameObject:
   - component: {fileID: 6248787816825736170}
   - component: {fileID: 5363059078414614678}
   - component: {fileID: -6368199322473003075}
+  - component: {fileID: 7219854176267508625}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -9220,6 +9221,7 @@ MonoBehaviour:
   longestDriftStat: {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
   maxBoostTimeStat: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
   prismsDamagedStat: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
+  boostMultiplierThreshold: 1.5
   maxCleanStreakStat: {fileID: 11400000, guid: 5bc14503bfdc4c04ca04d6ba9074e7ff, type: 2}
   joustsWonStat: {fileID: 11400000, guid: a832d934d63484344adce8281a893989, type: 2}
   prismsStolen: {fileID: 11400000, guid: 985c79fbc42333942977329e077af6d6, type: 2}
@@ -9317,6 +9319,47 @@ MonoBehaviour:
   elementParamAtMax: 1
   elementSmoothing: 6
   extraParameters: []
+  debugLog: 0
+--- !u!114 &7219854176267508625
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0522691eb41b4421f8bea8d295699a07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  boostTickEvent:
+    Guid:
+      Data1: 175162526
+      Data2: 1078581788
+      Data3: 1171656846
+      Data4: 200696093
+    Path: event:/SFX/Skim
+  attachTickEventToShip: 1
+  boostLoopEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  boostAmountParameterName: Boost Amount
+  boostBaseMultiplier: {fileID: 0}
+  boostMaxMultiplier: {fileID: 0}
+  boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
+  tickEpsilon: 0.02
+  boostAmountSmoothing: 12
+  loopStopThreshold: 0.01
+  onlyAudibleToController: 1
+  forceLoopAttachToListener: 0
+  tieVolumeToSFXSlider: 1
+  baseVolumeMultiplier: 1
+  restrictToVesselClass: 1
+  targetVesselClass: 6
   debugLog: 0
 --- !u!1 &6514516964945388952
 GameObject:

@@ -2756,6 +2756,11 @@ PrefabInstance:
       propertyPath: SwitchScreenAudioClip
       value: 
       objectReference: {fileID: 8300000, guid: 49d6fbb77714f45da926b744d54d3944, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: ShieldDeactivateAudioClip
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
