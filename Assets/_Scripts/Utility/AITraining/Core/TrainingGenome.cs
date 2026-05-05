@@ -106,7 +106,7 @@ namespace CosmicShore.Utility.AITraining
                 g.Set(kv.Key, kv.Value.RandomValue());
             foreach (var moduleName in GeneRegistry.Modules.Keys)
             {
-                bool enabled = GeneRegistry.DefaultEnabledModules.Contains(moduleName)
+                bool enabled = GeneRegistry.IsDefaultEnabled(moduleName)
                     || UnityEngine.Random.value < moduleEnableProbability;
                 g.SetModuleEnabled(moduleName, enabled);
             }
@@ -174,7 +174,7 @@ namespace CosmicShore.Utility.AITraining
             foreach (var moduleName in GeneRegistry.Modules.Keys)
             {
                 if (UnityEngine.Random.value > structuralRate) continue;
-                if (GeneRegistry.DefaultEnabledModules.Contains(moduleName)) continue;
+                if (GeneRegistry.IsDefaultEnabled(moduleName)) continue;
                 SetModuleEnabled(moduleName, !IsModuleEnabled(moduleName));
             }
         }

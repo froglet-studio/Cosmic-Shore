@@ -243,7 +243,7 @@ namespace CosmicShore.Utility.AITraining.Editor
                         && !kv.Value.Any(g => g.ToLower().Contains(_moduleFilter.ToLower())))
                         continue;
 
-                    bool defaultOn = GeneRegistry.DefaultEnabledModules.Contains(kv.Key);
+                    bool defaultOn = GeneRegistry.IsDefaultEnabled(kv.Key);
                     EditorGUILayout.LabelField(
                         $"Module: {kv.Key} {(defaultOn ? "[default-on]" : "[default-off]")}",
                         EditorStyles.boldLabel);

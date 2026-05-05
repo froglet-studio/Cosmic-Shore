@@ -21,7 +21,14 @@ namespace CosmicShore.Utility.AITraining
 
         public static IReadOnlyDictionary<string, GeneSpec> Specs => s_Specs;
         public static IReadOnlyDictionary<string, List<string>> Modules => s_Modules;
-        public static IReadOnlyCollection<string> DefaultEnabledModules => s_DefaultEnabledModules;
+        public static IEnumerable<string> DefaultEnabledModules => s_DefaultEnabledModules;
+
+        /// <summary>
+        /// O(1) membership check. Exposed as a method rather than a property because
+        /// IReadOnlyCollection.Contains routes through MemoryExtensions for strings,
+        /// which requires an explicit StringComparison and fails to type-check.
+        /// </summary>
+        public static bool IsDefaultEnabled(string moduleName) => s_DefaultEnabledModules.Contains(moduleName);
 
         public static void Register(string moduleName, GeneSpec spec, bool defaultEnabled = true)
         {
