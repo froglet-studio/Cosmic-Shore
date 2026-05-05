@@ -2039,6 +2039,8 @@ MonoBehaviour:
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
+  superShieldTrackPrisms: 1
+  superShieldEngageInstant: 1
   ExternalResetControl: 0
 --- !u!1 &1899528608
 GameObject:
