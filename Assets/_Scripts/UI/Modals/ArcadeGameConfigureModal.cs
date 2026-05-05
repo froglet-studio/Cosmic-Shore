@@ -687,7 +687,7 @@ namespace CosmicShore.UI
         // Chips are destroyed on modal close.
 
         readonly Dictionary<Player, DomainAvatarChip> _playerChips = new();
-        readonly Dictionary<Player, System.Action<Domains, Domains>> _domainHandlers = new();
+        readonly Dictionary<Player, NetworkVariable<Domains>.OnValueChangedDelegate> _domainHandlers = new();
         bool _watchingPlayerSpawnEvent;
 
         void SpawnChipsForAllPlayers()
@@ -738,7 +738,8 @@ namespace CosmicShore.UI
 
             // Hook for future domain changes — closure captures the player so we know
             // whose chip to move when this fires.
-            System.Action<Domains, Domains> handler = (_, newDomain) => HandlePlayerDomainChanged(p, newDomain);
+            NetworkVariable<Domains>.OnValueChangedDelegate handler =
+                (_, newDomain) => HandlePlayerDomainChanged(p, newDomain);
             p.NetDomain.OnValueChanged += handler;
             _domainHandlers[p] = handler;
         }
