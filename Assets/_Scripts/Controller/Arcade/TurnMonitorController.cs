@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Utility;
 using Unity.Netcode;
 using UnityEngine;
@@ -70,7 +69,12 @@ namespace CosmicShore.Gameplay
             if (!_isRunning)
                 return;
 
-            if (!monitors.Any(m => m.CheckForEndOfTurn()))
+            bool anyTriggered = false;
+            for (int i = 0; i < monitors.Count; i++)
+            {
+                if (monitors[i].CheckForEndOfTurn()) { anyTriggered = true; break; }
+            }
+            if (!anyTriggered)
                 return;
 
             _isRunning = false;

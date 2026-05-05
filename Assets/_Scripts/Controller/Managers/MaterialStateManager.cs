@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using System;
@@ -14,6 +13,8 @@ namespace CosmicShore.Gameplay
     {
         private readonly List<(MaterialPropertyAnimator animator, float4 brightColor, float4 darkColor, float3 spread)> propertyUpdateQueue =
             new List<(MaterialPropertyAnimator, float4, float4, float3)>(32);
+
+        private readonly List<MaterialPropertyAnimator> _animatorsToRemove = new List<MaterialPropertyAnimator>(8);
 
         private MaterialPropertyBlock sharedPropertyBlock;
 
@@ -123,13 +124,14 @@ namespace CosmicShore.Gameplay
 
 
             // Validate all remaining active animators are actually animating
-            foreach (var animator in activeAnimators.ToArray())
+            _animatorsToRemove.Clear();
+            foreach (var animator in activeAnimators)
             {
                 if (!animator.IsAnimating)
-                {
-                    activeAnimators.Remove(animator);
-                }
+                    _animatorsToRemove.Add(animator);
             }
+            for (int i = 0; i < _animatorsToRemove.Count; i++)
+                activeAnimators.Remove(_animatorsToRemove[i]);
 
             // Batch apply property updates
             if (propertyUpdateQueue.Count > 0)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -6,6 +7,8 @@ namespace CosmicShore.Gameplay
 {
     public class ClearPrisms : MonoBehaviour
     {
+        static readonly int AlphaId = Shader.PropertyToID("_Alpha");
+
         Transform mainCamera;
 
         [SerializeField, RequireInterface(typeof(IVessel))]
@@ -23,7 +26,10 @@ namespace CosmicShore.Gameplay
 
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
-        
+
+        readonly Dictionary<Collider, Renderer> _renderers = new Dictionary<Collider, Renderer>();
+        MaterialPropertyBlock _block;
+
         bool isInitialized;
 
 
@@ -65,6 +71,7 @@ namespace CosmicShore.Gameplay
             visibilityCapsule.isTrigger = true;
             visibilityCapsule.radius = capsuleRadius;
 
+            _block = new MaterialPropertyBlock();
             isInitialized = true;
         }
 
@@ -93,22 +100,34 @@ namespace CosmicShore.Gameplay
 
         void OnTriggerEnter(Collider other)
         {
-            Prism prism = other.GetComponent<Prism>();
-            if (prism != null)
+            if (!_renderers.ContainsKey(other))
+            {
+                if (other.TryGetComponent<Renderer>(out var r))
+                    _renderers[other] = r;
+            }
+
+            if (other.TryGetComponent<Prism>(out var prism))
                 prism.SetTransparency(true);
         }
 
         private void OnTriggerStay(Collider other)
         {
-            Renderer renderer = other.GetComponent<Renderer>();
-            if (renderer != null)
-                renderer.material.SetFloat("_Alpha", scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData)/ capsuleRadius));
+            if (!_renderers.TryGetValue(other, out var renderer))
+            {
+                if (!other.TryGetComponent<Renderer>(out renderer)) return;
+                _renderers[other] = renderer;
+            }
+
+            float alpha = scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData) / capsuleRadius);
+            _block.SetFloat(AlphaId, alpha);
+            renderer.SetPropertyBlock(_block);
         }
 
         void OnTriggerExit(Collider other)
         {
-            Prism prism = other.GetComponent<Prism>();
-            if (prism != null)
+            _renderers.Remove(other);
+
+            if (other.TryGetComponent<Prism>(out var prism))
                 prism.SetTransparency(false);
         }
     }

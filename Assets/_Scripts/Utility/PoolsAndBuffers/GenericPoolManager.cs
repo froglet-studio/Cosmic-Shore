@@ -5,7 +5,6 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Pool;
 using CosmicShore.Utility;
-using System.Linq;
 
 namespace CosmicShore.Utility
 {
@@ -15,6 +14,10 @@ namespace CosmicShore.Utility
         [SerializeField] private T prefab;
         [SerializeField] private int defaultCapacity = 10;
         [SerializeField] private int maxSize = 100;
+
+        [Header("Prewarm")]
+        [Tooltip("Max objects to instantiate synchronously in Awake. Remainder fills via the async maintenance loop.")]
+        [SerializeField] private int maxSyncPrewarm = 8;
 
         [Header("Buffer Maintenance (Optional)")]
         [SerializeField] private bool enableBufferMaintenance = true;
@@ -42,8 +45,9 @@ namespace CosmicShore.Utility
                 maxSize
             );
 
-            if (defaultCapacity > 0)
-                Prewarm(Mathf.Max(defaultCapacity, bufferSizeTarget));
+            var prewarmTarget = Mathf.Max(defaultCapacity, bufferSizeTarget);
+            if (prewarmTarget > 0)
+                Prewarm(Mathf.Min(prewarmTarget, maxSyncPrewarm));
 
             if (enableBufferMaintenance)
             {
@@ -52,8 +56,17 @@ namespace CosmicShore.Utility
             }
         }
 
-        protected virtual void OnDisable() => CancelMaintenance();
-        protected virtual void OnDestroy() => CancelMaintenance();
+        protected virtual void OnDisable()
+        {
+            CancelMaintenance();
+            _activeObjects.Clear();
+        }
+
+        protected virtual void OnDestroy()
+        {
+            CancelMaintenance();
+            _activeObjects.Clear();
+        }
 
         private void CancelMaintenance()
         {

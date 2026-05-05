@@ -92,6 +92,9 @@ namespace CosmicShore.Gameplay
         IVesselStatus VesselStatus => vessel.VesselStatus;
         IInputStatus _inputStatus => VesselStatus.InputStatus;
 
+        WaitForSeconds _waitPlayerSeek;
+        static readonly WaitForSeconds WaitAbilityStart = new WaitForSeconds(3);
+
         float _lastPitchTarget;
         float _lastYawTarget;
         float _lastRollTarget;
@@ -212,7 +215,7 @@ namespace CosmicShore.Gameplay
                     _targetPosition = bestPos;
                 }
 
-                yield return new WaitForSeconds(playerSeekUpdateInterval);
+                yield return _waitPlayerSeek;
             }
         }
 
@@ -231,6 +234,7 @@ namespace CosmicShore.Gameplay
                 ability.Ability = inst;
             }
 
+            _waitPlayerSeek = new WaitForSeconds(playerSeekUpdateInterval);
             _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -323,9 +327,9 @@ namespace CosmicShore.Gameplay
             throttle += throttleIncrease * Time.deltaTime;
         }
         
-        IEnumerator UseAbilityCoroutine(AIAbility action) 
+        IEnumerator UseAbilityCoroutine(AIAbility action)
         {
-            yield return new WaitForSeconds(3);
+            yield return WaitAbilityStart;
             while (AutoPilotEnabled)
             {
                 action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
