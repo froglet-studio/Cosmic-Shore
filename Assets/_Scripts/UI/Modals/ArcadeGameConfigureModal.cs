@@ -816,29 +816,21 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Updates tile active/inactive state from <see cref="ArcadeGameConfigSO.DomainCount"/>
-        /// and the selected-vs-unselected sprite on each tile from the local pick. Does
-        /// not touch chip lifecycle. Call after open, after DomainCount changes, and on
-        /// local pick.
+        /// Updates the selected-vs-unselected sprite on each tile from the local pick.
+        /// All 4 tiles (Random/Jade/Ruby/Gold) are always visible — the host can pick
+        /// any. Does not touch chip lifecycle.
         /// </summary>
         void RefreshTileVisibility()
         {
             if (config == null) return;
 
-            int allowed = Mathf.Clamp(config.DomainCount, 1, GameDataSO.ActiveDomains.Length);
             var selected = config.SelectedDomain;
 
             foreach (var item in domainInfoItems)
             {
                 if (!item) continue;
 
-                int idx = System.Array.IndexOf(GameDataSO.ActiveDomains, item.Domain);
-                bool inActive = idx >= 0 && idx < allowed;
-                bool isRandom = item.Domain == Domains.Blue;
-
-                item.gameObject.SetActive(inActive || isRandom);
-                if (!item.gameObject.activeSelf) continue;
-
+                item.gameObject.SetActive(true);
                 item.SetSelected(item.Domain == selected);
             }
         }

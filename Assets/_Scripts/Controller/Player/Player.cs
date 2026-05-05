@@ -68,31 +68,31 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Owner-initiated request to change this player's domain.
         /// NetDomain is server-write, so clients route their selections through this RPC.
-        /// Accepts Blue (the "no pick / cleared" sentinel) or any active domain whose
-        /// index in <see cref="GameDataSO.ActiveDomains"/> is within the host's
-        /// <see cref="GameDataSO.RequestedDomainCount"/>. Out-of-range or garbage
-        /// domains are rejected.
+        /// Special case: <see cref="Domains.Blue"/> means "Random" — the server rolls
+        /// a real domain from <see cref="GameDataSO.ActiveDomains"/> instead of writing
+        /// the sentinel. All other inputs must match an active domain or are rejected.
         /// </summary>
         [ServerRpc] // RequireOwnership = true is the default — only the player's owner may request
         public void RequestSetDomain_ServerRpc(Domains domain)
         {
-            // Blue is the explicit "cleared / random" pick — always allowed.
+            // "Random" — pick a real active domain server-side. Blue is the sentinel
+            // for "no pick yet"; clicking the Random tile means "commit me to something".
             if (domain == Domains.Blue)
             {
-                NetDomain.Value = Domains.Blue;
+                var actives = GameDataSO.ActiveDomains;
+                if (actives == null || actives.Length == 0)
+                {
+                    Debug.LogWarning("[Player] Random pick requested but ActiveDomains is empty.");
+                    return;
+                }
+                NetDomain.Value = actives[Random.Range(0, actives.Length)];
                 return;
             }
 
-            // Otherwise the domain must be in the active set AND within the host's
-            // currently-allowed range (RequestedDomainCount).
-            int allowed = Mathf.Clamp(
-                gameData != null ? gameData.RequestedDomainCount : GameDataSO.ActiveDomains.Length,
-                1,
-                GameDataSO.ActiveDomains.Length);
-
-            for (int i = 0; i < allowed; i++)
+            // Otherwise the domain must be in the active set.
+            foreach (var d in GameDataSO.ActiveDomains)
             {
-                if (GameDataSO.ActiveDomains[i] == domain)
+                if (d == domain)
                 {
                     NetDomain.Value = domain;
                     return;
@@ -100,8 +100,7 @@ namespace CosmicShore.Gameplay
             }
 
             Debug.LogWarning(
-                $"[Player] RequestSetDomain_ServerRpc rejected out-of-range domain {domain} " +
-                $"for {NetName.Value} (allowed={allowed}/{GameDataSO.ActiveDomains.Length})");
+                $"[Player] RequestSetDomain_ServerRpc rejected unknown domain {domain} for {NetName.Value}");
         }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }

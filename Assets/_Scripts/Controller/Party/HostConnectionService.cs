@@ -1515,6 +1515,14 @@ namespace CosmicShore.Gameplay
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
         }
 
+        // Circuit breaker for RefreshPartyMembersAsync. Transient errors (network blip,
+        // server hiccup) shouldn't tear down the session and force a NetworkManager
+        // Shutdown+StartHost dance — that destroys & respawns every vessel in
+        // Menu_Main on each iteration. Only null the session after this many
+        // consecutive failures, when we're confident the session is genuinely dead.
+        private const int REFRESH_FAILURE_THRESHOLD = 3;
+        private int _consecutiveRefreshFailures;
+
         private async Task RefreshPartyMembersAsync()
         {
             if (_partySession == null) return;
@@ -1524,21 +1532,38 @@ namespace CosmicShore.Gameplay
             try { await _partySession.RefreshAsync(); }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] Party session refresh error: {e.Message}");
+                Debug.LogWarning($"[HostConnectionService] Party session refresh error " +
+                                 $"({_consecutiveRefreshFailures + 1}/{REFRESH_FAILURE_THRESHOLD}): {e.Message}");
 
                 // Rate limits are transient — back off and retry next cycle.
-                // Only null the session for non-transient errors (session deleted,
-                // auth failure, etc.) so the Update() loop can recreate it.
                 if (IsRateLimitException(e))
                 {
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     return;
                 }
 
+                // Other errors: tolerate up to N consecutive failures before tearing
+                // down. Each backoff doubles to avoid hammering during transient outage.
+                _consecutiveRefreshFailures++;
+                if (_consecutiveRefreshFailures < REFRESH_FAILURE_THRESHOLD)
+                {
+                    _rateLimitBackoffUntil = Time.unscaledTime
+                        + refreshIntervalSeconds * (1 << _consecutiveRefreshFailures);
+                    return;
+                }
+
+                Debug.LogWarning("[HostConnectionService] Party session refresh failed " +
+                                 $"{REFRESH_FAILURE_THRESHOLD} times consecutively — " +
+                                 "treating as terminal and recreating.");
+                _consecutiveRefreshFailures = 0;
                 _partySession = null;
                 connectionData.PartyMembers?.Clear();
                 return;
             }
+
+            // Success — reset the failure counter so a future hiccup doesn't trip
+            // the threshold from accumulated past failures.
+            _consecutiveRefreshFailures = 0;
 
             // Build a set of player IDs currently in the session
             var sessionPlayerIds = new HashSet<string>();
