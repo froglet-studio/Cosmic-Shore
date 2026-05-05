@@ -28,6 +28,13 @@ namespace CosmicShore.Gameplay
 
         void Awake() => s_gameSetting = injectedGameSetting;
 
+        static GameSetting ResolveGameSetting()
+        {
+            if (s_gameSetting != null) return s_gameSetting;
+            s_gameSetting = FindFirstObjectByType<GameSetting>();
+            return s_gameSetting;
+        }
+
         /// <summary>
         /// Play Haptic
         /// Play haptic pattern presets when haptics are enabled.
@@ -35,10 +42,13 @@ namespace CosmicShore.Gameplay
         /// <param name="type">Haptic type</param>
         public static void PlayHaptic(HapticType type)
         {
-            if (s_gameSetting == null || !s_gameSetting.HapticsEnabled || s_gameSetting.HapticsLevel == 0)
+            if (type == HapticType.None) return;
+
+            var settings = ResolveGameSetting();
+            if (settings == null || !settings.HapticsEnabled || settings.HapticsLevel == 0)
                 return;
 
-            Lofelt.NiceVibrations.HapticController.outputLevel = s_gameSetting.HapticsLevel;
+            Lofelt.NiceVibrations.HapticController.outputLevel = settings.HapticsLevel;
 
             var pattern = GetPatternForHapticType(type);
 
@@ -47,7 +57,8 @@ namespace CosmicShore.Gameplay
 
         public static void PlayConstant(float amplitude, float frequency, float duration)
         {
-            if (s_gameSetting == null || !s_gameSetting.HapticsEnabled)
+            var settings = ResolveGameSetting();
+            if (settings == null || !settings.HapticsEnabled)
                 return;
             HapticPatterns.PlayConstant(amplitude, frequency, duration);
         }

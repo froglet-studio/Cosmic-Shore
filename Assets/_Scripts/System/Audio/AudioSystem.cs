@@ -289,6 +289,7 @@ namespace CosmicShore.Core
         public void PlayMenuAudio(MenuAudioCategory category)
         {
             PlaySFXClip(MenuAudioClips[category]);
+            HapticController.PlayHaptic(GetHapticForMenuAudio(category));
         }
 
         public void PlayGameplaySFX(GameplaySFXCategory category)
@@ -297,7 +298,51 @@ namespace CosmicShore.Core
                 PlaySFXClip(clip);
             else
                 Debug.LogWarning($"AudioSystem.PlayGameplaySFX: No audio clip assigned for {category}");
+
+            HapticController.PlayHaptic(GetHapticForGameplaySFX(category));
         }
+
+        public static HapticType GetHapticForGameplaySFX(GameplaySFXCategory category) => category switch
+        {
+            GameplaySFXCategory.BlockDestroy      => HapticType.CrystalCollision,
+            GameplaySFXCategory.ShieldActivate    => HapticType.ButtonPress,
+            GameplaySFXCategory.ShieldDeactivate  => HapticType.ButtonPress,
+            GameplaySFXCategory.MineExplode       => HapticType.MineCollision,
+            GameplaySFXCategory.ProjectileLaunch  => HapticType.ButtonPress,
+            GameplaySFXCategory.CrystalCollect    => HapticType.CrystalCollision,
+            GameplaySFXCategory.VesselImpact      => HapticType.ShipCollision,
+            GameplaySFXCategory.GameEnd           => HapticType.ShipCollision,
+            GameplaySFXCategory.ScoreReveal       => HapticType.ButtonPress,
+            GameplaySFXCategory.PauseOpen         => HapticType.ButtonPress,
+            GameplaySFXCategory.PauseClose        => HapticType.ButtonPress,
+            GameplaySFXCategory.GunFire           => HapticType.ButtonPress,
+            GameplaySFXCategory.BoostActivate     => HapticType.CrystalCollision,
+            GameplaySFXCategory.Explosion         => HapticType.MineCollision,
+            GameplaySFXCategory.CreatureDeath     => HapticType.CrystalCollision,
+            GameplaySFXCategory.DriftStart        => HapticType.ButtonPress,
+            GameplaySFXCategory.DriftEnd          => HapticType.ButtonPress,
+            GameplaySFXCategory.EnergyGain        => HapticType.ButtonPress,
+            GameplaySFXCategory.SpeedBurst        => HapticType.CrystalCollision,
+            GameplaySFXCategory.CrystalSkim       => HapticType.ButtonPress,
+            _ => HapticType.None,
+        };
+
+        public static HapticType GetHapticForMenuAudio(MenuAudioCategory category) => category switch
+        {
+            MenuAudioCategory.OptionClick   => HapticType.ButtonPress,
+            MenuAudioCategory.OpenView      => HapticType.ButtonPress,
+            MenuAudioCategory.SwitchView    => HapticType.ButtonPress,
+            MenuAudioCategory.CloseView     => HapticType.ButtonPress,
+            MenuAudioCategory.SmallReward   => HapticType.CrystalCollision,
+            MenuAudioCategory.BigReward     => HapticType.ShipCollision,
+            MenuAudioCategory.Upgrade       => HapticType.CrystalCollision,
+            MenuAudioCategory.Denied        => HapticType.ButtonPress,
+            MenuAudioCategory.Confirmed     => HapticType.ButtonPress,
+            MenuAudioCategory.LetsGo        => HapticType.ShipCollision,
+            MenuAudioCategory.SwitchScreen  => HapticType.ButtonPress,
+            MenuAudioCategory.RedeemTicket  => HapticType.CrystalCollision,
+            _ => HapticType.None,
+        };
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
