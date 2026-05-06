@@ -1,18 +1,18 @@
 using System.Diagnostics;
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// One pre-computed densest-region answer for a single anti-domain bucket
     /// (i.e. the densest region of all prisms NOT belonging to the friendly
-    /// domain that's asking). Sent across the wire as one atomic payload so
-    /// position, density, owning-cell id, and version always replicate together.
+    /// domain that's asking). Held as a struct so consumers can pass it around
+    /// by value and so a future network-sync layer can serialize it directly.
     /// </summary>
-    public struct PartitionSolution : INetworkSerializable, System.IEquatable<PartitionSolution>
+    public struct PartitionSolution : System.IEquatable<PartitionSolution>
     {
         public Vector3 Position;
         public float Density;
@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
         // bounds for AOE / nav purposes without round-tripping to the cell.
         public float Stride;
 
-        // Friendly domain this solution is "anti" to, packed as int for serializer.
+        // Friendly domain this solution is "anti" to (the team that's asking).
         public int AntiOfDomain;
 
         // Monotonic counter so consumers can tell whether a poll returned a
@@ -32,16 +32,6 @@ namespace CosmicShore.Gameplay
         public bool HasResult => Density > 0f;
 
         public Domains AntiOfDomainEnum => (Domains)AntiOfDomain;
-
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-        {
-            serializer.SerializeValue(ref Position);
-            serializer.SerializeValue(ref Density);
-            serializer.SerializeValue(ref CellId);
-            serializer.SerializeValue(ref Stride);
-            serializer.SerializeValue(ref AntiOfDomain);
-            serializer.SerializeValue(ref Version);
-        }
 
         public bool Equals(PartitionSolution other) =>
             Position.Equals(other.Position)
@@ -58,12 +48,10 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Network-synced periodic aggregator over per-Cell density grids.
-    ///
-    /// Computes three "anti-domain" solutions on the server every
-    /// <see cref="recomputeIntervalSeconds"/> and replicates them as
-    /// <see cref="NetworkVariable{T}"/>s so any reader (AI, fauna, vessel
-    /// abilities) can poll the latest answer with no per-reader recompute cost:
+    /// Periodic aggregator over per-Cell density grids. Computes three
+    /// "anti-domain" solutions every <see cref="recomputeIntervalSeconds"/>
+    /// and caches them so any reader (AI, fauna, vessel abilities) can poll
+    /// with no per-reader recompute cost:
     ///
     /// <list type="bullet">
     ///   <item>Anti-Jade = densest region of {Ruby ∪ Gold} prisms.</item>
@@ -75,13 +63,32 @@ namespace CosmicShore.Gameplay
     /// per-team <see cref="BlockCountDensityGrid"/> where the per-domain bucket
     /// stores every block NOT belonging to that domain (the existing
     /// "anti-domain" semantic). This system only picks the strongest centroid
-    /// across all active cells, stamps a version, and broadcasts.
+    /// across all active cells, stamps a version, and caches.
     ///
+    /// <para>
+    /// Auto-bootstrap: <see cref="EnsureExists"/> is called from a
+    /// <see cref="RuntimeInitializeOnLoadMethodAttribute"/> hook so every
+    /// loaded scene gets the system for free — no manual scene placement
+    /// required. The lifetime is per-scene; <see cref="ResetForSceneLoad"/>
+    /// re-spawns it after each load so cell registries from the previous
+    /// scene don't leak forward.
+    /// </para>
+    ///
+    /// <para>
     /// Hybrid event entry: <see cref="RequestImmediateRecompute"/> is the
     /// cooldowned event path. Many simultaneous callers within
-    /// <see cref="eventCooldownSeconds"/> coalesce to a single recompute.
+    /// <see cref="eventCooldownSeconds"/> coalesce to a single recompute,
+    /// preventing thrash on volatile prism volumes.
+    /// </para>
+    ///
+    /// <para>
+    /// Network sync was scoped out of the initial system: each client computes
+    /// locally over its own (Netcode-replicated) Cells. A future
+    /// <c>DensityPartitionNetworkSync</c> sibling can be added if game scenes
+    /// require server-authoritative answers.
+    /// </para>
     /// </summary>
-    public class DensityPartitionSystem : NetworkBehaviour
+    public class DensityPartitionSystem : MonoBehaviour
     {
         [Header("Recompute cadence")]
         [Tooltip("Seconds between server-side recomputes. Default 0.5s (2 Hz) " +
@@ -98,26 +105,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("If true, log each recompute's millisecond cost.")]
         [SerializeField] bool verboseProfiling;
 
-        // ── Networked solutions (server writes, everyone reads) ─────────────
-        // Default read perm = Everyone, default write perm = Server. We use the
-        // explicit constructor so non-spawned writes don't throw on the host
-        // before OnNetworkSpawn (NetworkVariable buffers writes pre-spawn).
-        readonly NetworkVariable<PartitionSolution> _antiJade =
-            new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        readonly NetworkVariable<PartitionSolution> _antiRuby =
-            new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        readonly NetworkVariable<PartitionSolution> _antiGold =
-            new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        // ── Cached solutions (read by anyone via the public API) ────────────
+        PartitionSolution _antiJade;
+        PartitionSolution _antiRuby;
+        PartitionSolution _antiGold;
 
-        // ── Local cache mirrors of the above ────────────────────────────────
-        // Server fills these directly each Recompute() so reads work even
-        // before/without OnNetworkSpawn. Clients overwrite them from the
-        // OnValueChanged callback so reads are O(1) (no Value-getter call).
-        PartitionSolution _localAntiJade;
-        PartitionSolution _localAntiRuby;
-        PartitionSolution _localAntiGold;
-
-        // ── Server-only tick state ──────────────────────────────────────────
+        // ── Tick state ──────────────────────────────────────────────────────
         float _nextRecomputeAt;
         float _earliestEventRecomputeAt;
         uint _version;
@@ -125,14 +118,15 @@ namespace CosmicShore.Gameplay
         // ── Diagnostics ─────────────────────────────────────────────────────
         public uint Version => _version;
         public int LastRecomputeCellsScanned { get; private set; }
+        public int LastRecomputeCellsWithPrisms { get; private set; }
         public float LastRecomputeMillis { get; private set; }
         public float RecomputeIntervalSeconds => recomputeIntervalSeconds;
         public float EventCooldownSeconds => eventCooldownSeconds;
         public float NextRecomputeIn => Mathf.Max(0f, _nextRecomputeAt - Time.time);
 
-        // ── Singleton-ish accessor ──────────────────────────────────────────
-        // Lazy scene scan so any AI / fauna / ability can fetch the system
-        // without manual wiring. Only one instance is expected per game scene.
+        // ── Singleton-ish accessor + auto-bootstrap ─────────────────────────
+        // The system is per-scene; the static field is cleared and re-seeded
+        // on each scene load.
         static DensityPartitionSystem _active;
         public static DensityPartitionSystem Active
         {
@@ -142,6 +136,40 @@ namespace CosmicShore.Gameplay
                 _active = FindFirstObjectByType<DensityPartitionSystem>(FindObjectsInactive.Exclude);
                 return _active;
             }
+        }
+
+        /// <summary>
+        /// Returns the per-scene system, creating it on a hidden GameObject if
+        /// none exists. Safe to call from any scene at any time.
+        /// </summary>
+        public static DensityPartitionSystem EnsureExists()
+        {
+            var existing = Active;
+            if (existing != null) return existing;
+
+            var go = new GameObject($"[Auto] {nameof(DensityPartitionSystem)}");
+            go.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+            var system = go.AddComponent<DensityPartitionSystem>();
+            return system;
+        }
+
+        // ── Auto-bootstrap on every scene load ──────────────────────────────
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void HookSceneLoad()
+        {
+            // Wire once per game session. SubsystemRegistration runs before
+            // any scene loads, so we get to subscribe before Bootstrap.
+            SceneManager.sceneLoaded -= OnSceneLoadedStatic;
+            SceneManager.sceneLoaded += OnSceneLoadedStatic;
+        }
+
+        static void OnSceneLoadedStatic(Scene scene, LoadSceneMode mode)
+        {
+            // Drop the stale reference from the previous scene; Active getter
+            // will re-find or EnsureExists will create a fresh instance.
+            _active = null;
+            EnsureExists();
         }
 
         void Awake()
@@ -157,39 +185,13 @@ namespace CosmicShore.Gameplay
             _active = this;
         }
 
-        public override void OnDestroy()
+        void OnDestroy()
         {
-            base.OnDestroy();
             if (_active == this) _active = null;
         }
 
-        public override void OnNetworkSpawn()
-        {
-            // Seed the local cache from the current networked value so a
-            // client that joins mid-session reads the latest answer instead
-            // of an empty default.
-            _localAntiJade = _antiJade.Value;
-            _localAntiRuby = _antiRuby.Value;
-            _localAntiGold = _antiGold.Value;
-
-            _antiJade.OnValueChanged += OnAntiJadeChanged;
-            _antiRuby.OnValueChanged += OnAntiRubyChanged;
-            _antiGold.OnValueChanged += OnAntiGoldChanged;
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            _antiJade.OnValueChanged -= OnAntiJadeChanged;
-            _antiRuby.OnValueChanged -= OnAntiRubyChanged;
-            _antiGold.OnValueChanged -= OnAntiGoldChanged;
-        }
-
-        void OnAntiJadeChanged(PartitionSolution _, PartitionSolution next) => _localAntiJade = next;
-        void OnAntiRubyChanged(PartitionSolution _, PartitionSolution next) => _localAntiRuby = next;
-        void OnAntiGoldChanged(PartitionSolution _, PartitionSolution next) => _localAntiGold = next;
-
         // ─────────────────────────────────────────────────────────────────────
-        //  Read API — call from anywhere (server or client)
+        //  Read API — call from anywhere
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -201,9 +203,9 @@ namespace CosmicShore.Gameplay
         public PartitionSolution GetAntiDomainSolution(Domains friendlyDomain) =>
             friendlyDomain switch
             {
-                Domains.Jade => _localAntiJade,
-                Domains.Ruby => _localAntiRuby,
-                Domains.Gold => _localAntiGold,
+                Domains.Jade => _antiJade,
+                Domains.Ruby => _antiRuby,
+                Domains.Gold => _antiGold,
                 _ => default,
             };
 
@@ -226,25 +228,11 @@ namespace CosmicShore.Gameplay
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        //  Server tick
+        //  Tick
         // ─────────────────────────────────────────────────────────────────────
-
-        bool IsAuthoritative
-        {
-            // Treat "no NetworkManager at all" as local-only authoritative so
-            // the system is still useful in edit-mode tests and any scene that
-            // might run without Netcode. Otherwise: only the server computes.
-            get
-            {
-                var nm = NetworkManager.Singleton;
-                if (nm == null) return true;
-                return IsSpawned && IsServer;
-            }
-        }
 
         void Update()
         {
-            if (!IsAuthoritative) return;
             if (Time.time < _nextRecomputeAt) return;
 
             _nextRecomputeAt = Time.time + recomputeIntervalSeconds;
@@ -259,7 +247,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool RequestImmediateRecompute()
         {
-            if (!IsAuthoritative) return false;
             if (Time.time < _earliestEventRecomputeAt) return false;
 
             _earliestEventRecomputeAt = Time.time + eventCooldownSeconds;
@@ -287,6 +274,7 @@ namespace CosmicShore.Gameplay
             var bestGold = new PartitionSolution { AntiOfDomain = (int)Domains.Gold, Version = _version };
 
             int scanned = 0;
+            int withPrisms = 0;
             var cells = Cell.ActiveCells;
             foreach (var cell in cells)
             {
@@ -294,57 +282,53 @@ namespace CosmicShore.Gameplay
                 if (cell.countGrids == null || cell.countGrids.Count == 0) continue;
                 scanned++;
 
-                EvaluateCellAntiDomain(cell, Domains.Jade, ref bestJade);
-                EvaluateCellAntiDomain(cell, Domains.Ruby, ref bestRuby);
-                EvaluateCellAntiDomain(cell, Domains.Gold, ref bestGold);
+                bool any = false;
+                any |= EvaluateCellAntiDomain(cell, Domains.Jade, ref bestJade);
+                any |= EvaluateCellAntiDomain(cell, Domains.Ruby, ref bestRuby);
+                any |= EvaluateCellAntiDomain(cell, Domains.Gold, ref bestGold);
+                if (any) withPrisms++;
             }
 
-            // Local cache update — read API hits this path on both server and
-            // (eventually) client. Server replicates to clients via the
-            // NetworkVariable assignments below.
-            _localAntiJade = bestJade;
-            _localAntiRuby = bestRuby;
-            _localAntiGold = bestGold;
-
-            if (IsSpawned && IsServer)
-            {
-                // NetworkVariable does its own change detection via IEquatable,
-                // but the equality check here saves a tiny amount of dirty-bit
-                // bookkeeping when nothing's moved between recomputes.
-                if (!_antiJade.Value.Equals(bestJade)) _antiJade.Value = bestJade;
-                if (!_antiRuby.Value.Equals(bestRuby)) _antiRuby.Value = bestRuby;
-                if (!_antiGold.Value.Equals(bestGold)) _antiGold.Value = bestGold;
-            }
+            _antiJade = bestJade;
+            _antiRuby = bestRuby;
+            _antiGold = bestGold;
 
             sw.Stop();
             LastRecomputeMillis = (float)sw.Elapsed.TotalMilliseconds;
             LastRecomputeCellsScanned = scanned;
+            LastRecomputeCellsWithPrisms = withPrisms;
 
             if (verboseProfiling)
             {
-                CSDebug.Log($"[DensityPartitionSystem] v{_version} scanned {scanned} cells in " +
-                            $"{LastRecomputeMillis:F2}ms — antiJ={bestJade.Density:F0} " +
-                            $"antiR={bestRuby.Density:F0} antiG={bestGold.Density:F0}");
+                CSDebug.Log($"[DensityPartitionSystem] v{_version} scanned {scanned} cells " +
+                            $"({withPrisms} with prisms) in {LastRecomputeMillis:F2}ms — " +
+                            $"antiJ={bestJade.Density:F0} antiR={bestRuby.Density:F0} " +
+                            $"antiG={bestGold.Density:F0}");
             }
         }
 
-        static void EvaluateCellAntiDomain(Cell cell, Domains friendlyDomain, ref PartitionSolution best)
+        /// <summary>
+        /// Returns true when this cell contributed any prism to <paramref name="friendlyDomain"/>'s
+        /// anti-domain bucket — used to count "cells with prisms" for diagnostics.
+        /// </summary>
+        static bool EvaluateCellAntiDomain(Cell cell, Domains friendlyDomain, ref PartitionSolution best)
         {
             // Cell.countGrids[friendly] holds every block NOT in `friendly`
             // (see Cell.AddBlock — friendly is the one team it skips). So the
             // densest region of that grid is the anti-friendly answer.
             if (!cell.countGrids.TryGetValue(friendlyDomain, out var grid) || grid == null)
-                return;
+                return false;
 
             var pos = grid.FindDensestRegion();
             int density = grid.GetDensityAtPosition(pos);
-            if (density <= 0) return;
-            if (density <= best.Density) return;
+            if (density <= 0) return false;
+            if (density <= best.Density) return true;
 
             best.Position = pos;
             best.Density = density;
             best.CellId = cell.ID;
             best.Stride = grid.Stride;
+            return true;
         }
     }
 }

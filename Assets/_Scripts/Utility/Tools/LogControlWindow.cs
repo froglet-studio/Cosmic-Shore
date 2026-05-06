@@ -830,20 +830,58 @@ namespace CosmicShore.Utility
             {
                 GUILayout.Space(Pad);
                 GUILayout.Label(
-                    "<b>No DensityPartitionSystem in this scene.</b>\n" +
-                    "Add a GameObject with a NetworkObject + DensityPartitionSystem " +
-                    "to enable live aggregation. Each Cell still maintains its own " +
-                    "per-domain density grid; this system aggregates them globally " +
-                    "and replicates the three anti-domain solutions to all clients.",
+                    "<b>No DensityPartitionSystem yet.</b>\n" +
+                    "It auto-bootstraps on every scene load via " +
+                    "[RuntimeInitializeOnLoadMethod]. If this message persists, " +
+                    "the static SceneManager.sceneLoaded hook hasn't fired — try " +
+                    "reloading the current scene or pressing Play.",
                     _infoStyle);
                 return;
             }
 
             int activeCellCount = Cell.ActiveCells.Count;
 
+            // ── Ecosystem health summary ────────────────────────────────────
+            string ecosystemDiagnosis;
+            Color ecosystemColor;
+            if (activeCellCount == 0)
+            {
+                ecosystemDiagnosis =
+                    "<b>No Cells in scene.</b>\n" +
+                    "Density partitioning aggregates from per-Cell grids — without " +
+                    "a Cell GameObject in the active scene, every solution stays " +
+                    "empty. For a Menu_Main ecosystem, drop a Cell prefab into the " +
+                    "scene (with crystal + flora/fauna spawners) so prisms accumulate " +
+                    "and the partition has something to bucket.";
+                ecosystemColor = new Color(0.95f, 0.55f, 0.30f);
+            }
+            else if (system.LastRecomputeCellsWithPrisms == 0)
+            {
+                ecosystemDiagnosis =
+                    $"<b>{activeCellCount} cell(s) tracked, but none have prisms yet.</b>\n" +
+                    "The cell grids are empty — flora/fauna haven't grown anything " +
+                    "trackable. Wait for cell phase to advance, or check that " +
+                    "HealthBlockTracker is calling Cell.AddBlock on prism creation.";
+                ecosystemColor = new Color(0.85f, 0.78f, 0.30f);
+            }
+            else
+            {
+                ecosystemDiagnosis =
+                    $"<b>Ecosystem live.</b> " +
+                    $"{system.LastRecomputeCellsWithPrisms}/{activeCellCount} cells " +
+                    $"contain prisms across {ActiveSolutionCount(system)} anti-domain " +
+                    $"solution(s). Toggle the Scene-view overlays above to see them.";
+                ecosystemColor = new Color(0.45f, 0.82f, 0.55f);
+            }
+
+            DrawDiagnosisBanner(ecosystemDiagnosis, ecosystemColor);
+
+            GUILayout.Space(6);
+
             string info =
                 $"<b>Version:</b> {system.Version}   " +
-                $"<b>Cells:</b> {system.LastRecomputeCellsScanned}/{activeCellCount}\n" +
+                $"<b>Cells:</b> {system.LastRecomputeCellsWithPrisms}/{activeCellCount} " +
+                $"with prisms\n" +
                 $"<b>Recompute:</b> every {system.RecomputeIntervalSeconds:F2}s   " +
                 $"<b>Event cooldown:</b> {system.EventCooldownSeconds:F2}s\n" +
                 $"<b>Next in:</b> {system.NextRecomputeIn:F2}s   " +
@@ -865,17 +903,43 @@ namespace CosmicShore.Utility
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(Pad);
-            using (new EditorGUI.DisabledScope(!system.IsServer && system.IsSpawned))
-            {
-                if (GUILayout.Button("Force Recompute Now"))
-                    system.RequestImmediateRecompute();
-            }
+            if (GUILayout.Button("Force Recompute Now"))
+                system.RequestImmediateRecompute();
             EditorGUILayout.EndHorizontal();
 
             // Continually repaint while solutions are visible so the "next in"
             // counter and live values stay current without the user mousing
             // over the window.
             Repaint();
+        }
+
+        static int ActiveSolutionCount(DensityPartitionSystem system)
+        {
+            int n = 0;
+            if (system.GetAntiDomainSolution(Domains.Jade).HasResult) n++;
+            if (system.GetAntiDomainSolution(Domains.Ruby).HasResult) n++;
+            if (system.GetAntiDomainSolution(Domains.Gold).HasResult) n++;
+            return n;
+        }
+
+        void DrawDiagnosisBanner(string richTextMessage, Color accentColor)
+        {
+            var rect = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true));
+            // Reserve generous space; richText word-wrap means height varies.
+            var content = new GUIContent(richTextMessage);
+            var style = new GUIStyle(EditorStyles.helpBox)
+            {
+                richText = true,
+                fontSize = 11,
+                padding = new RectOffset(10, 10, 8, 8),
+            };
+            float height = style.CalcHeight(content, position.width - 24);
+            rect = GUILayoutUtility.GetRect(0, height, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(rect, Color.Lerp(SectionHeader, accentColor, 0.20f));
+            // Left accent strip in the diagnosis color.
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4, rect.height), accentColor);
+            var labelRect = new Rect(rect.x + 12, rect.y, rect.width - 16, rect.height);
+            GUI.Label(labelRect, content, style);
         }
 
         void DrawEditorPrefToggle(string label, string prefKey, bool defaultValue)
