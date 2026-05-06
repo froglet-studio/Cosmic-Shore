@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
+using CosmicShore.Editor;
+using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using UnityEditor;
@@ -47,6 +49,7 @@ namespace CosmicShore.Utility
             new() { Label = "Vessels",    Color = new Color(0.60f, 0.78f, 0.85f, 1f), Draw = w => w.DrawVesselsTab() },
             new() { Label = "Crystals",   Color = new Color(0.85f, 0.60f, 0.72f, 1f), Draw = w => w.DrawCrystalsTab() },
             new() { Label = "UGS Data",   Color = new Color(0.75f, 0.85f, 0.60f, 1f), Draw = w => w.DrawUGSDataTab() },
+            new() { Label = "Density",    Color = new Color(0.55f, 0.78f, 0.85f, 1f), Draw = w => w.DrawDensityTab() },
         };
 
         // ── UGS Data sub-foldouts ────────────────────────────────────────────
@@ -261,11 +264,12 @@ namespace CosmicShore.Utility
 
         void DrawTabBar()
         {
-            // Two rows: row 1 = first 4 tabs, row 2 = remaining 3 tabs
+            // Two rows; first row holds half (rounded up). Keeps the bar
+            // balanced as new tabs get added (currently 8 → 4 + 4).
             const float tabHeight = 32;
             const float gap = 2;
             const float padding = 4;
-            int row1Count = 4;
+            int row1Count = (Tabs.Length + 1) / 2;
             int row2Count = Tabs.Length - row1Count;
             float totalHeight = tabHeight * 2 + gap + padding * 2;
 
@@ -784,6 +788,145 @@ namespace CosmicShore.Utility
                 DrawField("Invert Throttle", d.InvertThrottleEnabled ? "ON" : "OFF");
                 DrawField("Joystick Visuals", d.JoystickVisualsEnabled ? "ON" : "OFF");
             });
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  TAB: DENSITY (anti-domain partitioning diagnostics)
+        // ═════════════════════════════════════════════════════════════════════
+        void DrawDensityTab()
+        {
+            DrawTabTitle("Density Partitioning", Tabs[7].Color);
+
+            // ── Scene-view overlay toggles ─────────────────────────────────
+            DrawSubSectionLabel("Scene View Overlays");
+
+            DrawEditorPrefToggle("Show Grid Wireframe",     DensityPartitionDiagnostics.PrefShowGrid,       false);
+            DrawEditorPrefToggle("Show Anti-Jade Solution", DensityPartitionDiagnostics.PrefShowAntiJade,   true);
+            DrawEditorPrefToggle("Show Anti-Ruby Solution", DensityPartitionDiagnostics.PrefShowAntiRuby,   true);
+            DrawEditorPrefToggle("Show Anti-Gold Solution", DensityPartitionDiagnostics.PrefShowAntiGold,   true);
+            DrawEditorPrefToggle("Highlight Strongest",     DensityPartitionDiagnostics.PrefShowOnlyDensest, true);
+            DrawEditorPrefToggle("Show Labels",             DensityPartitionDiagnostics.PrefShowLabels,     true);
+
+            GUILayout.Space(4);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (GUILayout.Button("Repaint Scene Views"))
+                SceneView.RepaintAll();
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(8);
+
+            // ── Live runtime status ─────────────────────────────────────────
+            DrawSubSectionLabel("Live Status");
+
+            if (!Application.isPlaying)
+            {
+                GUILayout.Space(Pad);
+                EditorGUILayout.LabelField("Enter Play Mode to see live solutions.", _mutedLabel);
+                return;
+            }
+
+            var system = DensityPartitionSystem.Active;
+            if (system == null)
+            {
+                GUILayout.Space(Pad);
+                GUILayout.Label(
+                    "<b>No DensityPartitionSystem in this scene.</b>\n" +
+                    "Add a GameObject with a NetworkObject + DensityPartitionSystem " +
+                    "to enable live aggregation. Each Cell still maintains its own " +
+                    "per-domain density grid; this system aggregates them globally " +
+                    "and replicates the three anti-domain solutions to all clients.",
+                    _infoStyle);
+                return;
+            }
+
+            int activeCellCount = Cell.ActiveCells.Count;
+
+            string info =
+                $"<b>Version:</b> {system.Version}   " +
+                $"<b>Cells:</b> {system.LastRecomputeCellsScanned}/{activeCellCount}\n" +
+                $"<b>Recompute:</b> every {system.RecomputeIntervalSeconds:F2}s   " +
+                $"<b>Event cooldown:</b> {system.EventCooldownSeconds:F2}s\n" +
+                $"<b>Next in:</b> {system.NextRecomputeIn:F2}s   " +
+                $"<b>Last cost:</b> {system.LastRecomputeMillis:F2}ms";
+            GUILayout.Label(info, _infoStyle);
+
+            GUILayout.Space(6);
+            DrawSolutionRow("Anti-Jade  (Ruby + Gold densest)",
+                            system.GetAntiDomainSolution(Domains.Jade),
+                            DensityPartitionDiagnostics.JadeColor);
+            DrawSolutionRow("Anti-Ruby  (Jade + Gold densest)",
+                            system.GetAntiDomainSolution(Domains.Ruby),
+                            DensityPartitionDiagnostics.RubyColor);
+            DrawSolutionRow("Anti-Gold  (Jade + Ruby densest)",
+                            system.GetAntiDomainSolution(Domains.Gold),
+                            DensityPartitionDiagnostics.GoldColor);
+
+            GUILayout.Space(8);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            using (new EditorGUI.DisabledScope(!system.IsServer && system.IsSpawned))
+            {
+                if (GUILayout.Button("Force Recompute Now"))
+                    system.RequestImmediateRecompute();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            // Continually repaint while solutions are visible so the "next in"
+            // counter and live values stay current without the user mousing
+            // over the window.
+            Repaint();
+        }
+
+        void DrawEditorPrefToggle(string label, string prefKey, bool defaultValue)
+        {
+            bool current = EditorPrefs.GetBool(prefKey, defaultValue);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            bool next = GUILayout.Toggle(current, label);
+            if (next != current)
+            {
+                EditorPrefs.SetBool(prefKey, next);
+                SceneView.RepaintAll();
+                Repaint();
+            }
+            GUILayout.FlexibleSpace();
+            DrawBadge(current ? "ON" : "OFF", current ? BadgeOn : BadgeOff);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawSolutionRow(string label, PartitionSolution solution, Color color)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+
+            // Color swatch.
+            var swatch = GUILayoutUtility.GetRect(10, 14, GUILayout.Width(10));
+            EditorGUI.DrawRect(new Rect(swatch.x, swatch.y + 2, 10, 10), color);
+            GUILayout.Space(4);
+
+            string status = solution.HasResult
+                ? $"density {solution.Density:F0}  pos {solution.Position}  cell #{solution.CellId}  v{solution.Version}"
+                : "no result yet";
+
+            var labelStyle = new GUIStyle(EditorStyles.label) { richText = true };
+            GUILayout.Label($"<b>{label}</b>\n{status}", labelStyle);
+
+            GUILayout.FlexibleSpace();
+            if (solution.HasResult)
+            {
+                if (GUILayout.Button("Frame", GUILayout.Width(56)))
+                {
+                    foreach (SceneView sv in SceneView.sceneViews)
+                    {
+                        var bounds = new Bounds(solution.Position,
+                                                Vector3.one * Mathf.Max(20f, solution.Stride * 2f));
+                        sv.Frame(bounds, false);
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
         // ── Drawing helpers ──────────────────────────────────────────────────

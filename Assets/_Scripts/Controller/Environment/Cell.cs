@@ -57,6 +57,12 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Domains, float> teamVolumes = new();
         readonly Dictionary<Domains, int> domainBlockCounts = new();
 
+        // Live registry consumed by DensityPartitionSystem and editor diagnostics.
+        // OnEnable/OnDisable maintain it so the partition tick doesn't need a
+        // FindObjectsByType scan, and so destroyed cells drop out cleanly.
+        static readonly HashSet<Cell> _activeCells = new();
+        public static IReadOnlyCollection<Cell> ActiveCells => _activeCells;
+
         readonly List<GameObject> spawnedLifeForms = new();
         readonly HashSet<Prism> trackedBlocks = new();
         SnowChanger spawnedCytoplasm;
@@ -216,6 +222,8 @@ namespace CosmicShore.Gameplay
 
         void OnEnable()
         {
+            _activeCells.Add(this);
+
             // Clear stale config BEFORE subscribing to events.
             // CellRuntimeDataSO is a shared SO asset — Menu_Main's Cell sets
             // runtime.Config to Blob Cell Config, which persists into the next
@@ -253,6 +261,8 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            _activeCells.Remove(this);
+
             if (gameData != null)
                 gameData.OnInitializeGame.OnRaised -= Initialize;
 
