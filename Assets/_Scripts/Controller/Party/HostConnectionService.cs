@@ -26,10 +26,11 @@ namespace CosmicShore.Gameplay
     /// • <see cref="LobbyPropertyWriter"/>    – mutex + refresh + save-with-retry pattern (Phase 3)
     /// • <see cref="SoapPartyEventBus"/>      – all SOAP event Raise calls (Phase 4)
     /// • <see cref="InviteService"/>          – payload build/track/serialize/parse (Phase 5)
-    /// • <see cref="LobbyRefreshScheduler"/>  – refresh timer + boost window (Phase 6)
-    /// • <see cref="PresenceLobbyService"/>   – presence lobby join/leave/refresh (Phase 7)
-    /// • <see cref="LobbyPatcherLogFilter"/>  – suppresses known harmless SDK noise
-    /// • <see cref="PartyStateMachine"/>      – explicit lifecycle state (Phase 1)
+    /// • <see cref="LobbyRefreshScheduler"/>     – refresh timer + boost window (Phase 6)
+    /// • <see cref="PresenceLobbyService"/>      – presence lobby join/leave/refresh (Phase 7)
+    /// • <see cref="AcceptanceSignalService"/>   – PENDING-sentinel acceptance handshake (Phase 8)
+    /// • <see cref="LobbyPatcherLogFilter"/>     – suppresses known harmless SDK noise
+    /// • <see cref="PartyStateMachine"/>         – explicit lifecycle state (Phase 1)
     ///
     /// Lifetime: DontDestroyOnLoad MonoBehaviour (same GO as PartyInviteController).
     /// Thread-safety: main-thread only.
@@ -92,7 +93,7 @@ namespace CosmicShore.Gameplay
         /// After session creation, suppress <see cref="RefreshPartyMembersAsync"/>
         /// for this many seconds. A freshly-provisioned session can transiently
         /// fail RefreshAsync with non-429 errors; nulling <see cref="_partySession"/>
-        /// in response would cause <see cref="ScanForAcceptanceSignalsAsync"/> to
+        /// in response would cause <see cref="AcceptanceSignalService.ScanForSignals"/> to
         /// recreate it on the next tick, kicking any joining client.
         /// </summary>
         private const float SESSION_CREATION_GRACE_PERIOD_SECONDS = 4f;
@@ -143,6 +144,13 @@ namespace CosmicShore.Gameplay
         /// Extracted in Phase 7; Phase 12 moves this to Reflex DI.
         /// </summary>
         private IPresenceLobbyService _lobbyService;
+
+        /// <summary>
+        /// Orchestrates the PENDING-sentinel three-phase acceptance handshake:
+        /// scan for signals, publish acceptance, wait for real id, republish.
+        /// Extracted in Phase 8; Phase 12 moves this to Reflex DI.
+        /// </summary>
+        private AcceptanceSignalService _acceptanceService;
 
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
@@ -227,9 +235,10 @@ namespace CosmicShore.Gameplay
             Instance = this;
             DontDestroyOnLoad(gameObject);
             // SerializeField values are populated before Awake — safe to use here.
-            _eventBus    = new SoapPartyEventBus(connectionData);
-            _scheduler   = new LobbyRefreshScheduler(refreshIntervalSeconds);
-            _lobbyService = new PresenceLobbyService(connectionData, _propertyWriter);
+            _eventBus          = new SoapPartyEventBus(connectionData);
+            _scheduler         = new LobbyRefreshScheduler(refreshIntervalSeconds);
+            _lobbyService      = new PresenceLobbyService(connectionData, _propertyWriter);
+            _acceptanceService = new AcceptanceSignalService();
             InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -315,7 +324,7 @@ namespace CosmicShore.Gameplay
         /// would burn a Relay allocation per launch and would call
         /// <c>nm.Shutdown()</c> + <c>StartHost()</c> — destroying and respawning
         /// every menu vessel. The Relay session is created lazily on first
-        /// invite acceptance via <see cref="ScanForAcceptanceSignalsAsync"/>.
+        /// invite acceptance via <see cref="AcceptanceSignalService.ScanForSignals"/>.
         /// </summary>
         private async Task EnsureInitializedAsync()
         {
@@ -392,7 +401,7 @@ namespace CosmicShore.Gameplay
 
                 // No NetworkManager activity here — the Relay session is created
                 // lazily when the first recipient accepts (see
-                // ScanForAcceptanceSignalsAsync). Sending an invite must never
+                // AcceptanceSignalService.ScanForSignals in RefreshAsync). Sending an invite must never
                 // touch NM, otherwise the host's vessel respawns mid-menu.
                 DebugExtensions.LogColored(
                     $"[INVITE-SEND] PartySession ID: {_partySession?.Id ?? PENDING_SESSION_ID} " +
@@ -473,14 +482,16 @@ namespace CosmicShore.Gameplay
                 //   1. Tell the host we accepted (presence-lobby property write).
                 //   2. Wait for the host to publish the real session id (poll).
                 //   3. Join the now-real session via Relay.
-                await PublishAcceptanceSignalAsync(invite.HostPlayerId);
+                await _acceptanceService.PublishSignalAsync(
+                    _lobbyService.ActiveLobby, invite.HostPlayerId, _propertyWriter);
 
                 string realSessionId = invite.PartySessionId;
                 if (string.IsNullOrEmpty(realSessionId) || realSessionId == PENDING_SESSION_ID)
                 {
                     Debug.Log("[HostConnectionService] Invite has PENDING session — polling for real id...");
                     _scheduler.Boost();
-                    realSessionId = await WaitForRealSessionIdAsync(invite.HostPlayerId);
+                    realSessionId = await _acceptanceService.WaitForRealSessionIdAsync(
+                        _lobbyService, invite.HostPlayerId, connectionData.LocalPlayerId);
                 }
 
                 _partySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
@@ -767,7 +778,28 @@ namespace CosmicShore.Gameplay
                 // only after CreatePartySessionAsync succeeds, and lazy creation
                 // hasn't reached that point yet on the first acceptance.
                 if (_inviteService.OutgoingCount > 0)
-                    await ScanForAcceptanceSignalsAsync();
+                {
+                    string acceptingId = _acceptanceService.ScanForSignals(
+                        _lobbyService.ActiveLobby,
+                        connectionData.LocalPlayerId,
+                        _inviteService.OutgoingTargets);
+
+                    if (acceptingId != null)
+                    {
+                        Debug.Log($"[HostConnectionService] Acceptance signal from {acceptingId} — creating party session...");
+                        if (_partySession == null)
+                            await CreatePartySessionAsync();
+
+                        // Session is live — we are the host, waiting for the
+                        // recipient's NM to connect.  InParty transitions in
+                        // RefreshPartyMembersAsync once both players show.
+                        _stateMachine.TryTransition(PartyState.HostingParty);
+
+                        Debug.Log($"[HostConnectionService] Party session ready ({_partySession?.Id ?? "null"}) — republishing payloads.");
+                        await _acceptanceService.RepublishWithRealIdAsync(
+                            _lobbyService, _partySession!.Id, _inviteService, _propertyWriter);
+                    }
+                }
 
                 if (_partySession != null && connectionData.IsHost)
                     ScanPresenceForJoinedPartyMembers();
@@ -1028,7 +1060,7 @@ namespace CosmicShore.Gameplay
 
             // Grace period: a freshly-provisioned session can transiently fail
             // RefreshAsync. Nulling _partySession here would cause
-            // ScanForAcceptanceSignalsAsync to recreate it on the next tick,
+            // AcceptanceSignalService.ScanForSignals to recreate it on the next tick,
             // kicking any joining client.
             if (Time.unscaledTime - _partySessionCreatedAt < SESSION_CREATION_GRACE_PERIOD_SECONDS)
                 return;
@@ -1126,128 +1158,6 @@ namespace CosmicShore.Gameplay
                 connectionData.PartyMembers.Add(memberData);
                 _eventBus.RaisePartyMemberJoined(memberData);
             }
-        }
-
-        // ╔═══════════════════════════════════════════════════════════════════╗
-        // ║  PENDING-Sentinel Acceptance Protocol                             ║
-        // ║                                                                   ║
-        // ║  Three-phase flow:                                                ║
-        // ║   1. Sender publishes invite payloads with PENDING session id.   ║
-        // ║   2. Recipient writes ACCEPTED_INVITE_KEY = senderId.            ║
-        // ║   3. Sender's refresh detects the signal, lazily creates the     ║
-        // ║      Relay session, republishes payloads with the real id.       ║
-        // ║   4. Recipient polls and joins on real id.                        ║
-        // ╚═══════════════════════════════════════════════════════════════════╝
-
-        private async Task ScanForAcceptanceSignalsAsync()
-        {
-            foreach (var p in _lobbyService.ActiveLobby.Players)
-            {
-                if (p.Id == connectionData.LocalPlayerId) continue;
-                if (!_inviteService.Contains(p.Id)) continue;
-                if (!p.Properties.TryGetValue(ACCEPTED_INVITE_KEY, out var prop)) continue;
-
-                string acceptedValue = prop?.Value ?? string.Empty;
-                if (acceptedValue != connectionData.LocalPlayerId)
-                {
-                    if (!string.IsNullOrEmpty(acceptedValue))
-                        Debug.Log($"[ACCEPT-SCAN] Player {p.Id} has accepted_invite='{acceptedValue}' but we are '{connectionData.LocalPlayerId}' — skipping.");
-                    continue;
-                }
-
-                Debug.Log($"[ACCEPT-SCAN] Acceptance signal from {p.Id} — creating party session...");
-
-                if (_partySession == null)
-                    await CreatePartySessionAsync();
-
-                // Session is live — we are now the host, waiting for the recipient's NM to connect.
-                // Transition: Inviting → HostingParty.  The final InParty transition happens
-                // in RefreshPartyMembersAsync once both players show in the session.
-                _stateMachine.TryTransition(PartyState.HostingParty);
-
-                Debug.Log($"[ACCEPT-SCAN] Party session ready (id={_partySession?.Id ?? "null"}) — republishing payloads.");
-                await RepublishOutgoingInvitesWithRealSessionIdAsync();
-                return;
-            }
-        }
-
-        private async Task RepublishOutgoingInvitesWithRealSessionIdAsync()
-        {
-            if (_partySession == null || _inviteService.OutgoingCount == 0) return;
-
-            _inviteService.UpdatePayloadsWithRealSessionId(_partySession.Id);
-
-            // CreatePartySessionAsync can take 2-3s (NM shutdown + Relay alloc),
-            // so the SDK's internal player index will be stale. Refresh before
-            // saving — same pattern as SendInviteAsync / PublishJoinedPartyAsync.
-            try { await _lobbyService.RefreshAsync(); }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] RepublishInvites pre-save refresh failed (non-fatal): {e.Message}");
-            }
-
-            PublishInvitePayloadsToCurrentPlayer();
-            await _propertyWriter.SaveWithRetryAsync(_lobbyService.ActiveLobby);
-            Debug.Log($"[HostConnectionService] Republished {_inviteService.OutgoingCount} pending invite(s) with real session id {_partySession.Id}");
-        }
-
-        private async Task<string> WaitForRealSessionIdAsync(string hostPlayerId, float timeoutSeconds = 7f)
-        {
-            float deadline = Time.unscaledTime + timeoutSeconds;
-            int   pollCount = 0;
-            while (Time.unscaledTime < deadline)
-            {
-                await Task.Delay(400);
-                pollCount++;
-
-                if (_lobbyService.ActiveLobby == null)
-                {
-                    Debug.LogWarning("[HostConnectionService] WaitForRealSessionId: presence lobby is null — lobby may have been reset.");
-                    continue;
-                }
-
-                bool hostFound = false;
-                foreach (var p in _lobbyService.ActiveLobby.Players)
-                {
-                    if (p.Id != hostPlayerId) continue;
-                    hostFound = true;
-
-                    if (!p.Properties.TryGetValue(INVITE_PAYLOADS_KEY, out var prop))
-                    {
-                        if (pollCount % 5 == 1) Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: host found but no {INVITE_PAYLOADS_KEY} property yet.");
-                        break;
-                    }
-                    if (string.IsNullOrEmpty(prop?.Value))
-                    {
-                        if (pollCount % 5 == 1) Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: {INVITE_PAYLOADS_KEY} is empty.");
-                        break;
-                    }
-
-                    bool foundForUs = false;
-                    foreach (var line in prop.Value.Split(InviteService.LINE_SEPARATOR))
-                    {
-                        var parsed = ParseInviteLine(line);
-                        if (!parsed.HasValue) continue;
-                        if (parsed.Value.targetId != connectionData.LocalPlayerId) continue;
-                        foundForUs = true;
-
-                        var sid = parsed.Value.invite.PartySessionId;
-                        if (!string.IsNullOrEmpty(sid) && sid != PENDING_SESSION_ID)
-                        {
-                            Debug.Log($"[HostConnectionService] WaitForRealSessionId resolved after {pollCount} polls: {sid}");
-                            return sid;
-                        }
-                        if (pollCount % 5 == 1) Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: session id still PENDING.");
-                    }
-                    if (!foundForUs && pollCount % 5 == 1)
-                        Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: payloads key present but no line targeting us in '{prop.Value}'.");
-                    break;
-                }
-                if (!hostFound && pollCount % 5 == 1)
-                    Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: host {hostPlayerId} not in lobby.Players ({_lobbyService.ActiveLobby?.Players.Count ?? 0} players total).");
-            }
-            throw new TimeoutException(
-                $"[HostConnectionService] Host {hostPlayerId} did not publish a real session id within {timeoutSeconds}s (after {pollCount} polls).");
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -1374,22 +1284,6 @@ namespace CosmicShore.Gameplay
                 () => lobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public)),
                 "ClearJoinedParty");
-        }
-
-        private async Task PublishAcceptanceSignalAsync(string hostPlayerId)
-        {
-            if (string.IsNullOrEmpty(hostPlayerId)) return;
-            var lobby = _lobbyService.ActiveLobby;
-            if (lobby == null) return;
-            await _propertyWriter.WriteAsync(
-                lobby,
-                () =>
-                {
-                    lobby.CurrentPlayer.SetProperty(ACCEPTED_INVITE_KEY,
-                        new PlayerProperty(hostPlayerId, VisibilityPropertyOptions.Public));
-                    Debug.Log($"[HostConnectionService] Published acceptance signal to host {hostPlayerId}");
-                },
-                "PublishAcceptanceSignal");
         }
 
         private async UniTaskVoid RepublishLocalIdentityAsync()
