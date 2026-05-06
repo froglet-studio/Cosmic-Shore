@@ -439,39 +439,87 @@ Per CLAUDE.md "three similar lines is better than a premature abstraction":
 
 ---
 
-## 9. What This Means for the GDC Demo
+## 9. Recommended Implementation Order
 
-The party system was a known fragility risk for the live demo. After this refactor:
+The items below are ordered by **engineering leverage and best-practices standards only** —
+SOLID, DRY, KISS, safety, and observability. No shortcuts, no deferral based on external
+deadlines. Each item should be completed, verified with MPPM, and covered by tests before
+the next one starts.
 
-1. **The vessel-destruction-on-Send-Invite bug is fixed** (PENDING protocol).
-2. **Every party operation has an explicit, observable state.** If something goes wrong
-   on stage, the Console shows `[PartyStateMachine] X → Y` for every transition — easy
-   diagnosis on the spot.
-3. **Each piece is independently testable** — when a future regression appears, we can
-   isolate it to one service in minutes, not hours.
-4. **MPPM verification is now a 5-minute checklist** (see CLAUDE.md "Manual MPPM Test"),
-   not "fly with VP-A and VP-B for 20 minutes hoping nothing breaks."
+### Tier 1 — Foundation (do these before anything else)
+
+**§7.2 → Play-Mode Integration Tests first.**
+Every remaining item below is silently re-breakable without automated end-to-end coverage.
+The test harness is the safety net that makes every subsequent change trustworthy. It must
+exist before any other structural change begins.
+
+**§7.1 → Lazy Party-Session Creation second.**
+This is the highest-leverage engineering improvement in the system. It removes the root
+cause of an entire class of race conditions (scene-sync race, orphaned local hosts, stale
+refs), cuts Relay session counts by ~10×, and reduces accept latency from ~1.5–3s to
+~500–800ms. It also removes ~200 lines from `HostConnectionService`, closing the gap
+between current LOC and the ≤200-line facade target.
+
+### Tier 2 — Correctness (observable, fail-safe behavior)
+
+**§7.4 → Implement the `Reconnecting` state.**
+The state exists in the machine and is tested, but no production code ever enters it.
+A user who loses connection mid-party today silently falls off a cliff — no retry, no
+recovery, no user feedback. This is the last correctness gap: the state machine is only
+as useful as its completeness.
+
+**§7.3 → Move `HostConnectionService` off `MonoBehaviour`.**
+This closes the final DI gap: `FriendsInitializer` still reads `HostConnectionService.Instance`
+because HCS is a MonoBehaviour that Reflex cannot register. Once HCS is a pure C# class
+(`HostConnectionMono` holds only the lifecycle hooks), every consumer gets `IPartyStateQuery`
+via `[Inject]` and the last singleton read disappears.
+
+### Tier 3 — Code Quality (eliminate remaining anti-patterns)
+
+**§7.5 → Replace the static C# event with a SOAP channel.**
+One remaining `public event Action<string>` on HCS violates the project's "no C# events for
+cross-system communication" rule. Replace with `connectionData.OnInviteCleared` SOAP event.
+
+**§7.7 → Inject `ITimeProvider`.**
+Removes `Time.unscaledTime` calls from services, making time-based logic unit-testable
+without a running Unity instance.
+
+**§7.8 → Move `ParseInviteLine` to `InviteService`.**
+The wrapper exists only for test compat. Update the two affected tests to reflect on
+`InviteService.ParseLine` directly and delete the HCS wrapper.
+
+**§7.10 → Create ADR documents.**
+Without Architectural Decision Records, the next engineer who touches these files will not
+know *why* the PENDING protocol has three phases, why the state machine uses a HashSet
+instead of a switch, or why ParseInviteLine was left on HCS. Write short ADRs for every
+non-obvious decision so the intent survives personnel changes.
+
+### Tier 4 — Hardening (security and observability)
+
+**§7.6 → Server-side invite token validation.**
+The current model trusts any client that presents a session ID. Add signed short-lived
+tokens to invite payloads, validated in the connection approval callback. This is
+non-negotiable for a production multiplayer system.
+
+**§7.9 → Metrics and telemetry.**
+Add `ProfilerMarker`s on every async path. Emit analytics events for `InviteSent`,
+`InviteAccepted`, `InviteDeclined`, `PartyJoinFailed`, `RelaySessionCreated`. Without
+telemetry, performance regressions are invisible until they surface as user reports.
 
 ---
 
-## 10. Recommended Next Sprint (Order of Operations)
+### Completion Criteria
 
-If we have one sprint before GDC, here's the ordering that maximizes safety and
-minimizes risk:
+The party system is at **zero tech debt** when:
 
-```
-Day 1   §7.2  Play-mode integration tests              [unblocks everything below]
-Day 2   §7.1  Lazy party-session creation              [highest user-facing leverage]
-Day 3   §7.4  Implement Reconnecting state             [demo robustness]
-Day 4   §7.3  Move HCS off MonoBehaviour               [closes the last DI gap]
-Day 5   §7.5 + §7.7 + §7.8 + §7.10  Cleanup & ADRs    [pure tech debt closure]
-        §7.6  Defer to post-GDC (security hardening)
-        §7.9  Defer to post-GDC (telemetry)
-```
-
-After Day 5, the party system has **zero tech debt** by every standard we've discussed:
-SOLID, DRY, KISS, single-writer, observable state, full DI, no singletons, full test
-coverage, ADRs documenting every non-obvious decision.
+- All 9 items above are done and MPPM-verified
+- `HostConnectionService.cs` is ≤200 lines (facade only)
+- `PartyInviteController.cs` is ≤120 lines
+- Play-mode tests cover: invite send, accept, decline, leave, reconnect
+- No `.Instance` reads outside of `HostConnectionMono`
+- No raw C# events — all cross-system notifications go through SOAP channels
+- ADRs exist for every architectural decision
+- Relay sessions are only created when a user actually sends an invite
 
 ---
 
@@ -516,4 +564,4 @@ Phase 1 → Phase 14, one commit per phase, each with explicit MPPM checkpoint c
 
 ---
 
-*Document version 1.0 — generated at end of Phase 14, ready for CTO review.*
+*Document version 1.1 — GDC and sprint-plan language removed. Roadmap reframed as best-practices implementation order. Ready for CTO review.*
