@@ -129,6 +129,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private readonly LobbyPropertyWriter _propertyWriter = new LobbyPropertyWriter();
 
+        /// <summary>
+        /// Centralises all SOAP event raises for the party system.
+        /// Initialised in Awake() once connectionData (SerializeField) is ready.
+        /// Direct instantiation here; Phase 12 moves this to Reflex DI.
+        /// </summary>
+        private SoapPartyEventBus _eventBus;
+
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
         private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
@@ -210,6 +217,8 @@ namespace CosmicShore.Gameplay
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            // connectionData (SerializeField) is populated before Awake — safe to use here.
+            _eventBus = new SoapPartyEventBus(connectionData);
             InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -291,7 +300,7 @@ namespace CosmicShore.Gameplay
             _stateMachine.TryTransition(PartyState.Disconnected);
             connectionData.ResetRuntimeData();
             await LeavePresenceLobbyAsync();
-            connectionData.OnHostConnectionLost?.Raise();
+            _eventBus.RaiseHostConnectionLost();
         }
 
         /// <summary>
@@ -411,7 +420,7 @@ namespace CosmicShore.Gameplay
                 foreach (var player in connectionData.OnlinePlayers.ToList())
                 {
                     if (player.PlayerId != targetPlayerId) continue;
-                    connectionData.OnInviteSent?.Raise(player);
+                    _eventBus.RaiseInviteSent(player);
                     DebugExtensions.LogColored(
                         $"[INVITE-SEND] OnInviteSent raised for {player.DisplayName}",
                         Color.green);
@@ -443,7 +452,7 @@ namespace CosmicShore.Gameplay
             // Mark resolved up-front so a re-opened FriendsListPanel doesn't
             // re-spawn a row for the invite the user just accepted.
             _lastInviteResolved = true;
-            connectionData.OnInviteResolved?.Raise();
+            _eventBus.RaiseInviteResolved();
             try
             {
                 SyncLocalIdentity();
@@ -474,7 +483,7 @@ namespace CosmicShore.Gameplay
                 connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
                 var hostData = new PartyPlayerData(invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
                 connectionData.PartyMembers?.Add(hostData);
-                connectionData.OnPartyMemberJoined?.Raise(hostData);
+                _eventBus.RaisePartyMemberJoined(hostData);
 
                 _refreshTimer = -refreshIntervalSeconds;
                 Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
@@ -499,7 +508,7 @@ namespace CosmicShore.Gameplay
             // a decline signal back to the sender.
             _lastFiredInvite     = null;
             _lastInviteResolved  = true;
-            connectionData.OnInviteResolved?.Raise();
+            _eventBus.RaiseInviteResolved();
             return Task.CompletedTask;
         }
 
@@ -518,16 +527,16 @@ namespace CosmicShore.Gameplay
 
             _lastFiredInvite    = null;
             _lastInviteResolved = true;
-            connectionData.OnInviteResolved?.Raise();
+            _eventBus.RaiseInviteResolved();
 
             // Locally fire OnPartyMemberLeft so panels clear slots immediately
             // instead of waiting for the next refresh tick.
-            if (connectionData.PartyMembers != null && connectionData.OnPartyMemberLeft != null)
+            if (connectionData.PartyMembers != null)
             {
                 foreach (var member in connectionData.PartyMembers.ToList())
                 {
                     if (member.PlayerId == connectionData.LocalPlayerId) continue;
-                    connectionData.OnPartyMemberLeft.Raise(member);
+                    _eventBus.RaisePartyMemberLeft(member);
                 }
             }
 
@@ -674,7 +683,7 @@ namespace CosmicShore.Gameplay
                 connectionData.PartyMembers?.Clear();
                 connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
 
-                connectionData.OnHostConnectionEstablished?.Raise();
+                _eventBus.RaiseHostConnectionEstablished();
             }
         }
 
@@ -1052,7 +1061,7 @@ namespace CosmicShore.Gameplay
                 Color.green);
             _lastFiredInvite    = invite;
             _lastInviteResolved = false;
-            connectionData.OnInviteReceived?.Raise(invite);
+            _eventBus.RaiseInviteReceived(invite);
 
             _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
         }
@@ -1168,7 +1177,7 @@ namespace CosmicShore.Gameplay
                 if (!connectionData.PartyMembers.Contains(memberData))
                 {
                     connectionData.PartyMembers.Add(memberData);
-                    connectionData.OnPartyMemberJoined?.Raise(memberData);
+                    _eventBus.RaisePartyMemberJoined(memberData);
                     DebugExtensions.LogColored(
                         $"[INVITE-SEND] Presence scan detected joined member '{memberData.DisplayName}' ({p.Id})",
                         Color.green);
@@ -1230,7 +1239,7 @@ namespace CosmicShore.Gameplay
                 if (!connectionData.PartyMembers.Contains(memberData))
                 {
                     connectionData.PartyMembers.Add(memberData);
-                    connectionData.OnPartyMemberJoined?.Raise(memberData);
+                    _eventBus.RaisePartyMemberJoined(memberData);
                     joinedPlayerIds.Add(p.Id);
                 }
             }
@@ -1251,7 +1260,7 @@ namespace CosmicShore.Gameplay
                 if (!sessionPlayerIds.Contains(member.PlayerId))
                 {
                     connectionData.PartyMembers.RemoveAt(i);
-                    connectionData.OnPartyMemberLeft?.Raise(member);
+                    _eventBus.RaisePartyMemberLeft(member);
                 }
             }
         }
@@ -1284,7 +1293,7 @@ namespace CosmicShore.Gameplay
                 if (p.Id == connectionData.LocalPlayerId) continue;
                 var memberData = ReadPartyMemberData(p);
                 connectionData.PartyMembers.Add(memberData);
-                connectionData.OnPartyMemberJoined?.Raise(memberData);
+                _eventBus.RaisePartyMemberJoined(memberData);
             }
         }
 
