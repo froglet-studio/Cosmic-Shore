@@ -29,6 +29,7 @@ namespace CosmicShore.Gameplay
     /// • <see cref="LobbyRefreshScheduler"/>     – refresh timer + boost window (Phase 6)
     /// • <see cref="PresenceLobbyService"/>      – presence lobby join/leave/refresh (Phase 7)
     /// • <see cref="AcceptanceSignalService"/>   – PENDING-sentinel acceptance handshake (Phase 8)
+    /// • <see cref="PartySessionService"/>       – Relay party session create/join/leave (Phase 9)
     /// • <see cref="LobbyPatcherLogFilter"/>     – suppresses known harmless SDK noise
     /// • <see cref="PartyStateMachine"/>         – explicit lifecycle state (Phase 1)
     ///
@@ -83,27 +84,17 @@ namespace CosmicShore.Gameplay
 
         private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 30f;
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
-        private const int   RATE_LIMIT_MAX_RETRIES           = 3;
-        private const int   RATE_LIMIT_BASE_DELAY_MS         = 2000;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
-        private const int   HOST_CONFLICT_MAX_RETRIES        = 2;
 
         /// <summary>
         /// After session creation, suppress <see cref="RefreshPartyMembersAsync"/>
-        /// for this many seconds. A freshly-provisioned session can transiently
-        /// fail RefreshAsync with non-429 errors; nulling <see cref="_partySession"/>
-        /// in response would cause <see cref="AcceptanceSignalService.ScanForSignals"/> to
-        /// recreate it on the next tick, kicking any joining client.
+        /// for this many seconds.  A freshly-provisioned session can transiently
+        /// fail RefreshAsync; nulling the session in response would cause
+        /// <see cref="AcceptanceSignalService.ScanForSignals"/> to recreate it on
+        /// the next tick, kicking any joining client.
         /// </summary>
         private const float SESSION_CREATION_GRACE_PERIOD_SECONDS = 4f;
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Sessions
-        // ─────────────────────────────────────────────────────────────────────
-
-        private ISession _partySession;
-        private float    _partySessionCreatedAt;
 
         // ─────────────────────────────────────────────────────────────────────
         // Synchronization
@@ -151,6 +142,12 @@ namespace CosmicShore.Gameplay
         /// Extracted in Phase 8; Phase 12 moves this to Reflex DI.
         /// </summary>
         private AcceptanceSignalService _acceptanceService;
+
+        /// <summary>
+        /// Manages the UGS Relay-backed party session lifecycle.
+        /// Extracted in Phase 9; Phase 12 moves this to Reflex DI.
+        /// </summary>
+        private IPartySessionService _partySessionService;
 
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
@@ -208,7 +205,7 @@ namespace CosmicShore.Gameplay
         // Public read-only state
         // ─────────────────────────────────────────────────────────────────────
 
-        public ISession PartySession => _partySession;
+        public ISession PartySession => _partySessionService?.ActiveSession;
 
         /// <summary>
         /// Read-only view of the party state machine.
@@ -235,10 +232,11 @@ namespace CosmicShore.Gameplay
             Instance = this;
             DontDestroyOnLoad(gameObject);
             // SerializeField values are populated before Awake — safe to use here.
-            _eventBus          = new SoapPartyEventBus(connectionData);
-            _scheduler         = new LobbyRefreshScheduler(refreshIntervalSeconds);
-            _lobbyService      = new PresenceLobbyService(connectionData, _propertyWriter);
-            _acceptanceService = new AcceptanceSignalService();
+            _eventBus             = new SoapPartyEventBus(connectionData);
+            _scheduler            = new LobbyRefreshScheduler(refreshIntervalSeconds);
+            _lobbyService         = new PresenceLobbyService(connectionData, _propertyWriter);
+            _acceptanceService    = new AcceptanceSignalService();
+            _partySessionService  = new PartySessionService(connectionData);
             InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -281,7 +279,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Resets per-session invite state on Menu_Main reload and rebuilds
-        /// <see cref="HostConnectionDataSO.PartyMembers"/> from <see cref="_partySession"/>.
+        /// <see cref="HostConnectionDataSO.PartyMembers"/> from the active party session.
         /// SOAP <c>ScriptableList</c> wipes itself on every <c>LoadSceneMode.Single</c>
         /// load, so we must re-seed if a session was already active.
         /// </summary>
@@ -354,7 +352,7 @@ namespace CosmicShore.Gameplay
                 _stateMachine.TryTransition(PartyState.InPresenceLobby);
                 DebugExtensions.LogColored(
                     $"[HostConnectionService] Initialized — lobby: {_lobbyService.ActiveLobby?.Id ?? "NULL"}, " +
-                    $"partySession: {_partySession?.Id ?? "NULL"}, " +
+                    $"partySession: {_partySessionService.ActiveSession?.Id ?? "NULL"}, " +
                     $"localId: {connectionData.LocalPlayerId}",
                     Color.green);
 
@@ -404,12 +402,12 @@ namespace CosmicShore.Gameplay
                 // AcceptanceSignalService.ScanForSignals in RefreshAsync). Sending an invite must never
                 // touch NM, otherwise the host's vessel respawns mid-menu.
                 DebugExtensions.LogColored(
-                    $"[INVITE-SEND] PartySession ID: {_partySession?.Id ?? PENDING_SESSION_ID} " +
+                    $"[INVITE-SEND] PartySession ID: {_partySessionService.ActiveSession?.Id ?? PENDING_SESSION_ID} " +
                     $"(PENDING until first accept)", Color.cyan);
 
                 _inviteService.AddOrRefresh(
                     targetPlayerId,
-                    _partySession?.Id ?? PENDING_SESSION_ID,
+                    _partySessionService.ActiveSession?.Id ?? PENDING_SESSION_ID,
                     connectionData.LocalPlayerId,
                     connectionData.LocalDisplayName,
                     connectionData.LocalAvatarId,
@@ -494,9 +492,7 @@ namespace CosmicShore.Gameplay
                         _lobbyService, invite.HostPlayerId, connectionData.LocalPlayerId);
                 }
 
-                _partySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
-                    realSessionId,
-                    new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
+                await _partySessionService.JoinByIdAsync(realSessionId);
 
                 connectionData.IsHost = false;
 
@@ -509,7 +505,7 @@ namespace CosmicShore.Gameplay
                 // Give the freshly-joined session a settling period before the
                 // first member-sync refresh fires — avoids stale-session 404s.
                 _scheduler.ResetDeferred(refreshIntervalSeconds);
-                Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
+                Debug.Log($"[HostConnectionService] Joined party {_partySessionService.ActiveSession?.Id}");
                 // Relay session join succeeded — we are now fully inside the party.
                 _stateMachine.TryTransition(PartyState.InParty);
 
@@ -584,11 +580,11 @@ namespace CosmicShore.Gameplay
 
             connectionData.RemovePartyMember(playerId);
 
-            if (_partySession != null)
+            if (_partySessionService.ActiveSession != null)
             {
                 try
                 {
-                    await _partySession.AsHost().RemovePlayerAsync(playerId);
+                    await _partySessionService.ActiveSession.AsHost().RemovePlayerAsync(playerId);
                     Debug.Log($"[HostConnectionService] Kicked {playerId} from party session.");
                 }
                 catch (Exception e)
@@ -627,12 +623,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void ClearStalePartySession()
         {
-            if (_partySession == null) return;
+            if (_partySessionService.ActiveSession == null) return;
             Debug.Log("[HostConnectionService] Clearing stale party session reference.");
 
-            _partySession          = null;
-            _partySessionCreatedAt = 0f;
-            _lastFiredInvite       = null;
+            _partySessionService.ClearSession();
+            _lastFiredInvite = null;
             connectionData.PartyMembers?.Clear();
 
             // Session cleared (e.g. game→menu transition) — return to browsing state.
@@ -652,7 +647,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public async Task CreatePartySessionPublicAsync()
         {
-            if (_partySession != null)
+            if (_partySessionService.ActiveSession != null)
             {
                 Debug.Log("[HostConnectionService] Party session already exists.");
                 return;
@@ -667,7 +662,7 @@ namespace CosmicShore.Gameplay
 
         private async Task CreatePartySessionAsync()
         {
-            if (_partySession != null) return;
+            if (_partySessionService.ActiveSession != null) return;
 
             // Dedicated mutex — replaces the legacy _creatingPartySessionTask
             // pattern (which had a finally-clear race window). Double-check
@@ -675,7 +670,7 @@ namespace CosmicShore.Gameplay
             await _sessionCreationMutex.WaitAsync();
             try
             {
-                if (_partySession != null) return;
+                if (_partySessionService.ActiveSession != null) return;
                 await CreatePartySessionCoreAsync();
             }
             finally
@@ -686,57 +681,33 @@ namespace CosmicShore.Gameplay
 
         private async Task CreatePartySessionCoreAsync()
         {
-            var opts = new SessionOptions
+            // The UGS Multiplayer SDK calls NetworkManager.StartHost()
+            // internally for Relay-backed sessions. If a local host is
+            // already running, that call fails — shut it down first.
+            // (NM lifecycle will move to NetworkTransitionService in Phase 11.)
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.IsListening)
             {
-                MaxPlayers       = connectionData.MaxPartySlots,
-                IsLocked         = false,
-                IsPrivate        = true,
-                PlayerProperties = BuildLocalPlayerProperties()
-            }.WithRelayNetwork();
+                Debug.Log("[HostConnectionService] Shutting down local host before Relay party session creation...");
+                nm.Shutdown();
 
-            for (int attempt = 0; ; attempt++)
-            {
-                // The UGS Multiplayer SDK calls NetworkManager.StartHost()
-                // internally for Relay-backed sessions. If a local host is
-                // already running, that call fails — shut it down first.
-                var nm = NetworkManager.Singleton;
-                if (nm != null && nm.IsListening)
-                {
-                    Debug.Log("[HostConnectionService] Shutting down local host before Relay party session creation...");
-                    nm.Shutdown();
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                while (nm != null && nm.IsListening && sw.ElapsedMilliseconds < 5000)
+                    await Task.Delay(100);
 
-                    var sw = System.Diagnostics.Stopwatch.StartNew();
-                    while (nm != null && nm.IsListening && sw.ElapsedMilliseconds < 5000)
-                        await Task.Delay(100);
-
-                    await Task.Delay(200); // transport cleanup settle
-                }
-
-                try
-                {
-                    _partySession          = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                    connectionData.IsHost  = true;
-                    _partySessionCreatedAt = Time.unscaledTime;
-
-                    // Give the new session breathing room before RefreshAsync
-                    // touches it — avoids transient "stale" errors that would
-                    // null the session and trigger another recreation.
-                    _scheduler.ResetDeferred(refreshIntervalSeconds);
-
-                    Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
-                    return;
-                }
-                catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
-                {
-                    Debug.LogWarning($"[HostConnectionService] Host conflict during Relay session creation — retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[HostConnectionService] Rate limited creating party session — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await Task.Delay(delay);
-                }
+                await Task.Delay(200); // transport cleanup settle
             }
+
+            // Session creation with retry logic delegated to PartySessionService.
+            await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
+
+            connectionData.IsHost = true;
+
+            // Give the new session breathing room before RefreshAsync touches it —
+            // avoids transient "stale" errors that would null the session and
+            // trigger another recreation.
+            _scheduler.ResetDeferred(refreshIntervalSeconds);
+            Debug.Log($"[HostConnectionService] Party session ready: {_partySessionService.ActiveSession?.Id}");
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -787,7 +758,7 @@ namespace CosmicShore.Gameplay
                     if (acceptingId != null)
                     {
                         Debug.Log($"[HostConnectionService] Acceptance signal from {acceptingId} — creating party session...");
-                        if (_partySession == null)
+                        if (_partySessionService.ActiveSession == null)
                             await CreatePartySessionAsync();
 
                         // Session is live — we are the host, waiting for the
@@ -795,16 +766,16 @@ namespace CosmicShore.Gameplay
                         // RefreshPartyMembersAsync once both players show.
                         _stateMachine.TryTransition(PartyState.HostingParty);
 
-                        Debug.Log($"[HostConnectionService] Party session ready ({_partySession?.Id ?? "null"}) — republishing payloads.");
+                        Debug.Log($"[HostConnectionService] Party session ready ({_partySessionService.ActiveSession?.Id ?? "null"}) — republishing payloads.");
                         await _acceptanceService.RepublishWithRealIdAsync(
-                            _lobbyService, _partySession!.Id, _inviteService, _propertyWriter);
+                            _lobbyService, _partySessionService.ActiveSession!.Id, _inviteService, _propertyWriter);
                     }
                 }
 
-                if (_partySession != null && connectionData.IsHost)
+                if (_partySessionService.ActiveSession != null && connectionData.IsHost)
                     ScanPresenceForJoinedPartyMembers();
 
-                if (_partySession != null)
+                if (_partySessionService.ActiveSession != null)
                     await RefreshPartyMembersAsync();
 
                 await PublishPartyStateIfChangedAsync();
@@ -893,9 +864,9 @@ namespace CosmicShore.Gameplay
         private void TryRaiseIncomingInvite(PartyInviteData invite)
         {
             // Already a client in this session — suppress re-fire.
-            if (_partySession != null &&
+            if (_partySessionService.ActiveSession != null &&
                 !connectionData.IsHost &&
-                _partySession.Id == invite.PartySessionId)
+                _partySessionService.ActiveSession.Id == invite.PartySessionId)
             {
                 _lastFiredInvite    = invite;
                 _lastInviteResolved = true;
@@ -1024,17 +995,18 @@ namespace CosmicShore.Gameplay
 
         private void ScanPresenceForJoinedPartyMembers()
         {
-            if (_lobbyService.ActiveLobby == null || _partySession == null) return;
+            if (_lobbyService.ActiveLobby == null || _partySessionService.ActiveSession == null) return;
             if (connectionData.PartyMembers == null) return;
 
             var joinedPlayerIds = new List<string>();
+            var sessionId       = _partySessionService.ActiveSession.Id;
 
             foreach (var p in _lobbyService.ActiveLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
                 if (!p.Properties.TryGetValue(JOINED_PARTY_KEY, out var joinedProp)) continue;
                 if (string.IsNullOrEmpty(joinedProp.Value)) continue;
-                if (joinedProp.Value != _partySession.Id) continue;
+                if (joinedProp.Value != sessionId) continue;
 
                 var memberData = ReadPartyMemberData(p);
                 if (!connectionData.PartyMembers.Contains(memberData))
@@ -1055,17 +1027,17 @@ namespace CosmicShore.Gameplay
 
         private async Task RefreshPartyMembersAsync()
         {
-            if (_partySession == null) return;
+            if (_partySessionService.ActiveSession == null) return;
             if (connectionData.PartyMembers == null) return;
 
             // Grace period: a freshly-provisioned session can transiently fail
-            // RefreshAsync. Nulling _partySession here would cause
+            // RefreshAsync.  Clearing the session here would cause
             // AcceptanceSignalService.ScanForSignals to recreate it on the next tick,
             // kicking any joining client.
-            if (Time.unscaledTime - _partySessionCreatedAt < SESSION_CREATION_GRACE_PERIOD_SECONDS)
+            if (Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime < SESSION_CREATION_GRACE_PERIOD_SECONDS)
                 return;
 
-            try { await _partySession.RefreshAsync(); }
+            try { await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message}");
@@ -1076,25 +1048,26 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
-                // Pending invites prevent nulling — would cascade into duplicate
+                // Pending invites prevent clearing — would cascade into duplicate
                 // session creation that kicks any already-joined client.
                 if (_inviteService.OutgoingCount > 0)
                 {
                     Debug.LogWarning(
-                        $"[HostConnectionService] Refresh failed but {_inviteService.OutgoingCount} outgoing invite(s) pending — keeping _partySession to avoid duplicate creation.");
+                        $"[HostConnectionService] Refresh failed but {_inviteService.OutgoingCount} outgoing invite(s) pending — keeping party session to avoid duplicate creation.");
                     return;
                 }
 
-                _partySession = null;
+                _partySessionService.ClearSession();
                 connectionData.PartyMembers?.Clear();
                 return;
             }
 
+            var session          = _partySessionService.ActiveSession;
             var sessionPlayerIds = new HashSet<string>();
-            foreach (var p in _partySession.Players) sessionPlayerIds.Add(p.Id);
+            foreach (var p in session.Players) sessionPlayerIds.Add(p.Id);
 
             var joinedPlayerIds = new List<string>();
-            foreach (var p in _partySession.Players)
+            foreach (var p in session.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
 
@@ -1145,13 +1118,13 @@ namespace CosmicShore.Gameplay
 
         private void RepopulatePartyMembersFromSession()
         {
-            if (_partySession == null || connectionData == null || connectionData.PartyMembers == null)
+            if (_partySessionService.ActiveSession == null || connectionData == null || connectionData.PartyMembers == null)
                 return;
 
             connectionData.PartyMembers.Clear();
             connectionData.PartyMembers.Add(connectionData.LocalPlayerData);
 
-            foreach (var p in _partySession.Players)
+            foreach (var p in _partySessionService.ActiveSession.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
                 var memberData = ReadPartyMemberData(p);
@@ -1360,27 +1333,6 @@ namespace CosmicShore.Gameplay
             return _gameData.GameMode.ToString();
         }
 
-        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
-        {
-            int partyCount = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
-            int partyMax   = connectionData.MaxPartySlots;
-
-            // 8 properties total — UGS lobbies cap player.data at 10. The
-            // composite INVITE_PAYLOADS_KEY holds an unbounded number of
-            // outstanding invites in a single property.
-            return new Dictionary<string, PlayerProperty>
-            {
-                { DISPLAY_NAME_KEY,    new PlayerProperty(connectionData.LocalDisplayName ?? "Pilot", VisibilityPropertyOptions.Public) },
-                { AVATAR_ID_KEY,       new PlayerProperty(connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
-                { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
-                { PARTY_MAX_KEY,       new PlayerProperty(partyMax.ToString(),   VisibilityPropertyOptions.Public) },
-                { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-            };
-        }
-
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Identity sync (cloud profile + auth fallback chain)              ║
         // ╚═══════════════════════════════════════════════════════════════════╝
@@ -1494,10 +1446,6 @@ namespace CosmicShore.Gameplay
 
         private static bool IsRateLimitException(Exception e) =>
             e.Message != null && e.Message.Contains("Too Many Requests");
-
-        private static bool IsHostConflictException(Exception e) =>
-            e.Message != null &&
-            e.Message.Contains("Failed to start NetworkManager component as host");
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Lobby SDK log filter                                             ║
