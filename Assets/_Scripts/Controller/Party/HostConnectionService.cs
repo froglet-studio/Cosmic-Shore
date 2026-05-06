@@ -110,6 +110,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private bool _lobbyBusy;
 
+        /// <summary>
+        /// Time.unscaledTime when <see cref="_partySession"/> was created.
+        /// Used to suppress <see cref="RefreshPartyMembersAsync"/> for a
+        /// grace period after creation — a freshly-provisioned session can
+        /// transiently fail RefreshAsync with non-429 errors, and nulling
+        /// <see cref="_partySession"/> in response would cause
+        /// <see cref="ScanForAcceptanceSignalsAsync"/> to recreate it on the
+        /// next tick, kicking any joining client.
+        /// </summary>
+        private float _partySessionCreatedAt;
+
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY = "displayName";
         private const string AVATAR_ID_KEY = "avatarId";
@@ -1117,6 +1128,7 @@ namespace CosmicShore.Gameplay
             if (_partySession == null) return;
             Debug.Log("[HostConnectionService] Clearing stale party session reference.");
             _partySession = null;
+            _partySessionCreatedAt = 0f;
             _lastFiredInvite = null;
             connectionData.PartyMembers?.Clear();
 
@@ -1722,15 +1734,36 @@ namespace CosmicShore.Gameplay
             if (_partySession == null) return;
             if (connectionData.PartyMembers == null) return;
 
+            // Skip refresh during the grace period after creation. A freshly-
+            // provisioned session can transiently fail RefreshAsync with a
+            // non-429 error; nulling _partySession in response would cause
+            // ScanForAcceptanceSignalsAsync to recreate it on the next tick,
+            // kicking any joining client.
+            const float CREATION_GRACE_PERIOD_SECONDS = 4f;
+            if (Time.unscaledTime - _partySessionCreatedAt < CREATION_GRACE_PERIOD_SECONDS)
+                return;
+
             // Refresh the party session so Players list is up-to-date.
             try { await _partySession.RefreshAsync(); }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] Party session refresh error: {e.Message}");
+                Debug.LogWarning($"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message}");
 
                 if (IsRateLimitException(e))
                 {
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
+                    return;
+                }
+
+                // If we still have outgoing invites pending acceptance, do NOT
+                // null the session — that would cause ScanForAcceptanceSignalsAsync
+                // to create a duplicate session on the next tick, kicking any
+                // already-joined client. Tolerate the transient refresh failure;
+                // the next tick will retry.
+                if (_outgoingInvites.Count > 0)
+                {
+                    Debug.LogWarning(
+                        $"[HostConnectionService] Refresh failed but {_outgoingInvites.Count} outgoing invite(s) pending — keeping _partySession to avoid duplicate creation.");
                     return;
                 }
 
@@ -1863,6 +1896,7 @@ namespace CosmicShore.Gameplay
                 {
                     _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
                     connectionData.IsHost = true;
+                    _partySessionCreatedAt = Time.unscaledTime;
 
                     // Give the new session a grace period before the refresh loop
                     // tries RefreshAsync() on it — avoids immediate "stale" errors
