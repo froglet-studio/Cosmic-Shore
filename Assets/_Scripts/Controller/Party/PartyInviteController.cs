@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>
     /// NM lifecycle mechanics (shutdown, wait-for-connect, wait-for-scene-sync)
-    /// live in <see cref="NetworkTransitionService"/> (extracted in Phase 11).
+    /// live in <see cref="NetworkTransitionService"/>, injected via Reflex DI.
     /// This class owns only the accept/decline/leave orchestration and the
     /// <see cref="_transitioning"/> guard (test-reflected — must stay here).
     /// </para>
@@ -64,10 +64,10 @@ namespace CosmicShore.Gameplay
         public bool IsTransitioning => _transitioning;
 
         // ─────────────────────────────────────────────────────────────────────
-        // Services (instantiated here; Phase 12 will inject via Reflex DI)
+        // Services (injected via Reflex DI)
         // ─────────────────────────────────────────────────────────────────────
 
-        private INetworkTransitionService _networkTransition;
+        [Inject] private INetworkTransitionService _networkTransition;
 
         // ─────────────────────────────────────────────────────────────────────
         // Singleton
@@ -83,13 +83,8 @@ namespace CosmicShore.Gameplay
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
-            // gameData is injected by Reflex after Awake — defer service creation to Start.
-        }
-
-        void Start()
-        {
-            // gameData is populated by Reflex before Start.
-            _networkTransition = new NetworkTransitionService(gameData);
+            // [Inject] fields (_networkTransition, gameData) are populated by Reflex
+            // between Awake and Start — do not access them here.
         }
 
         void OnDestroy()

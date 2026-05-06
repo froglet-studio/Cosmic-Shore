@@ -111,57 +111,38 @@ namespace CosmicShore.Gameplay
         // helpers called from outside acquire normally.
         // ─────────────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Owns both mutexes and the mutex+refresh+save-with-retry write pattern.
-        /// Direct instantiation here; Phase 12 moves this to Reflex DI.
-        /// </summary>
-        private readonly LobbyPropertyWriter _propertyWriter = new LobbyPropertyWriter();
+        /// <summary>Owns both mutexes and the mutex+refresh+save-with-retry write pattern.</summary>
+        [Inject] private LobbyPropertyWriter _propertyWriter;
 
-        /// <summary>
-        /// Centralises all SOAP event raises for the party system.
-        /// Initialised in Awake() once connectionData (SerializeField) is ready.
-        /// Direct instantiation here; Phase 12 moves this to Reflex DI.
-        /// </summary>
-        private SoapPartyEventBus _eventBus;
+        /// <summary>Centralises all SOAP event raises for the party system.</summary>
+        [Inject] private SoapPartyEventBus _eventBus;
 
         /// <summary>
         /// Owns the elapsed-time accumulator and boosted-refresh window for the
-        /// presence-lobby poll cycle.  Initialised in Awake() after refreshIntervalSeconds
-        /// (SerializeField) is set.  Direct instantiation here; Phase 12 moves to Reflex DI.
+        /// presence-lobby poll cycle.
         /// </summary>
-        private LobbyRefreshScheduler _scheduler;
+        [Inject] private LobbyRefreshScheduler _scheduler;
 
-        /// <summary>
-        /// Manages the UGS lobby-only presence session: join/create/leave/refresh.
-        /// Extracted in Phase 7; Phase 12 moves this to Reflex DI.
-        /// </summary>
-        private IPresenceLobbyService _lobbyService;
+        /// <summary>Manages the UGS lobby-only presence session: join/create/leave/refresh.</summary>
+        [Inject] private IPresenceLobbyService _lobbyService;
 
         /// <summary>
         /// Orchestrates the PENDING-sentinel three-phase acceptance handshake:
         /// scan for signals, publish acceptance, wait for real id, republish.
-        /// Extracted in Phase 8; Phase 12 moves this to Reflex DI.
         /// </summary>
-        private AcceptanceSignalService _acceptanceService;
+        [Inject] private AcceptanceSignalService _acceptanceService;
 
-        /// <summary>
-        /// Manages the UGS Relay-backed party session lifecycle.
-        /// Extracted in Phase 9; Phase 12 moves this to Reflex DI.
-        /// </summary>
-        private IPartySessionService _partySessionService;
+        /// <summary>Manages the UGS Relay-backed party session lifecycle.</summary>
+        [Inject] private IPartySessionService _partySessionService;
 
         /// <summary>
         /// Owns the PartyMembers SOAP list: diffs against live session, seeds,
         /// repopulates on scene reload, and fires member-change SOAP events.
-        /// Extracted in Phase 10; Phase 12 moves this to Reflex DI.
         /// </summary>
-        private IPartyMemberService _memberService;
+        [Inject] private IPartyMemberService _memberService;
 
-        /// <summary>
-        /// Manages NetworkManager lifecycle during party session creation.
-        /// Extracted in Phase 11; Phase 12 moves this to Reflex DI.
-        /// </summary>
-        private INetworkTransitionService _networkTransition;
+        /// <summary>Manages NetworkManager lifecycle during party session creation.</summary>
+        [Inject] private INetworkTransitionService _networkTransition;
 
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
@@ -207,9 +188,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Owns the in-memory map of pending outgoing invites and the serialised
-        /// payload string.  Direct instantiation here; Phase 12 moves to Reflex DI.
+        /// payload string.
         /// </summary>
-        private readonly InviteService _inviteService = new InviteService();
+        [Inject] private InviteService _inviteService;
 
         /// <summary>Raised when an outgoing invite is cleared (any reason).</summary>
         public event Action<string> OutgoingInviteCleared;
@@ -245,22 +226,15 @@ namespace CosmicShore.Gameplay
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            // SerializeField values are populated before Awake — safe to use here.
-            _eventBus             = new SoapPartyEventBus(connectionData);
-            _scheduler            = new LobbyRefreshScheduler(refreshIntervalSeconds);
-            _lobbyService         = new PresenceLobbyService(connectionData, _propertyWriter);
-            _acceptanceService    = new AcceptanceSignalService();
-            _partySessionService  = new PartySessionService(connectionData);
-            _memberService        = new PartyMemberService(connectionData, _eventBus);
+            // [Inject] fields are populated by Reflex between Awake and Start.
+            // Do not access service fields here — use Start() instead.
             InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         async void Start()
         {
-            // [Inject] fields are populated by Reflex between Awake and Start.
-            _networkTransition = new NetworkTransitionService(_gameData);
-
+            // All [Inject] fields (services + gameData) are populated before Start.
             while (!IsAuthSignedInAndHasId())
                 await Task.Delay(300);
 
