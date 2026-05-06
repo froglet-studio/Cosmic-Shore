@@ -67,5 +67,19 @@ namespace CosmicShore.Gameplay
         UniTask SavePropertiesAsync(
             Dictionary<string, PlayerProperty> properties,
             string operationName);
+
+        /// <summary>
+        /// Synchronously clears the <see cref="ActiveLobby"/> reference without
+        /// calling the UGS SDK.  Use before a reconnect attempt to let
+        /// <see cref="JoinOrCreateAsync"/> proceed rather than return early.
+        ///
+        /// <para>
+        /// This is appropriate when consecutive refresh errors indicate the
+        /// connection is already broken — calling Leave/Delete would just add more
+        /// failures.  The reconnect path calls <see cref="JoinOrCreateAsync"/>
+        /// immediately after to re-establish the lobby.
+        /// </para>
+        /// </summary>
+        void ForceReset();
     }
 }

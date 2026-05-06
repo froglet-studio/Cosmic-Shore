@@ -23,11 +23,13 @@ namespace CosmicShore.Gameplay
     /// SOAP events through <see cref="HostConnectionDataSO"/>.
     ///
     /// Internal helpers extracted progressively (Phases 3-11):
-    /// • <see cref="LobbyPropertyWriter"/>  – mutex + refresh + save-with-retry pattern (Phase 3)
-    /// • <see cref="SoapPartyEventBus"/>    – all SOAP event Raise calls (Phase 4)
-    /// • <see cref="InviteService"/>        – payload build/track/serialize/parse (Phase 5)
-    /// • <see cref="LobbyPatcherLogFilter"/> – suppresses known harmless SDK noise
-    /// • <see cref="PartyStateMachine"/>    – explicit lifecycle state (Phase 1)
+    /// • <see cref="LobbyPropertyWriter"/>    – mutex + refresh + save-with-retry pattern (Phase 3)
+    /// • <see cref="SoapPartyEventBus"/>      – all SOAP event Raise calls (Phase 4)
+    /// • <see cref="InviteService"/>          – payload build/track/serialize/parse (Phase 5)
+    /// • <see cref="LobbyRefreshScheduler"/>  – refresh timer + boost window (Phase 6)
+    /// • <see cref="PresenceLobbyService"/>   – presence lobby join/leave/refresh (Phase 7)
+    /// • <see cref="LobbyPatcherLogFilter"/>  – suppresses known harmless SDK noise
+    /// • <see cref="PartyStateMachine"/>      – explicit lifecycle state (Phase 1)
     ///
     /// Lifetime: DontDestroyOnLoad MonoBehaviour (same GO as PartyInviteController).
     /// Thread-safety: main-thread only.
@@ -68,7 +70,6 @@ namespace CosmicShore.Gameplay
         // (Names preserved verbatim; PartyInviteSystemTests reflects on them.)
         // ─────────────────────────────────────────────────────────────────────
 
-        private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
         private const string DISPLAY_NAME_KEY        = "displayName";
         private const string AVATAR_ID_KEY           = "avatarId";
         private const string PARTY_COUNT_KEY         = "partyCount";
@@ -80,7 +81,6 @@ namespace CosmicShore.Gameplay
         private const string PENDING_SESSION_ID      = "PENDING";
 
         private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 30f;
-        private const int   LOBBY_RACE_SETTLE_MS             = 1500;
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const int   RATE_LIMIT_MAX_RETRIES           = 3;
         private const int   RATE_LIMIT_BASE_DELAY_MS         = 2000;
@@ -101,7 +101,6 @@ namespace CosmicShore.Gameplay
         // Sessions
         // ─────────────────────────────────────────────────────────────────────
 
-        private ISession _presenceLobby;
         private ISession _partySession;
         private float    _partySessionCreatedAt;
 
@@ -139,6 +138,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private LobbyRefreshScheduler _scheduler;
 
+        /// <summary>
+        /// Manages the UGS lobby-only presence session: join/create/leave/refresh.
+        /// Extracted in Phase 7; Phase 12 moves this to Reflex DI.
+        /// </summary>
+        private IPresenceLobbyService _lobbyService;
+
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
         private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
@@ -159,7 +164,6 @@ namespace CosmicShore.Gameplay
 
         private bool   _initialized;
         private bool   _joining;
-        private bool   _leaving;
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
         private float  _rateLimitBackoffUntil;
@@ -223,8 +227,9 @@ namespace CosmicShore.Gameplay
             Instance = this;
             DontDestroyOnLoad(gameObject);
             // SerializeField values are populated before Awake — safe to use here.
-            _eventBus  = new SoapPartyEventBus(connectionData);
-            _scheduler = new LobbyRefreshScheduler(refreshIntervalSeconds);
+            _eventBus    = new SoapPartyEventBus(connectionData);
+            _scheduler   = new LobbyRefreshScheduler(refreshIntervalSeconds);
+            _lobbyService = new PresenceLobbyService(connectionData, _propertyWriter);
             InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -239,7 +244,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_initialized || _presenceLobby == null) return;
+            if (!_initialized || _lobbyService.ActiveLobby == null) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
             if (!IsOnMenuScene()) return;
@@ -256,7 +261,7 @@ namespace CosmicShore.Gameplay
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
             UninstallLobbyLogFilter();
-            await LeavePresenceLobbyAsync();
+            await _lobbyService.LeaveAsync();
 
             _lobbyMutex.Dispose();
             _sessionCreationMutex.Dispose();
@@ -297,7 +302,7 @@ namespace CosmicShore.Gameplay
             // Sign-out is the "emergency exit" — always allowed regardless of current state.
             _stateMachine.TryTransition(PartyState.Disconnected);
             connectionData.ResetRuntimeData();
-            await LeavePresenceLobbyAsync();
+            await _lobbyService.LeaveAsync();
             _eventBus.RaiseHostConnectionLost();
         }
 
@@ -324,10 +329,13 @@ namespace CosmicShore.Gameplay
                 await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
                 SyncLocalIdentity();
 
-                await JoinPresenceLobbyAsync();
+                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+
+                // Apply post-join state now that the lobby reference is live.
+                ApplyPostLobbyJoinState();
 
                 // Catch the case where the cloud profile resolved during
-                // JoinPresenceLobbyAsync — HandleProfileChanged's republish
+                // JoinOrCreateAsync — HandleProfileChanged's republish
                 // would have been a no-op (lobby was still null at that moment).
                 SyncLocalIdentity();
                 RepublishLocalIdentityAsync().Forget();
@@ -336,7 +344,7 @@ namespace CosmicShore.Gameplay
                 // Now in the presence lobby — can browse players and send/receive invites.
                 _stateMachine.TryTransition(PartyState.InPresenceLobby);
                 DebugExtensions.LogColored(
-                    $"[HostConnectionService] Initialized — lobby: {_presenceLobby?.Id ?? "NULL"}, " +
+                    $"[HostConnectionService] Initialized — lobby: {_lobbyService.ActiveLobby?.Id ?? "NULL"}, " +
                     $"partySession: {_partySession?.Id ?? "NULL"}, " +
                     $"localId: {connectionData.LocalPlayerId}",
                     Color.green);
@@ -355,10 +363,10 @@ namespace CosmicShore.Gameplay
             DebugExtensions.LogColored(
                 $"[INVITE-SEND] SendInviteAsync called — target: {targetPlayerId}", Color.cyan);
 
-            if (_presenceLobby == null)
+            if (_lobbyService.ActiveLobby == null)
             {
                 DebugExtensions.LogErrorColored(
-                    "[INVITE-SEND] ABORT — _presenceLobby is null", Color.red);
+                    "[INVITE-SEND] ABORT — presence lobby is null", Color.red);
                 throw new InvalidOperationException("Presence lobby unavailable.");
             }
 
@@ -409,11 +417,11 @@ namespace CosmicShore.Gameplay
 
                 // Best-effort refresh to sync the SDK's player-index cache before
                 // SaveCurrentPlayerDataAsync. Without it the save can fail silently.
-                try { await _presenceLobby.RefreshAsync(); }
+                try { await _lobbyService.RefreshAsync(); }
                 catch { /* SaveWithRetryAsync handles stale state via its own retry */ }
 
                 PublishInvitePayloadsToCurrentPlayer();
-                await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
+                await _propertyWriter.SaveWithRetryAsync(_lobbyService.ActiveLobby);
 
                 DebugExtensions.LogColored(
                     "[INVITE-SEND] SaveCurrentPlayerDataAsync completed — properties persisted",
@@ -589,7 +597,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void ForceRefreshNow()
         {
-            if (!_initialized || _presenceLobby == null) return;
+            if (!_initialized || _lobbyService.ActiveLobby == null) return;
 
             _scheduler.Boost();
 
@@ -640,184 +648,6 @@ namespace CosmicShore.Gameplay
             }
             SyncLocalIdentity();
             await CreatePartySessionAsync();
-        }
-
-        // ╔═══════════════════════════════════════════════════════════════════╗
-        // ║  Presence Lobby — Join / Create / Leave                           ║
-        // ╚═══════════════════════════════════════════════════════════════════╝
-
-        private async Task JoinPresenceLobbyAsync()
-        {
-            if (_presenceLobby != null) return;
-
-            // Lobby-only session (no Relay) used purely for player discovery
-            // and invite property exchange. Coexists safely with any active NM.
-            try
-            {
-                _presenceLobby = await TryQueryAndJoinLobbyAsync();
-
-                if (_presenceLobby == null)
-                {
-                    await CreatePresenceLobbyAsync();
-
-                    // Re-query after a short settle; if a rival lobby was created
-                    // simultaneously (MPPM, near-simultaneous launches), merge into it.
-                    await Task.Delay(LOBBY_RACE_SETTLE_MS);
-                    var rival = await TryQueryAndJoinLobbyAsync();
-                    if (rival != null)
-                    {
-                        Debug.Log("[HostConnectionService] Race detected — merging into existing lobby.");
-                        await DeleteOwnLobbyQuietly();
-                        _presenceLobby = rival;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] Join failed, creating new lobby: {e.Message}");
-                if (_presenceLobby == null)
-                    await CreatePresenceLobbyAsync();
-            }
-
-            if (_presenceLobby != null)
-            {
-                connectionData.IsConnected = true;
-                connectionData.IsHost      = _presenceLobby.IsHost;
-
-                connectionData.PartyMembers?.Clear();
-                connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
-
-                _eventBus.RaiseHostConnectionEstablished();
-            }
-        }
-
-        private async Task<ISession> TryQueryAndJoinLobbyAsync()
-        {
-            var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
-
-            IList<ISessionInfo> sessions = null;
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-                    sessions = results.Sessions;
-                    break;
-                }
-                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[HostConnectionService] Rate limited querying lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await Task.Delay(delay);
-                }
-            }
-
-            if (sessions.Count == 0) return null;
-
-            foreach (var session in sessions)
-            {
-                if (_presenceLobby != null && session.Id == _presenceLobby.Id) continue;
-
-                try
-                {
-                    var joined = await MultiplayerService.Instance.JoinSessionByIdAsync(
-                        session.Id,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
-                    Debug.Log($"[HostConnectionService] Joined presence lobby {joined.Id}");
-                    return joined;
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[HostConnectionService] Join session {session.Id} failed: {e.Message}");
-                    if (IsRateLimitException(e))
-                        await Task.Delay(RATE_LIMIT_BASE_DELAY_MS);
-                }
-            }
-            return null;
-        }
-
-        private async Task DeleteOwnLobbyQuietly()
-        {
-            if (_presenceLobby == null) return;
-            try
-            {
-                if (_presenceLobby.IsHost)
-                    await _presenceLobby.AsHost().DeleteAsync();
-                else
-                    await _presenceLobby.LeaveAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] DeleteOwnLobby error: {e.Message}");
-            }
-        }
-
-        private async Task CreatePresenceLobbyAsync()
-        {
-            try
-            {
-                var opts = new SessionOptions
-                {
-                    MaxPlayers       = presenceLobbyMaxPlayers,
-                    IsLocked         = false,
-                    IsPrivate        = false,
-                    PlayerProperties = BuildLocalPlayerProperties(),
-                    SessionProperties = new Dictionary<string, SessionProperty>
-                    {
-                        {
-                            "gameMode",
-                            new SessionProperty(PRESENCE_LOBBY_GAME_MODE,
-                                VisibilityPropertyOptions.Public,
-                                PropertyIndex.String1)
-                        }
-                    }
-                };
-
-                for (int attempt = 0; ; attempt++)
-                {
-                    try
-                    {
-                        _presenceLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                        connectionData.IsHost = true;
-                        Debug.Log($"[HostConnectionService] Created presence lobby {_presenceLobby.Id}");
-                        return;
-                    }
-                    catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
-                    {
-                        int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                        Debug.LogWarning($"[HostConnectionService] Rate limited creating presence lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                        await Task.Delay(delay);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[HostConnectionService] Could not create presence lobby: {e.Message}");
-            }
-        }
-
-        private async Task LeavePresenceLobbyAsync()
-        {
-            if (_presenceLobby == null || _leaving) return;
-            _leaving = true;
-            try
-            {
-                if (_presenceLobby.IsHost)
-                    await _presenceLobby.AsHost().DeleteAsync();
-                else
-                    await _presenceLobby.LeaveAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] Leave error: {e.Message}");
-            }
-            finally
-            {
-                _presenceLobby = null;
-                _leaving = false;
-            }
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -904,7 +734,7 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid RefreshAsync()
         {
-            if (_presenceLobby == null) return;
+            if (_lobbyService.ActiveLobby == null) return;
 
             // Quick non-blocking check — if someone else holds the mutex, skip
             // this tick rather than queuing up. The next tick will pick up.
@@ -915,14 +745,14 @@ namespace CosmicShore.Gameplay
             bool shouldReconnect = false;
             try
             {
-                await _presenceLobby.RefreshAsync();
+                await _lobbyService.RefreshAsync();
 
                 // Diff-based update — never Clear() + re-Add() (would flicker UI).
                 if (connectionData.OnlinePlayers != null)
                     RefreshOnlinePlayersDiff();
 
                 // Scan composite invite_payloads for lines targeting us.
-                foreach (var p in _presenceLobby.Players)
+                foreach (var p in _lobbyService.ActiveLobby.Players)
                 {
                     if (p.Id == connectionData.LocalPlayerId) continue;
                     if (TryFindIncomingInvite(p, out var invite))
@@ -964,8 +794,9 @@ namespace CosmicShore.Gameplay
                     {
                         Debug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors — reconnecting to presence lobby");
                         _consecutiveRefreshErrors = 0;
-                        _presenceLobby            = null;
-                        shouldReconnect           = true;
+                        // Clear the internal session reference so JoinOrCreateAsync will proceed.
+                        _lobbyService.ForceReset();
+                        shouldReconnect = true;
                         // Connection was lost — enter Reconnecting so callers and UI
                         // can show a "reconnecting…" indicator.
                         _stateMachine.TryTransition(PartyState.Reconnecting);
@@ -980,9 +811,10 @@ namespace CosmicShore.Gameplay
 
             if (shouldReconnect)
             {
-                await JoinPresenceLobbyAsync();
+                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+                ApplyPostLobbyJoinState();
                 // Reconnect succeeded (or fell back) — return to browsing state.
-                if (_presenceLobby != null)
+                if (_lobbyService.ActiveLobby != null)
                     _stateMachine.TryTransition(PartyState.InPresenceLobby);
             }
         }
@@ -1069,7 +901,7 @@ namespace CosmicShore.Gameplay
         {
             var freshPlayerIds = new HashSet<string>();
 
-            foreach (var p in _presenceLobby.Players)
+            foreach (var p in _lobbyService.ActiveLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
                 freshPlayerIds.Add(p.Id);
@@ -1160,12 +992,12 @@ namespace CosmicShore.Gameplay
 
         private void ScanPresenceForJoinedPartyMembers()
         {
-            if (_presenceLobby == null || _partySession == null) return;
+            if (_lobbyService.ActiveLobby == null || _partySession == null) return;
             if (connectionData.PartyMembers == null) return;
 
             var joinedPlayerIds = new List<string>();
 
-            foreach (var p in _presenceLobby.Players)
+            foreach (var p in _lobbyService.ActiveLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
                 if (!p.Properties.TryGetValue(JOINED_PARTY_KEY, out var joinedProp)) continue;
@@ -1309,7 +1141,7 @@ namespace CosmicShore.Gameplay
 
         private async Task ScanForAcceptanceSignalsAsync()
         {
-            foreach (var p in _presenceLobby.Players)
+            foreach (var p in _lobbyService.ActiveLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
                 if (!_inviteService.Contains(p.Id)) continue;
@@ -1348,14 +1180,14 @@ namespace CosmicShore.Gameplay
             // CreatePartySessionAsync can take 2-3s (NM shutdown + Relay alloc),
             // so the SDK's internal player index will be stale. Refresh before
             // saving — same pattern as SendInviteAsync / PublishJoinedPartyAsync.
-            try { await _presenceLobby.RefreshAsync(); }
+            try { await _lobbyService.RefreshAsync(); }
             catch (Exception e)
             {
                 Debug.LogWarning($"[HostConnectionService] RepublishInvites pre-save refresh failed (non-fatal): {e.Message}");
             }
 
             PublishInvitePayloadsToCurrentPlayer();
-            await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
+            await _propertyWriter.SaveWithRetryAsync(_lobbyService.ActiveLobby);
             Debug.Log($"[HostConnectionService] Republished {_inviteService.OutgoingCount} pending invite(s) with real session id {_partySession.Id}");
         }
 
@@ -1368,14 +1200,14 @@ namespace CosmicShore.Gameplay
                 await Task.Delay(400);
                 pollCount++;
 
-                if (_presenceLobby == null)
+                if (_lobbyService.ActiveLobby == null)
                 {
-                    Debug.LogWarning("[HostConnectionService] WaitForRealSessionId: _presenceLobby is null — lobby may have been reset.");
+                    Debug.LogWarning("[HostConnectionService] WaitForRealSessionId: presence lobby is null — lobby may have been reset.");
                     continue;
                 }
 
                 bool hostFound = false;
-                foreach (var p in _presenceLobby.Players)
+                foreach (var p in _lobbyService.ActiveLobby.Players)
                 {
                     if (p.Id != hostPlayerId) continue;
                     hostFound = true;
@@ -1412,7 +1244,7 @@ namespace CosmicShore.Gameplay
                     break;
                 }
                 if (!hostFound && pollCount % 5 == 1)
-                    Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: host {hostPlayerId} not in _presenceLobby.Players ({_presenceLobby.Players.Count} players total).");
+                    Debug.Log($"[HostConnectionService] WaitForRealSessionId poll#{pollCount}: host {hostPlayerId} not in lobby.Players ({_lobbyService.ActiveLobby?.Players.Count ?? 0} players total).");
             }
             throw new TimeoutException(
                 $"[HostConnectionService] Host {hostPlayerId} did not publish a real session id within {timeoutSeconds}s (after {pollCount} polls).");
@@ -1425,7 +1257,7 @@ namespace CosmicShore.Gameplay
         private void PublishInvitePayloadsToCurrentPlayer()
         {
             string composite = _inviteService.SerializeAll();
-            _presenceLobby.CurrentPlayer.SetProperty(INVITE_PAYLOADS_KEY,
+            _lobbyService.ActiveLobby.CurrentPlayer.SetProperty(INVITE_PAYLOADS_KEY,
                 new PlayerProperty(composite, VisibilityPropertyOptions.Public));
         }
 
@@ -1447,7 +1279,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async Task ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
         {
-            if (_presenceLobby == null || string.IsNullOrEmpty(playerId)) return;
+            if (_lobbyService.ActiveLobby == null || string.IsNullOrEmpty(playerId)) return;
             if (!_inviteService.Contains(playerId)) return;
 
             _inviteService.Remove(playerId);
@@ -1470,13 +1302,13 @@ namespace CosmicShore.Gameplay
                 Color.green);
             OutgoingInviteCleared?.Invoke(playerId);
 
-            if (_presenceLobby == null) return;
+            if (_lobbyService.ActiveLobby == null) return;
             bool needsLock = !_insideRefreshCycle;
             if (needsLock) await _lobbyMutex.WaitAsync();
             try
             {
                 PublishInvitePayloadsToCurrentPlayer();
-                await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
+                await _propertyWriter.SaveWithRetryAsync(_lobbyService.ActiveLobby);
             }
             catch (Exception e)
             {
@@ -1489,6 +1321,34 @@ namespace CosmicShore.Gameplay
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Post-join state application                                      ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
+
+        /// <summary>
+        /// Applies lobby join side-effects to <see cref="connectionData"/> and raises SOAP events.
+        /// Called after <see cref="IPresenceLobbyService.JoinOrCreateAsync"/> succeeds — both from
+        /// the initial <see cref="EnsureInitializedAsync"/> path and from the reconnect path in
+        /// <see cref="RefreshAsync"/>.
+        /// </summary>
+        /// <remarks>
+        /// Safe to call when <see cref="IPresenceLobbyService.ActiveLobby"/> is null (returns
+        /// immediately); callers need not null-check before calling.
+        /// </remarks>
+        private void ApplyPostLobbyJoinState()
+        {
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
+
+            connectionData.IsConnected = true;
+            connectionData.IsHost      = lobby.IsHost;
+
+            connectionData.PartyMembers?.Clear();
+            connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
+
+            _eventBus.RaiseHostConnectionEstablished();
+        }
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Property publishing                                              ║
         // ║  Delegates to _propertyWriter (LobbyPropertyWriter, Phase 3).    ║
         // ╚═══════════════════════════════════════════════════════════════════╝
@@ -1496,18 +1356,22 @@ namespace CosmicShore.Gameplay
         private async UniTaskVoid PublishJoinedPartyAsync(string partySessionId)
         {
             if (string.IsNullOrEmpty(partySessionId)) return;
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
             await _propertyWriter.WriteAsync(
-                _presenceLobby,
-                () => _presenceLobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
+                lobby,
+                () => lobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
                     new PlayerProperty(partySessionId, VisibilityPropertyOptions.Public)),
                 "PublishJoinedParty");
         }
 
         private async UniTaskVoid ClearJoinedPartyAsync()
         {
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
             await _propertyWriter.WriteAsync(
-                _presenceLobby,
-                () => _presenceLobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
+                lobby,
+                () => lobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public)),
                 "ClearJoinedParty");
         }
@@ -1515,11 +1379,13 @@ namespace CosmicShore.Gameplay
         private async Task PublishAcceptanceSignalAsync(string hostPlayerId)
         {
             if (string.IsNullOrEmpty(hostPlayerId)) return;
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
             await _propertyWriter.WriteAsync(
-                _presenceLobby,
+                lobby,
                 () =>
                 {
-                    _presenceLobby.CurrentPlayer.SetProperty(ACCEPTED_INVITE_KEY,
+                    lobby.CurrentPlayer.SetProperty(ACCEPTED_INVITE_KEY,
                         new PlayerProperty(hostPlayerId, VisibilityPropertyOptions.Public));
                     Debug.Log($"[HostConnectionService] Published acceptance signal to host {hostPlayerId}");
                 },
@@ -1528,14 +1394,16 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid RepublishLocalIdentityAsync()
         {
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
             await _propertyWriter.WriteAsync(
-                _presenceLobby,
+                lobby,
                 () =>
                 {
-                    _presenceLobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
+                    lobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
                         new PlayerProperty(connectionData.LocalDisplayName ?? "Pilot",
                             VisibilityPropertyOptions.Public));
-                    _presenceLobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
+                    lobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
                         new PlayerProperty(connectionData.LocalAvatarId.ToString(),
                             VisibilityPropertyOptions.Public));
                 },
@@ -1544,7 +1412,7 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid PublishPresenceImmediateAsync()
         {
-            if (_presenceLobby == null) return;
+            if (_lobbyService.ActiveLobby == null) return;
 
             await _lobbyMutex.WaitAsync();
             try
@@ -1563,7 +1431,8 @@ namespace CosmicShore.Gameplay
 
         private async Task PublishPartyStateIfChangedAsync()
         {
-            if (_presenceLobby == null) return;
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
 
             int    currentCount = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
             string currentMatch = ResolveCurrentMatchName();
@@ -1572,14 +1441,14 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                _presenceLobby.CurrentPlayer.SetProperty(PARTY_COUNT_KEY,
+                lobby.CurrentPlayer.SetProperty(PARTY_COUNT_KEY,
                     new PlayerProperty(currentCount.ToString(), VisibilityPropertyOptions.Public));
-                _presenceLobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
+                lobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
                     new PlayerProperty(connectionData.MaxPartySlots.ToString(), VisibilityPropertyOptions.Public));
-                _presenceLobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,
+                lobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,
                     new PlayerProperty(currentMatch ?? string.Empty, VisibilityPropertyOptions.Public));
 
-                await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
+                await _propertyWriter.SaveWithRetryAsync(lobby);
                 _publishedPartyCount = currentCount;
                 _publishedMatchName  = currentMatch;
             }
