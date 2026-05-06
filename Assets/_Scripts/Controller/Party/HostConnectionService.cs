@@ -23,8 +23,9 @@ namespace CosmicShore.Gameplay
     /// SOAP events through <see cref="HostConnectionDataSO"/>.
     ///
     /// Internal helpers extracted progressively (Phases 3-11):
-    /// • <see cref="LobbyPropertyWriter"/>  – mutex + refresh + save-with-retry pattern
-    /// • <see cref="OutgoingInviteTracker"/> – local outstanding-invite map
+    /// • <see cref="LobbyPropertyWriter"/>  – mutex + refresh + save-with-retry pattern (Phase 3)
+    /// • <see cref="SoapPartyEventBus"/>    – all SOAP event Raise calls (Phase 4)
+    /// • <see cref="InviteService"/>        – payload build/track/serialize/parse (Phase 5)
     /// • <see cref="LobbyPatcherLogFilter"/> – suppresses known harmless SDK noise
     /// • <see cref="PartyStateMachine"/>    – explicit lifecycle state (Phase 1)
     ///
@@ -77,9 +78,6 @@ namespace CosmicShore.Gameplay
         private const string JOINED_PARTY_KEY        = "joined_party";
         private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
         private const string PENDING_SESSION_ID      = "PENDING";
-
-        private const char INVITE_LINE_SEPARATOR  = '\n';
-        private const char INVITE_FIELD_SEPARATOR = '|';
 
         private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 30f;
         private const int   LOBBY_RACE_SETTLE_MS             = 1500;
@@ -181,11 +179,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private bool _lastInviteResolved;
 
-        private readonly OutgoingInviteTracker _outgoingInvites = new OutgoingInviteTracker();
+        /// <summary>
+        /// Owns the in-memory map of pending outgoing invites and the serialised
+        /// payload string.  Direct instantiation here; Phase 12 moves to Reflex DI.
+        /// </summary>
+        private readonly InviteService _inviteService = new InviteService();
 
         /// <summary>Raised when an outgoing invite is cleared (any reason).</summary>
         public event Action<string> OutgoingInviteCleared;
-        public IReadOnlyCollection<string> OutgoingInviteTargets => _outgoingInvites.Targets;
+        public IReadOnlyCollection<string> OutgoingInviteTargets => _inviteService.OutgoingTargets;
 
         // ─────────────────────────────────────────────────────────────────────
         // Public read-only state
@@ -365,12 +367,12 @@ namespace CosmicShore.Gameplay
             }
 
             // Idempotent re-click: just refresh the timeout, no network roundtrip.
-            if (_outgoingInvites.Contains(targetPlayerId))
+            if (_inviteService.Contains(targetPlayerId))
             {
                 DebugExtensions.LogColored(
                     $"[INVITE-SEND] {targetPlayerId} already pending — refreshing timeout",
                     Color.yellow);
-                _outgoingInvites.RefreshTimeout(targetPlayerId,
+                _inviteService.RefreshTimeout(targetPlayerId,
                     Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
                 return;
             }
@@ -392,8 +394,12 @@ namespace CosmicShore.Gameplay
                     $"[INVITE-SEND] PartySession ID: {_partySession?.Id ?? PENDING_SESSION_ID} " +
                     $"(PENDING until first accept)", Color.cyan);
 
-                string payload = BuildInvitePayload(targetPlayerId);
-                _outgoingInvites.AddOrRefresh(targetPlayerId, payload,
+                _inviteService.AddOrRefresh(
+                    targetPlayerId,
+                    _partySession?.Id ?? PENDING_SESSION_ID,
+                    connectionData.LocalPlayerId,
+                    connectionData.LocalDisplayName,
+                    connectionData.LocalAvatarId,
                     Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
                 inviteAdded = true;
 
@@ -403,7 +409,7 @@ namespace CosmicShore.Gameplay
                     _stateMachine.TryTransition(PartyState.Inviting);
 
                 DebugExtensions.LogColored(
-                    $"[INVITE-SEND] target='{targetPlayerId}', payload='{payload}'", Color.cyan);
+                    $"[INVITE-SEND] target='{targetPlayerId}', outgoing total={_inviteService.OutgoingCount}", Color.cyan);
 
                 // Best-effort refresh to sync the SDK's player-index cache before
                 // SaveCurrentPlayerDataAsync. Without it the save can fail silently.
@@ -434,7 +440,7 @@ namespace CosmicShore.Gameplay
 
                 if (inviteAdded)
                 {
-                    _outgoingInvites.Remove(targetPlayerId);
+                    _inviteService.Remove(targetPlayerId);
                     OutgoingInviteCleared?.Invoke(targetPlayerId);
                 }
                 throw;
@@ -932,7 +938,7 @@ namespace CosmicShore.Gameplay
                 // Gate on outgoing-invite count (NOT IsHost) — IsHost is set
                 // only after CreatePartySessionAsync succeeds, and lazy creation
                 // hasn't reached that point yet on the first acceptance.
-                if (_outgoingInvites.Count > 0)
+                if (_inviteService.OutgoingCount > 0)
                     await ScanForAcceptanceSignalsAsync();
 
                 if (_partySession != null && connectionData.IsHost)
@@ -991,7 +997,7 @@ namespace CosmicShore.Gameplay
             if (payloadsProp == null || string.IsNullOrEmpty(payloadsProp.Value))
                 return false;
 
-            foreach (var line in payloadsProp.Value.Split(INVITE_LINE_SEPARATOR))
+            foreach (var line in payloadsProp.Value.Split(InviteService.LINE_SEPARATOR))
             {
                 if (string.IsNullOrEmpty(line)) continue;
 
@@ -1017,15 +1023,10 @@ namespace CosmicShore.Gameplay
         /// Kept on this class (not extracted) because PartyInviteSystemTests
         /// reflects on it directly.
         /// </summary>
+        // ParseInviteLine must remain private static on this class — tests reflect on it.
+        // Delegates to InviteService.ParseLine so the format is defined in one place.
         private static (string targetId, PartyInviteData invite)? ParseInviteLine(string line)
-        {
-            if (string.IsNullOrEmpty(line)) return null;
-            var parts = line.Split(INVITE_FIELD_SEPARATOR);
-            if (parts.Length < 5) return null;
-            if (!int.TryParse(parts[4], out int avatarId)) return null;
-
-            return (parts[0], new PartyInviteData(parts[1], parts[2], parts[3], avatarId));
-        }
+            => InviteService.ParseLine(line);
 
         private void TryRaiseIncomingInvite(PartyInviteData invite)
         {
@@ -1115,10 +1116,10 @@ namespace CosmicShore.Gameplay
             }
 
             // Departed players with outstanding invites — free the slot now.
-            if (_outgoingInvites.Count == 0) return;
+            if (_inviteService.OutgoingCount == 0) return;
 
             List<string> departed = null;
-            foreach (var targetId in _outgoingInvites.Targets)
+            foreach (var targetId in _inviteService.OutgoingTargets)
             {
                 if (!freshPlayerIds.Contains(targetId))
                 {
@@ -1215,10 +1216,10 @@ namespace CosmicShore.Gameplay
 
                 // Pending invites prevent nulling — would cascade into duplicate
                 // session creation that kicks any already-joined client.
-                if (_outgoingInvites.Count > 0)
+                if (_inviteService.OutgoingCount > 0)
                 {
                     Debug.LogWarning(
-                        $"[HostConnectionService] Refresh failed but {_outgoingInvites.Count} outgoing invite(s) pending — keeping _partySession to avoid duplicate creation.");
+                        $"[HostConnectionService] Refresh failed but {_inviteService.OutgoingCount} outgoing invite(s) pending — keeping _partySession to avoid duplicate creation.");
                     return;
                 }
 
@@ -1313,7 +1314,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in _presenceLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
-                if (!_outgoingInvites.Contains(p.Id)) continue;
+                if (!_inviteService.Contains(p.Id)) continue;
                 if (!p.Properties.TryGetValue(ACCEPTED_INVITE_KEY, out var prop)) continue;
 
                 string acceptedValue = prop?.Value ?? string.Empty;
@@ -1342,9 +1343,9 @@ namespace CosmicShore.Gameplay
 
         private async Task RepublishOutgoingInvitesWithRealSessionIdAsync()
         {
-            if (_partySession == null || _outgoingInvites.Count == 0) return;
+            if (_partySession == null || _inviteService.OutgoingCount == 0) return;
 
-            _outgoingInvites.RebuildPayloads(BuildInvitePayload);
+            _inviteService.UpdatePayloadsWithRealSessionId(_partySession.Id);
 
             // CreatePartySessionAsync can take 2-3s (NM shutdown + Relay alloc),
             // so the SDK's internal player index will be stale. Refresh before
@@ -1357,7 +1358,7 @@ namespace CosmicShore.Gameplay
 
             PublishInvitePayloadsToCurrentPlayer();
             await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
-            Debug.Log($"[HostConnectionService] Republished {_outgoingInvites.Count} pending invite(s) with real session id {_partySession.Id}");
+            Debug.Log($"[HostConnectionService] Republished {_inviteService.OutgoingCount} pending invite(s) with real session id {_partySession.Id}");
         }
 
         private async Task<string> WaitForRealSessionIdAsync(string hostPlayerId, float timeoutSeconds = 7f)
@@ -1393,7 +1394,7 @@ namespace CosmicShore.Gameplay
                     }
 
                     bool foundForUs = false;
-                    foreach (var line in prop.Value.Split(INVITE_LINE_SEPARATOR))
+                    foreach (var line in prop.Value.Split(InviteService.LINE_SEPARATOR))
                     {
                         var parsed = ParseInviteLine(line);
                         if (!parsed.HasValue) continue;
@@ -1423,55 +1424,55 @@ namespace CosmicShore.Gameplay
         // ║  Outgoing invite serialization & expiry                           ║
         // ╚═══════════════════════════════════════════════════════════════════╝
 
-        /// <summary>
-        /// Builds one invite line:
-        /// <c>targetPlayerId|hostPlayerId|sessionId|hostDisplayName|avatarId</c>.
-        /// Uses <see cref="PENDING_SESSION_ID"/> when no Relay session exists yet.
-        /// </summary>
-        private string BuildInvitePayload(string targetPlayerId)
-        {
-            string sessionIdField = _partySession?.Id ?? PENDING_SESSION_ID;
-            return $"{targetPlayerId}{INVITE_FIELD_SEPARATOR}" +
-                   $"{connectionData.LocalPlayerId}{INVITE_FIELD_SEPARATOR}" +
-                   $"{sessionIdField}{INVITE_FIELD_SEPARATOR}" +
-                   $"{connectionData.LocalDisplayName}{INVITE_FIELD_SEPARATOR}" +
-                   $"{connectionData.LocalAvatarId}";
-        }
-
         private void PublishInvitePayloadsToCurrentPlayer()
         {
-            string composite = _outgoingInvites.SerializeAll(INVITE_LINE_SEPARATOR);
+            string composite = _inviteService.SerializeAll();
             _presenceLobby.CurrentPlayer.SetProperty(INVITE_PAYLOADS_KEY,
                 new PlayerProperty(composite, VisibilityPropertyOptions.Public));
         }
 
         private void ExpireOutgoingInvites()
         {
-            var expired = _outgoingInvites.CollectExpired(Time.unscaledTime);
-            if (expired == null) return;
+            // InviteService.RemoveExpired removes entries from the tracker and returns
+            // their IDs.  HandleInviteClearedAsync fires the UI event and saves the
+            // updated (shorter) composite property to the lobby.
+            var expired = _inviteService.RemoveExpired();
             foreach (var id in expired)
-                _ = ClearOutgoingInviteIfPresentAsync(id, "timeout");
+                HandleInviteClearedAsync(id, "timeout").Forget();
         }
 
         /// <summary>
-        /// Clears an outgoing invite locally and re-publishes the composite
-        /// property. Reentrant: callers from inside <see cref="RefreshAsync"/>
-        /// (mutex already held) skip re-acquiring; external callers acquire normally.
+        /// Clears an outgoing invite from the tracker, fires the UI-cleared event,
+        /// and republishes the composite property to the lobby.
+        /// Reentrant: callers from inside <see cref="RefreshAsync"/> (mutex already
+        /// held) skip re-acquiring; external callers acquire normally.
         /// </summary>
         private async Task ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
         {
-            if (_presenceLobby == null) return;
-            if (string.IsNullOrEmpty(playerId)) return;
-            if (!_outgoingInvites.Contains(playerId)) return;
+            if (_presenceLobby == null || string.IsNullOrEmpty(playerId)) return;
+            if (!_inviteService.Contains(playerId)) return;
 
-            // Local + UI updates fire immediately so the row reverts before the
-            // network round-trip confirms.
-            _outgoingInvites.Remove(playerId);
+            _inviteService.Remove(playerId);
+            await HandleInviteClearedAsync(playerId, reason);
+        }
+
+        /// <summary>
+        /// Fires the <see cref="OutgoingInviteCleared"/> event and saves the updated
+        /// (post-removal) composite invite property to the lobby.
+        ///
+        /// Called by both the timeout path (<see cref="ExpireOutgoingInvites"/>, after
+        /// <see cref="InviteService.RemoveExpired"/> already removed entries) and the
+        /// presence-leave path (<see cref="ClearOutgoingInviteIfPresentAsync"/>, after
+        /// <see cref="InviteService.Remove"/>).
+        /// </summary>
+        private async Task HandleInviteClearedAsync(string playerId, string reason)
+        {
             DebugExtensions.LogColored(
                 $"[INVITE-SEND] Clearing invite for '{playerId}' (reason: {reason})",
                 Color.green);
             OutgoingInviteCleared?.Invoke(playerId);
 
+            if (_presenceLobby == null) return;
             bool needsLock = !_insideRefreshCycle;
             if (needsLock) await _lobbyMutex.WaitAsync();
             try
@@ -1481,7 +1482,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] ClearOutgoingInvite error: {e.Message}");
+                Debug.LogWarning($"[HostConnectionService] HandleInviteCleared error: {e.Message}");
             }
             finally
             {
@@ -1792,88 +1793,5 @@ namespace CosmicShore.Gameplay
                 !string.IsNullOrEmpty(s) && s.Contains("LobbyPatcher") && s.Contains("Index was out of range");
         }
 
-        // ╔═══════════════════════════════════════════════════════════════════╗
-        // ║  OutgoingInviteTracker — encapsulates the local outgoing-invite   ║
-        // ║  map. Owns timeout expiry and composite-payload serialization.    ║
-        // ║                                                                   ║
-        // ║  Pulled out as a dedicated type so the rest of the service no    ║
-        // ║  longer juggles a Dictionary<string, struct OutgoingInvite> with  ║
-        // ║  the awkward copy-modify-assign mutation pattern.                 ║
-        // ╚═══════════════════════════════════════════════════════════════════╝
-
-        private sealed class OutgoingInviteTracker
-        {
-            private sealed class Entry
-            {
-                public string Payload;
-                public float  ExpiresAt;
-            }
-
-            private readonly Dictionary<string, Entry> _entries = new();
-
-            public int                          Count   => _entries.Count;
-            public IReadOnlyCollection<string>  Targets => _entries.Keys;
-
-            public bool Contains(string targetId) => _entries.ContainsKey(targetId);
-
-            public void AddOrRefresh(string targetId, string payload, float expiresAt)
-            {
-                if (_entries.TryGetValue(targetId, out var existing))
-                {
-                    existing.Payload   = payload;
-                    existing.ExpiresAt = expiresAt;
-                }
-                else
-                {
-                    _entries[targetId] = new Entry { Payload = payload, ExpiresAt = expiresAt };
-                }
-            }
-
-            public void RefreshTimeout(string targetId, float expiresAt)
-            {
-                if (_entries.TryGetValue(targetId, out var existing))
-                    existing.ExpiresAt = expiresAt;
-            }
-
-            public bool Remove(string targetId) => _entries.Remove(targetId);
-
-            /// <summary>
-            /// Rebuilds every entry's payload via <paramref name="payloadFactory"/>.
-            /// Used when the Relay session id transitions PENDING → real and all
-            /// outstanding invite lines must be re-serialized.
-            /// </summary>
-            public void RebuildPayloads(Func<string, string> payloadFactory)
-            {
-                foreach (var key in new List<string>(_entries.Keys))
-                    _entries[key].Payload = payloadFactory(key);
-            }
-
-            public string SerializeAll(char separator)
-            {
-                if (_entries.Count == 0) return string.Empty;
-                var lines = new List<string>(_entries.Count);
-                foreach (var entry in _entries.Values)
-                    lines.Add(entry.Payload);
-                return string.Join(separator.ToString(), lines);
-            }
-
-            /// <summary>
-            /// Returns a snapshot list of target ids whose timeout has elapsed,
-            /// or null if none. Caller is responsible for removing them.
-            /// </summary>
-            public List<string> CollectExpired(float currentTime)
-            {
-                List<string> expired = null;
-                foreach (var kv in _entries)
-                {
-                    if (currentTime >= kv.Value.ExpiresAt)
-                    {
-                        expired ??= new List<string>();
-                        expired.Add(kv.Key);
-                    }
-                }
-                return expired;
-            }
-        }
     }
 }

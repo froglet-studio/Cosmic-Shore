@@ -92,9 +92,11 @@ namespace CosmicShore.Gameplay
         string SerializeAll();
 
         /// <summary>
-        /// Removes all invites whose expiry time has passed.
-        /// Should be called each refresh tick.
+        /// Removes all invites whose expiry time has passed and returns the
+        /// player IDs that were removed, so callers can perform side effects
+        /// (UI notification, lobby property republish) for each one.
+        /// Returns an empty list if nothing expired.
         /// </summary>
-        void RemoveExpired();
+        System.Collections.Generic.IReadOnlyList<string> RemoveExpired();
     }
 }
