@@ -134,6 +134,14 @@ namespace CosmicShore.Gameplay
         // Lifecycle / state
         // ─────────────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Tracks which phase of the party lifecycle we are in.
+        /// Single source of truth — replaces the scatter of boolean flags
+        /// (_isHost, _joining, _inviteSent…) that previously drifted out of sync.
+        /// Read via CurrentState; change via TryTransition; react via OnStateChanged.
+        /// </summary>
+        private readonly PartyStateMachine _stateMachine = new();
+
         private bool   _initialized;
         private bool   _joining;
         private bool   _leaving;
@@ -172,6 +180,14 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         public ISession PartySession => _partySession;
+
+        /// <summary>
+        /// Read-only view of the party state machine.
+        /// Use <c>StateMachine.CurrentState</c> to check what phase we are in.
+        /// Do NOT call TryTransition from outside HostConnectionService — only this
+        /// class is the single writer of party state.
+        /// </summary>
+        public PartyStateMachine StateMachine => _stateMachine;
 
         /// <summary>
         /// Most recently detected incoming invite, or null once the user has
@@ -266,6 +282,8 @@ namespace CosmicShore.Gameplay
         public async void HandleSignedOutEvent()
         {
             _initialized = false;
+            // Sign-out is the "emergency exit" — always allowed regardless of current state.
+            _stateMachine.TryTransition(PartyState.Disconnected);
             connectionData.ResetRuntimeData();
             await LeavePresenceLobbyAsync();
             connectionData.OnHostConnectionLost?.Raise();
@@ -303,6 +321,8 @@ namespace CosmicShore.Gameplay
                 RepublishLocalIdentityAsync().Forget();
 
                 _initialized = true;
+                // Now in the presence lobby — can browse players and send/receive invites.
+                _stateMachine.TryTransition(PartyState.InPresenceLobby);
                 DebugExtensions.LogColored(
                     $"[HostConnectionService] Initialized — lobby: {_presenceLobby?.Id ?? "NULL"}, " +
                     $"partySession: {_partySession?.Id ?? "NULL"}, " +
@@ -363,6 +383,11 @@ namespace CosmicShore.Gameplay
                     Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
                 inviteAdded = true;
 
+                // First invite transitions us to Inviting. Subsequent invites to additional
+                // players are no-ops for the state machine (already Inviting).
+                if (_stateMachine.CurrentState == PartyState.InPresenceLobby)
+                    _stateMachine.TryTransition(PartyState.Inviting);
+
                 DebugExtensions.LogColored(
                     $"[INVITE-SEND] target='{targetPlayerId}', payload='{payload}'", Color.cyan);
 
@@ -417,6 +442,8 @@ namespace CosmicShore.Gameplay
             try
             {
                 SyncLocalIdentity();
+                // Accepting moves us from browsing to actively connecting.
+                _stateMachine.TryTransition(PartyState.JoiningParty);
 
                 // Three-phase accept:
                 //   1. Tell the host we accepted (presence-lobby property write).
@@ -446,6 +473,8 @@ namespace CosmicShore.Gameplay
 
                 _refreshTimer = -refreshIntervalSeconds;
                 Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
+                // Relay session join succeeded — we are now fully inside the party.
+                _stateMachine.TryTransition(PartyState.InParty);
 
                 _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
 
@@ -497,6 +526,8 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // Party leave returns us to browsing — back to the presence lobby.
+            _stateMachine.TryTransition(PartyState.InPresenceLobby);
             ClearJoinedPartyAsync().Forget();
             await controller.LeavePartyAndReturnToMenuAsync();
         }
@@ -566,6 +597,15 @@ namespace CosmicShore.Gameplay
             _partySessionCreatedAt = 0f;
             _lastFiredInvite       = null;
             connectionData.PartyMembers?.Clear();
+
+            // Session cleared (e.g. game→menu transition) — return to browsing state.
+            // Guard: may already be InPresenceLobby if the session was cleared without
+            // us having entered HostingParty/InParty (e.g. failed Relay creation).
+            if (_stateMachine.CurrentState != PartyState.InPresenceLobby &&
+                _stateMachine.CurrentState != PartyState.Disconnected)
+            {
+                _stateMachine.TryTransition(PartyState.InPresenceLobby);
+            }
 
             ClearJoinedPartyAsync().Forget();
         }
@@ -908,6 +948,9 @@ namespace CosmicShore.Gameplay
                         _consecutiveRefreshErrors = 0;
                         _presenceLobby            = null;
                         shouldReconnect           = true;
+                        // Connection was lost — enter Reconnecting so callers and UI
+                        // can show a "reconnecting…" indicator.
+                        _stateMachine.TryTransition(PartyState.Reconnecting);
                     }
                 }
             }
@@ -918,7 +961,12 @@ namespace CosmicShore.Gameplay
             }
 
             if (shouldReconnect)
+            {
                 await JoinPresenceLobbyAsync();
+                // Reconnect succeeded (or fell back) — return to browsing state.
+                if (_presenceLobby != null)
+                    _stateMachine.TryTransition(PartyState.InPresenceLobby);
+            }
         }
 
         private bool TryFindIncomingInvite(IReadOnlyPlayer sender, out PartyInviteData invite)
@@ -1185,6 +1233,11 @@ namespace CosmicShore.Gameplay
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join");
 
+            // A new party member appeared in the Relay session — the party is live.
+            // Transition HostingParty → InParty (no-op if already InParty for a second joiner).
+            if (joinedPlayerIds.Count > 0 && _stateMachine.CurrentState == PartyState.HostingParty)
+                _stateMachine.TryTransition(PartyState.InParty);
+
             for (int i = connectionData.PartyMembers.Count - 1; i >= 0; i--)
             {
                 var member = connectionData.PartyMembers[i];
@@ -1261,6 +1314,11 @@ namespace CosmicShore.Gameplay
 
                 if (_partySession == null)
                     await CreatePartySessionAsync();
+
+                // Session is live — we are now the host, waiting for the recipient's NM to connect.
+                // Transition: Inviting → HostingParty.  The final InParty transition happens
+                // in RefreshPartyMembersAsync once both players show in the session.
+                _stateMachine.TryTransition(PartyState.HostingParty);
 
                 Debug.Log($"[ACCEPT-SCAN] Party session ready (id={_partySession?.Id ?? "null"}) — republishing payloads.");
                 await RepublishOutgoingInvitesWithRealSessionIdAsync();
