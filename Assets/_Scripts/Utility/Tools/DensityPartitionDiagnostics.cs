@@ -5,7 +5,7 @@ using CosmicShore.Gameplay;
 using UnityEditor;
 using UnityEngine;
 
-namespace CosmicShore.Editor
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Edit-mode + play-mode Scene-view overlay for the network-synced
