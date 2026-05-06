@@ -30,6 +30,7 @@ namespace CosmicShore.Gameplay
     /// • <see cref="PresenceLobbyService"/>      – presence lobby join/leave/refresh (Phase 7)
     /// • <see cref="AcceptanceSignalService"/>   – PENDING-sentinel acceptance handshake (Phase 8)
     /// • <see cref="PartySessionService"/>       – Relay party session create/join/leave (Phase 9)
+    /// • <see cref="PartyMemberService"/>        – PartyMembers SOAP list diff + events (Phase 10)
     /// • <see cref="LobbyPatcherLogFilter"/>     – suppresses known harmless SDK noise
     /// • <see cref="PartyStateMachine"/>         – explicit lifecycle state (Phase 1)
     ///
@@ -149,6 +150,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private IPartySessionService _partySessionService;
 
+        /// <summary>
+        /// Owns the PartyMembers SOAP list: diffs against live session, seeds,
+        /// repopulates on scene reload, and fires member-change SOAP events.
+        /// Extracted in Phase 10; Phase 12 moves this to Reflex DI.
+        /// </summary>
+        private IPartyMemberService _memberService;
+
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
         private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
@@ -237,6 +245,7 @@ namespace CosmicShore.Gameplay
             _lobbyService         = new PresenceLobbyService(connectionData, _propertyWriter);
             _acceptanceService    = new AcceptanceSignalService();
             _partySessionService  = new PartySessionService(connectionData);
+            _memberService        = new PartyMemberService(connectionData, _eventBus);
             InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -496,8 +505,7 @@ namespace CosmicShore.Gameplay
 
                 connectionData.IsHost = false;
 
-                connectionData.PartyMembers?.Clear();
-                connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
+                _memberService.SeedLocalPlayer(clearFirst: true);
                 var hostData = new PartyPlayerData(invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
                 connectionData.PartyMembers?.Add(hostData);
                 _eventBus.RaisePartyMemberJoined(hostData);
@@ -550,14 +558,7 @@ namespace CosmicShore.Gameplay
 
             // Locally fire OnPartyMemberLeft so panels clear slots immediately
             // instead of waiting for the next refresh tick.
-            if (connectionData.PartyMembers != null)
-            {
-                foreach (var member in connectionData.PartyMembers.ToList())
-                {
-                    if (member.PlayerId == connectionData.LocalPlayerId) continue;
-                    _eventBus.RaisePartyMemberLeft(member);
-                }
-            }
+            _memberService.ClearWithEvents(connectionData.LocalPlayerId);
 
             // Party leave returns us to browsing — back to the presence lobby.
             _stateMachine.TryTransition(PartyState.InPresenceLobby);
@@ -628,7 +629,7 @@ namespace CosmicShore.Gameplay
 
             _partySessionService.ClearSession();
             _lastFiredInvite = null;
-            connectionData.PartyMembers?.Clear();
+            _memberService.ClearSilent();
 
             // Session cleared (e.g. game→menu transition) — return to browsing state.
             // Guard: may already be InPresenceLobby if the session was cleared without
@@ -1008,7 +1009,7 @@ namespace CosmicShore.Gameplay
                 if (string.IsNullOrEmpty(joinedProp.Value)) continue;
                 if (joinedProp.Value != sessionId) continue;
 
-                var memberData = ReadPartyMemberData(p);
+                var memberData = _memberService.ReadMemberData(p);
                 if (!connectionData.PartyMembers.Contains(memberData))
                 {
                     connectionData.PartyMembers.Add(memberData);
@@ -1058,27 +1059,12 @@ namespace CosmicShore.Gameplay
                 }
 
                 _partySessionService.ClearSession();
-                connectionData.PartyMembers?.Clear();
+                _memberService.ClearSilent();
                 return;
             }
 
-            var session          = _partySessionService.ActiveSession;
-            var sessionPlayerIds = new HashSet<string>();
-            foreach (var p in session.Players) sessionPlayerIds.Add(p.Id);
-
-            var joinedPlayerIds = new List<string>();
-            foreach (var p in session.Players)
-            {
-                if (p.Id == connectionData.LocalPlayerId) continue;
-
-                var memberData = ReadPartyMemberData(p);
-                if (!connectionData.PartyMembers.Contains(memberData))
-                {
-                    connectionData.PartyMembers.Add(memberData);
-                    _eventBus.RaisePartyMemberJoined(memberData);
-                    joinedPlayerIds.Add(p.Id);
-                }
-            }
+            var joinedPlayerIds = _memberService.SyncFromSession(
+                _partySessionService.ActiveSession, connectionData.LocalPlayerId);
 
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join");
@@ -1087,50 +1073,13 @@ namespace CosmicShore.Gameplay
             // Transition HostingParty → InParty (no-op if already InParty for a second joiner).
             if (joinedPlayerIds.Count > 0 && _stateMachine.CurrentState == PartyState.HostingParty)
                 _stateMachine.TryTransition(PartyState.InParty);
-
-            for (int i = connectionData.PartyMembers.Count - 1; i >= 0; i--)
-            {
-                var member = connectionData.PartyMembers[i];
-                if (member.PlayerId == connectionData.LocalPlayerId) continue;
-
-                if (!sessionPlayerIds.Contains(member.PlayerId))
-                {
-                    connectionData.PartyMembers.RemoveAt(i);
-                    _eventBus.RaisePartyMemberLeft(member);
-                }
-            }
-        }
-
-        private PartyPlayerData ReadPartyMemberData(IReadOnlyPlayer p)
-        {
-            string displayName = "Unknown Pilot";
-            int    avatarId    = 0;
-
-            if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
-                !string.IsNullOrEmpty(dn.Value))
-                displayName = dn.Value;
-            if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
-                int.TryParse(av.Value, out int parsed))
-                avatarId = parsed;
-
-            return new PartyPlayerData(p.Id, displayName, avatarId);
         }
 
         private void RepopulatePartyMembersFromSession()
         {
-            if (_partySessionService.ActiveSession == null || connectionData == null || connectionData.PartyMembers == null)
-                return;
-
-            connectionData.PartyMembers.Clear();
-            connectionData.PartyMembers.Add(connectionData.LocalPlayerData);
-
-            foreach (var p in _partySessionService.ActiveSession.Players)
-            {
-                if (p.Id == connectionData.LocalPlayerId) continue;
-                var memberData = ReadPartyMemberData(p);
-                connectionData.PartyMembers.Add(memberData);
-                _eventBus.RaisePartyMemberJoined(memberData);
-            }
+            if (_partySessionService.ActiveSession == null) return;
+            _memberService.RepopulateFromSession(
+                _partySessionService.ActiveSession, connectionData.LocalPlayerId);
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -1225,8 +1174,7 @@ namespace CosmicShore.Gameplay
             connectionData.IsConnected = true;
             connectionData.IsHost      = lobby.IsHost;
 
-            connectionData.PartyMembers?.Clear();
-            connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
+            _memberService.SeedLocalPlayer(clearFirst: true);
 
             _eventBus.RaiseHostConnectionEstablished();
         }

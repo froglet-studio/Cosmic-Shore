@@ -5,13 +5,13 @@
 //
 // WHY a separate service?
 //   The member-list diff logic (add new members, remove departed ones, fire
-//   OnPartyMemberJoined / OnPartyMemberLeft) is currently scattered across
+//   OnPartyMemberJoined / OnPartyMemberLeft) was scattered across
 //   RefreshPartyMembersAsync, ScanPresenceForJoinedPartyMembers, and
 //   AcceptInviteAsync in HostConnectionService.  Centralising it here means
 //   one place to audit and test member-list correctness.
 // ─────────────────────────────────────────────────────────────────────────────
 
-using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 using Unity.Services.Multiplayer;
 
 namespace CosmicShore.Gameplay
@@ -20,49 +20,85 @@ namespace CosmicShore.Gameplay
     /// Synchronises the <see cref="HostConnectionDataSO.PartyMembers"/> SOAP list
     /// against the live party session and fires the appropriate SOAP events.
     ///
+    /// <para>
+    /// Implementors must NOT start a NetworkManager or touch the UGS session SDK
+    /// directly — those are <see cref="INetworkTransitionService"/>'s and
+    /// <see cref="IPartySessionService"/>'s jobs respectively.
+    /// </para>
+    ///
     /// Lifetime: extracted from <see cref="HostConnectionService"/> in Phase 10.
     /// Implemented by <c>PartyMemberService</c> in the Services folder.
+    /// Thread-safety: main-thread only.
     /// </summary>
     public interface IPartyMemberService
     {
         /// <summary>
-        /// Adds the local player as the sole member when first entering a party
-        /// (host create) or joining a session (client accept).
-        /// Clears the list before seeding if <paramref name="clearFirst"/> is true.
+        /// Seeds the <see cref="HostConnectionDataSO.PartyMembers"/> list with only
+        /// the local player's <see cref="HostConnectionDataSO.LocalPlayerData"/>.
+        /// Call when the local player first enters a party (host-create path).
         /// </summary>
-        /// <param name="playerId">Local player's UGS ID.</param>
-        /// <param name="displayName">Local player's display name.</param>
-        /// <param name="avatarId">Local player's avatar ID.</param>
-        /// <param name="clearFirst">True to clear the SOAP list before adding.</param>
-        void SeedLocalPlayer(string playerId, string displayName, int avatarId, bool clearFirst = true);
+        /// <param name="clearFirst">
+        /// When <c>true</c> (default) the list is cleared before adding the local
+        /// player.  Set <c>false</c> only if the list is already empty.
+        /// </param>
+        void SeedLocalPlayer(bool clearFirst = true);
 
         /// <summary>
-        /// Diffs the <paramref name="session"/>'s player list against the current
-        /// <see cref="HostConnectionDataSO.PartyMembers"/> SOAP list and:
+        /// Diffs <paramref name="session"/>.Players against the current
+        /// <see cref="HostConnectionDataSO.PartyMembers"/> list:
         /// <list type="bullet">
-        ///   <item>Adds players that appeared — fires <c>OnPartyMemberJoined</c>.</item>
-        ///   <item>Removes players that left — fires <c>OnPartyMemberLeft</c>.</item>
+        ///   <item>Adds players that appeared and fires <c>OnPartyMemberJoined</c>.</item>
+        ///   <item>Removes players that left and fires <c>OnPartyMemberLeft</c>.</item>
         /// </list>
-        /// Returns the list of player IDs that were newly added (for outgoing-invite
-        /// cleanup after a member joins).
+        /// Returns the player IDs that were newly added so the caller can do
+        /// post-join processing (invite cleanup, state-machine transition, etc.).
         /// </summary>
         /// <param name="session">
-        /// The live party session.  Must not be null.
+        /// The live Relay party session.  Must not be null.
         /// </param>
         /// <param name="localPlayerId">
-        /// The local player's ID — excluded from the diff (always present).
+        /// The local player's UGS ID.  Excluded from the diff — always retained.
         /// </param>
-        UniTask<System.Collections.Generic.List<string>> SyncFromSessionAsync(
-            ISession session,
-            string   localPlayerId);
+        IReadOnlyList<string> SyncFromSession(ISession session, string localPlayerId);
 
         /// <summary>
-        /// Clears the SOAP party member list and fires <c>OnPartyMemberLeft</c>
-        /// for every non-local member.  Called on leave/kick.
+        /// Clears and rebuilds <see cref="HostConnectionDataSO.PartyMembers"/> from
+        /// the current session.  Seeds with the local player, then adds every
+        /// non-local session player and fires <c>OnPartyMemberJoined</c> for each.
+        ///
+        /// <para>
+        /// Use on scene reload: the SOAP <c>ScriptableList</c> wipes itself on
+        /// <c>LoadSceneMode.Single</c>, so a fresh sync is needed when re-entering
+        /// Menu_Main with an active party session.
+        /// </para>
+        /// </summary>
+        /// <param name="session">The live party session.</param>
+        /// <param name="localPlayerId">The local player's UGS ID.</param>
+        void RepopulateFromSession(ISession session, string localPlayerId);
+
+        /// <summary>
+        /// Silently clears <see cref="HostConnectionDataSO.PartyMembers"/> with no
+        /// SOAP events raised.  Use in error paths and stale-session cleanup where
+        /// the UI will be reset independently.
+        /// </summary>
+        void ClearSilent();
+
+        /// <summary>
+        /// Clears <see cref="HostConnectionDataSO.PartyMembers"/> and fires
+        /// <c>OnPartyMemberLeft</c> for every non-local member before removing them.
+        /// Use when the party disbands gracefully (leave, kick all, decline).
         /// </summary>
         /// <param name="localPlayerId">
-        /// Local player's ID — not evicted from the list, not fired as Left.
+        /// The local player's ID — retained in the list, not fired as Left.
         /// </param>
-        void Clear(string localPlayerId);
+        void ClearWithEvents(string localPlayerId);
+
+        /// <summary>
+        /// Reads the <c>displayName</c> and <c>avatarId</c> player properties from
+        /// <paramref name="p"/> and constructs a <see cref="PartyPlayerData"/> value.
+        /// Works for both presence-lobby players and Relay session players.
+        /// </summary>
+        /// <param name="p">A player whose Properties contain the standard keys.</param>
+        PartyPlayerData ReadMemberData(IReadOnlyPlayer p);
     }
 }
