@@ -1,0 +1,71 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// IPartySessionService.cs
+// Contract for the Relay-backed party session (the actual multiplayer session).
+//
+// KEY CONSTRAINT: implementors must NOT touch NetworkManager.  Starting and
+// stopping Netcode is INetworkTransitionService's job.  This interface only
+// manages the UGS session object (create, join, leave, refresh).
+// ─────────────────────────────────────────────────────────────────────────────
+
+using System;
+using Cysharp.Threading.Tasks;
+using Unity.Services.Multiplayer;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Manages the UGS Relay session (the live party session used for actual
+    /// multiplayer networking).  Responsible for creating, joining, and leaving
+    /// the session — not for Netcode transport.
+    ///
+    /// Lifetime: extracted from <see cref="HostConnectionService"/> in Phase 9.
+    /// Implemented by <c>PartySessionService</c> in the Services folder.
+    /// </summary>
+    public interface IPartySessionService
+    {
+        /// <summary>
+        /// The active party session, or <c>null</c> if no session has been created
+        /// or joined.
+        /// </summary>
+        ISession ActiveSession { get; }
+
+        /// <summary>
+        /// The wall-clock time (via <c>Time.unscaledTime</c>) when the current
+        /// session was created.  Used to enforce the grace period that prevents
+        /// premature RefreshAsync failures from nulling a freshly-provisioned session.
+        /// </summary>
+        float CreatedAtUnscaledTime { get; }
+
+        /// <summary>
+        /// Creates a new Relay-backed party session and sets it as <see cref="ActiveSession"/>.
+        /// No-op if a session already exists.
+        /// </summary>
+        /// <param name="maxPlayers">Maximum simultaneous players for this session.</param>
+        UniTask CreateAsync(int maxPlayers);
+
+        /// <summary>
+        /// Joins an existing session by its UGS session ID.
+        /// Sets <see cref="ActiveSession"/> on success.
+        /// </summary>
+        /// <param name="sessionId">
+        /// The UGS session ID published by the host.  Must be the real ID (not PENDING).
+        /// </param>
+        UniTask JoinByIdAsync(string sessionId);
+
+        /// <summary>
+        /// Leaves the active session.  Clears <see cref="ActiveSession"/> to null.
+        /// Safe to call even if no session is active.
+        /// </summary>
+        UniTask LeaveAsync();
+
+        /// <summary>
+        /// Refreshes the session's player list from the UGS backend.
+        /// Used to detect when new members have joined or left.
+        /// </summary>
+        /// <remarks>
+        /// Only call after the grace period (<see cref="CreatedAtUnscaledTime"/> +
+        /// SESSION_CREATION_GRACE_PERIOD_SECONDS) to avoid nulling a freshly-provisioned session.
+        /// </remarks>
+        UniTask RefreshAsync();
+    }
+}
