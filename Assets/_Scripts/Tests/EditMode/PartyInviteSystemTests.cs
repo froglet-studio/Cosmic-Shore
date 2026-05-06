@@ -1074,5 +1074,178 @@ namespace CosmicShore.Tests
         }
 
         #endregion
+
+        // ─────────────────────────────────────────────────────────────────────
+        // PartyStateMachine — legal transitions, guard, event, round-trips
+        // ─────────────────────────────────────────────────────────────────────
+
+        #region PartyStateMachine
+
+        [Test]
+        public void StateMachine_InitialState_IsDisconnected()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Disconnected, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_LegalTransition_Succeeds()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_IllegalTransition_ReturnsFalseAndStateUnchanged()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            // Disconnected -> InParty is illegal (must pass through InPresenceLobby first).
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Disconnected, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_AnyState_CanTransitionToDisconnected()
+        {
+            var states = new[]
+            {
+                CosmicShore.Gameplay.PartyState.InPresenceLobby,
+                CosmicShore.Gameplay.PartyState.Inviting,
+                CosmicShore.Gameplay.PartyState.JoiningParty,
+                CosmicShore.Gameplay.PartyState.HostingParty,
+                CosmicShore.Gameplay.PartyState.InParty,
+                CosmicShore.Gameplay.PartyState.Reconnecting,
+            };
+
+            // CurrentState is an auto-property; its backing field is named by the compiler.
+            var backingField = typeof(CosmicShore.Gameplay.PartyStateMachine)
+                .GetField("<CurrentState>k__BackingField",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+
+            foreach (var startState in states)
+            {
+                var sm = new CosmicShore.Gameplay.PartyStateMachine();
+                // Force the machine into startState without going through TryTransition,
+                // so we isolate the "any -> Disconnected" rule from legal-transition logic.
+                backingField?.SetValue(sm, startState);
+
+                bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.Disconnected);
+                Assert.IsTrue(result, $"Expected Disconnected to be legal from {startState}");
+                Assert.AreEqual(CosmicShore.Gameplay.PartyState.Disconnected, sm.CurrentState);
+            }
+        }
+
+        [Test]
+        public void StateMachine_OnStateChanged_FiresWithCorrectArgs()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+
+            CosmicShore.Gameplay.PartyState firedFrom = default;
+            CosmicShore.Gameplay.PartyState firedTo   = default;
+            int fireCount = 0;
+
+            sm.OnStateChanged += (from, to) => { firedFrom = from; firedTo = to; fireCount++; };
+
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            Assert.AreEqual(1, fireCount);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Disconnected,      firedFrom);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby,   firedTo);
+        }
+
+        [Test]
+        public void StateMachine_OnStateChanged_DoesNotFireOnIllegalTransition()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            int fireCount = 0;
+            sm.OnStateChanged += (_, __) => fireCount++;
+
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty); // illegal from Disconnected
+
+            Assert.AreEqual(0, fireCount);
+        }
+
+        [Test]
+        public void StateMachine_Reconnecting_RoundTripToPresenceLobby()
+        {
+            // InParty -> Reconnecting -> InPresenceLobby (recovery success / max-retries fallback)
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.Reconnecting);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_Reconnecting_RoundTripToInParty()
+        {
+            // InParty -> Reconnecting -> InParty (rejoin succeeded)
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.Reconnecting);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InvitingToHostingParty_IsLegal()
+        {
+            // Simulate: sign-in -> lobby -> send invite -> acceptance detected
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.Inviting);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_FullJoiningFlow_StateIsInParty()
+        {
+            // Simulate recipient accept flow: Disconnected -> Lobby -> Joining -> InParty
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_JoiningToLobby_IsLegalOnFailure()
+        {
+            // Accept flow failed or timed out — fall back to lobby
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby, sm.CurrentState);
+        }
+
+        #endregion
     }
 }
