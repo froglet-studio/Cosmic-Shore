@@ -8,7 +8,6 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
-using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -31,6 +30,7 @@ namespace CosmicShore.Gameplay
     /// • <see cref="AcceptanceSignalService"/>   – PENDING-sentinel acceptance handshake (Phase 8)
     /// • <see cref="PartySessionService"/>       – Relay party session create/join/leave (Phase 9)
     /// • <see cref="PartyMemberService"/>        – PartyMembers SOAP list diff + events (Phase 10)
+    /// • <see cref="NetworkTransitionService"/>  – NM shutdown for party session creation (Phase 11)
     /// • <see cref="LobbyPatcherLogFilter"/>     – suppresses known harmless SDK noise
     /// • <see cref="PartyStateMachine"/>         – explicit lifecycle state (Phase 1)
     ///
@@ -157,6 +157,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private IPartyMemberService _memberService;
 
+        /// <summary>
+        /// Manages NetworkManager lifecycle during party session creation.
+        /// Extracted in Phase 11; Phase 12 moves this to Reflex DI.
+        /// </summary>
+        private INetworkTransitionService _networkTransition;
+
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
         private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
@@ -252,6 +258,9 @@ namespace CosmicShore.Gameplay
 
         async void Start()
         {
+            // [Inject] fields are populated by Reflex between Awake and Start.
+            _networkTransition = new NetworkTransitionService(_gameData);
+
             while (!IsAuthSignedInAndHasId())
                 await Task.Delay(300);
 
@@ -685,19 +694,8 @@ namespace CosmicShore.Gameplay
             // The UGS Multiplayer SDK calls NetworkManager.StartHost()
             // internally for Relay-backed sessions. If a local host is
             // already running, that call fails — shut it down first.
-            // (NM lifecycle will move to NetworkTransitionService in Phase 11.)
-            var nm = NetworkManager.Singleton;
-            if (nm != null && nm.IsListening)
-            {
-                Debug.Log("[HostConnectionService] Shutting down local host before Relay party session creation...");
-                nm.Shutdown();
-
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                while (nm != null && nm.IsListening && sw.ElapsedMilliseconds < 5000)
-                    await Task.Delay(100);
-
-                await Task.Delay(200); // transport cleanup settle
-            }
+            using var cts = new System.Threading.CancellationTokenSource();
+            await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, cts.Token);
 
             // Session creation with retry logic delegated to PartySessionService.
             await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
