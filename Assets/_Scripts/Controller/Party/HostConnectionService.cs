@@ -17,21 +17,19 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Coordinates the user's presence in the global lobby and (lazily) their
-    /// Relay-backed party session. Single source of truth for outgoing/incoming
-    /// invites and party-member state; everything else flows through SOAP.
+    /// Thin facade that coordinates the party lifecycle: presence lobby, party
+    /// session, invite payloads, and member list.  Single source of truth for
+    /// outgoing/incoming invites and party-member state; everything flows out via
+    /// SOAP events through <see cref="HostConnectionDataSO"/>.
     ///
-    /// Internally split into focused helpers (kept as nested types so the public
-    /// MonoBehaviour surface stays a single, inspector-stable component):
+    /// Internal helpers extracted progressively (Phases 3-11):
+    /// • <see cref="LobbyPropertyWriter"/>  – mutex + refresh + save-with-retry pattern
+    /// • <see cref="OutgoingInviteTracker"/> – local outstanding-invite map
+    /// • <see cref="LobbyPatcherLogFilter"/> – suppresses known harmless SDK noise
+    /// • <see cref="PartyStateMachine"/>    – explicit lifecycle state (Phase 1)
     ///
-    /// • <see cref="OutgoingInviteTracker"/> – owns the local outstanding-invite map
-    ///   (timeout expiry + composite serialization).
-    /// • <see cref="LobbyPatcherLogFilter"/> – swallows known harmless SDK noise.
-    /// • A pair of <see cref="SemaphoreSlim"/>s – one serializes lobby reads/writes
-    ///   (replacing the legacy busy-flag spinloop), one dedups Relay-session creation.
-    /// • <see cref="RunLobbyPropertyWriteAsync"/> – DRYs the
-    ///   acquire-mutex + refresh + set-property + save-with-retry pattern that
-    ///   previously appeared in five near-identical methods.
+    /// Lifetime: DontDestroyOnLoad MonoBehaviour (same GO as PartyInviteController).
+    /// Thread-safety: main-thread only.
     /// </summary>
     public class HostConnectionService : MonoBehaviour
     {
@@ -114,21 +112,28 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
         // Synchronization
         //
-        // The legacy `_lobbyBusy` boolean was a hand-rolled mutex with two
-        // serious flaws:
-        //   1. Callers spun on `while (_lobbyBusy) await Task.Yield()` — no
-        //      FIFO ordering, no fairness guarantees, no cancellation support.
-        //   2. Re-entrance from inside RefreshAsync was hacked via
-        //      `bool ownsLobby = !_lobbyBusy` — easy to misread.
+        // Both mutexes live in LobbyPropertyWriter (extracted in Phase 3).
+        // Shortcuts for readability — these reference the same SemaphoreSlim
+        // objects owned by the service:
+        //   _propertyWriter.LobbyMutex           serialises lobby reads/writes
+        //   _propertyWriter.SessionCreationMutex  deduplicates session creation
         //
-        // SemaphoreSlim(1,1) gives us a real mutex. _insideRefreshCycle makes
-        // the reentrant case explicit: helpers called from inside RefreshAsync
-        // skip re-acquiring; helpers called from outside acquire normally.
+        // _insideRefreshCycle makes the re-entrant case explicit: helpers called
+        // from inside RefreshAsync (which holds LobbyMutex) skip re-acquiring;
+        // helpers called from outside acquire normally.
         // ─────────────────────────────────────────────────────────────────────
 
-        private readonly SemaphoreSlim _lobbyMutex            = new SemaphoreSlim(1, 1);
-        private readonly SemaphoreSlim _sessionCreationMutex  = new SemaphoreSlim(1, 1);
-        private bool                   _insideRefreshCycle;
+        /// <summary>
+        /// Owns both mutexes and the mutex+refresh+save-with-retry write pattern.
+        /// Direct instantiation here; Phase 12 moves this to Reflex DI.
+        /// </summary>
+        private readonly LobbyPropertyWriter _propertyWriter = new LobbyPropertyWriter();
+
+        // Shortcut properties to keep call sites readable.
+        private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
+        private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
+
+        private bool _insideRefreshCycle;
 
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle / state
@@ -394,10 +399,10 @@ namespace CosmicShore.Gameplay
                 // Best-effort refresh to sync the SDK's player-index cache before
                 // SaveCurrentPlayerDataAsync. Without it the save can fail silently.
                 try { await _presenceLobby.RefreshAsync(); }
-                catch { /* SaveWithRetryAsync handles stale state */ }
+                catch { /* SaveWithRetryAsync handles stale state via its own retry */ }
 
                 PublishInvitePayloadsToCurrentPlayer();
-                await SaveWithRetryAsync();
+                await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
 
                 DebugExtensions.LogColored(
                     "[INVITE-SEND] SaveCurrentPlayerDataAsync completed — properties persisted",
@@ -1342,7 +1347,7 @@ namespace CosmicShore.Gameplay
             }
 
             PublishInvitePayloadsToCurrentPlayer();
-            await SaveWithRetryAsync();
+            await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
             Debug.Log($"[HostConnectionService] Republished {_outgoingInvites.Count} pending invite(s) with real session id {_partySession.Id}");
         }
 
@@ -1463,7 +1468,7 @@ namespace CosmicShore.Gameplay
             try
             {
                 PublishInvitePayloadsToCurrentPlayer();
-                await SaveWithRetryAsync();
+                await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
             }
             catch (Exception e)
             {
@@ -1476,42 +1481,15 @@ namespace CosmicShore.Gameplay
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
-        // ║  Property publishing — DRY helper for the WaitMutex+Refresh+      ║
-        // ║  SetProperty+SaveWithRetry pattern                                ║
+        // ║  Property publishing                                              ║
+        // ║  Delegates to _propertyWriter (LobbyPropertyWriter, Phase 3).    ║
         // ╚═══════════════════════════════════════════════════════════════════╝
-
-        /// <summary>
-        /// Acquires <see cref="_lobbyMutex"/>, refreshes the lobby's player
-        /// cache, runs <paramref name="setProperty"/>, then saves with retry.
-        /// All callers from outside the refresh cycle should use this — it
-        /// replaces the five near-identical methods that previously duplicated
-        /// the lock+refresh+set+save dance.
-        /// </summary>
-        private async Task RunLobbyPropertyWriteAsync(Action setProperty, string operationName)
-        {
-            if (_presenceLobby == null) return;
-
-            await _lobbyMutex.WaitAsync();
-            try
-            {
-                await _presenceLobby.RefreshAsync();
-                setProperty();
-                await SaveWithRetryAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] {operationName} error: {e.Message}");
-            }
-            finally
-            {
-                _lobbyMutex.Release();
-            }
-        }
 
         private async UniTaskVoid PublishJoinedPartyAsync(string partySessionId)
         {
             if (string.IsNullOrEmpty(partySessionId)) return;
-            await RunLobbyPropertyWriteAsync(
+            await _propertyWriter.WriteAsync(
+                _presenceLobby,
                 () => _presenceLobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
                     new PlayerProperty(partySessionId, VisibilityPropertyOptions.Public)),
                 "PublishJoinedParty");
@@ -1519,7 +1497,8 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid ClearJoinedPartyAsync()
         {
-            await RunLobbyPropertyWriteAsync(
+            await _propertyWriter.WriteAsync(
+                _presenceLobby,
                 () => _presenceLobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
                     new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public)),
                 "ClearJoinedParty");
@@ -1528,7 +1507,8 @@ namespace CosmicShore.Gameplay
         private async Task PublishAcceptanceSignalAsync(string hostPlayerId)
         {
             if (string.IsNullOrEmpty(hostPlayerId)) return;
-            await RunLobbyPropertyWriteAsync(
+            await _propertyWriter.WriteAsync(
+                _presenceLobby,
                 () =>
                 {
                     _presenceLobby.CurrentPlayer.SetProperty(ACCEPTED_INVITE_KEY,
@@ -1540,7 +1520,8 @@ namespace CosmicShore.Gameplay
 
         private async UniTaskVoid RepublishLocalIdentityAsync()
         {
-            await RunLobbyPropertyWriteAsync(
+            await _propertyWriter.WriteAsync(
+                _presenceLobby,
                 () =>
                 {
                     _presenceLobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
@@ -1590,7 +1571,7 @@ namespace CosmicShore.Gameplay
                 _presenceLobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,
                     new PlayerProperty(currentMatch ?? string.Empty, VisibilityPropertyOptions.Public));
 
-                await SaveWithRetryAsync();
+                await _propertyWriter.SaveWithRetryAsync(_presenceLobby);
                 _publishedPartyCount = currentCount;
                 _publishedMatchName  = currentMatch;
             }
@@ -1606,37 +1587,6 @@ namespace CosmicShore.Gameplay
             if (IsOnMenuScene()) return string.Empty;
             if (!_gameData.IsMultiplayerMode) return string.Empty;
             return _gameData.GameMode.ToString();
-        }
-
-        private async Task SaveWithRetryAsync()
-        {
-            const int maxRetries = 3;
-            const int retryDelayMs = 2000;
-
-            for (int attempt = 0; attempt <= maxRetries; attempt++)
-            {
-                try
-                {
-                    await _presenceLobby.SaveCurrentPlayerDataAsync();
-
-                    // Post-save refresh: keeps the SDK's cached state in sync with
-                    // the server, reducing the window where WebSocket deltas
-                    // reference stale player indices (root cause of harmless
-                    // ArgumentOutOfRangeException in LobbyPatcher).
-                    try { await _presenceLobby.RefreshAsync(); }
-                    catch { /* polling corrects on next cycle */ }
-
-                    return;
-                }
-                catch (Exception e) when (attempt < maxRetries &&
-                    (e.Message.Contains("Too Many Requests") ||
-                     e.Message.Contains("Index was out of range")))
-                {
-                    Debug.LogWarning($"[HostConnectionService] SaveCurrentPlayerData failed ({e.Message}) — retry {attempt + 1}/{maxRetries} in {retryDelayMs}ms");
-                    await Task.Delay(retryDelayMs);
-                    try { await _presenceLobby.RefreshAsync(); } catch { /* best-effort */ }
-                }
-            }
         }
 
         private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
