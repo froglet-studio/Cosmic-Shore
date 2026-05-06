@@ -243,6 +243,31 @@ namespace CosmicShore.Gameplay
             Debug.Log($"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
         }
 
+        /// <summary>
+        /// Enumerate every configured spawnable across the weighted, intensity-mapped,
+        /// guaranteed, and legacy lists. Used by editor preview tools so they can
+        /// walk the spawn graph without depending on inspector wiring details.
+        /// May yield duplicates if the same spawnable is referenced by multiple lists.
+        /// </summary>
+        public IEnumerable<SpawnableBase> EnumerateSpawnables()
+        {
+            if (weightedSegments != null)
+                foreach (var ws in weightedSegments)
+                    if (ws.spawnable != null) yield return ws.spawnable;
+
+            if (spawnableSegments != null)
+                foreach (var s in spawnableSegments)
+                    if (s != null) yield return s;
+
+            if (spawnableByIntensity != null)
+                foreach (var s in spawnableByIntensity)
+                    if (s != null) yield return s;
+
+            if (guaranteedSpawnables != null)
+                foreach (var s in guaranteedSpawnables)
+                    if (s != null) yield return s;
+        }
+
         void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
         {
             if (Seed != 0) spawnable.SetSeed(Seed + layoutIndex);
