@@ -20,7 +20,13 @@ public class SpawnableWaypointTrack : SpawnableBase
     [Header("Block Settings")]
     [SerializeField] Prism prism;
     [SerializeField] Vector3 scale = new Vector3(5, 1, 5);
-    [Tooltip("Number of blocks to spawn per segment (between consecutive waypoints)")]
+    [Tooltip("Distance between consecutive prism centers, in world units. Same density across every " +
+             "segment regardless of length, so short and long segments tile uniformly. " +
+             "When > 0, supersedes blocksPerSegment.")]
+    [SerializeField] float prismSpacing = 12f;
+    [Tooltip("Legacy fallback: number of blocks per segment when prismSpacing <= 0. Hidden because " +
+             "the spacing-based path is the canonical setting for new tracks.")]
+    [HideInInspector]
     [SerializeField] int blocksPerSegment = 50;
 
     [Header("Checkpoints")]
@@ -103,9 +109,14 @@ public class SpawnableWaypointTrack : SpawnableBase
             Vector3 startPos = positions[segment];
             Vector3 endPos = positions[(segment + 1) % positions.Count];
 
-            for (int i = 0; i < blocksPerSegment; i++)
+            // Density is per-segment so both short and long segments share the
+            // same prism spacing. Falls back to the legacy fixed count when
+            // prismSpacing is unset.
+            int blocksThisSegment = ResolveBlocksThisSegment(positions, segment, spline);
+
+            for (int i = 0; i < blocksThisSegment; i++)
             {
-                float t = (float)i / blocksPerSegment;
+                float t = (float)i / blocksThisSegment;
 
                 Vector3 position;
                 Vector3 lookTarget;
@@ -114,9 +125,9 @@ public class SpawnableWaypointTrack : SpawnableBase
                 {
                     position = GetSplinePoint(positions, segment, t);
 
-                    if (i < blocksPerSegment - 1)
+                    if (i < blocksThisSegment - 1)
                     {
-                        lookTarget = GetSplinePoint(positions, segment, (float)(i + 1) / blocksPerSegment);
+                        lookTarget = GetSplinePoint(positions, segment, (float)(i + 1) / blocksThisSegment);
                     }
                     else
                     {
@@ -127,9 +138,9 @@ public class SpawnableWaypointTrack : SpawnableBase
                 {
                     position = Vector3.Lerp(startPos, endPos, t);
 
-                    if (i < blocksPerSegment - 1)
+                    if (i < blocksThisSegment - 1)
                     {
-                        lookTarget = Vector3.Lerp(startPos, endPos, (float)(i + 1) / blocksPerSegment);
+                        lookTarget = Vector3.Lerp(startPos, endPos, (float)(i + 1) / blocksThisSegment);
                     }
                     else
                     {
@@ -166,6 +177,39 @@ public class SpawnableWaypointTrack : SpawnableBase
            $"{totalBlocks} total blocks, spline={spline}, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
 
         return container;
+    }
+
+    /// <summary>
+    /// Compute how many blocks to spawn on a given segment so that the prism
+    /// spacing is consistent across segments of differing length. Falls back
+    /// to <see cref="blocksPerSegment"/> when <see cref="prismSpacing"/> is
+    /// not configured (≤ 0). Spline segments approximate arc length by
+    /// sampling the Catmull-Rom curve.
+    /// </summary>
+    private int ResolveBlocksThisSegment(List<Vector3> positions, int segment, bool spline)
+    {
+        if (prismSpacing <= 0f) return Mathf.Max(1, blocksPerSegment);
+
+        int next = (segment + 1) % positions.Count;
+        float length;
+        if (!spline)
+        {
+            length = Vector3.Distance(positions[segment], positions[next]);
+        }
+        else
+        {
+            const int samples = 20;
+            length = 0f;
+            Vector3 prev = GetSplinePoint(positions, segment, 0f);
+            for (int s = 1; s <= samples; s++)
+            {
+                float ts = (float)s / samples;
+                Vector3 curr = GetSplinePoint(positions, segment, ts);
+                length += Vector3.Distance(prev, curr);
+                prev = curr;
+            }
+        }
+        return Mathf.Max(1, Mathf.RoundToInt(length / prismSpacing));
     }
 
     /// <summary>

@@ -220,18 +220,24 @@ namespace CosmicShore.Gameplay
             {
                 if (prism == null) continue;
 
-                // Clear legacy shield flags + revert material so the stellated
-                // mesh reads as the dominant visual.
+                // Clear the legacy IsShielded flag + DeactivateShields so the
+                // transparent shielded material doesn't render over the
+                // stellated mesh (auto-engaged on prefabs that ship with
+                // prismProperties.IsShielded=true, e.g. ShieldedSpawnablePrism).
                 if (prism.prismProperties != null)
-                {
                     prism.prismProperties.IsShielded = false;
-                    prism.prismProperties.IsSuperShielded = false;
-                }
                 prism.DeactivateShields();
 
                 var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
                              ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
                 shield.Engage(instant: superShieldEngageInstant);
+
+                // Mark the prism super-shielded AFTER DeactivateShields so the
+                // legacy state machine sees Normal first, then we set the
+                // canonical flag that Prism.Damage / Prism.Consume /
+                // PrismAOERegistry gate on for invulnerability.
+                if (prism.prismProperties != null)
+                    prism.prismProperties.IsSuperShielded = true;
                 shielded++;
             }
             Debug.Log($"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
