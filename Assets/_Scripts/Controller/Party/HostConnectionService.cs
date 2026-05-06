@@ -84,8 +84,6 @@ namespace CosmicShore.Gameplay
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const int   RATE_LIMIT_MAX_RETRIES           = 3;
         private const int   RATE_LIMIT_BASE_DELAY_MS         = 2000;
-        private const float BOOSTED_REFRESH_INTERVAL_SECONDS = 0.75f;
-        private const float BOOSTED_REFRESH_WINDOW_SECONDS   = 15f;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
         private const int   HOST_CONFLICT_MAX_RETRIES        = 2;
@@ -134,6 +132,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private SoapPartyEventBus _eventBus;
 
+        /// <summary>
+        /// Owns the elapsed-time accumulator and boosted-refresh window for the
+        /// presence-lobby poll cycle.  Initialised in Awake() after refreshIntervalSeconds
+        /// (SerializeField) is set.  Direct instantiation here; Phase 12 moves to Reflex DI.
+        /// </summary>
+        private LobbyRefreshScheduler _scheduler;
+
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
         private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
@@ -157,9 +162,7 @@ namespace CosmicShore.Gameplay
         private bool   _leaving;
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
-        private float  _refreshTimer;
         private float  _rateLimitBackoffUntil;
-        private float  _boostedRefreshUntil;
         private float  _nextForcedRefreshAllowed;
         private int    _consecutiveRefreshErrors;
         private int    _publishedPartyCount = -1;
@@ -219,8 +222,9 @@ namespace CosmicShore.Gameplay
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            // connectionData (SerializeField) is populated before Awake — safe to use here.
-            _eventBus = new SoapPartyEventBus(connectionData);
+            // SerializeField values are populated before Awake — safe to use here.
+            _eventBus  = new SoapPartyEventBus(connectionData);
+            _scheduler = new LobbyRefreshScheduler(refreshIntervalSeconds);
             InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -242,16 +246,8 @@ namespace CosmicShore.Gameplay
 
             ExpireOutgoingInvites();
 
-            _refreshTimer += Time.unscaledDeltaTime;
-            float interval = Time.unscaledTime < _boostedRefreshUntil
-                ? BOOSTED_REFRESH_INTERVAL_SECONDS
-                : refreshIntervalSeconds;
-
-            if (_refreshTimer >= interval)
-            {
-                _refreshTimer = 0f;
+            if (_scheduler.ShouldFireNow(Time.unscaledDeltaTime))
                 RefreshAsync().Forget();
-            }
         }
 
         async void OnDestroy()
@@ -447,8 +443,8 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _refreshTimer = 0f;
-                _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+                _scheduler.Reset();
+                _scheduler.Boost();
                 _lobbyMutex.Release();
             }
         }
@@ -475,7 +471,7 @@ namespace CosmicShore.Gameplay
                 if (string.IsNullOrEmpty(realSessionId) || realSessionId == PENDING_SESSION_ID)
                 {
                     Debug.Log("[HostConnectionService] Invite has PENDING session — polling for real id...");
-                    _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+                    _scheduler.Boost();
                     realSessionId = await WaitForRealSessionIdAsync(invite.HostPlayerId);
                 }
 
@@ -491,12 +487,14 @@ namespace CosmicShore.Gameplay
                 connectionData.PartyMembers?.Add(hostData);
                 _eventBus.RaisePartyMemberJoined(hostData);
 
-                _refreshTimer = -refreshIntervalSeconds;
+                // Give the freshly-joined session a settling period before the
+                // first member-sync refresh fires — avoids stale-session 404s.
+                _scheduler.ResetDeferred(refreshIntervalSeconds);
                 Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
                 // Relay session join succeeded — we are now fully inside the party.
                 _stateMachine.TryTransition(PartyState.InParty);
 
-                _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+                _scheduler.Boost();
 
                 // Advertise this join so the host's RefreshAsync picks us up
                 // before their party-session Players list catches up.
@@ -593,12 +591,12 @@ namespace CosmicShore.Gameplay
         {
             if (!_initialized || _presenceLobby == null) return;
 
-            _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+            _scheduler.Boost();
 
             if (Time.unscaledTime < _nextForcedRefreshAllowed) return;
             _nextForcedRefreshAllowed = Time.unscaledTime + FORCE_REFRESH_COOLDOWN_SECONDS;
 
-            _refreshTimer = 0f;
+            _scheduler.Reset();
             if (_lobbyMutex.CurrentCount == 0) return; // already running
             RefreshAsync().Forget();
         }
@@ -882,7 +880,7 @@ namespace CosmicShore.Gameplay
                     // Give the new session breathing room before RefreshAsync
                     // touches it — avoids transient "stale" errors that would
                     // null the session and trigger another recreation.
-                    _refreshTimer = -refreshIntervalSeconds;
+                    _scheduler.ResetDeferred(refreshIntervalSeconds);
 
                     Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
                     return;
@@ -1064,7 +1062,7 @@ namespace CosmicShore.Gameplay
             _lastInviteResolved = false;
             _eventBus.RaiseInviteReceived(invite);
 
-            _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+            _scheduler.Boost();
         }
 
         private void RefreshOnlinePlayersDiff()
