@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
     /// Lifetime: DontDestroyOnLoad MonoBehaviour (same GO as PartyInviteController).
     /// Thread-safety: main-thread only.
     /// </summary>
-    public class HostConnectionService : MonoBehaviour
+    public class HostConnectionService : MonoBehaviour, IPartyStateQuery
     {
         // ─────────────────────────────────────────────────────────────────────
         // Inspector
@@ -209,6 +209,14 @@ namespace CosmicShore.Gameplay
         /// class is the single writer of party state.
         /// </summary>
         public PartyStateMachine StateMachine => _stateMachine;
+
+        // ─────────────────────────────────────────────────────────────────────
+        // IPartyStateQuery (read-only view used by FriendsInitializer and UI)
+        // ─────────────────────────────────────────────────────────────────────
+
+        PartyState IPartyStateQuery.CurrentState         => _stateMachine.CurrentState;
+        string     IPartyStateQuery.ActivePartySessionId => _partySessionService?.ActiveSession?.Id ?? "";
+        int        IPartyStateQuery.PartyMemberCount     => connectionData?.PartyMembers?.Count ?? 0;
 
         /// <summary>
         /// Most recently detected incoming invite, or null once the user has

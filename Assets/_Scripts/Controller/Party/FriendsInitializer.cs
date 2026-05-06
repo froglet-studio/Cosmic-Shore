@@ -12,8 +12,16 @@ namespace CosmicShore.Gameplay
     /// MonoBehaviour bridge that initializes the <see cref="FriendsServiceFacade"/>
     /// after authentication and sets presence when entering/leaving the menu.
     ///
+    /// <para>
+    /// Initialization is event-driven: the inspector-wired SOAP EventListenerNoParam
+    /// on <c>AuthenticationData.OnSignedIn</c> calls <see cref="HandleSignedInEvent"/>.
+    /// <c>Start()</c> additionally bootstraps immediately if auth already completed
+    /// before this MonoBehaviour loaded (e.g. after a scene reload).
+    /// </para>
+    ///
     /// Place on the same persistent GameObject as <see cref="HostConnectionService"/>.
-    /// Wires auth SOAP events to trigger Friends SDK initialization and presence updates.
+    /// Lifetime: DontDestroyOnLoad MonoBehaviour.
+    /// Thread-safety: main-thread only.
     /// </summary>
     public class FriendsInitializer : MonoBehaviour
     {
@@ -30,6 +38,10 @@ namespace CosmicShore.Gameplay
 
         [Inject] private FriendsServiceFacade friendsService;
 
+        // Assigned in Start() — HostConnectionService is on the same persistent GO
+        // and sets its Instance in Awake(), which runs before Start().
+        private IPartyStateQuery _partyQuery;
+
         private bool _initialized;
         private bool _partySubscriptionsWired;
 
@@ -37,14 +49,20 @@ namespace CosmicShore.Gameplay
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
 
-        async void Start()
+        void Start()
         {
-            // Wait for auth to be signed in
-            while (!IsAuthSignedIn())
-                await System.Threading.Tasks.Task.Delay(500);
+            // HostConnectionService.Awake() sets Instance before any Start() runs.
+            _partyQuery = HostConnectionService.Instance;
 
-            await InitializeFriendsAsync();
+            // Wire party SOAP subscriptions immediately — hostConnectionData is
+            // available from the inspector-serialized field.
             WirePartySubscriptions();
+
+            // If auth completed before this Start() ran (e.g. fast-boot or scene
+            // reload), bootstrap friends immediately. Otherwise the inspector-wired
+            // SOAP EventListenerNoParam on OnSignedIn will call HandleSignedInEvent.
+            if (IsAuthSignedIn())
+                HandleSignedInEvent();
         }
 
         void OnDestroy()
@@ -124,7 +142,7 @@ namespace CosmicShore.Gameplay
         {
             if (friendsService == null || !friendsService.IsInitialized) return;
 
-            var partySessionId = HostConnectionService.Instance?.PartySession?.Id ?? "";
+            var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
             int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
@@ -144,7 +162,7 @@ namespace CosmicShore.Gameplay
         {
             if (friendsService == null || !friendsService.IsInitialized) return;
 
-            var partySessionId = HostConnectionService.Instance?.PartySession?.Id ?? "";
+            var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
             int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
