@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
 using Unity.Services.Multiplayer;
 
 namespace CosmicShore.Gameplay
