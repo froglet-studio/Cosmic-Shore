@@ -422,13 +422,6 @@ namespace CosmicShore.Gameplay
             nucleus.transform.localScale *= nucleusScaleMultiplier;
         }
 
-        public void SwapMembrane(GameObject newPrefab)
-        {
-            if (newPrefab == null) return;
-            if (membrane != null) Destroy(membrane);
-            membrane = Instantiate(newPrefab, transform.position, Quaternion.identity);
-        }
-
         void ResetVolumes()
         {
             teamVolumes[Domains.Jade] = 0;
