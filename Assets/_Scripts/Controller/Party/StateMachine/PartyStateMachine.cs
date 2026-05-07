@@ -66,28 +66,32 @@ namespace CosmicShore.Gameplay
         private static readonly HashSet<(PartyState from, PartyState to)> LegalTransitions = new()
         {
             // Normal forward flow ─────────────────────────────────────────────
-            (PartyState.Disconnected,    PartyState.InPresenceLobby),  // auth sign-in + lobby join
+            (PartyState.Disconnected,    PartyState.InPresenceLobby),   // auth sign-in + lobby join
 
-            (PartyState.InPresenceLobby, PartyState.Inviting),          // host sends first invite
-            (PartyState.InPresenceLobby, PartyState.JoiningParty),      // recipient accepts invite
+            // InPresenceLobby is now transient: immediately auto-advances to HostingParty.
+            // Inviting and JoiningParty are only reachable from InParty (Relay always exists).
+            (PartyState.InPresenceLobby, PartyState.HostingParty),      // auto: create solo Relay after lobby join
             (PartyState.InPresenceLobby, PartyState.Disconnected),      // sign-out / network loss
 
-            (PartyState.Inviting,        PartyState.HostingParty),      // acceptance signal detected
-            (PartyState.Inviting,        PartyState.InPresenceLobby),   // all invites cancelled/expired
+            (PartyState.Inviting,        PartyState.HostingParty),      // acceptance signal detected (legacy path; session already exists)
+            (PartyState.Inviting,        PartyState.InParty),           // all invites cancelled, or joiner NM-connected
             (PartyState.Inviting,        PartyState.Reconnecting),      // lobby connection lost
 
             (PartyState.JoiningParty,    PartyState.InParty),           // Relay join + NM connect
-            (PartyState.JoiningParty,    PartyState.InPresenceLobby),   // join failed / timed out
+            (PartyState.JoiningParty,    PartyState.HostingParty),      // join failed → recreate solo Relay
             (PartyState.JoiningParty,    PartyState.Reconnecting),      // connection dropped mid-join
 
-            (PartyState.HostingParty,    PartyState.InParty),           // client NM-connected
-            (PartyState.HostingParty,    PartyState.InPresenceLobby),   // party disbanded
+            // HostingParty is now also used as the "recreating solo session" transient state.
+            (PartyState.HostingParty,    PartyState.InParty),           // session live (solo or first joiner NM-connected)
 
-            (PartyState.InParty,         PartyState.InPresenceLobby),   // leave or kicked
+            // InParty is the persistent baseline — every player has a live Relay session.
+            (PartyState.InParty,         PartyState.Inviting),          // sent first invite (no NM change)
+            (PartyState.InParty,         PartyState.JoiningParty),      // accepted someone else's invite (leave own Relay)
+            (PartyState.InParty,         PartyState.HostingParty),      // leave party → recreate solo Relay
             (PartyState.InParty,         PartyState.Reconnecting),      // connection lost
 
             // Recovery paths ──────────────────────────────────────────────────
-            (PartyState.Reconnecting,    PartyState.InPresenceLobby),   // recovery or max-retries fallback
+            (PartyState.Reconnecting,    PartyState.HostingParty),      // recovery: recreate solo Relay
             (PartyState.Reconnecting,    PartyState.InParty),           // rejoin succeeded
         };
 

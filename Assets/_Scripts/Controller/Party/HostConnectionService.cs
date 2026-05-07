@@ -348,15 +348,16 @@ namespace CosmicShore.Gameplay
                 RepublishLocalIdentityAsync().Forget();
 
                 _initialized = true;
-                // Now in the presence lobby — can browse players and send/receive invites.
+                // Presence lobby joined — transient state, immediately creates solo Relay session.
                 _stateMachine.TryTransition(PartyState.InPresenceLobby);
                 DebugExtensions.LogColored(
-                    $"[HostConnectionService] Initialized — lobby: {_lobbyService.ActiveLobby?.Id ?? "NULL"}, " +
-                    $"partySession: {_partySessionService.ActiveSession?.Id ?? "NULL"}, " +
+                    $"[HostConnectionService] Presence lobby joined — lobby: {_lobbyService.ActiveLobby?.Id ?? "NULL"}, " +
                     $"localId: {connectionData.LocalPlayerId}",
                     Color.green);
 
-                RefreshAsync().Forget();
+                // Every player always hosts their own solo Relay party session from menu entry.
+                // Creates Relay session and starts NM — vessel spawns when NM is up.
+                await CreateOwnPartySessionAsync();
             }
             finally { _joining = false; }
         }
@@ -397,26 +398,29 @@ namespace CosmicShore.Gameplay
                     $"[INVITE-SEND] LocalPlayerId: {connectionData.LocalPlayerId}, " +
                     $"DisplayName: {connectionData.LocalDisplayName}", Color.cyan);
 
-                // No NetworkManager activity here — the Relay session is created
-                // lazily when the first recipient accepts (see
-                // AcceptanceSignalService.ScanForSignals in RefreshAsync). Sending an invite must never
-                // touch NM, otherwise the host's vessel respawns mid-menu.
+                // The Relay session already exists (created at startup by CreateOwnPartySessionAsync).
+                // Use the real session ID directly — no PENDING placeholder.
+                if (_partySessionService.ActiveSession?.Id is not { Length: > 0 } sessionId)
+                {
+                    Debug.LogError("[INVITE-SEND] ABORT — no active party session ID. Relay session may not have been created.");
+                    return;
+                }
+
                 DebugExtensions.LogColored(
-                    $"[INVITE-SEND] PartySession ID: {_partySessionService.ActiveSession?.Id ?? PENDING_SESSION_ID} " +
-                    $"(PENDING until first accept)", Color.cyan);
+                    $"[INVITE-SEND] PartySession ID: {sessionId}", Color.cyan);
 
                 _inviteService.AddOrRefresh(
                     targetPlayerId,
-                    _partySessionService.ActiveSession?.Id ?? PENDING_SESSION_ID,
+                    sessionId,
                     connectionData.LocalPlayerId,
                     connectionData.LocalDisplayName,
                     connectionData.LocalAvatarId,
                     Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
                 inviteAdded = true;
 
-                // First invite transitions us to Inviting. Subsequent invites to additional
-                // players are no-ops for the state machine (already Inviting).
-                if (_stateMachine.CurrentState == PartyState.InPresenceLobby)
+                // First invite transitions us from InParty to Inviting.
+                // Subsequent invites to additional players are no-ops (already Inviting).
+                if (_stateMachine.CurrentState == PartyState.InParty)
                     _stateMachine.TryTransition(PartyState.Inviting);
 
                 DebugExtensions.LogColored(
@@ -484,12 +488,11 @@ namespace CosmicShore.Gameplay
                     _lobbyService.ActiveLobby, invite.HostPlayerId, _propertyWriter);
 
                 string realSessionId = invite.PartySessionId;
-                if (string.IsNullOrEmpty(realSessionId) || realSessionId == PENDING_SESSION_ID)
+                if (string.IsNullOrEmpty(realSessionId))
                 {
-                    Debug.Log("[HostConnectionService] Invite has PENDING session — polling for real id...");
-                    _scheduler.Boost();
-                    realSessionId = await _acceptanceService.WaitForRealSessionIdAsync(
-                        _lobbyService, invite.HostPlayerId, connectionData.LocalPlayerId);
+                    Debug.LogError("[HostConnectionService] AcceptInvite ABORT — invite has no session ID. The host may not have a Relay session.");
+                    await CreateOwnPartySessionAsync(); // JoiningParty → HostingParty → InParty
+                    return;
                 }
 
                 await _partySessionService.JoinByIdAsync(realSessionId);
@@ -551,10 +554,10 @@ namespace CosmicShore.Gameplay
             // instead of waiting for the next refresh tick.
             _memberService.ClearWithEvents(connectionData.LocalPlayerId);
 
-            // Party leave returns us to browsing — back to the presence lobby.
-            _stateMachine.TryTransition(PartyState.InPresenceLobby);
             ClearJoinedPartyAsync().Forget();
             await controller.LeavePartyAndReturnToMenuAsync();
+            // After leaving the party, recreate our own solo Relay party session.
+            await CreateOwnPartySessionAsync();
         }
 
         public async Task KickPartyMemberAsync(string playerId)
@@ -622,16 +625,10 @@ namespace CosmicShore.Gameplay
             _lastFiredInvite = null;
             _memberService.ClearSilent();
 
-            // Session cleared (e.g. game→menu transition) — return to browsing state.
-            // Guard: may already be InPresenceLobby if the session was cleared without
-            // us having entered HostingParty/InParty (e.g. failed Relay creation).
-            if (_stateMachine.CurrentState != PartyState.InPresenceLobby &&
-                _stateMachine.CurrentState != PartyState.Disconnected)
-            {
-                _stateMachine.TryTransition(PartyState.InPresenceLobby);
-            }
-
             ClearJoinedPartyAsync().Forget();
+            // Stale session cleared (e.g. game→menu transition) — recreate solo party session.
+            if (_stateMachine.CurrentState != PartyState.Disconnected)
+                CreateOwnPartySessionAsync().Forget();
         }
 
         /// <summary>
@@ -639,13 +636,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public async Task CreatePartySessionPublicAsync()
         {
-            if (_partySessionService.ActiveSession != null)
-            {
-                Debug.Log("[HostConnectionService] Party session already exists.");
-                return;
-            }
             SyncLocalIdentity();
-            await CreatePartySessionAsync();
+            await CreateOwnPartySessionAsync();
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -689,6 +681,70 @@ namespace CosmicShore.Gameplay
             // trigger another recreation.
             _scheduler.ResetDeferred(refreshIntervalSeconds);
             Debug.Log($"[HostConnectionService] Party session ready: {_partySessionService.ActiveSession?.Id}");
+        }
+
+        /// <summary>
+        /// Creates the local player's solo Relay-backed party session and starts
+        /// NetworkManager as a Relay host.  Called automatically after presence lobby
+        /// join and after any event that requires a fresh solo session (leave, reconnect,
+        /// failed join).
+        ///
+        /// Transitions: current → HostingParty (transient, session creating) → InParty
+        /// (session live, NM listening, vessel will spawn).
+        ///
+        /// Thread-safety: serialised by <see cref="_sessionCreationMutex"/>; concurrent
+        /// callers wait and then bail out if the first caller already succeeded.
+        /// </summary>
+        private async Task CreateOwnPartySessionAsync()
+        {
+            await _sessionCreationMutex.WaitAsync();
+            try
+            {
+                // Double-check: a concurrent call may have already reached InParty.
+                if (_stateMachine.CurrentState == PartyState.InParty &&
+                    _partySessionService.ActiveSession != null)
+                    return;
+
+                if (_stateMachine.CurrentState != PartyState.HostingParty)
+                    _stateMachine.TryTransition(PartyState.HostingParty);
+
+                using var shutdownCts = new System.Threading.CancellationTokenSource();
+                await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token);
+
+                await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
+
+                connectionData.IsHost = true;
+                _memberService.SeedLocalPlayer(clearFirst: true);
+
+                // Give the new session breathing room before RefreshAsync touches it.
+                _scheduler.ResetDeferred(refreshIntervalSeconds);
+
+                // HostingParty → InParty: session is live, NM is listening.
+                // Meaning shifts: InParty now means "I have a live Relay session"
+                // (solo or multi), not "at least one remote member has connected".
+                _stateMachine.TryTransition(PartyState.InParty);
+                _eventBus.RaiseHostConnectionEstablished();
+                RefreshAsync().Forget();
+
+                DebugExtensions.LogColored(
+                    $"[HostConnectionService] Solo party session ready: {_partySessionService.ActiveSession?.Id} — InParty, vessel will spawn.",
+                    Color.green);
+            }
+            finally
+            {
+                _sessionCreationMutex.Release();
+            }
+        }
+
+        /// <summary>
+        /// Public re-entry point for <see cref="Core.AuthenticationSceneController"/> to
+        /// retry Relay session creation without breaking the single-owner rule.
+        /// Clears any stale session reference before retrying.
+        /// </summary>
+        public async Task RetryCreateOwnPartySessionAsync(CancellationToken ct = default)
+        {
+            _partySessionService.ClearSession();
+            await CreateOwnPartySessionAsync();
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -738,18 +794,19 @@ namespace CosmicShore.Gameplay
 
                     if (acceptingId != null)
                     {
-                        Debug.Log($"[HostConnectionService] Acceptance signal from {acceptingId} — creating party session...");
-                        if (_partySessionService.ActiveSession == null)
-                            await CreatePartySessionAsync();
-
-                        // Session is live — we are the host, waiting for the
-                        // recipient's NM to connect.  InParty transitions in
-                        // RefreshPartyMembersAsync once both players show.
-                        _stateMachine.TryTransition(PartyState.HostingParty);
-
-                        Debug.Log($"[HostConnectionService] Party session ready ({_partySessionService.ActiveSession?.Id ?? "null"}) — republishing payloads.");
-                        await _acceptanceService.RepublishWithRealIdAsync(
-                            _lobbyService, _partySessionService.ActiveSession!.Id, _inviteService, _propertyWriter);
+                        // In the "Always InParty" model, the Relay session already exists
+                        // before the invite was sent — no session creation needed here.
+                        string activeSessionId = _partySessionService.ActiveSession?.Id;
+                        if (string.IsNullOrEmpty(activeSessionId))
+                        {
+                            Debug.LogError($"[HostConnectionService] Acceptance signal from {acceptingId} but no active party session — joiner cannot connect.");
+                        }
+                        else
+                        {
+                            Debug.Log($"[HostConnectionService] Acceptance signal from {acceptingId} — joiner will connect to existing session {activeSessionId}.");
+                            await _acceptanceService.RepublishWithRealIdAsync(
+                                _lobbyService, activeSessionId, _inviteService, _propertyWriter);
+                        }
                     }
                 }
 
@@ -797,9 +854,9 @@ namespace CosmicShore.Gameplay
             {
                 await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
                 ApplyPostLobbyJoinState();
-                // Reconnect succeeded (or fell back) — return to browsing state.
+                // Reconnect succeeded — recreate solo party session.
                 if (_lobbyService.ActiveLobby != null)
-                    _stateMachine.TryTransition(PartyState.InPresenceLobby);
+                    await CreateOwnPartySessionAsync();
             }
         }
 
@@ -1049,9 +1106,9 @@ namespace CosmicShore.Gameplay
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join");
 
-            // A new party member appeared in the Relay session — the party is live.
-            // Transition HostingParty → InParty (no-op if already InParty for a second joiner).
-            if (joinedPlayerIds.Count > 0 && _stateMachine.CurrentState == PartyState.HostingParty)
+            // A new party member appeared in the Relay session.
+            // If we're Inviting (sent an invite and they connected), transition to InParty.
+            if (joinedPlayerIds.Count > 0 && _stateMachine.CurrentState == PartyState.Inviting)
                 _stateMachine.TryTransition(PartyState.InParty);
         }
 
