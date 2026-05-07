@@ -251,8 +251,6 @@ namespace CosmicShore.Gameplay
             nucleus.transform.localScale *= nucleusScaleMultiplier;
         }
 
-        public GameObject CurrentMembrane => membrane;
-
         public void SwapMembrane(GameObject newPrefab)
         {
             if (newPrefab == null) return;
