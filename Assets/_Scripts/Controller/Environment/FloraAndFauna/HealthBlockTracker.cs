@@ -14,21 +14,26 @@ namespace CosmicShore.Gameplay
         readonly HashSet<HealthPrism> healthBlocks = new();
         readonly int healthBlocksForMaturity;
         readonly int minHealthBlocks;
+        readonly Cell cell;
 
         public int Count => healthBlocks.Count;
         public bool IsMature { get; private set; }
 
 
-        public HealthBlockTracker(int healthBlocksForMaturity, int minHealthBlocks)
+        public HealthBlockTracker(int healthBlocksForMaturity, int minHealthBlocks, Cell cell = null)
         {
             this.healthBlocksForMaturity = healthBlocksForMaturity;
             this.minHealthBlocks = minHealthBlocks;
+            this.cell = cell;
         }
 
         public void Add(HealthPrism hp, LifeForm owner, Domains domain)
         {
             if (!hp) return;
-            healthBlocks.Add(hp);
+            // HashSet.Add returns true only on a new entry, so forward only once per prism
+            // and Cell.LiveBlockCount counts unique prisms (not double-counted re-adds).
+            if (healthBlocks.Add(hp) && cell)
+                cell.AddBlock(hp);
             hp.ChangeTeam(domain);
             hp.LifeForm = owner;
             hp.ownerID = $"{owner} + {hp} + {healthBlocks.Count}";
@@ -38,7 +43,8 @@ namespace CosmicShore.Gameplay
         public void Remove(HealthPrism hp, string killerName = "")
         {
             if (!hp) return;
-            healthBlocks.Remove(hp);
+            if (healthBlocks.Remove(hp) && cell)
+                cell.RemoveBlock(hp);
             CleanupDeadRefs();
         }
 
@@ -50,7 +56,22 @@ namespace CosmicShore.Gameplay
 
         public void CleanupDeadRefs()
         {
-            healthBlocks.RemoveWhere(h => !h);
+            // Forward each dead ref to the cell before discarding so Cell.LiveBlockCount
+            // doesn't drift upward when prisms die outside the normal Damage path
+            // (scene unload, parent destruction, AOE chains that bypass HealthPrism).
+            if (cell != null)
+            {
+                healthBlocks.RemoveWhere(h =>
+                {
+                    if (h) return false;
+                    cell.RemoveBlock(h);
+                    return true;
+                });
+            }
+            else
+            {
+                healthBlocks.RemoveWhere(h => !h);
+            }
         }
 
         public void SetTeam(Domains domain)

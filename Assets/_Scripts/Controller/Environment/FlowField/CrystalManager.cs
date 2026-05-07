@@ -98,7 +98,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos)
         {
-            var domain = Domains.None;
+            var domain = Domains.Blue;
             if (spawnCrystalWithPlayerDomain && crystalId - 1 < gameData.Players.Count)
                 domain = gameData.Players[crystalId - 1].Domain;
 

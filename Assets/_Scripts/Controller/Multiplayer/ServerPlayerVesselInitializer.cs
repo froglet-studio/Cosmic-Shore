@@ -183,8 +183,10 @@ namespace CosmicShore.Gameplay
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
 
-            // Domain is owner-writable: human players choose their team via TeamSelectionPanel,
-            // AI players get their domain set in SpawnAIs(). No server assignment needed here.
+            // Domain is server-writable: human players route their selections through
+            // Player.RequestSetDomain_ServerRpc (called from DomainSelectionPanel and the
+            // arcade configure modal); AI players get their domain set in SpawnAIs().
+            // No server assignment needed here in the per-player spawn path.
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
             {

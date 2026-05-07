@@ -8667,6 +8667,9 @@ GameObject:
   - component: {fileID: 5649393235309590662}
   - component: {fileID: 8755860699239805343}
   - component: {fileID: 6248787816825736170}
+  - component: {fileID: 5363059078414614678}
+  - component: {fileID: -6368199322473003075}
+  - component: {fileID: 7219854176267508625}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -8980,7 +8983,6 @@ MonoBehaviour:
   ram: 0
   drift: 0
   seekPlayers: 0
-  gameData: {fileID: 0}
   playerSeekUpdateInterval: 0.5
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
@@ -9143,8 +9145,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
-    type: 2}
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071, type: 2}
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c65db9958c064485be49a2183f263,
     type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}
@@ -9191,7 +9192,6 @@ MonoBehaviour:
   domainColors: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   joustFlashDuration: 1
   shieldFlashDuration: 1
-  silhouetteController: {fileID: 0}
 --- !u!114 &8755860699239805343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9204,7 +9204,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36cc5225081c42ec8c55831fb35fa7cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  forwardSpeed: 20
   loopRadius: 15
   loopSpeed: 2
 --- !u!114 &6248787816825736170
@@ -9219,16 +9218,149 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b0d487de1554acfad93a158ddac3874, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   longestDriftStat: {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
   maxBoostTimeStat: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
   prismsDamagedStat: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
+  boostMultiplierThreshold: 1.5
   maxCleanStreakStat: {fileID: 11400000, guid: 5bc14503bfdc4c04ca04d6ba9074e7ff, type: 2}
   joustsWonStat: {fileID: 11400000, guid: a832d934d63484344adce8281a893989, type: 2}
   prismsStolen: {fileID: 11400000, guid: 985c79fbc42333942977329e077af6d6, type: 2}
   onCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c, type: 2}
   onJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
     type: 2}
+--- !u!114 &5363059078414614678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c60d4d8af5894e23a818d119516c513, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  driftEvent:
+    Guid:
+      Data1: 283230740
+      Data2: 1265577227
+      Data3: -1670033751
+      Data4: 522332312
+    Path: event:/SFX/Drift
+  driftAmountParameterName: Drift Amount
+  releaseEvent:
+    Guid:
+      Data1: -1579691313
+      Data2: 1086872641
+      Data3: 763564937
+      Data4: -488243266
+    Path: event:/SFX/trigger off
+  attachReleaseEventToShip: 1
+  driveParamToOneOnRelease: 0
+  triggerDeadzone: 0.05
+  useAnalogScaling: 0
+  amountSmoothing: 10
+  releaseSmoothing: 20
+  releaseHoldSeconds: 0.4
+  onlyAudibleToController: 1
+  forceAttachToListener: 0
+  tieVolumeToSFXSlider: 1
+  baseVolumeMultiplier: 1
+  restrictToVesselClass: 1
+  targetVesselClass: 6
+  debugLog: 0
+--- !u!114 &-6368199322473003075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d0449d8c3c8498592cf0c29f6fd9e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  engineEvent:
+    Guid:
+      Data1: -1809053689
+      Data2: 1230251534
+      Data3: 566434957
+      Data4: -1286293035
+    Path: event:/Engine stuff/space ship engine main
+  additionalEngineLayers: []
+  speedParameterName: Speed
+  tiltParameterName: Tilt Acel
+  maxShipVelocity: 100
+  paramAtZeroVelocity: 40
+  paramAtMaxVelocity: 100
+  velocitySmoothing: 6
+  maxTiltRate: 180
+  paramAtMaxTilt: 100
+  paramAtMinTilt: -100
+  paramAtZeroTilt: 0
+  pitchWeight: 1
+  yawWeight: 1
+  tiltSmoothing: 8
+  driftSlowdownMultiplier: 0.6
+  driftSmoothingRate: 8
+  onlyAudibleToController: 1
+  forceAttachToListener: 0
+  tieVolumeToSFXSlider: 1
+  baseVolumeMultiplier: 1
+  driveElementalParams: 1
+  chargeParameterName: Charge
+  massParameterName: Mass
+  spaceParameterName: Space
+  timeParameterName: Time
+  elementSourceMin: 0
+  elementSourceMax: 1
+  elementParamAtMin: 0
+  elementParamAtMax: 1
+  elementSmoothing: 6
+  extraParameters: []
+  debugLog: 0
+--- !u!114 &7219854176267508625
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0522691eb41b4421f8bea8d295699a07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  boostTickEvent:
+    Guid:
+      Data1: 175162526
+      Data2: 1078581788
+      Data3: 1171656846
+      Data4: 200696093
+    Path: event:/SFX/Skim
+  attachTickEventToShip: 1
+  boostLoopEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  boostAmountParameterName: Boost Amount
+  boostBaseMultiplier: {fileID: 0}
+  boostMaxMultiplier: {fileID: 0}
+  boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
+  tickEpsilon: 0.02
+  boostAmountSmoothing: 12
+  loopStopThreshold: 0.01
+  onlyAudibleToController: 1
+  forceLoopAttachToListener: 0
+  tieVolumeToSFXSlider: 1
+  baseVolumeMultiplier: 1
+  restrictToVesselClass: 1
+  targetVesselClass: 6
+  debugLog: 0
 --- !u!1 &6514516964945388952
 GameObject:
   m_ObjectHideFlags: 0

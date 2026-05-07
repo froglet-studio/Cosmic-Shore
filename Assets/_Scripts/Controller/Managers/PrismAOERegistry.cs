@@ -318,7 +318,7 @@ namespace CosmicShore.Gameplay
             int expDomain = (int)explosionDomain;
 
             // Cache vessel info to avoid repeated interface property access
-            Domains vesselDomain = Domains.None;
+            Domains vesselDomain = Domains.Blue;
             string vesselPlayerName = null;
             if (!anonymous && vessel != null)
             {
@@ -352,15 +352,15 @@ namespace CosmicShore.Gameplay
                 var dmg = _damage[idx];
                 int prismDomain = dmg.Domain;
 
-                // Super-shielded + different team: deactivate super shield and destroy explosion.
-                // Mirrors original ExecuteCommonPrismCommands which calls Destroy(gameObject)
-                // and intentionally falls through to the damage/shield logic below.
-                if ((prismDomain != expDomain || affectSelf) && (flags & PrismFlags.IsSuperShielded) != 0)
+                // Super-shielded prisms are fully invulnerable. AOE explosions
+                // are physically blocked by the shield (shouldContinue = false
+                // stops the explosion expanding past this layer) but cause no
+                // damage and no state change. Ways to break super-shields will
+                // be added later as targeted opt-in mechanics.
+                if ((flags & PrismFlags.IsSuperShielded) != 0)
                 {
-                    prism.DeactivateShields();
-                    UpdateShieldState(idx, false, false);
                     shouldContinue = false;
-                    // Fall through — original code does NOT return/continue here
+                    continue;
                 }
 
                 // Same team (and not affectSelf) or non-destructive: shield the prism
@@ -381,7 +381,7 @@ namespace CosmicShore.Gameplay
 
                 // Deal damage
                 if (anonymous)
-                    prism.Damage(impactVector, Domains.None, "🔥GuyFawkes🔥", devastating);
+                    prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating);
                 else
                     prism.Damage(impactVector, vesselDomain, vesselPlayerName, devastating);
 

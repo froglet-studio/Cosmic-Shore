@@ -12,6 +12,7 @@ using Reflex.Attributes;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
@@ -58,17 +59,28 @@ namespace CosmicShore.UI
         [SerializeField] private Button playerCountIncrementButton;
         [SerializeField] private TMP_Text playerCountValueText;
 
-        [Header("Screen 1 – Team Count Stepper")]
-        [SerializeField] private Button teamCountDecrementButton;
-        [SerializeField] private Button teamCountIncrementButton;
-        [SerializeField] private TMP_Text teamsValueText;
+        [Header("Screen 1 – Domain Count Stepper")]
+        [FormerlySerializedAs("domainCountDecrementButton")]
+        [SerializeField] private Button domainCountDecrementButton;
+        [FormerlySerializedAs("domainCountIncrementButton")]
+        [SerializeField] private Button domainCountIncrementButton;
+        [FormerlySerializedAs("domainsValueText")]
+        [SerializeField] private TMP_Text domainsValueText;
 
-        [Header("Screen 1 – Team Selection")]
-        [SerializeField] private TeamSelectionPanel teamSelectionPanel;
+        [Header("Screen 1 – Domain Selection")]
+        [FormerlySerializedAs("domainSelectionPanel")]
+        [SerializeField] private DomainSelectionPanel domainSelectionPanel;
 
-        [Header("Screen 2 – Domain (Team) Selection")]
-        [Tooltip("One TeamInfoData per selectable team. First entry should be the RANDOM option (Domain = Unassigned).")]
-        [SerializeField] private List<TeamInfoData> teamInfoItems = new();
+        [Header("Screen 2 – Domain Selection")]
+        [Tooltip("One DomainInfoData per selectable domain. The Blue tile (Domain = Blue) " +
+                 "doubles as the 'Random / not yet picked' home — chips spawn there at modal open.")]
+        [FormerlySerializedAs("domainInfoItems")]
+        [SerializeField] private List<DomainInfoData> domainInfoItems = new();
+
+        [Tooltip("Avatar chip prefab. One instance is created per human player when the " +
+                 "modal opens, parented to the Blue tile's strip. Reparented to the picked " +
+                 "tile's strip on each player's NetDomain.OnValueChanged.")]
+        [SerializeField] private DomainAvatarChip chipPrefab;
 
         [Header("Screen 2 – Selected Vessel Summary")]
         [SerializeField] private Image    shipPlaceholderIcon;
@@ -101,10 +113,10 @@ namespace CosmicShore.UI
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
-        // Hard cap on the number of players/teams the game supports
+        // Hard cap on the number of players/domains the game supports
         const int MaxSupportedPlayers = 4;
-        const int MaxSupportedTeams = 3;
-        const int MinTeams = 1;
+        const int MaxSupportedDomains = 3;
+        const int MinDomains = 1;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
@@ -159,14 +171,14 @@ namespace CosmicShore.UI
             if (playerCountIncrementButton)
                 playerCountIncrementButton.onClick.AddListener(OnPlayerCountIncrement);
 
-            // Team count buttons
-            if (teamCountDecrementButton)
-                teamCountDecrementButton.onClick.AddListener(OnTeamCountDecrement);
-            if (teamCountIncrementButton)
-                teamCountIncrementButton.onClick.AddListener(OnTeamCountIncrement);
+            // Domain count buttons
+            if (domainCountDecrementButton)
+                domainCountDecrementButton.onClick.AddListener(OnDomainCountDecrement);
+            if (domainCountIncrementButton)
+                domainCountIncrementButton.onClick.AddListener(OnDomainCountIncrement);
 
-            // Domain / team info buttons
-            foreach (var item in teamInfoItems)
+            // Domain info buttons
+            foreach (var item in domainInfoItems)
             {
                 if (!item || !item.Button) continue;
                 var captured = item.Domain;
@@ -176,8 +188,8 @@ namespace CosmicShore.UI
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
 
-            if (teamSelectionPanel)
-                teamSelectionPanel.OnTeamSelected += HandleTeamSelected;
+            if (domainSelectionPanel)
+                domainSelectionPanel.OnDomainSelected += HandlePanelDomainSelected;
 
             if (arcadeConfigSyncManager)
             {
@@ -210,12 +222,12 @@ namespace CosmicShore.UI
             if (playerCountIncrementButton)
                 playerCountIncrementButton.onClick.RemoveListener(OnPlayerCountIncrement);
 
-            if (teamCountDecrementButton)
-                teamCountDecrementButton.onClick.RemoveListener(OnTeamCountDecrement);
-            if (teamCountIncrementButton)
-                teamCountIncrementButton.onClick.RemoveListener(OnTeamCountIncrement);
+            if (domainCountDecrementButton)
+                domainCountDecrementButton.onClick.RemoveListener(OnDomainCountDecrement);
+            if (domainCountIncrementButton)
+                domainCountIncrementButton.onClick.RemoveListener(OnDomainCountIncrement);
 
-            foreach (var item in teamInfoItems)
+            foreach (var item in domainInfoItems)
             {
                 if (item && item.Button)
                     item.Button.onClick.RemoveAllListeners();
@@ -224,8 +236,8 @@ namespace CosmicShore.UI
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
 
-            if (teamSelectionPanel)
-                teamSelectionPanel.OnTeamSelected -= HandleTeamSelected;
+            if (domainSelectionPanel)
+                domainSelectionPanel.OnDomainSelected -= HandlePanelDomainSelected;
 
             if (arcadeConfigSyncManager)
             {
@@ -235,6 +247,10 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
             }
+
+            // Drop NetDomain / NetAvatarId subscriptions if the modal is being
+            // disabled while still open (scene transition, OnDestroy, etc).
+            DespawnAllChips();
         }
 
         #endregion
@@ -251,7 +267,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = selectedGame;
-            config.TeamCount    = 1; // default to 1 team — user can adjust via stepper
+            config.DomainCount  = 1; // default to 1 domain — user can adjust via stepper
 
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
@@ -265,7 +281,7 @@ namespace CosmicShore.UI
             ShowConfigurationScreen();
             RaiseConfigChanged();
 
-            // Notify all clients to open their own modal with team + vessel selection
+            // Notify all clients to open their own modal with domain + vessel selection
             if (arcadeConfigSyncManager)
             {
                 arcadeConfigSyncManager.NotifyConfigOpened(
@@ -275,6 +291,12 @@ namespace CosmicShore.UI
                     selectedGame.MaxPlayersAllowed,
                     CurrentPartyHumanCount);
             }
+
+            // Spawn one chip per player on the Blue tile, hook each player's
+            // NetDomain.OnValueChanged so that future picks reparent the right chip
+            // to the right tile. No periodic refresh — strictly event-driven.
+            SpawnChipsForAllPlayers();
+            RefreshTileVisibility();
         }
 
         #endregion
@@ -374,11 +396,11 @@ namespace CosmicShore.UI
             // Inline stepper UI (development UI)
             RefreshPlayerCountStepper();
 
-            // Team count stepper
-            RefreshTeamCountStepper();
+            // Domain count stepper
+            RefreshDomainCountStepper();
 
-            if (teamSelectionPanel && gameData != null && gameData.LocalPlayer is Player localPlayer)
-                teamSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
+            if (domainSelectionPanel && gameData != null && gameData.LocalPlayer is Player localPlayer)
+                domainSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -522,11 +544,11 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
         }
 
-        void HandleTeamSelected(Domains domain)
+        void HandlePanelDomainSelected(Domains domain)
         {
             if (gameData.LocalPlayer is not Player player) return;
             if (!player.IsOwner) return;
-            player.NetDomain.Value = domain;
+            player.RequestSetDomain_ServerRpc(domain);
         }
 
         #endregion
@@ -590,55 +612,55 @@ namespace CosmicShore.UI
 
         #endregion
 
-        #region Team count stepper
+        #region Domain count stepper
 
-        public void OnTeamCountIncrement()
+        public void OnDomainCountIncrement()
         {
             if (config == null) return;
 
-            int next = Mathf.Min(config.TeamCount + 1, MaxSupportedTeams);
-            SetTeamCount(next);
+            int next = Mathf.Min(config.DomainCount + 1, MaxSupportedDomains);
+            SetDomainCount(next);
         }
 
-        public void OnTeamCountDecrement()
+        public void OnDomainCountDecrement()
         {
             if (config == null) return;
 
-            int next = Mathf.Max(config.TeamCount - 1, MinTeams);
-            SetTeamCount(next);
+            int next = Mathf.Max(config.DomainCount - 1, MinDomains);
+            SetDomainCount(next);
         }
 
-        void SetTeamCount(int teamCount)
+        void SetDomainCount(int domainCount)
         {
-            if (config.TeamCount == teamCount) return;
+            if (config.DomainCount == domainCount) return;
 
-            config.TeamCount = teamCount;
-            RefreshTeamCountStepper();
+            config.DomainCount = domainCount;
+            RefreshDomainCountStepper();
             SyncGameDataConfig();
             RaiseConfigChanged();
         }
 
-        void RefreshTeamCountStepper()
+        void RefreshDomainCountStepper()
         {
-            if (teamsValueText)
-                teamsValueText.text = config.TeamCount.ToString();
+            if (domainsValueText)
+                domainsValueText.text = config.DomainCount.ToString();
 
-            if (teamCountDecrementButton)
-                teamCountDecrementButton.interactable = config.TeamCount > MinTeams;
+            if (domainCountDecrementButton)
+                domainCountDecrementButton.interactable = config.DomainCount > MinDomains;
 
-            if (teamCountIncrementButton)
-                teamCountIncrementButton.interactable = config.TeamCount < MaxSupportedTeams;
+            if (domainCountIncrementButton)
+                domainCountIncrementButton.interactable = config.DomainCount < MaxSupportedDomains;
         }
 
         #endregion
 
-        #region Domain (team) selection via TeamInfoData
+        #region Domain selection via DomainInfoData
 
         void InitializeDomainSelection()
         {
             if (config != null)
-                config.SelectedDomain = Domains.Unassigned;
-            RefreshDomainButtons();
+                config.SelectedDomain = Domains.Blue;
+            RefreshTileVisibility();
         }
 
         void HandleDomainSelected(Domains domain)
@@ -646,29 +668,170 @@ namespace CosmicShore.UI
             if (config != null)
                 config.SelectedDomain = domain;
 
-            // Write to local player's NetworkVariable
+            // Request a server-authoritative domain update for the local player.
+            // The chip movement is purely event-driven — Player.NetDomain.OnValueChanged
+            // fires on every client (including the host) and triggers the surgical
+            // reparent in HandlePlayerDomainChanged. No refresh-everything-each-event.
             if (gameData != null && gameData.LocalPlayer is Player player && player.IsOwner)
-                player.NetDomain.Value = domain;
+                player.RequestSetDomain_ServerRpc(domain);
 
             SyncGameDataDomain();
-            RefreshDomainButtons();
+            RefreshTileVisibility();
             RaiseConfigChanged();
         }
 
-        void RefreshDomainButtons()
+        // ── Per-player chip lifecycle ─────────────────────────────────────────
+        // One DomainAvatarChip is instantiated per human player when the modal
+        // opens, parented to the Blue tile's strip. Each player's own chip is
+        // reparented to whichever tile they pick on NetDomain.OnValueChanged.
+        // Chips are destroyed on modal close.
+
+        readonly Dictionary<Player, DomainAvatarChip> _playerChips = new();
+        readonly Dictionary<Player, NetworkVariable<Domains>.OnValueChangedDelegate> _domainHandlers = new();
+        bool _watchingPlayerSpawnEvent;
+
+        void SpawnChipsForAllPlayers()
         {
-            var selected = config ? config.SelectedDomain : Domains.Unassigned;
+            DespawnAllChips();
+            if (gameData == null) return;
 
-            Sprite avatarSprite = null;
+            if (chipPrefab == null)
+            {
+                Debug.LogWarning("[DomainPicker] Chip Prefab is not wired on ArcadeGameConfigureModal — cannot spawn chips.");
+                return;
+            }
+
+            ClearStaleChipsFromAllStrips();
+
+            ulong localId = NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL;
             var dataService = PlayerDataService.Instance;
-            if (dataService != null)
-                avatarSprite = dataService.GetAvatarSprite(dataService.CurrentProfile.avatarId);
 
-            foreach (var item in teamInfoItems)
+            foreach (var ip in gameData.Players)
+            {
+                if (ip is Player p && !p.NetIsAI.Value)
+                    SpawnChipForPlayer(p, localId, dataService);
+            }
+
+            // Late-joiner support — new humans get a chip as soon as their Player object replicates.
+            if (gameData.OnPlayerNetworkSpawnedUlong != null && !_watchingPlayerSpawnEvent)
+            {
+                gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerSpawnedDuringModal;
+                _watchingPlayerSpawnEvent = true;
+            }
+        }
+
+        void SpawnChipForPlayer(Player p, ulong localId, PlayerDataService dataService)
+        {
+            if (p == null || _playerChips.ContainsKey(p)) return;
+
+            var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Blue);
+            if (startTile == null || startTile.AvatarStripTransform == null)
+            {
+                Debug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} — chip not spawned.");
+                return;
+            }
+
+            var chip = Instantiate(chipPrefab, startTile.AvatarStripTransform);
+            Sprite sprite = dataService != null ? dataService.GetAvatarSprite(p.NetAvatarId.Value) : null;
+            chip.Set(sprite, p.OwnerClientId == localId);
+            _playerChips[p] = chip;
+
+            // Hook for future domain changes — closure captures the player so we know
+            // whose chip to move when this fires.
+            NetworkVariable<Domains>.OnValueChangedDelegate handler =
+                (_, newDomain) => HandlePlayerDomainChanged(p, newDomain);
+            p.NetDomain.OnValueChanged += handler;
+            _domainHandlers[p] = handler;
+        }
+
+        void HandlePlayerDomainChanged(Player p, Domains newDomain)
+        {
+            if (!_playerChips.TryGetValue(p, out var chip) || chip == null) return;
+            var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Blue);
+            if (tile == null || tile.AvatarStripTransform == null) return;
+            chip.transform.SetParent(tile.AvatarStripTransform, worldPositionStays: false);
+        }
+
+        void DespawnAllChips()
+        {
+            foreach (var kv in _domainHandlers)
+            {
+                if (kv.Key != null && kv.Key.NetDomain != null)
+                    kv.Key.NetDomain.OnValueChanged -= kv.Value;
+            }
+            _domainHandlers.Clear();
+
+            foreach (var chip in _playerChips.Values)
+                if (chip) Destroy(chip.gameObject);
+            _playerChips.Clear();
+
+            if (_watchingPlayerSpawnEvent && gameData != null
+                && gameData.OnPlayerNetworkSpawnedUlong != null)
+            {
+                gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerSpawnedDuringModal;
+            }
+            _watchingPlayerSpawnEvent = false;
+        }
+
+        void HandlePlayerSpawnedDuringModal(ulong ownerClientId)
+        {
+            if (gameData == null) return;
+            ulong localId = NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL;
+            var dataService = PlayerDataService.Instance;
+
+            foreach (var ip in gameData.Players)
+            {
+                if (ip is Player p && p.OwnerClientId == ownerClientId && !p.NetIsAI.Value)
+                {
+                    SpawnChipForPlayer(p, localId, dataService);
+                    break;
+                }
+            }
+        }
+
+        DomainInfoData FindTileForDomain(Domains d)
+        {
+            foreach (var item in domainInfoItems)
+                if (item && item.Domain == d) return item;
+            return null;
+        }
+
+        /// <summary>
+        /// Destroys any DomainAvatarChip GameObjects already parented under tile strips
+        /// (e.g. from a previous modal session, or hand-placed editor chips). Keeps
+        /// the strip clean for our managed chip set.
+        /// </summary>
+        void ClearStaleChipsFromAllStrips()
+        {
+            foreach (var item in domainInfoItems)
+            {
+                if (!item || item.AvatarStripTransform == null) continue;
+                for (int i = item.AvatarStripTransform.childCount - 1; i >= 0; i--)
+                {
+                    var child = item.AvatarStripTransform.GetChild(i);
+                    if (child.TryGetComponent<DomainAvatarChip>(out _))
+                        Destroy(child.gameObject);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the selected-vs-unselected sprite on each tile from the local pick.
+        /// All 4 tiles (Random/Jade/Ruby/Gold) are always visible — the host can pick
+        /// any. Does not touch chip lifecycle.
+        /// </summary>
+        void RefreshTileVisibility()
+        {
+            if (config == null) return;
+
+            var selected = config.SelectedDomain;
+
+            foreach (var item in domainInfoItems)
             {
                 if (!item) continue;
+
+                item.gameObject.SetActive(true);
                 item.SetSelected(item.Domain == selected);
-                item.SetAvatarSprite(avatarSprite);
             }
         }
 
@@ -885,7 +1048,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Start/Confirm button — called by ALL players (host and clients).
-        /// Confirms the player's team + vessel choices and enters the waiting state.
+        /// Confirms the player's domain + vessel choices and enters the waiting state.
         /// When all human players have confirmed, the host auto-launches the game.
         /// </summary>
         public void OnStartGameClicked()
@@ -958,8 +1121,8 @@ namespace CosmicShore.UI
             // Single source of truth — GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
-            // Team count — controls how many teams AI can be assigned to
-            gameData.RequestedTeamCount = config.TeamCount;
+            // Domain count — controls how many domains AI can be assigned to
+            gameData.RequestedDomainCount = config.DomainCount;
 
             Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
@@ -1062,7 +1225,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = game;
-            config.TeamCount    = 1; // clients inherit host's team count via UI sync
+            config.DomainCount  = 1; // clients inherit host's domain count via UI sync
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 
@@ -1078,8 +1241,13 @@ namespace CosmicShore.UI
             ModalWindowIn();
 
             // Clients skip the config screen (intensity/player count) and go
-            // directly to domain + vessel selection since only the host controls those.
+            // directly to vessel selection since only the host controls those.
             ShowGameDetailScreen();
+
+            // Same chip-spawn pattern as the host path so clients see live
+            // chip movement when any player picks.
+            SpawnChipsForAllPlayers();
+            RefreshTileVisibility();
         }
 
         /// <summary>
@@ -1088,6 +1256,7 @@ namespace CosmicShore.UI
         void HandleConfigClosedOnClient()
         {
             _isClientMode = false;
+            DespawnAllChips();
             ModalWindowOut();
         }
 
@@ -1128,12 +1297,17 @@ namespace CosmicShore.UI
             if (playerCountStepper)
                 playerCountStepper.SetValue(playerCount);
             RefreshPlayerCountStepper();
+
+            // Domain count may have shifted (host's domain stepper) — re-evaluate
+            // per-tile active state. Chip movement is unaffected; reparenting is
+            // driven by NetDomain.OnValueChanged independently.
+            RefreshTileVisibility();
         }
 
         /// <summary>
         /// Disables host-only controls when in client mode.
         /// Intensity buttons and player count stepper become non-interactable.
-        /// Team selection, vessel selection, and the Start/Confirm button remain
+        /// Domain selection, vessel selection, and the Start/Confirm button remain
         /// interactive for all players (host and clients).
         /// </summary>
         void ApplyHostOnlyInteractability()
@@ -1158,11 +1332,11 @@ namespace CosmicShore.UI
             if (playerCountIncrementButton)
                 playerCountIncrementButton.interactable = isHost;
 
-            // Team count buttons
-            if (teamCountDecrementButton)
-                teamCountDecrementButton.interactable = isHost;
-            if (teamCountIncrementButton)
-                teamCountIncrementButton.interactable = isHost;
+            // Domain count buttons
+            if (domainCountDecrementButton)
+                domainCountDecrementButton.interactable = isHost;
+            if (domainCountIncrementButton)
+                domainCountIncrementButton.interactable = isHost;
         }
 
         /// <summary>

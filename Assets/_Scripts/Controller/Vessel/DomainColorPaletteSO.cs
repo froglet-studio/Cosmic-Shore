@@ -7,26 +7,24 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "DomainColorPalette", menuName = "ScriptableObjects/UI/Domain Color Palette")]
     public class DomainColorPaletteSO : ScriptableObject
     {
+        // Blue is the "no team / unassigned / neutral entity" sentinel and is used
+        // anywhere code previously asked for a None or Unassigned color.
         [Header("Fallback colors per Domain (used only if Prism tint cannot be read)")]
-        public Color unassigned = Color.gray;
         public Color jade;
         public Color ruby;
-        public Color blue;
         public Color gold;
+        public Color blue;
         public Color danger;
-        public Color none       = Color.white;
 
         public Color Get(Domains d)
         {
             return d switch
             {
-                Domains.Jade        => jade,
-                Domains.Ruby        => ruby,
-                Domains.Blue        => blue,
-                Domains.Gold        => gold,
-                Domains.None        => none,
-                Domains.Unassigned  => unassigned,
-                _                   => Color.white,
+                Domains.Jade => jade,
+                Domains.Ruby => ruby,
+                Domains.Gold => gold,
+                Domains.Blue => blue,
+                _            => Color.white,
             };
         }
     }

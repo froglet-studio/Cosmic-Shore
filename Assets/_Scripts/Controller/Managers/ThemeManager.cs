@@ -20,9 +20,8 @@ namespace CosmicShore.Gameplay
             _dataContainer.TeamMaterialSets = new() {
                 { Domains.Jade, GreenTeamMaterialSet },
                 { Domains.Ruby,   RedTeamMaterialSet },
-                { Domains.Blue,  BlueTeamMaterialSet },
                 { Domains.Gold,  GoldTeamMaterialSet },
-                { Domains.Unassigned,  BlueTeamMaterialSet },
+                { Domains.Blue,  BlueTeamMaterialSet },
             };
         }
 

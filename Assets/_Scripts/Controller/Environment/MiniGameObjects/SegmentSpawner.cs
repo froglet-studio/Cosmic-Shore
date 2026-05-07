@@ -47,6 +47,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] public float RotationAmount;
         [HideInInspector] public int DifficultyAngle = 90;
 
+        [Header("Super-Shield Testing")]
+        [Tooltip("Diagnostic: super-shield every spawned track prism with a PrismStellatedOctahedronShield. " +
+                 "Used to test the stellated octahedron (Stella Octangula) shield system on the track.")]
+        [SerializeField] bool superShieldTrackPrisms = false;
+
+        [Tooltip("If true, super-shield engages instantly (skip bloom morph). If false, plays the per-face bloom transition on spawn.")]
+        [SerializeField] bool superShieldEngageInstant = true;
+
         // Runtime state
         private GameObject SpawnedSegmentContainer;
         private List<Trail> trails = new();
@@ -172,6 +180,92 @@ namespace CosmicShore.Gameplay
                 SpawnAndLayout(spawnable, currentIntensity, layoutIndex);
                 layoutIndex++;
             }
+
+            if (superShieldTrackPrisms)
+                SuperShieldSpawnedPrisms();
+        }
+
+        /// <summary>
+        /// Diagnostic helper: walks every prism in the spawned hierarchy and
+        /// attaches a <see cref="PrismStellatedOctahedronShield"/>, then
+        /// engages it. Used to test the stellated octahedron super-shield
+        /// system on the live track without authoring shielded variants of
+        /// the prism prefabs.
+        ///
+        /// Uses <c>GetComponentsInChildren&lt;Prism&gt;</c> rather than walking
+        /// trail.TrailList — some spawnables ship prisms via nested
+        /// PrefabInstance children (e.g. Manta Prism contains a Rhino Prism
+        /// child), and we want every renderable prism shielded regardless of
+        /// trail registration.
+        ///
+        /// Resets the legacy <c>IsShielded</c>/<c>IsSuperShielded</c> flags
+        /// before engaging. Some authored prefabs (notably
+        /// ShieldedSpawnablePrism, used as the regular HexRace track block)
+        /// ship with <c>prismProperties.IsShielded = true</c>, which causes
+        /// <c>Prism.Initialize()</c> to call <c>ActivateShield()</c> →
+        /// <c>materialAnimator.UpdateMaterial()</c>. That swap to the
+        /// transparent shield material rendered over the top of the stellated
+        /// mesh effectively hid the stellation on regular track blocks while
+        /// the larger waypoint markers (Manta Prism, IsShielded=false) still
+        /// read clearly. <see cref="Prism.DeactivateShields"/> kicks the
+        /// state machine back to Normal and restores the opaque material.
+        /// </summary>
+        void SuperShieldSpawnedPrisms()
+        {
+            if (SpawnedSegmentContainer == null) return;
+
+            var prisms = SpawnedSegmentContainer.GetComponentsInChildren<Prism>(includeInactive: true);
+            int shielded = 0;
+            foreach (var prism in prisms)
+            {
+                if (prism == null) continue;
+
+                // Clear the legacy IsShielded flag + DeactivateShields so the
+                // transparent shielded material doesn't render over the
+                // stellated mesh (auto-engaged on prefabs that ship with
+                // prismProperties.IsShielded=true, e.g. ShieldedSpawnablePrism).
+                if (prism.prismProperties != null)
+                    prism.prismProperties.IsShielded = false;
+                prism.DeactivateShields();
+
+                var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
+                             ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
+                shield.Engage(instant: superShieldEngageInstant);
+
+                // Mark the prism super-shielded AFTER DeactivateShields so the
+                // legacy state machine sees Normal first, then we set the
+                // canonical flag that Prism.Damage / Prism.Consume /
+                // PrismAOERegistry gate on for invulnerability.
+                if (prism.prismProperties != null)
+                    prism.prismProperties.IsSuperShielded = true;
+                shielded++;
+            }
+            Debug.Log($"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
+        }
+
+        /// <summary>
+        /// Enumerate every configured spawnable across the weighted, intensity-mapped,
+        /// guaranteed, and legacy lists. Used by editor preview tools so they can
+        /// walk the spawn graph without depending on inspector wiring details.
+        /// May yield duplicates if the same spawnable is referenced by multiple lists.
+        /// </summary>
+        public IEnumerable<SpawnableBase> EnumerateSpawnables()
+        {
+            if (weightedSegments != null)
+                foreach (var ws in weightedSegments)
+                    if (ws.spawnable != null) yield return ws.spawnable;
+
+            if (spawnableSegments != null)
+                foreach (var s in spawnableSegments)
+                    if (s != null) yield return s;
+
+            if (spawnableByIntensity != null)
+                foreach (var s in spawnableByIntensity)
+                    if (s != null) yield return s;
+
+            if (guaranteedSpawnables != null)
+                foreach (var s in guaranteedSpawnables)
+                    if (s != null) yield return s;
         }
 
         void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
@@ -283,7 +377,7 @@ namespace CosmicShore.Gameplay
             {
                 var domains = gameData.Players
                     .Select(p => p.Domain)
-                    .Where(d => d is not (Domains.None or Domains.Unassigned))
+                    .Where(d => d != Domains.Blue)
                     .Distinct()
                     .ToList();
 

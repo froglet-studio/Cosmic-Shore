@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
             }
 
             Domain = initStruct.OwnDomain;
-            if (Domain == Domains.Unassigned)
+            if (Domain == Domains.Blue)
                 Domain = Vessel.VesselStatus.Domain;
 
             MaxScale = initStruct.MaxScale;

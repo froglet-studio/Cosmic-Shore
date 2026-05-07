@@ -1,6 +1,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -80,6 +81,13 @@ namespace CosmicShore.Gameplay
         {
             if (spawnedItemCount >= maxTotalSpawnedObjects) return;
 
+            // Phase gate: existing flora freeze growth once the cell crosses Frozen
+            // (default 10000 prisms). Flora that already exist stay rendered — they just
+            // stop adding new prisms. The Settled gate in IntensityWiseLifeSpawner stopped
+            // *new* flora from being planted at 4000; this stops *existing* flora from
+            // continuing to grow at 10000.
+            if (cell && cell.Phase >= CellPhase.Frozen) return;
+
             List<Branch> newBranches = new List<Branch>();
             List<Branch> branchesToRemove = new List<Branch>();
 
@@ -136,6 +144,7 @@ namespace CosmicShore.Gameplay
 
                 newBranches.Add(newBranch);
                 itemsSpawned++;
+                spawnedItemCount++;
 
                 if (branch.depth >= maxDepth - 1 || branch.assembler.IsFullyBonded())
                 {

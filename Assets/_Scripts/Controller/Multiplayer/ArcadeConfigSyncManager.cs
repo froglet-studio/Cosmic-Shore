@@ -79,6 +79,20 @@ namespace CosmicShore.Gameplay
             // to guard against stale PartyMembers data.
             _expectedHumanCount = Mathf.Max(humanCount, NetworkManager.Singleton.ConnectedClientsIds.Count);
 
+            // Reset every human player's domain pick to Blue (the "no pick" sentinel)
+            // BEFORE telling clients the modal is open. The avatar strip on every
+            // domain button starts empty; everyone shows up on the Blue tile until
+            // they explicitly pick. Server-write replicates to all clients via
+            // Player.NetDomain.OnValueChanged → OnNetDomainChanged → vessel repaint.
+            // Humans who never pick are auto-rolled into a real domain at game-scene
+            // spawn by ServerPlayerVesselInitializerWithAI.NormalizeUnassignedHumans.
+            if (gameData != null)
+            {
+                foreach (var ip in gameData.Players)
+                    if (ip is Player pl && !pl.NetIsAI.Value)
+                        pl.ServerClearDomainPick();
+            }
+
             OpenConfigOnClients_ClientRpc(gameMode, intensity, playerCount, maxPlayers);
         }
 

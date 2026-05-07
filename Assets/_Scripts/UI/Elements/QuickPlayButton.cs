@@ -12,8 +12,8 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Launches a HexRace game immediately with the current party size.
-    /// Solo (no friends in lobby): 1 player, 1 team, random domain.
-    /// With party: player count = party size, 1 team, random domain.
+    /// Solo (no friends in lobby): 1 player, 1 domain, random domain.
+    /// With party: player count = party size, 1 domain, random domain.
     /// Attach to a Button GameObject — wires onClick automatically.
     /// </summary>
     public class QuickPlayButton : MonoBehaviour
@@ -52,7 +52,7 @@ namespace CosmicShore.UI
             // Configure game data
             gameData.SyncFromArcadeGame(hexRace);
             gameData.ConfigurePlayerCounts(totalPlayers, humanCount);
-            gameData.RequestedTeamCount = 1;
+            gameData.RequestedDomainCount = 1;
 
             if (gameData.SelectedIntensity)
                 gameData.SelectedIntensity.Value = 1;
@@ -61,7 +61,7 @@ namespace CosmicShore.UI
             if (gameData.LocalPlayer is Player localPlayer && localPlayer.IsOwner)
             {
                 var randomDomain = GetRandomDomain();
-                localPlayer.NetDomain.Value = randomDomain;
+                localPlayer.RequestSetDomain_ServerRpc(randomDomain);
             }
 
             // Hand off the party session so MultiplayerSetup reuses the existing Relay connection

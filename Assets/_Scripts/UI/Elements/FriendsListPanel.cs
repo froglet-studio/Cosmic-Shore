@@ -72,8 +72,10 @@ namespace CosmicShore.UI
         void OnEnable()
         {
             ValidateSceneWiring();
+            RehydrateOutgoingInvitesFromService();
             RehydratePendingInviteFromService();
             SubscribeSoap();
+            SubscribeServiceEvents();
             PopulateAll();
 
             // Pull fresh presence/invite data the moment the panel opens so the
@@ -81,6 +83,20 @@ namespace CosmicShore.UI
             // that was added between polling ticks. Debounced and mutex-aware
             // inside HostConnectionService, so bursty opens are safe.
             HostConnectionService.Instance?.ForceRefreshNow();
+        }
+
+        /// <summary>
+        /// Pulls every still-outstanding outgoing invite from the service so the
+        /// pending tint is restored on rows the user invited before this panel
+        /// was last opened (e.g. if they navigated away mid-invite).
+        /// </summary>
+        void RehydrateOutgoingInvitesFromService()
+        {
+            _outgoingInvitePlayerIds.Clear();
+            var service = HostConnectionService.Instance;
+            if (service == null) return;
+            foreach (var id in service.OutgoingInviteTargets)
+                _outgoingInvitePlayerIds.Add(id);
         }
 
         /// <summary>
@@ -127,6 +143,35 @@ namespace CosmicShore.UI
         void OnDisable()
         {
             UnsubscribeSoap();
+            UnsubscribeServiceEvents();
+        }
+
+        void SubscribeServiceEvents()
+        {
+            var service = HostConnectionService.Instance;
+            if (service == null) return;
+            service.OutgoingInviteCleared += HandleOutgoingInviteCleared;
+        }
+
+        void UnsubscribeServiceEvents()
+        {
+            var service = HostConnectionService.Instance;
+            if (service == null) return;
+            service.OutgoingInviteCleared -= HandleOutgoingInviteCleared;
+        }
+
+        /// <summary>
+        /// Service-side cleared the outgoing invite (target accepted, declined,
+        /// went offline, or timed out). Drop the pending tracking and revert any
+        /// rendered row back to its default ONLINE / IN LOBBY state.
+        /// </summary>
+        void HandleOutgoingInviteCleared(string playerId)
+        {
+            if (string.IsNullOrEmpty(playerId)) return;
+            _outgoingInvitePlayerIds.Remove(playerId);
+
+            var entry = FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId);
+            if (entry != null) entry.ResetInviteState();
         }
 
         void SubscribeSoap()

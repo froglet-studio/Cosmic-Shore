@@ -94,13 +94,11 @@ namespace CosmicShore.Tests
         public void Domains_HasExpectedMemberCount()
         {
             var values = Enum.GetValues(typeof(Domains));
-            Assert.AreEqual(6, values.Length,
+            Assert.AreEqual(4, values.Length,
                 "Domains member count changed. Update tests if a domain was added/removed.");
         }
 
         [Test]
-        [TestCase(Domains.None, -1)]
-        [TestCase(Domains.Unassigned, 0)]
         [TestCase(Domains.Jade, 1)]
         [TestCase(Domains.Ruby, 2)]
         [TestCase(Domains.Blue, 3)]

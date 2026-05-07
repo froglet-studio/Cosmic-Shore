@@ -2,6 +2,7 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.UI
 {
@@ -14,7 +15,8 @@ namespace CosmicShore.UI
             public SO_ArcadeGame SelectedGame;
             public int           Intensity;
             public int           PlayerCount;
-            public int           TeamCount;
+            [FormerlySerializedAs("TeamCount")]
+            public int           DomainCount;
             public SO_Vessel     SelectedShip;
             public Domains       SelectedDomain;
 
@@ -23,9 +25,9 @@ namespace CosmicShore.UI
                 SelectedGame   = null;
                 Intensity      = 0;
                 PlayerCount    = 0;
-                TeamCount      = 0;
+                DomainCount    = 0;
                 SelectedShip   = null;
-                SelectedDomain = Domains.Unassigned;
+                SelectedDomain = Domains.Blue;
             }
         }
 }
