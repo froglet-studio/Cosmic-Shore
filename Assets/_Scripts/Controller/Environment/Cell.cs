@@ -224,6 +224,12 @@ namespace CosmicShore.Gameplay
         {
             _activeCells.Add(this);
 
+            // First Cell to come online in any scene boots the partition
+            // system so AI / fauna / abilities can poll the anti-domain
+            // solutions without a per-scene manual placement step. No-op
+            // if it already exists.
+            DensityPartitionSystem.EnsureExists();
+
             // Clear stale config BEFORE subscribing to events.
             // CellRuntimeDataSO is a shared SO asset — Menu_Main's Cell sets
             // runtime.Config to Blob Cell Config, which persists into the next

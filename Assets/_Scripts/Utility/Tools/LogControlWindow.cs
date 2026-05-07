@@ -831,11 +831,16 @@ namespace CosmicShore.Utility
                 GUILayout.Space(Pad);
                 GUILayout.Label(
                     "<b>No DensityPartitionSystem yet.</b>\n" +
-                    "It auto-bootstraps on every scene load via " +
-                    "[RuntimeInitializeOnLoadMethod]. If this message persists, " +
-                    "the static SceneManager.sceneLoaded hook hasn't fired — try " +
-                    "reloading the current scene or pressing Play.",
+                    "Cells auto-bootstrap one when they enable. For scenes " +
+                    "without Cells (e.g. Menu_Main as it stands today), spawn " +
+                    "one manually for diagnostics:",
                     _infoStyle);
+                GUILayout.Space(4);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                if (GUILayout.Button("Spawn DensityPartitionSystem"))
+                    DensityPartitionSystem.EnsureExists();
+                EditorGUILayout.EndHorizontal();
                 return;
             }
 

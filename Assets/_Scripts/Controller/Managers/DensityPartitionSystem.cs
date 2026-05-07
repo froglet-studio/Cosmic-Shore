@@ -2,7 +2,6 @@ using System.Diagnostics;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Gameplay
 {
@@ -66,12 +65,13 @@ namespace CosmicShore.Gameplay
     /// across all active cells, stamps a version, and caches.
     ///
     /// <para>
-    /// Auto-bootstrap: <see cref="EnsureExists"/> is called from a
-    /// <see cref="RuntimeInitializeOnLoadMethodAttribute"/> hook so every
-    /// loaded scene gets the system for free — no manual scene placement
-    /// required. The lifetime is per-scene; <see cref="ResetForSceneLoad"/>
-    /// re-spawns it after each load so cell registries from the previous
-    /// scene don't leak forward.
+    /// Bootstrap: <see cref="EnsureExists"/> spawns the system on demand.
+    /// <see cref="Cell.OnEnable"/> calls it so any scene with cells gets
+    /// the system for free; the editor toolbox's "Density" tab also calls
+    /// it so a Menu_Main session without cells still has the diagnostics
+    /// available the moment you open the tab. Scenes that have neither
+    /// cells nor toolbox access (e.g. headless tests) need to call
+    /// <see cref="EnsureExists"/> explicitly.
     /// </para>
     ///
     /// <para>
@@ -151,25 +151,6 @@ namespace CosmicShore.Gameplay
             go.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
             var system = go.AddComponent<DensityPartitionSystem>();
             return system;
-        }
-
-        // ── Auto-bootstrap on every scene load ──────────────────────────────
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void HookSceneLoad()
-        {
-            // Wire once per game session. SubsystemRegistration runs before
-            // any scene loads, so we get to subscribe before Bootstrap.
-            SceneManager.sceneLoaded -= OnSceneLoadedStatic;
-            SceneManager.sceneLoaded += OnSceneLoadedStatic;
-        }
-
-        static void OnSceneLoadedStatic(Scene scene, LoadSceneMode mode)
-        {
-            // Drop the stale reference from the previous scene; Active getter
-            // will re-find or EnsureExists will create a fresh instance.
-            _active = null;
-            EnsureExists();
         }
 
         void Awake()
