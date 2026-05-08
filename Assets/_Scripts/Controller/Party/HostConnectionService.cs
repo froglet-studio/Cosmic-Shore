@@ -389,6 +389,18 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Ensure our own Relay session is live before writing the invite.
+            // CreateOwnPartySessionAsync is mutex-guarded and idempotent — if it is
+            // already running from the startup path this call simply waits for it
+            // to finish; if it already succeeded the double-check guard returns early.
+            if (_partySessionService.ActiveSession == null)
+            {
+                DebugExtensions.LogColored(
+                    "[INVITE-SEND] Relay session not yet ready — awaiting CreateOwnPartySessionAsync...",
+                    Color.yellow);
+                await CreateOwnPartySessionAsync();
+            }
+
             await _lobbyMutex.WaitAsync();
             bool inviteAdded = false;
             try
@@ -398,11 +410,11 @@ namespace CosmicShore.Gameplay
                     $"[INVITE-SEND] LocalPlayerId: {connectionData.LocalPlayerId}, " +
                     $"DisplayName: {connectionData.LocalDisplayName}", Color.cyan);
 
-                // The Relay session already exists (created at startup by CreateOwnPartySessionAsync).
+                // The Relay session was created at startup (or just above).
                 // Use the real session ID directly — no PENDING placeholder.
                 if (_partySessionService.ActiveSession?.Id is not { Length: > 0 } sessionId)
                 {
-                    Debug.LogError("[INVITE-SEND] ABORT — no active party session ID. Relay session may not have been created.");
+                    Debug.LogError("[INVITE-SEND] ABORT — party session creation failed; cannot send invite.");
                     return;
                 }
 
