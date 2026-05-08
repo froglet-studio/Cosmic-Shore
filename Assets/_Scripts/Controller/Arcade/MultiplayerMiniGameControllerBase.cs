@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
                     gameData.SelectedIntensity.Value,
                     gameData.SelectedPlayerCount.Value,
                     gameData.RequestedAIBackfillCount,
-                    gameData.RequestedTeamCount
+                    gameData.RequestedDomainCount
                 );
             }
 
@@ -441,7 +441,7 @@ namespace CosmicShore.Gameplay
         void SyncGameConfigToClients_ClientRpc(
             string sceneName, int gameMode, bool isMultiplayer,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
-            int teamCount)
+            int domainCount)
         {
             if (IsServer) return;
 
@@ -452,7 +452,7 @@ namespace CosmicShore.Gameplay
             gameData.SelectedIntensity.Value = intensity;
             gameData.SelectedPlayerCount.Value = playerCount;
             gameData.RequestedAIBackfillCount = aiBackfillCount;
-            gameData.RequestedTeamCount = teamCount;
+            gameData.RequestedDomainCount = domainCount;
         }
     }
 }

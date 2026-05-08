@@ -26,3 +26,14 @@ MonoBehaviour:
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 4c06f97afbda28c4ea70d435976318d2, type: 2}
+  PhaseThresholds:
+    QuietEnter: 100
+    QuietExit: 75
+    SettledEnter: 300
+    SettledExit: 250
+    RestlessEnter: 500
+    RestlessExit: 425
+    FrozenEnter: 700
+    FrozenExit: 625
+    RabidEnter: 900
+    RabidExit: 825

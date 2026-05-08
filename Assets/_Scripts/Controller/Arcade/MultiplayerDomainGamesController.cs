@@ -76,8 +76,13 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void NotifyPlayerReady_ClientRpc(string playerName)
         {
+            // Read RoundStats.Domain here (rather than Player.Domain) because this
+            // RPC fires before gameplay starts — RoundStats was just initialized from
+            // Player.NetDomain and is correct at this moment. Post-Phase-5,
+            // Player.OnNetDomainChanged keeps RoundStats.Domain live, but for an
+            // already-correct snapshot at game start there's no benefit to changing it.
             var domain = gameData.RoundStatsList
-                .FirstOrDefault(s => s.Name == playerName)?.Domain ?? Domains.Unassigned;
+                .FirstOrDefault(s => s.Name == playerName)?.Domain ?? Domains.Blue;
             GameFeedAPI.Post($"<b>{playerName}</b> Ready", domain, GameFeedType.PlayerReady);
         }
 
@@ -131,7 +136,10 @@ namespace CosmicShore.Gameplay
             if (ulong.TryParse(clientId, out var id) &&
                 gameData.TryGetPlayerByOwnerClientId(id, out var player))
             {
-                var domain = player.RoundStats?.Domain ?? Domains.Unassigned;
+                // Use Player.Domain (live mirror, kept in sync by OnNetDomainChanged) so
+                // the disconnect notification colors correctly even if domain changed
+                // mid-game.
+                var domain = player.Domain;
                 GameFeedAPI.Post($"<b>{player.Name}</b> disconnected", domain, GameFeedType.PlayerDisconnected);
                 gameData.RemovePlayerData(player.Name);
             }

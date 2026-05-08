@@ -127,7 +127,7 @@ public class VesselTransformer : MonoBehaviour
             {
                 BoostMultiplier = VesselStatus.BoostMultiplier,
                 MaxMultiplier = MaxBoostMultiplier,
-                SourceDomain = Domains.None
+                SourceDomain = Domains.Blue
             });
         }
 

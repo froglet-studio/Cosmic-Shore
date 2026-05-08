@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
         
         public Domains Domain
         {
-            get => teamManager?.Domain ?? Domains.Unassigned;
+            get => teamManager?.Domain ?? Domains.Blue;
             set
             {
                 if (teamManager) teamManager.SetInitialTeam(value);
@@ -318,9 +318,25 @@ namespace CosmicShore.Gameplay
             });
         }
 
+        // Idempotency guard for Damage/Consume. Multiple destruction sources can resolve
+        // against the same prism in a single frame: two fauna iterating cached
+        // OverlapSphere snapshots, AOE damage, and trail collisions all hit the same
+        // prism before the disabled collider drops out of the next physics tick. Without
+        // this gate, the second hit re-runs SetupDestruction (re-raising the destroyed
+        // event, bumping AOE registry state) and Implode/Explode spawns a duplicate VFX
+        // that has to play out its full duration in PrismEffectsManager — that's the
+        // accumulating "garbage" the user observes (fauna swarm-eat trail blocks → 64-128
+        // concurrent implosions). Once destroyed, hits become no-ops until Restore /
+        // ResetState clears the flag.
         public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
-            if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
+            if (destroyed) return;
+            // Super-shielded prisms are fully invulnerable. No damage source
+            // currently breaks them; ways to break them will be added later.
+            // The impactor's other effect SOs (sparks, sound) still fire on
+            // OnTriggerEnter, so the hit reads visually without state change.
+            if (prismProperties.IsSuperShielded) return;
+            if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
                 Explode(impactVector, domain, playerName, devastate);
@@ -328,7 +344,9 @@ namespace CosmicShore.Gameplay
 
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false)
         {
-            if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
+            if (destroyed) return;
+            if (prismProperties.IsSuperShielded) return;
+            if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
                 Implode(target, domain, playerName, devastate);

@@ -900,7 +900,7 @@ Transform:
   m_GameObject: {fileID: 838949991}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -350}
+  m_LocalPosition: {x: 0, y: 30, z: -350}
   m_LocalScale: {x: 99.99999, y: 99.99999, z: 100}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -953,7 +953,7 @@ MonoBehaviour:
     AngularDampingMode: 0
     RotationDamping: {x: 1, y: 1, z: 1}
     QuaternionDamping: 1
-  FollowOffset: {x: 0, y: 0, z: 0}
+  FollowOffset: {x: 0, y: 30, z: 0}
 --- !u!114 &838949995
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1451,7 +1451,7 @@ Transform:
   m_GameObject: {fileID: 989920293}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0.00017453292, w: 1}
-  m_LocalPosition: {x: 0, y: -0.019591246, z: -350.00858}
+  m_LocalPosition: {x: 0, y: 29.98041, z: -350.00858}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2733,6 +2733,21 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: DriftEndAudioClip
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: DriftStartAudioClip
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: CrystalSkimAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: dce9f9ad2fbdf46a1b1f022dc67f7e2d, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: OptionClickAudioClip
       value: 
       objectReference: {fileID: 8300000, guid: 07911b8944c854e89b848896b102e7f3, type: 3}
@@ -2741,6 +2756,11 @@ PrefabInstance:
       propertyPath: SwitchScreenAudioClip
       value: 
       objectReference: {fileID: 8300000, guid: 49d6fbb77714f45da926b744d54d3944, type: 3}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: ShieldDeactivateAudioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 1ce48d93fbeaa47df916bd45eb9ca748, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

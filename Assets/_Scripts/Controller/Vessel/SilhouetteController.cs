@@ -162,7 +162,7 @@ namespace CosmicShore.Gameplay
             }
             else if (config && config.useDomainPaletteColors && config.domainPalette)
             {
-                var dom = _vessel?.VesselStatus?.Domain ?? Domains.Unassigned;
+                var dom = _vessel?.VesselStatus?.Domain ?? Domains.Blue;
                 tint = config.domainPalette.Get(dom);
                 haveTint = true;
             }

@@ -26,8 +26,17 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] float nucleusScaleMultiplier = 1f;
 
+        // Local phase recompute interval. Constant rather than a serialized field so
+        // existing scene-placed Cells deserialized before this tick existed don't end
+        // up with phaseTickIntervalSeconds=0 (the default(float) for new serialized
+        // fields), which would silently disable phase advancement.
+        const float PhaseTickIntervalSeconds = 0.5f;
+
+        float _nextPhaseTickAt;
+
 
         CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
+        public CellConfigDataSO Config => cellConfigData;
         GameObject membrane;
         GameObject nucleus;
 
@@ -46,9 +55,159 @@ namespace CosmicShore.Gameplay
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
         readonly Dictionary<Domains, float> teamVolumes = new();
+        readonly Dictionary<Domains, int> domainBlockCounts = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
+        readonly HashSet<Prism> trackedBlocks = new();
         SnowChanger spawnedCytoplasm;
+
+        CellPhase phase = CellPhase.Sprout;
+
+        /// <summary>
+        /// Live count of unique prisms tracked through Add/RemoveBlock. Read-only signal
+        /// for systems that respond to prism load (e.g., LightFaunaManager scales its
+        /// fauna population with this so consumption keeps pace with growth, and the
+        /// phase system gates flora and fauna behavior on it).
+        /// </summary>
+        public int LiveBlockCount => trackedBlocks.Count;
+
+        /// <summary>
+        /// Live leader by per-domain prism count. Recomputed on demand so the answer
+        /// always reflects the current Add/RemoveBlock-driven counts. Returns
+        /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the cell has no
+        /// prisms tracked yet. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
+        /// </summary>
+        public Domains DominantDomain
+        {
+            get
+            {
+                Domains leader = Domains.Blue;
+                int leaderCount = 0;
+                Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+                foreach (var d in order)
+                {
+                    if (!domainBlockCounts.TryGetValue(d, out int c)) continue;
+                    if (c > leaderCount)
+                    {
+                        leader = d;
+                        leaderCount = c;
+                    }
+                }
+                return leader;
+            }
+        }
+
+        /// <summary>
+        /// Current phase. Written exclusively by <see cref="CellNetworkSync"/> via
+        /// <see cref="ApplyAuthoritativePhaseAndDomain"/> — the server's compute on a
+        /// networked cell, or the local-only fallback in single-player. Cell never
+        /// recomputes phase itself; it just exposes the inputs.
+        /// </summary>
+        public CellPhase Phase => phase;
+
+        // ---------------------------------------------------------------------
+        // Derived gates — orthogonal projections of Phase the consumers actually
+        // care about. The user spec mixes flora and fauna events along a single
+        // prism-count axis; these properties decouple the two systems' rules so
+        // each consumer reads only what it needs.
+        // ---------------------------------------------------------------------
+
+        /// <summary>True while the cell still allows new flora to be planted (Phase &lt; Settled).</summary>
+        public bool FloraPlantingEnabled => phase < CellPhase.Settled;
+
+        /// <summary>True while existing flora may still grow new prisms (Phase &lt; Frozen).</summary>
+        public bool FloraGrowingEnabled => phase < CellPhase.Frozen;
+
+        /// <summary>True once the cell has crossed the fauna-spawn threshold (Phase &gt;= Quiet).</summary>
+        public bool FaunaSpawningEnabled => phase >= CellPhase.Quiet;
+
+        /// <summary>
+        /// Fauna aggression level derived from <see cref="Phase"/>:
+        ///   Sprout/Quiet/Settled → Level0  (head toward crystal, normal cadence)
+        ///   Restless/Frozen      → Level1  (head toward opposing-color centroid)
+        ///   Rabid                → Level2  (any-domain centroid, drop friendly avoidance)
+        /// </summary>
+        public CellAggressionLevel AggressionLevel => phase switch
+        {
+            CellPhase.Restless => CellAggressionLevel.Level1,
+            CellPhase.Frozen => CellAggressionLevel.Level1,
+            CellPhase.Rabid => CellAggressionLevel.Level2,
+            _ => CellAggressionLevel.Level0,
+        };
+
+        /// <summary>
+        /// "Controlling color" for fauna spawns. Prefers the cell's live
+        /// <see cref="DominantDomain"/> (per-domain prism count leader), then falls
+        /// back to gameData's controlling team by remaining volume, then to the local
+        /// player's domain (useful in Menu_Main where there is no scored controlling
+        /// team), then to Jade as a last resort. Never returns Blue (the "no team"
+        /// sentinel) — callers can use it directly without further branching.
+        /// </summary>
+        public Domains ControllingDomain
+        {
+            get
+            {
+                var dominant = DominantDomain;
+                if (dominant != Domains.Blue)
+                    return dominant;
+
+                if (gameData != null)
+                {
+                    var top = gameData.GetControllingTeamStatsBasedOnVolumeRemaining();
+                    if (top.Team != Domains.Blue && top.Volume > 0f)
+                        return top.Team;
+
+                    var local = gameData.LocalRoundStats?.Domain
+                                ?? gameData.LocalPlayer?.Domain
+                                ?? Domains.Blue;
+                    if (local != Domains.Blue)
+                        return local;
+                }
+                return Domains.Jade;
+            }
+        }
+
+        /// <summary>
+        /// Sole entry point for phase mutation. Updates the local field and the
+        /// runtime SO's per-cell stats; the runtime SO raises <c>OnPhaseChanged</c>
+        /// when the value transitions. Both <see cref="CellNetworkSync"/>'s server
+        /// tick and its <c>OnValueChanged</c> client listener route through here so
+        /// the runtime SO is the single observable source of truth on every machine.
+        /// </summary>
+        public void ApplyAuthoritativePhaseAndDomain(CellPhase newPhase, Domains newDominantDomain)
+        {
+            phase = newPhase;
+            if (runtime != null)
+                runtime.WriteCellRuntimeStats(ID, LiveBlockCount, newPhase, newDominantDomain);
+        }
+
+        void Update()
+        {
+            // Drive phase locally every tick interval. Server-authoritative replication
+            // (CellNetworkSync) overlays this on networked clients via OnValueChanged
+            // — server's compute wins when the two diverge — but for single-player and
+            // for the server itself this is the only path that advances phase. Without
+            // it, no fauna ever spawn because phase stays at Sprout forever.
+            if (Time.time < _nextPhaseTickAt) return;
+            _nextPhaseTickAt = Time.time + PhaseTickIntervalSeconds;
+
+            var thresholds = ResolveThresholds();
+            var newPhase = CellPhaseRules.Compute(LiveBlockCount, phase, in thresholds);
+            ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
+        }
+
+        CellPhaseThresholds ResolveThresholds()
+        {
+            var cfg = cellConfigData;
+            if (!cfg) return CellPhaseThresholds.Default;
+
+            // Existing CellConfig assets serialized before PhaseThresholds existed
+            // deserialize as struct zero — Unity does not apply the C# initializer.
+            // Substitute the Default table so legacy biomes don't snap to Rabid the
+            // moment the first prism is added.
+            var t = cfg.PhaseThresholds;
+            return t.IsAllZero ? CellPhaseThresholds.Default : t;
+        }
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
@@ -124,6 +283,9 @@ namespace CosmicShore.Gameplay
                 if (spawnedLifeForms[i]) Destroy(spawnedLifeForms[i]);
             }
             spawnedLifeForms.Clear();
+            trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            phase = CellPhase.Sprout;
 
             if (spawnedCytoplasm)
             {
@@ -177,6 +339,9 @@ namespace CosmicShore.Gameplay
         void Initialize()
         {
             spawnedLifeForms.Clear();
+            trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            phase = CellPhase.Sprout;
 
             // Bind runtime -> this cell
             runtime.Cell = this;
@@ -233,10 +398,16 @@ namespace CosmicShore.Gameplay
 
         void SetupDensityGrids()
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
             foreach (Domains t in teams)
                 countGrids[t] = new BlockCountDensityGrid(t);
+
+            // Blue-keyed grid accumulates every block regardless of domain so
+            // GetDensestRegionAnyDomain() can answer aggression-2 fauna's "head toward
+            // nearest centroid" goal — friendly + enemy mass both count. Blue is the
+            // "no specific team" sentinel; this grid does double duty as the wildcard.
+            countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue);
         }
 
         void SpawnVisuals()
@@ -309,19 +480,99 @@ namespace CosmicShore.Gameplay
 
         public void AddBlock(Prism block)
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            foreach (var t in teams)
-                if (t != block.Domain) countGrids[t].AddBlock(block);
+            // `is null` (not `!block`) so destroyed-but-non-null Unity refs can still be
+            // removed from trackedBlocks via the matching RemoveBlock path; otherwise
+            // LiveBlockCount drifts upward when prisms die outside the normal flow.
+            if (block is null) return;
+            if (!trackedBlocks.Add(block)) return; // already counted
+
+            if (block)
+            {
+                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                foreach (var t in teams)
+                    if (t != block.Domain) countGrids[t].AddBlock(block);
+
+                if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
+                    anyGrid.AddBlock(block);
+
+                domainBlockCounts.TryGetValue(block.Domain, out int count);
+                domainBlockCounts[block.Domain] = count + 1;
+            }
         }
 
         public void RemoveBlock(Prism block)
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            foreach (Domains t in teams)
-                if (t != block.Domain) countGrids[t].RemoveBlock(block);
+            if (block is null) return;
+            if (!trackedBlocks.Remove(block)) return; // not counted
+
+            if (block)
+            {
+                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                foreach (Domains t in teams)
+                    if (t != block.Domain) countGrids[t].RemoveBlock(block);
+
+                if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
+                    anyGrid.RemoveBlock(block);
+
+                if (domainBlockCounts.TryGetValue(block.Domain, out int count) && count > 0)
+                    domainBlockCounts[block.Domain] = count - 1;
+            }
         }
 
-        public Vector3 GetExplosionTarget(Domains domain) => countGrids[domain].FindDensestRegion();
+        /// <summary>
+        /// Densest region of all blocks NOT belonging to the given domain — the
+        /// "nearest opposing-color centroid" for fauna at aggression Level 1.
+        /// Empty grids default to the cell anchor (crystal or cell transform)
+        /// instead of the grid's bottom-corner sentinel, which otherwise pulled
+        /// every fauna querying an empty grid to the world-space −X/−Y/−Z corner.
+        /// </summary>
+        public Vector3 GetExplosionTarget(Domains domain)
+        {
+            if (!countGrids.TryGetValue(domain, out var grid) || grid == null)
+                return GetCellAnchorPosition();
+
+            var region = grid.FindDensestRegion();
+            if (grid.GetDensityAtPosition(region) <= 0)
+                return GetCellAnchorPosition();
+            return region;
+        }
+
+        /// <summary>
+        /// Densest region across all domains — the "nearest centroid of any color"
+        /// goal for fauna at aggression Level 2. Reads the synthesized
+        /// countGrids[Domains.Blue] grid that <see cref="AddBlock"/> populates with
+        /// every block regardless of its domain (Blue serves double-duty as the
+        /// "no specific team" sentinel and the all-domain wildcard bucket).
+        /// </summary>
+        public Vector3 GetDensestRegionAnyDomain()
+        {
+            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
+                return GetCellAnchorPosition();
+
+            var region = anyGrid.FindDensestRegion();
+            if (anyGrid.GetDensityAtPosition(region) <= 0)
+                return GetCellAnchorPosition();
+            return region;
+        }
+
+        /// <summary>
+        /// Alias for <see cref="GetDensestRegionAnyDomain"/> — historical name from
+        /// the gyroid-overflow regulation work, kept so external callers can use
+        /// either spelling.
+        /// </summary>
+        public Vector3 GetPrimaryCentroid() => GetDensestRegionAnyDomain();
+
+        /// <summary>
+        /// Fallback position for goal resolution when density grids are empty:
+        /// the local crystal if one exists, otherwise the cell's own transform.
+        /// Keeps fauna near the cell instead of drifting to the empty-grid corner.
+        /// </summary>
+        Vector3 GetCellAnchorPosition()
+        {
+            if (runtime != null && runtime.CrystalTransform)
+                return runtime.CrystalTransform.position;
+            return transform.position;
+        }
 
         public bool ContainsPosition(Vector3 position)
         {

@@ -12,6 +12,9 @@ namespace CosmicShore.Gameplay
     public struct CellStats
     {
         public int LifeFormsInCell;
+        public int LiveBlockCount;
+        public CellPhase Phase;
+        public Domains DominantDomain;
     }
 
     [Serializable]

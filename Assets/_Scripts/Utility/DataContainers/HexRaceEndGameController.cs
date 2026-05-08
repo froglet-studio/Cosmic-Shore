@@ -11,9 +11,8 @@ namespace CosmicShore.Utility
     {
         protected override bool DetermineLocalPlayerWon()
         {
-            var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Unassigned;
-            return gameData.WinnerDomain != Domains.Unassigned
-                && gameData.WinnerDomain != Domains.None
+            var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
+            return gameData.WinnerDomain != Domains.Blue
                 && localDomain == gameData.WinnerDomain;
         }
 

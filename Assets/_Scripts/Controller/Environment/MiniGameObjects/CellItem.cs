@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     public abstract class CellItem : MonoBehaviour
     {
         public int Id { get; private set; }
-        [FormerlySerializedAs("OwnTeam")] public Domains ownDomain = Domains.None;
+        [FormerlySerializedAs("OwnTeam")] public Domains ownDomain = Domains.Blue;
         public ItemType ItemType = ItemType.Buff;
 
         // protected Cell cell;

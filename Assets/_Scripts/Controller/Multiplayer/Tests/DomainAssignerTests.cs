@@ -16,11 +16,11 @@ namespace CosmicShore.Gameplay
         [Test]
         public void Initialize_PopulatesDomainPool()
         {
-            // After Initialize, the first call should return a valid domain.
+            // After Initialize, the first call should return a valid domain — never
+            // the Blue sentinel (Blue is the "no team / unassigned / neutral" sentinel
+            // and is excluded from the assignment pool).
             var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
 
-            Assert.AreNotEqual(Domains.None, domain);
-            Assert.AreNotEqual(Domains.Unassigned, domain);
             Assert.AreNotEqual(Domains.Blue, domain);
         }
 
@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
         {
             var assigned = new HashSet<Domains>();
 
-            // There are 3 valid domains (Jade, Ruby, Gold) after excluding None, Unassigned, Blue.
+            // There are 3 valid domains (Jade, Ruby, Gold) after excluding Blue.
             for (int i = 0; i < 3; i++)
             {
                 var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
         }
 
         [Test]
-        public void GetDomainsByGameModes_EmptyPool_ReturnsUnassigned()
+        public void GetDomainsByGameModes_EmptyPool_ReturnsBlue()
         {
             // Exhaust the pool
             for (int i = 0; i < 10; i++)
@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
 
             var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
 
-            Assert.AreEqual(Domains.Unassigned, domain);
+            Assert.AreEqual(Domains.Blue, domain);
         }
 
         [Test]
@@ -78,11 +78,11 @@ namespace CosmicShore.Gameplay
 
             var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
 
-            Assert.AreNotEqual(Domains.Unassigned, domain);
+            Assert.AreNotEqual(Domains.Blue, domain);
         }
 
         [Test]
-        public void GetDomainsByGameModes_NeverReturnsBlue()
+        public void GetDomainsByGameModes_NeverReturnsBlueWhilePoolHasItems()
         {
             DomainAssigner.Initialize();
 
@@ -90,12 +90,12 @@ namespace CosmicShore.Gameplay
             {
                 var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
                 Assert.AreNotEqual(Domains.Blue, domain,
-                    "Blue domain should be excluded from the assignment pool.");
+                    "Blue is the no-team sentinel and must be excluded from the assignment pool.");
             }
         }
 
         [Test]
-        public void GetDomainsByGameModes_WithoutInitialize_ReturnsUnassigned()
+        public void GetDomainsByGameModes_WithoutInitialize_ReturnsBlue()
         {
             // Clear the pool manually by exhausting it without re-init
             for (int i = 0; i < 10; i++)
@@ -104,8 +104,8 @@ namespace CosmicShore.Gameplay
             // Don't call Initialize — simulate the missing-init bug
             var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
 
-            Assert.AreEqual(Domains.Unassigned, domain,
-                "Without Initialize(), exhausted pool should return Unassigned.");
+            Assert.AreEqual(Domains.Blue, domain,
+                "Without Initialize(), exhausted pool should return Blue (the sentinel).");
         }
     }
 }

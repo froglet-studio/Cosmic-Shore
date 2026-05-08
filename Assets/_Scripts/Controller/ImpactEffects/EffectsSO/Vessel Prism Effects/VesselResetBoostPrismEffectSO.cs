@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
             {
                 BoostMultiplier = status.BoostMultiplier,
                 MaxMultiplier = maxMult,
-                SourceDomain = Domains.None
+                SourceDomain = Domains.Blue
             });
         }
     }
