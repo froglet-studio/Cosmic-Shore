@@ -47,6 +47,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float sceneSyncTimeoutSeconds = 5f;
 
         [Inject] private GameDataSO gameData;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
 
         // ─────────────────────────────────────────────────────────────────────
         // State
@@ -123,6 +124,12 @@ namespace CosmicShore.Gameplay
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
+
+            // Cover the screen immediately so the user does not see the old menu
+            // state during NM shutdown + UGS join + Relay connect.
+            // SceneLoader.OnSceneLoaded re-arms this on Menu_Main load; it is
+            // idempotent at alpha=1, so calling it here is always safe.
+            _sceneTransitionManager?.SetFadeImmediate(1f);
 
             // Unpause immediately — ScreenSwitcher pauses on non-HOME screens,
             // and the accept flow needs Update() ticking so the UGS SDK's
@@ -232,6 +239,9 @@ namespace CosmicShore.Gameplay
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
 
+            // Cover the screen immediately — NM shutdown + solo Relay creation
+            // takes 1-3s and the user should not see the frozen lava-lamp state.
+            _sceneTransitionManager?.SetFadeImmediate(1f);
             PauseSystem.TogglePauseGame(false);
 
             try
