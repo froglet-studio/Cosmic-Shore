@@ -1004,9 +1004,11 @@ namespace CosmicShore.Tests
         [Test]
         public void ParseInviteLine_AcceptsPendingSentinel()
         {
-            // A 5-field line with "PENDING" in the sessionId slot must round-trip
-            // through ParseInviteLine without throwing. Recipients see this format
-            // while the host's Relay session is not yet created.
+            // In Phase 15 "Always InParty", SendInviteAsync uses the real session ID
+            // directly (the Relay session is created at startup, before any invite is
+            // sent), so PENDING is never written to player properties. The parser still
+            // accepts it without error for backward compatibility with any cached/in-flight
+            // payload from a pre-Phase-15 client.
             var result = InvokeParseInvite("host123|PENDING|HostPilot|2");
 
             Assert.IsTrue(result.HasValue,
@@ -1352,6 +1354,20 @@ namespace CosmicShore.Tests
             sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
 
             bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.Inviting);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InPresenceLobbyToJoiningParty_IsIllegal()
+        {
+            // Accepting an invite requires leaving an existing Relay session (InParty),
+            // not jumping directly from the transient InPresenceLobby state.
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
 
             Assert.IsFalse(result);
             Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby, sm.CurrentState);
