@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
             if (clearFirst)
                 _connectionData.PartyMembers?.Clear();
 
-            if (_connectionData.LocalPlayerData != null)
+            if (!string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
                 _connectionData.PartyMembers?.Add(_connectionData.LocalPlayerData);
 
             Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");

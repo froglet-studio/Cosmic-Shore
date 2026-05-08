@@ -628,7 +628,7 @@ namespace CosmicShore.Gameplay
             ClearJoinedPartyAsync().Forget();
             // Stale session cleared (e.g. game→menu transition) — recreate solo party session.
             if (_stateMachine.CurrentState != PartyState.Disconnected)
-                CreateOwnPartySessionAsync().Forget();
+                _ = CreateOwnPartySessionAsync();
         }
 
         /// <summary>
@@ -1137,7 +1137,7 @@ namespace CosmicShore.Gameplay
             // updated (shorter) composite property to the lobby.
             var expired = _inviteService.RemoveExpired();
             foreach (var id in expired)
-                HandleInviteClearedAsync(id, "timeout").Forget();
+                _ = HandleInviteClearedAsync(id, "timeout");
         }
 
         /// <summary>
