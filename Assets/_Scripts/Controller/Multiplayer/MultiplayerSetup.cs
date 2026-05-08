@@ -398,24 +398,21 @@ namespace CosmicShore.Gameplay
         public async UniTask LeaveSession()
         {
             if (_leaving) return;
-
             _leaving = true;
 
             try
             {
-                if (gameData.ActiveSession != null)
-                {
-                    if (gameData.ActiveSession.IsHost)
-                    {
-                        await gameData.ActiveSession.AsHost().DeleteAsync();
-                        CSDebug.Log("[MultiplayerSetup] Host deleted session.");
-                    }
-                    else
-                    {
-                        await gameData.ActiveSession.LeaveAsync();
-                        CSDebug.Log("[MultiplayerSetup] Client left session.");
-                    }
-                }
+                // Phase 15 "Always InParty": gameData.ActiveSession IS the party Relay
+                // session.  Do NOT delete or leave — HCS owns the session lifetime.
+                // Just clear the game reference; the Relay stays alive so all party
+                // members reload Menu_Main on the same NM session.
+                //
+                // NM is intentionally NOT shut down here.  ReturnToMainMenu() sets
+                // IsReturnToMenuTransition=true so ServerPlayerVesselInitializer skips
+                // its own Shutdown(), and nm.SceneManager.LoadScene carries all connected
+                // clients back to Menu_Main on the live Relay.
+                gameData.ActiveSession = null;
+                gameData.InvokeOnSessionEnded();
             }
             catch (Exception e)
             {
@@ -423,14 +420,10 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                gameData.ActiveSession = null;
-
-                if (networkManager != null)
-                    networkManager.Shutdown();
-
-                gameData.InvokeOnSessionEnded();
                 _leaving = false;
             }
+
+            await UniTask.CompletedTask;
         }
 
         // --------------------------

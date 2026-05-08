@@ -277,12 +277,12 @@ namespace CosmicShore.Core
             if (nm != null && nm.IsListening && !nm.IsServer)
                 return;
 
-            // Clear the stale party session reference so HostConnectionService
-            // can create a fresh Relay-backed session when Menu_Main loads.
-            // LeaveSession() deletes the game session and shuts down the network;
-            // the party session created during initial auth is now stale.
-            if (HostConnectionService.Instance != null)
-                HostConnectionService.Instance.ClearStalePartySession();
+            // Phase 15 "Always InParty": the party Relay session is NOT cleared here.
+            // MultiplayerSetup.LeaveSession() already nulled gameData.ActiveSession
+            // without deleting the underlying UGS session, so HCS still has a live
+            // Relay and NM is still running.  ReturnToMainMenu() uses
+            // nm.SceneManager.LoadScene to carry all party members back to Menu_Main
+            // on the same Relay connection — no disconnection, no re-creation.
 
             ReturnToMainMenu();
             gameData.ResetAllData();

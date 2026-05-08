@@ -245,18 +245,17 @@ namespace CosmicShore.Gameplay
                 }
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct);
 
-                HostConnectionService.Instance?.ClearStalePartySession();
+                // Recreate the player's own solo Relay session so they return
+                // to lava-lamp as a fresh host.  HCS handles NM startup internally.
+                var hcs = HostConnectionService.Instance;
+                if (hcs != null)
+                    await hcs.RetryCreateOwnPartySessionAsync(ct);
 
-                var activeScene = SceneManager.GetActiveScene();
-                if (activeScene.name != "Menu_Main")
-                    SceneManager.LoadScene("Menu_Main");
-
+                // Reload Menu_Main via the new NM so scene-placed NetworkObjects
+                // initialise cleanly in the fresh Relay session.
                 var nm = NetworkManager.Singleton;
-                if (nm != null && !nm.IsListening)
-                {
-                    nm.StartHost();
-                    await UniTask.Delay(500, DelayType.UnscaledDeltaTime, cancellationToken: ct);
-                }
+                if (nm != null && nm.IsServer && nm.SceneManager != null)
+                    nm.SceneManager.LoadScene("Menu_Main", LoadSceneMode.Single);
 
                 Debug.Log("[PartyInviteController] Leave-lobby flow completed.");
             }
@@ -311,20 +310,20 @@ namespace CosmicShore.Gameplay
         private async UniTask RecoverFromFailedTransitionAsync()
         {
             await UniTask.SwitchToMainThread();
-            Debug.Log("[PartyInviteController] Attempting recovery — restarting local host...");
+            Debug.Log("[PartyInviteController] Attempting recovery — recreating solo Relay session...");
 
             try
             {
-                var nm = NetworkManager.Singleton;
-                if (nm != null && !nm.IsListening)
-                {
-                    nm.StartHost();
-                    await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
-                }
+                // HCS owns NM startup.  RetryCreateOwnPartySessionAsync clears any
+                // stale session reference, creates a fresh solo Relay, and starts NM
+                // as host.  No direct nm.StartHost() calls here.
+                var hcs = HostConnectionService.Instance;
+                if (hcs != null)
+                    await hcs.RetryCreateOwnPartySessionAsync();
 
-                var activeScene = SceneManager.GetActiveScene();
-                if (activeScene.name != "Menu_Main")
-                    SceneManager.LoadScene("Menu_Main");
+                var nm = NetworkManager.Singleton;
+                if (nm != null && nm.IsServer && nm.SceneManager != null)
+                    nm.SceneManager.LoadScene("Menu_Main", LoadSceneMode.Single);
             }
             catch (Exception e)
             {
