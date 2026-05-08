@@ -511,7 +511,7 @@ namespace CosmicShore.Core
 
             try
             {
-                await tcs.Task.AsUniTask().AttachExternalCancellation(ct);
+                await tcs.Task.AttachExternalCancellation(ct);
             }
             finally
             {
