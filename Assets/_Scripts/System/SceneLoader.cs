@@ -83,8 +83,21 @@ namespace CosmicShore.Core
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (gameData)
-                gameData.InvokeSceneTransition(true);
+            if (!gameData) return;
+            gameData.InvokeSceneTransition(true);
+
+            // Whenever Menu_Main finishes loading (initial auth→menu or game→menu return),
+            // ensure the splash is opaque and subscribe FadeFromSplashOnReady so it fades
+            // out only once the vessel spawns (OnClientReady).  LaunchGame already handles
+            // this for menu→game transitions; this covers the two menu-entry paths that
+            // LaunchGame never sees.
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            if (scene.name == menuScene)
+            {
+                _sceneTransitionManager?.SetFadeImmediate(1f);
+                gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+                gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
+            }
         }
 
         #endregion

@@ -63,6 +63,7 @@ namespace CosmicShore.Core
         [Inject] private SceneNameListSO _sceneNames;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
         [Inject] private ApplicationStateMachine _appStateMachine;
+        [Inject] private HostConnectionDataSO _connectionData;
 
         CancellationTokenSource _cts;
         bool _navigated;
@@ -425,10 +426,13 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Waits for HostConnectionService to start the Relay host, retrying up to 3 times.
-        /// Each attempt waits up to <see cref="networkHostTimeout"/> seconds.
-        /// No direct scene load fallback exists — Menu_Main requires a Relay-backed NM host.
-        /// If all attempts fail, logs an error (future: show "NetworkConnectionError" UI panel).
+        /// Waits for HostConnectionService to confirm a live Relay session (state InParty),
+        /// then loads Menu_Main through Netcode.  Retries up to 3 times; each attempt waits
+        /// up to <see cref="networkHostTimeout"/> seconds.
+        ///
+        /// Keeps the splash overlay opaque until Menu_Main starts loading — the overlay
+        /// stays opaque through the scene transition and is released by
+        /// <see cref="SceneLoader.FadeFromSplashOnReady"/> when <c>OnClientReady</c> fires.
         /// </summary>
         async UniTaskVoid LoadMainMenuNetworkedAsync(CancellationToken ct)
         {
@@ -443,17 +447,19 @@ namespace CosmicShore.Core
                 linkedCts.CancelAfter(TimeSpan.FromSeconds(timeout));
                 try
                 {
-                    await UniTask.WaitUntil(
-                        () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
-                        cancellationToken: linkedCts.Token);
+                    // Wait for the Relay session to be confirmed live (InParty reached).
+                    // OnHostConnectionEstablished fires twice: at lobby join (NM not listening)
+                    // and after Relay creation (NM listening). WaitForRelayReadyAsync only
+                    // completes on the second fire.
+                    await WaitForRelayReadyAsync(linkedCts.Token);
                     networkReady = true;
-                    CSDebug.Log($"[AuthScene] Relay host ready (attempt {attempt}/{maxAttempts}).");
+                    CSDebug.Log($"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
                     if (attempt < maxAttempts)
                     {
-                        CSDebug.LogWarning($"[AuthScene] Relay host not ready (attempt {attempt}/{maxAttempts}) — retrying...");
+                        CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) — retrying HCS init...");
                         var hcs = HostConnectionService.Instance;
                         if (hcs != null)
                             await hcs.RetryCreateOwnPartySessionAsync(ct);
@@ -468,8 +474,50 @@ namespace CosmicShore.Core
 
             if (!networkReady) return;
 
+            // Keep the splash opaque through the scene transition.  SceneLoader.OnSceneLoaded
+            // will re-assert this on the Menu_Main side and subscribe FadeFromSplashOnReady
+            // to OnClientReady so the overlay fades once the vessel spawns.
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+
             CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
             NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+        }
+
+        /// <summary>
+        /// Resolves when <see cref="HostConnectionDataSO.OnHostConnectionEstablished"/> fires
+        /// AND <see cref="NetworkManager.IsListening"/> is true — confirming the Relay session
+        /// is live and NM is running as host.
+        ///
+        /// The event fires twice during startup: once at lobby join (NM not yet listening) and
+        /// once after Relay creation (NM listening).  Only the second fire satisfies both
+        /// conditions, so the lobby-join fire is silently ignored.
+        /// </summary>
+        async UniTask WaitForRelayReadyAsync(CancellationToken ct)
+        {
+            // Fast path: Relay is already live before we even subscribed.
+            if (NetworkManager.Singleton is { IsListening: true })
+                return;
+
+            var tcs = new UniTaskCompletionSource();
+
+            void OnEstablished()
+            {
+                if (NetworkManager.Singleton is { IsListening: true })
+                    tcs.TrySetResult();
+            }
+
+            if (_connectionData?.OnHostConnectionEstablished != null)
+                _connectionData.OnHostConnectionEstablished.OnRaised += OnEstablished;
+
+            try
+            {
+                await tcs.Task.AsUniTask().AttachExternalCancellation(ct);
+            }
+            finally
+            {
+                if (_connectionData?.OnHostConnectionEstablished != null)
+                    _connectionData.OnHostConnectionEstablished.OnRaised -= OnEstablished;
+            }
         }
     }
 }
