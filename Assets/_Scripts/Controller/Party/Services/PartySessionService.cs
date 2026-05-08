@@ -35,6 +35,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 
@@ -126,6 +127,13 @@ namespace CosmicShore.Gameplay
         public async Task CreateAsync(int maxPlayers)
         {
             if (ActiveSession != null) return;
+
+            // UGS SDK accesses Application.isPlaying during session creation and must
+            // run on Unity's main thread.  After awaiting ShutdownAsync (a UniTask),
+            // the continuation can land on the .NET thread pool — switch back before
+            // touching the SDK so all UGS HTTP continuations inherit the correct
+            // SynchronizationContext.
+            await UniTask.SwitchToMainThread();
 
             var opts = new SessionOptions
             {
