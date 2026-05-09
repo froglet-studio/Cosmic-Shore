@@ -177,6 +177,7 @@ namespace CosmicShore.Core
             InitializeGameplaySFXClips();
             InitializeMenuHapticClips();
             InitializeGameplayHapticClips();
+            HapticController.LogDiagnostics();
 
             // Fallback: when auto-created by AppManager.EnsureService before the
             // Reflex container is built, [Inject] will not have resolved yet.
