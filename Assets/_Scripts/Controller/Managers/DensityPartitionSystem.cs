@@ -101,6 +101,14 @@ namespace CosmicShore.Gameplay
                  "single recompute, preventing thrash on volatile prism volumes.")]
         [SerializeField] float eventCooldownSeconds = 0.25f;
 
+        [Header("Search")]
+        [Tooltip("Half-extent (in grid cells) of the kernel-smoothed peak search. " +
+                 "0 = pick the single densest cell (raw max, brittle to single-prism " +
+                 "noise); 1 = pick the densest 3x3x3 region (default — smooths over " +
+                 "isolated tight clusters so the strongest *region* wins, not the " +
+                 "strongest single cell); 2 = densest 5x5x5; etc.")]
+        [SerializeField, Range(0, 4)] int searchKernelRadius = 1;
+
         [Header("Diagnostics")]
         [Tooltip("If true, log each recompute's millisecond cost.")]
         [SerializeField] bool verboseProfiling;
@@ -109,6 +117,11 @@ namespace CosmicShore.Gameplay
         PartitionSolution _antiJade;
         PartitionSolution _antiRuby;
         PartitionSolution _antiGold;
+        // All-domain (countGrids[Blue]) peak — diagnostic only, surfaces in
+        // the toolbox so the user can see whether the search itself agrees
+        // with the visible heatmap (it should). Disagreement between this
+        // and the per-team antis is a bucket-staleness symptom in Cell.cs.
+        PartitionSolution _allDomain;
 
         // ── Tick state ──────────────────────────────────────────────────────
         float _nextRecomputeAt;
@@ -197,6 +210,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Diagnostic-only: densest region of the cell's all-domain bucket
+        /// (countGrids[Domains.Blue]). Useful as a sanity check against the
+        /// heatmap — if the all-domain marker tracks the bright cubes but
+        /// the per-team antis don't, that's a bucket-staleness issue in
+        /// Cell's Add/Remove path, not in this search.
+        /// </summary>
+        public PartitionSolution GetAllDomainSolution() => _allDomain;
+
+        /// <summary>
         /// Convenience for AI / fauna / vessel abilities that just want the
         /// current anti-domain answer without null-checking <see cref="Active"/>.
         /// Returns a default <see cref="PartitionSolution"/> (HasResult == false)
@@ -253,7 +275,9 @@ namespace CosmicShore.Gameplay
             var bestJade = new PartitionSolution { AntiOfDomain = (int)Domains.Jade, Version = _version };
             var bestRuby = new PartitionSolution { AntiOfDomain = (int)Domains.Ruby, Version = _version };
             var bestGold = new PartitionSolution { AntiOfDomain = (int)Domains.Gold, Version = _version };
+            var bestAll  = new PartitionSolution { AntiOfDomain = (int)Domains.Blue, Version = _version };
 
+            int radius = Mathf.Max(0, searchKernelRadius);
             int scanned = 0;
             int withPrisms = 0;
             var cells = Cell.ActiveCells;
@@ -264,15 +288,17 @@ namespace CosmicShore.Gameplay
                 scanned++;
 
                 bool any = false;
-                any |= EvaluateCellAntiDomain(cell, Domains.Jade, ref bestJade);
-                any |= EvaluateCellAntiDomain(cell, Domains.Ruby, ref bestRuby);
-                any |= EvaluateCellAntiDomain(cell, Domains.Gold, ref bestGold);
+                any |= EvaluateCellGrid(cell, Domains.Jade, radius, ref bestJade);
+                any |= EvaluateCellGrid(cell, Domains.Ruby, radius, ref bestRuby);
+                any |= EvaluateCellGrid(cell, Domains.Gold, radius, ref bestGold);
+                EvaluateCellGrid(cell, Domains.Blue, radius, ref bestAll); // diagnostic
                 if (any) withPrisms++;
             }
 
             _antiJade = bestJade;
             _antiRuby = bestRuby;
             _antiGold = bestGold;
+            _allDomain = bestAll;
 
             sw.Stop();
             LastRecomputeMillis = (float)sw.Elapsed.TotalMilliseconds;
@@ -284,29 +310,70 @@ namespace CosmicShore.Gameplay
                 CSDebug.Log($"[DensityPartitionSystem] v{_version} scanned {scanned} cells " +
                             $"({withPrisms} with prisms) in {LastRecomputeMillis:F2}ms — " +
                             $"antiJ={bestJade.Density:F0} antiR={bestRuby.Density:F0} " +
-                            $"antiG={bestGold.Density:F0}");
+                            $"antiG={bestGold.Density:F0} all={bestAll.Density:F0}");
             }
         }
 
         /// <summary>
-        /// Returns true when this cell contributed any prism to <paramref name="friendlyDomain"/>'s
-        /// anti-domain bucket — used to count "cells with prisms" for diagnostics.
+        /// Kernel-smoothed peak search: scans the cell's grid for the position
+        /// where the sum over a (2r+1)³ neighborhood is largest. Smooths out
+        /// single-prism noise so a tight 2-prism cluster doesn't outvote a
+        /// wider 10-prism spread, which was making the original FindDensestRegion
+        /// (single-cell max) jitter to "arbitrary" peaks in long-running ecosystems.
+        /// Returns true when this cell contributed any mass — used to count
+        /// "cells with prisms" for diagnostics.
         /// </summary>
-        static bool EvaluateCellAntiDomain(Cell cell, Domains friendlyDomain, ref PartitionSolution best)
+        static bool EvaluateCellGrid(Cell cell, Domains bucketDomain, int radius,
+                                     ref PartitionSolution best)
         {
-            // Cell.countGrids[friendly] holds every block NOT in `friendly`
-            // (see Cell.AddBlock — friendly is the one team it skips). So the
-            // densest region of that grid is the anti-friendly answer.
-            if (!cell.countGrids.TryGetValue(friendlyDomain, out var grid) || grid == null)
+            // Cell.countGrids[bucketDomain] semantics:
+            //   Jade/Ruby/Gold = every block NOT in that team (anti-team bucket)
+            //   Blue           = every block regardless of team (all-domain wildcard)
+            if (!cell.countGrids.TryGetValue(bucketDomain, out var grid) || grid == null)
                 return false;
+            if (grid.values == null) return false;
 
-            var pos = grid.FindDensestRegion();
-            int density = grid.GetDensityAtPosition(pos);
-            if (density <= 0) return false;
-            if (density <= best.Density) return true;
+            int n = grid.values.GetLength(0);
+            if (n <= 0) return false;
 
-            best.Position = pos;
-            best.Density = density;
+            int bestSum = 0;
+            int bx = 0, by = 0, bz = 0;
+
+            for (int x = 0; x < n; x++)
+            {
+                int xMin = x - radius; if (xMin < 0) xMin = 0;
+                int xMax = x + radius; if (xMax >= n) xMax = n - 1;
+
+                for (int y = 0; y < n; y++)
+                {
+                    int yMin = y - radius; if (yMin < 0) yMin = 0;
+                    int yMax = y + radius; if (yMax >= n) yMax = n - 1;
+
+                    for (int z = 0; z < n; z++)
+                    {
+                        int zMin = z - radius; if (zMin < 0) zMin = 0;
+                        int zMax = z + radius; if (zMax >= n) zMax = n - 1;
+
+                        int sum = 0;
+                        for (int xi = xMin; xi <= xMax; xi++)
+                            for (int yi = yMin; yi <= yMax; yi++)
+                                for (int zi = zMin; zi <= zMax; zi++)
+                                    sum += grid.values[xi, yi, zi];
+
+                        if (sum > bestSum)
+                        {
+                            bestSum = sum;
+                            bx = x; by = y; bz = z;
+                        }
+                    }
+                }
+            }
+
+            if (bestSum <= 0) return false;
+            if (bestSum <= best.Density) return true;
+
+            best.Position = grid.MapGridIndicesToCoordinates(new Vector3Int(bx, by, bz));
+            best.Density = bestSum;
             best.CellId = cell.ID;
             best.Stride = grid.Stride;
             return true;

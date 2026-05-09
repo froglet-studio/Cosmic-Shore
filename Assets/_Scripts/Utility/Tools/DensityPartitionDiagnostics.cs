@@ -17,12 +17,13 @@ namespace CosmicShore.Utility
     internal static class DensityPartitionDiagnostics
     {
         // ── EditorPrefs keys (shared with the toolbox tab) ──────────────────
-        public const string PrefShowGrid       = "Froglet_DensityShowGrid";
-        public const string PrefShowAntiJade   = "Froglet_DensityShowAntiJade";
-        public const string PrefShowAntiRuby   = "Froglet_DensityShowAntiRuby";
-        public const string PrefShowAntiGold   = "Froglet_DensityShowAntiGold";
+        public const string PrefShowGrid        = "Froglet_DensityShowGrid";
+        public const string PrefShowAntiJade    = "Froglet_DensityShowAntiJade";
+        public const string PrefShowAntiRuby    = "Froglet_DensityShowAntiRuby";
+        public const string PrefShowAntiGold    = "Froglet_DensityShowAntiGold";
+        public const string PrefShowAllDomain   = "Froglet_DensityShowAllDomain";
         public const string PrefShowOnlyDensest = "Froglet_DensityShowOnlyDensest";
-        public const string PrefShowLabels     = "Froglet_DensityShowLabels";
+        public const string PrefShowLabels      = "Froglet_DensityShowLabels";
 
         // ── Domain palette (matches in-game branding) ───────────────────────
         // Anti-X solution colors: complementary to the friendly's brand color
@@ -30,6 +31,9 @@ namespace CosmicShore.Utility
         public static readonly Color JadeColor = new(0.30f, 0.85f, 0.55f, 1f);
         public static readonly Color RubyColor = new(0.95f, 0.30f, 0.40f, 1f);
         public static readonly Color GoldColor = new(0.95f, 0.78f, 0.20f, 1f);
+        // All-domain marker: white so it's visually distinct from any team
+        // color and reads as "the heatmap-tracking sanity check".
+        public static readonly Color AllDomainColor = new(0.95f, 0.95f, 1.00f, 1f);
 
         public static readonly Color GridLineColor    = new(0.45f, 0.45f, 0.55f, 0.18f);
         public static readonly Color GridDensityColor = new(0.85f, 0.85f, 0.95f, 0.55f);
@@ -40,15 +44,16 @@ namespace CosmicShore.Utility
             SceneView.duringSceneGui += OnSceneGUI;
         }
 
-        static bool ShowGrid       => EditorPrefs.GetBool(PrefShowGrid, false);
-        static bool ShowAntiJade   => EditorPrefs.GetBool(PrefShowAntiJade, true);
-        static bool ShowAntiRuby   => EditorPrefs.GetBool(PrefShowAntiRuby, true);
-        static bool ShowAntiGold   => EditorPrefs.GetBool(PrefShowAntiGold, true);
-        static bool ShowOnlyDensest => EditorPrefs.GetBool(PrefShowOnlyDensest, true);
-        static bool ShowLabels     => EditorPrefs.GetBool(PrefShowLabels, true);
+        static bool ShowGrid        => EditorPrefs.GetBool(PrefShowGrid, false);
+        static bool ShowAntiJade    => EditorPrefs.GetBool(PrefShowAntiJade, true);
+        static bool ShowAntiRuby    => EditorPrefs.GetBool(PrefShowAntiRuby, true);
+        static bool ShowAntiGold    => EditorPrefs.GetBool(PrefShowAntiGold, true);
+        static bool ShowAllDomain   => EditorPrefs.GetBool(PrefShowAllDomain, true);
+        static bool ShowOnlyDensest => EditorPrefs.GetBool(PrefShowOnlyDensest, false);
+        static bool ShowLabels      => EditorPrefs.GetBool(PrefShowLabels, true);
 
         static bool AnythingVisible =>
-            ShowGrid || ShowAntiJade || ShowAntiRuby || ShowAntiGold;
+            ShowGrid || ShowAntiJade || ShowAntiRuby || ShowAntiGold || ShowAllDomain;
 
         static void OnSceneGUI(SceneView view)
         {
@@ -175,6 +180,11 @@ namespace CosmicShore.Utility
                 var s = system.GetAntiDomainSolution(Domains.Gold);
                 if (s.HasResult) DrawSolution(Domains.Gold, s, GoldColor, primary: true);
             }
+            if (ShowAllDomain)
+            {
+                var s = system.GetAllDomainSolution();
+                if (s.HasResult) DrawSolution(Domains.Blue, s, AllDomainColor, primary: true);
+            }
         }
 
         static void DrawSolution(Domains friendlyDomain, PartitionSolution solution,
@@ -207,8 +217,11 @@ namespace CosmicShore.Utility
                     normal = { textColor = color },
                     fontSize = primary ? 12 : 10,
                 };
+                string title = friendlyDomain == Domains.Blue
+                    ? "All Domain (heatmap peak)"
+                    : $"Anti-{friendlyDomain}";
                 Handles.Label(solution.Position + Vector3.up * (radius + 2f),
-                              $"Anti-{friendlyDomain}\n" +
+                              $"{title}\n" +
                               $"density {solution.Density:F0}  cell #{solution.CellId}  v{solution.Version}",
                               style);
             }

@@ -799,12 +799,13 @@ namespace CosmicShore.Utility
             // ── Scene-view overlay toggles ─────────────────────────────────
             DrawSubSectionLabel("Scene View Overlays");
 
-            DrawEditorPrefToggle("Show Grid Wireframe",     DensityPartitionDiagnostics.PrefShowGrid,       false);
-            DrawEditorPrefToggle("Show Anti-Jade Solution", DensityPartitionDiagnostics.PrefShowAntiJade,   true);
-            DrawEditorPrefToggle("Show Anti-Ruby Solution", DensityPartitionDiagnostics.PrefShowAntiRuby,   true);
-            DrawEditorPrefToggle("Show Anti-Gold Solution", DensityPartitionDiagnostics.PrefShowAntiGold,   true);
-            DrawEditorPrefToggle("Highlight Strongest",     DensityPartitionDiagnostics.PrefShowOnlyDensest, true);
-            DrawEditorPrefToggle("Show Labels",             DensityPartitionDiagnostics.PrefShowLabels,     true);
+            DrawEditorPrefToggle("Show Grid Wireframe",     DensityPartitionDiagnostics.PrefShowGrid,        false);
+            DrawEditorPrefToggle("Show Anti-Jade Solution", DensityPartitionDiagnostics.PrefShowAntiJade,    true);
+            DrawEditorPrefToggle("Show Anti-Ruby Solution", DensityPartitionDiagnostics.PrefShowAntiRuby,    true);
+            DrawEditorPrefToggle("Show Anti-Gold Solution", DensityPartitionDiagnostics.PrefShowAntiGold,    true);
+            DrawEditorPrefToggle("Show All-Domain (white)", DensityPartitionDiagnostics.PrefShowAllDomain,   true);
+            DrawEditorPrefToggle("Highlight Strongest",     DensityPartitionDiagnostics.PrefShowOnlyDensest, false);
+            DrawEditorPrefToggle("Show Labels",             DensityPartitionDiagnostics.PrefShowLabels,      true);
 
             GUILayout.Space(4);
             EditorGUILayout.BeginHorizontal();
@@ -903,6 +904,9 @@ namespace CosmicShore.Utility
             DrawSolutionRow("Anti-Gold  (Jade + Ruby densest)",
                             system.GetAntiDomainSolution(Domains.Gold),
                             DensityPartitionDiagnostics.GoldColor);
+            DrawSolutionRow("All-Domain  (heatmap peak, sanity check)",
+                            system.GetAllDomainSolution(),
+                            DensityPartitionDiagnostics.AllDomainColor);
 
             GUILayout.Space(8);
 
