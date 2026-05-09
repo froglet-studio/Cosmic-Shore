@@ -37,7 +37,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 
@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
         /// <param name="writer">
         /// Property writer used for the save-with-retry pattern.
         /// </param>
-        public async Task RepublishWithRealIdAsync(
+        public async UniTask RepublishWithRealIdAsync(
             IPresenceLobbyService lobbyService,
             string                realSessionId,
             InviteService         invites,
@@ -197,7 +197,7 @@ namespace CosmicShore.Gameplay
         /// Property writer used for the mutex + refresh + save-with-retry pattern.
         /// Do NOT call while already holding <c>_lobbyMutex</c>.
         /// </param>
-        public async Task PublishSignalAsync(
+        public async UniTask PublishSignalAsync(
             ISession            lobby,
             string              hostPlayerId,
             LobbyPropertyWriter writer)
@@ -240,7 +240,7 @@ namespace CosmicShore.Gameplay
         /// Thrown if the real session id does not appear within
         /// <paramref name="timeoutSeconds"/>.
         /// </exception>
-        public async Task<string> WaitForRealSessionIdAsync(
+        public async UniTask<string> WaitForRealSessionIdAsync(
             IPresenceLobbyService lobbyService,
             string                hostPlayerId,
             string                localPlayerId,
@@ -251,7 +251,7 @@ namespace CosmicShore.Gameplay
 
             while (UnityEngine.Time.unscaledTime < deadline)
             {
-                await Task.Delay(400);
+                await UniTask.Delay(400);
                 pollCount++;
 
                 var lobby = lobbyService.ActiveLobby;

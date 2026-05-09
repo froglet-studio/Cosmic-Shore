@@ -1,4 +1,5 @@
 using System;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -197,7 +198,7 @@ namespace CosmicShore.Gameplay
         // Internal
         // ─────────────────────────────────────────────────────────────────────
 
-        private async System.Threading.Tasks.Task InitializeFriendsAsync()
+        private async UniTask InitializeFriendsAsync()
         {
             if (_initialized || friendsService == null) return;
 

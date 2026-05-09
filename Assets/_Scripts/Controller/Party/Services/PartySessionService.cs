@@ -32,7 +32,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -124,7 +123,7 @@ namespace CosmicShore.Gameplay
         /// </para>
         /// </summary>
         /// <param name="maxPlayers">Maximum simultaneous players.</param>
-        public async Task CreateAsync(int maxPlayers)
+        public async UniTask CreateAsync(int maxPlayers)
         {
             if (ActiveSession != null) return;
 
@@ -160,7 +159,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     Debug.LogWarning($"[PartySessionService] Rate limited — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await Task.Delay(delay);
+                    await UniTask.Delay(delay);
                 }
             }
         }
@@ -179,8 +178,9 @@ namespace CosmicShore.Gameplay
         /// The UGS Relay session id published by the host after they call
         /// <see cref="CreateAsync"/>.
         /// </param>
-        public async Task JoinByIdAsync(string sessionId)
+        public async UniTask JoinByIdAsync(string sessionId)
         {
+            await UniTask.SwitchToMainThread();
             ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(
                 sessionId,
                 new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
@@ -192,9 +192,10 @@ namespace CosmicShore.Gameplay
         /// Leaves the active session (deletes if host, leaves if client) and clears
         /// <see cref="ActiveSession"/>.  Safe to call when no session is active.
         /// </summary>
-        public async Task LeaveAsync()
+        public async UniTask LeaveAsync()
         {
             if (ActiveSession == null) return;
+            await UniTask.SwitchToMainThread();
             var session = ActiveSession;
             ClearSession();
             try
@@ -216,9 +217,10 @@ namespace CosmicShore.Gameplay
         /// Throws on SDK errors — caller is responsible for error handling and
         /// grace-period enforcement.
         /// </summary>
-        public async Task RefreshAsync()
+        public async UniTask RefreshAsync()
         {
             if (ActiveSession == null) return;
+            await UniTask.SwitchToMainThread();
             await ActiveSession.RefreshAsync();
         }
 

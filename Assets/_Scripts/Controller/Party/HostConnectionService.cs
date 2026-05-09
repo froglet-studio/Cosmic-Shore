@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -244,7 +243,7 @@ namespace CosmicShore.Gameplay
         {
             // All [Inject] fields (services + gameData) are populated before Start.
             while (!IsAuthSignedInAndHasId())
-                await Task.Delay(300);
+                await UniTask.Delay(300);
 
             await EnsureInitializedAsync();
         }
@@ -324,7 +323,7 @@ namespace CosmicShore.Gameplay
         /// every menu vessel. The Relay session is created lazily on first
         /// invite acceptance via <see cref="AcceptanceSignalService.ScanForSignals"/>.
         /// </summary>
-        private async Task EnsureInitializedAsync()
+        private async UniTask EnsureInitializedAsync()
         {
             if (_initialized || _joining) return;
             _joining = true;
@@ -366,7 +365,7 @@ namespace CosmicShore.Gameplay
         // ║  Public Invite API                                                ║
         // ╚═══════════════════════════════════════════════════════════════════╝
 
-        public async Task SendInviteAsync(string targetPlayerId)
+        public async UniTask SendInviteAsync(string targetPlayerId)
         {
             DebugExtensions.LogColored(
                 $"[INVITE-SEND] SendInviteAsync called — target: {targetPlayerId}", Color.cyan);
@@ -480,7 +479,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public async Task AcceptInviteAsync(PartyInviteData invite)
+        public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {
             // Mark resolved up-front so a re-opened FriendsListPanel doesn't
             // re-spawn a row for the invite the user just accepted.
@@ -535,21 +534,21 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public Task DeclineInviteAsync()
+        public UniTask DeclineInviteAsync()
         {
             // Sender's slot is freed by their own timeout — UGS doesn't expose
             // a decline signal back to the sender.
             _lastFiredInvite     = null;
             _lastInviteResolved  = true;
             _eventBus.RaiseInviteResolved();
-            return Task.CompletedTask;
+            return UniTask.CompletedTask;
         }
 
         /// <summary>
         /// Client-side leave. Routes through <see cref="PartyInviteController"/>
         /// for the Netcode shutdown + fresh local-host restart.
         /// </summary>
-        public async Task LeavePartyAsync()
+        public async UniTask LeavePartyAsync()
         {
             var controller = PartyInviteController.Instance;
             if (controller == null)
@@ -572,7 +571,7 @@ namespace CosmicShore.Gameplay
             await CreateOwnPartySessionAsync();
         }
 
-        public async Task KickPartyMemberAsync(string playerId)
+        public async UniTask KickPartyMemberAsync(string playerId)
         {
             if (!connectionData.IsHost)
             {
@@ -646,7 +645,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Public wrapper for party session creation. Reserved; no current callers.
         /// </summary>
-        public async Task CreatePartySessionPublicAsync()
+        public async UniTask CreatePartySessionPublicAsync()
         {
             SyncLocalIdentity();
             await CreateOwnPartySessionAsync();
@@ -656,7 +655,7 @@ namespace CosmicShore.Gameplay
         // ║  Party Session — Lazy Relay creation                              ║
         // ╚═══════════════════════════════════════════════════════════════════╝
 
-        private async Task CreatePartySessionAsync()
+        private async UniTask CreatePartySessionAsync()
         {
             if (_partySessionService.ActiveSession != null) return;
 
@@ -675,7 +674,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private async Task CreatePartySessionCoreAsync()
+        private async UniTask CreatePartySessionCoreAsync()
         {
             // The UGS Multiplayer SDK calls NetworkManager.StartHost()
             // internally for Relay-backed sessions. If a local host is
@@ -707,7 +706,7 @@ namespace CosmicShore.Gameplay
         /// Thread-safety: serialised by <see cref="_sessionCreationMutex"/>; concurrent
         /// callers wait and then bail out if the first caller already succeeded.
         /// </summary>
-        private async Task CreateOwnPartySessionAsync()
+        private async UniTask CreateOwnPartySessionAsync()
         {
             await _sessionCreationMutex.WaitAsync();
             try
@@ -753,7 +752,7 @@ namespace CosmicShore.Gameplay
         /// retry Relay session creation without breaking the single-owner rule.
         /// Clears any stale session reference before retrying.
         /// </summary>
-        public async Task RetryCreateOwnPartySessionAsync(CancellationToken ct = default)
+        public async UniTask RetryCreateOwnPartySessionAsync(CancellationToken ct = default)
         {
             _partySessionService.ClearSession();
             await CreateOwnPartySessionAsync();
@@ -1075,7 +1074,7 @@ namespace CosmicShore.Gameplay
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
         }
 
-        private async Task RefreshPartyMembersAsync()
+        private async UniTask RefreshPartyMembersAsync()
         {
             if (_partySessionService.ActiveSession == null) return;
             if (connectionData.PartyMembers == null) return;
@@ -1158,7 +1157,7 @@ namespace CosmicShore.Gameplay
         /// Reentrant: callers from inside <see cref="RefreshAsync"/> (mutex already
         /// held) skip re-acquiring; external callers acquire normally.
         /// </summary>
-        private async Task ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
+        private async UniTask ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
         {
             if (_lobbyService.ActiveLobby == null || string.IsNullOrEmpty(playerId)) return;
             if (!_inviteService.Contains(playerId)) return;
@@ -1176,7 +1175,7 @@ namespace CosmicShore.Gameplay
         /// presence-leave path (<see cref="ClearOutgoingInviteIfPresentAsync"/>, after
         /// <see cref="InviteService.Remove"/>).
         /// </summary>
-        private async Task HandleInviteClearedAsync(string playerId, string reason)
+        private async UniTask HandleInviteClearedAsync(string playerId, string reason)
         {
             DebugExtensions.LogColored(
                 $"[INVITE-SEND] Clearing invite for '{playerId}' (reason: {reason})",
@@ -1293,7 +1292,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private async Task PublishPartyStateIfChangedAsync()
+        private async UniTask PublishPartyStateIfChangedAsync()
         {
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;
@@ -1334,7 +1333,7 @@ namespace CosmicShore.Gameplay
         // ║  Identity sync (cloud profile + auth fallback chain)              ║
         // ╚═══════════════════════════════════════════════════════════════════╝
 
-        private async Task WaitForProfileInitAsync(int timeoutMs)
+        private async UniTask WaitForProfileInitAsync(int timeoutMs)
         {
             if (playerDataService == null || playerDataService.IsInitialized) return;
 
@@ -1342,7 +1341,7 @@ namespace CosmicShore.Gameplay
             const int stepMs = 100;
             while (!playerDataService.IsInitialized && elapsed < timeoutMs)
             {
-                await Task.Delay(stepMs);
+                await UniTask.Delay(stepMs);
                 elapsed += stepMs;
             }
 

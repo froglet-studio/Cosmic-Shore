@@ -7,7 +7,7 @@
 // manages the UGS session object (create, join, leave, refresh).
 // ─────────────────────────────────────────────────────────────────────────────
 
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
 
 namespace CosmicShore.Gameplay
@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
         /// No-op if a session already exists.
         /// </summary>
         /// <param name="maxPlayers">Maximum simultaneous players for this session.</param>
-        Task CreateAsync(int maxPlayers);
+        UniTask CreateAsync(int maxPlayers);
 
         /// <summary>
         /// Joins an existing session by its UGS session ID.
@@ -49,14 +49,14 @@ namespace CosmicShore.Gameplay
         /// <param name="sessionId">
         /// The UGS session ID published by the host.  Must be the real ID (not PENDING).
         /// </param>
-        Task JoinByIdAsync(string sessionId);
+        UniTask JoinByIdAsync(string sessionId);
 
         /// <summary>
         /// Leaves the active session gracefully (delete if host, leave if client).
         /// Clears <see cref="ActiveSession"/> to null.
         /// Safe to call even if no session is active.
         /// </summary>
-        Task LeaveAsync();
+        UniTask LeaveAsync();
 
         /// <summary>
         /// Refreshes the session's player list from the UGS backend.
@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay
         /// Only call after the grace period (<see cref="CreatedAtUnscaledTime"/> +
         /// SESSION_CREATION_GRACE_PERIOD_SECONDS) to avoid nulling a freshly-provisioned session.
         /// </remarks>
-        Task RefreshAsync();
+        UniTask RefreshAsync();
 
         /// <summary>
         /// Synchronously clears <see cref="ActiveSession"/> without calling the UGS SDK.

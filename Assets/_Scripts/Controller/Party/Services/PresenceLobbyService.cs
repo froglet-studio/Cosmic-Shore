@@ -30,7 +30,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
@@ -145,7 +144,7 @@ namespace CosmicShore.Gameplay
                     // Re-query after a settling delay.  If a rival lobby appeared at
                     // the same instant (MPPM or near-simultaneous launch), join theirs
                     // and delete ours to avoid lobby fragmentation.
-                    await Task.Delay(LOBBY_RACE_SETTLE_MS);
+                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS);
                     var rival = await TryQueryAndJoinAsync(maxPlayers);
                     if (rival != null)
                     {
@@ -286,8 +285,9 @@ namespace CosmicShore.Gameplay
         /// first available one.  Returns <c>null</c> if no lobby exists or all join
         /// attempts fail.
         /// </summary>
-        private async Task<ISession> TryQueryAndJoinAsync(int maxPlayers)
+        private async UniTask<ISession> TryQueryAndJoinAsync(int maxPlayers)
         {
+            await UniTask.SwitchToMainThread();
             var queryOptions = new QuerySessionsOptions();
             queryOptions.FilterOptions.Add(
                 new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
@@ -305,7 +305,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     Debug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await Task.Delay(delay);
+                    await UniTask.Delay(delay);
                 }
             }
 
@@ -328,7 +328,7 @@ namespace CosmicShore.Gameplay
                 {
                     Debug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
                     if (IsRateLimitException(e))
-                        await Task.Delay(RATE_LIMIT_BASE_DELAY_MS);
+                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                 }
             }
 
@@ -339,8 +339,9 @@ namespace CosmicShore.Gameplay
         /// Creates a new presence lobby and stores it in <see cref="_activeLobby"/>.
         /// Retries up to <see cref="RATE_LIMIT_MAX_RETRIES"/> times on HTTP 429.
         /// </summary>
-        private async Task CreateAsync(int maxPlayers)
+        private async UniTask CreateAsync(int maxPlayers)
         {
+            await UniTask.SwitchToMainThread();
             Debug.Log($"[PresenceLobbyService] Creating new presence lobby (maxPlayers={maxPlayers})...");
             try
             {
@@ -374,7 +375,7 @@ namespace CosmicShore.Gameplay
                     {
                         int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                         Debug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                        await Task.Delay(delay);
+                        await UniTask.Delay(delay);
                     }
                 }
             }
@@ -389,9 +390,10 @@ namespace CosmicShore.Gameplay
         /// a lobby that lost a race condition (a rival lobby was created at the
         /// same moment and we are merging into theirs).
         /// </summary>
-        private async Task DeleteOwnLobbyQuietlyAsync()
+        private async UniTask DeleteOwnLobbyQuietlyAsync()
         {
             if (_activeLobby == null) return;
+            await UniTask.SwitchToMainThread();
             Debug.Log($"[PresenceLobbyService] DeleteOwnLobbyQuietly — releasing race-lost lobby {_activeLobby.Id}.");
             try
             {

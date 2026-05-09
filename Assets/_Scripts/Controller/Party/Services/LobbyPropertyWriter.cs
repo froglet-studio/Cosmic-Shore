@@ -21,7 +21,7 @@
 
 using System;
 using System.Threading;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using Unity.Services.Multiplayer;
 
@@ -99,13 +99,17 @@ namespace CosmicShore.Gameplay
         /// <param name="operationName">
         /// Human-readable label for log messages (e.g. "PublishJoinedParty").
         /// </param>
-        public async Task WriteAsync(ISession lobby, Action setProperty, string operationName)
+        public async UniTask WriteAsync(ISession lobby, Action setProperty, string operationName)
         {
             if (lobby == null) return;
 
             await LobbyMutex.WaitAsync();
             try
             {
+                // UGS SDK requires Unity main thread. Re-enter after mutex wait in case
+                // the caller is in a mixed async/await context.
+                await UniTask.SwitchToMainThread();
+
                 // Refresh before writing — the SDK's player-index cache can be
                 // stale, causing SaveCurrentPlayerDataAsync to fail silently if
                 // the local player's index moved since the last refresh.
@@ -137,8 +141,9 @@ namespace CosmicShore.Gameplay
         /// </param>
         /// <param name="maxRetries">Maximum retry attempts before giving up (default 3).</param>
         /// <param name="baseDelayMs">Base delay in ms between retries (default 2000).</param>
-        public async Task SaveWithRetryAsync(ISession lobby, int maxRetries = 3, int baseDelayMs = 2000)
+        public async UniTask SaveWithRetryAsync(ISession lobby, int maxRetries = 3, int baseDelayMs = 2000)
         {
+            await UniTask.SwitchToMainThread();
             for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
                 try
@@ -163,7 +168,7 @@ namespace CosmicShore.Gameplay
                     // consume the entire rate-limit budget.
                     Debug.LogWarning(
                         $"[LobbyPropertyWriter] Save failed ({e.Message}) — retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
-                    await Task.Delay(baseDelayMs);
+                    await UniTask.Delay(baseDelayMs);
                     try { await lobby.RefreshAsync(); } catch { /* best-effort */ }
                 }
             }
