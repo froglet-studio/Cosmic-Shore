@@ -65,6 +65,14 @@ namespace CosmicShore.Gameplay
 
         readonly List<GameObject> spawnedLifeForms = new();
         readonly HashSet<Prism> trackedBlocks = new();
+        // Snapshots block.Domain at the moment AddBlock was called so RemoveBlock
+        // can decrement exactly the same buckets that AddBlock incremented.
+        // Without this, prisms added when their PrismTeamManager still reads
+        // Domains.Blue (the default before HealthBlockTracker.Add → ChangeTeam
+        // runs) and removed after their team has been assigned would leave a
+        // stale +1 in countGrids[NewTeam] forever — anti-NewTeam answers drift
+        // toward historical death sites instead of current mass.
+        readonly Dictionary<Prism, Domains> addTimeDomains = new();
         SnowChanger spawnedCytoplasm;
 
         CellPhase phase = CellPhase.Sprout;
@@ -300,6 +308,7 @@ namespace CosmicShore.Gameplay
             }
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
+            addTimeDomains.Clear();
             domainBlockCounts.Clear();
             phase = CellPhase.Sprout;
 
@@ -356,6 +365,7 @@ namespace CosmicShore.Gameplay
         {
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
+            addTimeDomains.Clear();
             domainBlockCounts.Clear();
             phase = CellPhase.Sprout;
 
@@ -504,15 +514,18 @@ namespace CosmicShore.Gameplay
 
             if (block)
             {
+                Domains addDomain = block.Domain;
+                addTimeDomains[block] = addDomain;
+
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (var t in teams)
-                    if (t != block.Domain) countGrids[t].AddBlock(block);
+                    if (t != addDomain) countGrids[t].AddBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.AddBlock(block);
 
-                domainBlockCounts.TryGetValue(block.Domain, out int count);
-                domainBlockCounts[block.Domain] = count + 1;
+                domainBlockCounts.TryGetValue(addDomain, out int count);
+                domainBlockCounts[addDomain] = count + 1;
             }
         }
 
@@ -523,15 +536,24 @@ namespace CosmicShore.Gameplay
 
             if (block)
             {
+                // Use the add-time domain so we decrement exactly the buckets
+                // we incremented. Falling back to the live block.Domain is a
+                // best-effort for prisms that were added before this snapshot
+                // mechanism existed (or removed without a matching add).
+                Domains removeDomain;
+                if (!addTimeDomains.TryGetValue(block, out removeDomain))
+                    removeDomain = block.Domain;
+                addTimeDomains.Remove(block);
+
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (Domains t in teams)
-                    if (t != block.Domain) countGrids[t].RemoveBlock(block);
+                    if (t != removeDomain) countGrids[t].RemoveBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.RemoveBlock(block);
 
-                if (domainBlockCounts.TryGetValue(block.Domain, out int count) && count > 0)
-                    domainBlockCounts[block.Domain] = count - 1;
+                if (domainBlockCounts.TryGetValue(removeDomain, out int count) && count > 0)
+                    domainBlockCounts[removeDomain] = count - 1;
             }
         }
 
