@@ -6,6 +6,7 @@ using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Audio;
+using HapticClip = Lofelt.NiceVibrations.HapticClip;
 
 /// <summary>
 /// Audio System to contain audio methods accessed by other classes
@@ -105,6 +106,42 @@ namespace CosmicShore.Core
         [SerializeField] AudioClip SpeedBurstAudioClip;
         [SerializeField] AudioClip CrystalSkimAudioClip;
 
+        [Header("Menu Haptics (baked from menu audio via Tools > Cosmic Shore > Bake Haptics)")]
+        [SerializeField] HapticClip OptionClickHapticClip;
+        [SerializeField] HapticClip OpenViewHapticClip;
+        [SerializeField] HapticClip SwitchViewHapticClip;
+        [SerializeField] HapticClip CloseViewHapticClip;
+        [SerializeField] HapticClip SmallRewardHapticClip;
+        [SerializeField] HapticClip BigRewardHapticClip;
+        [SerializeField] HapticClip UpgradeHapticClip;
+        [SerializeField] HapticClip DeniedHapticClip;
+        [SerializeField] HapticClip ConfirmedHapticClip;
+        [SerializeField] HapticClip LetsGoHapticClip;
+        [SerializeField] HapticClip SwitchScreenHapticClip;
+        [SerializeField] HapticClip RedeemTicketHapticClip;
+
+        [Header("Gameplay Haptics (baked from gameplay SFX)")]
+        [SerializeField] HapticClip BlockDestroyHapticClip;
+        [SerializeField] HapticClip ShieldActivateHapticClip;
+        [SerializeField] HapticClip ShieldDeactivateHapticClip;
+        [SerializeField] HapticClip MineExplodeHapticClip;
+        [SerializeField] HapticClip ProjectileLaunchHapticClip;
+        [SerializeField] HapticClip CrystalCollectHapticClip;
+        [SerializeField] HapticClip VesselImpactHapticClip;
+        [SerializeField] HapticClip GameEndHapticClip;
+        [SerializeField] HapticClip ScoreRevealHapticClip;
+        [SerializeField] HapticClip PauseOpenHapticClip;
+        [SerializeField] HapticClip PauseCloseHapticClip;
+        [SerializeField] HapticClip GunFireHapticClip;
+        [SerializeField] HapticClip BoostActivateHapticClip;
+        [SerializeField] HapticClip ExplosionHapticClip;
+        [SerializeField] HapticClip CreatureDeathHapticClip;
+        [SerializeField] HapticClip DriftStartHapticClip;
+        [SerializeField] HapticClip DriftEndHapticClip;
+        [SerializeField] HapticClip EnergyGainHapticClip;
+        [SerializeField] HapticClip SpeedBurstHapticClip;
+        [SerializeField] HapticClip CrystalSkimHapticClip;
+
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
@@ -117,6 +154,8 @@ namespace CosmicShore.Core
 
         Dictionary<MenuAudioCategory, AudioClip> MenuAudioClips;
         Dictionary<GameplaySFXCategory, AudioClip> GameplaySFXClips;
+        Dictionary<MenuAudioCategory, HapticClip> MenuHapticClips;
+        Dictionary<GameplaySFXCategory, HapticClip> GameplayHapticClips;
 
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
@@ -136,6 +175,8 @@ namespace CosmicShore.Core
         {
             InitializeMenuAudioClips();
             InitializeGameplaySFXClips();
+            InitializeMenuHapticClips();
+            InitializeGameplayHapticClips();
 
             // Fallback: when auto-created by AppManager.EnsureService before the
             // Reflex container is built, [Inject] will not have resolved yet.
@@ -289,7 +330,7 @@ namespace CosmicShore.Core
         public void PlayMenuAudio(MenuAudioCategory category)
         {
             PlaySFXClip(MenuAudioClips[category]);
-            HapticController.PlayHaptic(GetHapticForMenuAudio(category));
+            PlayPairedHaptic(MenuHapticClips, category, GetHapticForMenuAudio(category));
         }
 
         public void PlayGameplaySFX(GameplaySFXCategory category)
@@ -299,7 +340,15 @@ namespace CosmicShore.Core
             else
                 Debug.LogWarning($"AudioSystem.PlayGameplaySFX: No audio clip assigned for {category}");
 
-            HapticController.PlayHaptic(GetHapticForGameplaySFX(category));
+            PlayPairedHaptic(GameplayHapticClips, category, GetHapticForGameplaySFX(category));
+        }
+
+        static void PlayPairedHaptic<TKey>(Dictionary<TKey, HapticClip> map, TKey category, HapticType fallback)
+        {
+            if (map != null && map.TryGetValue(category, out var clip) && clip != null && clip.json != null && clip.json.Length > 0)
+                HapticController.PlayClip(clip);
+            else
+                HapticController.PlayHaptic(fallback);
         }
 
         public static HapticType GetHapticForGameplaySFX(GameplaySFXCategory category) => category switch
@@ -411,6 +460,52 @@ namespace CosmicShore.Core
                 {GameplaySFXCategory.EnergyGain, EnergyGainAudioClip},
                 {GameplaySFXCategory.SpeedBurst, SpeedBurstAudioClip},
                 {GameplaySFXCategory.CrystalSkim, CrystalSkimAudioClip},
+            };
+        }
+
+        void InitializeMenuHapticClips()
+        {
+            MenuHapticClips = new Dictionary<MenuAudioCategory, HapticClip>()
+            {
+                {MenuAudioCategory.OptionClick, OptionClickHapticClip},
+                {MenuAudioCategory.OpenView, OpenViewHapticClip},
+                {MenuAudioCategory.SwitchView, SwitchViewHapticClip},
+                {MenuAudioCategory.CloseView, CloseViewHapticClip},
+                {MenuAudioCategory.SmallReward, SmallRewardHapticClip},
+                {MenuAudioCategory.BigReward, BigRewardHapticClip},
+                {MenuAudioCategory.Upgrade, UpgradeHapticClip},
+                {MenuAudioCategory.Denied, DeniedHapticClip},
+                {MenuAudioCategory.Confirmed, ConfirmedHapticClip},
+                {MenuAudioCategory.LetsGo, LetsGoHapticClip},
+                {MenuAudioCategory.SwitchScreen, SwitchScreenHapticClip},
+                {MenuAudioCategory.RedeemTicket, RedeemTicketHapticClip},
+            };
+        }
+
+        void InitializeGameplayHapticClips()
+        {
+            GameplayHapticClips = new Dictionary<GameplaySFXCategory, HapticClip>()
+            {
+                {GameplaySFXCategory.BlockDestroy, BlockDestroyHapticClip},
+                {GameplaySFXCategory.ShieldActivate, ShieldActivateHapticClip},
+                {GameplaySFXCategory.ShieldDeactivate, ShieldDeactivateHapticClip},
+                {GameplaySFXCategory.MineExplode, MineExplodeHapticClip},
+                {GameplaySFXCategory.ProjectileLaunch, ProjectileLaunchHapticClip},
+                {GameplaySFXCategory.CrystalCollect, CrystalCollectHapticClip},
+                {GameplaySFXCategory.VesselImpact, VesselImpactHapticClip},
+                {GameplaySFXCategory.GameEnd, GameEndHapticClip},
+                {GameplaySFXCategory.ScoreReveal, ScoreRevealHapticClip},
+                {GameplaySFXCategory.PauseOpen, PauseOpenHapticClip},
+                {GameplaySFXCategory.PauseClose, PauseCloseHapticClip},
+                {GameplaySFXCategory.GunFire, GunFireHapticClip},
+                {GameplaySFXCategory.BoostActivate, BoostActivateHapticClip},
+                {GameplaySFXCategory.Explosion, ExplosionHapticClip},
+                {GameplaySFXCategory.CreatureDeath, CreatureDeathHapticClip},
+                {GameplaySFXCategory.DriftStart, DriftStartHapticClip},
+                {GameplaySFXCategory.DriftEnd, DriftEndHapticClip},
+                {GameplaySFXCategory.EnergyGain, EnergyGainHapticClip},
+                {GameplaySFXCategory.SpeedBurst, SpeedBurstHapticClip},
+                {GameplaySFXCategory.CrystalSkim, CrystalSkimHapticClip},
             };
         }
     }

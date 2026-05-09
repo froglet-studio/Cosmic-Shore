@@ -64,6 +64,22 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Play a baked .haptic clip authored by HapticClipBaker (or Lofelt Studio).
+        /// Falls through silently when disabled or when the clip is empty.
+        /// </summary>
+        public static void PlayClip(HapticClip clip)
+        {
+            if (clip == null || clip.json == null || clip.json.Length == 0) return;
+
+            var settings = ResolveGameSetting();
+            if (settings == null || !settings.HapticsEnabled || settings.HapticsLevel == 0)
+                return;
+
+            Lofelt.NiceVibrations.HapticController.outputLevel = settings.HapticsLevel;
+            Lofelt.NiceVibrations.HapticController.Play(clip);
+        }
+
+        /// <summary>
         /// Get Pattern For Haptic Type
         /// Returns mapped Haptic Patterns
         /// </summary>
