@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
         private const int RATE_LIMIT_MAX_RETRIES  = 3;
         private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
         private const int HOST_CONFLICT_MAX_RETRIES = 2;
-        private const int TRANSIENT_MAX_RETRIES   = 3;
+        private const int TRANSIENT_MAX_RETRIES   = 5;
         private const int TRANSIENT_BASE_DELAY_MS = 1000;
 
         // Lobby player-property keys — written during session create/join so
@@ -285,9 +285,24 @@ namespace CosmicShore.Gameplay
             e.Message?.Contains("NetworkManager", StringComparison.OrdinalIgnoreCase) == true ||
             e.Message?.Contains("host", StringComparison.OrdinalIgnoreCase) == true;
 
-        private static bool IsTransientSessionException(Exception e) =>
-            e is SessionException &&
-            (e.InnerException is NullReferenceException ||
-             e.Message?.IndexOf("Object reference", StringComparison.OrdinalIgnoreCase) >= 0);
+        private static bool IsTransientSessionException(Exception e)
+        {
+            if (e is not SessionException) return false;
+
+            // NRE-flavored transient (null ref inside UGS SDK on lobby events subscription)
+            if (e.InnerException is NullReferenceException) return true;
+
+            var msg = e.Message ?? string.Empty;
+            if (msg.IndexOf("Object reference",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+            // Lobby-events / Wire-subscription transients (error code 23006).
+            // These originate in LobbyHandler.SubscribeToLobbyEventsAsync after the
+            // lobby is created server-side, so retrying CreateSessionAsync is safe.
+            if (msg.IndexOf("lobby service for events", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (msg.IndexOf("Error Code[23006]",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (msg.IndexOf("valid Lobby ID",           StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+            return false;
+        }
     }
 }
