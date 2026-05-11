@@ -64,6 +64,8 @@ namespace CosmicShore.Gameplay
         private const int RATE_LIMIT_MAX_RETRIES  = 3;
         private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
         private const int HOST_CONFLICT_MAX_RETRIES = 2;
+        private const int TRANSIENT_MAX_RETRIES   = 3;
+        private const int TRANSIENT_BASE_DELAY_MS = 1000;
 
         // Lobby player-property keys — written during session create/join so
         // other lobby members can see our display name, party info, etc.
@@ -159,6 +161,12 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     Debug.LogWarning($"[PartySessionService] Rate limited — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await UniTask.Delay(delay);
+                }
+                catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
+                {
+                    int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[PartySessionService] Transient session error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms: {e.Message}");
                     await UniTask.Delay(delay);
                 }
             }
@@ -276,5 +284,10 @@ namespace CosmicShore.Gameplay
         private static bool IsHostConflictException(Exception e) =>
             e.Message?.Contains("NetworkManager", StringComparison.OrdinalIgnoreCase) == true ||
             e.Message?.Contains("host", StringComparison.OrdinalIgnoreCase) == true;
+
+        private static bool IsTransientSessionException(Exception e) =>
+            e is SessionException &&
+            (e.InnerException is NullReferenceException ||
+             e.Message?.IndexOf("Object reference", StringComparison.OrdinalIgnoreCase) >= 0);
     }
 }

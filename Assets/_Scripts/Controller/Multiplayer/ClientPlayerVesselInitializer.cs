@@ -227,6 +227,11 @@ namespace CosmicShore.Gameplay
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
                 _signalClientReadyWhenDone = false;
+                // Fallback: if the local player's pair was skipped via the
+                // "already initialized" branch above, InvokeClientReady was
+                // never called inside InitializePair.  Call it here so the
+                // loading screen always clears when all pairs are resolved.
+                gameData.InvokeClientReady();
             }
         }
 
