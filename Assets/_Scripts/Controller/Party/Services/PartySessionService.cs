@@ -1,0 +1,308 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PartySessionService.cs
+// Owns the UGS Relay-backed party session lifecycle.
+//
+// WHY this class exists:
+//   Before extraction, all party session state (_partySession, _partySessionCreatedAt)
+//   and the CreatePartySessionCoreAsync / JoinSessionByIdAsync logic lived in
+//   HostConnectionService alongside lobby code, member-sync code, invite code,
+//   and refresh scheduling.  Extracting the session lifecycle here gives it a
+//   single, documentable home and makes every session state change observable
+//   through ActiveSession and CreatedAtUnscaledTime.
+//
+// KEY CONSTRAINT: this service does NOT touch NetworkManager.
+//   Netcode startup/shutdown (NM.StartHost(), NM.Shutdown()) is
+//   HostConnectionService's responsibility for Phases 9-10 and will move to
+//   INetworkTransitionService in Phase 11.  This service only manages the UGS
+//   session object returned by MultiplayerService.Instance.
+//
+// RETRY POLICY:
+//   CreateAsync retries on host-conflict (happens when the local NM is still
+//   shutting down) and rate-limit (HTTP 429) errors with exponential back-off.
+//   JoinByIdAsync does not retry — the caller (AcceptInviteAsync) handles the
+//   join-failed path.
+//
+// LIFETIME:
+//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   HostConnectionService for Phases 9-11.  Phase 12 registers it in Reflex DI.
+//
+// THREAD SAFETY:
+//   Main-thread only.
+// ─────────────────────────────────────────────────────────────────────────────
+
+using System;
+using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
+using Unity.Services.Multiplayer;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Manages the UGS Relay-backed party session: create, join, leave, refresh.
+    ///
+    /// <para>
+    /// Owns the <see cref="ActiveSession"/> reference and the
+    /// <see cref="CreatedAtUnscaledTime"/> timestamp used to enforce the
+    /// post-creation grace period.  All NetworkManager lifecycle operations
+    /// (Shutdown, StartHost) remain in the caller for Phase 9 and will move to
+    /// <see cref="NetworkTransitionService"/> in Phase 11.
+    /// </para>
+    ///
+    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
+    /// Thread-safety: main-thread only.
+    /// </summary>
+    public sealed class PartySessionService : IPartySessionService
+    {
+        // ─────────────────────────────────────────────────────────────────────
+        // Constants
+        // ─────────────────────────────────────────────────────────────────────
+
+        private const int RATE_LIMIT_MAX_RETRIES  = 3;
+        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
+        private const int HOST_CONFLICT_MAX_RETRIES = 2;
+        private const int TRANSIENT_MAX_RETRIES   = 5;
+        private const int TRANSIENT_BASE_DELAY_MS = 1000;
+
+        // Lobby player-property keys — written during session create/join so
+        // other lobby members can see our display name, party info, etc.
+        private const string DISPLAY_NAME_KEY    = "displayName";
+        private const string AVATAR_ID_KEY       = "avatarId";
+        private const string PARTY_COUNT_KEY     = "partyCount";
+        private const string PARTY_MAX_KEY       = "partyMax";
+        private const string MATCH_NAME_KEY      = "matchName";
+        private const string JOINED_PARTY_KEY    = "joined_party";
+        private const string INVITE_PAYLOADS_KEY = "invite_payloads";
+        private const string ACCEPTED_INVITE_KEY = "accepted_invite";
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Dependencies + state
+        // ─────────────────────────────────────────────────────────────────────
+
+        private readonly HostConnectionDataSO _connectionData;
+
+        // ─────────────────────────────────────────────────────────────────────
+        // IPartySessionService — state properties
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <inheritdoc/>
+        public ISession ActiveSession { get; private set; }
+
+        /// <inheritdoc/>
+        public float CreatedAtUnscaledTime { get; private set; }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Construction
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates the party session service.
+        /// </summary>
+        /// <param name="connectionData">
+        /// Shared party state container.  Read for player identity (display name,
+        /// avatar id) when building player properties for session create/join.
+        /// </param>
+        public PartySessionService(HostConnectionDataSO connectionData)
+        {
+            _connectionData = connectionData;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // IPartySessionService — session lifecycle
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates a new private Relay-backed party session and sets
+        /// <see cref="ActiveSession"/>.  No-op if a session is already active.
+        ///
+        /// <para>
+        /// Retries on host-conflict (NM still shutting down) and rate-limit (HTTP 429)
+        /// errors with exponential back-off.  Caller is responsible for shutting
+        /// down the local NetworkManager BEFORE calling this method.
+        /// </para>
+        /// </summary>
+        /// <param name="maxPlayers">Maximum simultaneous players.</param>
+        public async UniTask CreateAsync(int maxPlayers)
+        {
+            if (ActiveSession != null) return;
+
+            // UGS SDK accesses Application.isPlaying during session creation and must
+            // run on Unity's main thread.  After awaiting ShutdownAsync (a UniTask),
+            // the continuation can land on the .NET thread pool — switch back before
+            // touching the SDK so all UGS HTTP continuations inherit the correct
+            // SynchronizationContext.
+            await UniTask.SwitchToMainThread();
+
+            var opts = new SessionOptions
+            {
+                MaxPlayers       = maxPlayers,
+                IsLocked         = false,
+                IsPrivate        = true,
+                PlayerProperties = BuildLocalPlayerProperties(),
+            }.WithRelayNetwork();
+
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    ActiveSession          = await MultiplayerService.Instance.CreateSessionAsync(opts);
+                    CreatedAtUnscaledTime  = Time.unscaledTime;
+                    Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
+                    return;
+                }
+                catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
+                {
+                    Debug.LogWarning($"[PartySessionService] Host conflict — retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[PartySessionService] Rate limited — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await UniTask.Delay(delay);
+                }
+                catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
+                {
+                    int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[PartySessionService] Transient session error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms: {e.Message}");
+                    await UniTask.Delay(delay);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Joins an existing party session by its UGS session ID and sets
+        /// <see cref="ActiveSession"/>.
+        ///
+        /// <para>
+        /// The caller must ensure <paramref name="sessionId"/> is the real (non-PENDING)
+        /// Relay session id before calling — use
+        /// <see cref="AcceptanceSignalService.WaitForRealSessionIdAsync"/> to obtain it.
+        /// </para>
+        /// </summary>
+        /// <param name="sessionId">
+        /// The UGS Relay session id published by the host after they call
+        /// <see cref="CreateAsync"/>.
+        /// </param>
+        public async UniTask JoinByIdAsync(string sessionId)
+        {
+            await UniTask.SwitchToMainThread();
+            ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(
+                sessionId,
+                new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
+
+            Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
+        }
+
+        /// <summary>
+        /// Leaves the active session (deletes if host, leaves if client) and clears
+        /// <see cref="ActiveSession"/>.  Safe to call when no session is active.
+        /// </summary>
+        public async UniTask LeaveAsync()
+        {
+            if (ActiveSession == null) return;
+            await UniTask.SwitchToMainThread();
+            var session = ActiveSession;
+            ClearSession();
+            try
+            {
+                if (session.IsHost)
+                    await session.AsHost().DeleteAsync();
+                else
+                    await session.LeaveAsync();
+                Debug.Log($"[PartySessionService] Left party session {session.Id}.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[PartySessionService] Leave error (session already gone?): {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the active session's player list from the UGS backend.
+        /// Throws on SDK errors — caller is responsible for error handling and
+        /// grace-period enforcement.
+        /// </summary>
+        public async UniTask RefreshAsync()
+        {
+            if (ActiveSession == null) return;
+            await UniTask.SwitchToMainThread();
+            await ActiveSession.RefreshAsync();
+        }
+
+        /// <summary>
+        /// Synchronously clears <see cref="ActiveSession"/> and
+        /// <see cref="CreatedAtUnscaledTime"/> without calling the UGS SDK.
+        ///
+        /// <para>
+        /// Use when the session reference should be discarded without a graceful
+        /// leave (e.g., game→menu transition stale-session clear, or after a
+        /// non-rate-limit refresh failure when retaining the session would trigger
+        /// duplicate creation that kicks the joining client).
+        /// </para>
+        /// </summary>
+        public void ClearSession()
+        {
+            if (ActiveSession == null) return;
+            Debug.Log($"[PartySessionService] Clearing session reference {ActiveSession.Id}.");
+            ActiveSession         = null;
+            CreatedAtUnscaledTime = 0f;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Private helpers
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Builds the player-property dictionary written to the UGS session on
+        /// create/join.  Reflects the current player identity snapshot from
+        /// <c>_connectionData</c>.
+        /// </summary>
+        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
+        {
+            int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
+            int partyMax   = _connectionData.MaxPartySlots;
+
+            return new Dictionary<string, PlayerProperty>
+            {
+                { DISPLAY_NAME_KEY,    new PlayerProperty(_connectionData.LocalDisplayName ?? "Pilot", VisibilityPropertyOptions.Public) },
+                { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
+                { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
+                { PARTY_MAX_KEY,       new PlayerProperty(partyMax.ToString(),   VisibilityPropertyOptions.Public) },
+                { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+            };
+        }
+
+        private static bool IsRateLimitException(Exception e) =>
+            e is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 429;
+
+        private static bool IsHostConflictException(Exception e) =>
+            e.Message?.Contains("NetworkManager", StringComparison.OrdinalIgnoreCase) == true ||
+            e.Message?.Contains("host", StringComparison.OrdinalIgnoreCase) == true;
+
+        private static bool IsTransientSessionException(Exception e)
+        {
+            if (e is not SessionException) return false;
+
+            // NRE-flavored transient (null ref inside UGS SDK on lobby events subscription)
+            if (e.InnerException is NullReferenceException) return true;
+
+            var msg = e.Message ?? string.Empty;
+            if (msg.IndexOf("Object reference",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+            // Lobby-events / Wire-subscription transients (error code 23006).
+            // These originate in LobbyHandler.SubscribeToLobbyEventsAsync after the
+            // lobby is created server-side, so retrying CreateSessionAsync is safe.
+            if (msg.IndexOf("lobby service for events", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (msg.IndexOf("Error Code[23006]",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (msg.IndexOf("valid Lobby ID",           StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+            return false;
+        }
+    }
+}

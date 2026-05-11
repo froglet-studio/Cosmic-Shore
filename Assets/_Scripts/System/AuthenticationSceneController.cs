@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -53,8 +54,8 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Hard safety timeout — force-navigates to main menu if everything hangs.")]
         private float safetyTimeout = 10f;
 
-        [SerializeField, Tooltip("Seconds to wait for HostConnectionService to start the Relay host before falling back to a direct scene load.")]
-        private float networkHostTimeout = 12f;
+        [SerializeField, Tooltip("Seconds to wait per attempt for HostConnectionService to start the Relay host (minimum 15s). Three attempts are made before giving up.")]
+        private float networkHostTimeout = 15f;
 
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
@@ -62,6 +63,7 @@ namespace CosmicShore.Core
         [Inject] private SceneNameListSO _sceneNames;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
         [Inject] private ApplicationStateMachine _appStateMachine;
+        [Inject] private HostConnectionDataSO _connectionData;
 
         CancellationTokenSource _cts;
         bool _navigated;
@@ -424,166 +426,97 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Ensures a network host is running, then loads Menu_Main via Netcode
-        /// scene management so that scene-placed NetworkObjects (including
-        /// MenuServerPlayerVesselInitializer) receive OnNetworkSpawn.
+        /// Waits for HostConnectionService to confirm a live Relay session (state InParty),
+        /// then loads Menu_Main through Netcode.  Retries up to 3 times; each attempt waits
+        /// up to <see cref="networkHostTimeout"/> seconds.
+        ///
+        /// Keeps the splash overlay opaque until Menu_Main starts loading — the overlay
+        /// stays opaque through the scene transition and is released by
+        /// <see cref="SceneLoader.FadeFromSplashOnReady"/> when <c>OnClientReady</c> fires.
         /// </summary>
         async UniTaskVoid LoadMainMenuNetworkedAsync(CancellationToken ct)
         {
-            try
+            const int maxAttempts = 3;
+            bool networkReady = false;
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            float timeout = Mathf.Max(networkHostTimeout, 15f);
+
+            for (int attempt = 1; attempt <= maxAttempts && !networkReady; attempt++)
             {
-                await EnsureHostStartedAsync(ct);
-
-                var nm = NetworkManager.Singleton;
-                string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
-
-                // If HostConnectionService didn't produce a Relay host in time
-                // (UGS rate limits, Relay outage, etc.), start a plain local host
-                // so Menu_Main's networked spawning still works. HostConnectionService
-                // will shut this down and take over if it eventually succeeds with
-                // Relay (see HostConnectionService.CreatePartySessionCoreAsync).
-                if ((nm == null || !nm.IsListening) && TryStartLocalHostFallback())
-                {
-                    nm = NetworkManager.Singleton;
-                    CSDebug.LogWarning($"[AuthScene] Relay host unavailable — started local host fallback.");
-                }
-
-                if (nm != null && nm.IsListening)
-                {
-                    CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
-                    nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
-                }
-                else
-                {
-                    CSDebug.LogError($"[AuthScene] No host could be started. " +
-                        $"Loading {menuScene} directly — player spawning will not work.");
-                    LoadMainMenuDirect();
-                }
-            }
-            catch (OperationCanceledException) { /* scene destroyed */ }
-            catch (Exception ex)
-            {
-                CSDebug.LogWarning($"[AuthScene] Networked scene load failed: {ex.Message}. Falling back to direct scene load.");
-                LoadMainMenuDirect();
-            }
-        }
-
-        /// <summary>
-        /// Waits for the network host to become ready before Menu_Main is loaded.
-        /// The host is started by <see cref="HostConnectionService"/> via a
-        /// Relay-backed party session.
-        ///
-        /// If the host does not come up within the timeout,
-        /// <see cref="LoadMainMenuNetworkedAsync"/> invokes
-        /// <see cref="TryStartLocalHostFallback"/> to start a plain local host
-        /// so Menu_Main's networked vessel spawning still works. The previous
-        /// race — where a local host and a Relay host both tried to own the
-        /// NetworkManager — is now handled inside
-        /// <c>HostConnectionService.CreatePartySessionCoreAsync</c>, which
-        /// shuts down any running host before creating its Relay session.
-        /// </summary>
-        async UniTask EnsureHostStartedAsync(CancellationToken ct)
-        {
-            // Already running — nothing to do.
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
-                CSDebug.Log("[AuthScene] Network host already running.");
-                return;
-            }
-
-            // Guard against scenes that still have the old serialized default (3s).
-            // Relay allocation typically needs 5-10s.
-            float effectiveTimeout = Mathf.Max(networkHostTimeout, 10f);
-
-            // Wait for HostConnectionService to start the Relay host.
-            using (var waitCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
-            {
-                waitCts.CancelAfter(TimeSpan.FromSeconds(effectiveTimeout));
-
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                linkedCts.CancelAfter(TimeSpan.FromSeconds(timeout));
                 try
                 {
-                    await UniTask.WaitUntil(
-                        () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
-                        cancellationToken: waitCts.Token);
-                    CSDebug.Log("[AuthScene] Network host started (by HostConnectionService).");
+                    // Wait for the Relay session to be confirmed live (InParty reached).
+                    // OnHostConnectionEstablished fires twice: at lobby join (NM not listening)
+                    // and after Relay creation (NM listening). WaitForRelayReadyAsync only
+                    // completes on the second fire.
+                    await WaitForRelayReadyAsync(linkedCts.Token);
+                    networkReady = true;
+                    CSDebug.Log($"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
-                    CSDebug.LogWarning($"[AuthScene] Relay host did not start within {effectiveTimeout}s. " +
-                        "Will try local host fallback.");
+                    if (attempt < maxAttempts)
+                    {
+                        CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) — retrying HCS init...");
+                        var hcs = HostConnectionService.Instance;
+                        if (hcs != null)
+                            await hcs.RetryCreateOwnPartySessionAsync(ct);
+                    }
+                    else
+                    {
+                        CSDebug.LogError("[AuthScene] Failed to start network session after 3 attempts. Cannot load Menu_Main without a Relay host.");
+                        // TODO: raise SOAP event → "NetworkConnectionError" panel with Retry button
+                    }
                 }
             }
+
+            if (!networkReady) return;
+
+            // Keep the splash opaque through the scene transition.  SceneLoader.OnSceneLoaded
+            // will re-assert this on the Menu_Main side and subscribe FadeFromSplashOnReady
+            // to OnClientReady so the overlay fades once the vessel spawns.
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+
+            CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
+            NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
         }
 
         /// <summary>
-        /// Starts a plain local host on the existing <see cref="NetworkManager"/>
-        /// as a last-resort fallback when HostConnectionService can't produce a
-        /// Relay host in time (e.g. UGS Multiplayer rate limits, Relay outage).
-        /// Returns true if the NetworkManager is listening after the call.
+        /// Resolves when <see cref="HostConnectionDataSO.OnHostConnectionEstablished"/> fires
+        /// AND <see cref="NetworkManager.IsListening"/> is true — confirming the Relay session
+        /// is live and NM is running as host.
+        ///
+        /// The event fires twice during startup: once at lobby join (NM not yet listening) and
+        /// once after Relay creation (NM listening).  Only the second fire satisfies both
+        /// conditions, so the lobby-join fire is silently ignored.
         /// </summary>
-        static bool TryStartLocalHostFallback()
+        async UniTask WaitForRelayReadyAsync(CancellationToken ct)
         {
-            var nm = NetworkManager.Singleton;
-            if (nm == null)
+            // Fast path: Relay is already live before we even subscribed.
+            if (NetworkManager.Singleton is { IsListening: true })
+                return;
+
+            var tcs = new UniTaskCompletionSource();
+
+            void OnEstablished()
             {
-                CSDebug.LogWarning("[AuthScene] NetworkManager.Singleton is null — cannot start local host fallback.");
-                return false;
+                if (NetworkManager.Singleton is { IsListening: true })
+                    tcs.TrySetResult();
             }
 
-            if (nm.IsListening)
-                return true;
+            if (_connectionData?.OnHostConnectionEstablished != null)
+                _connectionData.OnHostConnectionEstablished.OnRaised += OnEstablished;
 
             try
             {
-                if (!nm.StartHost())
-                {
-                    CSDebug.LogWarning("[AuthScene] NetworkManager.StartHost() returned false.");
-                    return false;
-                }
-                return nm.IsListening;
+                await tcs.Task.AttachExternalCancellation(ct);
             }
-            catch (Exception ex)
+            finally
             {
-                CSDebug.LogWarning($"[AuthScene] Local host fallback failed: {ex.Message}");
-                return false;
-            }
-        }
-
-        void LoadMainMenuDirect()
-        {
-            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
-
-            if (_sceneTransitionManager != null && !_sceneTransitionManager.IsTransitioning)
-            {
-                LoadMainMenuDirectWithFallbackAsync(menuScene).Forget();
-            }
-            else
-            {
-                SceneManager.LoadScene(menuScene);
-            }
-        }
-
-        /// <summary>
-        /// Runs the SceneTransitionManager fade+load for Menu_Main, but guarantees
-        /// a synchronous fallback if the transition throws — otherwise a failure
-        /// inside LoadSceneAsync would leave the user stuck on a black overlay.
-        /// </summary>
-        async UniTaskVoid LoadMainMenuDirectWithFallbackAsync(string menuScene)
-        {
-            try
-            {
-                await _sceneTransitionManager.LoadSceneAsync(menuScene);
-            }
-            catch (Exception ex)
-            {
-                CSDebug.LogWarning($"[AuthScene] SceneTransitionManager load failed: {ex.Message}. " +
-                    "Loading Menu_Main synchronously.");
-
-                if (_sceneTransitionManager != null)
-                    _sceneTransitionManager.SetFadeImmediate(0f);
-
-                if (SceneManager.GetActiveScene().name != menuScene)
-                    SceneManager.LoadScene(menuScene);
+                if (_connectionData?.OnHostConnectionEstablished != null)
+                    _connectionData.OnHostConnectionEstablished.OnRaised -= OnEstablished;
             }
         }
     }

@@ -1002,6 +1002,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ParseInviteLine_AcceptsPendingSentinel()
+        {
+            // In Phase 15 "Always InParty", SendInviteAsync uses the real session ID
+            // directly (the Relay session is created at startup, before any invite is
+            // sent), so PENDING is never written to player properties. The parser still
+            // accepts it without error for backward compatibility with any cached/in-flight
+            // payload from a pre-Phase-15 client.
+            var result = InvokeParseInvite("host123|PENDING|HostPilot|2");
+
+            Assert.IsTrue(result.HasValue,
+                "PENDING sentinel in sessionId slot should parse successfully.");
+            Assert.AreEqual("host123", result.Value.HostPlayerId);
+            Assert.AreEqual("PENDING", result.Value.PartySessionId,
+                "PartySessionId must carry the PENDING sentinel string verbatim.");
+            Assert.AreEqual("HostPilot", result.Value.HostDisplayName);
+            Assert.AreEqual(2, result.Value.HostAvatarId);
+        }
+
+        [Test]
         public void HostConnectionService_InviteFormatString_MatchesParseExpectation()
         {
             // The current per-invite line format produced by SendInviteAsync is
@@ -1054,6 +1073,319 @@ namespace CosmicShore.Tests
                 BindingFlags.Public | BindingFlags.Instance));
             Assert.IsNotNull(type.GetMethod("HandleSignedOutEvent",
                 BindingFlags.Public | BindingFlags.Instance));
+        }
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────────
+        // PartyStateMachine — legal transitions, guard, event, round-trips
+        // ─────────────────────────────────────────────────────────────────────
+
+        #region PartyStateMachine
+
+        [Test]
+        public void StateMachine_InitialState_IsDisconnected()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Disconnected, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_LegalTransition_Succeeds()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_IllegalTransition_ReturnsFalseAndStateUnchanged()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            // Disconnected -> InParty is illegal (must pass through InPresenceLobby first).
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Disconnected, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_AnyState_CanTransitionToDisconnected()
+        {
+            var states = new[]
+            {
+                CosmicShore.Gameplay.PartyState.InPresenceLobby,
+                CosmicShore.Gameplay.PartyState.Inviting,
+                CosmicShore.Gameplay.PartyState.JoiningParty,
+                CosmicShore.Gameplay.PartyState.HostingParty,
+                CosmicShore.Gameplay.PartyState.InParty,
+                CosmicShore.Gameplay.PartyState.Reconnecting,
+            };
+
+            // CurrentState is an auto-property; its backing field is named by the compiler.
+            var backingField = typeof(CosmicShore.Gameplay.PartyStateMachine)
+                .GetField("<CurrentState>k__BackingField",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+
+            foreach (var startState in states)
+            {
+                var sm = new CosmicShore.Gameplay.PartyStateMachine();
+                // Force the machine into startState without going through TryTransition,
+                // so we isolate the "any -> Disconnected" rule from legal-transition logic.
+                backingField?.SetValue(sm, startState);
+
+                bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.Disconnected);
+                Assert.IsTrue(result, $"Expected Disconnected to be legal from {startState}");
+                Assert.AreEqual(CosmicShore.Gameplay.PartyState.Disconnected, sm.CurrentState);
+            }
+        }
+
+        [Test]
+        public void StateMachine_OnStateChanged_FiresWithCorrectArgs()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+
+            CosmicShore.Gameplay.PartyState firedFrom = default;
+            CosmicShore.Gameplay.PartyState firedTo   = default;
+            int fireCount = 0;
+
+            sm.OnStateChanged += (from, to) => { firedFrom = from; firedTo = to; fireCount++; };
+
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            Assert.AreEqual(1, fireCount);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Disconnected,      firedFrom);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby,   firedTo);
+        }
+
+        [Test]
+        public void StateMachine_OnStateChanged_DoesNotFireOnIllegalTransition()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            int fireCount = 0;
+            sm.OnStateChanged += (_, __) => fireCount++;
+
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty); // illegal from Disconnected
+
+            Assert.AreEqual(0, fireCount);
+        }
+
+        [Test]
+        public void StateMachine_Reconnecting_RecreatesSoloSession()
+        {
+            // InParty -> Reconnecting -> HostingParty (max-retries fallback: recreate solo Relay session)
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.Reconnecting);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_Reconnecting_RoundTripToInParty()
+        {
+            // InParty -> Reconnecting -> InParty (rejoin succeeded)
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.Reconnecting);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InvitingToHostingParty_IsLegal()
+        {
+            // Simulate: sign-in -> lobby -> hosting solo party -> send invite -> legacy acceptance path
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.Inviting);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_FullJoiningFlow_StateIsInParty()
+        {
+            // Simulate recipient accept flow: Disconnected -> Lobby -> HostingParty -> InParty -> JoiningParty -> InParty
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_JoiningToHostingParty_IsLegalOnFailure()
+        {
+            // Accept flow failed or timed out — recreate own solo Relay session
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
+        }
+
+        // ─── New "Always InParty" model transitions ─────────────────────────────
+
+        [Test]
+        public void StateMachine_InPresenceLobbyToHostingParty_IsLegal()
+        {
+            // Auto-advance: presence lobby joined → create solo Relay session
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InPartyToInviting_IsLegal()
+        {
+            // Send first invite from an established solo party session
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.Inviting);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Inviting, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InPartyToJoiningParty_IsLegal()
+        {
+            // Accept someone else's invite — leave own Relay, join theirs
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.JoiningParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InPartyToHostingParty_IsLegal()
+        {
+            // Leave party → recreate own solo Relay session
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InvitingToInParty_IsLegal()
+        {
+            // Joiner NM-connected to existing Relay, or all invites cancelled
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.Inviting);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_JoiningPartyToHostingParty_IsLegal()
+        {
+            // Join failed → recreate own solo Relay session
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InPresenceLobbyToInviting_IsIllegal()
+        {
+            // Invites can only be sent from InParty (Relay session must exist first)
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.Inviting);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InPresenceLobbyToJoiningParty_IsIllegal()
+        {
+            // Accepting an invite requires leaving an existing Relay session (InParty),
+            // not jumping directly from the transient InPresenceLobby state.
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.JoiningParty);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InPresenceLobby, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_InPartyToInPresenceLobby_IsIllegal()
+        {
+            // InPresenceLobby is no longer a valid destination from InParty — always recreate a party
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.InParty, sm.CurrentState);
         }
 
         #endregion
