@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -20,9 +21,37 @@ namespace CosmicShore.Gameplay
             gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
 
-            gameData.InitializeGame();
+            // Decouple OnClientReady (which clears the loading screen) from
+            // InitializeGame. InitializeGame fires OnInitializeGame synchronously
+            // to many subscribers (Cell, MiniGamePlayerSpawnerAdapter, ScoreTracker,
+            // etc); a single subscriber throwing would otherwise prevent
+            // InvokeClientReady from ever being called and leave the loading screen
+            // stuck. Fail loud, but always raise OnClientReady so the fade clears.
+            try
+            {
+                gameData.InitializeGame();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SinglePlayerMiniGameBase] InitializeGame threw: {ex}", this);
+            }
+
             gameData.InvokeClientReady();
-            SetupNewRound();
+
+            // Match MultiplayerMiniGameControllerBase.InitializeAfterDelay so the
+            // ApplicationStateMachine transitions LoadingGame → InGame for solo
+            // games too. Without this, AppState would stay at LoadingGame for the
+            // duration of the singleplayer session.
+            gameData.InvokeSessionStarted();
+
+            try
+            {
+                SetupNewRound();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SinglePlayerMiniGameBase] SetupNewRound threw: {ex}", this);
+            }
         }
 
         protected virtual void OnDisable()

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -32,6 +33,12 @@ namespace CosmicShore.Core
     {
         [SerializeField] float waitBeforeLoading = 0.5f;
 
+        [SerializeField, Tooltip("Maximum seconds to wait for OnClientReady after a game scene starts loading. " +
+            "If the game scene's controller never raises OnClientReady (e.g. an exception in its " +
+            "Start chain), the loading overlay is force-cleared after this timeout so the user " +
+            "isn't permanently stuck on a black screen.")]
+        float fadeFromBlackTimeoutSeconds = 8f;
+
         [Header("SOAP Events (wired in Bootstrap inspector)")]
         [SerializeField] ScriptableEventNoParam _onClickToMainMenuButton;
         [SerializeField] ScriptableEventNoParam _onActiveSessionEnd;
@@ -40,6 +47,8 @@ namespace CosmicShore.Core
         [Inject] SceneNameListSO _sceneNames;
         [Inject] ApplicationStateMachine _appStateMachine;
         [Inject] SceneTransitionManager _sceneTransitionManager;
+
+        CancellationTokenSource _fadeTimeoutCts;
 
         #region Unity Lifecycle
 
@@ -70,6 +79,8 @@ namespace CosmicShore.Core
         void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            CancelFadeTimeout();
+
             if (!gameData) return;
 
             gameData.OnLaunchGame.OnRaised -= LaunchGame;
@@ -115,6 +126,13 @@ namespace CosmicShore.Core
             _sceneTransitionManager?.SetFadeImmediate(1f);
             gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
 
+            // Safety net: if the new scene's controller never raises OnClientReady
+            // (e.g. an exception in its Start chain or a missing scene reference),
+            // force-clear the overlay after a timeout so the player isn't stuck on
+            // a black screen. The handler logs a warning so the underlying cause is
+            // still visible in the console.
+            ScheduleFadeFromBlackTimeout();
+
             var nm = NetworkManager.Singleton;
 
             // In multiplayer, only the server initiates scene loads.
@@ -138,7 +156,55 @@ namespace CosmicShore.Core
         {
             Debug.Log("<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady — OnClientReady fired!</b></color>");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+            CancelFadeTimeout();
             _sceneTransitionManager?.FadeFromBlack().Forget();
+        }
+
+        void ScheduleFadeFromBlackTimeout()
+        {
+            CancelFadeTimeout();
+
+            if (fadeFromBlackTimeoutSeconds <= 0f)
+                return;
+
+            _fadeTimeoutCts = new CancellationTokenSource();
+            FadeFromBlackTimeoutWatchdog(_fadeTimeoutCts.Token).Forget();
+        }
+
+        async UniTaskVoid FadeFromBlackTimeoutWatchdog(CancellationToken ct)
+        {
+            try
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(fadeFromBlackTimeoutSeconds),
+                    DelayType.UnscaledDeltaTime,
+                    cancellationToken: ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            // OnClientReady never fired. Unhook our subscription, log loudly so
+            // the root cause is visible, and fade the overlay to transparent so
+            // the player can see the loaded scene instead of staring at a black
+            // screen.
+            if (gameData != null && gameData.OnClientReady != null)
+                gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+
+            Debug.LogWarning($"[SceneLoader] OnClientReady was not raised within " +
+                $"{fadeFromBlackTimeoutSeconds:0.0}s of LaunchGame. Force-clearing the " +
+                $"loading overlay. Scene='{gameData?.SceneName}', Mode={gameData?.GameMode}.");
+
+            _sceneTransitionManager?.FadeFromBlack().Forget();
+        }
+
+        void CancelFadeTimeout()
+        {
+            if (_fadeTimeoutCts == null) return;
+            try { _fadeTimeoutCts.Cancel(); } catch { /* already disposed */ }
+            _fadeTimeoutCts.Dispose();
+            _fadeTimeoutCts = null;
         }
 
         /// <summary>
@@ -148,6 +214,11 @@ namespace CosmicShore.Core
         public void ReturnToMainMenu()
         {
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
+
+            // Cancel any in-flight fade-from-black watchdog that LaunchGame
+            // started — returning to the menu is its own transition and the
+            // watchdog warning would be a false alarm.
+            CancelFadeTimeout();
 
             // Prevent the game scene's ServerPlayerVesselInitializer from calling
             // NetworkManager.Shutdown() during the scene transition. The network
