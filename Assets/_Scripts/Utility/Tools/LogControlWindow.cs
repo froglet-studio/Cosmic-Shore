@@ -6,6 +6,7 @@ using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Core;
+using CosmicShore.Utility.Tools.DensityPartitionBenchmark;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -43,6 +44,7 @@ namespace CosmicShore.Utility
             new() { Label = "Scenes",     Color = new Color(0.68f, 0.62f, 0.85f, 1f), Draw = w => w.DrawScenesTab() },
             new() { Label = "Tools",      Color = new Color(0.60f, 0.85f, 0.75f, 1f), Draw = w => w.DrawToolsTab() },
             new() { Label = "Logging",    Color = new Color(0.85f, 0.72f, 0.60f, 1f), Draw = w => w.DrawLoggingTab() },
+            new() { Label = "Density",    Color = new Color(0.85f, 0.78f, 0.55f, 1f), Draw = w => w.DrawDensityTab() },
             new() { Label = "Quest",      Color = new Color(0.72f, 0.60f, 0.85f, 1f), Draw = w => w.DrawQuestTab() },
             new() { Label = "Vessels",    Color = new Color(0.60f, 0.78f, 0.85f, 1f), Draw = w => w.DrawVesselsTab() },
             new() { Label = "Crystals",   Color = new Color(0.85f, 0.60f, 0.72f, 1f), Draw = w => w.DrawCrystalsTab() },
@@ -406,11 +408,126 @@ namespace CosmicShore.Utility
         }
 
         // ═════════════════════════════════════════════════════════════════════
+        //  TAB: DENSITY (Density Partition Benchmark Runner)
+        // ═════════════════════════════════════════════════════════════════════
+        const string DensityBenchmarkScenePath = "Assets/_Scenes/Game_TestDesign/DensityPartitionBenchmark.unity";
+
+        void DrawDensityTab()
+        {
+            DrawTabTitle("Density Partition Benchmark", Tabs[3].Color);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                "Edit-Mode harness that grades density-search algorithms against a deterministic " +
+                "ground truth. See Docs/DENSITY_PARTITIONING_AUDIT.md for the design audit.",
+                EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+
+            DrawSubSectionLabel("Scene");
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (GUILayout.Button("Open Benchmark Scene"))
+            {
+                if (System.IO.File.Exists(DensityBenchmarkScenePath))
+                {
+                    EditorSceneManager.OpenScene(DensityBenchmarkScenePath, OpenSceneMode.Single);
+                    CSDebug.Log($"[FrogletToolbox] Opened {DensityBenchmarkScenePath}.");
+                }
+                else
+                {
+                    Debug.LogError($"[FrogletToolbox] Benchmark scene missing at {DensityBenchmarkScenePath}. " +
+                                   $"Was it deleted? Recreate via git checkout or re-import.");
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+
+            DrawSubSectionLabel("Runner");
+
+            var runner = FindRunnerInOpenScenes();
+            if (runner == null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                EditorGUILayout.LabelField(
+                    "No DensityPartitionBenchmarkRunner found in the open scenes. Open the benchmark " +
+                    "scene above, or add the component to any GameObject in the active scene.",
+                    _mutedLabel);
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField($"Runner: {runner.gameObject.name}   Scenarios: {(runner.scenarios?.Count ?? 0)}");
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            var prev = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.65f, 0.85f, 0.7f);
+            if (GUILayout.Button("Run All && Dump Report", GUILayout.Height(28)))
+            {
+                Undo.RecordObject(runner, "Run Density Benchmark");
+                runner.RunAllAndDump();
+                EditorUtility.SetDirty(runner);
+                Selection.activeGameObject = runner.gameObject;
+            }
+            GUI.backgroundColor = prev;
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(2);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(runner.lastReport)))
+            {
+                if (GUILayout.Button("Copy Last Report"))
+                {
+                    EditorGUIUtility.systemCopyBuffer = runner.lastReport ?? "";
+                    CSDebug.Log("[FrogletToolbox] Last density-partition report copied to clipboard.");
+                }
+                if (GUILayout.Button("Select Runner GameObject"))
+                {
+                    Selection.activeGameObject = runner.gameObject;
+                    EditorGUIUtility.PingObject(runner.gameObject);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(8);
+
+            DrawSubSectionLabel("Notes");
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                "1. Paste the report back to the prompter — it's the falsifiable correctness contract.\n" +
+                "2. Default scenarios cover UniformRandom, SingleCluster, MultiCluster, Gradient, " +
+                "plus a 30%-stale variant that reproduces the ChangeTeam-after-AddBlock bug.\n" +
+                "3. Two consecutive runs with the same scenario list should produce identical reports " +
+                "modulo wall-clock time, so a textual diff surfaces real changes.",
+                EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        static DensityPartitionBenchmarkRunner FindRunnerInOpenScenes()
+        {
+            // FindFirstObjectByType ignores inactive objects by default; pass true to include them.
+            return UnityEngine.Object.FindFirstObjectByType<DensityPartitionBenchmarkRunner>(FindObjectsInactive.Include);
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
         //  TAB: QUEST (Quest Debug, Non-Quest Game Modes, Intensity)
         // ═════════════════════════════════════════════════════════════════════
         void DrawQuestTab()
         {
-            DrawTabTitle("Quest Debug", Tabs[3].Color);
+            DrawTabTitle("Quest Debug", Tabs[4].Color);
 
             bool available = Application.isPlaying && GameModeProgressionService.Instance != null;
 
@@ -512,7 +629,7 @@ namespace CosmicShore.Utility
         // ═════════════════════════════════════════════════════════════════════
         void DrawVesselsTab()
         {
-            DrawTabTitle("Vessel Unlock", Tabs[4].Color);
+            DrawTabTitle("Vessel Unlock", Tabs[5].Color);
 
             if (!_vesselList)
             {
@@ -570,7 +687,7 @@ namespace CosmicShore.Utility
         // ═════════════════════════════════════════════════════════════════════
         void DrawCrystalsTab()
         {
-            DrawTabTitle("Crystal Currency", Tabs[5].Color);
+            DrawTabTitle("Crystal Currency", Tabs[6].Color);
 
             bool isPlayMode = Application.isPlaying;
             var service = isPlayMode ? PlayerDataService.Instance : null;
@@ -638,7 +755,7 @@ namespace CosmicShore.Utility
         // ═════════════════════════════════════════════════════════════════════
         void DrawUGSDataTab()
         {
-            DrawTabTitle("UGS Data View", Tabs[6].Color);
+            DrawTabTitle("UGS Data View", Tabs[7].Color);
 
             bool available = Application.isPlaying && UGSDataService.Instance != null && UGSDataService.Instance.IsInitialized;
 
