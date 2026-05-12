@@ -38,7 +38,7 @@ namespace CosmicShore.UI
 
         [Header("Layout")]
         [Tooltip("Pixels of inset from the parent rect edge.")]
-        [SerializeField] float edgePadding = 80f;
+        [SerializeField] float edgePadding = 55f;
 
         [Tooltip("Sprite art that points UP by default needs -90; sprite that points RIGHT needs 0.")]
         [SerializeField] float spriteRotationOffset = 0f;
@@ -254,7 +254,7 @@ namespace CosmicShore.UI
             iconRect.SetParent(rootRect, false);
             iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.5f);
             iconRect.pivot = new Vector2(0.5f, 0.5f);
-            iconRect.sizeDelta = new Vector2(110f, 110f);
+            iconRect.sizeDelta = new Vector2(60f, 60f);
 
             var iconCg = iconGo.GetComponent<CanvasGroup>();
             iconCg.alpha = 1f;

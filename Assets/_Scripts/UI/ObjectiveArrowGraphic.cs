@@ -4,37 +4,61 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Procedural arrow Graphic for off-screen objective indicators. Renders
-    /// three stacked triangles — soft glow halo, mid stroke, bright inner core
-    /// — with no sprite/texture/font dependency.
+    /// Procedural chevron-arrow Graphic for off-screen objective indicators.
+    /// Renders three stacked concave hexagons — soft glow halo, mid stroke,
+    /// bright inner core — with no sprite/texture/font dependency.
     ///
-    /// Points right at rotation 0; rotate the host RectTransform to aim it.
-    /// Pulse animation modulates scale + glow alpha each frame.
+    /// Shape is a right-pointing chevron with a notched (V-cut) back so the
+    /// silhouette reads as an arrow rather than a generic shape. Points right
+    /// at rotation 0; rotate the host RectTransform to aim it. Pulse
+    /// animation modulates scale + glow alpha each frame.
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     [AddComponentMenu("UI/Cosmic Shore/Objective Arrow")]
     public class ObjectiveArrowGraphic : MaskableGraphic
     {
-        [Header("Colors")]
+        // Lime-green palette — same hue (~85°), varying lightness + saturation.
+        // Glow: low V, low S → muted dark lime. Outer: high V + high S → vivid
+        // lime stroke. Inner: peak V + low S → near-white lime highlight.
+
+        [Header("Colors (lime-green, varied L+S)")]
         [Tooltip("Faint halo behind the arrow.")]
-        [SerializeField] Color glowColor = new Color(1f, 0.42f, 0.08f, 0.35f);
+        [SerializeField] Color glowColor = new Color(0.31f, 0.50f, 0.18f, 0.32f);
+
         [Tooltip("Mid stroke — the main visible silhouette.")]
-        [SerializeField] Color outerColor = new Color(1f, 0.6f, 0.14f, 0.95f);
+        [SerializeField] Color outerColor = new Color(0.55f, 0.92f, 0.10f, 0.95f);
+
         [Tooltip("Bright inner core, sits on top.")]
-        [SerializeField] Color innerColor = new Color(1f, 0.97f, 0.55f, 1f);
+        [SerializeField] Color innerColor = new Color(0.86f, 1.00f, 0.62f, 1.00f);
 
         [Header("Shape")]
-        [Tooltip("Half-height at the back of the arrow as a fraction of rect height. Lower = more pointed.")]
+        [Tooltip("How far the shoulder sits ahead of the rect centre (fraction of half-width).")]
+        [Range(-0.4f, 0.6f)]
+        [SerializeField] float shoulderX = 0.20f;
+
+        [Tooltip("Shoulder height (fraction of half-height).")]
         [Range(0.4f, 1f)]
-        [SerializeField] float backHeightFraction = 0.72f;
+        [SerializeField] float shoulderY = 0.85f;
 
-        [Tooltip("Inner-core size as a fraction of the outer stroke.")]
+        [Tooltip("How far back the wingtips extend (fraction of half-width, negative = behind centre).")]
+        [Range(-1f, -0.3f)]
+        [SerializeField] float tailX = -0.85f;
+
+        [Tooltip("Wingtip height (fraction of half-height).")]
+        [Range(0.2f, 0.7f)]
+        [SerializeField] float tailY = 0.45f;
+
+        [Tooltip("How far the back-notch apex sits in front of the wingtips (fraction of half-width).")]
+        [Range(-0.6f, 0.3f)]
+        [SerializeField] float notchX = -0.40f;
+
+        [Tooltip("Inner-core scale relative to the outer stroke.")]
         [Range(0.3f, 0.95f)]
-        [SerializeField] float innerScale = 0.55f;
+        [SerializeField] float innerScale = 0.58f;
 
-        [Tooltip("Glow halo size relative to the outer stroke.")]
+        [Tooltip("Glow halo scale relative to the outer stroke.")]
         [Range(1f, 1.6f)]
-        [SerializeField] float glowScale = 1.28f;
+        [SerializeField] float glowScale = 1.22f;
 
         [Header("Pulse Animation")]
         [SerializeField] bool pulse = true;
@@ -57,31 +81,36 @@ namespace CosmicShore.UI
             float cx = r.center.x;
             float cy = r.center.y;
 
-            // Draw back-to-front so the bright core sits on top.
-            AddArrow(vh, cx, cy,
-                     halfW * glowScale,
-                     halfH * backHeightFraction * glowScale,
-                     OffsetAlpha(glowColor, _glowAlphaPhase));
-
-            AddArrow(vh, cx, cy,
-                     halfW,
-                     halfH * backHeightFraction,
-                     outerColor);
-
-            AddArrow(vh, cx, cy,
-                     halfW * innerScale,
-                     halfH * backHeightFraction * innerScale,
-                     innerColor);
+            // Back-to-front: glow halo, outer stroke, bright core.
+            AddChevron(vh, cx, cy, halfW * glowScale, halfH * glowScale,
+                       OffsetAlpha(glowColor, _glowAlphaPhase));
+            AddChevron(vh, cx, cy, halfW, halfH, outerColor);
+            AddChevron(vh, cx, cy, halfW * innerScale, halfH * innerScale, innerColor);
         }
 
-        /// <summary>Appends a right-pointing isosceles triangle to the vertex helper.</summary>
-        static void AddArrow(VertexHelper vh, float cx, float cy, float w, float h, Color c)
+        /// <summary>
+        /// Appends a six-vertex chevron (right-pointing arrow with notched back)
+        /// to the mesh. The polygon is concave at the notch, so we split it
+        /// into top + bottom convex quads and triangulate each as a fan.
+        /// </summary>
+        void AddChevron(VertexHelper vh, float cx, float cy, float w, float h, Color c)
         {
-            int baseIdx = vh.currentVertCount;
-            vh.AddVert(MakeVert(new Vector2(cx + w, cy), c));      // tip (right)
-            vh.AddVert(MakeVert(new Vector2(cx - w, cy + h), c));  // top-back
-            vh.AddVert(MakeVert(new Vector2(cx - w, cy - h), c));  // bottom-back
-            vh.AddTriangle(baseIdx, baseIdx + 1, baseIdx + 2);
+            int b = vh.currentVertCount;
+
+            // Six perimeter vertices, CCW from tip.
+            vh.AddVert(MakeVert(new Vector2(cx + w,                cy),                c)); // 0 tip
+            vh.AddVert(MakeVert(new Vector2(cx + w * shoulderX,    cy + h * shoulderY), c)); // 1 top-shoulder
+            vh.AddVert(MakeVert(new Vector2(cx + w * tailX,        cy + h * tailY),     c)); // 2 top-wingtip
+            vh.AddVert(MakeVert(new Vector2(cx + w * notchX,       cy),                c)); // 3 notch apex
+            vh.AddVert(MakeVert(new Vector2(cx + w * tailX,        cy - h * tailY),     c)); // 4 bottom-wingtip
+            vh.AddVert(MakeVert(new Vector2(cx + w * shoulderX,    cy - h * shoulderY), c)); // 5 bottom-shoulder
+
+            // Top half (convex quad 0-1-2-3, fan from tip).
+            vh.AddTriangle(b + 0, b + 1, b + 2);
+            vh.AddTriangle(b + 0, b + 2, b + 3);
+            // Bottom half (convex quad 0-3-4-5, fan from tip).
+            vh.AddTriangle(b + 0, b + 3, b + 4);
+            vh.AddTriangle(b + 0, b + 4, b + 5);
         }
 
         static UIVertex MakeVert(Vector2 pos, Color c)
@@ -113,8 +142,6 @@ namespace CosmicShore.UI
             float scale = 1f + t * pulseScaleAmplitude;
             rectTransform.localScale = new Vector3(scale, scale, 1f);
 
-            // Glow alpha pulses with the same phase as scale so the halo
-            // breathes outward in sync.
             float glowPhase = t * pulseGlowAmplitude;
             if (!Mathf.Approximately(glowPhase, _glowAlphaPhase))
             {
