@@ -68,24 +68,27 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Owner-initiated request to change this player's domain.
         /// NetDomain is server-write, so clients route their selections through this RPC.
-        /// Special case: <see cref="Domains.Blue"/> means "Random" — the server rolls
-        /// a real domain from <see cref="GameDataSO.ActiveDomains"/> instead of writing
-        /// the sentinel. All other inputs must match an active domain or are rejected.
+        ///
+        /// <see cref="Domains.Blue"/> is the "Random / no pick yet" sentinel. The server
+        /// keeps it Blue here — clicking Random does NOT commit a domain at picker time.
+        /// All Blue-state humans are resolved together at scene-spawn by
+        /// <c>ServerPlayerVesselInitializerWithAI.NormalizeUnassignedHumans</c>, which
+        /// uses the same balanced algorithm as AI fill (least-populated domain first,
+        /// uniform random among ties). Resolving once at spawn-time means every Random
+        /// picker fills against the same snapshot of humans + AI, not a stale mid-picker
+        /// count.
+        ///
+        /// Any other value must be in <see cref="GameDataSO.ActiveDomains"/> or it's rejected.
         /// </summary>
         [ServerRpc] // RequireOwnership = true is the default — only the player's owner may request
         public void RequestSetDomain_ServerRpc(Domains domain)
         {
-            // "Random" — pick a real active domain server-side. Blue is the sentinel
-            // for "no pick yet"; clicking the Random tile means "commit me to something".
+            // Random pick: keep Blue. The scene-spawn balance pass handles all
+            // Blue-state humans together with full info instead of committing
+            // each one mid-picker against a stale count.
             if (domain == Domains.Blue)
             {
-                var actives = GameDataSO.ActiveDomains;
-                if (actives == null || actives.Length == 0)
-                {
-                    Debug.LogWarning("[Player] Random pick requested but ActiveDomains is empty.");
-                    return;
-                }
-                NetDomain.Value = actives[UnityEngine.Random.Range(0, actives.Length)];
+                NetDomain.Value = Domains.Blue;
                 return;
             }
 

@@ -42,7 +42,7 @@ Cross-client domain sync is driven entirely by `Player.NetDomain` (server-write 
 
 Do not snapshot domain at component-creation time. Either subscribe to `Player.NetDomain.OnValueChanged` directly or read the live `Player.Domain` mirror each time you need it. `RoundStats.Domain` is also live (after Phase 5) so end-game UIs can keep using it.
 
-`ServerPlayerVesselInitializerWithAI.GetBalancedDomain` ties break by `ActiveDomains` enum order (Jade → Ruby → Gold), not RNG, so identical inputs produce identical AI distributions across machines without needing a shared seed.
+`ServerPlayerVesselInitializerWithAI.GetBalancedDomain` always picks the domain with the fewest players; when multiple domains tie at the minimum, one is chosen uniformly at random. Runs server-only — all clients see the same outcome via `NetDomain` replication. Humans who clicked the Random tile keep `NetDomain = Blue` through the picker and are folded into the same balanced pass by `NormalizeUnassignedHumans` at scene-spawn time (so all Random pickers fill against the same human+AI snapshot, not stale mid-picker counts).
 
 ### Tech Stack
 

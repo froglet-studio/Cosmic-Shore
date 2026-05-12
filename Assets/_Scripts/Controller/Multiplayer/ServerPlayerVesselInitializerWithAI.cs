@@ -190,10 +190,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Returns the active domain with the fewest players. Ties are broken
-        /// deterministically by <see cref="GameDataSO.ActiveDomains"/> enum order
-        /// (Jade → Ruby → Gold), so identical inputs produce identical AI
-        /// distributions across machines without needing a shared RNG seed.
+        /// Returns one of the active domains tied for the fewest players. When a single
+        /// domain has the lowest count it's returned outright; when multiple domains tie
+        /// at the minimum, one is chosen uniformly at random.
+        /// Server-only — runs on the host, so all clients see the same outcome via
+        /// NetDomain replication.
         /// </summary>
         static Domains GetBalancedDomain(Dictionary<Domains, int> counts)
         {
@@ -201,17 +202,27 @@ namespace CosmicShore.Gameplay
             foreach (var v in counts.Values)
                 if (v < min) min = v;
 
-            // Iterate ActiveDomains in order so the first match (== smallest team
-            // with the lowest enum index) wins ties deterministically.
+            // Collect every active domain tied at the minimum count. Iterate
+            // ActiveDomains (not counts.Keys) so the candidate list has a stable
+            // order regardless of dictionary hashing; the random pick below is
+            // the only source of nondeterminism.
+            _tiedBuf.Clear();
             foreach (var d in GameDataSO.ActiveDomains)
                 if (counts.TryGetValue(d, out var c) && c == min)
-                    return d;
+                    _tiedBuf.Add(d);
 
-            // Should never happen if counts is initialized from BuildInitialCounts,
-            // but degrade gracefully rather than throw.
-            CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] GetBalancedDomain: counts dict is empty");
-            return GameDataSO.ActiveDomains[0];
+            if (_tiedBuf.Count == 0)
+            {
+                CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] GetBalancedDomain: no active domains in counts");
+                return GameDataSO.ActiveDomains[0];
+            }
+
+            return _tiedBuf[UnityEngine.Random.Range(0, _tiedBuf.Count)];
         }
+
+        // Reused per call to keep AI spawning allocation-free. Server-only access on
+        // the main thread — no concurrency concerns.
+        static readonly List<Domains> _tiedBuf = new(GameDataSO.ActiveDomains.Length);
 
         /// <summary>
         /// Gathers human Player objects from NetworkManager.ConnectedClients.
