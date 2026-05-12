@@ -187,13 +187,24 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         // ------------------------------------------------------------------
         // Query iteration helper. Returns the four standard queries in order:
         //   anti-Jade, anti-Ruby, anti-Gold, all-domain.
+        // Uses a plain struct array instead of value-tuple yield-return to keep
+        // the public API free of tuple types (some Unity compiler configurations
+        // dislike tuple-typed enumerables crossing assembly boundaries).
         // ------------------------------------------------------------------
-        public static IEnumerable<(string label, Domains? exclude)> StandardQueries()
+        public struct Query
         {
-            yield return ("anti-Jade", Domains.Jade);
-            yield return ("anti-Ruby", Domains.Ruby);
-            yield return ("anti-Gold", Domains.Gold);
-            yield return ("all-domain", null);
+            public string label;
+            public Domains? exclude;
         }
+
+        static readonly Query[] _standardQueries = new Query[]
+        {
+            new Query { label = "anti-Jade",  exclude = Domains.Jade },
+            new Query { label = "anti-Ruby",  exclude = Domains.Ruby },
+            new Query { label = "anti-Gold",  exclude = Domains.Gold },
+            new Query { label = "all-domain", exclude = null },
+        };
+
+        public static Query[] StandardQueries() => _standardQueries;
     }
 }

@@ -78,13 +78,25 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         {
             EnsureDefaultScenarios();
 
-            var named = new (string name, AlgorithmFn fn)[]
+            // Parallel arrays instead of value-tuple arrays — the tuple-of-method-group
+            // initializer form (`new (string, MyDelegate)[]{...}`) trips some Unity
+            // compiler configurations even though it's spec-legal C# 7.1+. Plain arrays
+            // are unambiguous.
+            string[] algoNames = new string[]
             {
-                ("GridArgmax (current)",            DensityPartitionBenchmarkAlgorithms.GridArgmax),
-                ("GridSmoothed (current+smooth)",   DensityPartitionBenchmarkAlgorithms.GridSmoothed),
-                ("GridCentroid (baseline)",         DensityPartitionBenchmarkAlgorithms.GridCentroid),
-                ("MassHistogramArgmax (rec)",       DensityPartitionBenchmarkAlgorithms.MassHistogramArgmax),
-                ("MassHistogramSmoothed (rec+smooth)", DensityPartitionBenchmarkAlgorithms.MassHistogramSmoothed),
+                "GridArgmax (current)",
+                "GridSmoothed (current+smooth)",
+                "GridCentroid (baseline)",
+                "MassHistogramArgmax (rec)",
+                "MassHistogramSmoothed (rec+smooth)",
+            };
+            AlgorithmFn[] algoFns = new AlgorithmFn[]
+            {
+                DensityPartitionBenchmarkAlgorithms.GridArgmax,
+                DensityPartitionBenchmarkAlgorithms.GridSmoothed,
+                DensityPartitionBenchmarkAlgorithms.GridCentroid,
+                DensityPartitionBenchmarkAlgorithms.MassHistogramArgmax,
+                DensityPartitionBenchmarkAlgorithms.MassHistogramSmoothed,
             };
 
             // Sort scenarios deterministically by label so the report diffs cleanly.
@@ -94,29 +106,34 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             // Pre-build truth tapes + ground-truth answers once per (scenario, query).
             // Brute-force ground truth is the expensive step; caching it cuts total
             // time by ~Nalgos times.
-            var truths = new List<(BenchmarkScenario scn, List<BenchmarkPrism> truth, List<BenchmarkPrism> underTest)>(ordered.Count);
-            var gtAnswers = new Dictionary<(int scnIdx, string query), BenchmarkResult>();
+            var truthList = new List<BenchmarkScenario>(ordered.Count);
+            var truthData = new List<List<BenchmarkPrism>>(ordered.Count);
+            var underTestData = new List<List<BenchmarkPrism>>(ordered.Count);
+            var gtAnswers = new Dictionary<string, BenchmarkResult>();
+
             for (int si = 0; si < ordered.Count; si++)
             {
                 var scn = ordered[si];
-                if (scn == null) { truths.Add((null, null, null)); continue; }
+                if (scn == null) { truthList.Add(null); truthData.Add(null); underTestData.Add(null); continue; }
                 var truth = scn.Build();
                 var underTest = scn.ApplyStaleness(truth);
-                truths.Add((scn, truth, underTest));
+                truthList.Add(scn);
+                truthData.Add(truth);
+                underTestData.Add(underTest);
 
-                foreach (var (label, excl) in DensityPartitionBenchmarkReport.StandardQueries())
+                foreach (var q in DensityPartitionBenchmarkReport.StandardQueries())
                 {
                     var gt = DensityPartitionBenchmarkAlgorithms.GroundTruth(
-                        truth, excl, scn.worldHalfExtent,
+                        truth, q.exclude, scn.worldHalfExtent,
                         groundTruthSmoothingRadius, groundTruthMassWeighted);
-                    gtAnswers[(si, label)] = gt;
+                    gtAnswers[si + "|" + q.label] = gt;
                 }
             }
 
             // Run every algorithm over the pre-built tapes and pre-computed ground truth.
-            var algos = new List<DensityPartitionBenchmarkReport.AlgorithmReport>(named.Length);
-            foreach (var (algoName, fn) in named)
-                algos.Add(RunOneFromCache(algoName, fn, truths, gtAnswers));
+            var algos = new List<DensityPartitionBenchmarkReport.AlgorithmReport>(algoNames.Length);
+            for (int ai = 0; ai < algoNames.Length; ai++)
+                algos.Add(RunOneFromCache(algoNames[ai], algoFns[ai], truthList, truthData, underTestData, gtAnswers));
 
             string branch = ReadEnvOr("GIT_BRANCH", "(unknown)");
             string sha = ReadEnvOr("GIT_SHA", "(unknown)");
@@ -221,33 +238,37 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         // Internals
         // ------------------------------------------------------------------
 
-        delegate BenchmarkResult AlgorithmFn(IReadOnlyList<BenchmarkPrism> prisms, Domains? exclude, float worldHalfExtent);
+        public delegate BenchmarkResult AlgorithmFn(IReadOnlyList<BenchmarkPrism> prisms, Domains? exclude, float worldHalfExtent);
 
         DensityPartitionBenchmarkReport.AlgorithmReport RunOneFromCache(
             string name,
             AlgorithmFn fn,
-            List<(BenchmarkScenario scn, List<BenchmarkPrism> truth, List<BenchmarkPrism> underTest)> truths,
-            Dictionary<(int scnIdx, string query), BenchmarkResult> gtAnswers)
+            List<BenchmarkScenario> truthList,
+            List<List<BenchmarkPrism>> truthData,
+            List<List<BenchmarkPrism>> underTestData,
+            Dictionary<string, BenchmarkResult> gtAnswers)
         {
-            var rows = new List<DensityPartitionBenchmarkReport.QueryRow>(truths.Count * 4);
+            var rows = new List<DensityPartitionBenchmarkReport.QueryRow>(truthList.Count * 4);
             var totalSw = Stopwatch.StartNew();
 
-            for (int si = 0; si < truths.Count; si++)
+            for (int si = 0; si < truthList.Count; si++)
             {
-                var (scenario, truth, underTest) = truths[si];
+                var scenario = truthList[si];
                 if (scenario == null) continue;
+                var truth = truthData[si];
+                var underTest = underTestData[si];
 
                 if (warmupPass)
                 {
                     // Warm-up: run each algorithm once on this scenario and discard.
-                    foreach (var (_, excl) in DensityPartitionBenchmarkReport.StandardQueries())
-                        fn(underTest, excl, scenario.worldHalfExtent);
+                    foreach (var q in DensityPartitionBenchmarkReport.StandardQueries())
+                        fn(underTest, q.exclude, scenario.worldHalfExtent);
                 }
 
-                foreach (var (label, excl) in DensityPartitionBenchmarkReport.StandardQueries())
+                foreach (var q in DensityPartitionBenchmarkReport.StandardQueries())
                 {
-                    var gt = gtAnswers[(si, label)];
-                    var sys = fn(underTest, excl, scenario.worldHalfExtent);
+                    var gt = gtAnswers[si + "|" + q.label];
+                    var sys = fn(underTest, q.exclude, scenario.worldHalfExtent);
 
                     float dist = (gt.Empty || sys.Empty)
                         ? 0f
@@ -261,7 +282,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                         // prisms inside the smoothing radius). Avoids comparing apples
                         // (system-count over a corrupted tape) to oranges (ground-truth
                         // count over the clean tape).
-                        float scored = ScoreLocation(sys.Location, truth, excl,
+                        float scored = ScoreLocation(sys.Location, truth, q.exclude,
                             groundTruthSmoothingRadius, groundTruthMassWeighted);
                         massPct = 100f * scored / gt.Density;
                     }
@@ -269,7 +290,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                     rows.Add(new DensityPartitionBenchmarkReport.QueryRow
                     {
                         Scenario = scenario.label,
-                        Query = label,
+                        Query = q.label,
                         GroundTruth = gt.Location,
                         GroundTruthDensity = gt.Density,
                         SystemAnswer = sys.Location,

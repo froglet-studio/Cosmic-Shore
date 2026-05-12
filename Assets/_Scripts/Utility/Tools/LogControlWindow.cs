@@ -561,9 +561,7 @@ namespace CosmicShore.Utility
             var runnerType = ResolveRunnerType();
             if (runnerType == null)
             {
-                Debug.LogError(
-                    $"[FrogletToolbox] Cannot create benchmark scene: type '{DensityRunnerTypeName}' " +
-                    $"not found. Try Assets > Refresh, then click again.");
+                DumpDensityPartitionDiagnostic();
                 return;
             }
 
@@ -604,6 +602,59 @@ namespace CosmicShore.Utility
         }
 
         // ── Reflection helpers (decouple from runner type at compile time) ──
+
+        /// <summary>
+        /// Called when ResolveRunnerType() returns null. Prints a diagnostic showing
+        /// which assemblies are loaded and which (if any) DensityPartition-named
+        /// types are present. Lets us distinguish "files didn't compile" from "files
+        /// compiled but namespace lookup is wrong".
+        /// </summary>
+        static void DumpDensityPartitionDiagnostic()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[FrogletToolbox] Cannot find '{DensityRunnerTypeName}'.");
+            sb.AppendLine("Diagnostic — searching every loaded assembly for *DensityPartition* types:");
+
+            int hits = 0;
+            foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                System.Type[] types;
+                try { types = asm.GetTypes(); }
+                catch (System.Reflection.ReflectionTypeLoadException ex)
+                {
+                    sb.AppendLine($"  {asm.GetName().Name}: ReflectionTypeLoadException ({ex.LoaderExceptions?.Length ?? 0} loader errors)");
+                    types = ex.Types;
+                }
+                if (types == null) continue;
+                foreach (var t in types)
+                {
+                    if (t == null) continue;
+                    if (t.FullName == null) continue;
+                    if (!t.FullName.Contains("DensityPartition")) continue;
+                    sb.AppendLine($"  {asm.GetName().Name} :: {t.FullName}");
+                    hits++;
+                }
+            }
+            if (hits == 0)
+            {
+                sb.AppendLine("  (no DensityPartition* types in any loaded assembly)");
+                sb.AppendLine();
+                sb.AppendLine("Most likely cause: the .cs files in Assets/_Scripts/Utility/Tools/DensityPartitionBenchmark/");
+                sb.AppendLine("failed to compile. Check the Console for any other compile errors (red ⊘ icon, not yellow ⚠).");
+                sb.AppendLine("If the Console is clean, try:");
+                sb.AppendLine("  1. Right-click Assets/_Scripts/Utility/Tools/DensityPartitionBenchmark → Reimport.");
+                sb.AppendLine("  2. Assets > Refresh (Ctrl-R / Cmd-R).");
+                sb.AppendLine("  3. Close Unity and delete the Library/ScriptAssemblies folder, then reopen.");
+            }
+            else
+            {
+                sb.AppendLine();
+                sb.AppendLine($"Found {hits} DensityPartition* type(s) but expected name '{DensityRunnerTypeName}' wasn't among them.");
+                sb.AppendLine("This means the runner is loaded under a different namespace — paste the diagnostic above and I'll fix it.");
+            }
+
+            Debug.LogError(sb.ToString());
+        }
 
         static System.Type _cachedRunnerType;
 
