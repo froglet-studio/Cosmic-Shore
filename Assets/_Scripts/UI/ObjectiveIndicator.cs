@@ -1,25 +1,26 @@
 using CosmicShore.Gameplay;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Edge-of-screen pointer that highlights an off-screen objective. The
-    /// objective is supplied by an <see cref="IObjectiveProvider"/> — wired in
-    /// the inspector or via <see cref="Configure"/> at runtime. The indicator
-    /// is game-mode-agnostic: it only handles world-to-screen math, edge
-    /// clamping, rotation, and show/hide.
+    /// Edge-of-screen pointer that highlights an off-screen objective.
     ///
     /// While the objective is on-screen the icon is hidden; while it is
     /// off-screen the icon clamps to the parent rect's edge in the direction
     /// of the target and rotates to point at it.
+    ///
+    /// Set <see cref="debugAlwaysVisible"/> to true to force the icon to stay
+    /// on the right edge at all times — useful for verifying that the UI
+    /// element renders at all before wiring up a provider.
     /// </summary>
     [DisallowMultipleComponent]
     public class ObjectiveIndicator : MonoBehaviour
     {
         [Header("Objective")]
-        [Tooltip("Component implementing IObjectiveProvider that supplies the world target to point at.")]
+        [Tooltip("Component implementing IObjectiveProvider that supplies the world target to point at. Optional when debugAlwaysVisible is on.")]
         [SerializeField, RequireInterface(typeof(IObjectiveProvider))]
         Object provider;
 
@@ -41,11 +42,11 @@ namespace CosmicShore.UI
         [SerializeField] float edgePadding = 60f;
 
         [Tooltip("Sprite art that points UP by default needs -90; sprite that points RIGHT needs 0.")]
-        [SerializeField] float spriteRotationOffset = -90f;
+        [SerializeField] float spriteRotationOffset = 0f;
 
-        [Header("Lifecycle")]
-        [Tooltip("Hide while local vessel/camera is unavailable. Recommended.")]
-        [SerializeField] bool hideWhenNoCamera = true;
+        [Header("Debug")]
+        [Tooltip("Always show the icon at a fixed edge position, ignoring providers and on-screen checks. Use to verify the UI renders.")]
+        [SerializeField] bool debugAlwaysVisible = true;
 
         IObjectiveProvider _providerCached;
         RectTransform _parentRect;
@@ -55,10 +56,7 @@ namespace CosmicShore.UI
         IObjectiveProvider Provider =>
             _providerCached ??= provider as IObjectiveProvider;
 
-        /// <summary>
-        /// Wires a provider at runtime. Use when constructing the indicator
-        /// programmatically rather than wiring via the inspector.
-        /// </summary>
+        /// <summary>Wires a provider at runtime (alternative to inspector wiring).</summary>
         public void Configure(IObjectiveProvider providerInstance)
         {
             _providerCached = providerInstance;
@@ -69,16 +67,27 @@ namespace CosmicShore.UI
             _parentRect = icon != null ? icon.parent as RectTransform : null;
             _canvas = GetComponentInParent<Canvas>();
 
-            // Force consistent anchoring so anchoredPosition is "offset from
-            // parent's centre, in parent's local pixels" — independent of the
-            // parent's pivot or the icon's original anchor settings.
             if (icon != null)
             {
                 icon.anchorMin = icon.anchorMax = new Vector2(0.5f, 0.5f);
                 icon.pivot = new Vector2(0.5f, 0.5f);
             }
 
-            SetVisible(false);
+            Debug.Log($"[ObjectiveIndicator] Awake — icon={icon != null}, canvasGroup={canvasGroup != null}, " +
+                      $"parentRect={_parentRect != null}, canvas={_canvas != null} (mode={_canvas?.renderMode}), " +
+                      $"provider={provider != null}, debugAlwaysVisible={debugAlwaysVisible}");
+
+            // Force-visible on Awake when in debug mode so the user sees something
+            // immediately even before LateUpdate runs.
+            if (debugAlwaysVisible)
+            {
+                ForceVisible(true);
+                PlaceAtFixedEdge();
+            }
+            else
+            {
+                SetVisible(false);
+            }
         }
 
         void OnValidate()
@@ -89,13 +98,16 @@ namespace CosmicShore.UI
 
         void LateUpdate()
         {
-            if (icon == null || Provider == null || _parentRect == null)
+            if (icon == null || _parentRect == null) return;
+
+            if (debugAlwaysVisible)
             {
-                SetVisible(false);
+                ForceVisible(true);
+                PlaceAtFixedEdge();
                 return;
             }
 
-            if (!Provider.TryGetObjective(out var target) || target == null)
+            if (Provider == null || !Provider.TryGetObjective(out var target) || target == null)
             {
                 SetVisible(false);
                 return;
@@ -104,7 +116,7 @@ namespace CosmicShore.UI
             var cam = ResolveCamera();
             if (cam == null)
             {
-                if (hideWhenNoCamera) SetVisible(false);
+                SetVisible(false);
                 return;
             }
 
@@ -120,9 +132,6 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // Behind the camera: WorldToScreenPoint produces a flipped value.
-            // Mirror through the screen centre so direction-from-centre still
-            // points roughly toward the target.
             if (!inFront)
                 screenPos = new Vector3(Screen.width - screenPos.x, Screen.height - screenPos.y, screenPos.z);
 
@@ -131,19 +140,25 @@ namespace CosmicShore.UI
             SetVisible(true);
         }
 
+        /// <summary>Fixed-position debug placement: hugs the right edge, mid-height.</summary>
+        void PlaceAtFixedEdge()
+        {
+            Rect rect = _parentRect.rect;
+            float halfW = Mathf.Max(0f, rect.width * 0.5f - edgePadding);
+            icon.anchoredPosition = new Vector2(halfW, 0f);
+            icon.localRotation = Quaternion.identity;
+        }
+
         void PositionAtEdge(Vector3 screenPos)
         {
             var canvasCam = (_canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay)
                 ? _canvas.worldCamera
                 : null;
 
-            // Parent rect's centre in screen space.
             Vector2 centerScreen = RectTransformUtility.WorldToScreenPoint(canvasCam, _parentRect.position);
             Vector2 dirScreen = (Vector2)screenPos - centerScreen;
             if (dirScreen.sqrMagnitude < 1e-4f) dirScreen = Vector2.up;
 
-            // Convert the screen-space direction into parent-rect local pixels
-            // so canvas scaling / rotation is handled correctly.
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 _parentRect, centerScreen, canvasCam, out Vector2 localCenter);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -151,20 +166,15 @@ namespace CosmicShore.UI
             Vector2 dirLocal = localTarget - localCenter;
             if (dirLocal.sqrMagnitude < 1e-4f) dirLocal = Vector2.up;
 
-            // Clamp to the parent rect's edge, inset by edgePadding.
             Rect rect = _parentRect.rect;
-            float halfW = rect.width * 0.5f - edgePadding;
-            float halfH = rect.height * 0.5f - edgePadding;
-            if (halfW < 0f) halfW = 0f;
-            if (halfH < 0f) halfH = 0f;
+            float halfW = Mathf.Max(0f, rect.width * 0.5f - edgePadding);
+            float halfH = Mathf.Max(0f, rect.height * 0.5f - edgePadding);
 
             Vector2 unit = dirLocal.normalized;
             float tx = Mathf.Abs(unit.x) > 1e-4f ? halfW / Mathf.Abs(unit.x) : float.PositiveInfinity;
             float ty = Mathf.Abs(unit.y) > 1e-4f ? halfH / Mathf.Abs(unit.y) : float.PositiveInfinity;
             float t = Mathf.Min(tx, ty);
 
-            // Icon is anchored at parent's centre (forced in Awake), so
-            // anchoredPosition is offset from that centre in parent pixels.
             icon.anchoredPosition = unit * t;
 
             float angleDeg = Mathf.Atan2(unit.y, unit.x) * Mathf.Rad2Deg + spriteRotationOffset;
@@ -191,7 +201,18 @@ namespace CosmicShore.UI
         {
             if (_visible == visible) return;
             _visible = visible;
+            ApplyVisibility(visible);
+        }
 
+        /// <summary>Bypasses the cache so the visible state is reasserted every frame in debug mode.</summary>
+        void ForceVisible(bool visible)
+        {
+            _visible = visible;
+            ApplyVisibility(visible);
+        }
+
+        void ApplyVisibility(bool visible)
+        {
             if (canvasGroup != null)
             {
                 canvasGroup.alpha = visible ? 1f : 0f;
@@ -208,12 +229,17 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Builds a fully configured indicator at runtime: a full-screen
-        /// container under <paramref name="parent"/> with an arrow icon child.
-        /// Use when no editor-wired indicator exists in the scene.
+        /// container under <paramref name="parent"/> with a coloured-square
+        /// icon. Use when no editor-wired indicator exists in the scene.
         /// </summary>
         public static ObjectiveIndicator CreateRuntime(Transform parent, IObjectiveProvider providerInstance)
         {
             var rootGo = new GameObject("ObjectiveIndicator", typeof(RectTransform));
+            // Deactivate while we wire things up so Awake doesn't fire with
+            // unassigned serialized references (AddComponent runs Awake
+            // immediately on active GameObjects).
+            rootGo.SetActive(false);
+
             var rootRect = rootGo.GetComponent<RectTransform>();
             rootRect.SetParent(parent, false);
             rootRect.anchorMin = Vector2.zero;
@@ -228,24 +254,29 @@ namespace CosmicShore.UI
             iconRect.SetParent(rootRect, false);
             iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.5f);
             iconRect.pivot = new Vector2(0.5f, 0.5f);
-            iconRect.sizeDelta = new Vector2(80f, 80f);
+            iconRect.sizeDelta = new Vector2(160f, 160f);
 
             var iconCg = iconGo.GetComponent<CanvasGroup>();
-            iconCg.alpha = 0f;
+            iconCg.alpha = 1f;
             iconCg.interactable = false;
             iconCg.blocksRaycasts = false;
 
-            var arrowText = iconGo.AddComponent<TextMeshProUGUI>();
-            arrowText.text = "▲"; // ▲
-            arrowText.fontSize = 60f;
-            arrowText.alignment = TextAlignmentOptions.Center;
-            arrowText.raycastTarget = false;
-            arrowText.color = new Color(1f, 0.85f, 0.2f, 1f);
+            // Use Image with no sprite — renders the built-in white square,
+            // tinted by Image.color. No font / TMP dependency.
+            var image = iconGo.AddComponent<Image>();
+            image.color = new Color(1f, 0f, 1f, 1f); // bright magenta — impossible to miss
+            image.raycastTarget = false;
 
             var indicator = rootGo.AddComponent<ObjectiveIndicator>();
             indicator.icon = iconRect;
             indicator.canvasGroup = iconCg;
             indicator.Configure(providerInstance);
+
+            // Now safe to activate — Awake runs with fields populated.
+            rootGo.SetActive(true);
+
+            string parentName = parent != null ? parent.name : "null";
+            Debug.Log($"[ObjectiveIndicator] CreateRuntime — built under '{parentName}' (provider={providerInstance != null})");
             return indicator;
         }
     }

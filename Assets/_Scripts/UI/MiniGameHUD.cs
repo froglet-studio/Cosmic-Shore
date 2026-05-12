@@ -155,22 +155,35 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Auto-creates an off-screen objective indicator and a matching
+        /// Auto-creates an off-screen objective indicator and the matching
         /// provider for the current game mode, if the scene doesn't already
-        /// have one. Mirrors the EnsurePreGameCinematic pattern: lets the
-        /// inspector override take precedence, falls back to a programmatic
-        /// hierarchy.
+        /// have one. The indicator is created even without a matching provider
+        /// so the UI element is always visible in debug mode — useful for
+        /// verifying that rendering works before wiring up provider logic.
         /// </summary>
         protected virtual void EnsureObjectiveIndicator()
         {
-            if (!autoCreateObjectiveIndicator || gameData == null) return;
-            if (FindAnyObjectByType<ObjectiveIndicator>() != null) return;
+            if (!autoCreateObjectiveIndicator)
+            {
+                Debug.Log("[MiniGameHUD] EnsureObjectiveIndicator skipped — autoCreate=false");
+                return;
+            }
 
-            IObjectiveProvider provider = CreateObjectiveProviderForGameMode(gameData.GameMode);
-            if (provider == null) return;
+            if (FindAnyObjectByType<ObjectiveIndicator>() != null)
+            {
+                Debug.Log("[MiniGameHUD] EnsureObjectiveIndicator skipped — already exists in scene");
+                return;
+            }
+
+            IObjectiveProvider provider = gameData != null
+                ? CreateObjectiveProviderForGameMode(gameData.GameMode)
+                : null;
 
             Transform canvasRoot = transform.parent != null ? transform.parent : transform;
             _autoCreatedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, provider);
+
+            Debug.Log($"[MiniGameHUD] EnsureObjectiveIndicator — created under '{canvasRoot.name}', " +
+                      $"gameMode={gameData?.GameMode}, provider={provider != null}");
         }
 
         IObjectiveProvider CreateObjectiveProviderForGameMode(GameModes mode)
