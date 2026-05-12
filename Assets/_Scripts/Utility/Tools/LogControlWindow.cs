@@ -435,18 +435,12 @@ namespace CosmicShore.Utility
             DrawSubSectionLabel("Scene");
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(Pad);
-            if (GUILayout.Button("Open Benchmark Scene"))
+            string sceneButtonLabel = System.IO.File.Exists(DensityBenchmarkScenePath)
+                ? "Open Benchmark Scene"
+                : "Create && Open Benchmark Scene";
+            if (GUILayout.Button(sceneButtonLabel))
             {
-                if (System.IO.File.Exists(DensityBenchmarkScenePath))
-                {
-                    EditorSceneManager.OpenScene(DensityBenchmarkScenePath, OpenSceneMode.Single);
-                    CSDebug.Log($"[FrogletToolbox] Opened {DensityBenchmarkScenePath}.");
-                }
-                else
-                {
-                    Debug.LogError($"[FrogletToolbox] Benchmark scene missing at {DensityBenchmarkScenePath}. " +
-                                   $"Was it deleted? Recreate via git checkout or re-import.");
-                }
+                EnsureAndOpenBenchmarkScene();
             }
             EditorGUILayout.EndHorizontal();
 
@@ -537,6 +531,76 @@ namespace CosmicShore.Utility
                 "modulo wall-clock time, so a textual diff surfaces real changes.",
                 EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.EndHorizontal();
+        }
+
+        // ── Scene creation (Unity generates a valid .unity file) ──
+
+        static void EnsureAndOpenBenchmarkScene()
+        {
+            // If the scene exists on disk, just open it. Wrap in try/catch so a
+            // corrupt scene file doesn't leave the IMGUI layout state mid-call
+            // (the parent OnGUI's Begin/End pairs would otherwise mismatch).
+            if (System.IO.File.Exists(DensityBenchmarkScenePath))
+            {
+                try
+                {
+                    EditorSceneManager.OpenScene(DensityBenchmarkScenePath, OpenSceneMode.Single);
+                    CSDebug.Log($"[FrogletToolbox] Opened {DensityBenchmarkScenePath}.");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[FrogletToolbox] Failed to open {DensityBenchmarkScenePath}: {ex.Message}. " +
+                                   $"Delete the file and click again to regenerate.");
+                }
+                return;
+            }
+
+            // Otherwise, generate it. Unity's NewScene + SaveScene produces a valid
+            // .unity asset; hand-crafted YAML can omit required SceneRoots metadata
+            // in Unity 6 and throw ArgumentException on OpenScene.
+            var runnerType = ResolveRunnerType();
+            if (runnerType == null)
+            {
+                Debug.LogError(
+                    $"[FrogletToolbox] Cannot create benchmark scene: type '{DensityRunnerTypeName}' " +
+                    $"not found. Try Assets > Refresh, then click again.");
+                return;
+            }
+
+            // Ensure the target folder exists.
+            string folder = System.IO.Path.GetDirectoryName(DensityBenchmarkScenePath)
+                ?.Replace('\\', '/');
+            if (!string.IsNullOrEmpty(folder) && !AssetDatabase.IsValidFolder(folder))
+            {
+                System.IO.Directory.CreateDirectory(folder);
+                AssetDatabase.Refresh();
+            }
+
+            // Save the current scene state so we don't lose unsaved edits.
+            if (EditorSceneManager.GetActiveScene().isDirty)
+            {
+                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                {
+                    CSDebug.Log("[FrogletToolbox] Scene creation cancelled by user.");
+                    return;
+                }
+            }
+
+            var newScene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var go = new GameObject("DensityPartitionBenchmarkRunner");
+            go.AddComponent(runnerType);
+
+            bool saved = EditorSceneManager.SaveScene(newScene, DensityBenchmarkScenePath);
+            if (!saved)
+            {
+                Debug.LogError($"[FrogletToolbox] Failed to save benchmark scene to {DensityBenchmarkScenePath}.");
+                return;
+            }
+
+            AssetDatabase.Refresh();
+            CSDebug.Log($"[FrogletToolbox] Created {DensityBenchmarkScenePath}.");
         }
 
         // ── Reflection helpers (decouple from runner type at compile time) ──
