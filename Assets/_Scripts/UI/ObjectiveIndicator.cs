@@ -1,7 +1,6 @@
 using CosmicShore.Gameplay;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
@@ -39,7 +38,7 @@ namespace CosmicShore.UI
 
         [Header("Layout")]
         [Tooltip("Pixels of inset from the parent rect edge.")]
-        [SerializeField] float edgePadding = 60f;
+        [SerializeField] float edgePadding = 80f;
 
         [Tooltip("Sprite art that points UP by default needs -90; sprite that points RIGHT needs 0.")]
         [SerializeField] float spriteRotationOffset = 0f;
@@ -229,8 +228,9 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Builds a fully configured indicator at runtime: a full-screen
-        /// container under <paramref name="parent"/> with a coloured-square
-        /// icon. Use when no editor-wired indicator exists in the scene.
+        /// container under <paramref name="parent"/> with a procedural arrow
+        /// icon (<see cref="ObjectiveArrowGraphic"/>). Use when no
+        /// editor-wired indicator exists in the scene.
         /// </summary>
         public static ObjectiveIndicator CreateRuntime(Transform parent, IObjectiveProvider providerInstance)
         {
@@ -254,18 +254,18 @@ namespace CosmicShore.UI
             iconRect.SetParent(rootRect, false);
             iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.5f);
             iconRect.pivot = new Vector2(0.5f, 0.5f);
-            iconRect.sizeDelta = new Vector2(160f, 160f);
+            iconRect.sizeDelta = new Vector2(110f, 110f);
 
             var iconCg = iconGo.GetComponent<CanvasGroup>();
             iconCg.alpha = 1f;
             iconCg.interactable = false;
             iconCg.blocksRaycasts = false;
 
-            // Use Image with no sprite — renders the built-in white square,
-            // tinted by Image.color. No font / TMP dependency.
-            var image = iconGo.AddComponent<Image>();
-            image.color = new Color(1f, 0f, 1f, 1f); // bright magenta — impossible to miss
-            image.raycastTarget = false;
+            // Procedural arrow Graphic — three layered triangles (halo, stroke,
+            // core) with pulse animation. Points right at rotation 0; no
+            // sprite/font dependency.
+            var arrow = iconGo.AddComponent<ObjectiveArrowGraphic>();
+            arrow.raycastTarget = false;
 
             var indicator = rootGo.AddComponent<ObjectiveIndicator>();
             indicator.icon = iconRect;
