@@ -6,7 +6,6 @@ using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Core;
-using CosmicShore.Utility.Tools.DensityPartitionBenchmark;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -409,8 +408,15 @@ namespace CosmicShore.Utility
 
         // ═════════════════════════════════════════════════════════════════════
         //  TAB: DENSITY (Density Partition Benchmark Runner)
+        //
+        //  Decoupled from the runner type at compile time via reflection so this
+        //  toolbox stays compilable even if the DensityPartitionBenchmark folder
+        //  is missing, deleted, or hasn't been re-imported yet. The reflection
+        //  surface is tiny (one Type lookup + one method invoke + one field read)
+        //  and the runner's API is part of the audit's locked-in contract.
         // ═════════════════════════════════════════════════════════════════════
         const string DensityBenchmarkScenePath = "Assets/_Scenes/Game_TestDesign/DensityPartitionBenchmark.unity";
+        const string DensityRunnerTypeName = "CosmicShore.Utility.Tools.DensityPartitionBenchmark.DensityPartitionBenchmarkRunner";
 
         void DrawDensityTab()
         {
@@ -448,7 +454,20 @@ namespace CosmicShore.Utility
 
             DrawSubSectionLabel("Runner");
 
-            var runner = FindRunnerInOpenScenes();
+            var runnerType = ResolveRunnerType();
+            if (runnerType == null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                EditorGUILayout.LabelField(
+                    "DensityPartitionBenchmarkRunner type not found. The Density benchmark folder may not " +
+                    "have been re-imported. Try Assets > Refresh, or right-click the folder and Reimport.",
+                    _mutedLabel);
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+
+            var runner = FindRunnerInOpenScenes(runnerType);
             if (runner == null)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -461,9 +480,13 @@ namespace CosmicShore.Utility
                 return;
             }
 
+            var go = runner is Component c ? c.gameObject : null;
+            int scenarioCount = ReadScenarioCount(runner);
+            string lastReport = ReadLastReport(runner);
+
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(Pad);
-            EditorGUILayout.LabelField($"Runner: {runner.gameObject.name}   Scenarios: {(runner.scenarios?.Count ?? 0)}");
+            EditorGUILayout.LabelField($"Runner: {(go ? go.name : "(unknown)")}   Scenarios: {scenarioCount}");
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(4);
@@ -475,9 +498,9 @@ namespace CosmicShore.Utility
             if (GUILayout.Button("Run All && Dump Report", GUILayout.Height(28)))
             {
                 Undo.RecordObject(runner, "Run Density Benchmark");
-                runner.RunAllAndDump();
+                InvokeRunAllAndDump(runner);
                 EditorUtility.SetDirty(runner);
-                Selection.activeGameObject = runner.gameObject;
+                if (go) Selection.activeGameObject = go;
             }
             GUI.backgroundColor = prev;
             EditorGUILayout.EndHorizontal();
@@ -486,17 +509,17 @@ namespace CosmicShore.Utility
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(Pad);
-            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(runner.lastReport)))
+            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(lastReport)))
             {
                 if (GUILayout.Button("Copy Last Report"))
                 {
-                    EditorGUIUtility.systemCopyBuffer = runner.lastReport ?? "";
+                    EditorGUIUtility.systemCopyBuffer = lastReport ?? "";
                     CSDebug.Log("[FrogletToolbox] Last density-partition report copied to clipboard.");
                 }
-                if (GUILayout.Button("Select Runner GameObject"))
+                if (GUILayout.Button("Select Runner GameObject") && go)
                 {
-                    Selection.activeGameObject = runner.gameObject;
-                    EditorGUIUtility.PingObject(runner.gameObject);
+                    Selection.activeGameObject = go;
+                    EditorGUIUtility.PingObject(go);
                 }
             }
             EditorGUILayout.EndHorizontal();
@@ -516,10 +539,46 @@ namespace CosmicShore.Utility
             EditorGUILayout.EndHorizontal();
         }
 
-        static DensityPartitionBenchmarkRunner FindRunnerInOpenScenes()
+        // ── Reflection helpers (decouple from runner type at compile time) ──
+
+        static System.Type _cachedRunnerType;
+
+        static System.Type ResolveRunnerType()
         {
-            // FindFirstObjectByType ignores inactive objects by default; pass true to include them.
-            return UnityEngine.Object.FindFirstObjectByType<DensityPartitionBenchmarkRunner>(FindObjectsInactive.Include);
+            if (_cachedRunnerType != null) return _cachedRunnerType;
+            foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var t = asm.GetType(DensityRunnerTypeName, throwOnError: false);
+                if (t != null) { _cachedRunnerType = t; return t; }
+            }
+            return null;
+        }
+
+        static UnityEngine.Object FindRunnerInOpenScenes(System.Type runnerType)
+        {
+            return UnityEngine.Object.FindFirstObjectByType(runnerType, FindObjectsInactive.Include) as UnityEngine.Object;
+        }
+
+        static int ReadScenarioCount(UnityEngine.Object runner)
+        {
+            if (runner == null) return 0;
+            var field = runner.GetType().GetField("scenarios");
+            if (field?.GetValue(runner) is System.Collections.ICollection list) return list.Count;
+            return 0;
+        }
+
+        static string ReadLastReport(UnityEngine.Object runner)
+        {
+            if (runner == null) return "";
+            var field = runner.GetType().GetField("lastReport");
+            return field?.GetValue(runner) as string ?? "";
+        }
+
+        static void InvokeRunAllAndDump(UnityEngine.Object runner)
+        {
+            if (runner == null) return;
+            var method = runner.GetType().GetMethod("RunAllAndDump");
+            method?.Invoke(runner, null);
         }
 
         // ═════════════════════════════════════════════════════════════════════
