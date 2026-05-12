@@ -46,7 +46,7 @@ namespace CosmicShore.UI
 
         [Header("Debug")]
         [Tooltip("Always show the icon at a fixed edge position, ignoring providers and on-screen checks. Use to verify the UI renders.")]
-        [SerializeField] bool debugAlwaysVisible = true;
+        [SerializeField] bool debugAlwaysVisible = false;
 
         IObjectiveProvider _providerCached;
         RectTransform _parentRect;
