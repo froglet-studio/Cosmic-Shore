@@ -31,9 +31,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Raised on clients when the host opens the arcade config modal.
-        /// Args: gameMode, intensity, playerCount, maxPlayers
+        /// Args: gameMode, intensity, playerCount, maxPlayers, domainCount
         /// </summary>
-        public event System.Action<int, int, int, int> OnConfigOpenedOnClient;
+        public event System.Action<int, int, int, int, int> OnConfigOpenedOnClient;
 
         /// <summary>
         /// Raised on all clients when the host closes/cancels the config modal.
@@ -41,10 +41,10 @@ namespace CosmicShore.Gameplay
         public event System.Action OnConfigClosedOnClient;
 
         /// <summary>
-        /// Raised on clients when the host changes intensity or player count.
-        /// Args: intensity, playerCount
+        /// Raised on clients when the host changes intensity, player count, or domain count.
+        /// Args: intensity, playerCount, domainCount
         /// </summary>
-        public event System.Action<int, int> OnConfigUpdatedOnClient;
+        public event System.Action<int, int, int> OnConfigUpdatedOnClient;
 
         /// <summary>
         /// Raised on all instances (host + clients) when a player confirms ready.
@@ -68,9 +68,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Called by ArcadeGameConfigureModal on the host when the modal opens.
-        /// Sends game mode, intensity, player count, and max players to all clients.
+        /// Sends game mode, intensity, player count, max players, and domain count to all clients.
         /// </summary>
-        public void NotifyConfigOpened(int gameMode, int intensity, int playerCount, int maxPlayers, int humanCount)
+        public void NotifyConfigOpened(int gameMode, int intensity, int playerCount, int maxPlayers, int humanCount, int domainCount)
         {
             if (!IsServer) return;
 
@@ -79,21 +79,11 @@ namespace CosmicShore.Gameplay
             // to guard against stale PartyMembers data.
             _expectedHumanCount = Mathf.Max(humanCount, NetworkManager.Singleton.ConnectedClientsIds.Count);
 
-            // Reset every human player's domain pick to Blue (the "no pick" sentinel)
-            // BEFORE telling clients the modal is open. The avatar strip on every
-            // domain button starts empty; everyone shows up on the Blue tile until
-            // they explicitly pick. Server-write replicates to all clients via
-            // Player.NetDomain.OnValueChanged → OnNetDomainChanged → vessel repaint.
-            // Humans who never pick are auto-rolled into a real domain at game-scene
-            // spawn by ServerPlayerVesselInitializerWithAI.NormalizeUnassignedHumans.
-            if (gameData != null)
-            {
-                foreach (var ip in gameData.Players)
-                    if (ip is Player pl && !pl.NetIsAI.Value)
-                        pl.ServerClearDomainPick();
-            }
-
-            OpenConfigOnClients_ClientRpc(gameMode, intensity, playerCount, maxPlayers);
+            // Humans keep whatever NetDomain they last had (Jade default for fresh spawns).
+            // Each owner re-picks via RequestSetDomain_ServerRpc from the modal; humans on a
+            // now-inactive domain are reassigned on game-scene entry by
+            // ServerPlayerVesselInitializerWithAI.NormalizeUnassignedHumans.
+            OpenConfigOnClients_ClientRpc(gameMode, intensity, playerCount, maxPlayers, domainCount);
         }
 
         /// <summary>
@@ -108,17 +98,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Called by ArcadeGameConfigureModal on the host when intensity or
-        /// player count changes so clients see updated read-only values.
+        /// Called by ArcadeGameConfigureModal on the host when intensity, player count,
+        /// or domain count changes so clients see updated read-only values.
         /// </summary>
-        public void NotifyConfigUpdated(int intensity, int playerCount)
+        public void NotifyConfigUpdated(int intensity, int playerCount, int domainCount)
         {
             if (!IsServer) return;
-            UpdateConfigOnClients_ClientRpc(intensity, playerCount);
+            UpdateConfigOnClients_ClientRpc(intensity, playerCount, domainCount);
         }
 
         [ClientRpc]
-        void OpenConfigOnClients_ClientRpc(int gameMode, int intensity, int playerCount, int maxPlayers)
+        void OpenConfigOnClients_ClientRpc(int gameMode, int intensity, int playerCount, int maxPlayers, int domainCount)
         {
             if (IsServer) return; // Host already has the modal open
 
@@ -129,7 +119,7 @@ namespace CosmicShore.Gameplay
                 Debug.LogWarning("[ArcadeConfigSync] No subscribers on OnConfigOpenedOnClient — modal will not open. " +
                                  "Is ArcadeGameConfigureModal.OnEnable() running? Is ModalWindows active?");
 
-            OnConfigOpenedOnClient?.Invoke(gameMode, intensity, playerCount, maxPlayers);
+            OnConfigOpenedOnClient?.Invoke(gameMode, intensity, playerCount, maxPlayers, domainCount);
         }
 
         [ClientRpc]
@@ -140,10 +130,10 @@ namespace CosmicShore.Gameplay
         }
 
         [ClientRpc]
-        void UpdateConfigOnClients_ClientRpc(int intensity, int playerCount)
+        void UpdateConfigOnClients_ClientRpc(int intensity, int playerCount, int domainCount)
         {
             if (IsServer) return;
-            OnConfigUpdatedOnClient?.Invoke(intensity, playerCount);
+            OnConfigUpdatedOnClient?.Invoke(intensity, playerCount, domainCount);
         }
 
         /// <summary>

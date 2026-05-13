@@ -45,7 +45,7 @@
 
 | File | Why |
 |---|---|
-| `DomainAssignerTests` | Team pool: unique assignment, empty pool fallback, co-op returns Jade, Blue exclusion, re-initialization. Without this, two players get the same team. |
+| `ServerPlayerVesselInitializerWithAITests` | AI placement: contiguous active-domain slice, 3-tier tie-break (lowest total → fewest humans → Jade > Ruby > Gold), worked sequences from spec. Without this, AI piles onto one domain or differs between machines. |
 
 ### Performance Benchmark Tests (`Assets/_Scripts/Utility/PerformanceBenchmark/Tests/Editor/`) — 6 files
 

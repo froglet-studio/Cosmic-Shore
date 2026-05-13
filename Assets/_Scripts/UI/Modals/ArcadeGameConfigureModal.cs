@@ -51,35 +51,24 @@ namespace CosmicShore.UI
         [Header("Screen 1 – Intensity Controls")]
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
 
-        [Header("Screen 1 – Player Count (Component Stepper)")]
-        [SerializeField] private PlayerCountStepper playerCountStepper;
-
-        [Header("Screen 1 – Player Count (Inline Stepper)")]
-        [SerializeField] private Button playerCountDecrementButton;
-        [SerializeField] private Button playerCountIncrementButton;
-        [SerializeField] private TMP_Text playerCountValueText;
+        [Header("Screen 1 – Player Count Stepper")]
+        [FormerlySerializedAs("playerCountStepper")]
+        [SerializeField] private IntStepper pcStepper;
 
         [Header("Screen 1 – Domain Count Stepper")]
-        [FormerlySerializedAs("domainCountDecrementButton")]
-        [SerializeField] private Button domainCountDecrementButton;
-        [FormerlySerializedAs("domainCountIncrementButton")]
-        [SerializeField] private Button domainCountIncrementButton;
-        [FormerlySerializedAs("domainsValueText")]
-        [SerializeField] private TMP_Text domainsValueText;
-
-        [Header("Screen 1 – Domain Selection")]
-        [FormerlySerializedAs("domainSelectionPanel")]
-        [SerializeField] private DomainSelectionPanel domainSelectionPanel;
+        [SerializeField] private IntStepper dcStepper;
 
         [Header("Screen 2 – Domain Selection")]
-        [Tooltip("One DomainInfoData per selectable domain. The Blue tile (Domain = Blue) " +
-                 "doubles as the 'Random / not yet picked' home — chips spawn there at modal open.")]
+        [Tooltip("One DomainInfoData per selectable domain (Jade, Ruby, Gold). " +
+                 "Any Blue tile in this list is hidden at runtime — Random is gone, " +
+                 "Jade is the unpicked default. Tiles outside ActiveDomains[0..DC-1] " +
+                 "are dimmed and non-interactable.")]
         [FormerlySerializedAs("domainInfoItems")]
         [SerializeField] private List<DomainInfoData> domainInfoItems = new();
 
         [Tooltip("Avatar chip prefab. One instance is created per human player when the " +
-                 "modal opens, parented to the Blue tile's strip. Reparented to the picked " +
-                 "tile's strip on each player's NetDomain.OnValueChanged.")]
+                 "modal opens, parented to the player's currently-picked tile (Jade by default). " +
+                 "Reparented to the new tile's strip on each player's NetDomain.OnValueChanged.")]
         [SerializeField] private DomainAvatarChip chipPrefab;
 
         [Header("Screen 2 – Selected Vessel Summary")]
@@ -114,9 +103,10 @@ namespace CosmicShore.UI
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
         // Hard cap on the number of players/domains the game supports
-        const int MaxSupportedPlayers = 4;
+        const int MaxSupportedPlayers = 12;
         const int MaxSupportedDomains = 3;
         const int MinDomains = 1;
+        const int DefaultDomainCount = 3;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
@@ -162,20 +152,11 @@ namespace CosmicShore.UI
                 intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
             }
 
-            if (playerCountStepper)
-                playerCountStepper.OnValueChanged += HandlePlayerCountSelected;
+            if (pcStepper)
+                pcStepper.OnValueChanged += HandlePlayerCountSelected;
 
-            // Inline player count buttons (development UI)
-            if (playerCountDecrementButton)
-                playerCountDecrementButton.onClick.AddListener(OnPlayerCountDecrement);
-            if (playerCountIncrementButton)
-                playerCountIncrementButton.onClick.AddListener(OnPlayerCountIncrement);
-
-            // Domain count buttons
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.onClick.AddListener(OnDomainCountDecrement);
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.onClick.AddListener(OnDomainCountIncrement);
+            if (dcStepper)
+                dcStepper.OnValueChanged += HandleDomainCountChanged;
 
             // Domain info buttons
             foreach (var item in domainInfoItems)
@@ -187,9 +168,6 @@ namespace CosmicShore.UI
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
-
-            if (domainSelectionPanel)
-                domainSelectionPanel.OnDomainSelected += HandlePanelDomainSelected;
 
             if (arcadeConfigSyncManager)
             {
@@ -214,18 +192,11 @@ namespace CosmicShore.UI
                 intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
             }
 
-            if (playerCountStepper)
-                playerCountStepper.OnValueChanged -= HandlePlayerCountSelected;
+            if (pcStepper)
+                pcStepper.OnValueChanged -= HandlePlayerCountSelected;
 
-            if (playerCountDecrementButton)
-                playerCountDecrementButton.onClick.RemoveListener(OnPlayerCountDecrement);
-            if (playerCountIncrementButton)
-                playerCountIncrementButton.onClick.RemoveListener(OnPlayerCountIncrement);
-
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.onClick.RemoveListener(OnDomainCountDecrement);
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.onClick.RemoveListener(OnDomainCountIncrement);
+            if (dcStepper)
+                dcStepper.OnValueChanged -= HandleDomainCountChanged;
 
             foreach (var item in domainInfoItems)
             {
@@ -235,9 +206,6 @@ namespace CosmicShore.UI
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
-
-            if (domainSelectionPanel)
-                domainSelectionPanel.OnDomainSelected -= HandlePanelDomainSelected;
 
             if (arcadeConfigSyncManager)
             {
@@ -267,7 +235,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = selectedGame;
-            config.DomainCount  = 1; // default to 1 domain — user can adjust via stepper
+            config.DomainCount  = ComputeDefaultDomainCount();
 
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
@@ -289,7 +257,8 @@ namespace CosmicShore.UI
                     config.Intensity,
                     config.PlayerCount,
                     selectedGame.MaxPlayersAllowed,
-                    CurrentPartyHumanCount);
+                    CurrentPartyHumanCount,
+                    config.DomainCount);
             }
 
             // Spawn one chip per player on the Blue tile, hook each player's
@@ -388,20 +357,21 @@ namespace CosmicShore.UI
             // Player count — enforce minimum = party size so host can't select
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
+            int pcMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
 
-            // Component stepper UI (preferred — supports 1-12 range)
-            if (playerCountStepper)
-                playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount);
+            if (pcStepper)
+                pcStepper.Initialize(effectiveMin, pcMax, config.PlayerCount);
 
-            // Inline stepper UI (development UI)
-            RefreshPlayerCountStepper();
-
-            // Domain count stepper
-            RefreshDomainCountStepper();
-
-            if (domainSelectionPanel && gameData != null && gameData.LocalPlayer is Player localPlayer)
-                domainSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
+            // Domain count stepper — max bound depends on current PC (DC <= PC).
+            if (dcStepper)
+                dcStepper.Initialize(MinDomains, ComputeMaxDomainCount(), config.DomainCount);
         }
+
+        int ComputeMaxDomainCount() =>
+            Mathf.Min(config != null ? config.PlayerCount : MaxSupportedDomains, MaxSupportedDomains);
+
+        int ComputeDefaultDomainCount() =>
+            Mathf.Clamp(DefaultDomainCount, MinDomains, ComputeMaxDomainCount());
 
         void BuildAvailableShips(SO_ArcadeGame game)
         {
@@ -521,7 +491,7 @@ namespace CosmicShore.UI
 
             // Sync intensity + player count to clients so they see updated read-only values
             if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
+                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount, config.DomainCount);
         }
 
         void HandlePlayerCountSelected(int playerCount)
@@ -530,126 +500,72 @@ namespace CosmicShore.UI
             if (IsClientMode) return;
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayersAllowed);
+            int pcMax = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+            playerCount        = Mathf.Clamp(playerCount, effectiveMin, pcMax);
             config.PlayerCount = playerCount;
 
-            if (playerCountStepper)
-                playerCountStepper.SetValue(playerCount);
-            RefreshPlayerCountStepper();
+            if (pcStepper)
+                pcStepper.SetValue(playerCount);
 
+            // PC change may shrink the DC bound (DC <= PC). Re-clamp + re-bound the DC stepper.
+            int newDcMax = ComputeMaxDomainCount();
+            int newDc = Mathf.Clamp(config.DomainCount, MinDomains, newDcMax);
+            if (newDc != config.DomainCount)
+                config.DomainCount = newDc;
+            if (dcStepper)
+                dcStepper.Initialize(MinDomains, newDcMax, config.DomainCount);
+
+            RefreshTileVisibility();
             SyncGameDataConfig();
             RaiseConfigChanged();
 
             if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
-        }
-
-        void HandlePanelDomainSelected(Domains domain)
-        {
-            if (gameData.LocalPlayer is not Player player) return;
-            if (!player.IsOwner) return;
-            player.RequestSetDomain_ServerRpc(domain);
-        }
-
-        #endregion
-
-        #region Inline player count stepper
-
-        public void OnPlayerCountIncrement()
-        {
-            if (_selectedGame == null || config == null) return;
-            if (IsClientMode) return;
-
-            int max = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
-            int next = Mathf.Min(config.PlayerCount + 1, max);
-            SetPlayerCount(next);
-        }
-
-        public void OnPlayerCountDecrement()
-        {
-            if (_selectedGame == null || config == null) return;
-            if (IsClientMode) return;
-
-            int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            int next = Mathf.Max(config.PlayerCount - 1, effectiveMin);
-            SetPlayerCount(next);
-        }
-
-        void SetPlayerCount(int playerCount)
-        {
-            if (config.PlayerCount == playerCount) return;
-
-            config.PlayerCount = playerCount;
-
-            // Update both stepper UIs
-            if (playerCountStepper)
-                playerCountStepper.SetValue(playerCount);
-            RefreshPlayerCountStepper();
-
-            SyncGameDataConfig();
-            RaiseConfigChanged();
-
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
-        }
-
-        void RefreshPlayerCountStepper()
-        {
-            if (playerCountValueText)
-                playerCountValueText.text = config.PlayerCount.ToString();
-
-            if (_selectedGame == null) return;
-
-            int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            int max = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
-
-            if (playerCountDecrementButton)
-                playerCountDecrementButton.interactable = config.PlayerCount > effectiveMin && !IsClientMode;
-
-            if (playerCountIncrementButton)
-                playerCountIncrementButton.interactable = config.PlayerCount < max && !IsClientMode;
+                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount, config.DomainCount);
         }
 
         #endregion
 
         #region Domain count stepper
 
-        public void OnDomainCountIncrement()
+        void HandleDomainCountChanged(int newDomainCount)
         {
             if (config == null) return;
+            if (IsClientMode) return;
 
-            int next = Mathf.Min(config.DomainCount + 1, MaxSupportedDomains);
-            SetDomainCount(next);
-        }
+            int proposed = Mathf.Clamp(newDomainCount, MinDomains, ComputeMaxDomainCount());
 
-        public void OnDomainCountDecrement()
-        {
-            if (config == null) return;
+            // Block decrement when any human is on a domain that would become inactive.
+            if (proposed < config.DomainCount && !CanReduceDomainCountTo(proposed))
+            {
+                if (dcStepper) dcStepper.SetValue(config.DomainCount);
+                return;
+            }
 
-            int next = Mathf.Max(config.DomainCount - 1, MinDomains);
-            SetDomainCount(next);
-        }
+            if (proposed == config.DomainCount)
+            {
+                if (dcStepper) dcStepper.SetValue(config.DomainCount);
+                return;
+            }
 
-        void SetDomainCount(int domainCount)
-        {
-            if (config.DomainCount == domainCount) return;
-
-            config.DomainCount = domainCount;
-            RefreshDomainCountStepper();
+            config.DomainCount = proposed;
+            RefreshTileVisibility();
             SyncGameDataConfig();
             RaiseConfigChanged();
+
+            if (arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount, config.DomainCount);
         }
 
-        void RefreshDomainCountStepper()
+        bool CanReduceDomainCountTo(int proposed)
         {
-            if (domainsValueText)
-                domainsValueText.text = config.DomainCount.ToString();
-
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.interactable = config.DomainCount > MinDomains;
-
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.interactable = config.DomainCount < MaxSupportedDomains;
+            if (gameData == null) return true;
+            foreach (var ip in gameData.Players)
+            {
+                if (ip is Player p && !p.NetIsAI.Value
+                    && !GameDataSO.IsActiveDomain(p.NetDomain.Value, proposed))
+                    return false;
+            }
+            return true;
         }
 
         #endregion
@@ -659,7 +575,7 @@ namespace CosmicShore.UI
         void InitializeDomainSelection()
         {
             if (config != null)
-                config.SelectedDomain = Domains.Blue;
+                config.SelectedDomain = Domains.Jade;
             RefreshTileVisibility();
         }
 
@@ -724,7 +640,7 @@ namespace CosmicShore.UI
         {
             if (p == null || _playerChips.ContainsKey(p)) return;
 
-            var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Blue);
+            var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Jade);
             if (startTile == null || startTile.AvatarStripTransform == null)
             {
                 Debug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} — chip not spawned.");
@@ -747,7 +663,7 @@ namespace CosmicShore.UI
         void HandlePlayerDomainChanged(Player p, Domains newDomain)
         {
             if (!_playerChips.TryGetValue(p, out var chip) || chip == null) return;
-            var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Blue);
+            var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Jade);
             if (tile == null || tile.AvatarStripTransform == null) return;
             chip.transform.SetParent(tile.AvatarStripTransform, worldPositionStays: false);
         }
@@ -816,21 +732,32 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Updates the selected-vs-unselected sprite on each tile from the local pick.
-        /// All 4 tiles (Random/Jade/Ruby/Gold) are always visible — the host can pick
-        /// any. Does not touch chip lifecycle.
+        /// Refreshes the selected-vs-unselected sprite and interactability on each tile.
+        /// The Blue tile is always hidden (Random is gone; Jade is the unpicked default).
+        /// Tiles outside <c>ActiveDomains[0..DC-1]</c> are dimmed and non-interactable.
+        /// Does not touch chip lifecycle.
         /// </summary>
         void RefreshTileVisibility()
         {
             if (config == null) return;
 
             var selected = config.SelectedDomain;
+            int dc = config.DomainCount;
 
             foreach (var item in domainInfoItems)
             {
                 if (!item) continue;
 
+                // Blue is the "no team" sentinel; never expose it in the modal.
+                if (item.Domain == Domains.Blue)
+                {
+                    item.gameObject.SetActive(false);
+                    continue;
+                }
+
                 item.gameObject.SetActive(true);
+                bool active = GameDataSO.IsActiveDomain(item.Domain, dc);
+                item.SetInteractable(active);
                 item.SetSelected(item.Domain == selected);
             }
         }
@@ -1205,10 +1132,10 @@ namespace CosmicShore.UI
         /// Called on non-host clients when the host opens the arcade config modal.
         /// Opens the same modal in client mode with host-only controls disabled.
         /// </summary>
-        void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers)
+        void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers, int domainCount)
         {
             Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient — mode={gameModeInt}, intensity={intensity}, " +
-                      $"players={playerCount}, max={maxPlayers}");
+                      $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
             _isClientMode = true;
 
@@ -1225,7 +1152,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = game;
-            config.DomainCount  = 1; // clients inherit host's domain count via UI sync
+            config.DomainCount  = Mathf.Clamp(domainCount, MinDomains, MaxSupportedDomains);
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 
@@ -1279,12 +1206,13 @@ namespace CosmicShore.UI
         /// Called on non-host clients when the host changes intensity or player count.
         /// Updates the read-only display values.
         /// </summary>
-        void HandleConfigUpdatedOnClient(int intensity, int playerCount)
+        void HandleConfigUpdatedOnClient(int intensity, int playerCount, int domainCount)
         {
             if (_selectedGame == null || config == null) return;
 
             config.Intensity   = intensity;
             config.PlayerCount = playerCount;
+            config.DomainCount = Mathf.Clamp(domainCount, MinDomains, MaxSupportedDomains);
 
             // Update intensity button visuals (read-only — buttons are not interactable)
             foreach (var button in intensityButtons)
@@ -1293,10 +1221,9 @@ namespace CosmicShore.UI
                 button.SetSelected(button.Intensity == intensity);
             }
 
-            // Update player count display (read-only — stepper is not interactable)
-            if (playerCountStepper)
-                playerCountStepper.SetValue(playerCount);
-            RefreshPlayerCountStepper();
+            // Update steppers (read-only — host owns the +/- buttons).
+            if (pcStepper) pcStepper.SetValue(playerCount);
+            if (dcStepper) dcStepper.SetValue(config.DomainCount);
 
             // Domain count may have shifted (host's domain stepper) — re-evaluate
             // per-tile active state. Chip movement is unaffected; reparenting is
@@ -1322,21 +1249,9 @@ namespace CosmicShore.UI
                 if (uiButton) uiButton.interactable = isHost;
             }
 
-            // Player count stepper component — visible for all, but only host can change it
-            if (playerCountStepper)
-                playerCountStepper.SetInteractable(isHost);
-
-            // Inline player count buttons
-            if (playerCountDecrementButton)
-                playerCountDecrementButton.interactable = isHost;
-            if (playerCountIncrementButton)
-                playerCountIncrementButton.interactable = isHost;
-
-            // Domain count buttons
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.interactable = isHost;
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.interactable = isHost;
+            // Steppers — visible for all, but only host can change them
+            if (pcStepper) pcStepper.SetInteractable(isHost);
+            if (dcStepper) dcStepper.SetInteractable(isHost);
         }
 
         /// <summary>

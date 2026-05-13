@@ -25,9 +25,9 @@ namespace CosmicShore.UI
                 SelectedGame   = null;
                 Intensity      = 0;
                 PlayerCount    = 0;
-                DomainCount    = 0;
+                DomainCount    = 3;
                 SelectedShip   = null;
-                SelectedDomain = Domains.Blue;
+                SelectedDomain = Domains.Jade;
             }
         }
 }

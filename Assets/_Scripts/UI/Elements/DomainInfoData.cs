@@ -46,5 +46,15 @@ namespace CosmicShore.UI
             if (labelText)
                 labelText.color = selected ? selectedTextColor : unselectedTextColor;
         }
+
+        public void SetInteractable(bool interactable)
+        {
+            if (button) button.interactable = interactable;
+            if (backgroundImage)
+            {
+                var c = backgroundImage.color;
+                backgroundImage.color = new Color(c.r, c.g, c.b, interactable ? 1f : 0.4f);
+            }
+        }
     }
 }
