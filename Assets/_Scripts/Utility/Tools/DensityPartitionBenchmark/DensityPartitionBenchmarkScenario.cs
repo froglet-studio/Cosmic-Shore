@@ -30,6 +30,20 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     }
 
     /// <summary>
+    /// Whether a scenario actually has a peak to find. Peaked scenarios are where
+    /// peak-finding accuracy is meaningful — the summary headline ranks algorithms
+    /// only on these. Diffuse scenarios (uniform random, density gradient) have no
+    /// well-defined peak and serve as a diagnostic floor: every algorithm "fails"
+    /// them, and that failure is not a regression. Keep them in the report for
+    /// diagnostic value but exclude them from the headline median.
+    /// </summary>
+    public enum ScenarioShape
+    {
+        Peaked = 0,
+        Diffuse = 1,
+    }
+
+    /// <summary>
     /// Deterministic scenario definition. Serializable so the runner inspector can
     /// edit a list. Build() expands into a list of BenchmarkPrism structs and is
     /// repeatable for a given seed — every algorithm in the report sees the same
@@ -43,6 +57,12 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
         [Tooltip("Distribution shape.")]
         public ScenarioKind kind = ScenarioKind.UniformRandom;
+
+        [Tooltip("Whether this scenario has a real peak to find. Peaked: " +
+                 "algorithm accuracy is meaningful. Diffuse: no peak exists, " +
+                 "every algorithm produces noisy answers and the result is a " +
+                 "diagnostic floor only.")]
+        public ScenarioShape shape = ScenarioShape.Peaked;
 
         [Tooltip("Total prism count produced by Build().")]
         [Min(10)] public int prismCount = 2000;

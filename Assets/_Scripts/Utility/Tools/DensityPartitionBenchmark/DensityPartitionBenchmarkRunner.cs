@@ -22,13 +22,14 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     /// bugs in HealthBlockTracker / Cell.AddBlock aren't exercised — those are
     /// simulated via BenchmarkScenario.staleFraction instead.
     ///
-    /// Algorithms included:
-    ///   - GroundTruth                       — slow brute-force, used as the oracle
-    ///   - GridArgmax                         — current Cell.countGrids[D].FindDensestRegion()
-    ///   - GridSmoothed                       — current + 3x3x3 smoothing (sibling-branch baseline)
-    ///   - GridCentroid                       — alternative reduction over the same grid
-    ///   - MassHistogramArgmax                — recommended (§3.7 in audit), volume-weighted
-    ///   - MassHistogramSmoothed              — recommended + 3x3x3 smoothing (default reduction)
+    /// Algorithms in the matrix (each adjacent pair isolates one variable):
+    ///   - GridArgmax17                      — current Cell.countGrids[D].FindDensestRegion()
+    ///   - GridSmoothed17                    — + separable box smoothing (sibling-branch baseline)
+    ///   - GridSmoothedInterp17              — + sub-voxel parabolic interpolation
+    ///   - GridMassSmoothedInterp17          — + mass-weighted per prism (volume sum)
+    ///   - GridMassSmoothedInterp32          — same, finer 32^3 grid (does resolution help?)
+    /// Ground truth uses a 64^3 grid with separable smoothing — ~100x faster than the
+    /// brute-force candidate-vs-prism scan it replaced.
     /// </summary>
     [ExecuteAlways]
     [DisallowMultipleComponent]
@@ -78,25 +79,27 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         {
             EnsureDefaultScenarios();
 
-            // Parallel arrays instead of value-tuple arrays — the tuple-of-method-group
-            // initializer form (`new (string, MyDelegate)[]{...}`) trips some Unity
-            // compiler configurations even though it's spec-legal C# 7.1+. Plain arrays
-            // are unambiguous.
+            // Algorithm matrix. Each adjacent pair isolates one variable so the
+            // report attributes wins/losses to a specific knob:
+            //   1 vs 2: smoothing on/off
+            //   2 vs 3: sub-voxel interpolation on/off
+            //   3 vs 4: mass-weighting on/off
+            //   4 vs 5: grid resolution 17 vs 32
             string[] algoNames = new string[]
             {
-                "GridArgmax (current)",
-                "GridSmoothed (current+smooth)",
-                "GridCentroid (baseline)",
-                "MassHistogramArgmax (rec)",
-                "MassHistogramSmoothed (rec+smooth)",
+                "GridArgmax17 (current production)",
+                "GridSmoothed17 (sibling baseline)",
+                "GridSmoothedInterp17",
+                "GridMassSmoothedInterp17",
+                "GridMassSmoothedInterp32",
             };
-            AlgorithmFn[] algoFns = new AlgorithmFn[]
+            SearchOptions[] algoOpts = new SearchOptions[]
             {
-                DensityPartitionBenchmarkAlgorithms.GridArgmax,
-                DensityPartitionBenchmarkAlgorithms.GridSmoothed,
-                DensityPartitionBenchmarkAlgorithms.GridCentroid,
-                DensityPartitionBenchmarkAlgorithms.MassHistogramArgmax,
-                DensityPartitionBenchmarkAlgorithms.MassHistogramSmoothed,
+                DensityPartitionBenchmarkAlgorithms.GridArgmax17(),
+                DensityPartitionBenchmarkAlgorithms.GridSmoothed17(),
+                DensityPartitionBenchmarkAlgorithms.GridSmoothedInterp17(),
+                DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterp17(),
+                DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterp32(),
             };
 
             // Sort scenarios deterministically by label so the report diffs cleanly.
@@ -133,7 +136,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             // Run every algorithm over the pre-built tapes and pre-computed ground truth.
             var algos = new List<DensityPartitionBenchmarkReport.AlgorithmReport>(algoNames.Length);
             for (int ai = 0; ai < algoNames.Length; ai++)
-                algos.Add(RunOneFromCache(algoNames[ai], algoFns[ai], truthList, truthData, underTestData, gtAnswers));
+                algos.Add(RunOneFromCache(algoNames[ai], algoOpts[ai], truthList, truthData, underTestData, gtAnswers));
 
             string branch = ReadEnvOr("GIT_BRANCH", "(unknown)");
             string sha = ReadEnvOr("GIT_SHA", "(unknown)");
@@ -158,32 +161,60 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             if (scenarios == null) scenarios = new List<BenchmarkScenario>();
             if (scenarios.Count > 0) return;
 
-            scenarios.Add(new BenchmarkScenario
-            {
-                label = "UniformRandom_2000",
-                kind = ScenarioKind.UniformRandom,
-                prismCount = 2000,
-                seed = 42,
-                worldHalfExtent = 500f,
-                jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
-            });
+            // ── Peaked scenarios (the algorithms' real job) ───────────────────
 
+            // Cluster centered ON 60m grid lines — measures "best case" for grid
+            // algorithms, since quantization error can hit 0 by accident.
             scenarios.Add(new BenchmarkScenario
             {
-                label = "SingleCluster_2000_r100",
+                label = "SingleCluster_OnGrid_r80",
                 kind = ScenarioKind.SingleCluster,
+                shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 42,
                 worldHalfExtent = 500f,
-                clusterCenter = new Vector3(150f, 80f, -120f),
-                clusterRadius = 100f,
+                clusterCenter = new Vector3(120f, 60f, -180f),
+                clusterRadius = 80f,
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
 
+            // Cluster center deliberately OFF 60m grid lines — exposes the real
+            // grid quantization error floor. With 17^3 production grid the
+            // theoretical lower bound for argmax is half-stride / sqrt(3) ≈ 17m.
+            // Sub-voxel interp should drop this below 10m.
+            scenarios.Add(new BenchmarkScenario
+            {
+                label = "SingleCluster_OffGrid_r80",
+                kind = ScenarioKind.SingleCluster,
+                shape = ScenarioShape.Peaked,
+                prismCount = 2000,
+                seed = 7,
+                worldHalfExtent = 500f,
+                clusterCenter = new Vector3(73f, 49f, -127f), // none on 60m lines
+                clusterRadius = 80f,
+                jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
+            });
+
+            // Tight cluster — kernel sees a sharp peak, sub-voxel interp can shine.
+            scenarios.Add(new BenchmarkScenario
+            {
+                label = "TightCluster_OffGrid_r30",
+                kind = ScenarioKind.SingleCluster,
+                shape = ScenarioShape.Peaked,
+                prismCount = 2000,
+                seed = 11,
+                worldHalfExtent = 500f,
+                clusterCenter = new Vector3(173f, 49f, -227f),
+                clusterRadius = 30f,
+                jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
+            });
+
+            // Three Gaussian clusters — the realistic gameplay distribution.
             scenarios.Add(new BenchmarkScenario
             {
                 label = "MultiCluster_2000_K3",
                 kind = ScenarioKind.MultiCluster,
+                shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 42,
                 worldHalfExtent = 500f,
@@ -192,25 +223,46 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 jadeFraction = 0.3f, rubyFraction = 0.3f, goldFraction = 0.4f,
             });
 
+            // Two equal-mass clusters — tests stability. Algorithm should pick one
+            // consistently across queries (otherwise it'd thrash mid-game).
             scenarios.Add(new BenchmarkScenario
             {
-                label = "Gradient_2000_X",
-                kind = ScenarioKind.Gradient,
+                label = "TwoEqualClusters_2000",
+                kind = ScenarioKind.MultiCluster,
+                shape = ScenarioShape.Peaked,
                 prismCount = 2000,
-                seed = 42,
+                seed = 123,
                 worldHalfExtent = 500f,
-                gradientAxis = Vector3.right,
+                clusterCount = 2,
+                clusterRadius = 80f,
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
 
-            // Staleness reproductions — same shape as above but with 30% of prisms
-            // mis-tagged as Blue, matching the §2.3.1 ordering bug. Run alongside
-            // the clean versions to make the "anti-domain drifts away from truth"
-            // failure mode quantitative.
+            // Heavy mass variance — only mass-weighted algorithms should benefit.
             scenarios.Add(new BenchmarkScenario
             {
-                label = "MultiCluster_2000_K3_stale30",
+                label = "MultiCluster_HeavyMass_K3",
                 kind = ScenarioKind.MultiCluster,
+                shape = ScenarioShape.Peaked,
+                prismCount = 2000,
+                seed = 42,
+                worldHalfExtent = 500f,
+                clusterCount = 3,
+                clusterRadius = 80f,
+                jadeFraction = 0.3f, rubyFraction = 0.3f, goldFraction = 0.4f,
+                volumeMin = 0.5f, volumeMax = 4f,
+            });
+
+            // Staleness reproduction (static approximation of §2.3.1; see audit §6).
+            // Doesn't fully model the dynamic Add/Remove cycle but keeps the slot
+            // open — the static version is identical to clean for the anti-D
+            // query (any non-X prism counts regardless of tag), which is itself a
+            // useful finding to document in the report.
+            scenarios.Add(new BenchmarkScenario
+            {
+                label = "MultiCluster_K3_stale30_static",
+                kind = ScenarioKind.MultiCluster,
+                shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 42,
                 worldHalfExtent = 500f,
@@ -220,17 +272,29 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 staleFraction = 0.3f,
             });
 
+            // ── Diffuse scenarios (no peak — diagnostic floor only) ───────────
+
             scenarios.Add(new BenchmarkScenario
             {
-                label = "MultiCluster_HeavyMass_2000_K3",
-                kind = ScenarioKind.MultiCluster,
+                label = "UniformRandom_2000_diag",
+                kind = ScenarioKind.UniformRandom,
+                shape = ScenarioShape.Diffuse,
                 prismCount = 2000,
                 seed = 42,
                 worldHalfExtent = 500f,
-                clusterCount = 3,
-                clusterRadius = 80f,
-                jadeFraction = 0.3f, rubyFraction = 0.3f, goldFraction = 0.4f,
-                volumeMin = 0.5f, volumeMax = 4f,
+                jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
+            });
+
+            scenarios.Add(new BenchmarkScenario
+            {
+                label = "Gradient_2000_X_diag",
+                kind = ScenarioKind.Gradient,
+                shape = ScenarioShape.Diffuse,
+                prismCount = 2000,
+                seed = 42,
+                worldHalfExtent = 500f,
+                gradientAxis = Vector3.right,
+                jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
         }
 
@@ -238,11 +302,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         // Internals
         // ------------------------------------------------------------------
 
-        public delegate BenchmarkResult AlgorithmFn(IReadOnlyList<BenchmarkPrism> prisms, Domains? exclude, float worldHalfExtent);
-
         DensityPartitionBenchmarkReport.AlgorithmReport RunOneFromCache(
             string name,
-            AlgorithmFn fn,
+            SearchOptions opt,
             List<BenchmarkScenario> truthList,
             List<List<BenchmarkPrism>> truthData,
             List<List<BenchmarkPrism>> underTestData,
@@ -262,13 +324,13 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 {
                     // Warm-up: run each algorithm once on this scenario and discard.
                     foreach (var q in DensityPartitionBenchmarkReport.StandardQueries())
-                        fn(underTest, q.exclude, scenario.worldHalfExtent);
+                        DensityPartitionBenchmarkAlgorithms.Search(underTest, q.exclude, scenario.worldHalfExtent, opt);
                 }
 
                 foreach (var q in DensityPartitionBenchmarkReport.StandardQueries())
                 {
                     var gt = gtAnswers[si + "|" + q.label];
-                    var sys = fn(underTest, q.exclude, scenario.worldHalfExtent);
+                    var sys = DensityPartitionBenchmarkAlgorithms.Search(underTest, q.exclude, scenario.worldHalfExtent, opt);
 
                     float dist = (gt.Empty || sys.Empty)
                         ? 0f
@@ -290,6 +352,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                     rows.Add(new DensityPartitionBenchmarkReport.QueryRow
                     {
                         Scenario = scenario.label,
+                        Shape = scenario.shape,
                         Query = q.label,
                         GroundTruth = gt.Location,
                         GroundTruthDensity = gt.Density,
