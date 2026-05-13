@@ -54,6 +54,15 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// grid-stride quantization to sub-voxel precision.
         /// </summary>
         public bool subVoxelInterp;
+
+        /// <summary>
+        /// If true, after argmax+interp, do a final O(N) pass: compute the
+        /// (mass-weighted, if massWeighted=true) centroid of all prisms within
+        /// smoothingRadiusM of the interp answer. Grounds the answer in the
+        /// actual prism positions instead of voxel centers — drops error toward
+        /// the analytical centroid floor at the cost of one extra prism scan.
+        /// </summary>
+        public bool centroidRefine;
     }
 
     /// <summary>
@@ -128,6 +137,26 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             subVoxelInterp = true,
         };
 
+        public static SearchOptions GridMassSmoothedInterpCentroid17() => new SearchOptions
+        {
+            gridSize = ProductionGridCells,
+            massWeighted = true,
+            smoothed = true,
+            smoothingRadiusM = DefaultSmoothingRadiusM,
+            subVoxelInterp = true,
+            centroidRefine = true,
+        };
+
+        public static SearchOptions GridMassSmoothedInterpCentroid32() => new SearchOptions
+        {
+            gridSize = 32,
+            massWeighted = true,
+            smoothed = true,
+            smoothingRadiusM = DefaultSmoothingRadiusM,
+            subVoxelInterp = true,
+            centroidRefine = true,
+        };
+
         // ==================================================================
         //  Unified Search() — implements every variant.
         // ==================================================================
@@ -145,62 +174,114 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             int N = opt.gridSize;
             float stride = worldHalfExtent * 2f / N;
             float origin = -worldHalfExtent;
+            int len = N * N * N;
 
-            // Phase 1: bin
-            float[] hist = new float[N * N * N];
+            // Phase 1: bin (pooled allocation — see RentArray/ReturnArray below)
+            float[] hist = RentArray(len);
+            try
+            {
+                for (int i = 0; i < prisms.Count; i++)
+                {
+                    var p = prisms[i];
+                    if (excludeDomain.HasValue && p.Domain == excludeDomain.Value) continue;
+                    int xi, yi, zi;
+                    if (!TryMapToIndex(p.Position, origin, stride, N, out xi, out yi, out zi)) continue;
+                    hist[xi + yi * N + zi * N * N] += opt.massWeighted ? p.Volume : 1f;
+                }
+
+                // Phase 2: optional smoothing (separable box filter, pooled scratch)
+                float[] field = hist;
+                float[] scratch = null;
+                if (opt.smoothed)
+                {
+                    int kernelHalfWidth = Mathf.Max(1, Mathf.RoundToInt(opt.smoothingRadiusM / stride));
+                    scratch = RentArray(len);
+                    field = SeparableBoxFilter3D(hist, scratch, N, kernelHalfWidth);
+                }
+
+                try
+                {
+                    // Phase 3: argmax
+                    float best = -1f;
+                    int bestX = 0, bestY = 0, bestZ = 0;
+                    for (int z = 0; z < N; z++)
+                    for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float v = field[x + y * N + z * N * N];
+                        if (v > best) { best = v; bestX = x; bestY = y; bestZ = z; }
+                    }
+
+                    if (best <= 0f)
+                        return new BenchmarkResult { Empty = true, ElapsedMs = sw.Elapsed.TotalMilliseconds };
+
+                    // Phase 4: optional sub-voxel parabolic interpolation
+                    float dx = 0f, dy = 0f, dz = 0f;
+                    if (opt.subVoxelInterp)
+                    {
+                        dx = ParabolicOffset(SampleAxis(field, N, bestX, bestY, bestZ, axis: 0));
+                        dy = ParabolicOffset(SampleAxis(field, N, bestX, bestY, bestZ, axis: 1));
+                        dz = ParabolicOffset(SampleAxis(field, N, bestX, bestY, bestZ, axis: 2));
+                    }
+
+                    Vector3 loc = new Vector3(
+                        origin + (bestX + dx) * stride,
+                        origin + (bestY + dy) * stride,
+                        origin + (bestZ + dz) * stride);
+
+                    // Phase 5: optional centroid refinement — anchors the answer to
+                    // the actual prism positions, not voxel centers.
+                    if (opt.centroidRefine)
+                        loc = CentroidWithinRadius(prisms, excludeDomain, loc, opt.smoothingRadiusM, opt.massWeighted, fallback: loc);
+
+                    sw.Stop();
+                    return new BenchmarkResult
+                    {
+                        Location = loc,
+                        Density = best,
+                        Empty = false,
+                        ElapsedMs = sw.Elapsed.TotalMilliseconds,
+                    };
+                }
+                finally
+                {
+                    if (scratch != null) ReturnArray(scratch);
+                }
+            }
+            finally
+            {
+                ReturnArray(hist);
+            }
+        }
+
+        /// <summary>
+        /// Weighted centroid of prisms within radius of `seed`. Box kernel matches
+        /// the GroundTruth + ScoreLocation conventions, so the answer is consistent
+        /// with how mass% is rescored. Returns `fallback` when no prisms qualify.
+        /// </summary>
+        static Vector3 CentroidWithinRadius(
+            IReadOnlyList<BenchmarkPrism> prisms,
+            Domains? excludeDomain,
+            Vector3 seed,
+            float radius,
+            bool massWeighted,
+            Vector3 fallback)
+        {
+            Vector3 acc = Vector3.zero;
+            float wsum = 0f;
             for (int i = 0; i < prisms.Count; i++)
             {
                 var p = prisms[i];
                 if (excludeDomain.HasValue && p.Domain == excludeDomain.Value) continue;
-                int xi, yi, zi;
-                if (!TryMapToIndex(p.Position, origin, stride, N, out xi, out yi, out zi)) continue;
-                hist[xi + yi * N + zi * N * N] += opt.massWeighted ? p.Volume : 1f;
+                Vector3 diff = p.Position - seed;
+                if (Mathf.Abs(diff.x) > radius) continue;
+                if (Mathf.Abs(diff.y) > radius) continue;
+                if (Mathf.Abs(diff.z) > radius) continue;
+                float w = massWeighted ? p.Volume : 1f;
+                acc += p.Position * w;
+                wsum += w;
             }
-
-            // Phase 2: optional smoothing (separable box filter)
-            float[] field = hist;
-            if (opt.smoothed)
-            {
-                int kernelHalfWidth = Mathf.Max(1, Mathf.RoundToInt(opt.smoothingRadiusM / stride));
-                field = SeparableBoxFilter3D(hist, N, kernelHalfWidth);
-            }
-
-            // Phase 3: argmax
-            float best = -1f;
-            int bestX = 0, bestY = 0, bestZ = 0;
-            for (int z = 0; z < N; z++)
-            for (int y = 0; y < N; y++)
-            for (int x = 0; x < N; x++)
-            {
-                float v = field[x + y * N + z * N * N];
-                if (v > best) { best = v; bestX = x; bestY = y; bestZ = z; }
-            }
-
-            if (best <= 0f)
-                return new BenchmarkResult { Empty = true, ElapsedMs = sw.Elapsed.TotalMilliseconds };
-
-            // Phase 4: optional sub-voxel parabolic interpolation
-            float dx = 0f, dy = 0f, dz = 0f;
-            if (opt.subVoxelInterp)
-            {
-                dx = ParabolicOffset(SampleAxis(field, N, bestX, bestY, bestZ, axis: 0));
-                dy = ParabolicOffset(SampleAxis(field, N, bestX, bestY, bestZ, axis: 1));
-                dz = ParabolicOffset(SampleAxis(field, N, bestX, bestY, bestZ, axis: 2));
-            }
-
-            Vector3 loc = new Vector3(
-                origin + (bestX + dx) * stride,
-                origin + (bestY + dy) * stride,
-                origin + (bestZ + dz) * stride);
-
-            sw.Stop();
-            return new BenchmarkResult
-            {
-                Location = loc,
-                Density = best,
-                Empty = false,
-                ElapsedMs = sw.Elapsed.TotalMilliseconds,
-            };
+            return wsum > 0f ? acc / wsum : fallback;
         }
 
         // ==================================================================
@@ -293,11 +374,59 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// Separable 3D box filter using a sliding window. O(N³) per pass × 3 passes,
         /// independent of kernel width — works as well for 3³ kernels as for 25³ ones.
         /// Edge voxels use a partial-window sum (no zero-padding shrink).
+        ///
+        /// `scratch` is a caller-provided buffer of the same length as `input`; it's
+        /// overwritten during the X/Y passes and ends up holding intermediate state.
+        /// Return value is one of {input, scratch} depending on pass parity; both
+        /// buffers' final contents are valid for the caller to read or recycle.
         /// </summary>
-        static float[] SeparableBoxFilter3D(float[] input, int N, int kernelHalfWidth)
+        // ──────────────────────────────────────────────────────────────────
+        // Array pool — keyed by length, lockless single-threaded LIFO.
+        //
+        // Iteration 1 allocated ~130 MB of float[] across one full run (5
+        // algorithms × 36 queries × up to 3 arrays per Search). The resulting
+        // GC pauses caused 5-7ms outliers in the 32³ rows. The pool reuses
+        // arrays across queries — typical hot run hits 4 distinct lengths
+        // (17³=4913, 32³=32768, 64³=262144, plus an occasional resize).
+        // ──────────────────────────────────────────────────────────────────
+
+        static readonly System.Collections.Generic.Dictionary<int, System.Collections.Generic.Stack<float[]>> _pool
+            = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.Stack<float[]>>();
+
+        static float[] RentArray(int length)
         {
-            float[] a = (float[])input.Clone();
-            float[] b = new float[input.Length];
+            System.Collections.Generic.Stack<float[]> stack;
+            if (_pool.TryGetValue(length, out stack) && stack.Count > 0)
+            {
+                var arr = stack.Pop();
+                System.Array.Clear(arr, 0, length);
+                return arr;
+            }
+            return new float[length];
+        }
+
+        static void ReturnArray(float[] arr)
+        {
+            if (arr == null) return;
+            System.Collections.Generic.Stack<float[]> stack;
+            if (!_pool.TryGetValue(arr.Length, out stack))
+            {
+                stack = new System.Collections.Generic.Stack<float[]>(4);
+                _pool[arr.Length] = stack;
+            }
+            stack.Push(arr);
+        }
+
+        static float[] SeparableBoxFilter3D(float[] input, float[] scratch, int N, int kernelHalfWidth)
+        {
+            // We mutate `input` in-place across alternating passes — the caller's
+            // expectation is "field" returned, "hist" untouched after this returns.
+            // To honor that, we use the input as the "a" buffer (reading from it,
+            // overwriting it on the second pass) and scratch as the "b" buffer.
+            // Since this function returns into a finally that disposes both, we
+            // can clobber `input` freely.
+            float[] a = input;
+            float[] b = scratch;
 
             // X pass: a -> b
             for (int z = 0; z < N; z++)

@@ -85,6 +85,8 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             //   2 vs 3: sub-voxel interpolation on/off
             //   3 vs 4: mass-weighting on/off
             //   4 vs 5: grid resolution 17 vs 32
+            //   5 vs 6: + centroid refinement at 17 (anchors to prism positions)
+            //   5 vs 7: + centroid refinement at 32 (best accuracy)
             string[] algoNames = new string[]
             {
                 "GridArgmax17 (current production)",
@@ -92,6 +94,8 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 "GridSmoothedInterp17",
                 "GridMassSmoothedInterp17",
                 "GridMassSmoothedInterp32",
+                "GridMassSmoothedInterpCentroid17",
+                "GridMassSmoothedInterpCentroid32",
             };
             SearchOptions[] algoOpts = new SearchOptions[]
             {
@@ -100,6 +104,8 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 DensityPartitionBenchmarkAlgorithms.GridSmoothedInterp17(),
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterp17(),
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterp32(),
+                DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpCentroid17(),
+                DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpCentroid32(),
             };
 
             // Sort scenarios deterministically by label so the report diffs cleanly.
@@ -253,14 +259,16 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 volumeMin = 0.5f, volumeMax = 4f,
             });
 
-            // Staleness reproduction (static approximation of §2.3.1; see audit §6).
-            // Doesn't fully model the dynamic Add/Remove cycle but keeps the slot
-            // open — the static version is identical to clean for the anti-D
-            // query (any non-X prism counts regardless of tag), which is itself a
-            // useful finding to document in the report.
+            // Dynamic staleness (§2.3.1 model): phantom Blue-tagged duplicates at
+            // random prism positions, simulating the cumulative bucket pollution
+            // from Add-before-ChangeTeam + Remove-after-ChangeTeam asymmetry.
+            // Ground truth never sees the phantoms, so any algorithm's deviation
+            // from clean MultiCluster_2000_K3 here is directly attributable to
+            // the bug — gives us a quantitative budget for "what does fixing
+            // HealthBlockTracker.Add ordering buy us?"
             scenarios.Add(new BenchmarkScenario
             {
-                label = "MultiCluster_K3_stale30_static",
+                label = "MultiCluster_K3_stale30_dynamic",
                 kind = ScenarioKind.MultiCluster,
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
@@ -383,13 +391,19 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             float radius,
             bool massWeighted)
         {
-            float r2 = radius * radius;
+            // Box kernel — matches the separable-box smoothing the GroundTruth
+            // uses, so mass% is an apples-to-apples ratio. A spherical kernel
+            // would have ~47% the volume of the bounding cube, which is exactly
+            // why iteration 1's mass% sat at 44-52% even when Δ was small.
             float s = 0f;
             for (int i = 0; i < truth.Count; i++)
             {
                 var p = truth[i];
                 if (exclude.HasValue && p.Domain == exclude.Value) continue;
-                if ((p.Position - loc).sqrMagnitude > r2) continue;
+                Vector3 diff = p.Position - loc;
+                if (Mathf.Abs(diff.x) > radius) continue;
+                if (Mathf.Abs(diff.y) > radius) continue;
+                if (Mathf.Abs(diff.z) > radius) continue;
                 s += massWeighted ? p.Volume : 1f;
             }
             return s;

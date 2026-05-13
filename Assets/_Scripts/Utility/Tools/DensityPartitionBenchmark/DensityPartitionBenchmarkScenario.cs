@@ -98,8 +98,14 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Tooltip("Maximum prism volume. Set min==max for uniform 1.0 (the current production grid's effective weighting).")]
         [Min(0.1f)] public float volumeMax = 1f;
 
-        [Header("Staleness injection (simulates the ChangeTeam-after-AddBlock bug)")]
-        [Tooltip("Fraction of prisms whose domain is set to Domains.Blue in the input tape sent to the algorithm under test, even though their true domain is something else. Ground truth uses the true domains. This isolates the §2.3.1 failure mode described in DENSITY_PARTITIONING_AUDIT.md without needing to reproduce the full Prism+HealthBlockTracker lifecycle.")]
+        [Header("Staleness injection (models the §2.3.1 dynamic Add/Remove bug)")]
+        [Tooltip("Fraction of prisms to *duplicate* as Blue-tagged phantoms at the " +
+                 "same position. Models Cell.AddBlock running while block.Domain is " +
+                 "still Blue (the pool default) so the prism is added to all three " +
+                 "per-domain countGrids, then RemoveBlock running after ChangeTeam " +
+                 "fails to remove from the prism's eventual domain's grid — a phantom " +
+                 "is left at the prism's position in its own anti-domain bucket. " +
+                 "Ground truth never sees the phantoms.")]
         [Range(0f, 1f)] public float staleFraction = 0f;
 
         /// <summary>
@@ -209,27 +215,44 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         /// <summary>
-        /// Apply staleness to the input tape sent to an algorithm under test. Returns
-        /// a *new* list where staleFraction of prisms are re-tagged with Domains.Blue
-        /// — the sentinel a pooled HealthPrism reports before HealthBlockTracker.Add
-        /// runs hp.ChangeTeam(domain). Cell.AddBlock's `if (t != block.Domain)` loop
-        /// then treats Blue as ∉ {Jade,Ruby,Gold} and increments all three buckets,
-        /// which is the §2.3.1 corruption path the audit calls out.
+        /// Apply staleness to the input tape sent to an algorithm under test.
         ///
-        /// Ground truth always sees the true domain (the caller passes the original
-        /// tape to ground truth and this corrupted tape to the algorithm under test).
+        /// Models the §2.3.1 dynamic-cycle failure: HealthBlockTracker.Add runs
+        /// `cell.AddBlock(hp)` while `hp.Domain` is still Blue (the pool default),
+        /// so Cell.AddBlock's `if (t != block.Domain)` loop increments ALL THREE
+        /// per-domain countGrids. Later, `hp.ChangeTeam(domain)` sets the real
+        /// domain. If the prism dies after that, RemoveBlock's same-shaped loop
+        /// only decrements two of the three buckets — the bucket matching the
+        /// prism's eventual domain is left with a phantom entry forever.
+        ///
+        /// Implementation: append `staleFraction × N` phantom prisms at the same
+        /// positions as randomly-chosen real prisms, tagged Blue so they pass
+        /// every anti-D filter (Blue ∉ {Jade, Ruby, Gold}). Each phantom adds one
+        /// "phantom enemy" near a real prism — the cumulative effect of the bug
+        /// over a long-running ecosystem.
+        ///
+        /// Ground truth never sees the phantoms — it scores the clean truth tape.
         /// </summary>
         public List<BenchmarkPrism> ApplyStaleness(List<BenchmarkPrism> truth)
         {
             if (staleFraction <= 0f) return truth;
-            var corrupted = new List<BenchmarkPrism>(truth.Count);
-            var rng = new System.Random(seed ^ 0x53415F45); // distinct from build-time seed
-            for (int i = 0; i < truth.Count; i++)
+            int phantomCount = Mathf.RoundToInt(truth.Count * staleFraction);
+            if (phantomCount <= 0) return truth;
+
+            var corrupted = new List<BenchmarkPrism>(truth.Count + phantomCount);
+            corrupted.AddRange(truth);
+
+            var rng = new System.Random(seed ^ 0x50_48_4E_54); // 'PHNT'
+            for (int i = 0; i < phantomCount; i++)
             {
-                var p = truth[i];
-                if (rng.NextDouble() < staleFraction)
-                    p.Domain = Domains.Blue;
-                corrupted.Add(p);
+                int srcIdx = rng.Next(truth.Count);
+                var src = truth[srcIdx];
+                corrupted.Add(new BenchmarkPrism
+                {
+                    Position = src.Position,
+                    Domain = Domains.Blue, // phantoms pass every anti-D filter
+                    Volume = src.Volume,
+                });
             }
             return corrupted;
         }

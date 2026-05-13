@@ -221,12 +221,12 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 if (seen.Add(row.Scenario)) scenarios.Add(row.Scenario);
             }
 
-            sb.AppendLine("=== Per-scenario winners (median Δ across queries, Peaked only) ===");
-            sb.AppendLine(string.Format("{0,-34} {1,-36} {2,12}", "Scenario", "Winner", "medianΔ(m)"));
+            sb.AppendLine("=== Per-scenario winners + stability (Peaked only) ===");
+            sb.AppendLine(string.Format("{0,-34} {1,-36} {2,12} {3,12}",
+                "Scenario", "Winner (smallest medianΔ)", "winnerΔ(m)", "winnerStab(m)"));
 
             foreach (var scn in scenarios)
             {
-                // Find scenario shape from any algorithm's row matching this label
                 ScenarioShape shape = ScenarioShape.Peaked;
                 foreach (var algo in algos)
                 {
@@ -237,29 +237,83 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                     }
                     if (found) break;
                 }
-
                 if (shape != ScenarioShape.Peaked) continue;
 
                 string bestAlgo = null;
                 float bestMedianD = float.MaxValue;
+                float bestStability = 0f;
                 foreach (var algo in algos)
                 {
                     var dists = new List<float>();
+                    var locs = new List<Vector3>();
                     foreach (var row in algo.Rows)
                     {
                         if (row.Scenario != scn) continue;
                         if (row.GroundTruthEmpty || row.SystemEmpty) continue;
                         dists.Add(row.DistanceErrorM);
+                        locs.Add(row.SystemAnswer);
                     }
                     if (dists.Count == 0) continue;
                     dists.Sort();
                     float med = Median(dists);
-                    if (med < bestMedianD) { bestMedianD = med; bestAlgo = algo.AlgorithmName; }
+                    if (med < bestMedianD)
+                    {
+                        bestMedianD = med;
+                        bestAlgo = algo.AlgorithmName;
+                        bestStability = PairwiseMedianDistance(locs);
+                    }
                 }
 
                 if (bestAlgo != null)
-                    sb.AppendLine(string.Format("{0,-34} {1,-36} {2,11:F1}",
-                        scn, bestAlgo, bestMedianD));
+                    sb.AppendLine(string.Format("{0,-34} {1,-36} {2,11:F1} {3,11:F1}",
+                        scn, bestAlgo, bestMedianD, bestStability));
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("Stability = median pairwise distance between the algorithm's 4 query answers");
+            sb.AppendLine("on the same scenario. A scenario with one dominant cluster should produce a low");
+            sb.AppendLine("stability number (answers cluster together). High stability + low Δ together =");
+            sb.AppendLine("'algorithm flips between equivalent answers across queries' (TwoEqualClusters at");
+            sb.AppendLine("low grid resolution is the canonical example).");
+            sb.AppendLine();
+            sb.AppendLine("=== Cross-algorithm stability on each Peaked scenario ===");
+            sb.AppendLine("(median pairwise distance between the 4 query answers — lower = more stable)");
+            sb.AppendLine();
+
+            // Header row of algorithm names
+            sb.Append(string.Format("{0,-34}", "Scenario"));
+            foreach (var algo in algos)
+                sb.Append(string.Format(" {0,-22}", Truncate(algo.AlgorithmName, 22)));
+            sb.AppendLine();
+
+            foreach (var scn in scenarios)
+            {
+                ScenarioShape shape = ScenarioShape.Peaked;
+                foreach (var algo in algos)
+                {
+                    bool found = false;
+                    foreach (var row in algo.Rows)
+                    {
+                        if (row.Scenario == scn) { shape = row.Shape; found = true; break; }
+                    }
+                    if (found) break;
+                }
+                if (shape != ScenarioShape.Peaked) continue;
+
+                sb.Append(string.Format("{0,-34}", scn));
+                foreach (var algo in algos)
+                {
+                    var locs = new List<Vector3>();
+                    foreach (var row in algo.Rows)
+                    {
+                        if (row.Scenario != scn) continue;
+                        if (row.SystemEmpty) continue;
+                        locs.Add(row.SystemAnswer);
+                    }
+                    float stab = PairwiseMedianDistance(locs);
+                    sb.Append(string.Format(" {0,22}", string.Format("{0:F1}m", stab)));
+                }
+                sb.AppendLine();
             }
 
             sb.AppendLine();
@@ -272,6 +326,20 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             sb.AppendLine("  algorithm must beat the current production row (GridArgmax17) on at least");
             sb.AppendLine("  one of medianΔ / medianMass% / medianMs without regressing the other two.");
         }
+
+        static float PairwiseMedianDistance(List<Vector3> locs)
+        {
+            if (locs.Count < 2) return 0f;
+            var dists = new List<float>(locs.Count * (locs.Count - 1) / 2);
+            for (int i = 0; i < locs.Count; i++)
+            for (int j = i + 1; j < locs.Count; j++)
+                dists.Add(Vector3.Distance(locs[i], locs[j]));
+            dists.Sort();
+            return Median(dists);
+        }
+
+        static string Truncate(string s, int max) =>
+            s.Length <= max ? s : s.Substring(0, max);
 
         // ==================================================================
         // Helpers
