@@ -9839,7 +9839,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &211505306
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9852,7 +9852,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8377878a0e884704ba3c40235cb5fc37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  domain: 1
+  domain: 3
   button: {fileID: 211505309}
   backgroundImage: {fileID: 211505308}
   selectedSprite: {fileID: 21300000, guid: a46749acf1cd6904b8a5a6920473ac5a, type: 3}
@@ -30629,7 +30629,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8377878a0e884704ba3c40235cb5fc37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  domain: 2
+  domain: 4
   button: {fileID: 666256584}
   backgroundImage: {fileID: 666256585}
   selectedSprite: {fileID: 21300000, guid: a46749acf1cd6904b8a5a6920473ac5a, type: 3}
@@ -48475,7 +48475,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8377878a0e884704ba3c40235cb5fc37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  domain: 4
+  domain: 2
   button: {fileID: 1156556881}
   backgroundImage: {fileID: 1156556882}
   selectedSprite: {fileID: 21300000, guid: a46749acf1cd6904b8a5a6920473ac5a, type: 3}
@@ -61330,6 +61330,39 @@ MonoBehaviour:
   m_ChildScaleWidth: 1
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &1494522950 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1497814302855192466, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2098022921}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &1494522951 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7533621146432159294, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2098022921}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1494522952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1494522951}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c8b3c1ceb3acc84ea3081bf66b0e58d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  decrementButton: {fileID: 2098022937}
+  incrementButton: {fileID: 2098022936}
+  countText: {fileID: 1494522950}
 --- !u!1 &1495744678
 GameObject:
   m_ObjectHideFlags: 0
@@ -76584,14 +76617,8 @@ MonoBehaviour:
   - {fileID: 396634034}
   - {fileID: 1046431407}
   - {fileID: 1813300077}
-  playerCountStepper: {fileID: 895275951}
-  playerCountDecrementButton: {fileID: 0}
-  playerCountIncrementButton: {fileID: 0}
-  playerCountValueText: {fileID: 0}
-  domainCountDecrementButton: {fileID: 0}
-  domainCountIncrementButton: {fileID: 0}
-  domainsValueText: {fileID: 0}
-  domainSelectionPanel: {fileID: 0}
+  pcStepper: {fileID: 895275951}
+  dcStepper: {fileID: 0}
   domainInfoItems: []
   chipPrefab: {fileID: 0}
   shipPlaceholderIcon: {fileID: 777058466}
@@ -82273,6 +82300,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1946949948}
   m_CullTransparentMesh: 1
+--- !u!114 &1952801080 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2253036957094455005, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2098022921}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1952801081 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5095103428512042826, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2098022921}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &1952801082 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2466215769494462647, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2098022921}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1952801083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1952801082}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c8b3c1ceb3acc84ea3081bf66b0e58d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  decrementButton: {fileID: 1952801081}
+  incrementButton: {fileID: 1952801080}
+  countText: {fileID: 2098022926}
 --- !u!1 &1954930174
 GameObject:
   m_ObjectHideFlags: 0
@@ -88704,6 +88776,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 962396418157226940, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
+      propertyPath: m_Name
+      value: PlayerCountSelection
+      objectReference: {fileID: 0}
+    - target: {fileID: 962396418157226940, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -88749,6 +88826,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2098265765021851674, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: IncrementButton
+      objectReference: {fileID: 0}
     - target: {fileID: 2333044826710928284, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -88788,6 +88870,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3014309538493370683, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: PlayerCountText
       objectReference: {fileID: 0}
     - target: {fileID: 3061974702104673148, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
@@ -88806,11 +88893,26 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: a9c6af5337e21f84e96b8218bea507fb,
         type: 3}
+    - target: {fileID: 3670243238771172781, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: DecrementButton
+      objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: ModalType
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: dcStepper
+      value: 
+      objectReference: {fileID: 1494522952}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: pcStepper
+      value: 
+      objectReference: {fileID: 1952801083}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: chipPrefab
@@ -88855,7 +88957,7 @@ PrefabInstance:
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: domainInfoItems.Array.size
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
@@ -88897,6 +88999,11 @@ PrefabInstance:
       propertyPath: 'domainInfoItems.Array.data[3]'
       value: 
       objectReference: {fileID: 211505306}
+    - target: {fileID: 4845406550598797316, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: IncrementButton
+      objectReference: {fileID: 0}
     - target: {fileID: 5440107228895143991, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: m_IsActive
@@ -88937,6 +89044,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696422172704105266, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: DomainCountSelection
+      objectReference: {fileID: 0}
+    - target: {fileID: 5889727247446011163, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: Total Domain Count
       objectReference: {fileID: 0}
     - target: {fileID: 6064141727780457774, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
@@ -89104,10 +89221,25 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: CosmicShore.UI.ArcadeGameConfigureModal, Assembly-CSharp
       objectReference: {fileID: 0}
+    - target: {fileID: 7533621146432159294, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: Domain Count
+      objectReference: {fileID: 0}
     - target: {fileID: 8490682396956724260, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8708645598640455168, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: DomainCountText
+      objectReference: {fileID: 0}
+    - target: {fileID: 8899762354549211344, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: m_Name
+      value: DecrementButton
       objectReference: {fileID: 0}
     - target: {fileID: 9115360384598870881, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
@@ -89152,6 +89284,14 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 211505307}
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2466215769494462647, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1952801083}
+    - targetCorrespondingSourceObject: {fileID: 7533621146432159294, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1494522952}
     - targetCorrespondingSourceObject: {fileID: 8899762354549211344, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       insertIndex: -1
@@ -89199,6 +89339,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2098022926 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1318881823929256153, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2098022921}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &2098022927 stripped
@@ -89291,7 +89443,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8377878a0e884704ba3c40235cb5fc37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  domain: 3
+  domain: 1
   button: {fileID: 2098022929}
   backgroundImage: {fileID: 2098022930}
   selectedSprite: {fileID: 21300000, guid: a46749acf1cd6904b8a5a6920473ac5a, type: 3}
