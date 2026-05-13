@@ -27,6 +27,20 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         SingleCluster = 1,
         MultiCluster = 2,
         Gradient = 3,
+
+        /// <summary>
+        /// K clusters at deterministic positions, each cluster dominated by one
+        /// domain (cluster i → {Jade, Ruby, Gold}[i % 3] with `segregatedPurity`
+        /// fraction of prisms in that domain, the rest split among the others).
+        ///
+        /// Models a "territorial" game state where each team has carved out a
+        /// region. This is the scenario where the §2.3.1 staleness bug should
+        /// actually move the answer: phantom-Blue prisms at the Jade-dominant
+        /// cluster's position pollute anti-Jade's view, potentially flipping
+        /// the algorithm's pick from "Ruby/Gold cluster" to "polluted Jade
+        /// cluster."
+        /// </summary>
+        DomainSegregatedClusters = 4,
     }
 
     /// <summary>
@@ -92,6 +106,12 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Range(0f, 1f)] public float rubyFraction = 0.4f;
         [Range(0f, 1f)] public float goldFraction = 0.2f;
 
+        [Header("DomainSegregatedClusters")]
+        [Tooltip("Fraction of each cluster's prisms that go to its dominant domain. " +
+                 "The rest are split among the other two domains. 1.0 = fully pure, " +
+                 "0.33 = same as MultiCluster (uniform mix).")]
+        [Range(0.34f, 1f)] public float segregatedPurity = 0.9f;
+
         [Header("Volume distribution")]
         [Tooltip("Minimum prism volume. Volume is sampled uniformly in [min, max] per prism.")]
         [Min(0.1f)] public float volumeMin = 1f;
@@ -130,16 +150,20 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             float vmax = Mathf.Max(vmin, volumeMax);
 
             Vector3[] multiCenters = null;
-            if (kind == ScenarioKind.MultiCluster)
+            Domains[] dominantDomainPerCluster = null;
+            if (kind == ScenarioKind.MultiCluster || kind == ScenarioKind.DomainSegregatedClusters)
             {
                 int k = Mathf.Clamp(clusterCount, 2, 8);
                 multiCenters = new Vector3[k];
+                dominantDomainPerCluster = new Domains[k];
+                Domains[] domainCycle = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 for (int i = 0; i < k; i++)
                 {
                     multiCenters[i] = new Vector3(
                         (float)(rng.NextDouble() * 2 - 1) * worldHalfExtent * 0.6f,
                         (float)(rng.NextDouble() * 2 - 1) * worldHalfExtent * 0.6f,
                         (float)(rng.NextDouble() * 2 - 1) * worldHalfExtent * 0.6f);
+                    dominantDomainPerCluster[i] = domainCycle[i % 3];
                 }
             }
 
@@ -147,10 +171,21 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
             for (int i = 0; i < prismCount; i++)
             {
-                Vector3 pos = SamplePosition(rng, kind, axis, multiCenters);
+                int chosenCluster;
+                Vector3 pos = SamplePosition(rng, kind, axis, multiCenters, out chosenCluster);
 
-                float t = (float)rng.NextDouble();
-                Domains d = t < jadeT ? Domains.Jade : t < rubyT ? Domains.Ruby : Domains.Gold;
+                Domains d;
+                if (kind == ScenarioKind.DomainSegregatedClusters && chosenCluster >= 0)
+                {
+                    d = SampleDomainForSegregatedCluster(rng,
+                        dominantDomainPerCluster[chosenCluster],
+                        Mathf.Clamp(segregatedPurity, 0.34f, 1f));
+                }
+                else
+                {
+                    float t = (float)rng.NextDouble();
+                    d = t < jadeT ? Domains.Jade : t < rubyT ? Domains.Ruby : Domains.Gold;
+                }
 
                 float v = Mathf.Lerp(vmin, vmax, (float)rng.NextDouble());
 
@@ -160,17 +195,40 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             return prisms;
         }
 
-        Vector3 SamplePosition(System.Random rng, ScenarioKind shape, Vector3 axis, Vector3[] centers)
+        /// <summary>
+        /// Pick a domain for a prism in a segregated cluster: `purity` chance of
+        /// the dominant domain, remainder split evenly between the other two.
+        /// </summary>
+        static Domains SampleDomainForSegregatedCluster(System.Random rng, Domains dominant, float purity)
         {
+            float r = (float)rng.NextDouble();
+            if (r < purity) return dominant;
+            // Remaining (1 - purity) split evenly between the two non-dominant domains.
+            float t = (r - purity) / (1f - purity);
+            switch (dominant)
+            {
+                case Domains.Jade: return t < 0.5f ? Domains.Ruby : Domains.Gold;
+                case Domains.Ruby: return t < 0.5f ? Domains.Jade : Domains.Gold;
+                case Domains.Gold: return t < 0.5f ? Domains.Jade : Domains.Ruby;
+                default: return Domains.Jade;
+            }
+        }
+
+        Vector3 SamplePosition(System.Random rng, ScenarioKind shape, Vector3 axis, Vector3[] centers, out int chosenCluster)
+        {
+            chosenCluster = -1;
             switch (shape)
             {
                 case ScenarioKind.SingleCluster:
+                    chosenCluster = 0;
                     return clusterCenter + GaussianVector(rng) * clusterRadius;
 
                 case ScenarioKind.MultiCluster:
+                case ScenarioKind.DomainSegregatedClusters:
                 {
                     int k = centers != null ? centers.Length : 3;
                     int pick = rng.Next(k);
+                    chosenCluster = pick;
                     return centers[pick] + GaussianVector(rng) * clusterRadius;
                 }
 

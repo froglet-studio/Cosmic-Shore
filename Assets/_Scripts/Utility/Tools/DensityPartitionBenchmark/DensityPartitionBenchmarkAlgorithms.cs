@@ -63,6 +63,15 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// the analytical centroid floor at the cost of one extra prism scan.
         /// </summary>
         public bool centroidRefine;
+
+        /// <summary>
+        /// Number of iterations of centroid refinement when centroidRefine=true.
+        /// >1 = mean-shift: re-take the centroid with the previous answer as the
+        /// new seed. Converges to a local fixed point of the kernel. Typically
+        /// converges in 3-5 iterations. Ignored when centroidRefine=false.
+        /// Default 1 = single-pass centroid (the iteration-2 behavior).
+        /// </summary>
+        public int centroidIterations;
     }
 
     /// <summary>
@@ -145,6 +154,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             smoothingRadiusM = DefaultSmoothingRadiusM,
             subVoxelInterp = true,
             centroidRefine = true,
+            centroidIterations = 1,
         };
 
         public static SearchOptions GridMassSmoothedInterpCentroid32() => new SearchOptions
@@ -155,6 +165,29 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             smoothingRadiusM = DefaultSmoothingRadiusM,
             subVoxelInterp = true,
             centroidRefine = true,
+            centroidIterations = 1,
+        };
+
+        public static SearchOptions GridMassSmoothedInterpMeanShift17() => new SearchOptions
+        {
+            gridSize = ProductionGridCells,
+            massWeighted = true,
+            smoothed = true,
+            smoothingRadiusM = DefaultSmoothingRadiusM,
+            subVoxelInterp = true,
+            centroidRefine = true,
+            centroidIterations = 5,
+        };
+
+        public static SearchOptions GridMassSmoothedInterpMeanShift32() => new SearchOptions
+        {
+            gridSize = 32,
+            massWeighted = true,
+            smoothed = true,
+            smoothingRadiusM = DefaultSmoothingRadiusM,
+            subVoxelInterp = true,
+            centroidRefine = true,
+            centroidIterations = 5,
         };
 
         // ==================================================================
@@ -230,9 +263,21 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                         origin + (bestZ + dz) * stride);
 
                     // Phase 5: optional centroid refinement — anchors the answer to
-                    // the actual prism positions, not voxel centers.
+                    // the actual prism positions, not voxel centers. With
+                    // centroidIterations > 1, repeats with the previous answer
+                    // as the new seed — converges to a kernel-local fixed point
+                    // (box-kernel mean-shift). Early-exit when the answer stops
+                    // moving more than 0.5m between iterations.
                     if (opt.centroidRefine)
-                        loc = CentroidWithinRadius(prisms, excludeDomain, loc, opt.smoothingRadiusM, opt.massWeighted, fallback: loc);
+                    {
+                        int iters = Mathf.Max(1, opt.centroidIterations);
+                        for (int it = 0; it < iters; it++)
+                        {
+                            Vector3 prev = loc;
+                            loc = CentroidWithinRadius(prisms, excludeDomain, loc, opt.smoothingRadiusM, opt.massWeighted, fallback: loc);
+                            if ((loc - prev).sqrMagnitude < 0.25f) break; // 0.5m converged
+                        }
+                    }
 
                     sw.Stop();
                     return new BenchmarkResult

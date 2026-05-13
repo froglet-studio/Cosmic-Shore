@@ -85,8 +85,10 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             //   2 vs 3: sub-voxel interpolation on/off
             //   3 vs 4: mass-weighting on/off
             //   4 vs 5: grid resolution 17 vs 32
-            //   5 vs 6: + centroid refinement at 17 (anchors to prism positions)
-            //   5 vs 7: + centroid refinement at 32 (best accuracy)
+            //   5 vs 6: + 1-pass centroid at 17 (anchors to prism positions)
+            //   6 vs 7: + iterated centroid (mean-shift, 5 iters) at 17
+            //   5 vs 8: + 1-pass centroid at 32
+            //   8 vs 9: + iterated centroid (mean-shift, 5 iters) at 32
             string[] algoNames = new string[]
             {
                 "GridArgmax17 (current production)",
@@ -95,7 +97,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 "GridMassSmoothedInterp17",
                 "GridMassSmoothedInterp32",
                 "GridMassSmoothedInterpCentroid17",
+                "GridMassSmoothedInterpMeanShift17",
                 "GridMassSmoothedInterpCentroid32",
+                "GridMassSmoothedInterpMeanShift32",
             };
             SearchOptions[] algoOpts = new SearchOptions[]
             {
@@ -105,7 +109,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterp17(),
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterp32(),
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpCentroid17(),
+                DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpMeanShift17(),
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpCentroid32(),
+                DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpMeanShift32(),
             };
 
             // Sort scenarios deterministically by label so the report diffs cleanly.
@@ -259,16 +265,48 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 volumeMin = 0.5f, volumeMax = 4f,
             });
 
-            // Dynamic staleness (§2.3.1 model): phantom Blue-tagged duplicates at
-            // random prism positions, simulating the cumulative bucket pollution
-            // from Add-before-ChangeTeam + Remove-after-ChangeTeam asymmetry.
-            // Ground truth never sees the phantoms, so any algorithm's deviation
-            // from clean MultiCluster_2000_K3 here is directly attributable to
-            // the bug — gives us a quantitative budget for "what does fixing
-            // HealthBlockTracker.Add ordering buy us?"
+            // DomainSegregated clusters: three clusters at deterministic positions,
+            // each ~90% one domain. Anti-Jade should point at the Ruby/Gold clusters
+            // (away from the Jade-dominant one). This is the scenario that actually
+            // exercises the §2.3.1 staleness model — phantom Blue at the Jade-
+            // dominant cluster pollutes anti-Jade's view and can flip the answer.
             scenarios.Add(new BenchmarkScenario
             {
-                label = "MultiCluster_K3_stale30_dynamic",
+                label = "DomainSegregated_K3_clean",
+                kind = ScenarioKind.DomainSegregatedClusters,
+                shape = ScenarioShape.Peaked,
+                prismCount = 2000,
+                seed = 42,
+                worldHalfExtent = 500f,
+                clusterCount = 3,
+                clusterRadius = 80f,
+                segregatedPurity = 0.9f,
+                // Domain mix at scenario level is overridden per-cluster in DomainSegregated;
+                // these fractions are unused but kept harmless.
+                jadeFraction = 0.33f, rubyFraction = 0.33f, goldFraction = 0.34f,
+            });
+
+            scenarios.Add(new BenchmarkScenario
+            {
+                label = "DomainSegregated_K3_stale30",
+                kind = ScenarioKind.DomainSegregatedClusters,
+                shape = ScenarioShape.Peaked,
+                prismCount = 2000,
+                seed = 42,
+                worldHalfExtent = 500f,
+                clusterCount = 3,
+                clusterRadius = 80f,
+                segregatedPurity = 0.9f,
+                jadeFraction = 0.33f, rubyFraction = 0.33f, goldFraction = 0.34f,
+                staleFraction = 0.3f,
+            });
+
+            // Legacy dynamic-staleness on uniformly-mixed clusters. Kept so we can
+            // see that uniform-mix scenarios don't surface §2.3.1, but
+            // DomainSegregated_K3_stale30 does.
+            scenarios.Add(new BenchmarkScenario
+            {
+                label = "MultiCluster_K3_stale30_uniformMix",
                 kind = ScenarioKind.MultiCluster,
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
@@ -293,17 +331,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
 
-            scenarios.Add(new BenchmarkScenario
-            {
-                label = "Gradient_2000_X_diag",
-                kind = ScenarioKind.Gradient,
-                shape = ScenarioShape.Diffuse,
-                prismCount = 2000,
-                seed = 42,
-                worldHalfExtent = 500f,
-                gradientAxis = Vector3.right,
-                jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
-            });
+            // Gradient scenario dropped in iteration 3 — never produced an
+            // actionable signal (no peak by construction, every algorithm fails
+            // by definition, output never differentiated algorithms).
         }
 
         // ------------------------------------------------------------------
@@ -338,7 +368,17 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 foreach (var q in DensityPartitionBenchmarkReport.StandardQueries())
                 {
                     var gt = gtAnswers[si + "|" + q.label];
+
+                    // Time the system query 3 times post-warmup; capture median + worst.
+                    // Exposes JIT/pooling instability — a "fast median" with a 5x worst
+                    // case is materially different from a stable run.
                     var sys = DensityPartitionBenchmarkAlgorithms.Search(underTest, q.exclude, scenario.worldHalfExtent, opt);
+                    double t1 = sys.ElapsedMs;
+                    double t2 = DensityPartitionBenchmarkAlgorithms.Search(underTest, q.exclude, scenario.worldHalfExtent, opt).ElapsedMs;
+                    double t3 = DensityPartitionBenchmarkAlgorithms.Search(underTest, q.exclude, scenario.worldHalfExtent, opt).ElapsedMs;
+                    double minMs = System.Math.Min(t1, System.Math.Min(t2, t3));
+                    double worstMs = System.Math.Max(t1, System.Math.Max(t2, t3));
+                    double medMs = t1 + t2 + t3 - minMs - worstMs; // median = sum - min - max
 
                     float dist = (gt.Empty || sys.Empty)
                         ? 0f
@@ -368,7 +408,8 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                         SystemDensity = sys.Density,
                         DistanceErrorM = dist,
                         MassFoundPercent = massPct,
-                        ElapsedMs = sys.ElapsedMs,
+                        ElapsedMs = medMs,
+                        WorstMs = worstMs,
                         GroundTruthEmpty = gt.Empty,
                         SystemEmpty = sys.Empty,
                     });

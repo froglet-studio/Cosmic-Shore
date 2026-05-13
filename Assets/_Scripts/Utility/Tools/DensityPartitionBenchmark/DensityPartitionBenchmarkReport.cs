@@ -34,7 +34,8 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             public float SystemDensity;
             public float DistanceErrorM;
             public float MassFoundPercent;   // ScoreLocation(sys.Loc, truth) / gt.Density * 100
-            public double ElapsedMs;
+            public double ElapsedMs;         // Median wall-clock across timing repeats
+            public double WorstMs;           // Worst wall-clock across timing repeats (perf-jitter floor)
             public bool GroundTruthEmpty;
             public bool SystemEmpty;
         }
@@ -154,53 +155,56 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         static void AppendCrossAlgorithmSummary(StringBuilder sb, IReadOnlyList<AlgorithmReport> algos)
         {
             sb.AppendLine("=== Summary (Peaked scenarios — headline ranking) ===");
-            sb.AppendLine(string.Format("{0,-36} {1,12} {2,12} {3,12}",
-                "Algorithm", "medianΔ(m)", "medianMass%", "medianMs"));
+            sb.AppendLine(string.Format("{0,-40} {1,11} {2,12} {3,11} {4,11}",
+                "Algorithm", "medianΔ(m)", "medianMass%", "medianMs", "worstMs"));
 
             // Track best on each axis for the * marker
             float bestDist = float.MaxValue;
             float bestMass = -1f;
             double bestMs = double.MaxValue;
-            string bestDistAlgo = null, bestMassAlgo = null, bestMsAlgo = null;
+            double bestWorst = double.MaxValue;
+            string bestDistAlgo = null, bestMassAlgo = null, bestMsAlgo = null, bestWorstAlgo = null;
 
-            var cached = new List<(string name, float d, float m, double t)>();
+            var cached = new List<AlgoSummary>();
             foreach (var algo in algos)
             {
-                if (!ComputeMedians(algo.Rows, ScenarioShape.Peaked, out var d, out var m, out var t)) continue;
-                cached.Add((algo.AlgorithmName, d, m, t));
+                if (!ComputeMedians(algo.Rows, ScenarioShape.Peaked, out var d, out var m, out var t, out var w)) continue;
+                cached.Add(new AlgoSummary { Name = algo.AlgorithmName, D = d, M = m, T = t, W = w });
                 if (d < bestDist) { bestDist = d; bestDistAlgo = algo.AlgorithmName; }
                 if (m > bestMass) { bestMass = m; bestMassAlgo = algo.AlgorithmName; }
                 if (t < bestMs)   { bestMs = t;   bestMsAlgo = algo.AlgorithmName; }
+                if (w < bestWorst){ bestWorst = w; bestWorstAlgo = algo.AlgorithmName; }
             }
 
             foreach (var c in cached)
             {
-                string mark(string algoName, string axisBest) => algoName == axisBest ? "*" : " ";
-                sb.AppendLine(string.Format("{0,-36} {1,11:F1}{2} {3,10:F0}%{4} {5,11:F2}{6}",
-                    c.name,
-                    c.d, mark(c.name, bestDistAlgo),
-                    c.m, mark(c.name, bestMassAlgo),
-                    c.t, mark(c.name, bestMsAlgo)));
+                sb.AppendLine(string.Format("{0,-40} {1,10:F1}{2} {3,10:F0}%{4} {5,10:F2}{6} {7,10:F2}{8}",
+                    c.Name,
+                    c.D, c.Name == bestDistAlgo ? "*" : " ",
+                    c.M, c.Name == bestMassAlgo ? "*" : " ",
+                    c.T, c.Name == bestMsAlgo ? "*" : " ",
+                    c.W, c.Name == bestWorstAlgo ? "*" : " "));
             }
 
             sb.AppendLine();
-            sb.AppendLine("  *  marks the best algorithm per column. medianΔ lower-is-better, medianMass% higher-is-better, medianMs lower-is-better.");
+            sb.AppendLine("  *  marks the best algorithm per column. Lower-is-better except medianMass% (higher).");
+            sb.AppendLine("  worstMs = max of 3 timing repeats per query, then median across queries. Jitter floor.");
             sb.AppendLine();
 
             // Diffuse diagnostic section
             sb.AppendLine("=== Summary (Diffuse scenarios — diagnostic only, no peak exists) ===");
-            sb.AppendLine(string.Format("{0,-36} {1,12} {2,12} {3,12}",
-                "Algorithm", "medianΔ(m)", "medianMass%", "medianMs"));
+            sb.AppendLine(string.Format("{0,-40} {1,11} {2,12} {3,11} {4,11}",
+                "Algorithm", "medianΔ(m)", "medianMass%", "medianMs", "worstMs"));
             foreach (var algo in algos)
             {
-                if (!ComputeMedians(algo.Rows, ScenarioShape.Diffuse, out var d, out var m, out var t))
+                if (!ComputeMedians(algo.Rows, ScenarioShape.Diffuse, out var d, out var m, out var t, out var w))
                 {
-                    sb.AppendLine(string.Format("{0,-36} {1,12} {2,12} {3,12}",
-                        algo.AlgorithmName, "(no data)", "(no data)", "(no data)"));
+                    sb.AppendLine(string.Format("{0,-40} {1,11} {2,12} {3,11} {4,11}",
+                        algo.AlgorithmName, "(no data)", "(no data)", "(no data)", "(no data)"));
                     continue;
                 }
-                sb.AppendLine(string.Format("{0,-36} {1,12:F1} {2,11:F0}% {3,12:F2}",
-                    algo.AlgorithmName, d, m, t));
+                sb.AppendLine(string.Format("{0,-40} {1,11:F1} {2,11:F0}% {3,11:F2} {4,11:F2}",
+                    algo.AlgorithmName, d, m, t, w));
             }
             sb.AppendLine();
         }
@@ -345,12 +349,15 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         // Helpers
         // ==================================================================
 
+        struct AlgoSummary { public string Name; public float D; public float M; public double T; public double W; }
+
         static bool ComputeMedians(List<QueryRow> rows, ScenarioShape onlyShape,
-                                   out float medianDist, out float medianMass, out double medianMs)
+                                   out float medianDist, out float medianMass, out double medianMs, out double medianWorstMs)
         {
             var dists = new List<float>();
             var masses = new List<float>();
             var times = new List<double>();
+            var worsts = new List<double>();
             foreach (var r in rows)
             {
                 if (r.Shape != onlyShape) continue;
@@ -358,11 +365,13 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 dists.Add(r.DistanceErrorM);
                 masses.Add(r.MassFoundPercent);
                 times.Add(r.ElapsedMs);
+                worsts.Add(r.WorstMs);
             }
-            dists.Sort(); masses.Sort(); times.Sort();
+            dists.Sort(); masses.Sort(); times.Sort(); worsts.Sort();
             medianDist = Median(dists);
             medianMass = Median(masses);
             medianMs = MedianD(times);
+            medianWorstMs = MedianD(worsts);
             return dists.Count > 0;
         }
 
