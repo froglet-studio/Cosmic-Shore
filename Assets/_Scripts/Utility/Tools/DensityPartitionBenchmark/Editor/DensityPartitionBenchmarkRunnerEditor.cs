@@ -33,6 +33,13 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark.Editor
             }
             GUI.backgroundColor = prevColor;
 
+            if (GUILayout.Button("Reset Config && Scenarios to Defaults"))
+            {
+                Undo.RecordObject(runner, "Reset Density Benchmark Config");
+                runner.ResetToDefaults();
+                EditorUtility.SetDirty(runner);
+            }
+
             using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(runner.lastReport)))
             {
                 if (GUILayout.Button("Copy lastReport to Clipboard"))

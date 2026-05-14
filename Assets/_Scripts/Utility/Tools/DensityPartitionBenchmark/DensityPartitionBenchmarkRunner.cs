@@ -35,10 +35,21 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     [DisallowMultipleComponent]
     public class DensityPartitionBenchmarkRunner : MonoBehaviour
     {
+        // Bumped whenever the built-in scenario set or config defaults change.
+        // RunAllAndDump auto-resets a stale serialized component to the current
+        // defaults when this doesn't match _configVersion — so pulling a new
+        // benchmark iteration "just works" without manually clearing the
+        // Scenarios list on the GameObject. (That manual step was forgotten
+        // every iteration and silently ran stale scenarios.)
+        const int CurrentConfigVersion = 4;
+
+        [SerializeField, HideInInspector] int _configVersion = 0;
+
         [Header("Scenarios")]
         [Tooltip("Scenarios run in this order. Each scenario produces four queries " +
-                 "(anti-Jade, anti-Ruby, anti-Gold, all-domain). Reorder via the +/- " +
-                 "controls. The default list reproduces the audit's failure modes.")]
+                 "(anti-Jade, anti-Ruby, anti-Gold, all-domain). Auto-reset to the " +
+                 "current built-in set when the benchmark version bumps — clear the " +
+                 "list and Run to force a refresh, or use the inspector's Reset button.")]
         public List<BenchmarkScenario> scenarios = new();
 
         [Header("Ground truth")]
@@ -78,7 +89,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [ContextMenu("Run All && Dump Report")]
         public string RunAllAndDump()
         {
-            EnsureDefaultScenarios();
+            EnsureDefaults();
 
             // Algorithm matrix.
             //   Row 0 — ProductionFixedGrid17 — the LITERAL shipped algorithm: 17³
@@ -183,14 +194,44 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         /// <summary>
-        /// Re-populate the scenario list with the audit's recommended default set if
-        /// the list is empty. Lets the user run a useful benchmark on a fresh
-        /// component without inspector configuration.
+        /// Force a full reset to the current built-in defaults — scenarios + all
+        /// config fields. Exposed for the editor inspector's "Reset to Defaults"
+        /// button and the context menu.
         /// </summary>
-        public void EnsureDefaultScenarios()
+        [ContextMenu("Reset Config && Scenarios to Defaults")]
+        public void ResetToDefaults()
+        {
+            _configVersion = 0;            // force EnsureDefaults to treat this as stale
+            if (scenarios != null) scenarios.Clear();
+            EnsureDefaults();
+        }
+
+        /// <summary>
+        /// Ensures the component is on the current built-in defaults. Re-populates
+        /// the scenario list AND resets the config fields (kernel radius, etc.)
+        /// whenever the serialized _configVersion lags CurrentConfigVersion — so a
+        /// component serialized by an older benchmark iteration auto-refreshes on
+        /// the next Run instead of silently running stale scenarios. Also fires on
+        /// a genuinely empty scenario list (fresh component).
+        /// </summary>
+        public void EnsureDefaults()
         {
             if (scenarios == null) scenarios = new List<BenchmarkScenario>();
-            if (scenarios.Count > 0) return;
+
+            bool stale = _configVersion != CurrentConfigVersion;
+            if (scenarios.Count > 0 && !stale) return;
+
+            if (stale && scenarios.Count > 0)
+                Debug.Log($"[DensityPartitionBenchmark] Config v{_configVersion} is stale " +
+                          $"(current v{CurrentConfigVersion}) — auto-resetting scenarios + config to defaults.");
+
+            // Reset every code-defaulted field, not just the scenario list — a
+            // stale component also carries a stale groundTruthSmoothingRadius etc.
+            _configVersion = CurrentConfigVersion;
+            groundTruthSmoothingRadius = DensityPartitionBenchmarkAlgorithms.DefaultSmoothingRadiusM;
+            groundTruthMassWeighted = false;
+            warmupPass = true;
+            scenarios.Clear();
 
             // Iteration 4: re-anchored to the REAL cell scale. The Blob cell's
             // CapsuleMembrane has radius 1200m — a 2400m-diameter sphere. The
