@@ -115,7 +115,6 @@ namespace CosmicShore.Core
             ConfigureMenuGameData();
             SubscribeEvents();
             TransitionTo(MainMenuState.Initializing);
-            DomainAssigner.Initialize();
             _gameData.InitializeGame();
         }
 
