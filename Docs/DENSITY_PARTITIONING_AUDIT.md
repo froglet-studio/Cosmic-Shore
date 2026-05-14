@@ -1,20 +1,53 @@
 # Density Partitioning — Design Audit
 
-**Status:** First-principles audit; no algorithm change committed yet.
+**Status:** Audit + benchmark-driven redesign. **Fixes landed** in `c058663` — see §4.
 **Branch:** `claude/audit-density-partitioning-2EvgR`
 **Companion artifact:** `DensityPartitionBenchmarkRunner` (Edit-Mode scene + Toolbox "Density" tab).
 **Acceptance criteria:** the curation rubric in `CLAUDE.md` → *Design Philosophy: Favor Emergent Systems Over Bespoke Solutions*.
+
+> **Reading note.** Sections 1–3 and 5 are the original first-principles audit, preserved
+> as written. Section 0 (this) and Section 4 (Recommendation) and Section 6 (Benchmark
+> findings) were **rewritten after the benchmark ran** — the data falsified the original
+> recommendation in §4 (a scene-wide `PrismAOERegistry` migration) and replaced it with
+> three much smaller surgical fixes. Where §3.7 and the original §4 disagree with §4
+> below, §4 wins; the earlier text is kept for the reasoning trail.
 
 ---
 
 ## 0. TL;DR
 
-1. The current per-Cell `BlockCountDensityGrid` substrate is a **bespoke storage** layered on top of an *existing* fundamental — every prism is already registered with `PrismAOERegistry` (position + flags + domain + volume, scene-wide, Burst-friendly). The cell grid duplicates that state, drifts out of sync because of the `ChangeTeam`-after-`AddBlock` ordering in `HealthBlockTracker`, and discards mass information by counting prisms instead of weighting by `Volume`.
-2. The "single grid cell with kernel-smoothed peak" answer is **the wrong shape** for some consumers (worms / shards want a *direction*, fauna want a *seek goal that doesn't pull the pack onto one point*, future abilities are likely to want top-K or a gradient field). Single-peak is a defensible answer for the *common case* but should not be the only answer the API exposes.
-3. The "anti-domain" framing (`densest of {everything that isn't D}`) is a derived view, not a fundamental. The fundamental is **team mass**: "where is team D's mass?" Anti-D decomposes into `union(team_mass(X) | X != D)` and can be computed from a single shared source. The bookkeeping in `Cell.AddBlock` (3 grids per cell × 1-grid-per-other-team) is the *artifact* of treating anti-D as the primitive.
-4. **Recommendation (preview):** Replace the per-Cell `countGrids` with a scene-wide partition over `PrismAOERegistry`'s NativeArrays. Return *per-team mass* (one grid per active domain + one "all teams" grid). Expose three derived queries — peak, top-K cluster heads, centroid — and let the consumer pick. Keep `Cell.GetExplosionTarget(domain)` / `GetDensestRegionAnyDomain()` as thin facade methods that route to the new system filtered to the cell's bounds. Migration path = drop-in: every existing fauna/worm/shard caller stays at the same signature.
+The audit started by suspecting the *algorithm* and the *storage architecture*. Five
+benchmark iterations proved the real defects were simpler and more structural:
 
-The benchmark scene gives this recommendation a falsifiable test before any line of the existing system is removed.
+1. **The grid was the wrong size.** The shipped `BlockDensityGrid` is a hard-coded
+   1000m cube anchored at world origin. The real Blob cell membrane is 1200m radius —
+   a 2400m-diameter sphere. The grid saw ~14% of the cell's volume; every prism in the
+   outer shell was silently dropped by the bounds check, invisible to `FindDensestRegion`.
+   Fauna were never directed at outer-shell mass → it accumulated unconsumed → the
+   "static equilibrium" symptom. **This is the root cause**, and no algorithm choice
+   matters while the grid is blind to most of the cell.
+2. **Raw count-argmax is noisy.** Even with a correctly-sized grid, argmax-over-raw-counts
+   landed ~100m off the true peak (it locks onto single noise voxels). A separable
+   3×3×3 box smoothing pass + sub-voxel parabolic interpolation drops that to ~28m —
+   well inside the ~150m swarm consumption radius.
+3. **Bucket staleness from `ChangeTeam`-after-`AddBlock`.** `HealthBlockTracker.Add` ran
+   `cell.AddBlock` before `hp.ChangeTeam`, so pooled `HealthPrism`s were binned into the
+   per-domain `countGrids` by their stale domain; the later `RemoveBlock` (correct domain)
+   decremented different buckets, leaving phantom counts that drift the anti-domain answer
+   over a long session.
+
+**What was *not* needed:** the original §4 recommendation — replacing `countGrids` with a
+scene-wide Burst job over `PrismAOERegistry` — turned out to be unjustified. The benchmark
+showed the existing per-Cell `BlockDensityGrid` structure is fine; it was just mis-sized
+and under-processed. The fix is three surgical changes to existing files, not a rewrite.
+See §4.
+
+**What's still open:** the original concerns about API shape (single-peak vs centroid vs
+top-K, §1) and "anti-domain is a derived view, not a fundamental" (§2.3.4) remain valid
+design observations but were *not* load-bearing for the static-equilibrium bug, so they're
+deferred. The hierarchical fauna→swarm→population framing (§6) reframes "accuracy" — the
+swarm covers a ~300m-diameter volume, so the algorithm only has to land within ~150m, which
+all the smoothed variants now do.
 
 ---
 
@@ -269,66 +302,76 @@ A coarse 8³ grid + a fine 32³ grid where the coarse grid points to fine sub-gr
 
 ---
 
-## 4. Recommendation
+## 4. Recommendation — what was actually done
 
-**Replace the per-Cell `countGrids` with a scene-wide Burst job over `PrismAOERegistry`, plus a small fixed-size per-domain histogram in the registry.**
+> The original §4 recommended replacing `countGrids` with a scene-wide Burst job over
+> `PrismAOERegistry`. **The benchmark falsified that as unnecessary.** The per-Cell
+> `BlockDensityGrid` structure is sound; it was mis-sized and under-processed. The actual
+> fix is three surgical changes to existing files — landed in commit `c058663` — not a
+> rewrite, not a new singleton, not a `PrismAOERegistry` migration.
 
-### 4.1 The reduced storage model
+### 4.1 Fix 1 — size the grid to the cell (`BlockDensityGrid` + `Cell`)
 
-Move the partition state into `PrismAOERegistry` (or a sibling singleton that holds a reference to the registry's NativeArrays). Per density tick:
+The shipped `BlockDensityGrid` hard-coded `totalLength = 1000f`, `Stride = 60f`, and
+`origin = -totalLength/2` (world origin). On a 1200m-radius cell that covered ~14% of the
+volume and was off-centre besides. **Changed:**
 
-```
-NativeArray<float> hist_Jade   // 32^3 floats, mass-weighted
-NativeArray<float> hist_Ruby
-NativeArray<float> hist_Gold
-NativeArray<float> hist_All    // sum of the three above
-```
+- `BlockDensityGrid.Init(Domains, Vector3 cellCenter, float worldDiameter)` — the grid now
+  covers a cube of side `worldDiameter` centred on `cellCenter`. Resolution stays fixed at
+  17³ (`GridPointsPerDimension`); the **stride is derived** (`totalLength / 16`) so the grid
+  scales with the cell instead of the cell having to fit the grid.
+- `Cell.SetupDensityGrids()` passes `transform.position` + `MembraneRadius * 2` (fallback
+  2400m if the membrane prefab is missing).
+- `Cell.Initialize()` reordered: `SpawnVisuals()` now runs **before** `SetupDensityGrids()`
+  so the membrane GameObject exists when `MembraneRadius` is read.
+- Existing grids are `Dispose()`d before recreation (they hold persistent NativeArrays).
 
-Each tick: clear all four → run a Burst parallel-for that increments `hist_<domain>[index] += volume` for every active prism → derive `hist_anti_D = hist_All - hist_D` lazily on query. Cost is bounded by N (the active prism count), not by V (voxel count), and the constant factor is excellent because each prism reads 16 + 8 = 24 bytes (already laid out for cache friendliness in `PrismAOERegistry`).
+The benchmark's `GridSmoothedInterp17` row proved 17³ at cell-derived stride (~150m for the
+Blob cell) is sufficient — ~28m median error, inside the swarm radius. No 32³ bump, no
+finer grid.
 
-### 4.2 The API consumers see
+### 4.2 Fix 2 — smoothing + sub-voxel interpolation (`FindDensestRegionJob`)
 
-Unchanged. `Cell.GetExplosionTarget(domain)` and `Cell.GetDensestRegionAnyDomain()` keep their signatures. Internally they delegate to a new `DensityPartitionSystem` singleton with the cell's `transform.position` + `MembraneRadius` as a filter. **Every existing caller compiles unchanged.**
+Raw `argmax` over byte counts locked onto single noise voxels (~100m error even with a
+right-sized grid). The Burst job now runs the proven pipeline:
 
-The same `DensityPartitionSystem` exposes new direct entry points for consumers that don't have a Cell handle (worms outside a cell, future scene-wide abilities):
+1. **Separable 3D box filter** (sliding-window, O(N³) per pass — independent of kernel
+   width). Kernel half-width derived from `SmoothingRadiusMeters = 150f` ÷ stride.
+2. **Argmax** over the smoothed field.
+3. **Parabolic sub-voxel interpolation** around the peak — the answer is no longer
+   quantized to the (now coarse, cell-sized) stride.
 
-```csharp
-Vector3 GetEnemyMassTarget(Domains seekerDomain);
-Vector3 GetEnemyMassTarget(Domains seekerDomain, Vector3 origin, float radius);
-Vector3 GetAllMassTarget();
-Vector3 GetAllMassTarget(Vector3 origin, float radius);
-```
+Output is a world-space `float3`. `Cell.GetExplosionTarget` / `GetDensestRegionAnyDomain`
+are unchanged — they still call `FindDensestRegion()` and still validate via
+`GetDensityAtPosition` (now bounds-guarded, since the result is sub-voxel).
 
-### 4.3 Three rotation-axis queries — pick the right reduction per consumer
+### 4.3 Fix 3 — `HealthBlockTracker.Add` ordering (§2.3.1)
 
-The histogram is one source of truth. The *reduction* — peak vs. centroid vs. top-K — is per-consumer. Initial proposal:
+Two-line reorder: `hp.ChangeTeam(domain)` now runs **before** `cell.AddBlock(hp)`, so
+`Cell.AddBlock` reads the correct domain when binning the prism into per-domain grids.
+Eliminates the phantom-count drift described in §2.3.1.
 
-| Consumer | Reduction | Why |
-|---|---|---|
-| Fauna L1, LightFauna L1 | Centroid of top-N bins above threshold | Stable goal that biases toward mass without flickering. Orbit offset still applies. |
-| Fauna L2, LightFauna L2 (Rabid) | Argmax (kernel-smoothed) | Spec: tight convergence onto the densest point. |
-| WormManager | Argmax of cluster head | Worm needs a *stable* point that survives small redistributions; mean-shift converged-from-last-target is ideal. |
-| ShardToggleAction | Argmax (kernel-smoothed) | Visual / one-shot — argmax is correct. |
-| AIPilot (future) | Argmax + offset | Same as ShardToggle. |
+### 4.4 What this deliberately did *not* do
 
-This is a one-method-with-an-enum interface, not five separate methods.
+- **No `PrismAOERegistry` migration.** The benchmark showed the per-Cell grid is fine once
+  sized correctly. Migrating would have been weight for no measured benefit — exactly the
+  "don't add a parallel fundamental" caution from CLAUDE.md's curation rubric, applied in
+  reverse: the existing structure *is* the right fundamental, it was just broken.
+- **No API change.** Every fauna / worm / shard caller compiles and behaves the same; only
+  the answers got better.
+- **No new `DensityPartitionSystem` singleton, no per-consumer reduction enum.** Deferred —
+  see §5. The single kernel-smoothed peak is good enough for every current consumer once
+  the grid sees the whole cell.
+- **No network sync.** Still out of scope; host-authoritative local compute, as before.
 
-### 4.4 Migration path
+### 4.5 Per-consumer reduction shape — deferred, not rejected
 
-Step-by-step. Each step is a checkpoint that compiles, runs Menu_Main, and is independently revertable.
-
-1. **Fix `HealthBlockTracker.Add` ordering** — reorder so `hp.ChangeTeam(domain)` runs before `cell.AddBlock(hp)`. Independent of the algorithm change. Re-run benchmark to confirm anti-domain drift collapses. Keep this fix even if the rest of the recommendation is rejected.
-2. **Add `DensityPartitionBenchmarkRunner`** *(this PR)*. Lock in a falsifiable correctness contract.
-3. **Add `DensityPartitionSystem`** — new singleton that owns the four histograms and the Burst jobs. Initially populated by `PrismAOERegistry.Register/Unregister/UpdateDomain/UpdateVolume` callbacks (zero new mutation paths).
-4. **Add `Cell.GetExplosionTarget` overload** that delegates to `DensityPartitionSystem`. Gate behind a `useNewPartition` `[SerializeField]` on a debug component so we can A/B test Menu_Main with both.
-5. **Run the benchmark on both, run Menu_Main on both, compare** — keep both code paths for one PR cycle, paste benchmark + screenshots back, then delete the old `countGrids` allocation, the `BlockCountDensityGrid` class, and the dictionary fields. (Three steps; risk is mainly in the deletion, which is reversible by a single git revert.)
-6. **Move `TestHarnessOctreeDensitySearch.cs`** — it's already in `ChoppingBlock/`. After §5 deletion, this is a dangling reference. Either rewire it through `DensityPartitionSystem` or delete it (it's a 40-line smoke test; deletion is fine).
-
-No fauna behavior file is touched in this plan. The replacement is wholly internal to `Cell` + registry; the seek-goal API stays the same.
-
-### 4.5 Network sync
-
-Out of scope per the brief. The recommendation keeps host-only authoritative compute (the histograms are server-side state), which is what `DensityPartitionNetworkSync` will eventually need to replicate. Sync surface is one histogram-snapshot per tick or one resolved-target-per-consumer; cheaper than replicating per-Cell grids would have been.
+§4.3 of the original audit proposed per-consumer reductions (centroid for fauna L1, argmax
+for L2, etc.). The benchmark's hierarchical analysis (§6) showed this is **lower priority
+than it looked**: the swarm's emergent consumption volume (~300m diameter) dwarfs the
+difference between "peak" and "centroid" answers (~10-30m apart). Revisit only if a future
+consumer (e.g. a vessel ability that needs a precise point, or top-K for multi-pack
+splitting) actually needs it. For now, one smoothed-peak answer serves everyone.
 
 ---
 
@@ -352,20 +395,77 @@ These surfaced during the audit and should be answered before / during implement
 
 ---
 
-## 6. What the benchmark will prove (or disprove)
+## 6. What the benchmark proved
 
-The companion `DensityPartitionBenchmarkRunner` (Edit-Mode) lets us validate the claims above without trusting eyeball verification on Menu_Main. The minimum set of scenarios:
+The companion `DensityPartitionBenchmarkRunner` ran five iterations. Each iteration
+advanced the tool along three axes — diagnostic capability, expected-vs-measured accuracy,
+and cost — and the data repeatedly overturned the audit's assumptions. The trail:
 
-- **UniformRandom N=2000** — sanity check; system answer should be near the geometric center, density should match ground truth.
-- **SingleCluster N=2000 radius=100m** — peak should land near cluster center, distance error < kernel size.
-- **MultiCluster N=2000 K=3** — *this is the failure scenario the current system hides.* A correct peak picks one of the three clusters consistently; centroid lands between them. Both behaviors are visible side-by-side.
-- **Gradient N=2000 axis=X** — no peak, just a smooth slope. Peak answers are unstable here; centroid is correct. This isolates "peak is the wrong reduction for this distribution."
-- **StaleBuckets (synthetic)** — populate the per-Cell `countGrids` with stale entries (the §2.3.1 failure mode) and watch the existing system drift while a fresh `PrismAOERegistry`-based scan stays accurate.
+**Iteration 0 — first numbers, wrong scale.** Surfaced that the original §4 recommendation
+(`MassHistogram` over `PrismAOERegistry`) was *worse* than the current grid, and that the
+sibling-branch's smoothing was *better* than the audit claimed. First sign the audit's
+"needs a rewrite" premise was off.
 
-Each scenario is parameterized by a domain mix (e.g. `[Jade=0.4, Ruby=0.4, Gold=0.2]`) so anti-D is meaningful. The benchmark dumps a deterministic text report comparing each candidate algorithm against ground truth with absolute and relative error.
+**Iterations 1–3 — sharpening the tool.** Faster histogram-based ground truth (~100×),
+sub-voxel interpolation, a Peaked/Diffuse scenario split, a box-kernel `mass%` fix, a
+stability metric, mean-shift variants, and a jitter (`worstMs`) column. Net finding: at the
+benchmark's *then-current* 500m world scale, the algorithm choice barely mattered — every
+smoothed+interp variant clustered around 10-35m. The audit's algorithm anxiety was
+misplaced.
 
-The report format is documented in the runner's header comment and in §3 of `BENCHMARK_TEST_PROCEDURE.md` style — every number has units and a target, scenarios are sorted deterministically, and a "Summary" footer gives the headline metrics.
+**Iteration 4 — the real cell scale.** Re-anchored every scenario to `worldHalfExtent =
+1200m` (the actual Blob membrane radius) and added `ProductionFixedGrid17` — the *literal*
+shipped algorithm including the hard-coded ±500m bounds. **This is where the root cause
+showed up:**
 
-**Acceptance:** the recommended algorithm (3.7) passes all scenarios with median Δ < 30m (= grid stride) and median mass-found ratio > 90%, *and* costs less than the current cost (estimate: same order of magnitude, possibly slightly more, but recovers per-Cell allocation cost). If the recommended algorithm fails any of those bars, it's not the right answer — iterate.
+- Grid-coverage diagnostic: the shipped ±500m grid sees **2-37%** of a cell-scale
+  scenario's prisms. `OuterShellCluster` → 2%.
+- `OuterShellCluster_r150`, anti-Jade: `ProductionFixedGrid17` Δ = **350.6m, mass 7%**
+  (found a 2-prism noise voxel). `GridArgmax17` — *identical algorithm, grid sized to the
+  cell* — Δ = **16.8m, mass 80%**. A 20× collapse purely from grid sizing.
+- The headline median *hid* this (102.5m vs 102.6m) because raw count-argmax fails
+  everywhere anyway. The bug is invisible in the median, lethal per-scenario — which is
+  exactly how it stayed hidden in the running game.
 
-The benchmark scene is also the place where future variants (3.6 mean-shift, 3.8 hierarchical) can be slotted in without touching production code.
+**The two-problems verdict.** Per-knob deltas at cell scale:
+
+| Change | medianΔ | |
+|---|---|---|
+| `ProductionFixedGrid17` (shipped) | 102.5m | grid blind to 63%+ of cell |
+| → size grid to cell | 102.6m | median unchanged, but fixes catastrophic per-scenario failures |
+| → + 3³ smoothing | 68.7m | −34m |
+| → + sub-voxel interp | **27.6m** | −41m — biggest single win |
+| → + mass-weighting | 27.6m | negligible on its own |
+| → + 32³ resolution | 17.7m | −10m, 5× the cost — not worth it |
+
+Both fixes are independently necessary: sizing the grid stops the catastrophic
+per-scenario blindness; smoothing+interp fixes the raw-argmax noise. Together =
+`GridSmoothedInterp17` at **27.6m / 0.22ms** — 3.7× more accurate than shipped, 2× the
+cost (trivial at fauna's 1-5s query cadence), 17³ resolution unchanged. That is exactly
+what §4 landed.
+
+**Hierarchical reframing (the accuracy target).** The fauna→swarm→population analysis
+established that the algorithm's accuracy budget is the *swarm-effective consumption
+volume*, not per-fauna precision: `consumeRadius` 40m + `goalOrbitRadius` 60m + boid
+separation spread ≈ a 150m-radius region, ~300m diameter. The algorithm only has to land
+within ~150m of enemy mass; the swarm sweeps the rest. 27.6m clears that with margin. This
+is also why the original §1/§4.3 "peak vs centroid vs top-K" question is deferred — the
+swarm volume dwarfs the difference.
+
+**§2.3.1 staleness — partially reproduced.** A static re-tag didn't move the anti-D answer
+(any non-X prism counts regardless of tag). A *dynamic* model — phantom Blue duplicates at
+real prism positions — does show drift on the accurate algorithms (anti-Ruby ~500m on
+`DomainSegregated_K3_stale30`), confirming the ordering fix is worth doing. The benchmark
+can't fully model the running-game Add/Remove cycle, so the ordering fix rests partly on
+the static code analysis in §2.3.1 — but it's a two-line, independently-correct change, so
+the bar for shipping it is low.
+
+**What the benchmark could not settle** — see §5: `PrismAOERegistry`'s stale positions, the
+`TwoEqualClusters` cluster-flip (resolution-bound, and arguably *beneficial* pack
+distribution at the population level, not a bug), and whether the two-frequency oscillation
+actually emerges — that last one needs a temporal ecology simulation, queued as the next
+benchmark iteration.
+
+The benchmark scene remains the place to slot in future variants without touching
+production code; the report format (deterministic, every number has units + a target,
+diff-friendly) is the falsifiable contract for any further change.
