@@ -56,5 +56,35 @@ namespace CosmicShore.UI
                 backgroundImage.color = new Color(c.r, c.g, c.b, interactable ? 1f : 0.4f);
             }
         }
+
+        void Awake()
+        {
+            ApplyDomainLabel();
+        }
+
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            // Defer the write — Unity warns against mutating serialized refs
+            // (Image.color, TMP_Text.text) during OnValidate itself.
+            UnityEditor.EditorApplication.delayCall += () =>
+            {
+                if (this == null) return;
+                ApplyDomainLabel();
+            };
+        }
+#endif
+
+        void ApplyDomainLabel()
+        {
+            if (labelText == null) return;
+            var target = domain.ToString().ToUpperInvariant();
+            if (labelText.text == target) return;
+            labelText.text = target;
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                UnityEditor.EditorUtility.SetDirty(labelText);
+#endif
+        }
     }
 }
