@@ -348,8 +348,11 @@ namespace CosmicShore.Gameplay
             runtime.EnsureCellStats(ID);
 
             AssignConfig();
-            SetupDensityGrids();
+            // SpawnVisuals must run before SetupDensityGrids: the density grids
+            // are now sized to the cell's membrane radius, and MembraneRadius
+            // reads the membrane GameObject that SpawnVisuals instantiates.
             SpawnVisuals();
+            SetupDensityGrids();
             ResetVolumes();
 
             UpdateCellStats();
@@ -398,16 +401,34 @@ namespace CosmicShore.Gameplay
 
         void SetupDensityGrids()
         {
+            // Size the density grids to the cell's actual membrane, not the old
+            // hard-coded 1000m cube anchored at world origin. With a 1200m-radius
+            // membrane the fixed cube saw only ~14% of the cell's volume — outer-
+            // shell mass was invisible to FindDensestRegion, so fauna were never
+            // directed at it and it accumulated unconsumed. See
+            // Docs/DENSITY_PARTITIONING_AUDIT.md.
+            float membraneRadius = MembraneRadius;
+            float worldDiameter = membraneRadius > 0f
+                ? membraneRadius * 2f
+                : 2400f; // fallback when the membrane prefab is missing
+            Vector3 cellCenter = transform.position;
+
+            // Dispose any existing grids before replacing them — each holds
+            // persistent NativeArrays, and Initialize() can run more than once
+            // across a session (e.g. replay).
+            foreach (var existing in countGrids.Values)
+                existing?.Dispose();
+
             Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
             foreach (Domains t in teams)
-                countGrids[t] = new BlockCountDensityGrid(t);
+                countGrids[t] = new BlockCountDensityGrid(t, cellCenter, worldDiameter);
 
             // Blue-keyed grid accumulates every block regardless of domain so
             // GetDensestRegionAnyDomain() can answer aggression-2 fauna's "head toward
             // nearest centroid" goal — friendly + enemy mass both count. Blue is the
             // "no specific team" sentinel; this grid does double duty as the wildcard.
-            countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue);
+            countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue, cellCenter, worldDiameter);
         }
 
         void SpawnVisuals()
