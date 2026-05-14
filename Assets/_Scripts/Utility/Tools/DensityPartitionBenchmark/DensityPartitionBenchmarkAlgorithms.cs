@@ -72,6 +72,17 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// Default 1 = single-pass centroid (the iteration-2 behavior).
         /// </summary>
         public int centroidIterations;
+
+        /// <summary>
+        /// When > 0, the grid is built with this fixed half-extent (origin at
+        /// -fixedHalfExtentM) instead of adapting to the scenario's worldHalfExtent.
+        /// Models the *actual shipped* BlockDensityGrid, which is hard-coded to a
+        /// 1000m cube (±500m) regardless of the cell's real size. Prisms outside
+        /// the fixed grid are silently dropped — exactly the production behavior.
+        /// With a 1200m-radius cell, this drops ~86% of the cell volume's prisms.
+        /// 0 = adaptive grid sized to the data (what every other variant does).
+        /// </summary>
+        public float fixedHalfExtentM;
     }
 
     /// <summary>
@@ -91,15 +102,34 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         public const int ProductionGridCells = 17;
         public const float ProductionExtent = 500f;
 
-        // Default kernel radius. Matches the goal-update cadence's effective scale —
-        // fauna at aggression 1 read "anti-domain" every 5s and the cluster they
-        // chase typically grows on a ~minute timescale, so a ~90m smoothing window
-        // is appropriate for an answer that should be stable for 5s.
-        public const float DefaultSmoothingRadiusM = 90f;
+        // Default kernel radius = the swarm-effective consumption volume. A 4-fauna
+        // swarm at consumeRadius=40m, goalOrbitRadius=60m, plus boid separation
+        // spread covers roughly a 150m-radius region around the goal point. The
+        // algorithm only has to land within this of enemy mass — the swarm sweeps
+        // the rest. (Was 90m through iteration 3, before the hierarchical
+        // fauna→swarm→population analysis re-scoped it.)
+        public const float DefaultSmoothingRadiusM = 150f;
 
         // ==================================================================
         //  Variant constructors — named for the report.
         // ==================================================================
+
+        /// <summary>
+        /// The LITERAL shipped algorithm: 17³ count grid hard-fixed at ±500m,
+        /// argmax, no smoothing/interp. Prisms outside ±500m are dropped exactly
+        /// as BlockCountDensityGrid.AddBlock's bounds check drops them. This is
+        /// the only variant that reproduces the production grid-undersizing bug —
+        /// every other variant adapts its grid to the data.
+        /// </summary>
+        public static SearchOptions ProductionFixedGrid17() => new SearchOptions
+        {
+            gridSize = ProductionGridCells,
+            massWeighted = false,
+            smoothed = false,
+            smoothingRadiusM = 0f,
+            subVoxelInterp = false,
+            fixedHalfExtentM = ProductionExtent, // 500m — the shipped constant
+        };
 
         public static SearchOptions GridArgmax17() => new SearchOptions
         {
@@ -205,8 +235,13 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 return new BenchmarkResult { Empty = true, ElapsedMs = sw.Elapsed.TotalMilliseconds };
 
             int N = opt.gridSize;
-            float stride = worldHalfExtent * 2f / N;
-            float origin = -worldHalfExtent;
+            // fixedHalfExtentM > 0 models the shipped BlockDensityGrid, which is
+            // hard-coded to a 1000m cube (±500m) regardless of cell size. Prisms
+            // outside that box fall out of TryMapToIndex's bounds check and are
+            // silently dropped — exactly the production behavior.
+            float effectiveHalfExtent = opt.fixedHalfExtentM > 0f ? opt.fixedHalfExtentM : worldHalfExtent;
+            float stride = effectiveHalfExtent * 2f / N;
+            float origin = -effectiveHalfExtent;
             int len = N * N * N;
 
             // Phase 1: bin (pooled allocation — see RentArray/ReturnArray below)

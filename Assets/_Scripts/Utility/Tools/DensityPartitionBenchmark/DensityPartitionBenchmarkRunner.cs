@@ -42,10 +42,11 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         public List<BenchmarkScenario> scenarios = new();
 
         [Header("Ground truth")]
-        [Tooltip("Smoothing radius for ground truth, in meters. Each ground-truth scan picks " +
-                 "the candidate center with the highest prism count (or mass) inside this radius. " +
-                 "Smaller = finer peak; larger = more lenient.")]
-        [Min(20f)] public float groundTruthSmoothingRadius = 90f;
+        [Tooltip("Smoothing radius for ground truth, in meters. Represents the swarm-effective " +
+                 "consumption volume: consumeRadius (40m) + goalOrbitRadius (60m) + boid " +
+                 "separation spread. 150m is a representative value — the algorithm only has " +
+                 "to land within this of enemy mass for the swarm to sweep the rest.")]
+        [Min(20f)] public float groundTruthSmoothingRadius = 150f;
 
         [Tooltip("If true, ground truth weights each prism by Volume instead of counting 1. " +
                  "Keep false to grade against the current production semantics (count-only).")]
@@ -79,20 +80,20 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         {
             EnsureDefaultScenarios();
 
-            // Algorithm matrix. Each adjacent pair isolates one variable so the
-            // report attributes wins/losses to a specific knob:
-            //   1 vs 2: smoothing on/off
-            //   2 vs 3: sub-voxel interpolation on/off
-            //   3 vs 4: mass-weighting on/off
-            //   4 vs 5: grid resolution 17 vs 32
-            //   5 vs 6: + 1-pass centroid at 17 (anchors to prism positions)
-            //   6 vs 7: + iterated centroid (mean-shift, 5 iters) at 17
-            //   5 vs 8: + 1-pass centroid at 32
-            //   8 vs 9: + iterated centroid (mean-shift, 5 iters) at 32
+            // Algorithm matrix.
+            //   Row 0 — ProductionFixedGrid17 — the LITERAL shipped algorithm: 17³
+            //     count grid hard-fixed at ±500m, no adaptation to cell size. At
+            //     1200m cell scale this drops every prism in the outer shell.
+            //   Rows 1+ — adaptive grids sized to the data. Each adjacent pair
+            //     isolates one variable (smoothing / interp / mass / resolution /
+            //     centroid / mean-shift).
+            // Row 0 vs Row 1 is the headline: how much does the grid-undersizing
+            // bug cost vs an otherwise-identical grid that's sized to the cell?
             string[] algoNames = new string[]
             {
-                "GridArgmax17 (current production)",
-                "GridSmoothed17 (sibling baseline)",
+                "ProductionFixedGrid17 (LITERAL shipped)",
+                "GridArgmax17 (adaptive — same algo, sized to cell)",
+                "GridSmoothed17",
                 "GridSmoothedInterp17",
                 "GridMassSmoothedInterp17",
                 "GridMassSmoothedInterp32",
@@ -103,6 +104,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             };
             SearchOptions[] algoOpts = new SearchOptions[]
             {
+                DensityPartitionBenchmarkAlgorithms.ProductionFixedGrid17(),
                 DensityPartitionBenchmarkAlgorithms.GridArgmax17(),
                 DensityPartitionBenchmarkAlgorithms.GridSmoothed17(),
                 DensityPartitionBenchmarkAlgorithms.GridSmoothedInterp17(),
@@ -125,7 +127,11 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             var truthData = new List<List<BenchmarkPrism>>(ordered.Count);
             var underTestData = new List<List<BenchmarkPrism>>(ordered.Count);
             var gtAnswers = new Dictionary<string, BenchmarkResult>();
+            // Scenario label -> % of prisms inside the production grid's ±500m bounds.
+            // <100% means the shipped grid silently drops the rest.
+            var gridCoverage = new Dictionary<string, float>();
 
+            float prodExtent = DensityPartitionBenchmarkAlgorithms.ProductionExtent;
             for (int si = 0; si < ordered.Count; si++)
             {
                 var scn = ordered[si];
@@ -135,6 +141,19 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 truthList.Add(scn);
                 truthData.Add(truth);
                 underTestData.Add(underTest);
+
+                // Grid-coverage diagnostic: how many truth prisms fall inside the
+                // production grid's fixed ±500m box.
+                int inside = 0;
+                for (int pi = 0; pi < truth.Count; pi++)
+                {
+                    var pos = truth[pi].Position;
+                    if (Mathf.Abs(pos.x) <= prodExtent &&
+                        Mathf.Abs(pos.y) <= prodExtent &&
+                        Mathf.Abs(pos.z) <= prodExtent)
+                        inside++;
+                }
+                gridCoverage[scn.label] = truth.Count > 0 ? 100f * inside / truth.Count : 0f;
 
                 foreach (var q in DensityPartitionBenchmarkReport.StandardQueries())
                 {
@@ -154,7 +173,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             string sha = ReadEnvOr("GIT_SHA", "(unknown)");
 
             lastReport = DensityPartitionBenchmarkReport.Render(
-                branch, sha, algos,
+                branch, sha, algos, gridCoverage,
                 kernelRadiusM: Mathf.RoundToInt(groundTruthSmoothingRadius),
                 gridStrideM: Mathf.RoundToInt(DensityPartitionBenchmarkAlgorithms.ProductionStride),
                 gridCellsPerAxis: DensityPartitionBenchmarkAlgorithms.ProductionGridCells);
@@ -173,103 +192,112 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             if (scenarios == null) scenarios = new List<BenchmarkScenario>();
             if (scenarios.Count > 0) return;
 
-            // ── Peaked scenarios (the algorithms' real job) ───────────────────
+            // Iteration 4: re-anchored to the REAL cell scale. The Blob cell's
+            // CapsuleMembrane has radius 1200m — a 2400m-diameter sphere. The
+            // production BlockDensityGrid is hard-coded to a 1000m cube (±500m),
+            // so it can only see ~14% of the cell's volume. Scenarios now place
+            // clusters both inside ±500m (production grid sees them) and in the
+            // 500-1200m outer shell (production grid silently drops them).
+            const float CellRadius = 1200f;
 
-            // Cluster centered ON 60m grid lines — measures "best case" for grid
-            // algorithms, since quantization error can hit 0 by accident.
+            // ── Inside the production grid (±500m) — control cases ────────────
+
             scenarios.Add(new BenchmarkScenario
             {
-                label = "SingleCluster_OnGrid_r80",
+                label = "InnerCluster_r150",
                 kind = ScenarioKind.SingleCluster,
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 42,
-                worldHalfExtent = 500f,
-                clusterCenter = new Vector3(120f, 60f, -180f),
-                clusterRadius = 80f,
+                worldHalfExtent = CellRadius,
+                clusterCenter = new Vector3(220f, 110f, -160f), // fully within ±500m
+                clusterRadius = 150f,
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
 
-            // Cluster center deliberately OFF 60m grid lines — exposes the real
-            // grid quantization error floor. With 17^3 production grid the
-            // theoretical lower bound for argmax is half-stride / sqrt(3) ≈ 17m.
-            // Sub-voxel interp should drop this below 10m.
             scenarios.Add(new BenchmarkScenario
             {
-                label = "SingleCluster_OffGrid_r80",
-                kind = ScenarioKind.SingleCluster,
-                shape = ScenarioShape.Peaked,
-                prismCount = 2000,
-                seed = 7,
-                worldHalfExtent = 500f,
-                clusterCenter = new Vector3(73f, 49f, -127f), // none on 60m lines
-                clusterRadius = 80f,
-                jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
-            });
-
-            // Tight cluster — kernel sees a sharp peak, sub-voxel interp can shine.
-            scenarios.Add(new BenchmarkScenario
-            {
-                label = "TightCluster_OffGrid_r30",
+                label = "TightCluster_Inner_r60",
                 kind = ScenarioKind.SingleCluster,
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 11,
-                worldHalfExtent = 500f,
-                clusterCenter = new Vector3(173f, 49f, -227f),
-                clusterRadius = 30f,
+                worldHalfExtent = CellRadius,
+                clusterCenter = new Vector3(173f, 91f, -227f),
+                clusterRadius = 60f,
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
 
-            // Three Gaussian clusters — the realistic gameplay distribution.
+            // ── In the outer shell (>500m) — the production grid CANNOT see ───
+
+            // A dense cluster entirely outside ±500m. ProductionFixedGrid17 sees
+            // zero prisms here and returns Empty; every adaptive variant nails it.
+            // This is the direct demonstration of the grid-undersizing bug.
             scenarios.Add(new BenchmarkScenario
             {
-                label = "MultiCluster_2000_K3",
+                label = "OuterShellCluster_r150",
+                kind = ScenarioKind.SingleCluster,
+                shape = ScenarioShape.Peaked,
+                prismCount = 2000,
+                seed = 7,
+                worldHalfExtent = CellRadius,
+                clusterCenter = new Vector3(780f, 220f, -340f), // ~880m from origin
+                clusterRadius = 150f,
+                jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
+            });
+
+            // ── Spanning both regions — realistic gameplay distribution ───────
+
+            // K=3 clusters spread across ±720m (worldHalfExtent*0.6). Some land
+            // inside ±500m, some outside. Production grid finds only the inner
+            // ones even when the densest cluster is in the outer shell.
+            scenarios.Add(new BenchmarkScenario
+            {
+                label = "MultiCluster_K3_CellScale",
                 kind = ScenarioKind.MultiCluster,
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 42,
-                worldHalfExtent = 500f,
+                worldHalfExtent = CellRadius,
                 clusterCount = 3,
-                clusterRadius = 80f,
+                clusterRadius = 160f,
                 jadeFraction = 0.3f, rubyFraction = 0.3f, goldFraction = 0.4f,
             });
 
-            // Two equal-mass clusters — tests stability. Algorithm should pick one
-            // consistently across queries (otherwise it'd thrash mid-game).
+            // Two clusters — one inner, one outer. The outer one is denser by
+            // construction (seed-tuned). Production grid only sees the inner one,
+            // so it always picks the WRONG cluster — a clean correctness failure,
+            // not just an accuracy one.
             scenarios.Add(new BenchmarkScenario
             {
-                label = "TwoEqualClusters_2000",
+                label = "TwoClusters_InnerVsOuter",
                 kind = ScenarioKind.MultiCluster,
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 123,
-                worldHalfExtent = 500f,
+                worldHalfExtent = CellRadius,
                 clusterCount = 2,
-                clusterRadius = 80f,
+                clusterRadius = 160f,
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
 
-            // Heavy mass variance — only mass-weighted algorithms should benefit.
             scenarios.Add(new BenchmarkScenario
             {
-                label = "MultiCluster_HeavyMass_K3",
+                label = "MultiCluster_HeavyMass_CellScale",
                 kind = ScenarioKind.MultiCluster,
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 42,
-                worldHalfExtent = 500f,
+                worldHalfExtent = CellRadius,
                 clusterCount = 3,
-                clusterRadius = 80f,
+                clusterRadius = 160f,
                 jadeFraction = 0.3f, rubyFraction = 0.3f, goldFraction = 0.4f,
                 volumeMin = 0.5f, volumeMax = 4f,
             });
 
-            // DomainSegregated clusters: three clusters at deterministic positions,
-            // each ~90% one domain. Anti-Jade should point at the Ruby/Gold clusters
-            // (away from the Jade-dominant one). This is the scenario that actually
-            // exercises the §2.3.1 staleness model — phantom Blue at the Jade-
-            // dominant cluster pollutes anti-Jade's view and can flip the answer.
+            // DomainSegregated: each cluster ~90% one domain, spread cell-scale.
+            // The §2.3.1 staleness test — phantom Blue at the Jade-dominant
+            // cluster pollutes anti-Jade's view.
             scenarios.Add(new BenchmarkScenario
             {
                 label = "DomainSegregated_K3_clean",
@@ -277,12 +305,10 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 42,
-                worldHalfExtent = 500f,
+                worldHalfExtent = CellRadius,
                 clusterCount = 3,
-                clusterRadius = 80f,
+                clusterRadius = 160f,
                 segregatedPurity = 0.9f,
-                // Domain mix at scenario level is overridden per-cluster in DomainSegregated;
-                // these fractions are unused but kept harmless.
                 jadeFraction = 0.33f, rubyFraction = 0.33f, goldFraction = 0.34f,
             });
 
@@ -293,47 +319,26 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 shape = ScenarioShape.Peaked,
                 prismCount = 2000,
                 seed = 42,
-                worldHalfExtent = 500f,
+                worldHalfExtent = CellRadius,
                 clusterCount = 3,
-                clusterRadius = 80f,
+                clusterRadius = 160f,
                 segregatedPurity = 0.9f,
                 jadeFraction = 0.33f, rubyFraction = 0.33f, goldFraction = 0.34f,
                 staleFraction = 0.3f,
             });
 
-            // Legacy dynamic-staleness on uniformly-mixed clusters. Kept so we can
-            // see that uniform-mix scenarios don't surface §2.3.1, but
-            // DomainSegregated_K3_stale30 does.
-            scenarios.Add(new BenchmarkScenario
-            {
-                label = "MultiCluster_K3_stale30_uniformMix",
-                kind = ScenarioKind.MultiCluster,
-                shape = ScenarioShape.Peaked,
-                prismCount = 2000,
-                seed = 42,
-                worldHalfExtent = 500f,
-                clusterCount = 3,
-                clusterRadius = 80f,
-                jadeFraction = 0.3f, rubyFraction = 0.3f, goldFraction = 0.4f,
-                staleFraction = 0.3f,
-            });
-
-            // ── Diffuse scenarios (no peak — diagnostic floor only) ───────────
+            // ── Diffuse (no peak — diagnostic floor only) ─────────────────────
 
             scenarios.Add(new BenchmarkScenario
             {
-                label = "UniformRandom_2000_diag",
+                label = "UniformRandom_CellScale_diag",
                 kind = ScenarioKind.UniformRandom,
                 shape = ScenarioShape.Diffuse,
                 prismCount = 2000,
                 seed = 42,
-                worldHalfExtent = 500f,
+                worldHalfExtent = CellRadius,
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
-
-            // Gradient scenario dropped in iteration 3 — never produced an
-            // actionable signal (no peak by construction, every algorithm fails
-            // by definition, output never differentiated algorithms).
         }
 
         // ------------------------------------------------------------------
