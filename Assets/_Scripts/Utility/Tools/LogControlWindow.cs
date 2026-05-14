@@ -417,6 +417,7 @@ namespace CosmicShore.Utility
         // ═════════════════════════════════════════════════════════════════════
         const string DensityBenchmarkScenePath = "Assets/_Scenes/Game_TestDesign/DensityPartitionBenchmark.unity";
         const string DensityRunnerTypeName = "CosmicShore.Utility.Tools.DensityPartitionBenchmark.DensityPartitionBenchmarkRunner";
+        const string DensityTemporalSimTypeName = "CosmicShore.Utility.Tools.DensityPartitionBenchmark.DensityPartitionTemporalSimRunner";
 
         void DrawDensityTab()
         {
@@ -520,17 +521,74 @@ namespace CosmicShore.Utility
 
             GUILayout.Space(8);
 
+            // ── Temporal ecology sim ──────────────────────────────────────
+            DrawSubSectionLabel("Temporal Ecology Sim");
+            var simType = ResolveTemporalSimType();
+            var sim = simType != null ? FindRunnerInOpenScenes(simType) : null;
+            if (sim == null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                EditorGUILayout.LabelField(
+                    "No DensityPartitionTemporalSimRunner in the open scenes. Re-create the " +
+                    "benchmark scene (the Create button adds both components), or add the " +
+                    "component manually.",
+                    _mutedLabel);
+                EditorGUILayout.EndHorizontal();
+            }
+            else
+            {
+                var simGo = sim is Component sc ? sc.gameObject : null;
+                string simReport = ReadLastReport(sim);
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                var prevSim = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(0.65f, 0.80f, 0.90f);
+                if (GUILayout.Button("Run Temporal Sim (old grid vs new grid)", GUILayout.Height(28)))
+                {
+                    Undo.RecordObject(sim, "Run Temporal Sim");
+                    InvokeMethod(sim, "RunComparison");
+                    EditorUtility.SetDirty(sim);
+                    if (simGo) Selection.activeGameObject = simGo;
+                }
+                GUI.backgroundColor = prevSim;
+                EditorGUILayout.EndHorizontal();
+
+                GUILayout.Space(2);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(simReport)))
+                {
+                    if (GUILayout.Button("Copy Sim Report"))
+                    {
+                        EditorGUIUtility.systemCopyBuffer = simReport ?? "";
+                        CSDebug.Log("[FrogletToolbox] Last temporal-sim report copied to clipboard.");
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(8);
+
             DrawSubSectionLabel("Notes");
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(Pad);
             EditorGUILayout.LabelField(
                 "1. Paste the report back to the prompter — it's the falsifiable correctness contract.\n" +
-                "2. Default scenarios cover UniformRandom, SingleCluster, MultiCluster, Gradient, " +
-                "plus a 30%-stale variant that reproduces the ChangeTeam-after-AddBlock bug.\n" +
-                "3. Two consecutive runs with the same scenario list should produce identical reports " +
-                "modulo wall-clock time, so a textual diff surfaces real changes.",
+                "2. The geometric benchmark grades single-query accuracy. The temporal sim runs the " +
+                "flora/fauna/phase loop over time and checks whether outer-shell mass stays bounded " +
+                "(fauna reach it) or accumulates forever (the shipped ±500m grid is blind to it).\n" +
+                "3. Runs are deterministic per seed — a textual diff surfaces real changes.",
                 EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.EndHorizontal();
+        }
+
+        static void InvokeMethod(UnityEngine.Object target, string methodName)
+        {
+            if (target == null) return;
+            var method = target.GetType().GetMethod(methodName);
+            method?.Invoke(target, null);
         }
 
         // ── Scene creation (Unity generates a valid .unity file) ──
@@ -589,6 +647,10 @@ namespace CosmicShore.Utility
 
             var go = new GameObject("DensityPartitionBenchmarkRunner");
             go.AddComponent(runnerType);
+            // Also add the temporal ecology sim runner if it compiled — same
+            // GameObject, so the Density tab finds both in one scene.
+            var simType = ResolveTemporalSimType();
+            if (simType != null) go.AddComponent(simType);
 
             bool saved = EditorSceneManager.SaveScene(newScene, DensityBenchmarkScenePath);
             if (!saved)
@@ -657,14 +719,28 @@ namespace CosmicShore.Utility
         }
 
         static System.Type _cachedRunnerType;
+        static System.Type _cachedTemporalSimType;
 
         static System.Type ResolveRunnerType()
         {
             if (_cachedRunnerType != null) return _cachedRunnerType;
+            _cachedRunnerType = ResolveTypeByName(DensityRunnerTypeName);
+            return _cachedRunnerType;
+        }
+
+        static System.Type ResolveTemporalSimType()
+        {
+            if (_cachedTemporalSimType != null) return _cachedTemporalSimType;
+            _cachedTemporalSimType = ResolveTypeByName(DensityTemporalSimTypeName);
+            return _cachedTemporalSimType;
+        }
+
+        static System.Type ResolveTypeByName(string fullName)
+        {
             foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
             {
-                var t = asm.GetType(DensityRunnerTypeName, throwOnError: false);
-                if (t != null) { _cachedRunnerType = t; return t; }
+                var t = asm.GetType(fullName, throwOnError: false);
+                if (t != null) return t;
             }
             return null;
         }
