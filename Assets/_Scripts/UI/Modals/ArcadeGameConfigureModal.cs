@@ -102,16 +102,33 @@ namespace CosmicShore.UI
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
+        [Header("Screen 1 → Screen 2 transition")]
+        [Tooltip("Confirm Configuration button on Screen 1. Disabled after the first click " +
+                 "to defend against spam-clicks (commit fires exactly once per modal session).")]
+        [SerializeField] private Button confirmConfigurationButton;
+
+        [Tooltip("Optional: the Screen-2 Back button. Hidden on Screen-2 entry — the " +
+                 "commit-once flow has no back path. Wire in the inspector if a back " +
+                 "button still exists in the prefab.")]
+        [SerializeField] private GameObject backFromGameSelectButton;
+
         // Hard cap on the number of players/domains the game supports
         const int MaxSupportedPlayers = 12;
         const int MaxSupportedDomains = 3;
         const int MinDomains = 1;
-        const int DefaultDomainCount = 3;
+        const int DefaultDomainCount = 1;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
         bool _isClientMode;
+
+        // Modal-side single-shot guard for the host's "Confirm Configuration"
+        // button. Set true on first click; gates re-entry into OnConfirmConfiguration
+        // so a host spam-click does not re-trigger the chip respawn, audio, or
+        // server commit. Reset on modal-open (SetSelectedGame) and modal-close
+        // (CloseAndNotifyClients) so the next session starts clean.
+        bool _isConfigurationCommitted;
 
         readonly List<SO_Vessel> _availableShips = new();
         int _currentShipIndex = -1;
@@ -173,7 +190,6 @@ namespace CosmicShore.UI
             {
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
-                arcadeConfigSyncManager.OnConfigUpdatedOnClient += HandleConfigUpdatedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 Debug.Log($"[ArcadeConfigModal] OnEnable — subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
@@ -211,7 +227,6 @@ namespace CosmicShore.UI
             {
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
-                arcadeConfigSyncManager.OnConfigUpdatedOnClient -= HandleConfigUpdatedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
             }
@@ -233,6 +248,11 @@ namespace CosmicShore.UI
             _isClientMode = false;
             _selectedGame = selectedGame;
 
+            // Fresh modal session — re-arm the commit guard so OnConfirmConfiguration
+            // can fire again. The Confirm button is re-enabled below in
+            // ResetCommitGuard().
+            ResetCommitGuard();
+
             config.ResetState();
             config.SelectedGame = selectedGame;
             config.DomainCount  = ComputeDefaultDomainCount();
@@ -246,26 +266,10 @@ namespace CosmicShore.UI
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
+            // Host configures privately on Screen 1. No client involvement until
+            // the host clicks Confirm Configuration → CommitConfiguration RPC fires.
             ShowConfigurationScreen();
             RaiseConfigChanged();
-
-            // Notify all clients to open their own modal with domain + vessel selection
-            if (arcadeConfigSyncManager)
-            {
-                arcadeConfigSyncManager.NotifyConfigOpened(
-                    (int)selectedGame.Mode,
-                    config.Intensity,
-                    config.PlayerCount,
-                    selectedGame.MaxPlayersAllowed,
-                    CurrentPartyHumanCount,
-                    config.DomainCount);
-            }
-
-            // Spawn one chip per player on the Blue tile, hook each player's
-            // NetDomain.OnValueChanged so that future picks reparent the right chip
-            // to the right tile. No periodic refresh — strictly event-driven.
-            SpawnChipsForAllPlayers();
-            RefreshTileVisibility();
         }
 
         #endregion
@@ -488,10 +492,6 @@ namespace CosmicShore.UI
 
             SyncGameDataConfig();
             RaiseConfigChanged();
-
-            // Sync intensity + player count to clients so they see updated read-only values
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount, config.DomainCount);
         }
 
         void HandlePlayerCountSelected(int playerCount)
@@ -518,9 +518,6 @@ namespace CosmicShore.UI
             RefreshTileVisibility();
             SyncGameDataConfig();
             RaiseConfigChanged();
-
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount, config.DomainCount);
         }
 
         #endregion
@@ -532,14 +529,11 @@ namespace CosmicShore.UI
             if (config == null) return;
             if (IsClientMode) return;
 
+            // Pre-commit, host-local DC change. No snap-back: nobody has picked
+            // a domain yet (CommitConfiguration resets all humans to Jade), so
+            // there's nothing to protect against. No client broadcast either —
+            // clients don't open the modal until commit.
             int proposed = Mathf.Clamp(newDomainCount, MinDomains, ComputeMaxDomainCount());
-
-            // Block decrement when any human is on a domain that would become inactive.
-            if (proposed < config.DomainCount && !CanReduceDomainCountTo(proposed))
-            {
-                if (dcStepper) dcStepper.SetValue(config.DomainCount);
-                return;
-            }
 
             if (proposed == config.DomainCount)
             {
@@ -551,21 +545,6 @@ namespace CosmicShore.UI
             RefreshTileVisibility();
             SyncGameDataConfig();
             RaiseConfigChanged();
-
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount, config.DomainCount);
-        }
-
-        bool CanReduceDomainCountTo(int proposed)
-        {
-            if (gameData == null) return true;
-            foreach (var ip in gameData.Players)
-            {
-                if (ip is Player p && !p.NetIsAI.Value
-                    && !GameDataSO.IsActiveDomain(p.NetDomain.Value, proposed))
-                    return false;
-            }
-            return true;
         }
 
         #endregion
@@ -903,23 +882,69 @@ namespace CosmicShore.UI
                 shipVesselNameText.text = nameText;
         }
 
-        // Screen 1 → Screen 2
+        // Screen 1 → Screen 2 — host commits PC + DC + intensity.
+        //
+        // This is the single commit point in the lava-lamp arcade flow. Before
+        // this fires, clients are flying in freestyle and have no modal open.
+        // After it fires, every client opens the modal at GameDetailView with
+        // chips on Jade, tiles dimmed per DC, and back-navigation removed.
+        //
+        // Idempotent — repeated clicks (button mash, repeated input) short-circuit
+        // at the _isConfigurationCommitted gate. The Confirm button is also
+        // disabled visually for snappy feedback.
         public void OnConfirmConfiguration()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
-            ShowGameDetailScreen();
+            if (_isConfigurationCommitted) return;
+            _isConfigurationCommitted = true;
+            SetConfirmButtonInteractable(false);
 
-            if (!IsClientMode && arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyScreenChanged(1);
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+
+            if (!IsClientMode && arcadeConfigSyncManager && _selectedGame != null)
+            {
+                arcadeConfigSyncManager.CommitConfiguration(
+                    (int)_selectedGame.Mode,
+                    config.Intensity,
+                    config.PlayerCount,
+                    _selectedGame.MaxPlayersAllowed,
+                    CurrentPartyHumanCount,
+                    config.DomainCount);
+            }
+
+            // Local: spawn chips (after server reset to Jade), refresh tiles, open
+            // Screen 2, hide the back button. SpawnChipsForAllPlayers is idempotent
+            // — it calls DespawnAllChips first — so even if guard #1 is bypassed
+            // somehow, no duplicate chips leak.
+            SpawnChipsForAllPlayers();
+            RefreshTileVisibility();
+            ShowGameDetailScreen();
+            HideBackFromGameSelectButton();
         }
 
-        // Screen 2 → Screen 1 (Back button)
-        public void OnBackFromGameSelectView()
-        {
-            ShowConfigurationScreen();
+        // Screen 2 → Screen 1 (Back button) — DEPRECATED.
+        //
+        // The new commit-once flow has no Screen 2 → Screen 1 transition. This
+        // method is retained as a no-op stub so prefab UnityEvent wiring doesn't
+        // surface a missing-method warning. The button itself is hidden via
+        // HideBackFromGameSelectButton() on Screen-2 entry.
+        public void OnBackFromGameSelectView() { }
 
-            if (!IsClientMode && arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyScreenChanged(0);
+        void SetConfirmButtonInteractable(bool interactable)
+        {
+            if (confirmConfigurationButton)
+                confirmConfigurationButton.interactable = interactable;
+        }
+
+        void HideBackFromGameSelectButton()
+        {
+            if (backFromGameSelectButton)
+                backFromGameSelectButton.SetActive(false);
+        }
+
+        void ResetCommitGuard()
+        {
+            _isConfigurationCommitted = false;
+            SetConfirmButtonInteractable(true);
         }
 
         // Screen 2 → Screen 3 (Vessel Selection)
@@ -969,6 +994,10 @@ namespace CosmicShore.UI
             // previously-selected game (e.g. after returning from a game scene).
             _selectedGame = null;
             if (config) config.ResetState();
+
+            // Re-arm the modal-side commit guard so the next session's
+            // OnConfirmConfiguration is allowed to fire.
+            ResetCommitGuard();
 
             ModalWindowOut();
         }
@@ -1139,6 +1168,12 @@ namespace CosmicShore.UI
 
             _isClientMode = true;
 
+            // Re-arm the commit guard. Clients never invoke OnConfirmConfiguration
+            // (the Confirm button lives on Screen 1, which clients never see), but
+            // a player who was previously the party host might have a stale
+            // _isConfigurationCommitted=true. Reset for hygiene.
+            ResetCommitGuard();
+
             // Look up the SO_ArcadeGame by mode so we can show the same game info
             SO_ArcadeGame game = arcadeConfigSyncManager.FindGameByMode(gameModeInt);
             if (game == null)
@@ -1167,12 +1202,15 @@ namespace CosmicShore.UI
             Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
             ModalWindowIn();
 
-            // Clients skip the config screen (intensity/player count) and go
-            // directly to vessel selection since only the host controls those.
+            // Clients skip Screen 1 entirely — modal opens straight at GameDetailView
+            // with the back button hidden. Host has already committed PC + DC + intensity.
             ShowGameDetailScreen();
+            HideBackFromGameSelectButton();
 
             // Same chip-spawn pattern as the host path so clients see live
-            // chip movement when any player picks.
+            // chip movement when any player picks. Server has reset every human's
+            // NetDomain to Jade as part of CommitConfiguration, so all chips spawn
+            // on the Jade tile.
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
         }
@@ -1200,35 +1238,6 @@ namespace CosmicShore.UI
                 case 2: ShowVesselSelectionScreen(); break;
                 case 3: ShowSquadMateSelectionScreen(); break;
             }
-        }
-
-        /// <summary>
-        /// Called on non-host clients when the host changes intensity or player count.
-        /// Updates the read-only display values.
-        /// </summary>
-        void HandleConfigUpdatedOnClient(int intensity, int playerCount, int domainCount)
-        {
-            if (_selectedGame == null || config == null) return;
-
-            config.Intensity   = intensity;
-            config.PlayerCount = playerCount;
-            config.DomainCount = Mathf.Clamp(domainCount, MinDomains, MaxSupportedDomains);
-
-            // Update intensity button visuals (read-only — buttons are not interactable)
-            foreach (var button in intensityButtons)
-            {
-                if (!button) continue;
-                button.SetSelected(button.Intensity == intensity);
-            }
-
-            // Update steppers (read-only — host owns the +/- buttons).
-            if (pcStepper) pcStepper.SetValue(playerCount);
-            if (dcStepper) dcStepper.SetValue(config.DomainCount);
-
-            // Domain count may have shifted (host's domain stepper) — re-evaluate
-            // per-tile active state. Chip movement is unaffected; reparenting is
-            // driven by NetDomain.OnValueChanged independently.
-            RefreshTileVisibility();
         }
 
         /// <summary>
