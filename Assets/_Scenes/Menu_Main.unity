@@ -6230,6 +6230,12 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1697768584}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1699805652 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4714658887917362778, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1892651051}
+  m_PrefabAsset: {fileID: 0}
 --- !u!225 &1704700151
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -9293,6 +9299,16 @@ PrefabInstance:
       propertyPath: arcadeConfigSyncManager
       value: 
       objectReference: {fileID: 1486013854}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: backFromGameSelectButton
+      value: 
+      objectReference: {fileID: 1699805652}
+    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+        type: 3}
+      propertyPath: confirmConfigurationButton
+      value: 
+      objectReference: {fileID: 2098022923}
     - target: {fileID: 5626452830758336854, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -9464,6 +9480,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 2098022921}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2098022923 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 507831156117195918, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2098022921}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2130276007
 GameObject:
   m_ObjectHideFlags: 0
