@@ -19,6 +19,9 @@ namespace CosmicShore.UI
         [Header("Display")]
         [SerializeField] private TMP_Text domainSumText;
         [SerializeField] private Image domainIndicatorImage;
+        [Tooltip("Alpha applied to the domain-color tint on the indicator image so the panel reads as a subtle background rather than a saturated block. 0 = invisible, 1 = fully opaque.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float indicatorAlpha = 0.15f;
 
         [Header("Avatars")]
         [Tooltip("Container the small per-player avatars are parented under (HorizontalLayoutGroup expected).")]
@@ -55,7 +58,9 @@ namespace CosmicShore.UI
             if (domainIndicatorImage)
             {
                 domainIndicatorImage.gameObject.SetActive(true);
-                domainIndicatorImage.color = domainColor;
+                var tinted = domainColor;
+                tinted.a = indicatorAlpha;
+                domainIndicatorImage.color = tinted;
             }
         }
 
