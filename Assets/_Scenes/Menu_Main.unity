@@ -60956,7 +60956,7 @@ MonoBehaviour:
   - {fileID: 673228694}
   - {fileID: 1419570605}
   - {fileID: 1867942830}
-  menuVesselClass: 6
+  menuVesselClass: 11
   menuPlayerCount: 3
   menuIntensity: 1
   menuVesselDomain: 1
