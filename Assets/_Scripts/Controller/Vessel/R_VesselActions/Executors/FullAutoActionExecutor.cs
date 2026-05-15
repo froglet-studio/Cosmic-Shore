@@ -18,6 +18,8 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     [SerializeField] private Gun gun;
     [SerializeField] private Transform[] muzzles;
 
+    public void SetGuns(Transform[] newMuzzles) => muzzles = newMuzzles;
+
     [Header("Events")]
     [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
 
