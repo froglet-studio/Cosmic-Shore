@@ -530,11 +530,34 @@ namespace CosmicShore.Utility
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(Pad);
                 EditorGUILayout.LabelField(
-                    "No DensityPartitionTemporalSimRunner in the open scenes. Re-create the " +
-                    "benchmark scene (the Create button adds both components), or add the " +
-                    "component manually.",
+                    "No DensityPartitionTemporalSimRunner in the open scenes. Scenes created " +
+                    "before this component existed only have the benchmark runner. Click " +
+                    "'Add Temporal Sim to Scene' below to attach it to the existing GameObject.",
                     _mutedLabel);
                 EditorGUILayout.EndHorizontal();
+
+                // Offer a one-click heal: find the benchmark runner's GameObject in the
+                // open scenes and add the temporal sim component to it. Avoids the
+                // delete-and-recreate-the-scene path for users who already have a scene.
+                if (simType != null && runnerType != null)
+                {
+                    var benchmarkRunnerForHeal = FindRunnerInOpenScenes(runnerType);
+                    GameObject hostGo = benchmarkRunnerForHeal is Component bc ? bc.gameObject : null;
+                    using (new EditorGUI.DisabledScope(hostGo == null))
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.Space(Pad);
+                        if (GUILayout.Button(hostGo != null
+                            ? $"Add Temporal Sim to '{hostGo.name}'"
+                            : "Add Temporal Sim to Scene (no benchmark runner found)"))
+                        {
+                            Undo.AddComponent(hostGo, simType);
+                            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(hostGo.scene);
+                            CSDebug.Log($"[FrogletToolbox] Added DensityPartitionTemporalSimRunner to '{hostGo.name}'. Save the scene to persist.");
+                        }
+                        EditorGUILayout.EndHorizontal();
+                    }
+                }
             }
             else
             {
