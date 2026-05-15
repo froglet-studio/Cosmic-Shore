@@ -1032,6 +1032,29 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// True if the local player should fire gameData.InvokeGameLaunch() — i.e.
+        /// they are the launch authority. Three cases launch locally:
+        /// (a) no sync manager at all (legacy solo path),
+        /// (b) sync manager exists but the local player is not in a multi-human
+        ///     party session (PartyMembers <= 1, i.e. just self — presence-lobby
+        ///     membership is irrelevant),
+        /// (c) the local player is the host of an active multi-human party session.
+        ///
+        /// Non-host party clients return false: their modal closes silently and
+        /// they ride Netcode scene replication into the game scene.
+        /// </summary>
+        internal static bool ShouldLocalPlayerLaunch(HostConnectionDataSO data, bool hasSyncManager)
+        {
+            if (!hasSyncManager) return true;
+            if (data == null) return true;
+
+            bool inActiveParty = data.PartyMembers != null && data.PartyMembers.Count > 1;
+            if (!inActiveParty) return true;
+
+            return data.IsPartyHost;
+        }
+
+        /// <summary>
         /// Called on ALL instances (host + clients) when every human player
         /// has pressed Start/Confirm. The host launches the game; clients
         /// close their modal (they'll be pulled into the game scene via Netcode).
@@ -1040,10 +1063,7 @@ namespace CosmicShore.UI
         {
             Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
 
-            // If there's no sync manager, this is a solo/local launch — always proceed.
-            // If there IS a sync manager, only the host should trigger the launch.
-            bool shouldLaunch = !arcadeConfigSyncManager
-                || (hostConnectionData != null && hostConnectionData.IsHost);
+            bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
 
             if (shouldLaunch)
             {
