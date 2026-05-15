@@ -4979,6 +4979,9 @@ MonoBehaviour:
   - Domain: 4
     Color: {r: 1, g: 0.62498116, b: 0, a: 1}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
+  allyDomainContainer: {fileID: 3271622132221250187}
+  opposingDomainsContainer: {fileID: 3271622132221250187}
+  domainPanelPrefab: {fileID: 1000000000000000007, guid: 9b3e72c1f8a04d7d8b6c5e4a1c2d3e4f, type: 3}
 --- !u!114 &130764324212571447
 MonoBehaviour:
   m_ObjectHideFlags: 0
