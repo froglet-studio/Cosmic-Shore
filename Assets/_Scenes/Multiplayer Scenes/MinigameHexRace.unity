@@ -2039,6 +2039,8 @@ MonoBehaviour:
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
+  superShieldTrackPrisms: 1
+  superShieldEngageInstant: 1
   ExternalResetControl: 0
 --- !u!1 &1899528608
 GameObject:
@@ -2156,7 +2158,8 @@ MonoBehaviour:
     - {x: 600, y: 0, z: -150}
   useSplinePerIntensity: 00000000010000000000000000000000
   prism: {fileID: 4563009547826722997, guid: 415046a97d64fc24eb9952852adb123c, type: 3}
-  scale: {x: 10, y: 1, z: 5}
+  scale: {x: 10, y: 1, z: 3}
+  prismSpacing: 12
   blocksPerSegment: 50
   markWaypoints: 1
   waypointScaleMultiplier: 2

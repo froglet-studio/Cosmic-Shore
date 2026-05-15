@@ -61,10 +61,15 @@ namespace CosmicShore.Gameplay
 
         public void Steal(string playerName, Domains newDomain, bool superSteal)
         {
-            if (Domain == newDomain) 
+            if (Domain == newDomain)
                 return;
-            
-            if (!superSteal && (prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded))
+
+            // Super-shielded prisms are fully invulnerable: no team change,
+            // no shield decay. Ways to break super-shields will be added
+            // later as targeted opt-in mechanics.
+            if (prism.prismProperties.IsSuperShielded) return;
+
+            if (!superSteal && prism.prismProperties.IsShielded)
             {
                 prism.DeactivateShields();
                 return;

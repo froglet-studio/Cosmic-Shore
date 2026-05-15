@@ -54,53 +54,23 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server-only: clears this player's domain pick by resetting NetDomain to
-        /// the Blue sentinel. Called by <see cref="ArcadeConfigSyncManager"/> when
-        /// the host opens the configure modal so the per-domain avatar strip starts
-        /// empty for everyone.
-        /// </summary>
-        internal void ServerClearDomainPick()
-        {
-            if (IsServer)
-                NetDomain.Value = Domains.Blue;
-        }
-
-        /// <summary>
         /// Owner-initiated request to change this player's domain.
         /// NetDomain is server-write, so clients route their selections through this RPC.
-        /// Special case: <see cref="Domains.Blue"/> means "Random" — the server rolls
-        /// a real domain from <see cref="GameDataSO.ActiveDomains"/> instead of writing
-        /// the sentinel. All other inputs must match an active domain or are rejected.
+        /// Validated against <see cref="GameDataSO.IsActiveDomain"/> with the session's
+        /// configured <see cref="GameDataSO.RequestedDomainCount"/>; out-of-range picks
+        /// are rejected silently.
         /// </summary>
         [ServerRpc] // RequireOwnership = true is the default — only the player's owner may request
         public void RequestSetDomain_ServerRpc(Domains domain)
         {
-            // "Random" — pick a real active domain server-side. Blue is the sentinel
-            // for "no pick yet"; clicking the Random tile means "commit me to something".
-            if (domain == Domains.Blue)
+            if (!GameDataSO.IsActiveDomain(domain, gameData.RequestedDomainCount))
             {
-                var actives = GameDataSO.ActiveDomains;
-                if (actives == null || actives.Length == 0)
-                {
-                    Debug.LogWarning("[Player] Random pick requested but ActiveDomains is empty.");
-                    return;
-                }
-                NetDomain.Value = actives[UnityEngine.Random.Range(0, actives.Length)];
+                Debug.LogWarning(
+                    $"[Player] RequestSetDomain_ServerRpc rejected domain {domain} for {NetName.Value} (DC={gameData.RequestedDomainCount})");
                 return;
             }
 
-            // Otherwise the domain must be in the active set.
-            foreach (var d in GameDataSO.ActiveDomains)
-            {
-                if (d == domain)
-                {
-                    NetDomain.Value = domain;
-                    return;
-                }
-            }
-
-            Debug.LogWarning(
-                $"[Player] RequestSetDomain_ServerRpc rejected unknown domain {domain} for {NetName.Value}");
+            NetDomain.Value = domain;
         }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
@@ -156,7 +126,9 @@ namespace CosmicShore.Gameplay
         {
             InitializeData = data;
             IsInitializedAsAI = InitializeData.IsAI;
-            Domain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+            // Single-player & legacy menu spawns default to Jade. Multiplayer overrides
+            // via NetDomain (server-write) before the vessel is initialized.
+            Domain = Domains.Jade;
             Name = InitializeData.PlayerName;
             AvatarId = InitializeData.AvatarId;
             InputController.Initialize();
@@ -206,13 +178,10 @@ namespace CosmicShore.Gameplay
             NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
 
             // --- Server writes (server-perm vars) ---
-            // Domain is NOT assigned here — it is the spawner's responsibility:
-            //   AI players:        SpawnAIs() in ServerPlayerVesselInitializerWithAI
-            //   Persistent humans: PrepareForNewScene() via FindUnprocessedPlayerByOwnerClientId
-            //   New humans:        HandlePlayerNetworkSpawnedAsync() fallback in ServerPlayerVesselInitializer
-            // Assigning here caused double-consumption of the DomainAssigner pool for AI players,
-            // because Player.OnNetworkSpawn fires synchronously during Spawn() inside SpawnAIs(),
-            // wasting a pool slot that SpawnAIs then overwrites.
+            // Domain is NOT assigned here. Humans default to Jade (the NetDomain
+            // initializer); the modal lets each owner pick a real domain via
+            // RequestSetDomain_ServerRpc. AI players have their domain written
+            // by SpawnAIs() in ServerPlayerVesselInitializerWithAI before vessel spawn.
             if (IsServer)
             {
                 NetIsAI.Value = IsInitializedAsAI;

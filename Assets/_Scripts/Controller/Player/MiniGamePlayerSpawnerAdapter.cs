@@ -26,7 +26,6 @@ namespace CosmicShore.Gameplay
 
         void InitializeGame()
         {
-            DomainAssigner.Initialize();
             SpawnCustomPlayerAndAddToGameData(InitializePlayerData());
             SpawnDefaultPlayersAndAddToGameData();
         }

@@ -508,7 +508,7 @@ namespace CosmicShore.Gameplay
 
                 await _partySessionService.JoinByIdAsync(realSessionId);
 
-                connectionData.IsHost = false;
+                connectionData.IsPartyHost = false;
 
                 _memberService.SeedLocalPlayer(clearFirst: true);
                 var hostData = new PartyPlayerData(invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
@@ -573,9 +573,9 @@ namespace CosmicShore.Gameplay
 
         public async UniTask KickPartyMemberAsync(string playerId)
         {
-            if (!connectionData.IsHost)
+            if (!connectionData.IsPartyHost)
             {
-                Debug.LogWarning("[HostConnectionService] Only the host can kick party members.");
+                Debug.LogWarning("[HostConnectionService] Only the party host can kick party members.");
                 return;
             }
             if (playerId == connectionData.LocalPlayerId)
@@ -685,7 +685,7 @@ namespace CosmicShore.Gameplay
             // Session creation with retry logic delegated to PartySessionService.
             await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
 
-            connectionData.IsHost = true;
+            connectionData.IsPartyHost = true;
 
             // Give the new session breathing room before RefreshAsync touches it —
             // avoids transient "stale" errors that would null the session and
@@ -724,7 +724,7 @@ namespace CosmicShore.Gameplay
 
                 await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
 
-                connectionData.IsHost = true;
+                connectionData.IsPartyHost = true;
                 _memberService.SeedLocalPlayer(clearFirst: true);
 
                 // Give the new session breathing room before RefreshAsync touches it.
@@ -793,7 +793,7 @@ namespace CosmicShore.Gameplay
                 // BEFORE the JOINED_PARTY_KEY scan because recipients won't set
                 // joined_party until after they read the real session id.
                 //
-                // Gate on outgoing-invite count (NOT IsHost) — IsHost is set
+                // Gate on outgoing-invite count (NOT IsPartyHost) — IsPartyHost is set
                 // only after CreatePartySessionAsync succeeds, and lazy creation
                 // hasn't reached that point yet on the first acceptance.
                 if (_inviteService.OutgoingCount > 0)
@@ -821,7 +821,12 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                if (_partySessionService.ActiveSession != null && connectionData.IsHost)
+                // ── Presence-lobby party-join scan (host only) ──────────────
+                // Clients advertise their party join via JOINED_PARTY_KEY so we
+                // can detect them even when the party-session Players list is
+                // still stale. This is the authoritative fast path for the
+                // sender's arcade lobby list.
+                if (_partySessionService.ActiveSession != null && connectionData.IsPartyHost)
                     ScanPresenceForJoinedPartyMembers();
 
                 if (_partySessionService.ActiveSession != null)
@@ -914,7 +919,7 @@ namespace CosmicShore.Gameplay
         {
             // Already a client in this session — suppress re-fire.
             if (_partySessionService.ActiveSession != null &&
-                !connectionData.IsHost &&
+                !connectionData.IsPartyHost &&
                 _partySessionService.ActiveSession.Id == invite.PartySessionId)
             {
                 _lastFiredInvite    = invite;
@@ -1219,8 +1224,8 @@ namespace CosmicShore.Gameplay
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;
 
-            connectionData.IsConnected = true;
-            connectionData.IsHost      = lobby.IsHost;
+            connectionData.IsConnected         = true;
+            connectionData.IsPresenceLobbyHost = lobby.IsHost;
 
             _memberService.SeedLocalPlayer(clearFirst: true);
 

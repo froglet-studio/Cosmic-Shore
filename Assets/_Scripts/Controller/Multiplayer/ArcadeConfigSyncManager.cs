@@ -10,12 +10,15 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Lightweight NetworkBehaviour that relays arcade game configuration UI state
-    /// between host and clients. When the host opens the ArcadeGameConfigureModal,
-    /// this manager sends a ClientRpc so all party clients also open the modal.
+    /// between host and clients. The host configures PC + DC + intensity privately
+    /// on Screen 1 (ConfigurationDetailView). When the host clicks "Confirm
+    /// Configuration", the server commits DC into shared game state, resets every
+    /// human's NetDomain to Jade, and broadcasts a single ClientRpc to open the
+    /// modal directly at GameDetailView on every client.
     ///
-    /// Each player (host and clients) independently selects their team and vessel,
-    /// then presses Start to confirm. Once all human players have confirmed,
-    /// the host automatically launches the game.
+    /// Each player (host and clients) then independently selects their domain and
+    /// vessel from GameDetailView, then presses Start to confirm. Once all human
+    /// players have confirmed, the host automatically launches the game.
     ///
     /// Place on a scene-level GameObject in Menu_Main alongside the existing
     /// ServerPlayerVesselInitializer hierarchy.
@@ -29,22 +32,23 @@ namespace CosmicShore.Gameplay
         readonly HashSet<ulong> _readyClients = new();
         int _expectedHumanCount;
 
+        // Server-side single-shot guard. Host spam-clicking the Confirm button on
+        // Screen 1 must not re-broadcast the open RPC, re-write gameData, or
+        // re-reset NetDomains (which would silently yank a client's just-made
+        // domain pick back to Jade). Reset on modal close so the next session
+        // can commit fresh.
+        bool _isCommitted;
+
         /// <summary>
-        /// Raised on clients when the host opens the arcade config modal.
-        /// Args: gameMode, intensity, playerCount, maxPlayers
+        /// Raised on clients when the host commits configuration (Screen 1 → Screen 2).
+        /// Args: gameMode, intensity, playerCount, maxPlayers, domainCount
         /// </summary>
-        public event System.Action<int, int, int, int> OnConfigOpenedOnClient;
+        public event System.Action<int, int, int, int, int> OnConfigOpenedOnClient;
 
         /// <summary>
         /// Raised on all clients when the host closes/cancels the config modal.
         /// </summary>
         public event System.Action OnConfigClosedOnClient;
-
-        /// <summary>
-        /// Raised on clients when the host changes intensity or player count.
-        /// Args: intensity, playerCount
-        /// </summary>
-        public event System.Action<int, int> OnConfigUpdatedOnClient;
 
         /// <summary>
         /// Raised on all instances (host + clients) when a player confirms ready.
@@ -64,61 +68,62 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event System.Action<int> OnScreenChangedOnClient;
 
-        #region Host → Client: Config modal open/close/update
+        #region Host → Client: Config commit / close
 
         /// <summary>
-        /// Called by ArcadeGameConfigureModal on the host when the modal opens.
-        /// Sends game mode, intensity, player count, and max players to all clients.
+        /// Called by ArcadeGameConfigureModal on the host when the host clicks
+        /// "Confirm Configuration" on Screen 1. Commits PC + DC + intensity
+        /// before broadcasting modal-open to clients:
+        ///   1. Writes gameData.RequestedDomainCount so Player.RequestSetDomain_ServerRpc
+        ///      validates against the live value from now on.
+        ///   2. Resets every human's NetDomain to Jade so GameDetailView opens
+        ///      with all chips on the Jade tile across every client.
+        ///   3. Broadcasts OpenConfigOnClients_ClientRpc — clients open modal at
+        ///      GameDetailView with the back button hidden, tiles outside
+        ///      [0..DC-1] dimmed/non-interactable.
+        ///
+        /// Idempotent — repeated calls (host spam-clicks Confirm) short-circuit
+        /// at the _isCommitted gate.
         /// </summary>
-        public void NotifyConfigOpened(int gameMode, int intensity, int playerCount, int maxPlayers, int humanCount)
+        public void CommitConfiguration(int gameMode, int intensity, int playerCount,
+                                        int maxPlayers, int humanCount, int domainCount)
         {
             if (!IsServer) return;
+            if (_isCommitted) return;
+            _isCommitted = true;
 
             _readyClients.Clear();
-            // Use the higher of PartyMembers count and actual connected clients
-            // to guard against stale PartyMembers data.
             _expectedHumanCount = Mathf.Max(humanCount, NetworkManager.Singleton.ConnectedClientsIds.Count);
 
-            // Reset every human player's domain pick to Blue (the "no pick" sentinel)
-            // BEFORE telling clients the modal is open. The avatar strip on every
-            // domain button starts empty; everyone shows up on the Blue tile until
-            // they explicitly pick. Server-write replicates to all clients via
-            // Player.NetDomain.OnValueChanged → OnNetDomainChanged → vessel repaint.
-            // Humans who never pick are auto-rolled into a real domain at game-scene
-            // spawn by ServerPlayerVesselInitializerWithAI.NormalizeUnassignedHumans.
             if (gameData != null)
             {
+                gameData.RequestedDomainCount = domainCount;
+
                 foreach (var ip in gameData.Players)
+                {
                     if (ip is Player pl && !pl.NetIsAI.Value)
-                        pl.ServerClearDomainPick();
+                        pl.NetDomain.Value = Domains.Jade;
+                }
             }
 
-            OpenConfigOnClients_ClientRpc(gameMode, intensity, playerCount, maxPlayers);
+            OpenConfigOnClients_ClientRpc(gameMode, intensity, playerCount, maxPlayers, domainCount);
         }
 
         /// <summary>
         /// Called by ArcadeGameConfigureModal on the host when the modal closes
-        /// (back button or cancel — NOT game start).
+        /// (back button or cancel — NOT game start). Re-arms the commit guard so
+        /// the next configuration session can broadcast.
         /// </summary>
         public void NotifyConfigClosed()
         {
             if (!IsServer) return;
+            _isCommitted = false;
             _readyClients.Clear();
             CloseConfigOnClients_ClientRpc();
         }
 
-        /// <summary>
-        /// Called by ArcadeGameConfigureModal on the host when intensity or
-        /// player count changes so clients see updated read-only values.
-        /// </summary>
-        public void NotifyConfigUpdated(int intensity, int playerCount)
-        {
-            if (!IsServer) return;
-            UpdateConfigOnClients_ClientRpc(intensity, playerCount);
-        }
-
         [ClientRpc]
-        void OpenConfigOnClients_ClientRpc(int gameMode, int intensity, int playerCount, int maxPlayers)
+        void OpenConfigOnClients_ClientRpc(int gameMode, int intensity, int playerCount, int maxPlayers, int domainCount)
         {
             if (IsServer) return; // Host already has the modal open
 
@@ -129,7 +134,7 @@ namespace CosmicShore.Gameplay
                 Debug.LogWarning("[ArcadeConfigSync] No subscribers on OnConfigOpenedOnClient — modal will not open. " +
                                  "Is ArcadeGameConfigureModal.OnEnable() running? Is ModalWindows active?");
 
-            OnConfigOpenedOnClient?.Invoke(gameMode, intensity, playerCount, maxPlayers);
+            OnConfigOpenedOnClient?.Invoke(gameMode, intensity, playerCount, maxPlayers, domainCount);
         }
 
         [ClientRpc]
@@ -137,13 +142,6 @@ namespace CosmicShore.Gameplay
         {
             if (IsServer) return;
             OnConfigClosedOnClient?.Invoke();
-        }
-
-        [ClientRpc]
-        void UpdateConfigOnClients_ClientRpc(int intensity, int playerCount)
-        {
-            if (IsServer) return;
-            OnConfigUpdatedOnClient?.Invoke(intensity, playerCount);
         }
 
         /// <summary>
