@@ -11,8 +11,8 @@ namespace CosmicShore.Tests
     /// HostConnectionDataSO is the central SOAP container for multiplayer party state.
     /// It tracks who's in the party, whether slots are open, and local player identity.
     /// If HasOpenSlots returns true when the party is full, extra players will join and
-    /// crash the game. If ResetRuntimeData doesn't clear IsHost, returning from a
-    /// multiplayer session will leave stale host state.
+    /// crash the game. If ResetRuntimeData doesn't clear the host flags, returning
+    /// from a multiplayer session will leave stale host state.
     /// </summary>
     [TestFixture]
     public class HostConnectionDataSOTests
@@ -47,9 +47,15 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Default_IsHost_IsFalse()
+        public void Default_IsPresenceLobbyHost_IsFalse()
         {
-            Assert.IsFalse(_data.IsHost);
+            Assert.IsFalse(_data.IsPresenceLobbyHost);
+        }
+
+        [Test]
+        public void Default_IsPartyHost_IsFalse()
+        {
+            Assert.IsFalse(_data.IsPartyHost);
         }
 
         #endregion
@@ -118,13 +124,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ResetRuntimeData_SetsIsHostToFalse()
+        public void ResetRuntimeData_SetsIsPresenceLobbyHostToFalse()
         {
-            _data.IsHost = true;
+            _data.IsPresenceLobbyHost = true;
 
             _data.ResetRuntimeData();
 
-            Assert.IsFalse(_data.IsHost);
+            Assert.IsFalse(_data.IsPresenceLobbyHost);
+        }
+
+        [Test]
+        public void ResetRuntimeData_SetsIsPartyHostToFalse()
+        {
+            _data.IsPartyHost = true;
+
+            _data.ResetRuntimeData();
+
+            Assert.IsFalse(_data.IsPartyHost);
         }
 
         #endregion

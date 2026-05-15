@@ -668,7 +668,7 @@ namespace CosmicShore.Gameplay
                     invite.PartySessionId,
                     new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
 
-                connectionData.IsHost = false;
+                connectionData.IsPartyHost = false;
 
                 // Add self + host to party members
                 connectionData.PartyMembers?.Clear();
@@ -827,9 +827,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public async Task KickPartyMemberAsync(string playerId)
         {
-            if (!connectionData.IsHost)
+            if (!connectionData.IsPartyHost)
             {
-                Debug.LogWarning("[HostConnectionService] Only the host can kick party members.");
+                Debug.LogWarning("[HostConnectionService] Only the party host can kick party members.");
                 return;
             }
 
@@ -978,7 +978,7 @@ namespace CosmicShore.Gameplay
             if (_presenceLobby != null)
             {
                 connectionData.IsConnected = true;
-                connectionData.IsHost = _presenceLobby.IsHost;
+                connectionData.IsPresenceLobbyHost = _presenceLobby.IsHost;
 
                 // Seed party members with self
                 connectionData.PartyMembers?.Clear();
@@ -1094,7 +1094,7 @@ namespace CosmicShore.Gameplay
                     try
                     {
                         _presenceLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                        connectionData.IsHost = true;
+                        connectionData.IsPresenceLobbyHost = true;
                         Debug.Log($"[HostConnectionService] Created presence lobby {_presenceLobby.Id}");
                         return;
                     }
@@ -1173,7 +1173,7 @@ namespace CosmicShore.Gameplay
                 // can detect them even when the party-session Players list is
                 // still stale. This is the authoritative fast path for the
                 // sender's arcade lobby list.
-                if (_partySession != null && connectionData.IsHost)
+                if (_partySession != null && connectionData.IsPartyHost)
                     ScanPresenceForJoinedPartyMembers();
 
                 // ── Party session member tracking ───────────────────────────
@@ -1278,7 +1278,7 @@ namespace CosmicShore.Gameplay
             // _lastFiredInvite, and the next refresh would re-fire the same
             // invite before the sender has had a chance to clear their slot.
             if (_partySession != null &&
-                !connectionData.IsHost &&
+                !connectionData.IsPartyHost &&
                 _partySession.Id == invite.PartySessionId)
             {
                 _lastFiredInvite = invite;
@@ -1624,7 +1624,7 @@ namespace CosmicShore.Gameplay
                 try
                 {
                     _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                    connectionData.IsHost = true;
+                    connectionData.IsPartyHost = true;
 
                     // Give the new session a grace period before the refresh loop
                     // tries RefreshAsync() on it — avoids immediate "stale" errors

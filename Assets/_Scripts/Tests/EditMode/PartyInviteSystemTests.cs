@@ -269,7 +269,8 @@ namespace CosmicShore.Tests
             _data.LocalDisplayName = "TestPilot";
             _data.LocalAvatarId = 5;
             _data.IsConnected = true;
-            _data.IsHost = true;
+            _data.IsPresenceLobbyHost = true;
+            _data.IsPartyHost = true;
             _partyMembers.Add(new PartyPlayerData("p1", "P1", 1));
             _onlinePlayers.Add(new PartyPlayerData("o1", "O1", 1));
 
@@ -279,7 +280,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(string.Empty, _data.LocalDisplayName);
             Assert.AreEqual(0, _data.LocalAvatarId);
             Assert.IsFalse(_data.IsConnected);
-            Assert.IsFalse(_data.IsHost);
+            Assert.IsFalse(_data.IsPresenceLobbyHost);
+            Assert.IsFalse(_data.IsPartyHost);
             Assert.AreEqual(0, _partyMembers.Count);
             Assert.AreEqual(0, _onlinePlayers.Count);
         }
@@ -757,7 +759,7 @@ namespace CosmicShore.Tests
         public void PartySlot_FullParty_ThenKick_OpensSlot()
         {
             _data.LocalPlayerId = "host";
-            _data.IsHost = true;
+            _data.IsPartyHost = true;
             _partyMembers.Add(new PartyPlayerData("host", "Host", 0));
             _partyMembers.Add(new PartyPlayerData("p1", "Player1", 1));
             _partyMembers.Add(new PartyPlayerData("p2", "Player2", 2));
@@ -788,13 +790,115 @@ namespace CosmicShore.Tests
             var hostData = new PartyPlayerData(
                 invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
             _partyMembers.Add(hostData);
-            _data.IsHost = false;
+            _data.IsPartyHost = false;
 
             Assert.AreEqual(2, _partyMembers.Count);
             Assert.AreEqual("client1", _partyMembers[0].PlayerId);
             Assert.AreEqual("host1", _partyMembers[1].PlayerId);
-            Assert.IsFalse(_data.IsHost);
+            Assert.IsFalse(_data.IsPartyHost);
             Assert.AreEqual(1, _data.RemotePartyMemberCount);
+        }
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────────
+        // ArcadeGameConfigureModal.ShouldLocalPlayerLaunch predicate
+        // ─────────────────────────────────────────────────────────────────────
+        //
+        // Regression coverage for the "Start Game silently no-ops for non-
+        // presence-lobby-host users" bug: when multiple users were signed in,
+        // anyone but the first user to sign in had IsHost=false, which caused
+        // the launch gate to suppress gameData.InvokeGameLaunch() even when
+        // they were playing solo.
+
+        #region ShouldLocalPlayerLaunch
+
+        [Test]
+        public void ShouldLocalPlayerLaunch_NoSyncManager_AlwaysLaunches()
+        {
+            // Legacy solo path — no networked sync at all.
+            bool result = CosmicShore.UI.ArcadeGameConfigureModal
+                .ShouldLocalPlayerLaunch(_data, hasSyncManager: false);
+
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void ShouldLocalPlayerLaunch_NullData_LaunchesWhenSyncManagerPresent()
+        {
+            bool result = CosmicShore.UI.ArcadeGameConfigureModal
+                .ShouldLocalPlayerLaunch(null, hasSyncManager: true);
+
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void ShouldLocalPlayerLaunch_Solo_NonPresenceLobbyHost_Launches()
+        {
+            // The original bug: user is in the presence lobby with others, but
+            // has no party of their own. PartyMembers contains only self.
+            // Before the fix this returned false because IsHost (presence-lobby
+            // ownership) was false. Now it should launch.
+            _data.LocalPlayerId = "secondUser";
+            _data.IsPresenceLobbyHost = false;
+            _data.IsPartyHost = false;
+            _partyMembers.Clear();
+            _partyMembers.Add(_data.LocalPlayerData);
+
+            bool result = CosmicShore.UI.ArcadeGameConfigureModal
+                .ShouldLocalPlayerLaunch(_data, hasSyncManager: true);
+
+            Assert.IsTrue(result, "A solo player in someone else's presence lobby must still launch their own game.");
+        }
+
+        [Test]
+        public void ShouldLocalPlayerLaunch_Solo_PresenceLobbyHost_Launches()
+        {
+            // First user — owns the presence lobby. Should still launch (this is
+            // the case that always worked, kept as a sanity check).
+            _data.LocalPlayerId = "firstUser";
+            _data.IsPresenceLobbyHost = true;
+            _data.IsPartyHost = false;
+            _partyMembers.Clear();
+            _partyMembers.Add(_data.LocalPlayerData);
+
+            bool result = CosmicShore.UI.ArcadeGameConfigureModal
+                .ShouldLocalPlayerLaunch(_data, hasSyncManager: true);
+
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void ShouldLocalPlayerLaunch_ActiveParty_PartyHost_Launches()
+        {
+            // Two-human party, I'm the party host. I am the launch authority.
+            _data.LocalPlayerId = "hostUser";
+            _data.IsPartyHost = true;
+            _partyMembers.Clear();
+            _partyMembers.Add(_data.LocalPlayerData);
+            _partyMembers.Add(new PartyPlayerData("clientUser", "Client", 1));
+
+            bool result = CosmicShore.UI.ArcadeGameConfigureModal
+                .ShouldLocalPlayerLaunch(_data, hasSyncManager: true);
+
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void ShouldLocalPlayerLaunch_ActiveParty_NonHost_DoesNotLaunch()
+        {
+            // Two-human party, I joined someone else's. Their host fires
+            // InvokeGameLaunch; I ride Netcode scene replication.
+            _data.LocalPlayerId = "clientUser";
+            _data.IsPartyHost = false;
+            _partyMembers.Clear();
+            _partyMembers.Add(_data.LocalPlayerData);
+            _partyMembers.Add(new PartyPlayerData("hostUser", "Host", 0));
+
+            bool result = CosmicShore.UI.ArcadeGameConfigureModal
+                .ShouldLocalPlayerLaunch(_data, hasSyncManager: true);
+
+            Assert.IsFalse(result);
         }
 
         #endregion
