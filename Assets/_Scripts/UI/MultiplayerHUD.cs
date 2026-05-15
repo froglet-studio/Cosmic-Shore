@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -189,8 +190,18 @@ namespace CosmicShore.UI
             if (!container || multiplayerView.DomainPanelPrefab == null) return;
 
             var panel = Instantiate(multiplayerView.DomainPanelPrefab, container);
-            var color = multiplayerView.GetColorForDomain(domain);
-            panel.Setup(domain, color, SumStatByDomain(domain));
+            int sum = SumStatByDomain(domain);
+            DomainColorSet colorSet = null;
+            var themeColors = gameData?.ThemeManagerData?.ColorSet;
+            if (themeColors != null) themeColors.TryGetColorSetByDomain(domain, out colorSet);
+
+            if (colorSet != null)
+                panel.Setup(domain, colorSet, sum);
+            else
+                panel.Setup(domain, multiplayerView.GetColorForDomain(domain), sum);
+
+            // Color used to tint per-teammate avatar entries below the sum.
+            var color = colorSet != null ? colorSet.ShipColor1 : multiplayerView.GetColorForDomain(domain);
 
             // Add a small icon per teammate (humans + AI on this domain). Local
             // player's name is shown; others render avatar-only.

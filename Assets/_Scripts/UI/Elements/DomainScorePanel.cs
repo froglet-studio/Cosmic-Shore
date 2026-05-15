@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -19,9 +20,14 @@ namespace CosmicShore.UI
         [Header("Display")]
         [SerializeField] private TMP_Text domainSumText;
         [SerializeField] private Image domainIndicatorImage;
+        [Tooltip("Optional thin accent strip painted with the domain's secondary ship color. Leave unassigned to skip.")]
+        [SerializeField] private Image accentImage;
         [Tooltip("Alpha applied to the domain-color tint on the indicator image so the panel reads as a subtle background rather than a saturated block. 0 = invisible, 1 = fully opaque.")]
         [Range(0f, 1f)]
         [SerializeField] private float indicatorAlpha = 0.15f;
+        [Tooltip("Alpha applied to the accent strip's tint. Higher than indicator alpha so the strip pops against the muted background.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float accentAlpha = 0.85f;
 
         [Header("Avatars")]
         [Tooltip("Container the small per-player avatars are parented under (HorizontalLayoutGroup expected).")]
@@ -49,19 +55,80 @@ namespace CosmicShore.UI
             if (domainSumText) _baseTextColor = domainSumText.color;
         }
 
+        /// <summary>
+        /// Legacy single-color setup. Tints both the background and (if present)
+        /// the accent strip with the same color. Use the <see cref="DomainColorSet"/>
+        /// overload below for the modern multi-color theme look.
+        /// </summary>
         public void Setup(Domains domain, Color domainColor, int initialSum)
         {
             Domain = domain;
             _displayedSum = initialSum;
 
-            if (domainSumText) domainSumText.text = initialSum.ToString();
-            if (domainIndicatorImage)
+            if (domainSumText)
             {
-                domainIndicatorImage.gameObject.SetActive(true);
-                var tinted = domainColor;
-                tinted.a = indicatorAlpha;
-                domainIndicatorImage.color = tinted;
+                domainSumText.text = initialSum.ToString();
+                domainSumText.color = _baseTextColor;
             }
+            ApplyIndicatorColor(domainColor, indicatorAlpha);
+            ApplyAccentColor(domainColor, accentAlpha);
+        }
+
+        /// <summary>
+        /// Modern setup. Pulls multiple colors out of the per-domain theme
+        /// palette so the panel reads as a designed info chip rather than a
+        /// single flat tint:
+        ///   * background indicator → <see cref="DomainColorSet.ShipColor1"/>
+        ///     at <see cref="indicatorAlpha"/> (subtle, muted backdrop)
+        ///   * accent strip → <see cref="DomainColorSet.ShipColor2"/> at
+        ///     <see cref="accentAlpha"/> (bright pop)
+        ///   * sum text → <see cref="DomainColorSet.BrightCrystalColor"/>
+        ///     so the number reads as the team's signature color.
+        /// </summary>
+        public void Setup(Domains domain, DomainColorSet colorSet, int initialSum)
+        {
+            Domain = domain;
+            _displayedSum = initialSum;
+
+            if (colorSet == null)
+            {
+                // Theme palette unavailable — fall back to neutral white sum and hide the accent.
+                if (domainSumText)
+                {
+                    domainSumText.text = initialSum.ToString();
+                    domainSumText.color = _baseTextColor;
+                }
+                if (domainIndicatorImage) domainIndicatorImage.gameObject.SetActive(true);
+                if (accentImage) accentImage.gameObject.SetActive(false);
+                return;
+            }
+
+            if (domainSumText)
+            {
+                domainSumText.text = initialSum.ToString();
+                var textColor = colorSet.BrightCrystalColor;
+                textColor.a = 1f;
+                _baseTextColor = textColor;
+                domainSumText.color = textColor;
+            }
+            ApplyIndicatorColor(colorSet.ShipColor1, indicatorAlpha);
+            ApplyAccentColor(colorSet.ShipColor2, accentAlpha);
+        }
+
+        void ApplyIndicatorColor(Color color, float alpha)
+        {
+            if (!domainIndicatorImage) return;
+            domainIndicatorImage.gameObject.SetActive(true);
+            color.a = alpha;
+            domainIndicatorImage.color = color;
+        }
+
+        void ApplyAccentColor(Color color, float alpha)
+        {
+            if (!accentImage) return;
+            accentImage.gameObject.SetActive(true);
+            color.a = alpha;
+            accentImage.color = color;
         }
 
         public void AddPlayerIcon(string playerName, Sprite avatar, Color domainColor, bool isLocalPlayer)
