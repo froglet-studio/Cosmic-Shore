@@ -1,5 +1,4 @@
 // NetworkCrystalCollisionTurnMonitor.cs
-using System.Linq;
 using CosmicShore.Data;
 using Unity.Netcode;
 using UnityEngine;
@@ -42,6 +41,15 @@ namespace CosmicShore.Gameplay
             // Base resolves the target: CrystalCollisions (inspector) > waypoints > 39
             base.StartMonitor();
 
+            // Subscribe to every player's crystal-changed event so the HUD displays the
+            // up-to-date DOMAIN sum (not just the local player's count). Base only
+            // wires the local player; teammates' collections would otherwise stay invisible.
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == null) continue;
+                stats.OnCrystalsCollectedChanged += OnAnyCrystalChanged;
+            }
+
             if (!IsServer) return;
 
             _netCrystalCollisions.Value = CrystalCollisions;
@@ -51,6 +59,18 @@ namespace CosmicShore.Gameplay
                       $"(intensity={gameData.SelectedIntensity.Value})");
         }
 
+        public override void StopMonitor()
+        {
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == null) continue;
+                stats.OnCrystalsCollectedChanged -= OnAnyCrystalChanged;
+            }
+            base.StopMonitor();
+        }
+
+        void OnAnyCrystalChanged(IRoundStats _) => UpdateCrystalsRemainingUI();
+
         public override bool CheckForEndOfTurn()
         {
             if (!IsServer) return false;
@@ -59,7 +79,11 @@ namespace CosmicShore.Gameplay
                 ? _netCrystalCollisions.Value
                 : CrystalCollisions;
 
-            return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target);
+            // Team-aware end condition: the turn ends when any active domain's
+            // summed CrystalsCollected reaches the target. Individual progress is
+            // displayed by the HUD, but the trigger is per-team so AI and human
+            // teammates can finish the objective together.
+            return gameData.TryGetDomainReachingCrystalTarget(target, out _);
         }
 
         protected override void UpdateCrystalsRemainingUI()
@@ -68,8 +92,12 @@ namespace CosmicShore.Gameplay
                 ? _netCrystalCollisions.Value
                 : CrystalCollisions;
 
-            int current = ownStats?.CrystalsCollected ?? 0;
-            int remaining = Mathf.Max(0, target - current);
+            // Remaining is now relative to the LOCAL PLAYER'S DOMAIN aggregate,
+            // so the HUD reflects the team objective rather than a single ship.
+            int domainSum = 0;
+            if (gameData.LocalPlayer != null)
+                domainSum = gameData.SumCrystalsCollectedByDomain(gameData.LocalPlayer.Domain);
+            int remaining = Mathf.Max(0, target - domainSum);
 
             if (onUpdateTurnMonitorDisplay)
                 onUpdateTurnMonitorDisplay.Raise(remaining.ToString());

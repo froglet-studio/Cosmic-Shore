@@ -2,7 +2,7 @@
 
 ## Overview
 
-Crystal Capture is a competitive crystal-collection mode for 1-4 players. Players race to collect crystals — the player with the most crystals when the turn ends wins. The turn ends either when a player reaches the crystal target (crystal-target mode) or when a timer expires (time-based mode), depending on which turn monitors are wired in the scene. The mode supports solo play with AI opponents, multiplayer with friends, or mixed human+AI lobbies.
+Crystal Capture is a competitive crystal-collection mode for 1-4 players. Teams (the active **domains** Jade / Ruby / Gold) race to collect crystals — the first domain whose summed CrystalsCollected reaches the inspector-configured target wins. Solo play with AI backfill, full multiplayer parties, and mixed human+AI lobbies all flow through the same domain-aggregated trigger.
 
 **Key architectural facts:**
 
@@ -135,16 +135,13 @@ Player sees "Ready" button
 gameData.OnMiniGameTurnStarted.Raise()
 │
 ├─ TurnMonitorController.StartMonitors()
-│   ├─ NetworkCrystalCollisionTurnMonitor.StartMonitor()  [crystal-target mode]
-│   │   ├─ target = GetCrystalCollisionCount()  (inspector > waypoints > default 39)
-│   │   ├─ [Server] _netCrystalCollisions.Value = target  [NetworkVariable]
-│   │   ├─ [Server] gameData.CrystalTargetCount = target
-│   │   ├─ Subscribe to ownStats.OnCrystalsCollectedChanged
-│   │   └─ UpdateCrystalsRemainingUI()
-│   │
-│   └─ NetworkTimeBasedTurnMonitor.StartMonitor()  [time-based mode, if wired]
-│       ├─ elapsedTime = 0
-│       └─ Periodic UpdateTimerUI_ClientRpc() with countdown display
+│   └─ NetworkCrystalCollisionTurnMonitor.StartMonitor()  [crystal-target mode]
+│       ├─ target = GetCrystalCollisionCount()  (inspector > waypoints > default 39)
+│       ├─ [Server] _netCrystalCollisions.Value = target  [NetworkVariable]
+│       ├─ [Server] gameData.CrystalTargetCount = target
+│       ├─ Subscribe to OnCrystalsCollectedChanged on EVERY RoundStats (so the
+│       │   HUD's "remaining" readout reflects the local DOMAIN sum, not just self)
+│       └─ UpdateCrystalsRemainingUI()  — shows target - SumCrystalsCollectedByDomain(localDomain)
 │
 ├─ Crystal collected by player:
 │   ├─ Collision → updates RoundStats.CrystalsCollected
@@ -154,12 +151,11 @@ gameData.OnMiniGameTurnStarted.Raise()
 │
 └─ TurnMonitor.Update() — every frame
     └─ CheckForEndOfTurn()
-        ├─ NetworkCrystalCollisionTurnMonitor: Any player CrystalsCollected >= target?
-        └─ NetworkTimeBasedTurnMonitor: elapsedTime >= duration?
+        └─ NetworkCrystalCollisionTurnMonitor: gameData.TryGetDomainReachingCrystalTarget(target)?
             └─ If true → OnTurnEnded() → gameData.InvokeGameTurnConditionsMet()
 ```
 
-**Dual end conditions**: The scene can wire either `NetworkCrystalCollisionTurnMonitor` (crystal target), `NetworkTimeBasedTurnMonitor` (timer), or both. `TurnMonitorController` ends the turn when ANY monitor triggers.
+**Domain-aggregated end condition**: The scene wires `NetworkCrystalCollisionTurnMonitor` with a per-domain crystal target. The turn ends as soon as any active domain's summed CrystalsCollected reaches the target — teammates (humans + AI on the same Domain) capture together.
 
 ### 7. Winner Determination & Score Sync
 
@@ -173,8 +169,9 @@ TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 │   │   └─ [All clients] OnTurnEndedCustom()
 │   │       └─ MultiplayerCrystalCaptureController.OnTurnEndedCustom()  [server only]
 │   │           ├─ Guard: if (_finalResultsSent) return
-│   │           ├─ DetermineWinner(): highest CrystalsCollected wins
-│   │           ├─ Map CrystalsCollected → Score for ALL players
+│   │           ├─ DetermineWinner(): active domain with the highest SumCrystalsCollectedByDomain;
+│   │           │   representative WinnerName = best individual contributor on that domain
+│   │           ├─ Map CrystalsCollected → Score for ALL players (individual contribution)
 │   │           ├─ gameData.SortRoundStats(UseGolfRules: false)  — descending
 │   │           ├─ gameData.CalculateDomainStats(UseGolfRules: false)
 │   │           ├─ _finalResultsSent = true
@@ -247,14 +244,13 @@ An `OnResetForReplayCustom()` method exists as an in-place reset fallback (reset
 
 ## End Conditions
 
-Crystal Capture supports two configurable end conditions via scene-wired turn monitors:
+Crystal Capture ends when the first active domain's summed CrystalsCollected reaches the target. The scene wires a single `NetworkCrystalCollisionTurnMonitor` with `CrystalCollisions` set to the domain target (default 20).
 
-| Mode | Turn Monitor | End Condition | Winner |
-|---|---|---|---|
-| Crystal Target | `NetworkCrystalCollisionTurnMonitor` | First player reaches crystal target | Highest CrystalsCollected |
-| Time-Based | `NetworkTimeBasedTurnMonitor` | Timer expires | Highest CrystalsCollected |
+| Turn Monitor | End Condition | Winner |
+|---|---|---|
+| `NetworkCrystalCollisionTurnMonitor` | First domain whose `SumCrystalsCollectedByDomain` ≥ `CrystalCollisions` | Domain with highest aggregate; representative `WinnerName` = best individual contributor on the winning domain |
 
-Both modes determine the winner the same way — highest `CrystalsCollected` — but they differ in what triggers the turn to end. The scene's `TurnMonitorController` can wire one or both monitors; the turn ends when ANY monitor triggers.
+To swap the end condition mode (e.g., timer-based), replace the turn monitor in the scene — the controller drives the rest of the flow through `OnTurnEndedCustom()` regardless of which monitor triggers it.
 
 ## HUD & UI Components
 
@@ -323,9 +319,9 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 1. **No dedicated environment generation**: Unlike HexRace's deterministic track with seed sync, Crystal Capture uses a scene-placed environment. No seed NetworkVariable or deterministic spawning is needed.
 
-2. **Dual turn monitors**: The scene can wire either `NetworkCrystalCollisionTurnMonitor` (crystal target) or `NetworkTimeBasedTurnMonitor` (timer), or both. The `TurnMonitorController` ends the turn when ANY monitor triggers. This allows the same controller to support both "race to target" and "timed competition" variants.
+2. **Domain-aggregated turn end**: The scene wires `NetworkCrystalCollisionTurnMonitor` with `CrystalCollisions` set to the per-domain target. The turn ends as soon as `gameData.TryGetDomainReachingCrystalTarget(target, out _)` returns true — i.e., when any active domain's summed CrystalsCollected reaches the target. To swap the trigger (e.g., back to a timer), replace the monitor in the scene.
 
-3. **Score = CrystalsCollected**: The simplest scoring of the three domain game modes. No time tracking, no penalty scores. `OnTurnEndedCustom()` maps `stats.Score = stats.CrystalsCollected` for all players.
+3. **Score = CrystalsCollected (per-player)**: Per-player `Score` still equals individual `CrystalsCollected` so the scoreboard's secondary stat shows individual contribution. The winner banner and end-game attribution use the domain aggregate via `WinnerDomain`.
 
 4. **HasEndGame=false + SetupNewRound suppression**: Crystal Capture handles end-game through `OnTurnEndedCustom()` → `SyncFinalScores_ClientRpc()`, which calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`. Setting `HasEndGame=false` prevents the base controller's `SyncGameEnd_ClientRpc` from duplicating these calls. Since `HasEndGame=false` causes `ExecuteServerRoundEnd` to call `SetupNewRound()` instead of `ExecuteServerGameEnd()`, Crystal Capture also overrides `SetupNewRound()` to return immediately when `_finalResultsSent=true`.
 
@@ -333,6 +329,6 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 6. **No comeback system**: Unlike HexRace (which uses `ElementalComebackSystem`), Crystal Capture has no handicap or catch-up mechanics. It is a straightforward competitive race.
 
-7. **HUD refreshes on turn start**: `MultiplayerCrystalCaptureHUD` subscribes to `OnMiniGameTurnStarted` and calls `RefreshAllPlayerCards()`, ensuring all crystal counts are up to date when the turn begins (important for replay resets).
+7. **HUD refreshes on turn start**: `MultiplayerCrystalCaptureHUD` inherits the base `MultiplayerHUD` refresh on `OnMiniGameTurnStarted` — domain panels (or legacy per-player cards) are initialized from current `RoundStatsList` values, important for replay resets.
 
 8. **Solo play supported**: `MinPlayersAllowed=1` allows launching Crystal Capture without a party. AI backfill provides opponents via `ServerPlayerVesselInitializerWithAI`.

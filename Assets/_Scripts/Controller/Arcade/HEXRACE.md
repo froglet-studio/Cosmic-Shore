@@ -232,18 +232,19 @@ gameData.OnMiniGameTurnStarted.Raise()
 └─ TurnMonitorController.Update() — every frame
     └─ CheckEndOfTurn()
         └─ NetworkCrystalCollisionTurnMonitor.CheckForEndOfTurn()
-            └─ return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target)
+            └─ return gameData.TryGetDomainReachingCrystalTarget(target, out _)
                 └─ If true → OnTurnEnded() → gameData.InvokeGameTurnConditionsMet()
 ```
+The end condition is **domain-aggregated**: the turn ends as soon as any active domain's summed CrystalsCollected reaches the target. Teammates (humans + AI on the same Domain) cross the finish line together.
 
 ### 8. Winner Determination & Score Sync
 
-When any player collects all crystals, the turn monitor detects the condition and the turn ends. Winner detection is **server-authoritative** via `OnTurnEndedCustom()`:
+When any domain's summed crystals reach the target, the turn monitor detects the condition and the turn ends. Winner detection is **server-authoritative** and **domain-aggregated** via `OnTurnEndedCustom()`:
 
 ```
 TurnMonitorController.CheckEndOfTurn()  [server, every frame]
 │   └─ NetworkCrystalCollisionTurnMonitor.CheckForEndOfTurn()
-│       └─ return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target)
+│       └─ return gameData.TryGetDomainReachingCrystalTarget(target, out _)
 │           └─ If true → gameData.InvokeGameTurnConditionsMet()
 │
 ├─ MultiplayerMiniGameControllerBase.HandleTurnEnd()  [server]
@@ -251,11 +252,12 @@ TurnMonitorController.CheckEndOfTurn()  [server, every frame]
 │   │   └─ [All clients] OnTurnEndedCustom()
 │   │       └─ HexRaceController.OnTurnEndedCustom()  [server only — guard: if (!IsServer) return]
 │   │           ├─ Guard: if (_raceEnded) return
-│   │           ├─ Find winner: first player with CrystalsCollected >= target
+│   │           ├─ Find winning DOMAIN: gameData.TryGetDomainReachingCrystalTarget(target, out winningDomain)
+│   │           ├─ Representative WinnerName: best individual contributor on the winning domain
 │   │           ├─ _raceEnded = true
-│   │           ├─ winner.Score = elapsed race time (from LocalRoundStats.Score)
-│   │           ├─ For each non-winner:
-│   │           │   └─ stats.Score = 10000 + (target - stats.CrystalsCollected)
+│   │           ├─ For each player on the winning domain: stats.Score = elapsed race time
+│   │           ├─ For each player on a losing domain:
+│   │           │   └─ stats.Score = 10000 + (target - SumCrystalsCollectedByDomain(stats.Domain))
 │   │           ├─ gameData.SortRoundStats(UseGolfRules: true)
 │   │           ├─ gameData.CalculateDomainStats(UseGolfRules: true)
 │   │           └─ SyncFinalScoresSnapshot(winnerName)
@@ -444,7 +446,7 @@ ugsStatsManager.ReportHexRaceStats(
 
 1. **No separate singleplayer scene**: The original `MultiplayerHexRace` concept was consolidated into a single scene. All games run through Netcode regardless of player count. Solo games run as a host with AI-spawned opponents.
 
-2. **Server-authoritative winner detection**: Winner detection runs entirely on the server via `OnTurnEndedCustom()`, which fires when `SyncTurnEnd_ClientRpc` is sent to all clients. The server finds the first player with enough crystals, sets `_raceEnded=true`, calculates all scores, and broadcasts via `SyncFinalScores_ClientRpc`. `HexRaceScoreTracker` only handles local elapsed-time tracking and UGS stats reporting — it does not participate in winner determination.
+2. **Server-authoritative winner detection**: Winner detection runs entirely on the server via `OnTurnEndedCustom()`, which fires when `SyncTurnEnd_ClientRpc` is sent to all clients. The server finds the first **domain** whose summed CrystalsCollected reaches the target (Jade → Ruby → Gold tie-break), picks the best individual contributor on that domain as the representative `WinnerName`, sets `_raceEnded=true`, calculates all scores, and broadcasts via `SyncFinalScores_ClientRpc`. `HexRaceScoreTracker` only handles local elapsed-time tracking and UGS stats reporting — it does not participate in winner determination.
 
 3. **Deterministic track**: All clients must produce identical tracks from the same seed + intensity. The `SegmentSpawner` uses `Random.InitState(seed)` before spawning to ensure determinism.
 

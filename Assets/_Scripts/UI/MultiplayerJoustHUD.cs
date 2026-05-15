@@ -1,6 +1,4 @@
-﻿using System.Linq;
 using CosmicShore.Data;
-using UnityEngine;
 
 namespace CosmicShore.UI
 {
@@ -13,26 +11,19 @@ namespace CosmicShore.UI
 
         protected override void SubscribeToPlayerStats(IRoundStats stats)
         {
-            if (stats != null)
-            {
-                stats.OnJoustCollisionChanged += HandleJoustStatChanged;
-            }
+            if (stats == null) return;
+            stats.OnJoustCollisionChanged += HandleJoustStatChanged;
         }
 
         protected override void UnsubscribeFromPlayerStats(IRoundStats stats)
         {
-            if (stats != null)
-            {
-                stats.OnJoustCollisionChanged -= HandleJoustStatChanged;
-            }
+            if (stats == null) return;
+            stats.OnJoustCollisionChanged -= HandleJoustStatChanged;
         }
 
         private void HandleJoustStatChanged(IRoundStats updatedStats)
         {
-            if (updatedStats != null)
-            {
-                UpdatePlayerCard(updatedStats.Name, updatedStats.JoustCollisions);
-            }
+            HandlePlayerStatChanged(updatedStats);
         }
     }
 }
