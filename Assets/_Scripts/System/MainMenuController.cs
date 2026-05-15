@@ -47,7 +47,7 @@ namespace CosmicShore.Core
 
         [Header("Menu Autopilot Configuration")]
         [SerializeField, Tooltip("Vessel class displayed as the autopilot in the menu background.")]
-        VesselClassType menuVesselClass = VesselClassType.Squirrel;
+        VesselClassType menuVesselClass = VesselClassType.BrittleStar;
 
         [SerializeField, Tooltip("Number of AI players for the menu background scene.")]
         int menuPlayerCount = 3;

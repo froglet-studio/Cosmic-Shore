@@ -213,7 +213,13 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
             CSDebug.LogError($"[FullAutoActionExecutor] Loop error: {e}");
         }
     }
-    #endregion
+        #endregion
+
+        //modfiy guns transforms via script
+        public void SetGuns(Transform[] newMuzzle)
+        {
+            muzzles = newMuzzle;
+        }
 
     }
 }

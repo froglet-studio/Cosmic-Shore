@@ -447,7 +447,7 @@ namespace CosmicShore.Core
 
             // Set sane defaults for the menu scene.
             gameData.SelectedPlayerCount.Value = 1;
-            gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
+            gameData.selectedVesselClass.Value = VesselClassType.BrittleStar;
             gameData.SelectedIntensity.Value = 1;
         }
 
