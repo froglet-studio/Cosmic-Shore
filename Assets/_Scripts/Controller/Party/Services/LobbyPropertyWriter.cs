@@ -24,6 +24,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using Unity.Services.Multiplayer;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -106,14 +107,10 @@ namespace CosmicShore.Gameplay
             await LobbyMutex.WaitAsync();
             try
             {
-                // UGS SDK requires Unity main thread. Re-enter after mutex wait in case
-                // the caller is in a mixed async/await context.
-                await UniTask.SwitchToMainThread();
-
                 // Refresh before writing — the SDK's player-index cache can be
                 // stale, causing SaveCurrentPlayerDataAsync to fail silently if
                 // the local player's index moved since the last refresh.
-                await lobby.RefreshAsync();
+                await lobby.RefreshAsync().AsMainThread();
                 setProperty();
                 await SaveWithRetryAsync(lobby);
 
@@ -143,18 +140,17 @@ namespace CosmicShore.Gameplay
         /// <param name="baseDelayMs">Base delay in ms between retries (default 2000).</param>
         public async UniTask SaveWithRetryAsync(ISession lobby, int maxRetries = 3, int baseDelayMs = 2000)
         {
-            await UniTask.SwitchToMainThread();
             for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
                 try
                 {
-                    await lobby.SaveCurrentPlayerDataAsync();
+                    await lobby.SaveCurrentPlayerDataAsync().AsMainThread();
 
                     // Post-save refresh: keeps the SDK's cached state in sync with
                     // the server.  Reduces the window where WebSocket deltas reference
                     // stale player indices (root cause of harmless
                     // ArgumentOutOfRangeException in LobbyPatcher).
-                    try { await lobby.RefreshAsync(); }
+                    try { await lobby.RefreshAsync().AsMainThread(); }
                     catch { /* polling corrects on next cycle */ }
 
                     return;
@@ -169,7 +165,7 @@ namespace CosmicShore.Gameplay
                     Debug.LogWarning(
                         $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) — retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
                     await UniTask.Delay(baseDelayMs);
-                    try { await lobby.RefreshAsync(); } catch { /* best-effort */ }
+                    try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort */ }
                 }
             }
         }

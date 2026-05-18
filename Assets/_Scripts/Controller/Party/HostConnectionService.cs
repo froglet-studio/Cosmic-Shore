@@ -603,7 +603,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    await _partySessionService.ActiveSession.AsHost().RemovePlayerAsync(playerId);
+                    await _partySessionService.ActiveSession.AsHost().RemovePlayerAsync(playerId).AsMainThread();
                     Debug.Log($"[HostConnectionService] Kicked {playerId} from party session.");
                 }
                 catch (Exception e)
@@ -692,18 +692,13 @@ namespace CosmicShore.Gameplay
             // The UGS Multiplayer SDK calls NetworkManager.StartHost()
             // internally for Relay-backed sessions. If a local host is
             // already running, that call fails — shut it down first.
+            // Every cross-thread await uses .AsMainThread() so the continuation
+            // is always on Unity's main thread (see UniTaskExtensions.cs).
             using var cts = new System.Threading.CancellationTokenSource();
-            await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, cts.Token);
-            // UGS / Netcode awaits resume on the ThreadPool. Yield onto PlayerLoop
-            // (main thread) before the next UnityEngine.Object access.
-            // (UniTask.SwitchToMainThread proved unreliable on this version —
-            //  it sometimes returned IsCompleted=true on the ThreadPool. Yield
-            //  has IsCompleted=false unconditionally, so it always yields.)
-            await UniTask.Yield(PlayerLoopTiming.Update);
+            await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, cts.Token).AsMainThread();
 
             // Session creation with retry logic delegated to PartySessionService.
-            await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
-            await UniTask.Yield(PlayerLoopTiming.Update);
+            await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
 
             connectionData.IsPartyHost = true;
 
@@ -740,15 +735,11 @@ namespace CosmicShore.Gameplay
                     _stateMachine.TryTransition(PartyState.HostingParty);
 
                 using var shutdownCts = new System.Threading.CancellationTokenSource();
-                await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token);
-                // UGS / Netcode awaits resume on the ThreadPool. Yield onto PlayerLoop
-                // (main thread) before the next UnityEngine.Object access AND before
-                // the SOAP raise below (which invokes listeners synchronously, so
-                // they would otherwise run on the ThreadPool).
-                await UniTask.Yield(PlayerLoopTiming.Update);
+                // .AsMainThread() guarantees the continuation (and the SOAP raise
+                // further down) runs on Unity's main thread.
+                await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token).AsMainThread();
 
-                await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
-                await UniTask.Yield(PlayerLoopTiming.Update);
+                await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
 
                 connectionData.IsPartyHost = true;
                 _memberService.SeedLocalPlayer(clearFirst: true);

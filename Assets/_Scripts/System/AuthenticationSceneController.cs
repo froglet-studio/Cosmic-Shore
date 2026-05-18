@@ -448,14 +448,10 @@ namespace CosmicShore.Core
                     // Wait for the Relay session to be confirmed live (InParty reached).
                     // OnHostConnectionEstablished fires twice: at lobby join (NM not listening)
                     // and after Relay creation (NM listening). WaitForRelayReadyAsync only
-                    // completes on the second fire.
-                    await WaitForRelayReadyAsync(linkedCts.Token);
-                    // UGS SDK awaits resume on the ThreadPool; the next operations touch a
-                    // UnityEngine.Object (CanvasGroup / NetworkManager / SceneManager).
-                    // Yield onto PlayerLoop (main thread) before continuing.
-                    // (UniTask.SwitchToMainThread proved unreliable on this version —
-                    //  see HostConnectionService.cs for full notes.)
-                    await UniTask.Yield(PlayerLoopTiming.Update);
+                    // completes on the second fire.  .AsMainThread() guarantees the
+                    // continuation runs on Unity's main thread, since the upstream SOAP
+                    // raise may originate from a UGS Task completion on the ThreadPool.
+                    await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread();
                     networkReady = true;
                     CSDebug.Log($"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
@@ -466,13 +462,7 @@ namespace CosmicShore.Core
                         CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) — retrying HCS init...");
                         var hcs = HostConnectionService.Instance;
                         if (hcs != null)
-                        {
-                            await hcs.RetryCreateOwnPartySessionAsync(ct);
-                            // UGS SDK awaits resume on the ThreadPool; yield onto PlayerLoop
-                            // (main thread) before the loop continues into another awaited
-                            // Unity call.
-                            await UniTask.Yield(PlayerLoopTiming.Update);
-                        }
+                            await hcs.RetryCreateOwnPartySessionAsync(ct).AsMainThread();
                     }
                     else
                     {
@@ -493,11 +483,7 @@ namespace CosmicShore.Core
 
                 try
                 {
-                    await WaitForRelayReadyAsync(ct);
-                    // UGS SDK awaits resume on the ThreadPool; the next operations touch a
-                    // UnityEngine.Object. Yield onto PlayerLoop (main thread) before
-                    // continuing.
-                    await UniTask.Yield(PlayerLoopTiming.Update);
+                    await WaitForRelayReadyAsync(ct).AsMainThread();
                     networkReady = true;
                     CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
                 }

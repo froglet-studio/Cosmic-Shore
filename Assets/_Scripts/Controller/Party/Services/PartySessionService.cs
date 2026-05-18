@@ -129,13 +129,6 @@ namespace CosmicShore.Gameplay
         {
             if (ActiveSession != null) return;
 
-            // UGS SDK accesses Application.isPlaying during session creation and must
-            // run on Unity's main thread.  After awaiting ShutdownAsync (a UniTask),
-            // the continuation can land on the .NET thread pool — switch back before
-            // touching the SDK so all UGS HTTP continuations inherit the correct
-            // SynchronizationContext.
-            await UniTask.SwitchToMainThread();
-
             var opts = new SessionOptions
             {
                 MaxPlayers       = maxPlayers,
@@ -148,7 +141,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    ActiveSession          = await MultiplayerService.Instance.CreateSessionAsync(opts);
+                    ActiveSession          = await MultiplayerService.Instance.CreateSessionAsync(opts).AsMainThread();
                     CreatedAtUnscaledTime  = Time.unscaledTime;
                     Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
                     return;
@@ -188,10 +181,9 @@ namespace CosmicShore.Gameplay
         /// </param>
         public async UniTask JoinByIdAsync(string sessionId)
         {
-            await UniTask.SwitchToMainThread();
             ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(
                 sessionId,
-                new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
+                new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
 
             Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
         }
@@ -203,15 +195,14 @@ namespace CosmicShore.Gameplay
         public async UniTask LeaveAsync()
         {
             if (ActiveSession == null) return;
-            await UniTask.SwitchToMainThread();
             var session = ActiveSession;
             ClearSession();
             try
             {
                 if (session.IsHost)
-                    await session.AsHost().DeleteAsync();
+                    await session.AsHost().DeleteAsync().AsMainThread();
                 else
-                    await session.LeaveAsync();
+                    await session.LeaveAsync().AsMainThread();
                 Debug.Log($"[PartySessionService] Left party session {session.Id}.");
             }
             catch (Exception e)
@@ -228,8 +219,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (ActiveSession == null) return;
-            await UniTask.SwitchToMainThread();
-            await ActiveSession.RefreshAsync();
+            await ActiveSession.RefreshAsync().AsMainThread();
         }
 
         /// <summary>

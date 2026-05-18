@@ -273,8 +273,8 @@ namespace CosmicShore.Core
             {
                 Debug.LogError(
                     "[SceneTransitionManager] SetFadeImmediate called off main thread — " +
-                    "caller forgot `await UniTask.SwitchToMainThread()` after a UGS await. " +
-                    "Ignoring to avoid EnsureRunningOnMainThread.");
+                    "caller forgot `.AsMainThread()` on a UGS / Netcode Task await " +
+                    "(see UniTaskExtensions.cs). Ignoring to avoid EnsureRunningOnMainThread.");
                 return;
             }
 

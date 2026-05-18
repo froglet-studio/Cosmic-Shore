@@ -178,9 +178,9 @@ namespace CosmicShore.Gameplay
             try
             {
                 if (_activeLobby.IsHost)
-                    await _activeLobby.AsHost().DeleteAsync();
+                    await _activeLobby.AsHost().DeleteAsync().AsMainThread();
                 else
-                    await _activeLobby.LeaveAsync();
+                    await _activeLobby.LeaveAsync().AsMainThread();
             }
             catch (Exception e)
             {
@@ -197,7 +197,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (_activeLobby == null) return;
-            await _activeLobby.RefreshAsync();
+            await _activeLobby.RefreshAsync().AsMainThread();
         }
 
         /// <inheritdoc/>
@@ -287,7 +287,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask<ISession> TryQueryAndJoinAsync(int maxPlayers)
         {
-            await UniTask.SwitchToMainThread();
             var queryOptions = new QuerySessionsOptions();
             queryOptions.FilterOptions.Add(
                 new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
@@ -297,7 +296,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions).AsMainThread();
                     sessions = results.Sessions;
                     break;
                 }
@@ -320,7 +319,7 @@ namespace CosmicShore.Gameplay
                 {
                     var joined = await MultiplayerService.Instance.JoinSessionByIdAsync(
                         session.Id,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
+                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
                     Debug.Log($"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
                     return joined;
                 }
@@ -341,7 +340,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask CreateAsync(int maxPlayers)
         {
-            await UniTask.SwitchToMainThread();
             Debug.Log($"[PresenceLobbyService] Creating new presence lobby (maxPlayers={maxPlayers})...");
             try
             {
@@ -367,7 +365,7 @@ namespace CosmicShore.Gameplay
                 {
                     try
                     {
-                        _activeLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
+                        _activeLobby = await MultiplayerService.Instance.CreateSessionAsync(opts).AsMainThread();
                         Debug.Log($"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
                         return;
                     }
@@ -393,14 +391,13 @@ namespace CosmicShore.Gameplay
         private async UniTask DeleteOwnLobbyQuietlyAsync()
         {
             if (_activeLobby == null) return;
-            await UniTask.SwitchToMainThread();
             Debug.Log($"[PresenceLobbyService] DeleteOwnLobbyQuietly — releasing race-lost lobby {_activeLobby.Id}.");
             try
             {
                 if (_activeLobby.IsHost)
-                    await _activeLobby.AsHost().DeleteAsync();
+                    await _activeLobby.AsHost().DeleteAsync().AsMainThread();
                 else
-                    await _activeLobby.LeaveAsync();
+                    await _activeLobby.LeaveAsync().AsMainThread();
             }
             catch (Exception e)
             {
