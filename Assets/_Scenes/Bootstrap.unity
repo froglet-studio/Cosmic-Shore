@@ -3118,6 +3118,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5,
         type: 2}
+    - target: {fileID: 3258728696626565719, guid: b2bb38c2502442f2a1448fafdb7d94ea,
+        type: 3}
+      propertyPath: bootStatusRetryRequestedEvent
+      value: 
+      objectReference: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e95c,
+        type: 2}
     - target: {fileID: 7831454145019129197, guid: b2bb38c2502442f2a1448fafdb7d94ea,
         type: 3}
       propertyPath: connectionTimeoutSeconds
