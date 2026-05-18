@@ -6,10 +6,11 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Stepper control for selecting player count.
-    /// Displays a count with +/- buttons, clamped between min and max.
+    /// Generic integer stepper. Displays a count with +/- buttons, clamped
+    /// between configurable min and max. Reused by the arcade configure modal
+    /// for both player-count and domain-count selection.
     /// </summary>
-    public class PlayerCountStepper : MonoBehaviour
+    public class IntStepper : MonoBehaviour
     {
         [SerializeField] Button decrementButton;
         [SerializeField] Button incrementButton;

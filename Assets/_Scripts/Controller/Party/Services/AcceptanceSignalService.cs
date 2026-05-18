@@ -160,7 +160,7 @@ namespace CosmicShore.Gameplay
             try { await lobbyService.RefreshAsync(); }
             catch (Exception e)
             {
-                Debug.LogWarning($"[AcceptanceSignalService] Pre-save refresh failed (non-fatal): {e.Message}");
+                Debug.LogWarning($"[AcceptanceSignalService] Pre-save refresh failed (non-fatal) ({e.GetType().Name}): {e}");
             }
 
             var lobby = lobbyService.ActiveLobby;

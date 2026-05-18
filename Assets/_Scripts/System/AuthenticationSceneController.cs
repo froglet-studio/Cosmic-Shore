@@ -33,7 +33,10 @@ namespace CosmicShore.Core
         [Header("Panels")]
         [SerializeField] private GameObject authPanel;
         [SerializeField] private GameObject usernameSetupPanel;
-        [SerializeField] private GameObject loadingPanel;
+
+        [Header("Boot Status SOAP")]
+        [Tooltip("Raised to drive the BootStatusPanel surface (status text + retry button).")]
+        [SerializeField] private ScriptableEventBootStatusRequest bootStatusEvent;
 
         [Header("Guest Login")]
         [SerializeField] private Button guestLoginButton;
@@ -111,7 +114,7 @@ namespace CosmicShore.Core
         async UniTaskVoid RunAuthFlowAsync(CancellationToken ct)
         {
             HideAllPanels();
-            ShowLoading();
+            ShowLoading("Signing in…");
 
             try
             {
@@ -245,7 +248,7 @@ namespace CosmicShore.Core
         {
             if (guestLoginButton) guestLoginButton.interactable = false;
             ClearStatusMessages();
-            ShowLoading();
+            ShowLoading("Signing in…");
 
             try
             {
@@ -276,7 +279,7 @@ namespace CosmicShore.Core
 
         async UniTask HandlePostAuthFlowAsync(CancellationToken ct)
         {
-            ShowLoading();
+            ShowLoading("Loading profile…");
 
             // Wait for PlayerDataService to initialize, with a timeout.
             if (_playerDataService != null && !_playerDataService.IsInitialized)
@@ -378,32 +381,27 @@ namespace CosmicShore.Core
         {
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
-            if (loadingPanel) loadingPanel.SetActive(false);
         }
 
         void ShowAuthPanel()
         {
             if (authPanel) authPanel.SetActive(true);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
-            if (loadingPanel) loadingPanel.SetActive(false);
+            HideLoading();
         }
 
         void ShowUsernameSetup()
         {
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(true);
-            if (loadingPanel) loadingPanel.SetActive(false);
+            HideLoading();
         }
 
-        void ShowLoading()
-        {
-            if (loadingPanel) loadingPanel.SetActive(true);
-        }
+        void ShowLoading(string text = "Loading…")
+            => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, text));
 
         void HideLoading()
-        {
-            if (loadingPanel) loadingPanel.SetActive(false);
-        }
+            => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
 
         void ClearStatusMessages()
         {
@@ -450,8 +448,10 @@ namespace CosmicShore.Core
                     // Wait for the Relay session to be confirmed live (InParty reached).
                     // OnHostConnectionEstablished fires twice: at lobby join (NM not listening)
                     // and after Relay creation (NM listening). WaitForRelayReadyAsync only
-                    // completes on the second fire.
-                    await WaitForRelayReadyAsync(linkedCts.Token);
+                    // completes on the second fire.  .AsMainThread() guarantees the
+                    // continuation runs on Unity's main thread, since the upstream SOAP
+                    // raise may originate from a UGS Task completion on the ThreadPool.
+                    await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread();
                     networkReady = true;
                     CSDebug.Log($"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
@@ -462,17 +462,36 @@ namespace CosmicShore.Core
                         CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) — retrying HCS init...");
                         var hcs = HostConnectionService.Instance;
                         if (hcs != null)
-                            await hcs.RetryCreateOwnPartySessionAsync(ct);
+                            await hcs.RetryCreateOwnPartySessionAsync(ct).AsMainThread();
                     }
                     else
                     {
-                        CSDebug.LogError("[AuthScene] Failed to start network session after 3 attempts. Cannot load Menu_Main without a Relay host.");
-                        // TODO: raise SOAP event → "NetworkConnectionError" panel with Retry button
+                        CSDebug.LogWarning("[AuthScene] Auto-retry exhausted after 3 attempts. Surfacing manual retry button.");
                     }
                 }
             }
 
-            if (!networkReady) return;
+            if (!networkReady)
+            {
+                // Auto-retry exhausted. Raise the retry surface via SOAP; the
+                // BootStatusPanel renders it, and HostConnectionService listens
+                // for the retry-requested event and calls RetryCreateOwnPartySessionAsync.
+                // Resume the wait with no timeout — OnHostConnectionEstablished fires
+                // when manual retry succeeds and the scene load proceeds.
+                bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry,
+                    "Could not connect. Tap retry."));
+
+                try
+                {
+                    await WaitForRelayReadyAsync(ct).AsMainThread();
+                    networkReady = true;
+                    CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
 
             // Keep the splash opaque through the scene transition.  SceneLoader.OnSceneLoaded
             // will re-assert this on the Menu_Main side and subscribe FadeFromSplashOnReady

@@ -331,7 +331,12 @@ namespace CosmicShore.Gameplay
         public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             if (destroyed) return;
-            if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
+            // Super-shielded prisms are fully invulnerable. No damage source
+            // currently breaks them; ways to break them will be added later.
+            // The impactor's other effect SOs (sparks, sound) still fire on
+            // OnTriggerEnter, so the hit reads visually without state change.
+            if (prismProperties.IsSuperShielded) return;
+            if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
                 Explode(impactVector, domain, playerName, devastate);
@@ -340,7 +345,8 @@ namespace CosmicShore.Gameplay
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false)
         {
             if (destroyed) return;
-            if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
+            if (prismProperties.IsSuperShielded) return;
+            if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
                 Implode(target, domain, playerName, devastate);

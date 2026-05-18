@@ -142,7 +142,9 @@ namespace CosmicShore.Gameplay
                 Debug.Log("[PartyInviteController] Starting direct-join accept flow...");
 
                 // Step 1: Shutdown the local NetworkManager.
-                await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct);
+                // .AsMainThread() guarantees each cross-thread await resumes on
+                // Unity's main thread (see UniTaskExtensions.cs).
+                await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct).AsMainThread();
 
                 // Step 1b: Clear stale SOAP references the NM shutdown left behind.
                 // Player.OnNetworkDespawn removes from gameData.Players but leaves
@@ -156,7 +158,7 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
-                await HostConnectionService.Instance.AcceptInviteAsync(invite);
+                await HostConnectionService.Instance.AcceptInviteAsync(invite).AsMainThread();
 
                 // Store the party session so MultiplayerSetup in the game scene
                 // knows to reuse the existing Relay connection (client side).
@@ -166,12 +168,12 @@ namespace CosmicShore.Gameplay
                 Debug.Log("[PartyInviteController] Joined party session via UGS.");
 
                 // Step 3: Wait for Netcode client connection.
-                await _networkTransition.WaitForClientConnectionAsync(connectionTimeoutSeconds, ct);
+                await _networkTransition.WaitForClientConnectionAsync(connectionTimeoutSeconds, ct).AsMainThread();
                 Debug.Log("[PartyInviteController] Netcode client connected.");
 
                 // Step 3b: Wait for Netcode's automatic Menu_Main reload.
                 Debug.Log("[PartyInviteController] Awaiting client scene-sync...");
-                await _networkTransition.WaitForSceneSyncAsync("Menu_Main", sceneSyncTimeoutSeconds, ct);
+                await _networkTransition.WaitForSceneSyncAsync("Menu_Main", sceneSyncTimeoutSeconds, ct).AsMainThread();
 
                 // Step 4: Signal completion.  Isolated try/catch so a listener
                 // throwing during scene-reload teardown can't roll back the outer
@@ -197,10 +199,10 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                // Ensure main thread — timeout continuations can land on the thread pool.
-                // Yield one frame to move past any in-flight scene-load tick.
-                await UniTask.SwitchToMainThread();
-                await UniTask.Yield();
+                // Timeout / cancel continuations can land on the thread pool.
+                // Yield one frame on PlayerLoop.Update to land on Unity's main thread
+                // before touching SOAP / GameObjects in the recovery path.
+                await UniTask.Yield(PlayerLoopTiming.Update);
                 Debug.LogError($"[PartyInviteController] Accept flow failed " +
                                $"({e.GetType().Name}): {e}");
                 await RecoverFromFailedTransitionAsync();
@@ -253,13 +255,15 @@ namespace CosmicShore.Gameplay
                     gameData.DestroyPlayerAndVessel();
                     gameData.ResetRuntimeData();
                 }
-                await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct);
+                // .AsMainThread() guarantees each cross-thread await resumes on
+                // Unity's main thread.
+                await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct).AsMainThread();
 
                 // Recreate the player's own solo Relay session so they return
                 // to lava-lamp as a fresh host.  HCS handles NM startup internally.
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
-                    await hcs.RetryCreateOwnPartySessionAsync(ct);
+                    await hcs.RetryCreateOwnPartySessionAsync(ct).AsMainThread();
 
                 // Reload Menu_Main via the new NM so scene-placed NetworkObjects
                 // initialise cleanly in the fresh Relay session.
@@ -275,8 +279,9 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                await UniTask.SwitchToMainThread();
-                await UniTask.Yield();
+                // Timeout / cancel continuations can land on the thread pool.
+                // Yield onto PlayerLoop.Update to land on Unity's main thread.
+                await UniTask.Yield(PlayerLoopTiming.Update);
                 Debug.LogError($"[PartyInviteController] Leave-lobby flow failed " +
                                $"({e.GetType().Name}): {e}");
                 await RecoverFromFailedTransitionAsync();
@@ -319,7 +324,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask RecoverFromFailedTransitionAsync()
         {
-            await UniTask.SwitchToMainThread();
+            // Recovery may be entered from a thread-pool continuation; land on
+            // PlayerLoop.Update to guarantee main thread before touching anything.
+            await UniTask.Yield(PlayerLoopTiming.Update);
             Debug.Log("[PartyInviteController] Attempting recovery — recreating solo Relay session...");
 
             try
@@ -329,7 +336,7 @@ namespace CosmicShore.Gameplay
                 // as host.  No direct nm.StartHost() calls here.
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
-                    await hcs.RetryCreateOwnPartySessionAsync();
+                    await hcs.RetryCreateOwnPartySessionAsync().AsMainThread();
 
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer && nm.SceneManager != null)
@@ -337,7 +344,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogError($"[PartyInviteController] Recovery failed: {e.Message}");
+                Debug.LogError($"[PartyInviteController] Recovery failed ({e.GetType().Name}): {e}");
             }
         }
     }

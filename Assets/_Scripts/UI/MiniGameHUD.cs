@@ -14,6 +14,8 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 namespace CosmicShore.UI
 {
     [RequireComponent(typeof(MiniGameHUDView))]
@@ -21,6 +23,12 @@ namespace CosmicShore.UI
     {
         [Header("Data")]
         [Inject] protected GameDataSO gameData;
+        [Inject] protected Container _diContainer;
+
+        [Header("Objective Indicator")]
+        [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (HexRace, Joust). Disable to wire your own indicator manually in the scene.")]
+        [SerializeField] protected bool autoCreateObjectiveIndicator = true;
+        ObjectiveIndicator _autoCreatedIndicator;
 
         [Header("View")]
         [SerializeField] protected MiniGameHUDView view;
@@ -134,6 +142,8 @@ namespace CosmicShore.UI
             Debug.Log($"<color=#FFFFFF><b>[FLOW-HUD] [MiniGameHUD] Start — gameData={gameData != null}, enableCinematic={enablePreGameCinematic}</b></color>");
             SubscribeToEvents();
 
+            EnsureObjectiveIndicator();
+
             // If OnClientReady already fired before we subscribed (client race condition:
             // RPCs can resolve in the same frame as scene load, before Start() runs),
             // handle it now. LocalPlayer.Vessel being set means InitializePair() already ran.
@@ -142,6 +152,61 @@ namespace CosmicShore.UI
                 Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] Late subscription — OnClientReady already fired, handling now</b></color>");
                 HandleClientReady().Forget();
             }
+        }
+
+        /// <summary>
+        /// Auto-creates an off-screen objective indicator and the matching
+        /// provider for the current game mode, if the scene doesn't already
+        /// have one. The indicator is created even without a matching provider
+        /// so the UI element is always visible in debug mode — useful for
+        /// verifying that rendering works before wiring up provider logic.
+        /// </summary>
+        protected virtual void EnsureObjectiveIndicator()
+        {
+            if (!autoCreateObjectiveIndicator)
+            {
+                Debug.Log("[MiniGameHUD] EnsureObjectiveIndicator skipped — autoCreate=false");
+                return;
+            }
+
+            if (FindAnyObjectByType<ObjectiveIndicator>() != null)
+            {
+                Debug.Log("[MiniGameHUD] EnsureObjectiveIndicator skipped — already exists in scene");
+                return;
+            }
+
+            IObjectiveProvider provider = gameData != null
+                ? CreateObjectiveProviderForGameMode(gameData.GameMode)
+                : null;
+
+            Transform canvasRoot = transform.parent != null ? transform.parent : transform;
+            _autoCreatedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, provider);
+
+            Debug.Log($"[MiniGameHUD] EnsureObjectiveIndicator — created under '{canvasRoot.name}', " +
+                      $"gameMode={gameData?.GameMode}, provider={provider != null}");
+        }
+
+        IObjectiveProvider CreateObjectiveProviderForGameMode(GameModes mode)
+        {
+            switch (mode)
+            {
+                case GameModes.HexRace:
+                    return CreateProviderComponent<HexRaceObjectiveProvider>("ObjectiveProvider_HexRace");
+                case GameModes.MultiplayerJoust:
+                    return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");
+                default:
+                    return null;
+            }
+        }
+
+        T CreateProviderComponent<T>(string objectName) where T : MonoBehaviour, IObjectiveProvider
+        {
+            var go = new GameObject(objectName);
+            go.transform.SetParent(transform, false);
+            var component = go.AddComponent<T>();
+            if (_diContainer != null)
+                GameObjectInjector.InjectRecursive(go, _diContainer);
+            return component;
         }
 
         protected virtual void OnDisable()

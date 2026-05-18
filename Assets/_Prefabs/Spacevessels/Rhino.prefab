@@ -2362,6 +2362,7 @@ MonoBehaviour:
   _shipInstance: {fileID: 8374620423313890364}
   vesselHUDController: {fileID: 2171807218592972036}
   boostMultiplier: 4
+  inertia: 1
   _name: Rhino
   vesselType: 3
   _nearFieldSkimmer: {fileID: 874579554510349383}
@@ -2429,6 +2430,8 @@ MonoBehaviour:
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
   startDelay: 2
+  Trail:
+    TrailRenderer: {fileID: 0}
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -2491,6 +2494,8 @@ MonoBehaviour:
   raycastWidth: 2
   ram: 1
   drift: 0
+  seekPlayers: 0
+  playerSeekUpdateInterval: 0.5
   abilities:
   - Ability: {fileID: 11400000, guid: 0c9c1d521f39e7048b82825ae4fce5bc, type: 2}
     Duration: 0
@@ -2555,6 +2560,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 7bdf308b6685d7646bb57265f899033f, type: 2}
   energyResourceIndex: 0
   view: {fileID: 7955211723655855840}
+  elementBars: {fileID: 0}
 --- !u!114 &3953285837003103147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2590,6 +2596,8 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
     - {fileID: 11400000, guid: 0c9c1d521f39e7048b82825ae4fce5bc, type: 2}
   _resourceEventClassActions: []
+  _touchActionOverrides: []
+  _gamepadActionOverrides: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -2638,8 +2646,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
-    type: 2}
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071, type: 2}
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 212ff1ef2b8c43c4ab1acfc073c79e0b,
     type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}
@@ -2681,6 +2688,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactor: {fileID: 3485795873575935315}
+--- !u!114 &6693358806957623137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6498880644727737877
 GameObject:
   m_ObjectHideFlags: 0
@@ -12698,28 +12717,43 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 4.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 9.38
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.35
+      value: 20.7
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.93410754
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: 0.35699156
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
@@ -12859,10 +12893,30 @@ PrefabInstance:
       propertyPath: m_Name
       value: ForceFieldSkimmer
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 4084605387251425628, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+    - target: {fileID: 6188715390681639088, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7248918950389440568, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+    m_RemovedComponents:
+    - {fileID: 1075466679460627604, guid: c8d5df1098821194eb69eec4c965548e, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3630837686170528968, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4880931740909781519}
   m_SourcePrefab: {fileID: 100100000, guid: c8d5df1098821194eb69eec4c965548e, type: 3}
 --- !u!4 &282447970148362685 stripped
 Transform:
@@ -12876,12 +12930,41 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 1660592348679971898}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &2695624631939139826 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3630837686170528968, guid: c8d5df1098821194eb69eec4c965548e,
+    type: 3}
+  m_PrefabInstance: {fileID: 1660592348679971898}
+  m_PrefabAsset: {fileID: 0}
+--- !u!136 &4880931740909781519
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 1.98
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &2754590152818896375
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13823,16 +13906,3 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 8469593379654306638}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6693358806957623137
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

@@ -244,6 +244,10 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 |---|---|---|
 | `CLAUDE.md` | Project root | Architecture, patterns, systems reference |
 | `SCENES.md` | `Docs/` | Complete scene inventory, game modes, launch pipeline |
+| `THREADING.md` | `Docs/` | UniTask / SyncContext threading rules, `.AsMainThread()` contract, `MainThreadDispatcher`, canary, history |
+| `PARTY_INVITE_DEBUGGING.md` | `Docs/` | Outstanding party-invite bugs (host vessel despawn on send, client splash-stuck on accept) with investigation checklists |
+| `PARTY_SYSTEM_REFACTOR.md` | `Docs/` | Party system AAA refactor — 9 services, state machine, SOAP event bus |
+| `PartySystemAudit.md` | `Docs/` | Earlier party system audit (pre-refactor) |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
@@ -311,6 +315,73 @@ Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationStat
 - **Do not** duplicate SOAP types — check `Assets/_Scripts/ScriptableObjects/SOAP/` for existing types before creating new ones
 - **Do not** put gameplay logic inside ScriptableVariable/ScriptableEvent classes — they are data containers and channels, not controllers
 - **Do not** add if-null guards on ScriptableEvent serialize fields — fail loud on missing references
+
+### Threading & Main-Thread Affinity
+
+See `Docs/THREADING.md` for the full reference. The short version:
+
+UGS SDK (`Unity.Services.*`) and Netcode methods return `System.Threading.Tasks.Task` whose
+continuations complete on the .NET ThreadPool. From the ThreadPool, any `UnityEngine.Object`
+access throws `EnsureRunningOnMainThread`, and any `Obvious.Soap` `ScriptableEvent.Raise()` runs
+its listeners **inline on the off-thread**, surfacing the same crash one level deeper.
+
+**The contract:** every `await` of a UGS / Netcode `Task` uses `.AsMainThread()`:
+
+```csharp
+ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(opts).AsMainThread();
+```
+
+`.AsMainThread()` (in `Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs`) awaits
+the original task and then awaits `MainThreadDispatcher.SwitchToMainThreadAsync()`, which
+marshals onto Unity's captured `SynchronizationContext`. Four overloads cover
+`Task`, `Task<T>`, `UniTask`, `UniTask<T>`.
+
+**Why UniTask's own primitives don't work on this version (`com.cysharp.unitask@86b6e6a2e286`):**
+
+UniTask 2.x intentionally bypasses `SynchronizationContext` and `ExecutionContext`:
+
+> *"UniTask always works like `Task.ConfigureAwait(false)` and is not guaranteed that the thread
+> before awaiting may match the thread after awaiting."* — UniTask docs.
+
+Consequence:
+
+- `UniTask.SwitchToMainThread()` — awaiter's `IsCompleted` reports `true` from ThreadPool →
+  continuation runs **inline** on ThreadPool. Switch is a no-op. ([Cysharp/UniTask#319](https://github.com/Cysharp/UniTask/issues/319), [#151](https://github.com/Cysharp/UniTask/issues/151))
+- `UniTask.Yield(PlayerLoopTiming.Update)` — yields, but the resumption is *not* guaranteed on
+  main thread because UniTask's `ContinuationQueue` doesn't capture the SyncContext.
+  ([Cysharp/UniTask#561](https://github.com/Cysharp/UniTask/discussions/561) — exact symptom we hit.)
+
+Neither primitive is a reliable main-thread switch on this version. The `MainThreadDispatcher` +
+`.AsMainThread()` boundary helper bypasses UniTask's bypass by using Unity's own
+`SynchronizationContext`, which IS properly main-thread-bound.
+
+**The canary** lives in `SceneTransitionManager.SetFadeImmediate`
+(`Assets/_Scripts/System/Bootstrap/SceneTransitionManager.cs`). It reads
+`MainThreadDispatcher.IsOnMainThread` and logs `Debug.LogError` with the call stack if a future
+UGS call site forgets `.AsMainThread()`. Both the canary and the helper share one main-thread-ID
+source — no risk of divergent capture sites.
+
+**When to use which primitive:**
+
+| Situation | Use |
+|---|---|
+| `await` a UGS / Netcode / cross-thread `Task` | `.AsMainThread()` |
+| `await` a `UniTask` you wrote that internally awaits UGS with `.AsMainThread()` | nothing extra at the caller |
+| Need main thread without a Task to attach to (e.g., top of a `catch` block) | `await MainThreadDispatcher.SwitchToMainThreadAsync()` |
+| Yield one frame for PlayerLoop processing (NOT thread marshaling) | `await UniTask.Yield(PlayerLoopTiming.Update)` — fine for sequencing, not for affinity |
+| Assert main thread (debug) | `MainThreadDispatcher.IsOnMainThread` |
+
+The three remaining `Yield(PlayerLoopTiming.Update)` calls in
+`Controller/Party/PartyInviteController.cs` (in catch / recovery blocks) are intentional —
+they are "wait for the next PlayerLoop tick before handling this exception" semantics, not
+threading.
+
+**Anti-patterns to avoid:**
+
+- **Do not** add `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — neither works on this UniTask version. Use `.AsMainThread()`.
+- **Do not** raise a SOAP `ScriptableEvent` from a UGS / Netcode callback continuation without ensuring the continuation has resumed on the main thread first — SOAP raises invoke listeners inline.
+- **Do not** touch a `UnityEngine.Object` (incl. `== null` checks) in a `Task` continuation without `.AsMainThread()` upstream.
+- **Do not** capture `Thread.CurrentThread.ManagedThreadId` in random places to make per-class main-thread checks — read `MainThreadDispatcher.IsOnMainThread` instead, single source of truth.
 
 ### Bootstrap & Scene Flow
 
@@ -967,6 +1038,28 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 #### Pending Critical Refactors (next session)
 
 Queued for a focused pass — these are root-cause fixes, not symptom patches.
+
+**Recently completed (branch `claude/investigate-startup-warnings-yuLbq`):** the entire
+threading cascade — UGS / Netcode `Task` continuations resuming on the .NET ThreadPool → SOAP
+raises running off-thread → `EnsureRunningOnMainThread` crashes — was resolved by introducing
+`MainThreadDispatcher` (Unity-`SynchronizationContext`-backed) plus the `.AsMainThread()`
+boundary helper at every UGS / Netcode `await`. See `Docs/THREADING.md`. **Do not** introduce
+`UniTask.SwitchToMainThread()` or `UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling
+fix — both have been tried and proven unreliable on this UniTask version.
+
+**Two follow-up bugs remain after the threading fix** (see `Docs/PARTY_INVITE_DEBUGGING.md` for
+full debugging notes, including suspected root causes, files / line numbers, log instrumentation
+plan, and reproduction scenarios):
+
+- **Bug A — Host vessel despawn on invite send.** Pressing "+" to send an invite causes the host's
+  own vessel to `OnNetworkDespawn`. Suspected root: `CreateOwnPartySessionAsync` unconditionally
+  calls `_networkTransition.ShutdownAsync` before recreating the Relay session, despawning the
+  host's Player + Vessel. Likely fully resolved by the lazy party-session refactor below.
+- **Bug B — Client stuck on splash after accepting invite.** Joining client's fade-overlay stays
+  opaque after a successful Relay join. Most likely culprit: `gameData.OnClientReady` never fires
+  on the joining client (either because `ClientPlayerVesselInitializer.InitializePair` is not
+  reached on their side, or because `WaitForSceneSyncAsync` times out without a host-side scene
+  load). Tractable with one log-instrumentation pass.
 
 1. **Lazy party-session creation** *(highest leverage)*
    - Today every authenticated user eagerly creates a Relay-backed session on startup via `HostConnectionService.Start()` → `CreatePartySessionAsync()` → `CreateSessionAsync(WithRelayNetwork())`, which internally calls `NetworkManager.StartHost()`. Every user burns a Relay allocation + UGS session whether or not they invite anyone.
@@ -1699,6 +1792,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
 | Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
 | Bootstrap / DI | `AppManager` (orchestrator + IInstaller), `BootstrapConfigSO`, `SceneTransitionManager`, `ApplicationLifecycleManager`, `ApplicationLifecycleEventsContainerSO` | `_Scripts/System/`, `_Scripts/System/Bootstrap/`, `_Scripts/ScriptableObjects/` |
+| Threading / Main-thread affinity | `MainThreadDispatcher` (captures Unity's `SynchronizationContext` at `BeforeSceneLoad`, exposes `IsOnMainThread` + `SwitchToMainThreadAsync()`), `UniTaskExtensions.AsMainThread<T>()` (boundary helper for UGS / Netcode `Task` awaits), `SceneTransitionManager.SetFadeImmediate` (canary that fires if a UGS continuation reaches it off-thread) | `_Scripts/Utility/`, `_Scripts/Utility/ClassExtensions/`, `_Scripts/System/Bootstrap/`. See `Docs/THREADING.md`. |
 | App state machine | `ApplicationStateMachine` (single-writer phase tracker), `ApplicationStateData` / `ApplicationStateDataVariable` (SOAP state), `ApplicationState` enum | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/`, `_Scripts/Data/Enums/` |
 | Scene management | `SceneLoader` (MonoBehaviour, DontDestroyOnLoad in Bootstrap, game launch + restart + return-to-menu, SOAP code subscriptions), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
@@ -1721,6 +1815,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - Always include `CancellationToken` for anything non-trivial — UniTask respects play mode lifecycle better than raw `Task`
 - Bootstrap uses `UniTaskVoid` with `CancellationTokenSource` for the async startup sequence
 - Prefer SOAP event channels (`ScriptableEvent`) over `UniTask.WaitUntil` polling for waiting on state changes from other systems. Subscribe to the relevant event and react when it fires, rather than polling a condition every frame
+- **Every `await` of a UGS / Netcode `Task` uses `.AsMainThread()`** — see the "Threading & Main-Thread Affinity" section above and `Docs/THREADING.md`. UniTask's own `SwitchToMainThread()` and `Yield(PlayerLoopTiming.Update)` are unreliable on this UniTask version and must not be used as thread-marshaling primitives.
 
 ### Anti-Patterns to Avoid
 
@@ -1732,6 +1827,9 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - C# `event Action` / delegates on MonoBehaviours for broadcast patterns — use SOAP `ScriptableEvent` channels
 - `renderer.material` (clones material) — use `renderer.sharedMaterial` + MaterialPropertyBlock instead
 - Per-object coroutines at scale — use centralized timer/manager systems (see Prism Performance Audit)
+- `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — they don't reliably switch threads on this UniTask version. Use `.AsMainThread()` (see `Docs/THREADING.md`)
+- Raising a SOAP `ScriptableEvent` from a UGS / Netcode `Task` continuation without ensuring the continuation has resumed on the main thread first — SOAP `Raise()` invokes listeners inline, so off-thread raises crash any listener that touches Unity state
+- Touching a `UnityEngine.Object` (incl. `== null` checks routing through `op_Equality`) in a `Task` continuation without `.AsMainThread()` upstream — throws `EnsureRunningOnMainThread`
 
 ## Shader & Visual Development
 

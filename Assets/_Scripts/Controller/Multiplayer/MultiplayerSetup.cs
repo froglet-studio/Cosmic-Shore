@@ -186,7 +186,6 @@ namespace CosmicShore.Gameplay
             if (gameData.ActiveSession != null)
             {
                 CSDebug.Log($"[MultiplayerSetup] Using existing party session {gameData.ActiveSession.Id}");
-                DomainAssigner.Initialize();
                 gameData.InvokeSessionStarted();
                 return;
             }
@@ -257,9 +256,6 @@ namespace CosmicShore.Gameplay
 
         private async UniTask StartSessionAsHost()
         {
-            // Ensure domain pool is fresh before any players connect.
-            DomainAssigner.Initialize();
-
             var playerProperties  = await GetPlayerProperties();
             var sessionProperties = GetSessionProperties();
 

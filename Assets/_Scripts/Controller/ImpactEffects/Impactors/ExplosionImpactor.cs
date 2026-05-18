@@ -120,11 +120,18 @@ namespace CosmicShore.Gameplay
         
         void ExecuteCommonPrismCommands(Prism prism, Vector3 impactVector)
         {
-            if ((prism.Domain != explosion.Domain || affectSelf) && prism.prismProperties.IsSuperShielded)
+            // Super-shielded prisms are fully invulnerable. The explosion is
+            // physically blocked by the shield: destroy the explosion VFX so
+            // it doesn't visibly expand through the prism, and skip all
+            // damage / steal / shield-decay state changes. Mirrors the
+            // PrismAOERegistry Burst path. Ways to break super-shields will
+            // be added later as targeted opt-in mechanics.
+            if (prism.prismProperties.IsSuperShielded)
             {
-                prism.DeactivateShields();
-                Destroy(gameObject);    // TODO: This seems wrong...
-            } 
+                Destroy(gameObject);
+                return;
+            }
+
             if ((prism.Domain == explosion.Domain && !affectSelf) || !destructive)
             {
                 if (shielding && prism.Domain == explosion.Domain)

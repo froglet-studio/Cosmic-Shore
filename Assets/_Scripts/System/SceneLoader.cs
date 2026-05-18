@@ -136,7 +136,12 @@ namespace CosmicShore.Core
             // to call SceneManager.LoadScene() locally, which races with the server's
             // network load and destroys AI NetworkObjects before they can replicate.
             if (nm != null && nm.IsListening && !nm.IsServer)
+            {
+                Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server — " +
+                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}. " +
+                          $"Server will replicate scene via Netcode.</color>");
                 return;
+            }
 
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
 
@@ -180,7 +185,11 @@ namespace CosmicShore.Core
 
             // Clients rely on the server's Netcode scene management for transitions.
             if (nm != null && nm.IsListening && !nm.IsServer)
+            {
+                Debug.Log($"<color=#FF8C00>[SceneLoader] ReturnToMainMenu deferring to server — " +
+                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.</color>");
                 return;
+            }
 
             bool useNetworkSceneLoading = nm != null && nm.IsServer;
             LoadSceneAsync(menuScene, useNetworkSceneLoading).Forget();
@@ -275,7 +284,11 @@ namespace CosmicShore.Core
             // call ResetAllData() on the shared GameDataSO, wiping server state.
             var nm = NetworkManager.Singleton;
             if (nm != null && nm.IsListening && !nm.IsServer)
+            {
+                Debug.Log($"<color=#FF8C00>[SceneLoader] HandleActiveSessionEnd deferring to server — " +
+                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.</color>");
                 return;
+            }
 
             // Phase 15 "Always InParty": the party Relay session is NOT cleared here.
             // MultiplayerSetup.LeaveSession() already nulled gameData.ActiveSession

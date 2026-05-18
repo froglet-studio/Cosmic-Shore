@@ -60,9 +60,8 @@ namespace CosmicShore.Core
 
             try
             {
-                await UniTask.SwitchToMainThread();
                 Log("Initializing Friends service...");
-                await Service.InitializeAsync();
+                await Service.InitializeAsync().AsMainThread();
 
                 WireEvents();
                 SyncAllRelationships();
@@ -103,12 +102,11 @@ namespace CosmicShore.Core
         public async UniTask SendFriendRequestByNameAsync(string playerName)
         {
             EnsureInitialized();
-            await UniTask.SwitchToMainThread();
 
             try
             {
                 Log($"Sending friend request to '{playerName}'...");
-                await Service.AddFriendByNameAsync(playerName);
+                await Service.AddFriendByNameAsync(playerName).AsMainThread();
 
                 // Refresh lists to capture the new relationship state
                 SyncAllRelationships();
@@ -127,12 +125,11 @@ namespace CosmicShore.Core
         public async UniTask SendFriendRequestAsync(string playerId)
         {
             EnsureInitialized();
-            await UniTask.SwitchToMainThread();
 
             try
             {
                 Log($"Sending friend request to ID '{playerId}'...");
-                await Service.AddFriendAsync(playerId);
+                await Service.AddFriendAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend request sent to ID '{playerId}'.");
@@ -150,12 +147,11 @@ namespace CosmicShore.Core
         public async UniTask AcceptFriendRequestAsync(string playerId)
         {
             EnsureInitialized();
-            await UniTask.SwitchToMainThread();
 
             try
             {
                 Log($"Accepting friend request from '{playerId}'...");
-                await Service.AddFriendAsync(playerId);
+                await Service.AddFriendAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend request accepted from '{playerId}'.");
@@ -173,12 +169,11 @@ namespace CosmicShore.Core
         public async UniTask DeclineFriendRequestAsync(string playerId)
         {
             EnsureInitialized();
-            await UniTask.SwitchToMainThread();
 
             try
             {
                 Log($"Declining friend request from '{playerId}'...");
-                await Service.DeleteIncomingFriendRequestAsync(playerId);
+                await Service.DeleteIncomingFriendRequestAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend request declined from '{playerId}'.");
@@ -196,12 +191,11 @@ namespace CosmicShore.Core
         public async UniTask CancelFriendRequestAsync(string playerId)
         {
             EnsureInitialized();
-            await UniTask.SwitchToMainThread();
 
             try
             {
                 Log($"Cancelling friend request to '{playerId}'...");
-                await Service.DeleteOutgoingFriendRequestAsync(playerId);
+                await Service.DeleteOutgoingFriendRequestAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend request cancelled to '{playerId}'.");
@@ -223,12 +217,11 @@ namespace CosmicShore.Core
         public async UniTask RemoveFriendAsync(string playerId)
         {
             EnsureInitialized();
-            await UniTask.SwitchToMainThread();
 
             try
             {
                 Log($"Removing friend '{playerId}'...");
-                await Service.DeleteFriendAsync(playerId);
+                await Service.DeleteFriendAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend removed: '{playerId}'.");
@@ -246,12 +239,11 @@ namespace CosmicShore.Core
         public async UniTask BlockPlayerAsync(string playerId)
         {
             EnsureInitialized();
-            await UniTask.SwitchToMainThread();
 
             try
             {
                 Log($"Blocking player '{playerId}'...");
-                await Service.AddBlockAsync(playerId);
+                await Service.AddBlockAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Player blocked: '{playerId}'.");
@@ -269,12 +261,11 @@ namespace CosmicShore.Core
         public async UniTask UnblockPlayerAsync(string playerId)
         {
             EnsureInitialized();
-            await UniTask.SwitchToMainThread();
 
             try
             {
                 Log($"Unblocking player '{playerId}'...");
-                await Service.DeleteBlockAsync(playerId);
+                await Service.DeleteBlockAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Player unblocked: '{playerId}'.");
@@ -296,11 +287,10 @@ namespace CosmicShore.Core
         public async UniTask SetPresenceAsync(Availability availability, FriendPresenceActivity activity)
         {
             if (!_initialized) return;
-            await UniTask.SwitchToMainThread();
 
             try
             {
-                await Service.SetPresenceAsync(availability, activity);
+                await Service.SetPresenceAsync(availability, activity).AsMainThread();
                 Log($"Presence set: {availability}, status='{activity.Status}'");
             }
             catch (FriendsServiceException e)
@@ -315,11 +305,10 @@ namespace CosmicShore.Core
         public async UniTask SetAvailabilityAsync(Availability availability)
         {
             if (!_initialized) return;
-            await UniTask.SwitchToMainThread();
 
             try
             {
-                await Service.SetPresenceAvailabilityAsync(availability);
+                await Service.SetPresenceAvailabilityAsync(availability).AsMainThread();
                 Log($"Availability set: {availability}");
             }
             catch (FriendsServiceException e)
@@ -338,11 +327,10 @@ namespace CosmicShore.Core
         public async UniTask RefreshAsync()
         {
             if (!_initialized) return;
-            await UniTask.SwitchToMainThread();
 
             try
             {
-                await Service.ForceRelationshipsRefreshAsync();
+                await Service.ForceRelationshipsRefreshAsync().AsMainThread();
                 SyncAllRelationships();
             }
             catch (FriendsServiceException e)
