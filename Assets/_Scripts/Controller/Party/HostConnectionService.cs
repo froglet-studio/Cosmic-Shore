@@ -49,6 +49,10 @@ namespace CosmicShore.Gameplay
         [Header("SOAP Data Container")]
         [SerializeField] private HostConnectionDataSO connectionData;
 
+        [Header("Boot Status SOAP")]
+        [Tooltip("Raised by BootStatusPanel when the user taps the retry button after the auto-retry loop exhausts. Triggers RetryCreateOwnPartySessionAsync.")]
+        [SerializeField] private ScriptableEventNoParam bootStatusRetryRequestedEvent;
+
         [Header("Presence Lobby")]
         [Tooltip("Max simultaneous players in the global presence lobby.")]
         [SerializeField] private int presenceLobbyMaxPlayers = 100;
@@ -237,6 +241,9 @@ namespace CosmicShore.Gameplay
             // Do not access service fields here — use Start() instead.
             InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
+
+            if (bootStatusRetryRequestedEvent != null)
+                bootStatusRetryRequestedEvent.OnRaised += HandleBootStatusRetryRequested;
         }
 
         async void Start()
@@ -267,6 +274,10 @@ namespace CosmicShore.Gameplay
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
             UninstallLobbyLogFilter();
+
+            if (bootStatusRetryRequestedEvent != null)
+                bootStatusRetryRequestedEvent.OnRaised -= HandleBootStatusRetryRequested;
+
             await _lobbyService.LeaveAsync();
 
             _lobbyMutex.Dispose();
@@ -275,6 +286,8 @@ namespace CosmicShore.Gameplay
             if (Instance == this)
                 Instance = null;
         }
+
+        private void HandleBootStatusRetryRequested() => RetryCreateOwnPartySessionAsync().Forget();
 
         /// <summary>
         /// Resets per-session invite state on Menu_Main reload and rebuilds

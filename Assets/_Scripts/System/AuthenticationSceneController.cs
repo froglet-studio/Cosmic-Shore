@@ -33,7 +33,10 @@ namespace CosmicShore.Core
         [Header("Panels")]
         [SerializeField] private GameObject authPanel;
         [SerializeField] private GameObject usernameSetupPanel;
-        [SerializeField] private GameObject loadingPanel;
+
+        [Header("Boot Status SOAP")]
+        [Tooltip("Raised to drive the BootStatusPanel surface (status text + retry button).")]
+        [SerializeField] private ScriptableEventBootStatusRequest bootStatusEvent;
 
         [Header("Guest Login")]
         [SerializeField] private Button guestLoginButton;
@@ -111,7 +114,7 @@ namespace CosmicShore.Core
         async UniTaskVoid RunAuthFlowAsync(CancellationToken ct)
         {
             HideAllPanels();
-            ShowLoading();
+            ShowLoading("Signing in…");
 
             try
             {
@@ -245,7 +248,7 @@ namespace CosmicShore.Core
         {
             if (guestLoginButton) guestLoginButton.interactable = false;
             ClearStatusMessages();
-            ShowLoading();
+            ShowLoading("Signing in…");
 
             try
             {
@@ -276,7 +279,7 @@ namespace CosmicShore.Core
 
         async UniTask HandlePostAuthFlowAsync(CancellationToken ct)
         {
-            ShowLoading();
+            ShowLoading("Loading profile…");
 
             // Wait for PlayerDataService to initialize, with a timeout.
             if (_playerDataService != null && !_playerDataService.IsInitialized)
@@ -378,32 +381,27 @@ namespace CosmicShore.Core
         {
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
-            if (loadingPanel) loadingPanel.SetActive(false);
         }
 
         void ShowAuthPanel()
         {
             if (authPanel) authPanel.SetActive(true);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
-            if (loadingPanel) loadingPanel.SetActive(false);
+            HideLoading();
         }
 
         void ShowUsernameSetup()
         {
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(true);
-            if (loadingPanel) loadingPanel.SetActive(false);
+            HideLoading();
         }
 
-        void ShowLoading()
-        {
-            if (loadingPanel) loadingPanel.SetActive(true);
-        }
+        void ShowLoading(string text = "Loading…")
+            => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, text));
 
         void HideLoading()
-        {
-            if (loadingPanel) loadingPanel.SetActive(false);
-        }
+            => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
 
         void ClearStatusMessages()
         {
@@ -473,12 +471,13 @@ namespace CosmicShore.Core
 
             if (!networkReady)
             {
-                // Auto-retry exhausted. Hand off to BootStatusPanel: its retry
-                // button invokes HostConnectionService.RetryCreateOwnPartySessionAsync
-                // (the `null` callback delegates to the panel's default behavior).
-                // Resume the wait with no timeout; OnHostConnectionEstablished
-                // fires when the manual retry succeeds and the scene load proceeds.
-                BootStatusPanel.Instance?.ShowRetry("Could not connect. Tap retry.", null);
+                // Auto-retry exhausted. Raise the retry surface via SOAP; the
+                // BootStatusPanel renders it, and HostConnectionService listens
+                // for the retry-requested event and calls RetryCreateOwnPartySessionAsync.
+                // Resume the wait with no timeout — OnHostConnectionEstablished fires
+                // when manual retry succeeds and the scene load proceeds.
+                bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry,
+                    "Could not connect. Tap retry."));
 
                 try
                 {
