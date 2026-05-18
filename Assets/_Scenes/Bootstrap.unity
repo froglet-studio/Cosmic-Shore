@@ -1034,6 +1034,7 @@ GameObject:
   - component: {fileID: 820208340}
   - component: {fileID: 820208345}
   - component: {fileID: 820208346}
+  - component: {fileID: 820208347}
   m_Layer: 5
   m_Name: Canvas - Splash Screen
   m_TagString: Untagged
@@ -1143,16 +1144,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 923a1692e687af44daf6f67a2ef2ccb3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canvasGroup: {fileID: 820208345}
   statusText: {fileID: 1713505288}
   retryButton: {fileID: 203003806}
+  inboundRequestEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e84b,
+    type: 2}
+  outboundRetryEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e95c, type: 2}
+--- !u!114 &820208347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 820208339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2d629, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   authData: {fileID: 11400000, guid: 875bcedfcf3335047b416297732cba15, type: 2}
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  requestEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e84b, type: 2}
   labelConnecting: "Connecting\u2026"
   labelJoiningLobby: "Joining lobby\u2026"
   labelCreatingSession: "Creating session\u2026"
   labelHostReady: "Host ready\u2026"
-  labelVesselReady: Vessel ready
   labelConnectionLost: Connection lost. Tap retry.
 --- !u!1 &838949991
 GameObject:
@@ -3096,6 +3112,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: PartyServices
       objectReference: {fileID: 0}
+    - target: {fileID: 2287010195568088798, guid: b2bb38c2502442f2a1448fafdb7d94ea,
+        type: 3}
+      propertyPath: hostConnectionData
+      value: 
+      objectReference: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5,
+        type: 2}
     - target: {fileID: 7831454145019129197, guid: b2bb38c2502442f2a1448fafdb7d94ea,
         type: 3}
       propertyPath: connectionTimeoutSeconds
