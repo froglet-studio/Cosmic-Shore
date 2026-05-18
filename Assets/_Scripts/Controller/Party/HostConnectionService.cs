@@ -838,7 +838,14 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                if (IsRateLimitException(e))
+                // UGS SDK self-corrects on the next refresh tick. Treat as a
+                // no-op so the consecutive-error counter doesn't roll into
+                // the reconnect path on harmless SDK noise.
+                if (IsBenignLobbyPatcherError(e))
+                {
+                    // intentional: no log, no counter increment, no state change
+                }
+                else if (IsRateLimitException(e))
                 {
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     Debug.LogWarning("[HostConnectionService] Rate limited during refresh — backing off");
@@ -868,11 +875,18 @@ namespace CosmicShore.Gameplay
 
             if (shouldReconnect)
             {
+                // Surface the failure so any subscribed UI (boot status panel,
+                // in-menu reconnect banner) can show "Connection lost".  We do
+                // NOT call CreateOwnPartySessionAsync from this background
+                // loop — that path would shut down NetworkManager and respawn
+                // every menu vessel.  Relay re-creation is driven by an
+                // explicit user action (retry button) via
+                // RetryCreateOwnPartySessionAsync, which keeps the user-visible
+                // recovery in one place.
+                _eventBus.RaiseHostConnectionLost();
+
                 await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
                 ApplyPostLobbyJoinState();
-                // Reconnect succeeded — recreate solo party session.
-                if (_lobbyService.ActiveLobby != null)
-                    await CreateOwnPartySessionAsync();
             }
         }
 
@@ -1094,6 +1108,12 @@ namespace CosmicShore.Gameplay
             try { await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
+                // UGS SDK self-corrects on the next refresh tick. Skip without
+                // logging or incrementing the consecutive-error counter — these
+                // are not real failures and must not trigger session re-creation.
+                if (IsBenignLobbyPatcherError(e))
+                    return;
+
                 Debug.LogWarning($"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message}");
 
                 if (IsRateLimitException(e))
@@ -1500,7 +1520,28 @@ namespace CosmicShore.Gameplay
             }
 
             private static bool ContainsLobbyPatcherIndexError(string s) =>
-                !string.IsNullOrEmpty(s) && s.Contains("LobbyPatcher") && s.Contains("Index was out of range");
+                !string.IsNullOrEmpty(s)
+                && s.Contains("LobbyPatcher")
+                && (s.Contains("Index was out of range")
+                    || s.Contains("Index must be within the bounds of the List"));
+        }
+
+        /// <summary>
+        /// Detects the harmless <see cref="ArgumentOutOfRangeException"/> the UGS
+        /// Lobby SDK throws from <c>LobbyPatcher.ApplyPatchesToLobby</c> when a
+        /// WebSocket delta references a stale player index. Surfaces both as the
+        /// direct exception and as an <c>AggregateException</c>/inner-wrapped
+        /// exception forwarded by <c>await</c>.
+        /// </summary>
+        private static bool IsBenignLobbyPatcherError(Exception e)
+        {
+            for (var current = e; current != null; current = current.InnerException)
+            {
+                if (current is ArgumentOutOfRangeException
+                    && (current.StackTrace?.Contains("LobbyPatcher") ?? false))
+                    return true;
+            }
+            return false;
         }
 
     }

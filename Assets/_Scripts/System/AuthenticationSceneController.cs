@@ -466,13 +466,31 @@ namespace CosmicShore.Core
                     }
                     else
                     {
-                        CSDebug.LogError("[AuthScene] Failed to start network session after 3 attempts. Cannot load Menu_Main without a Relay host.");
-                        // TODO: raise SOAP event → "NetworkConnectionError" panel with Retry button
+                        CSDebug.LogWarning("[AuthScene] Auto-retry exhausted after 3 attempts. Surfacing manual retry button.");
                     }
                 }
             }
 
-            if (!networkReady) return;
+            if (!networkReady)
+            {
+                // Auto-retry exhausted. Hand off to BootStatusPanel: its retry
+                // button invokes HostConnectionService.RetryCreateOwnPartySessionAsync
+                // (the `null` callback delegates to the panel's default behavior).
+                // Resume the wait with no timeout; OnHostConnectionEstablished
+                // fires when the manual retry succeeds and the scene load proceeds.
+                BootStatusPanel.Instance?.ShowRetry("Could not connect. Tap retry.", null);
+
+                try
+                {
+                    await WaitForRelayReadyAsync(ct);
+                    networkReady = true;
+                    CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
 
             // Keep the splash opaque through the scene transition.  SceneLoader.OnSceneLoaded
             // will re-assert this on the Menu_Main side and subscribe FadeFromSplashOnReady
