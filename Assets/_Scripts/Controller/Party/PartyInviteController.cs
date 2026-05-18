@@ -143,9 +143,10 @@ namespace CosmicShore.Gameplay
 
                 // Step 1: Shutdown the local NetworkManager.
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct);
-                // UGS / Netcode awaits resume on the ThreadPool. Restore main thread
-                // before the next UnityEngine.Object access.
-                await UniTask.SwitchToMainThread();
+                // UGS / Netcode awaits resume on the ThreadPool. Yield onto PlayerLoop
+                // (main thread) before the next UnityEngine.Object access. UniTask
+                // SwitchToMainThread proved unreliable on this version; Yield always yields.
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
                 // Step 1b: Clear stale SOAP references the NM shutdown left behind.
                 // Player.OnNetworkDespawn removes from gameData.Players but leaves
@@ -160,9 +161,9 @@ namespace CosmicShore.Gameplay
                 }
 
                 await HostConnectionService.Instance.AcceptInviteAsync(invite);
-                // UGS SDK awaits resume on the ThreadPool. Restore main thread
-                // before touching SOAP / Unity objects below.
-                await UniTask.SwitchToMainThread();
+                // UGS SDK awaits resume on the ThreadPool. Yield onto PlayerLoop
+                // (main thread) before touching SOAP / Unity objects below.
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
                 // Store the party session so MultiplayerSetup in the game scene
                 // knows to reuse the existing Relay connection (client side).
@@ -173,13 +174,13 @@ namespace CosmicShore.Gameplay
 
                 // Step 3: Wait for Netcode client connection.
                 await _networkTransition.WaitForClientConnectionAsync(connectionTimeoutSeconds, ct);
-                await UniTask.SwitchToMainThread();
+                await UniTask.Yield(PlayerLoopTiming.Update);
                 Debug.Log("[PartyInviteController] Netcode client connected.");
 
                 // Step 3b: Wait for Netcode's automatic Menu_Main reload.
                 Debug.Log("[PartyInviteController] Awaiting client scene-sync...");
                 await _networkTransition.WaitForSceneSyncAsync("Menu_Main", sceneSyncTimeoutSeconds, ct);
-                await UniTask.SwitchToMainThread();
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
                 // Step 4: Signal completion.  Isolated try/catch so a listener
                 // throwing during scene-reload teardown can't roll back the outer
@@ -262,9 +263,10 @@ namespace CosmicShore.Gameplay
                     gameData.ResetRuntimeData();
                 }
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct);
-                // UGS / Netcode awaits resume on the ThreadPool. Restore main thread
-                // before the next UnityEngine.Object access.
-                await UniTask.SwitchToMainThread();
+                // UGS / Netcode awaits resume on the ThreadPool. Yield onto PlayerLoop
+                // (main thread) before the next UnityEngine.Object access. UniTask
+                // SwitchToMainThread proved unreliable on this version; Yield always yields.
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
                 // Recreate the player's own solo Relay session so they return
                 // to lava-lamp as a fresh host.  HCS handles NM startup internally.
@@ -272,7 +274,7 @@ namespace CosmicShore.Gameplay
                 if (hcs != null)
                 {
                     await hcs.RetryCreateOwnPartySessionAsync(ct);
-                    await UniTask.SwitchToMainThread();
+                    await UniTask.Yield(PlayerLoopTiming.Update);
                 }
 
                 // Reload Menu_Main via the new NM so scene-placed NetworkObjects

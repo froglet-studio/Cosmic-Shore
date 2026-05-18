@@ -694,13 +694,16 @@ namespace CosmicShore.Gameplay
             // already running, that call fails — shut it down first.
             using var cts = new System.Threading.CancellationTokenSource();
             await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, cts.Token);
-            // UGS / Netcode awaits resume on the ThreadPool. Restore main thread
-            // before the next UnityEngine.Object access.
-            await UniTask.SwitchToMainThread();
+            // UGS / Netcode awaits resume on the ThreadPool. Yield onto PlayerLoop
+            // (main thread) before the next UnityEngine.Object access.
+            // (UniTask.SwitchToMainThread proved unreliable on this version —
+            //  it sometimes returned IsCompleted=true on the ThreadPool. Yield
+            //  has IsCompleted=false unconditionally, so it always yields.)
+            await UniTask.Yield(PlayerLoopTiming.Update);
 
             // Session creation with retry logic delegated to PartySessionService.
             await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
-            await UniTask.SwitchToMainThread();
+            await UniTask.Yield(PlayerLoopTiming.Update);
 
             connectionData.IsPartyHost = true;
 
@@ -738,12 +741,14 @@ namespace CosmicShore.Gameplay
 
                 using var shutdownCts = new System.Threading.CancellationTokenSource();
                 await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token);
-                // UGS / Netcode awaits resume on the ThreadPool. Restore main thread
-                // before the next UnityEngine.Object access.
-                await UniTask.SwitchToMainThread();
+                // UGS / Netcode awaits resume on the ThreadPool. Yield onto PlayerLoop
+                // (main thread) before the next UnityEngine.Object access AND before
+                // the SOAP raise below (which invokes listeners synchronously, so
+                // they would otherwise run on the ThreadPool).
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
                 await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
-                await UniTask.SwitchToMainThread();
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
                 connectionData.IsPartyHost = true;
                 _memberService.SeedLocalPlayer(clearFirst: true);

@@ -451,9 +451,11 @@ namespace CosmicShore.Core
                     // completes on the second fire.
                     await WaitForRelayReadyAsync(linkedCts.Token);
                     // UGS SDK awaits resume on the ThreadPool; the next operations touch a
-                    // UnityEngine.Object (CanvasGroup / NetworkManager / SceneManager). Force
-                    // back to main thread before continuing.
-                    await UniTask.SwitchToMainThread();
+                    // UnityEngine.Object (CanvasGroup / NetworkManager / SceneManager).
+                    // Yield onto PlayerLoop (main thread) before continuing.
+                    // (UniTask.SwitchToMainThread proved unreliable on this version —
+                    //  see HostConnectionService.cs for full notes.)
+                    await UniTask.Yield(PlayerLoopTiming.Update);
                     networkReady = true;
                     CSDebug.Log($"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
@@ -466,9 +468,10 @@ namespace CosmicShore.Core
                         if (hcs != null)
                         {
                             await hcs.RetryCreateOwnPartySessionAsync(ct);
-                            // UGS SDK awaits resume on the ThreadPool; restore main thread
-                            // before the loop continues into another awaited Unity call.
-                            await UniTask.SwitchToMainThread();
+                            // UGS SDK awaits resume on the ThreadPool; yield onto PlayerLoop
+                            // (main thread) before the loop continues into another awaited
+                            // Unity call.
+                            await UniTask.Yield(PlayerLoopTiming.Update);
                         }
                     }
                     else
@@ -492,8 +495,9 @@ namespace CosmicShore.Core
                 {
                     await WaitForRelayReadyAsync(ct);
                     // UGS SDK awaits resume on the ThreadPool; the next operations touch a
-                    // UnityEngine.Object. Force back to main thread before continuing.
-                    await UniTask.SwitchToMainThread();
+                    // UnityEngine.Object. Yield onto PlayerLoop (main thread) before
+                    // continuing.
+                    await UniTask.Yield(PlayerLoopTiming.Update);
                     networkReady = true;
                     CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
                 }
