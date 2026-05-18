@@ -1092,7 +1092,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   authPanel: {fileID: 1203594348}
   usernameSetupPanel: {fileID: 832278049}
-  loadingPanel: {fileID: 0}
+  bootStatusEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e84b, type: 2}
   guestLoginButton: {fileID: 1671311816}
   statusText: {fileID: 200000004}
   usernameInputField: {fileID: 698878740}
