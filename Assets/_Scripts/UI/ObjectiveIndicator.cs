@@ -1,5 +1,7 @@
+using System.Text;
 using CosmicShore.Gameplay;
 using TMPro;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -50,7 +52,24 @@ namespace CosmicShore.UI
         IObjectiveProvider _providerCached;
         RectTransform _parentRect;
         Canvas _canvas;
+        Camera _canvasCamera;
+        Camera _cachedCamera;
+        float _cameraCacheRefreshAt;
+        int _lastDistanceInt = int.MinValue;
+        string _lastDistanceSuffix;
+        readonly StringBuilder _distanceTextBuilder = new(16);
         bool? _visible;
+
+        const float CameraCacheTtlSeconds = 0.5f;
+
+        static readonly ProfilerMarker s_LateUpdateMarker =
+            new("ObjectiveIndicator.LateUpdate");
+        static readonly ProfilerMarker s_ResolveCameraMarker =
+            new("ObjectiveIndicator.ResolveCamera");
+        static readonly ProfilerMarker s_PositionAtEdgeMarker =
+            new("ObjectiveIndicator.PositionAtEdge");
+        static readonly ProfilerMarker s_UpdateDistanceMarker =
+            new("ObjectiveIndicator.UpdateDistance");
 
         IObjectiveProvider Provider =>
             _providerCached ??= provider as IObjectiveProvider;
@@ -65,6 +84,9 @@ namespace CosmicShore.UI
         {
             _parentRect = icon != null ? icon.parent as RectTransform : null;
             _canvas = GetComponentInParent<Canvas>();
+            _canvasCamera = (_canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                ? _canvas.worldCamera
+                : null;
 
             if (icon != null)
             {
@@ -97,46 +119,52 @@ namespace CosmicShore.UI
 
         void LateUpdate()
         {
-            if (icon == null || _parentRect == null) return;
-
-            if (debugAlwaysVisible)
+            using (s_LateUpdateMarker.Auto())
             {
-                ForceVisible(true);
-                PlaceAtFixedEdge();
-                return;
+                if (icon == null || _parentRect == null) return;
+
+                if (debugAlwaysVisible)
+                {
+                    ForceVisible(true);
+                    PlaceAtFixedEdge();
+                    return;
+                }
+
+                if (Provider == null || !Provider.TryGetObjective(out var target) || target == null)
+                {
+                    SetVisible(false);
+                    return;
+                }
+
+                var cam = ResolveCamera();
+                if (cam == null)
+                {
+                    SetVisible(false);
+                    return;
+                }
+
+                float screenW = Screen.width;
+                float screenH = Screen.height;
+
+                var targetPos = target.position;
+                var screenPos = cam.WorldToScreenPoint(targetPos);
+                bool inFront = screenPos.z > 0f;
+
+                if (inFront &&
+                    screenPos.x >= 0f && screenPos.x <= screenW &&
+                    screenPos.y >= 0f && screenPos.y <= screenH)
+                {
+                    SetVisible(false);
+                    return;
+                }
+
+                if (!inFront)
+                    screenPos = new Vector3(screenW - screenPos.x, screenH - screenPos.y, screenPos.z);
+
+                PositionAtEdge(screenPos);
+                UpdateDistance(cam.transform.position, targetPos);
+                SetVisible(true);
             }
-
-            if (Provider == null || !Provider.TryGetObjective(out var target) || target == null)
-            {
-                SetVisible(false);
-                return;
-            }
-
-            var cam = ResolveCamera();
-            if (cam == null)
-            {
-                SetVisible(false);
-                return;
-            }
-
-            var targetPos = target.position;
-            var screenPos = cam.WorldToScreenPoint(targetPos);
-            bool inFront = screenPos.z > 0f;
-
-            if (inFront &&
-                screenPos.x >= 0f && screenPos.x <= Screen.width &&
-                screenPos.y >= 0f && screenPos.y <= Screen.height)
-            {
-                SetVisible(false);
-                return;
-            }
-
-            if (!inFront)
-                screenPos = new Vector3(Screen.width - screenPos.x, Screen.height - screenPos.y, screenPos.z);
-
-            PositionAtEdge(screenPos);
-            UpdateDistance(cam.transform.position, targetPos);
-            SetVisible(true);
         }
 
         /// <summary>Fixed-position debug placement: hugs the right edge, mid-height.</summary>
@@ -150,50 +178,79 @@ namespace CosmicShore.UI
 
         void PositionAtEdge(Vector3 screenPos)
         {
-            var canvasCam = (_canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay)
-                ? _canvas.worldCamera
-                : null;
+            using (s_PositionAtEdgeMarker.Auto())
+            {
+                var canvasCam = _canvasCamera;
 
-            Vector2 centerScreen = RectTransformUtility.WorldToScreenPoint(canvasCam, _parentRect.position);
-            Vector2 dirScreen = (Vector2)screenPos - centerScreen;
-            if (dirScreen.sqrMagnitude < 1e-4f) dirScreen = Vector2.up;
+                Vector2 centerScreen = RectTransformUtility.WorldToScreenPoint(canvasCam, _parentRect.position);
+                Vector2 dirScreen = (Vector2)screenPos - centerScreen;
+                if (dirScreen.sqrMagnitude < 1e-4f) dirScreen = Vector2.up;
 
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                _parentRect, centerScreen, canvasCam, out Vector2 localCenter);
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                _parentRect, centerScreen + dirScreen, canvasCam, out Vector2 localTarget);
-            Vector2 dirLocal = localTarget - localCenter;
-            if (dirLocal.sqrMagnitude < 1e-4f) dirLocal = Vector2.up;
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _parentRect, centerScreen, canvasCam, out Vector2 localCenter);
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _parentRect, centerScreen + dirScreen, canvasCam, out Vector2 localTarget);
+                Vector2 dirLocal = localTarget - localCenter;
+                if (dirLocal.sqrMagnitude < 1e-4f) dirLocal = Vector2.up;
 
-            Rect rect = _parentRect.rect;
-            float halfW = Mathf.Max(0f, rect.width * 0.5f - edgePadding);
-            float halfH = Mathf.Max(0f, rect.height * 0.5f - edgePadding);
+                Rect rect = _parentRect.rect;
+                float halfW = Mathf.Max(0f, rect.width * 0.5f - edgePadding);
+                float halfH = Mathf.Max(0f, rect.height * 0.5f - edgePadding);
 
-            Vector2 unit = dirLocal.normalized;
-            float tx = Mathf.Abs(unit.x) > 1e-4f ? halfW / Mathf.Abs(unit.x) : float.PositiveInfinity;
-            float ty = Mathf.Abs(unit.y) > 1e-4f ? halfH / Mathf.Abs(unit.y) : float.PositiveInfinity;
-            float t = Mathf.Min(tx, ty);
+                Vector2 unit = dirLocal.normalized;
+                float tx = Mathf.Abs(unit.x) > 1e-4f ? halfW / Mathf.Abs(unit.x) : float.PositiveInfinity;
+                float ty = Mathf.Abs(unit.y) > 1e-4f ? halfH / Mathf.Abs(unit.y) : float.PositiveInfinity;
+                float t = Mathf.Min(tx, ty);
 
-            icon.anchoredPosition = unit * t;
+                icon.anchoredPosition = unit * t;
 
-            float angleDeg = Mathf.Atan2(unit.y, unit.x) * Mathf.Rad2Deg + spriteRotationOffset;
-            icon.localRotation = Quaternion.Euler(0f, 0f, angleDeg);
+                float angleDeg = Mathf.Atan2(unit.y, unit.x) * Mathf.Rad2Deg + spriteRotationOffset;
+                icon.localRotation = Quaternion.Euler(0f, 0f, angleDeg);
+            }
         }
 
         void UpdateDistance(Vector3 cameraPos, Vector3 targetPos)
         {
-            if (distanceText == null) return;
-            float dist = Vector3.Distance(cameraPos, targetPos);
-            distanceText.text = $"{Mathf.RoundToInt(dist)}{distanceSuffix}";
+            using (s_UpdateDistanceMarker.Auto())
+            {
+                if (distanceText == null) return;
+                float dist = Vector3.Distance(cameraPos, targetPos);
+                int distInt = Mathf.RoundToInt(dist);
+                if (distInt == _lastDistanceInt
+                    && ReferenceEquals(distanceSuffix, _lastDistanceSuffix))
+                    return;
+
+                _lastDistanceInt = distInt;
+                _lastDistanceSuffix = distanceSuffix;
+
+                _distanceTextBuilder.Clear();
+                _distanceTextBuilder.Append(distInt);
+                if (!string.IsNullOrEmpty(distanceSuffix))
+                    _distanceTextBuilder.Append(distanceSuffix);
+                distanceText.SetText(_distanceTextBuilder);
+            }
         }
 
         Camera ResolveCamera()
         {
-            if (CameraManager.Instance != null
-                && CameraManager.Instance.GetActiveController() is CustomCameraController active
-                && active.Camera != null)
-                return active.Camera;
-            return Camera.main;
+            using (s_ResolveCameraMarker.Auto())
+            {
+                float now = Time.unscaledTime;
+                if (_cachedCamera != null && now < _cameraCacheRefreshAt)
+                    return _cachedCamera;
+
+                _cameraCacheRefreshAt = now + CameraCacheTtlSeconds;
+
+                if (CameraManager.Instance != null
+                    && CameraManager.Instance.GetActiveController() is CustomCameraController active
+                    && active.Camera != null)
+                {
+                    _cachedCamera = active.Camera;
+                    return _cachedCamera;
+                }
+                _cachedCamera = Camera.main;
+                return _cachedCamera;
+            }
         }
 
         void SetVisible(bool visible)
