@@ -49,6 +49,7 @@ namespace CosmicShore.Core
         Canvas _fadeCanvas;
         bool _isTransitioning;
         CancellationTokenSource _cts;
+        int _mainThreadId;
 
         /// <summary>
         /// True while a scene transition is in progress.
@@ -65,6 +66,7 @@ namespace CosmicShore.Core
         void Awake()
         {
             _cts = new CancellationTokenSource();
+            _mainThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
 
             if (_splashOverlay != null)
                 AdoptSplashOverlay();
@@ -264,6 +266,18 @@ namespace CosmicShore.Core
         /// </summary>
         public void SetFadeImmediate(float alpha)
         {
+            // Defensive guard: a UGS-SDK await resuming on the ThreadPool can land here,
+            // and any UnityEngine.Object access (incl. `== null`) throws
+            // EnsureRunningOnMainThread. Bail loudly instead of crashing the scene flow.
+            if (System.Threading.Thread.CurrentThread.ManagedThreadId != _mainThreadId)
+            {
+                Debug.LogError(
+                    "[SceneTransitionManager] SetFadeImmediate called off main thread — " +
+                    "caller forgot `await UniTask.SwitchToMainThread()` after a UGS await. " +
+                    "Ignoring to avoid EnsureRunningOnMainThread.");
+                return;
+            }
+
             if (_fadeCanvasGroup == null) return;
             _fadeCanvasGroup.alpha = alpha;
             _fadeCanvasGroup.blocksRaycasts = alpha > 0.01f;

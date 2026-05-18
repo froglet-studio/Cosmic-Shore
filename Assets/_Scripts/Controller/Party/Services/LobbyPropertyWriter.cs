@@ -121,7 +121,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[LobbyPropertyWriter] {operationName} error: {e.Message}");
+                Debug.LogWarning($"[LobbyPropertyWriter] {operationName} error ({e.GetType().Name}): {e}");
             }
             finally
             {
@@ -167,7 +167,7 @@ namespace CosmicShore.Gameplay
                     // Back off exponentially so a burst of rapid retries doesn't
                     // consume the entire rate-limit budget.
                     Debug.LogWarning(
-                        $"[LobbyPropertyWriter] Save failed ({e.Message}) — retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
+                        $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) — retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
                     await UniTask.Delay(baseDelayMs);
                     try { await lobby.RefreshAsync(); } catch { /* best-effort */ }
                 }

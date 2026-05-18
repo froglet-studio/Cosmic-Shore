@@ -166,7 +166,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[PartySessionService] Transient session error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms: {e.Message}");
+                    Debug.LogWarning($"[PartySessionService] Transient session error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
                     await UniTask.Delay(delay);
                 }
             }

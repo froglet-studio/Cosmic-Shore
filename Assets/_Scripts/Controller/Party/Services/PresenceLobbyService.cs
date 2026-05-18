@@ -184,7 +184,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PresenceLobbyService] Leave error (session may already be gone): {e.Message}");
+                Debug.LogWarning($"[PresenceLobbyService] Leave error (session may already be gone) ({e.GetType().Name}): {e}");
             }
             finally
             {

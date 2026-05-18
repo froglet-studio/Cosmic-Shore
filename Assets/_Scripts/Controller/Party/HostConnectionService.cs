@@ -694,9 +694,13 @@ namespace CosmicShore.Gameplay
             // already running, that call fails — shut it down first.
             using var cts = new System.Threading.CancellationTokenSource();
             await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, cts.Token);
+            // UGS / Netcode awaits resume on the ThreadPool. Restore main thread
+            // before the next UnityEngine.Object access.
+            await UniTask.SwitchToMainThread();
 
             // Session creation with retry logic delegated to PartySessionService.
             await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
+            await UniTask.SwitchToMainThread();
 
             connectionData.IsPartyHost = true;
 
@@ -734,8 +738,12 @@ namespace CosmicShore.Gameplay
 
                 using var shutdownCts = new System.Threading.CancellationTokenSource();
                 await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token);
+                // UGS / Netcode awaits resume on the ThreadPool. Restore main thread
+                // before the next UnityEngine.Object access.
+                await UniTask.SwitchToMainThread();
 
                 await _partySessionService.CreateAsync(connectionData.MaxPartySlots);
+                await UniTask.SwitchToMainThread();
 
                 connectionData.IsPartyHost = true;
                 _memberService.SeedLocalPlayer(clearFirst: true);
@@ -865,7 +873,7 @@ namespace CosmicShore.Gameplay
                 }
                 else
                 {
-                    Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+                    Debug.LogWarning($"[HostConnectionService] Refresh error ({e.GetType().Name}): {e}");
                     _consecutiveRefreshErrors++;
                     if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
                     {

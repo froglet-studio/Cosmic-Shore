@@ -450,6 +450,10 @@ namespace CosmicShore.Core
                     // and after Relay creation (NM listening). WaitForRelayReadyAsync only
                     // completes on the second fire.
                     await WaitForRelayReadyAsync(linkedCts.Token);
+                    // UGS SDK awaits resume on the ThreadPool; the next operations touch a
+                    // UnityEngine.Object (CanvasGroup / NetworkManager / SceneManager). Force
+                    // back to main thread before continuing.
+                    await UniTask.SwitchToMainThread();
                     networkReady = true;
                     CSDebug.Log($"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
@@ -460,7 +464,12 @@ namespace CosmicShore.Core
                         CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) — retrying HCS init...");
                         var hcs = HostConnectionService.Instance;
                         if (hcs != null)
+                        {
                             await hcs.RetryCreateOwnPartySessionAsync(ct);
+                            // UGS SDK awaits resume on the ThreadPool; restore main thread
+                            // before the loop continues into another awaited Unity call.
+                            await UniTask.SwitchToMainThread();
+                        }
                     }
                     else
                     {
@@ -482,6 +491,9 @@ namespace CosmicShore.Core
                 try
                 {
                     await WaitForRelayReadyAsync(ct);
+                    // UGS SDK awaits resume on the ThreadPool; the next operations touch a
+                    // UnityEngine.Object. Force back to main thread before continuing.
+                    await UniTask.SwitchToMainThread();
                     networkReady = true;
                     CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
                 }
