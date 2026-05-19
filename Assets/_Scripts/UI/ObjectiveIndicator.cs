@@ -99,10 +99,6 @@ namespace CosmicShore.UI
                 icon.pivot = new Vector2(0.5f, 0.5f);
             }
 
-            Debug.Log($"[ObjectiveIndicator] Awake — icon={icon != null}, canvasGroup={canvasGroup != null}, " +
-                      $"parentRect={_parentRect != null}, canvas={_canvas != null} (mode={_canvas?.renderMode}), " +
-                      $"provider={provider != null}, debugAlwaysVisible={debugAlwaysVisible}");
-
             // Force-visible on Awake when in debug mode so the user sees something
             // immediately even before LateUpdate runs.
             if (debugAlwaysVisible)
@@ -357,8 +353,6 @@ namespace CosmicShore.UI
             // Now safe to activate — Awake runs with fields populated.
             rootGo.SetActive(true);
 
-            string parentName = parent != null ? parent.name : "null";
-            Debug.Log($"[ObjectiveIndicator] CreateRuntime — built under '{parentName}' (provider={providerInstance != null})");
             return indicator;
         }
     }
