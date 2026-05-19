@@ -65,6 +65,10 @@ namespace CosmicShore.UI
 
         static readonly ProfilerMarker s_LateUpdateMarker =
             new("ObjectiveIndicator.LateUpdate");
+        static readonly ProfilerMarker s_TryGetObjectiveMarker =
+            new("ObjectiveIndicator.TryGetObjective");
+        static readonly ProfilerMarker s_WorldToScreenMarker =
+            new("ObjectiveIndicator.WorldToScreen");
         static readonly ProfilerMarker s_ResolveCameraMarker =
             new("ObjectiveIndicator.ResolveCamera");
         static readonly ProfilerMarker s_PositionAtEdgeMarker =
@@ -131,10 +135,14 @@ namespace CosmicShore.UI
                     return;
                 }
 
-                if (Provider == null || !Provider.TryGetObjective(out var target) || target == null)
+                Transform target;
+                using (s_TryGetObjectiveMarker.Auto())
                 {
-                    SetVisible(false);
-                    return;
+                    if (Provider == null || !Provider.TryGetObjective(out target) || target == null)
+                    {
+                        SetVisible(false);
+                        return;
+                    }
                 }
 
                 var cam = ResolveCamera();
@@ -148,7 +156,9 @@ namespace CosmicShore.UI
                 float screenH = Screen.height;
 
                 var targetPos = target.position;
-                var screenPos = cam.WorldToScreenPoint(targetPos);
+                Vector3 screenPos;
+                using (s_WorldToScreenMarker.Auto())
+                    screenPos = cam.WorldToScreenPoint(targetPos);
                 bool inFront = screenPos.z > 0f;
 
                 if (inFront &&

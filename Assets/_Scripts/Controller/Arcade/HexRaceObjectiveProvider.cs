@@ -1,7 +1,6 @@
-using CosmicShore.Gameplay;
 using CosmicShore.UI;
-using CosmicShore.Utility;
 using Reflex.Attributes;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -9,57 +8,105 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Objective provider for HexRace: the local player's next crystal — the
     /// closest live <see cref="Crystal"/> to the player's vessel.
+    ///
+    /// Event-driven: the closest-crystal scan runs on demand (initial call +
+    /// each <see cref="ElementalCrystalImpactor.OnCrystalCollected"/> event +
+    /// whenever the cached target becomes null or exploding). Steady-state
+    /// <see cref="TryGetObjective"/> is an O(1) cache lookup — no per-frame
+    /// FindObjects, no per-frame allocation, no per-frame scan over crystals.
     /// </summary>
     public class HexRaceObjectiveProvider : MonoBehaviour, IObjectiveProvider
     {
         [Header("Dependencies")]
         [Inject] GameDataSO gameData;
 
-        [Header("Refresh")]
-        [Tooltip("How often (seconds) to rescan the scene for live Crystal objects.")]
-        [SerializeField] float rescanInterval = 0.5f;
+        Transform _cachedTarget;
+        Crystal _cachedCrystal;
+        bool _dirty = true;
+        bool _subscribed;
 
-        Crystal[] _crystals;
-        float _nextRescanTime;
+        static readonly ProfilerMarker s_TryGetObjectiveMarker =
+            new("HexRaceObjectiveProvider.TryGetObjective");
+        static readonly ProfilerMarker s_RecomputeTargetMarker =
+            new("HexRaceObjectiveProvider.RecomputeTarget");
+
+        void OnEnable()
+        {
+            ElementalCrystalImpactor.OnCrystalCollected += HandleCrystalCollected;
+            _subscribed = true;
+            _dirty = true;
+        }
+
+        void OnDisable()
+        {
+            if (_subscribed)
+            {
+                ElementalCrystalImpactor.OnCrystalCollected -= HandleCrystalCollected;
+                _subscribed = false;
+            }
+        }
+
+        void HandleCrystalCollected(string _) => _dirty = true;
 
         public bool TryGetObjective(out Transform target)
         {
-            target = null;
-
-            if (gameData == null) return false;
-
-            var localVessel = gameData.LocalPlayer?.Vessel;
-            if (localVessel == null) return false;
-
-            RescanIfDue();
-            if (_crystals == null || _crystals.Length == 0) return false;
-
-            var origin = localVessel.Transform.position;
-            float bestSqr = float.MaxValue;
-            Transform bestTransform = null;
-
-            for (int i = 0; i < _crystals.Length; i++)
+            using (s_TryGetObjectiveMarker.Auto())
             {
-                var crystal = _crystals[i];
-                if (crystal == null || crystal.IsExploding) continue;
+                // The cached crystal can become invalid between collection
+                // events: collected by something other than the local skimmer,
+                // explicitly destroyed, or already exploding mid-animation.
+                // Detect those and force a recompute without waiting for an
+                // event.
+                if (_cachedCrystal == null || _cachedCrystal.IsExploding)
+                    _dirty = true;
 
-                float sqr = (crystal.transform.position - origin).sqrMagnitude;
-                if (sqr < bestSqr)
-                {
-                    bestSqr = sqr;
-                    bestTransform = crystal.transform;
-                }
+                if (_dirty)
+                    RecomputeTarget();
+
+                target = _cachedTarget;
+                return target != null;
             }
-
-            target = bestTransform;
-            return target != null;
         }
 
-        void RescanIfDue()
+        void RecomputeTarget()
         {
-            if (Time.time < _nextRescanTime && _crystals != null) return;
-            _nextRescanTime = Time.time + rescanInterval;
-            _crystals = FindObjectsByType<Crystal>(FindObjectsSortMode.None);
+            using (s_RecomputeTargetMarker.Auto())
+            {
+                _dirty = false;
+                _cachedTarget = null;
+                _cachedCrystal = null;
+
+                if (gameData == null) return;
+
+                var localVessel = gameData.LocalPlayer?.Vessel;
+                if (localVessel == null) return;
+
+                var crystals = FindObjectsByType<Crystal>(FindObjectsSortMode.None);
+                if (crystals == null || crystals.Length == 0) return;
+
+                var origin = localVessel.Transform.position;
+                float bestSqr = float.MaxValue;
+                Crystal best = null;
+
+                for (int i = 0; i < crystals.Length; i++)
+                {
+                    var crystal = crystals[i];
+                    if (crystal == null || crystal.IsExploding) continue;
+
+                    float sqr = (crystal.transform.position - origin).sqrMagnitude;
+                    if (sqr < bestSqr)
+                    {
+                        bestSqr = sqr;
+                        best = crystal;
+                    }
+                }
+
+                if (best != null)
+                {
+                    _cachedCrystal = best;
+                    _cachedTarget = best.transform;
+                }
+            }
         }
     }
 }
