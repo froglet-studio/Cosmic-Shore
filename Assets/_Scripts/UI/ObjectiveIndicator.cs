@@ -3,6 +3,7 @@ using CosmicShore.Gameplay;
 using TMPro;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
@@ -291,7 +292,15 @@ namespace CosmicShore.UI
         /// </summary>
         public static ObjectiveIndicator CreateRuntime(Transform parent, IObjectiveProvider providerInstance)
         {
-            var rootGo = new GameObject("ObjectiveIndicator", typeof(RectTransform));
+            // Sub-canvas isolation: a dedicated Canvas component on the
+            // indicator root means any Graphic rebuild under the indicator
+            // (e.g. ObjectiveArrowGraphic vertices) only rebuilds the
+            // indicator's batched mesh, not the parent HUD canvas with all
+            // its score/timer/lifeform/notification/player-card graphics.
+            // This is the single biggest perf win for this widget on a
+            // shared HUD canvas.
+            var rootGo = new GameObject("ObjectiveIndicator",
+                typeof(RectTransform), typeof(Canvas));
             // Deactivate while we wire things up so Awake doesn't fire with
             // unassigned serialized references (AddComponent runs Awake
             // immediately on active GameObjects).
@@ -305,6 +314,12 @@ namespace CosmicShore.UI
             rootRect.offsetMax = Vector2.zero;
             rootRect.localScale = Vector3.one;
             rootRect.SetAsLastSibling();
+
+            // overrideSorting=false so the sub-canvas inherits the parent's
+            // sort order — the indicator renders on top by virtue of being
+            // last sibling, not by overriding sort.
+            var subCanvas = rootGo.GetComponent<Canvas>();
+            subCanvas.overrideSorting = false;
 
             var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(CanvasGroup));
             var iconRect = iconGo.GetComponent<RectTransform>();
