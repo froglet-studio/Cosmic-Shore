@@ -144,9 +144,10 @@ gameData.OnMiniGameTurnStarted.Raise()
 │
 └─ TurnMonitor.Update() — every frame
     └─ NetworkJoustCollisionTurnMonitor.CheckForEndOfTurn()  [server only]
-        └─ return gameData.RoundStatsList.Any(s => s.JoustCollisions >= CollisionsNeeded)
+        └─ return gameData.TryGetDomainReachingJoustTarget(CollisionsNeeded, out _)
             └─ If true → OnTurnEnded() → gameData.InvokeGameTurnConditionsMet()
 ```
+The end condition is **domain-aggregated**: the turn ends as soon as any active domain's summed JoustCollisions reaches the target. Teammates (humans + AI on the same Domain) hit the joust target together.
 
 ### 7. Winner Determination & Score Sync
 
@@ -162,9 +163,10 @@ TurnMonitor detects collision target reached → gameData.InvokeGameTurnConditio
 │   │           ├─ Guard: if (_finalResultsSent) return
 │   │           ├─ CalculateJoustScores_Server():
 │   │           │   ├─ currentTime = Time.time - gameData.TurnStartTime
-│   │           │   ├─ Winner = player with highest JoustCollisions
-│   │           │   ├─ winner.Score = currentTime (elapsed seconds)
-│   │           │   └─ All losers: stats.Score = 99999f
+│   │           │   ├─ Winning DOMAIN = active domain with the highest SumJoustCollisionsByDomain
+│   │           │   ├─ Representative WinnerName = best individual contributor on winning domain
+│   │           │   ├─ Every player on the winning domain: stats.Score = currentTime
+│   │           │   └─ All other players: stats.Score = 99999f
 │   │           ├─ gameData.SortRoundStats(UseGolfRules: true)  — ascending
 │   │           ├─ gameData.CalculateDomainStats(UseGolfRules: true)
 │   │           ├─ _finalResultsSent = true
@@ -185,14 +187,14 @@ TurnMonitor detects collision target reached → gameData.InvokeGameTurnConditio
 │   └─ [Winner only] Reports time + joust count + vessel telemetry to UGS
 ```
 
-**Scoring Rules:**
+**Scoring Rules (domain-aggregated):**
 
 | Player | Score Formula | Example |
 |---|---|---|
-| Winner (reached collision target first) | Elapsed time in seconds | `32.5` |
-| Loser (did not reach target) | `99999f` | `99999` |
+| Player on the winning **domain** (the domain whose summed JoustCollisions reached the target first) | Elapsed time in seconds | `32.5` |
+| Player on a losing domain | `99999f` | `99999` |
 
-Golf rules (`UseGolfRules = true`): Lower score = higher rank. Winner always ranks first. All losers are tied at 99999.
+Golf rules (`UseGolfRules = true`): Lower score = higher rank. Every teammate on the winning domain shares the same elapsed-time score (the joust scoreboard's tie-break — `JoustCollisions` descending — orders the finisher above the assist). All losers are tied at 99999.
 
 ### 8. End Game Cinematic
 
