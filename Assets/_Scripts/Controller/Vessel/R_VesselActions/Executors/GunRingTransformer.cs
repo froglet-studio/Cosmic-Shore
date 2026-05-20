@@ -1,10 +1,12 @@
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     public class GunRingTransformer : MonoBehaviour
     {
-        [SerializeField] VesselStatus shipInstance;
+        [RequireInterface(typeof(IVesselStatus))]
+        [SerializeField] MonoBehaviour shipInstance;
         [SerializeField] Transform gunFocus;
         [SerializeField] GameObject pivotObject;
 
@@ -18,15 +20,15 @@ namespace CosmicShore.Gameplay
             {
                 if (child == transform) continue;
 
-                Vector3 direction = (child.position - shipInstance.transform.position).normalized;
-                child.position = shipInstance.transform.position + direction * radius;
+                var vessel = shipInstance as IVesselStatus;
+                Vector3 direction = (child.position - vessel.Transform.position).normalized;
+                child.position = vessel.Transform.position + direction * radius;
             }
         }
 
         void Update()
         {
-            // TODO: replace with InputController read once BrittleStar input is wired
-            Vector2 rightStick = UnityEngine.InputSystem.Gamepad.current?.rightStick.ReadValue() ?? Vector2.zero;
+            Vector2 rightStick = (shipInstance as IVesselStatus).InputStatus.RightNormalizedJoystickPosition;
 
             Vector3 targetFocus = new Vector3(0, 0, 300f * rightStick.sqrMagnitude + 70f);
             gunFocus.localPosition = Vector3.Lerp(gunFocus.localPosition, targetFocus, Time.deltaTime * speed);
