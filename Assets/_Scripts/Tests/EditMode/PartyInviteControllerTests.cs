@@ -86,7 +86,8 @@ namespace CosmicShore.Tests
             _connectionData.LocalDisplayName = "TestPilot";
             _connectionData.LocalAvatarId = 5;
             _connectionData.IsConnected = true;
-            _connectionData.IsHost = true;
+            _connectionData.IsPresenceLobbyHost = true;
+            _connectionData.IsPartyHost = true;
 
             _connectionData.ResetRuntimeData();
 
@@ -94,7 +95,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(string.Empty, _connectionData.LocalDisplayName);
             Assert.AreEqual(0, _connectionData.LocalAvatarId);
             Assert.IsFalse(_connectionData.IsConnected);
-            Assert.IsFalse(_connectionData.IsHost);
+            Assert.IsFalse(_connectionData.IsPresenceLobbyHost);
+            Assert.IsFalse(_connectionData.IsPartyHost);
         }
 
         #endregion
@@ -120,14 +122,14 @@ namespace CosmicShore.Tests
         #region State Transitions
 
         [Test]
-        public void ConnectionData_HostFlag_SetCorrectlyForClient()
+        public void ConnectionData_PartyHostFlag_SetCorrectlyForClient()
         {
-            // When accepting an invite, IsHost should be set to false
-            _connectionData.IsHost = true;
-            _connectionData.IsHost = false;
+            // When accepting an invite, IsPartyHost should be set to false
+            _connectionData.IsPartyHost = true;
+            _connectionData.IsPartyHost = false;
 
-            Assert.IsFalse(_connectionData.IsHost,
-                "IsHost should be false after transitioning to client role.");
+            Assert.IsFalse(_connectionData.IsPartyHost,
+                "IsPartyHost should be false after transitioning to client role.");
         }
 
         [Test]

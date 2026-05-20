@@ -73,10 +73,9 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Number of domains configured by the host (1-3).
-        /// 1 = all players on same domain, 2 = Jade + Ruby, 3 = Jade + Ruby + Gold.
-        /// Used by BuildDomainCounts() to limit available domains and by AI spawning
-        /// to assign AI to the correct domains.
-        /// Default is 3 for backward compatibility.
+        /// 1 = Jade only, 2 = Jade + Ruby, 3 = Jade + Ruby + Gold.
+        /// Used by AI spawning to assign AI to the correct domains and by
+        /// <see cref="IsActiveDomain"/> to validate domain picks server-side.
         /// </summary>
         [FormerlySerializedAs("RequestedTeamCount")]
         public int RequestedDomainCount = 3;
@@ -188,11 +187,6 @@ namespace CosmicShore.Utility
 
         public void DestroyPlayerAndVessel()
         {
-            // Ensure the domain pool is fresh for the new session so every
-            // player gets a unique domain.  Without this, leftover state from
-            // a previous session could cause duplicate or swapped domains.
-            DomainAssigner.Initialize();
-
             if (Players == null || Players.Count == 0)
                 return;
 
@@ -330,7 +324,6 @@ namespace CosmicShore.Utility
 
             ResetRuntimeData();
             DestroyPlayerAndVessel();
-            DomainAssigner.Initialize();
         }
 
         public void AddPlayer(IPlayer p)
@@ -660,39 +653,48 @@ namespace CosmicShore.Utility
         // Domain Balancing
 
         /// <summary>
-        /// All available playable domains in order. Index 0 = 1st domain, etc.
+        /// All playable domains in priority order. The active set for a session
+        /// is the contiguous slice <c>ActiveDomains[0..DC-1]</c> where DC is
+        /// <see cref="RequestedDomainCount"/>: DC=1 → Jade only, DC=2 → Jade+Ruby,
+        /// DC=3 → Jade+Ruby+Gold. Tie-break order for AI placement is the same.
+        /// Blue is intentionally absent — it's the "no team / neutral" sentinel
+        /// and never a playable assignment.
         /// </summary>
         public static readonly Domains[] ActiveDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
         /// <summary>
-        /// Counts how many players are on each domain, limited to RequestedDomainCount.
-        /// Used by AI spawning to assign AI to the domain with the fewest players.
-        /// Players on domains outside the active domain set are counted on the first domain.
+        /// True iff <paramref name="d"/> is one of the first <paramref name="dc"/>
+        /// entries of <see cref="ActiveDomains"/>. Single source of truth used by
+        /// the modal (tile dimming), Player RPC (domain pick validation), and
+        /// AI placement (active-set membership).
         /// </summary>
-        public Dictionary<Domains, int> BuildDomainCounts()
+        public static bool IsActiveDomain(Domains d, int dc)
         {
-            int domainCount = Mathf.Clamp(RequestedDomainCount, 1, ActiveDomains.Length);
-            var counts = new Dictionary<Domains, int>();
+            int clampedDc = Mathf.Clamp(dc, 1, ActiveDomains.Length);
+            for (int i = 0; i < clampedDc; i++)
+                if (ActiveDomains[i] == d) return true;
+            return false;
+        }
 
-            for (int i = 0; i < domainCount; i++)
-                counts[ActiveDomains[i]] = 0;
-
-            foreach (var p in Players)
+        /// <summary>
+        /// Counts non-AI players per active domain. Returns a fresh dictionary
+        /// keyed by every entry in <paramref name="activeDomains"/>, with zero
+        /// entries for domains no human has picked. Humans whose
+        /// <see cref="Player.NetDomain"/> is outside the active set are not
+        /// counted (caller handles them via NormalizeUnassignedHumans).
+        /// </summary>
+        public static Dictionary<Domains, int> BuildHumanCounts(
+            IEnumerable<Player> humans,
+            IList<Domains> activeDomains)
+        {
+            var counts = new Dictionary<Domains, int>(activeDomains.Count);
+            foreach (var d in activeDomains) counts[d] = 0;
+            foreach (var h in humans)
             {
-                if (p is not Player player) continue;
-
-                var domain = player.NetDomain.Value;
-                if (counts.ContainsKey(domain))
-                {
-                    counts[domain]++;
-                }
-                else
-                {
-                    // Player has a domain outside the active set — count on first domain
-                    counts[ActiveDomains[0]]++;
-                }
+                if (h == null || h.NetIsAI.Value) continue;
+                var d = h.NetDomain.Value;
+                if (counts.ContainsKey(d)) counts[d]++;
             }
-
             return counts;
         }
 
