@@ -51,6 +51,7 @@ namespace CosmicShore.Core
         DriftEnd = 17,
         EnergyGain = 18,
         SpeedBurst = 19,
+        Skim = 20,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -102,6 +103,7 @@ namespace CosmicShore.Core
         [SerializeField] AudioClip DriftEndAudioClip;
         [SerializeField] AudioClip EnergyGainAudioClip;
         [SerializeField] AudioClip SpeedBurstAudioClip;
+        [SerializeField] AudioClip SkimAudioClip;
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
@@ -363,6 +365,7 @@ namespace CosmicShore.Core
                 {GameplaySFXCategory.DriftEnd, DriftEndAudioClip},
                 {GameplaySFXCategory.EnergyGain, EnergyGainAudioClip},
                 {GameplaySFXCategory.SpeedBurst, SpeedBurstAudioClip},
+                {GameplaySFXCategory.Skim, SkimAudioClip},
             };
         }
     }
