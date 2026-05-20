@@ -294,6 +294,9 @@ namespace CosmicShore.Gameplay
                 Ease(2 * leftNormalizedJoystickPosition.y)
             );
 
+            inputStatus.RightNormalizedJoystickPosition = rightNormalizedJoystickPosition;
+            inputStatus.LeftNormalizedJoystickPosition = leftNormalizedJoystickPosition;
+
             inputStatus.XSum = Ease(rightNormalizedJoystickPosition.x + leftNormalizedJoystickPosition.x);
             inputStatus.YSum = -Ease(rightNormalizedJoystickPosition.y + leftNormalizedJoystickPosition.y);
             inputStatus.XDiff = (rightNormalizedJoystickPosition.x - leftNormalizedJoystickPosition.x + 2) / 4;
