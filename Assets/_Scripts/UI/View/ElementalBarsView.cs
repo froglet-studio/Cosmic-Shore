@@ -33,9 +33,11 @@ namespace CosmicShore.UI
         [SerializeField] private ElementBarBinding[] bars = new ElementBarBinding[0];
 
         [Header("Colors")]
-        [SerializeField] private Color dangerColor   = new(1f,    0.2f, 0.2f, 1f);
-        [SerializeField] private Color baselineColor = Color.white;
-        [SerializeField] private Color buffedColor   = new(0.2f, 1f,   0.3f, 1f);
+        [SerializeField] private Color dangerColor      = new(1f,    0.2f, 0.2f, 1f);
+        [SerializeField] private Color baselineColor    = Color.white;
+        [SerializeField] private Color normalColor      = Color.white;   // overridden per-bar by domain color
+        [SerializeField] private Color buffedGreenColor = new(0.2f, 1f,  0.3f, 1f);
+        [SerializeField] private Color buffedBlueColor  = new(0.3f, 0.7f, 1f, 1f);
         [Tooltip("Color flash on debuff before restoring to zone color")]
         [SerializeField] private Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
 
@@ -80,7 +82,7 @@ namespace CosmicShore.UI
 
         public bool IsBuilt => _built;
 
-        private const int BaselineLevel = 5;
+        private const int BaselineLevel = 0;
         private const int MaxPetals     = 5;
 
         void Start()
@@ -170,7 +172,7 @@ namespace CosmicShore.UI
             // Floor at BaselineLevel in normal gameplay so an uninitialized GetLevel(0) never
             // triggers the danger zone. Danger petals are only reachable via BeginOvertake().
             int clamped = _overtakeActive ? level : Mathf.Max(BaselineLevel, level);
-            clamped = Mathf.Clamp(clamped, 0, BaselineLevel + MaxPetals * 2);
+            clamped = Mathf.Clamp(clamped, -MaxPetals, BaselineLevel + MaxPetals * 2);
 
             _barDomainColors[idx] = domainColor;
             int prev = _currentLevels[idx];
@@ -357,28 +359,35 @@ namespace CosmicShore.UI
 
         void GetZoneInfo(int idx, int level, out int petalCount, out Color color)
         {
-            if (level < BaselineLevel)
+            if (level < 0)
             {
-                // Danger: level 0 → 5 petals, level 4 → 1 petal
-                petalCount = BaselineLevel - level;
+                // Danger: -1 → 1 petal, -5 → 5 petals (red)
+                petalCount = Mathf.Clamp(-level, 1, MaxPetals);
                 color = dangerColor;
             }
-            else if (level == BaselineLevel)
+            else if (level == 0)
             {
+                // Baseline: no petals
                 petalCount = 0;
                 color = baselineColor;
             }
-            else if (level <= BaselineLevel + MaxPetals)
+            else if (level <= MaxPetals)
             {
-                // Normal: level 6 → 1 petal, level 10 → 5 petals
-                petalCount = level - BaselineLevel;
+                // Normal: 1 → 1 petal, 5 → 5 petals (domain color)
+                petalCount = level;
                 color = _barDomainColors[idx];
+            }
+            else if (level <= MaxPetals * 2)
+            {
+                // Green buffed: 6 → 1 petal, 10 → 5 petals
+                petalCount = level - MaxPetals;
+                color = buffedGreenColor;
             }
             else
             {
-                // Buffed: level 11 → 1 petal, level 15 → 5 petals
-                petalCount = level - (BaselineLevel + MaxPetals);
-                color = buffedColor;
+                // Blue buffed: 11 → 1 petal, 15 → 5 petals
+                petalCount = Mathf.Clamp(level - MaxPetals * 2, 1, MaxPetals);
+                color = buffedBlueColor;
             }
         }
 
