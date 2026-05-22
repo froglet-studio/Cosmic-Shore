@@ -48,6 +48,7 @@ namespace CosmicShore.Gameplay
 
         [Inject] private GameDataSO gameData;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private SceneLoader _sceneLoader;
 
         // ─────────────────────────────────────────────────────────────────────
         // State
@@ -130,6 +131,16 @@ namespace CosmicShore.Gameplay
             // SceneLoader.OnSceneLoaded re-arms this on Menu_Main load; it is
             // idempotent at alpha=1, so calling it here is always safe.
             _sceneTransitionManager?.SetFadeImmediate(1f);
+
+            // Bug B fix: arm the splash fade-out trigger before the join flow starts.
+            // SceneLoader only auto-subscribes FadeFromSplashOnReady when Menu_Main
+            // loads (via OnSceneLoaded), but accepting an invite does NOT trigger a
+            // scene reload on the joining client — Netcode just synchronises
+            // NetworkObjects against the host's already-loaded Menu_Main. Without
+            // re-arming here, the joining client's OnClientReady raise (after their
+            // Player+Vessel pair is initialised) has no subscriber and the splash
+            // stays opaque forever.
+            _sceneLoader?.ArmSplashFadeOnNextClientReady();
 
             // Unpause immediately — ScreenSwitcher pauses on non-HOME screens,
             // and the accept flow needs Update() ticking so the UGS SDK's
