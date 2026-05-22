@@ -7,6 +7,7 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
+using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -164,7 +165,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private readonly PartyStateMachine _stateMachine = new();
 
-        private bool   _initialized;
         private bool   _joining;
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
@@ -212,6 +212,42 @@ namespace CosmicShore.Gameplay
         public PartyStateMachine StateMachine => _stateMachine;
 
         // ─────────────────────────────────────────────────────────────────────
+        // Guard predicates — derive from authoritative state (state machine,
+        // lobby service ref, NetworkManager) rather than a separate boolean.
+        // See Docs/PARTY_SYSTEM_REFACTOR.md (Helper properties).
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// True after <see cref="EnsureInitializedAsync"/> has completed at least
+        /// once and before <see cref="HandleSignedOutEvent"/> transitions us back
+        /// to Disconnected. Equivalent to the old <c>_initialized</c> boolean.
+        /// </summary>
+        private bool IsInitialized => _stateMachine.CurrentState != PartyState.Disconnected;
+
+        /// <summary>
+        /// True when we're initialized AND the presence lobby reference is live.
+        /// Read by <see cref="Update"/>, <see cref="ForceRefreshNow"/>, and the
+        /// <see cref="EnsureInitializedAsync"/> re-entry guard.
+        /// </summary>
+        private bool IsInPresenceLobby => IsInitialized && _lobbyService.ActiveLobby != null;
+
+        /// <summary>
+        /// True when NetworkManager is actively hosting a Relay-backed party
+        /// session. The canonical "am I a live party host?" predicate — checks
+        /// both Netcode reality (<c>IsListening</c>, <c>IsServer</c>) and the
+        /// presence of an <see cref="ISession"/> reference. Used as the
+        /// idempotent guard for party-session creation (Commit 4 onwards).
+        /// </summary>
+        private bool IsHostingParty
+        {
+            get
+            {
+                var nm = NetworkManager.Singleton;
+                return nm != null && nm.IsListening && nm.IsServer && PartySession != null;
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // IPartyStateQuery (read-only view used by FriendsInitializer and UI)
         // ─────────────────────────────────────────────────────────────────────
 
@@ -254,7 +290,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_initialized || _lobbyService.ActiveLobby == null) return;
+            if (!IsInPresenceLobby) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
             if (!IsOnMenuScene()) return;
@@ -313,8 +349,8 @@ namespace CosmicShore.Gameplay
 
         public async void HandleSignedOutEvent()
         {
-            _initialized = false;
             // Sign-out is the "emergency exit" — always allowed regardless of current state.
+            // Transition flips IsInitialized to false (replaces the old _initialized boolean).
             _stateMachine.TryTransition(PartyState.Disconnected);
             connectionData.ResetRuntimeData();
             await _lobbyService.LeaveAsync();
@@ -334,7 +370,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask EnsureInitializedAsync()
         {
-            if (_initialized || _joining) return;
+            if (IsInPresenceLobby || _joining) return;
             _joining = true;
             try
             {
@@ -355,8 +391,8 @@ namespace CosmicShore.Gameplay
                 SyncLocalIdentity();
                 RepublishLocalIdentityAsync().Forget();
 
-                _initialized = true;
                 // Presence lobby joined — transient state, immediately creates solo Relay session.
+                // Transition flips IsInitialized to true (replaces the old _initialized boolean).
                 _stateMachine.TryTransition(PartyState.InPresenceLobby);
                 DebugExtensions.LogColored(
                     $"[HostConnectionService] Presence lobby joined — lobby: {_lobbyService.ActiveLobby?.Id ?? "NULL"}, " +
@@ -619,7 +655,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void ForceRefreshNow()
         {
-            if (!_initialized || _lobbyService.ActiveLobby == null) return;
+            if (!IsInPresenceLobby) return;
 
             _scheduler.Boost();
 

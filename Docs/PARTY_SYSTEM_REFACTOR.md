@@ -308,11 +308,81 @@ predicate and `HandleDefiniteSessionGoneAsync` recovery action are designed.
 unchanged and existing reflection tests for `IsBenignLobbyPatcherError` already
 cover the surface that matters.
 
-### `[ ]` Commit 3 — Guard helper properties + delete `_initialized`
+### `[x]` Commit 3 — Guard helper properties + delete `_initialized`
 
-- Add `IsInitialized`, `IsInPresenceLobby`, `IsHostingParty` private properties.
-- Replace every `_initialized` read / state-machine double-check with helpers.
-- Delete `_initialized` field + its two writes.
+**Outcome**: `_initialized` field deleted (declaration + 2 writes + 4 reads).
+Three helper properties added (`IsInitialized`, `IsInPresenceLobby`, `IsHostingParty`).
+`using Unity.Netcode;` added for `NetworkManager.Singleton` access in `IsHostingParty`.
+`HostConnectionService.cs`: 1425 → 1467 lines (+42, from helper-property block + XML
+doc; net code-line reduction from field removal). Brace balance verified.
+
+The `CreateOwnPartySessionAsync` double-check (state == InParty && ActiveSession != null)
+deferred to Commit 4 per the pre-commit decision — it would change behavior in edge
+cases (state-says-InParty but NM externally shut down) and belongs with the
+`EnsurePartySessionAsync` introduction.
+
+`IsHostingParty` is unused in this commit but defined now — Commits 4 and 10 will be
+its first callers. Defining it here keeps Commit 3 a single conceptual unit (helper
+predicates) and avoids fragmenting the property block across multiple commits.
+
+**Pre-commit findings** (preserved for audit trail):
+
+
+`_initialized` field surface in `HostConnectionService.cs`:
+
+| Line | Site | Current code | Maps to |
+|---|---|---|---|
+| 167 | declaration | `private bool _initialized;` | DELETE |
+| 257 | `Update()` guard | `if (!_initialized \|\| _lobbyService.ActiveLobby == null) return;` | `if (!IsInPresenceLobby) return;` |
+| 316 | `HandleSignedOutEvent` write | `_initialized = false;` | DELETE (next line transitions to Disconnected — same effect on `IsInitialized`) |
+| 337 | `EnsureInitializedAsync` guard | `if (_initialized \|\| _joining) return;` | `if (IsInPresenceLobby \|\| _joining) return;` |
+| 358 | `EnsureInitializedAsync` write | `_initialized = true;` | DELETE (next line transitions to InPresenceLobby — same effect on `IsInitialized`) |
+| 622 | `ForceRefreshNow` guard | `if (!_initialized \|\| _lobbyService.ActiveLobby == null) return;` | `if (!IsInPresenceLobby) return;` |
+
+State-machine double-check at `CreateOwnPartySessionAsync` lines 652-654:
+```csharp
+if (_stateMachine.CurrentState == PartyState.InParty &&
+    _partySessionService.ActiveSession != null)
+    return;
+```
+Not replaced in this commit. The locked-design `IsHostingParty` adds NM `IsListening`
+and `IsServer` checks, which would change behavior in edge cases (state-machine says
+InParty but NM externally shut down → old returns no-op, new would proceed to recreate).
+**Deferred to Commit 4** where `EnsurePartySessionAsync` introduces `if (IsHostingParty) return;`
+as the canonical idempotent guard.
+
+Other `_stateMachine.CurrentState ==` reads (lines 443, 656, 1087) are transition
+guards, not double-checks — they decide *which* transition to fire, not whether to
+short-circuit. Left alone.
+
+External readers of HCS `_initialized`: **none**. Other classes (`FriendsInitializer`,
+`NetworkVolumeUIController`, `FriendsServiceFacade`) have unrelated fields with the
+same name. Safe to delete.
+
+`Unity.Netcode` namespace: not currently imported in `HostConnectionService.cs`.
+Need to add `using Unity.Netcode;` for `NetworkManager.Singleton` access in
+`IsHostingParty`.
+
+**Execution plan**:
+
+1. Add `using Unity.Netcode;` to the imports.
+2. Add three helper properties near the existing read-only state region (around line 206 where `PartySession` and `StateMachine` live):
+   ```csharp
+   private bool IsInitialized => _stateMachine.CurrentState != PartyState.Disconnected;
+   private bool IsInPresenceLobby => IsInitialized && _lobbyService.ActiveLobby != null;
+   private bool IsHostingParty
+   {
+       get
+       {
+           var nm = NetworkManager.Singleton;
+           return nm != null && nm.IsListening && nm.IsServer && PartySession != null;
+       }
+   }
+   ```
+3. Replace the four reads (lines 257, 337, 622) per the table.
+4. Delete the two writes (lines 316, 358).
+5. Delete the field declaration (line 167).
+6. Compile, run existing edit-mode tests (no test changes expected).
 
 ### `[ ]` Commit 4 — `EnsurePartySessionAsync` introduction
 
