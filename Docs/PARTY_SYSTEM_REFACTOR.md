@@ -272,11 +272,41 @@ Stale comments in other files referencing now-deleted methods (clean up here, si
 5. Compile, run edit-mode tests (`CosmicShore.Multiplayer.Tests`, `CosmicShore.Tests.EditMode`) — both should pass.
 6. Commit with `chore(party): remove dead methods + lobby-patcher log filter plumbing`.
 
-### `[ ]` Commit 2 — Simplify `RefreshPartyMembersAsync` catch (Bug A primary fix)
+### `[x]` Commit 2 — Annotate `RefreshPartyMembersAsync` catch (re-scoped)
 
-- Replace broad catch with: benign noise → swallow; `RateLimitedException` → set
-  backoff; everything else → log warning + return. No `ClearSession()` anywhere.
-- This single change is what closes Bug A (host vessel despawn on invite send).
+**Outcome**: catch block already matches the locked-design shape — Bug A's primary
+fix shipped in `edfa1be` (verified during Commit 1 re-read). This commit is a
+small in-code documentation pass that connects the catch to the doc's
+error-handling matrix and seeds a breadcrumb for Commits 11/12.
+
+**Pre-commit findings** (live source on `claude/blissful-tesla-9nefa`, post-Commit 1):
+
+`RefreshPartyMembersAsync` catch (`HostConnectionService.cs:1044-1071`):
+- Three branches already present: benign → swallow; rate-limit → backoff; everything
+  else → log + return without `ClearSession()`.
+- No `ClearSession()` calls anywhere in this catch. ✓ locked decision: `ActiveSession`
+  is never nulled outside intentional leave.
+
+Outer `RefreshAsync` catch (`HostConnectionService.cs:775-799`):
+- Same three-branch shape for the presence-lobby refresh path. Threshold
+  reconnect (`_consecutiveRefreshErrors >= 3 → _lobbyService.ForceReset()`)
+  touches the presence lobby only — does NOT clear `ActiveSession`. Safe.
+
+**Changes**:
+1. In-code: replaced the catch block comments in `RefreshPartyMembersAsync` with
+   `[benign]` / `[rate-limit]` / `[transient]` markers tied to the error-handling
+   matrix in this doc, and a `TODO (Commits 11/12)` breadcrumb noting where the
+   transient → definite split will land.
+2. Doc: this section rewritten to reflect actual scope.
+
+The original Commit 2 scope ("replace broad catch with three-branch shape") was
+already shipped; the locked design's promotion from transient → definite on
+threshold is deferred to Commits 11/12 where the new `IsDefiniteSessionGoneException`
+predicate and `HandleDefiniteSessionGoneAsync` recovery action are designed.
+
+**No tests added** — this is in-code documentation only; the catch behavior is
+unchanged and existing reflection tests for `IsBenignLobbyPatcherError` already
+cover the surface that matters.
 
 ### `[ ]` Commit 3 — Guard helper properties + delete `_initialized`
 

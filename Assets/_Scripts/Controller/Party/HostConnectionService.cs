@@ -1044,12 +1044,14 @@ namespace CosmicShore.Gameplay
             try { await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
-                // Benign UGS SDK noise (LobbyPatcher stale-index ArgumentOutOfRangeException).
-                // Skip silently — the SDK self-corrects on the next tick.
+                // Error-handling matrix — see Docs/PARTY_SYSTEM_REFACTOR.md.
+                //
+                // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException —
+                // known harmless SDK noise, self-corrects on the next tick.
                 if (IsBenignLobbyPatcherError(e))
                     return;
 
-                // Rate limit — back off and retry later.
+                // [rate-limit] UGS throttled us — back off, keep ActiveSession.
                 if (IsRateLimitException(e))
                 {
                     Debug.LogWarning($"[HostConnectionService] Party session refresh rate-limited — backing off");
@@ -1057,14 +1059,18 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
-                // Everything else: log and return WITHOUT clearing the session.
+                // [transient] Everything else: log and retry next tick WITHOUT
+                // clearing the session. Clearing here cascades into host-vessel
+                // despawn via SendInviteAsync → CreateOwnPartySessionAsync →
+                // NetworkTransitionService.ShutdownAsync → NetworkManager.Shutdown.
+                // Session lifetime is owned by explicit user paths (LeavePartyAsync,
+                // kick, NM shutdown, RetryCreateOwnPartySessionAsync) — not by
+                // background refresh ticks.
                 //
-                // Refresh failures are transient — clearing ActiveSession here cascades
-                // into host-vessel despawn via SendInviteAsync → CreateOwnPartySessionAsync
-                // → NetworkTransitionService.ShutdownAsync → NetworkManager.Shutdown.
-                // Session lifetime is owned by explicit user paths (LeavePartyAsync, kick,
-                // NetworkManager shutdown, user-driven RetryCreateOwnPartySessionAsync) —
-                // not by background refresh ticks. See Docs/PARTY_SYSTEM_REFACTOR.md.
+                // TODO (Commits 11/12): split this branch into [transient] vs
+                // [definite session-gone] (HTTP 404 / SessionNotFound) and auto-
+                // recover via LeavePartyKeepHostAsync so the UI never shows stale
+                // "in party" when the server has dropped the session.
                 Debug.LogWarning(
                     $"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message} — keeping session, will retry next tick");
                 return;
