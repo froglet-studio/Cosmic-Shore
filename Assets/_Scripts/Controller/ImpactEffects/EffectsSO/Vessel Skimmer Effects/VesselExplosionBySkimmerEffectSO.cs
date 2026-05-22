@@ -8,6 +8,14 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Joust scoring effect. When a faster vessel's skimmer sweeps past a slower
+    /// vessel — overtaking it — the faster vessel earns a joust point
+    /// (<see cref="OnJoustCollision"/>) and an AOE explosion spawns at the impact.
+    /// Points are scored only by overtaking an OPPONENT: overtaking a same-domain
+    /// teammate produces no point, no explosion, and no game-feed post (the
+    /// teammate is buffed instead by VesselOvertakeBySkimmerEffectSO).
+    /// </summary>
     [CreateAssetMenu(
         fileName = "VesselExplosionBySkimmer",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselExplosionBySkimmerEffectSO")]
@@ -44,6 +52,12 @@ namespace CosmicShore.Gameplay
 
             // Only trigger if the skimmer's vessel is faster than the impactor
             if (impacteeVessel.VesselStatus.Speed <= impactorVessel.VesselStatus.Speed)
+                return;
+
+            // Joust points are scored only by overtaking an opponent. Overtaking a
+            // same-domain teammate buffs them (VesselOvertakeBySkimmerEffectSO) but
+            // never scores — skip the explosion, joust point, and feed post.
+            if (impacteeVessel.VesselStatus.Domain == impactorVessel.VesselStatus.Domain)
                 return;
 
             var impacteeVesselImpactor = impacteeVessel.Transform.GetComponent<VesselImpactor>();

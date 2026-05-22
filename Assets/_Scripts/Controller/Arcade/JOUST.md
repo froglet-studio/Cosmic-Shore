@@ -2,7 +2,7 @@
 
 ## Overview
 
-Joust is a collision-based competitive mode for 2-12 players. Players fly vessels through each other's skimmers to score joust points. The first player to reach the collision target wins; losers are ranked by jousts remaining. The mode supports multiplayer with friends, mixed human+AI lobbies, or solo play with AI backfill (minimum 2 total players required).
+Joust is a collision-based competitive mode for 2-12 players. Players score joust points by overtaking **opponents** — sweeping their faster vessel's skimmer past a slower enemy. Overtaking a same-domain teammate scores nothing (it buffs the teammate instead). The first domain to reach the collision target wins; losers are ranked by jousts remaining. The mode supports multiplayer with friends, mixed human+AI lobbies, or solo play with AI backfill (minimum 2 total players required).
 
 **Key architectural facts:**
 
@@ -130,6 +130,8 @@ gameData.OnMiniGameTurnStarted.Raise()
 ├─ Vessel-skimmer collision occurs:
 │   └─ VesselExplosionBySkimmerEffectSO.Execute()
 │       ├─ Speed check: skimmer vessel must be faster than impacting vessel
+│       ├─ Domain check: skimmer vessel and impacting vessel must be on
+│       │   different domains — overtaking a teammate scores nothing
 │       ├─ Anti-spam cooldown check (0.15s per impactor)
 │       ├─ Create AOE explosion visual
 │       ├─ OnJoustCollision.Raise(impacteeVessel.PlayerName)
@@ -246,12 +248,24 @@ The jousting collision system is triggered by `VesselExplosionBySkimmerEffectSO`
 
 1. **Trigger**: A `VesselImpactor` (vessel A) physically collides with a `SkimmerImpactor` (skimmer belonging to vessel B)
 2. **Speed check**: Vessel B (the skimmer's owner) must be **faster** than vessel A. If not, the collision is ignored
-3. **Anti-spam**: A per-impactor cooldown dictionary (`_explosionCooldown = 0.15f`) prevents rapid-fire collisions from the same vessel pair
-4. **Effect**: An AOE explosion is created at the collision point
-5. **Joust point**: `OnJoustCollision.Raise(vesselB.PlayerName)` — the **hit vessel** (whose skimmer was impacted) receives the joust point, not the vessel that did the impacting
-6. **Game feed**: `GameFeedAPI.PostJoust()` posts a two-tone notification showing both players' names and domain colors
+3. **Domain check**: Vessel B and vessel A must be on **different domains**. Overtaking a same-domain teammate scores no joust point and spawns no explosion — the teammate is buffed instead (see *Buff / Debuff on Overtake* below). If they share a domain, the collision is ignored
+4. **Anti-spam**: A per-impactor cooldown dictionary (`_explosionCooldown = 0.15f`) prevents rapid-fire collisions from the same vessel pair
+5. **Effect**: An AOE explosion is created at the collision point
+6. **Joust point**: `OnJoustCollision.Raise(vesselB.PlayerName)` — the **hit vessel** (whose skimmer was impacted) receives the joust point, not the vessel that did the impacting
+7. **Game feed**: `GameFeedAPI.PostJoust()` posts a two-tone notification showing both players' names and domain colors
 
 **Key insight**: The collision credit goes to the **impactee's vessel** (the one whose skimmer was hit by a faster opponent). This means the faster player — whose skimmer sweeps through the slower player's path — earns the point for the slower player. The design rewards getting jousted while moving fast.
+
+### Buff / Debuff on Overtake
+
+The Squirrel skimmer runs **two** effect SOs on every vessel-skimmer collision (both wired in `SquirrelSkimmerImpactorDataContainer.asset`):
+
+| Effect SO | Role | Domain behavior |
+|---|---|---|
+| `VesselExplosionBySkimmerEffectSO` | Joust scoring + explosion VFX | Opponent overtake only — same-domain overtakes are skipped entirely |
+| `VesselOvertakeBySkimmerEffectSO` | Elemental buff/debuff on the overtaken vessel | Opponent → temporary debuff; same-domain teammate → temporary buff |
+
+The two effects compose: overtaking an **opponent** scores a joust point *and* debuffs them, while overtaking a **teammate** scores nothing but buffs them. Because scoring is opponent-only, a domain's joust count can never be inflated by teammates bumping into each other.
 
 ### Network Collision Sync
 
@@ -350,3 +364,5 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 9. **No comeback system**: Unlike HexRace (which uses `ElementalComebackSystem`), Joust has no handicap or catch-up mechanics. All players compete on equal footing throughout.
 
 10. **Scoreboard requires inspector wiring**: Both `MultiplayerJoustScoreboard` and `MultiplayerJoustEndGameController` have `[SerializeField] JoustCollisionTurnMonitor joustTurnMonitor` fields that must be wired in the scene inspector to the `NetworkJoustCollisionTurnMonitor` component on the Game object.
+
+11. **Opponent-only scoring**: `VesselExplosionBySkimmerEffectSO` checks `impacteeVessel.Domain != impactorVessel.Domain` before scoring. Without this check, two teammates bumping skimmers each scored joust points, inflating the domain sum to the (low) `collisionsNeeded` target almost instantly — the game ended within a few collisions, before the in-game HUD was visibly in play. Overtake buffs/debuffs are unaffected: `VesselOvertakeBySkimmerEffectSO` still buffs teammates and debuffs opponents regardless. AI pilots already chase opponents only (`AIPilot.UpdatePlayerTarget` skips `player.Domain == myDomain`), which complements this rule.
