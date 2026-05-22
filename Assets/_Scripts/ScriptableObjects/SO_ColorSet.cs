@@ -51,6 +51,8 @@ namespace CosmicShore.ScriptableObjects
         [ColorUsage(true, true)] [SerializeField] public Color SkimmerColor;
         [ColorUsage(true, true)] [SerializeField] public Color DullCrystalColor;
         [ColorUsage(true, true)] [SerializeField] public Color BrightCrystalColor;
+        [ColorUsage(true, true)] [SerializeField] public Color TrailHighlightColor;
+        [ColorUsage(true, true)] [SerializeField] public Color TrailCoreColor;
 
     }
 

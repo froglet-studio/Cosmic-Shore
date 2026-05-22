@@ -183,6 +183,14 @@ namespace CosmicShore.Gameplay
         public virtual void SetSkimmerMaterial(Material material) =>
                 VesselStatus.SkimmerMaterial = material;
 
+        VesselTrailCustomization _trailCustomization;
+        public virtual void SetTrailColors(Color highlightColor, Color coreColor)
+        {
+            if (_trailCustomization == null)
+                _trailCustomization = GetComponentInChildren<VesselTrailCustomization>(includeInactive: true);
+            _trailCustomization?.SetTrailColors(highlightColor, coreColor);
+        }
+
         public virtual void BindElementalFloat(string name, Element element) =>
             VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
 

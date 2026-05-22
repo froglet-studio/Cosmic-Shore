@@ -8660,6 +8660,7 @@ GameObject:
   - component: {fileID: 6989089190155014109}
   - component: {fileID: 9172589084772723142}
   - component: {fileID: 7779107667008759293}
+  - component: {fileID: 9000000000000000001}
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 2800655758706162833}
   - component: {fileID: 2643412773408452782}
@@ -9107,6 +9108,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipGeometries:
   - {fileID: 3168954648161338247}
+--- !u!114 &9000000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c4e3a9f6b1d4c8a91d6e2f4a8b7c3d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _trails: []
 --- !u!114 &4248184753307651523
 MonoBehaviour:
   m_ObjectHideFlags: 0
