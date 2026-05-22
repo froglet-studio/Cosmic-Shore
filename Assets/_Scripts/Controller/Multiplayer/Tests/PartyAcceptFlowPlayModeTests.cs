@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -7,16 +6,14 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Verifies the post-merge fix surface (Fix 1, Fix 2, Fix 3) added to
-    /// <see cref="HostConnectionService"/> in response to the "invite click
-    /// respawns vessel" symptom.
+    /// Verifies the refresh-loop transient detector added to
+    /// <see cref="HostConnectionService"/>: a UGS SDK
+    /// <see cref="ArgumentOutOfRangeException"/> thrown from
+    /// <c>LobbyPatcher.ApplyPatchesToLobby</c> is benign and must be swallowed
+    /// so that <c>RefreshPartyMembersAsync</c> does not null
+    /// <c>ActiveSession</c> (which would cascade into host-vessel despawn).
     ///
-    /// These tests are pure-static and reflect into the two private helpers
-    /// added by the fix:
-    ///   • <c>ContainsLobbyPatcherIndexError(string)</c> — log filter (Fix 1)
-    ///   • <c>IsBenignLobbyPatcherError(Exception)</c>  — refresh-loop transient
-    ///                                                  detector (Fix 2, Fix 3)
-    ///
+    /// These tests are pure-static and reflect into <c>IsBenignLobbyPatcherError</c>.
     /// Full play-mode integration tests for the host/invitee accept flow
     /// (plan Tests 1, 2, 3) require two NetworkManager instances and are
     /// driven through Multiplayer Play Mode (MPPM) virtual players, which
@@ -29,41 +26,7 @@ namespace CosmicShore.Gameplay
     public class PartyAcceptFlowPlayModeTests
     {
         // ─────────────────────────────────────────────────────────────────────
-        // Fix 1 — log filter widening
-        // ─────────────────────────────────────────────────────────────────────
-
-        [Test]
-        public void LobbyPatcherFilter_MatchesLegacySdkMessage()
-        {
-            bool match = InvokeContainsLobbyPatcherIndexError(
-                "LobbyPatcher: Index was out of range. Must be non-negative.");
-            Assert.IsTrue(match, "Legacy SDK message should be filtered.");
-        }
-
-        [Test]
-        public void LobbyPatcherFilter_MatchesCurrentSdkMessage()
-        {
-            // Symptom from the bug report:
-            //   Unity.Services.Lobbies.Internal.LobbyPatcher.ApplyPatchesToLobby
-            //   ArgumentOutOfRangeException: Index must be within the bounds of the List
-            bool match = InvokeContainsLobbyPatcherIndexError(
-                "LobbyPatcher.ApplyPatchesToLobby: Index must be within the bounds of the List.");
-            Assert.IsTrue(match, "Current SDK message should be filtered.");
-        }
-
-        [Test]
-        public void LobbyPatcherFilter_IgnoresUnrelatedMessage()
-        {
-            Assert.IsFalse(InvokeContainsLobbyPatcherIndexError(
-                "Some other library: Index was out of range."));
-            Assert.IsFalse(InvokeContainsLobbyPatcherIndexError(
-                "LobbyPatcher: success"));
-            Assert.IsFalse(InvokeContainsLobbyPatcherIndexError(string.Empty));
-            Assert.IsFalse(InvokeContainsLobbyPatcherIndexError(null));
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Fix 2 / Fix 3 — benign-error detector
+        // Benign-error detector
         // ─────────────────────────────────────────────────────────────────────
 
         [Test]
@@ -125,27 +88,11 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         // ─────────────────────────────────────────────────────────────────────
-        // Reflection plumbing — the helpers are private static so we can keep
-        // them tightly scoped to HostConnectionService.
+        // Reflection plumbing — the helper is private static so we can keep
+        // it tightly scoped to HostConnectionService.
         // ─────────────────────────────────────────────────────────────────────
 
-        private static MethodInfo _containsMethod;
         private static MethodInfo _benignMethod;
-
-        private static bool InvokeContainsLobbyPatcherIndexError(string s)
-        {
-            if (_containsMethod == null)
-            {
-                var filterType = typeof(HostConnectionService)
-                    .GetNestedType("LobbyPatcherLogFilter", BindingFlags.NonPublic);
-                Assert.NotNull(filterType, "LobbyPatcherLogFilter nested type missing.");
-                _containsMethod = filterType.GetMethod("ContainsLobbyPatcherIndexError",
-                    BindingFlags.NonPublic | BindingFlags.Static);
-                Assert.NotNull(_containsMethod,
-                    "ContainsLobbyPatcherIndexError static method missing.");
-            }
-            return (bool)_containsMethod.Invoke(null, new object[] { s });
-        }
 
         private static bool InvokeIsBenignLobbyPatcherError(Exception e)
         {

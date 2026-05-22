@@ -201,13 +201,76 @@ Each commit is small, focused, independently shippable. **Before executing any c
 re-read the live code, update that commit's section here with what changed, and only
 then start coding.** Status keys: `[ ]` planned, `[~]` in progress, `[x]` done.
 
-### `[ ]` Commit 1 — Dead-code removal (no behaviour change)
+### `[x]` Commit 1 — Dead-code removal (no behaviour change)
 
-- Delete `ClearStalePartySession`, `CreatePartySessionPublicAsync`, `CreatePartySessionAsync`,
-  `CreatePartySessionCoreAsync` (4 dead methods in `HostConnectionService.cs`).
-- Delete `LobbyPatcherLogFilter` plumbing (field, install/uninstall, inner class,
-  Awake + OnDestroy calls). Keep `IsBenignLobbyPatcherError` — commit 2 uses it.
-- Revert the previous stop-gap NM-listening guard in `RefreshPartyMembersAsync`.
+**Outcome**: `HostConnectionService.cs` shrunk from 1570 → 1425 lines (-145).
+Four dead methods removed (`ClearStalePartySession`, `CreatePartySessionPublicAsync`,
+`CreatePartySessionAsync`, `CreatePartySessionCoreAsync`). Lobby-patcher log-filter
+plumbing removed (field, install/uninstall, nested class). `IsBenignLobbyPatcherError`
+retained for the refresh-loop catch block at line 1052. Three tests in
+`PartyAcceptFlowPlayModeTests` (`LobbyPatcherFilter_*`) deleted; one reflection
+assertion in `PartyInviteSystemTests` removed. Stale comments referencing the
+deleted methods cleaned up in `NetworkTransitionService.cs`,
+`AcceptanceSignalService.cs`, `PartySessionService.cs`, and at two locations
+in `HostConnectionService.cs` itself.
+
+**Deviations from original plan**:
+1. The "stop-gap NM-listening guard in `RefreshPartyMembersAsync`" the plan called
+   for reverting **did not exist** in live source — the catch block was already
+   simplified in surgical Bug A fix `edfa1be`. No revert needed.
+2. Implication: Commit 2's primary work ("simplify `RefreshPartyMembersAsync` catch")
+   is already shipped. Commit 2 reduces to verifying the catch shape and possibly
+   adding the classification scaffolding for Commit 11. **Re-scope Commit 2 before
+   executing it.**
+
+**Pre-commit findings** (preserved for audit trail):
+
+
+**Pre-commit findings** (re-read of live source on `claude/blissful-tesla-9nefa`):
+
+Methods to delete (full source verified in `HostConnectionService.cs`):
+
+- `ClearStalePartySession` (lines 643–656) — public. Callers (grepped): **none** in any `.cs` file. Used to be called from `SceneLoader`; the only remaining reference is a stale `<see cref>` in this file's own XML doc comment. Calls into `_partySessionService.ClearSession()`, `_memberService.ClearSilent()`, `ClearJoinedPartyAsync().Forget()`, conditional `CreateOwnPartySessionAsync()`. Pure dead code.
+- `CreatePartySessionPublicAsync` (lines 658–665) — public. The doc comment explicitly says "Reserved; no current callers." Wraps `SyncLocalIdentity()` + `CreateOwnPartySessionAsync()`. Pure dead code, but **`PartyInviteSystemTests.cs:1085` asserts via reflection that this public method exists** — that assertion must be removed.
+- `CreatePartySessionAsync` (lines 671–688) — private. Only caller: itself recursively + `CreatePartySessionCoreAsync`. Mutex-guarded thin wrapper around `CreatePartySessionCoreAsync`. Pure dead code.
+- `CreatePartySessionCoreAsync` (lines 690–710) — private. Only caller: `CreatePartySessionAsync` (line 682). Calls into `_networkTransition.ShutdownAsync`, `_partySessionService.CreateAsync`, `_scheduler.ResetDeferred`. Pure dead code.
+
+`LobbyPatcherLogFilter` plumbing:
+- Field `_originalLogHandler` (line 177) — only used by `InstallLobbyLogFilter` / `UninstallLobbyLogFilter`. Delete.
+- `InstallLobbyLogFilter()` (line 242 call, line 1497 def) — installs a global Unity log handler that suppresses noise. The global swap is heavy-handed; `IsBenignLobbyPatcherError` already gives us per-catch suppression at the only place that matters (`RefreshPartyMembersAsync`). Delete.
+- `UninstallLobbyLogFilter()` (line 276 call, line 1503 def) — pairs with install. Delete.
+- Nested class `LobbyPatcherLogFilter` (lines 1516–1549) — implements `ILogHandler`. Delete.
+- **`PartyAcceptFlowPlayModeTests.cs` reflects into the nested class** to call `ContainsLobbyPatcherIndexError` from three tests (`LobbyPatcherFilter_MatchesLegacySdkMessage`, `LobbyPatcherFilter_MatchesCurrentSdkMessage`, `LobbyPatcherFilter_IgnoresUnrelatedMessage`). Those three tests + the `InvokeContainsLobbyPatcherIndexError` helper + the `_containsMethod` field must be deleted.
+- `IsBenignLobbyPatcherError` (line 1558) — **kept**. Called at line 861 and line 1130 (`RefreshPartyMembersAsync` catch block). Four reflection-tests in `PartyAcceptFlowPlayModeTests.cs` continue to pass.
+
+`RefreshPartyMembersAsync` catch block (lines 1113–1171):
+- **The "stop-gap NM-listening guard" the original plan said to revert does NOT exist in current source.** The catch block was already simplified in commit `edfa1be` (Bug A surgical mitigation): benign → return; rate-limit → backoff; everything else → log and return without `ClearSession()`. Commit 1 has nothing to do here.
+- The catch block does contain a multi-line comment (lines 1142–1158) that references "Bug A (Docs/PARTY_INVITE_DEBUGGING.md §2)" — that doc is now deleted. The reference must be updated to point at this doc (`Docs/PARTY_SYSTEM_REFACTOR.md`) or removed.
+- **This makes Commit 2 a near-no-op too** — the simplification it was supposed to make is already shipped. Commit 2 reduces to (a) update or remove that stale doc reference, (b) confirm classification structure for later Commit 11.
+
+Stale comments in other files referencing now-deleted methods (clean up here, since they directly name methods that no longer exist):
+- `Assets/_Scripts/Controller/Party/Services/NetworkTransitionService.cs:12` — "(used by `HostConnectionService.CreatePartySessionCoreAsync`)".
+- `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs:157` — "CreatePartySessionAsync can take 2-3s..."
+- `Assets/_Scripts/Controller/Party/Services/PartySessionService.cs:7` — "the CreatePartySessionCoreAsync / JoinSessionByIdAsync logic lived in".
+- `Assets/_Scripts/Controller/Party/HostConnectionService.cs:33` — `<see cref="LobbyPatcherLogFilter"/>` in the XML doc summary list.
+- `Assets/_Scripts/Controller/Party/HostConnectionService.cs:814` — "only after CreatePartySessionAsync succeeds, and lazy creation".
+
+**Execution plan**:
+
+1. `HostConnectionService.cs` edits:
+   - Delete `_originalLogHandler` field (line 177).
+   - Delete `InstallLobbyLogFilter()` call from `Awake()` (line 242).
+   - Delete `UninstallLobbyLogFilter()` call from `OnDestroy()` (line 276).
+   - Delete `ClearStalePartySession`, `CreatePartySessionPublicAsync`, `CreatePartySessionAsync`, `CreatePartySessionCoreAsync` methods.
+   - Delete `InstallLobbyLogFilter` / `UninstallLobbyLogFilter` definitions + `LobbyPatcherLogFilter` nested class.
+   - Update the catch-block comment in `RefreshPartyMembersAsync` to drop the deleted-doc reference.
+   - Update the `<see cref="LobbyPatcherLogFilter"/>` line in the class XML doc summary (line 33) to just remove the line.
+   - Update the misleading "lazy creation" comment at line 814 to describe current eager architecture (or simply remove the parenthetical, since Commit 14 handles comment cleanup fully).
+2. `PartyInviteSystemTests.cs` — delete the single `Assert.IsNotNull(...CreatePartySessionPublicAsync...)` line (1085–1086) and tighten the surrounding test.
+3. `PartyAcceptFlowPlayModeTests.cs` — delete the three `LobbyPatcherFilter_*` tests and the `InvokeContainsLobbyPatcherIndexError` helper + `_containsMethod` field + the related Fix-1 doc comment block.
+4. Stale-comment fixes in `NetworkTransitionService.cs`, `AcceptanceSignalService.cs`, `PartySessionService.cs` — drop the dead-method names.
+5. Compile, run edit-mode tests (`CosmicShore.Multiplayer.Tests`, `CosmicShore.Tests.EditMode`) — both should pass.
+6. Commit with `chore(party): remove dead methods + lobby-patcher log filter plumbing`.
 
 ### `[ ]` Commit 2 — Simplify `RefreshPartyMembersAsync` catch (Bug A primary fix)
 

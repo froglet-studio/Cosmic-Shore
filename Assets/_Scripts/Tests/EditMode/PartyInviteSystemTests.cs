@@ -1082,8 +1082,6 @@ namespace CosmicShore.Tests
                 BindingFlags.Public | BindingFlags.Instance));
             Assert.IsNotNull(type.GetMethod("KickPartyMemberAsync",
                 BindingFlags.Public | BindingFlags.Instance));
-            Assert.IsNotNull(type.GetMethod("CreatePartySessionPublicAsync",
-                BindingFlags.Public | BindingFlags.Instance));
         }
 
         [Test]

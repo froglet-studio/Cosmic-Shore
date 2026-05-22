@@ -154,7 +154,7 @@ namespace CosmicShore.Gameplay
         {
             invites.UpdatePayloadsWithRealSessionId(realSessionId);
 
-            // CreatePartySessionAsync can take 2-3s (NM shutdown + Relay alloc),
+            // Party session creation can take 2-3s (NM shutdown + Relay alloc),
             // so the SDK's internal player index may be stale.  Refresh before
             // saving to avoid writing to a stale CurrentPlayer reference.
             try { await lobbyService.RefreshAsync(); }

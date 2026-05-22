@@ -4,11 +4,11 @@
 //
 // WHY this class exists:
 //   Before extraction, all party session state (_partySession, _partySessionCreatedAt)
-//   and the CreatePartySessionCoreAsync / JoinSessionByIdAsync logic lived in
-//   HostConnectionService alongside lobby code, member-sync code, invite code,
-//   and refresh scheduling.  Extracting the session lifecycle here gives it a
-//   single, documentable home and makes every session state change observable
-//   through ActiveSession and CreatedAtUnscaledTime.
+//   and the session create/join logic lived in HostConnectionService alongside
+//   lobby code, member-sync code, invite code, and refresh scheduling.  Extracting
+//   the session lifecycle here gives it a single, documentable home and makes
+//   every session state change observable through ActiveSession and
+//   CreatedAtUnscaledTime.
 //
 // KEY CONSTRAINT: this service does NOT touch NetworkManager.
 //   Netcode startup/shutdown (NM.StartHost(), NM.Shutdown()) is

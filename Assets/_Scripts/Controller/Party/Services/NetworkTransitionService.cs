@@ -7,9 +7,9 @@
 //   (what to do when accepting an invite) and the low-level Netcode mechanics
 //   (how to shut down NM, how to wait for client connection, how to detect
 //   scene sync).  Extracting the "how" here makes each piece independently
-//   testable without spinning up a full Netcode environment, and removes three
-//   duplicated inline shutdown patterns (one in PartyInviteController, one in
-//   HostConnectionService.CreatePartySessionCoreAsync).
+//   testable without spinning up a full Netcode environment, and removes the
+//   duplicated inline shutdown patterns that previously lived in
+//   PartyInviteController and HostConnectionService.
 //
 // KEY CONSTRAINT: this service only deals with NetworkManager lifecycle.
 //   It does NOT create UGS sessions, send invites, or update SOAP state.

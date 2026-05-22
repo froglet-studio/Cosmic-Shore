@@ -30,7 +30,6 @@ namespace CosmicShore.Gameplay
     /// • <see cref="PartySessionService"/>       – Relay party session create/join/leave (Phase 9)
     /// • <see cref="PartyMemberService"/>        – PartyMembers SOAP list diff + events (Phase 10)
     /// • <see cref="NetworkTransitionService"/>  – NM shutdown for party session creation (Phase 11)
-    /// • <see cref="LobbyPatcherLogFilter"/>     – suppresses known harmless SDK noise
     /// • <see cref="PartyStateMachine"/>         – explicit lifecycle state (Phase 1)
     ///
     /// Lifetime: DontDestroyOnLoad MonoBehaviour (same GO as PartyInviteController).
@@ -174,7 +173,6 @@ namespace CosmicShore.Gameplay
         private int    _consecutiveRefreshErrors;
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
-        private ILogHandler _originalLogHandler;
 
         // ─────────────────────────────────────────────────────────────────────
         // Invite state
@@ -239,7 +237,6 @@ namespace CosmicShore.Gameplay
             DontDestroyOnLoad(gameObject);
             // [Inject] fields are populated by Reflex between Awake and Start.
             // Do not access service fields here — use Start() instead.
-            InstallLobbyLogFilter();
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             if (bootStatusRetryRequestedEvent != null)
@@ -273,7 +270,6 @@ namespace CosmicShore.Gameplay
             SceneManager.sceneLoaded -= OnSceneLoaded;
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
-            UninstallLobbyLogFilter();
 
             if (bootStatusRetryRequestedEvent != null)
                 bootStatusRetryRequestedEvent.OnRaised -= HandleBootStatusRetryRequested;
@@ -636,80 +632,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Drops the cached party session reference so the next outgoing invite
-        /// re-creates one fresh. Used by <see cref="Core.SceneLoader"/> on
-        /// game→menu transitions.
-        /// </summary>
-        public void ClearStalePartySession()
-        {
-            if (_partySessionService.ActiveSession == null) return;
-            Debug.Log("[HostConnectionService] Clearing stale party session reference.");
-
-            _partySessionService.ClearSession();
-            _lastFiredInvite = null;
-            _memberService.ClearSilent();
-
-            ClearJoinedPartyAsync().Forget();
-            // Stale session cleared (e.g. game→menu transition) — recreate solo party session.
-            if (_stateMachine.CurrentState != PartyState.Disconnected)
-                _ = CreateOwnPartySessionAsync();
-        }
-
-        /// <summary>
-        /// Public wrapper for party session creation. Reserved; no current callers.
-        /// </summary>
-        public async UniTask CreatePartySessionPublicAsync()
-        {
-            SyncLocalIdentity();
-            await CreateOwnPartySessionAsync();
-        }
-
-        // ╔═══════════════════════════════════════════════════════════════════╗
-        // ║  Party Session — Lazy Relay creation                              ║
-        // ╚═══════════════════════════════════════════════════════════════════╝
-
-        private async UniTask CreatePartySessionAsync()
-        {
-            if (_partySessionService.ActiveSession != null) return;
-
-            // Dedicated mutex — replaces the legacy _creatingPartySessionTask
-            // pattern (which had a finally-clear race window). Double-check
-            // pattern: a second caller waits, then sees the session and bails.
-            await _sessionCreationMutex.WaitAsync();
-            try
-            {
-                if (_partySessionService.ActiveSession != null) return;
-                await CreatePartySessionCoreAsync();
-            }
-            finally
-            {
-                _sessionCreationMutex.Release();
-            }
-        }
-
-        private async UniTask CreatePartySessionCoreAsync()
-        {
-            // The UGS Multiplayer SDK calls NetworkManager.StartHost()
-            // internally for Relay-backed sessions. If a local host is
-            // already running, that call fails — shut it down first.
-            // Every cross-thread await uses .AsMainThread() so the continuation
-            // is always on Unity's main thread (see UniTaskExtensions.cs).
-            using var cts = new System.Threading.CancellationTokenSource();
-            await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, cts.Token).AsMainThread();
-
-            // Session creation with retry logic delegated to PartySessionService.
-            await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
-
-            connectionData.IsPartyHost = true;
-
-            // Give the new session breathing room before RefreshAsync touches it —
-            // avoids transient "stale" errors that would null the session and
-            // trigger another recreation.
-            _scheduler.ResetDeferred(refreshIntervalSeconds);
-            Debug.Log($"[HostConnectionService] Party session ready: {_partySessionService.ActiveSession?.Id}");
-        }
-
-        /// <summary>
         /// Creates the local player's solo Relay-backed party session and starts
         /// NetworkManager as a Relay host.  Called automatically after presence lobby
         /// join and after any event that requires a fresh solo session (leave, reconnect,
@@ -806,13 +728,10 @@ namespace CosmicShore.Gameplay
                         TryRaiseIncomingInvite(invite);
                 }
 
-                // Acceptance-signal scan: lazy party-session creation. Must run
-                // BEFORE the JOINED_PARTY_KEY scan because recipients won't set
-                // joined_party until after they read the real session id.
-                //
-                // Gate on outgoing-invite count (NOT IsPartyHost) — IsPartyHost is set
-                // only after CreatePartySessionAsync succeeds, and lazy creation
-                // hasn't reached that point yet on the first acceptance.
+                // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
+                // because recipients won't set joined_party until after they read the
+                // real session id. Gated on outgoing-invite count — no work to do if
+                // we haven't sent any invites.
                 if (_inviteService.OutgoingCount > 0)
                 {
                     string acceptingId = _acceptanceService.ScanForSignals(
@@ -1140,19 +1059,12 @@ namespace CosmicShore.Gameplay
 
                 // Everything else: log and return WITHOUT clearing the session.
                 //
-                // Bug A (Docs/PARTY_INVITE_DEBUGGING.md §2): clearing the session here
-                // cascades into host-vessel despawn. The chain is:
-                //   ClearSession()                        — this method (old behavior)
-                //   → SendInviteAsync sees ActiveSession == null
-                //   → CreateOwnPartySessionAsync()
-                //   → NetworkTransitionService.ShutdownAsync()
-                //   → NetworkManager.Shutdown()
-                //   → host's Player + Vessel OnNetworkDespawn fires.
-                //
-                // Refresh failures are transient: the UGS SDK self-corrects on the
-                // next tick. Session lifetime is owned by explicit user paths —
-                // LeavePartyAsync, kick, NetworkManager shutdown, or the user-driven
-                // RetryCreateOwnPartySessionAsync — not by background refresh ticks.
+                // Refresh failures are transient — clearing ActiveSession here cascades
+                // into host-vessel despawn via SendInviteAsync → CreateOwnPartySessionAsync
+                // → NetworkTransitionService.ShutdownAsync → NetworkManager.Shutdown.
+                // Session lifetime is owned by explicit user paths (LeavePartyAsync, kick,
+                // NetworkManager shutdown, user-driven RetryCreateOwnPartySessionAsync) —
+                // not by background refresh ticks. See Docs/PARTY_SYSTEM_REFACTOR.md.
                 Debug.LogWarning(
                     $"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message} — keeping session, will retry next tick");
                 return;
@@ -1490,70 +1402,13 @@ namespace CosmicShore.Gameplay
         private static bool IsRateLimitException(Exception e) =>
             e.Message != null && e.Message.Contains("Too Many Requests");
 
-        // ╔═══════════════════════════════════════════════════════════════════╗
-        // ║  Lobby SDK log filter                                             ║
-        // ╚═══════════════════════════════════════════════════════════════════╝
-
-        private void InstallLobbyLogFilter()
-        {
-            _originalLogHandler = Debug.unityLogger.logHandler;
-            Debug.unityLogger.logHandler = new LobbyPatcherLogFilter(_originalLogHandler);
-        }
-
-        private void UninstallLobbyLogFilter()
-        {
-            if (_originalLogHandler != null && Debug.unityLogger.logHandler is LobbyPatcherLogFilter)
-                Debug.unityLogger.logHandler = _originalLogHandler;
-            _originalLogHandler = null;
-        }
-
-        /// <summary>
-        /// Suppresses the known harmless UGS SDK <see cref="ArgumentOutOfRangeException"/>
-        /// thrown by <c>LobbyPatcher.ApplyPatchesToLobby</c> when a WebSocket
-        /// lobby-change delta references a stale player index. The SDK self-corrects
-        /// on the next refresh; the log noise is pure pollution.
-        /// </summary>
-        private class LobbyPatcherLogFilter : ILogHandler
-        {
-            private readonly ILogHandler _inner;
-            public LobbyPatcherLogFilter(ILogHandler inner) => _inner = inner;
-
-            public void LogException(Exception exception, UnityEngine.Object context)
-            {
-                if (exception is ArgumentOutOfRangeException &&
-                    exception.StackTrace?.Contains("LobbyPatcher") == true)
-                    return;
-
-                _inner.LogException(exception, context);
-            }
-
-            public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
-            {
-                if (logType is LogType.Error or LogType.Exception or LogType.Warning)
-                {
-                    if (ContainsLobbyPatcherIndexError(format)) return;
-                    if (args != null)
-                    {
-                        for (int i = 0; i < args.Length; i++)
-                            if (ContainsLobbyPatcherIndexError(args[i]?.ToString())) return;
-                    }
-                }
-                _inner.LogFormat(logType, context, format, args);
-            }
-
-            private static bool ContainsLobbyPatcherIndexError(string s) =>
-                !string.IsNullOrEmpty(s)
-                && s.Contains("LobbyPatcher")
-                && (s.Contains("Index was out of range")
-                    || s.Contains("Index must be within the bounds of the List"));
-        }
-
         /// <summary>
         /// Detects the harmless <see cref="ArgumentOutOfRangeException"/> the UGS
         /// Lobby SDK throws from <c>LobbyPatcher.ApplyPatchesToLobby</c> when a
         /// WebSocket delta references a stale player index. Surfaces both as the
         /// direct exception and as an <c>AggregateException</c>/inner-wrapped
-        /// exception forwarded by <c>await</c>.
+        /// exception forwarded by <c>await</c>. <see cref="RefreshPartyMembersAsync"/>
+        /// swallows these on the next-tick path so the refresh loop stays clean.
         /// </summary>
         private static bool IsBenignLobbyPatcherError(Exception e)
         {
