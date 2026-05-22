@@ -95,9 +95,27 @@ namespace CosmicShore.Core
             if (scene.name == menuScene)
             {
                 _sceneTransitionManager?.SetFadeImmediate(1f);
-                gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
-                gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
+                ArmSplashFadeOnNextClientReady();
             }
+        }
+
+        /// <summary>
+        /// Subscribes <see cref="FadeFromSplashOnReady"/> to <see cref="GameDataSO.OnClientReady"/>
+        /// so the next time the local player's vessel finishes initialization the splash
+        /// overlay fades back to transparent. Idempotent — safe to call repeatedly.
+        ///
+        /// Called automatically on Menu_Main load via <see cref="OnSceneLoaded"/>. Called
+        /// manually by <see cref="Gameplay.PartyInviteController.AcceptInviteAsync"/> after
+        /// it sets the splash opaque, because accepting an invite does not trigger a scene
+        /// reload on the joining client (the host's Menu_Main is already loaded), so
+        /// <see cref="OnSceneLoaded"/> never fires and the fade subscription would otherwise
+        /// stay unarmed — leaving the joining client stuck on the splash (Bug B).
+        /// </summary>
+        public void ArmSplashFadeOnNextClientReady()
+        {
+            if (!gameData) return;
+            gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+            gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
         }
 
         #endregion

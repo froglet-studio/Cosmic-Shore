@@ -1125,31 +1125,36 @@ namespace CosmicShore.Gameplay
             try { await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
-                // UGS SDK self-corrects on the next refresh tick. Skip without
-                // logging or incrementing the consecutive-error counter — these
-                // are not real failures and must not trigger session re-creation.
+                // Benign UGS SDK noise (LobbyPatcher stale-index ArgumentOutOfRangeException).
+                // Skip silently — the SDK self-corrects on the next tick.
                 if (IsBenignLobbyPatcherError(e))
                     return;
 
-                Debug.LogWarning($"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message}");
-
+                // Rate limit — back off and retry later.
                 if (IsRateLimitException(e))
                 {
+                    Debug.LogWarning($"[HostConnectionService] Party session refresh rate-limited — backing off");
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     return;
                 }
 
-                // Pending invites prevent clearing — would cascade into duplicate
-                // session creation that kicks any already-joined client.
-                if (_inviteService.OutgoingCount > 0)
-                {
-                    Debug.LogWarning(
-                        $"[HostConnectionService] Refresh failed but {_inviteService.OutgoingCount} outgoing invite(s) pending — keeping party session to avoid duplicate creation.");
-                    return;
-                }
-
-                _partySessionService.ClearSession();
-                _memberService.ClearSilent();
+                // Everything else: log and return WITHOUT clearing the session.
+                //
+                // Bug A (Docs/PARTY_INVITE_DEBUGGING.md §2): clearing the session here
+                // cascades into host-vessel despawn. The chain is:
+                //   ClearSession()                        — this method (old behavior)
+                //   → SendInviteAsync sees ActiveSession == null
+                //   → CreateOwnPartySessionAsync()
+                //   → NetworkTransitionService.ShutdownAsync()
+                //   → NetworkManager.Shutdown()
+                //   → host's Player + Vessel OnNetworkDespawn fires.
+                //
+                // Refresh failures are transient: the UGS SDK self-corrects on the
+                // next tick. Session lifetime is owned by explicit user paths —
+                // LeavePartyAsync, kick, NetworkManager shutdown, or the user-driven
+                // RetryCreateOwnPartySessionAsync — not by background refresh ticks.
+                Debug.LogWarning(
+                    $"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message} — keeping session, will retry next tick");
                 return;
             }
 
