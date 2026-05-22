@@ -1,8 +1,8 @@
 # Party Invite — Outstanding Bugs
 
-**Branch:** `claude/investigate-startup-warnings-yuLbq` (threading bug fix shipped; two bugs queued)
-**Status:** threading cascade resolved (see `Docs/THREADING.md`). Two bugs remain.
-**Audience:** next debugging session — start here.
+**Branch:** `claude/fix-party-invite-bugs-BDrFO` (Bug B fixed; Bug A surgically mitigated; structural fix queued)
+**Status:** threading cascade resolved (see `Docs/THREADING.md`). Surgical fixes for Bug A + Bug B shipped. Structural lazy-session refactor still pending.
+**Audience:** next session picking up the lazy party-session refactor (`CLAUDE.md` → "Pending Critical Refactors" #1).
 
 ---
 
@@ -14,9 +14,24 @@ running off-thread → `EnsureRunningOnMainThread` crashes) is **fixed** as of c
 through Unity's own `SynchronizationContext` via `MainThreadDispatcher`. See
 `Docs/THREADING.md` for the contract and the history of attempts.
 
-Two distinct bugs in the party invite flow remain. They were occluded by the threading bug
-(the canary intercepted the off-thread call before any of the downstream party-flow logic
-could be observed). Now that the threading is solid, they should be tractable.
+Both follow-up bugs in the party invite flow now have surgical fixes shipped on
+`claude/fix-party-invite-bugs-BDrFO`:
+
+- **Bug A** (host vessel despawn on invite send) — surgical mitigation in `edfa1be`:
+  `RefreshPartyMembersAsync` no longer clears the session on transient refresh failures,
+  breaking the most common path into the `ClearSession → CreateOwnPartySessionAsync →
+  ShutdownAsync → NetworkManager.Shutdown` cascade. The structural fix (lazy party-session
+  creation, `CLAUDE.md` → "Pending Critical Refactors" #1) still removes the offending
+  shutdown entirely and remains the recommended long-term fix.
+- **Bug B** (joining client stuck on splash) — fixed in `a197efb`: extracted
+  `SceneLoader.ArmSplashFadeOnNextClientReady()` and call it from
+  `PartyInviteController.AcceptInviteAsync` so the `OnClientReady` → fade-out subscription
+  exists on the joining client (which never sees a `Menu_Main` `OnSceneLoaded` because
+  Netcode just syncs NetworkObjects against the host's already-loaded scene).
+
+Sections §2 and §3 below describe the chains as they existed pre-fix and remain useful
+context for the lazy refactor — both bugs trace back to the same root issue (eager
+party-session creation + shutdown-and-recreate dance) that the lazy refactor eliminates.
 
 ---
 
