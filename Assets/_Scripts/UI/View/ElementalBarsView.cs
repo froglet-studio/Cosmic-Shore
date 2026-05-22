@@ -95,7 +95,6 @@ namespace CosmicShore.UI
         private Tween[] _labelColorTweens;
         private Tween[][] _pipTweens; // [barIndex][pipIndex]
         private bool _built;
-        private bool _overtakeActive;
 
         public bool IsBuilt => _built;
 
@@ -201,20 +200,17 @@ namespace CosmicShore.UI
         // ---------------------------------------------------------------
 
         /// <summary>
-        /// Set the level for an element. Level is floored at 0 (baseline 5 pips always stay on).
-        /// Only overtake penalty can push below zero.
+        /// Set the level for an element. Negative levels (below the baseline 5 pips) are shown
+        /// directly — temporary debuffs from ResourceSystem.ApplyElementalEffect drive them.
         /// </summary>
         public void SetLevel(Element element, int level, Color domainColor)
         {
             int idx = GetBarIndex(element);
             if (idx < 0 || !_built) return;
 
-            // Floor at 0 unless overtake is active — baseline pips never decrease from normal gameplay
-            int clamped = _overtakeActive ? level : Mathf.Max(0, level);
-
             _barDomainColors[idx] = domainColor;
             int prev = _currentLevels[idx];
-            _currentLevels[idx] = clamped;
+            _currentLevels[idx] = level;
 
             RefreshBar(idx, prev);
         }
@@ -222,23 +218,6 @@ namespace CosmicShore.UI
         public void SetLevel(Element element, int level)
         {
             SetLevel(element, level, filledColor);
-        }
-
-        /// <summary>
-        /// Enter overtake mode — allows levels to go negative (below baseline 5 pips).
-        /// Call EndOvertake() when recovery is complete.
-        /// </summary>
-        public void BeginOvertake()
-        {
-            _overtakeActive = true;
-        }
-
-        /// <summary>
-        /// Exit overtake mode — levels are floored at 0 again.
-        /// </summary>
-        public void EndOvertake()
-        {
-            _overtakeActive = false;
         }
 
         public void RefreshAllBars()
@@ -408,51 +387,6 @@ namespace CosmicShore.UI
                 _labelColorTweens[i] = label
                     .DOColor(_originalLabelColors[i], colorTweenDuration)
                     .SetEase(Ease.OutQuad);
-            }
-        }
-
-        // ---------------------------------------------------------------
-        // Juice: Overtake penalty
-        // ---------------------------------------------------------------
-        public void JuiceOvertakePenalty()
-        {
-            if (!_built) return;
-
-            // Haptic burst for overtake
-            if (hapticOnDebuff)
-                HapticController.PlayConstant(0.8f, 0.7f, 0.25f);
-
-            for (int i = 0; i < bars.Length; i++)
-            {
-                // Flash + shake all active fill pips
-                ref var bar = ref bars[i];
-                if (bar.fillPips != null)
-                {
-                    int enabledCount = Mathf.Clamp(_currentLevels[i] + zeroLineIndex, 0, bar.fillPips.Length);
-                    for (int p = 0; p < enabledCount; p++)
-                    {
-                        var pip = bar.fillPips[p];
-                        if (!pip || !pip.gameObject.activeSelf) continue;
-
-                        _pipTweens[i][p]?.Kill();
-                        pip.color = Color.red;
-                        var origColor = _barDomainColors[i];
-
-                        var rt = pip.rectTransform;
-                        // Shake then color-recover
-                        _pipTweens[i][p] = DOTween.Sequence()
-                            .Append(rt.DOShakePosition(0.3f, 6f, 15, 90f, false, false))
-                            .Join(pip.DOColor(origColor, 0.5f).SetEase(Ease.OutQuad));
-                    }
-                }
-
-                var label = bars[i].labelIcon;
-                if (label)
-                {
-                    _labelScaleTweens[i]?.Kill();
-                    _labelScaleTweens[i] = label.rectTransform
-                        .DOShakeScale(0.4f, 0.3f, 10, 90f);
-                }
             }
         }
 
