@@ -1,0 +1,74 @@
+name: Unity Tests
+
+# Unity Test Framework CI — runs EditMode + PlayMode tests on every push to a
+# claude/** branch and on every pull request, so code changes can be verified
+# without a local Unity install. The Unity version is auto-detected from
+# ProjectSettings/ProjectVersion.txt.
+#
+# REQUIRED ONE-TIME SETUP — add a Unity license to the repo's Actions secrets
+# (Settings > Secrets and variables > Actions):
+#   * Unity Personal:  UNITY_LICENSE  — full contents of the .ulf license file
+#                      from the Unity activation flow.
+#   * Unity Pro/Plus:  UNITY_SERIAL + UNITY_EMAIL + UNITY_PASSWORD
+# Until one of those is set, runs fail at the Unity activation step.
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: unity-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  checks: write
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.testMode }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        testMode:
+          - editmode
+          - playmode
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ matrix.testMode }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ matrix.testMode }}-
+            Library-
+
+      - name: Run ${{ matrix.testMode }} tests
+        id: tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          testMode: ${{ matrix.testMode }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: ${{ matrix.testMode }} results
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.testMode }}
+          path: ${{ steps.tests.outputs.artifactsPath }}
+          if-no-files-found: ignore
