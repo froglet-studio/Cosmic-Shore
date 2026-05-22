@@ -23,8 +23,10 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     ///   - Cell phase is driven by total prism count through CellPhaseRules /
     ///     CellPhaseThresholds — the real production transition table.
     ///   - Fauna spawn for the *dominant* domain once phase >= Quiet, seek the
-    ///     density algorithm's anti-own-domain target (any-domain at Rabid),
-    ///     and consume opposing-domain prisms within consumeRadius.
+    ///     density algorithm's anti-own-domain target (any-domain at Rabid), and
+    ///     continuously sweep an orbit sphere around it (re-rolling a sub-goal on
+    ///     arrival — the sim's stand-in for boid separation spreading the swarm),
+    ///     consuming opposing-domain prisms within consumeRadius along the way.
     ///
     /// The headline test: run the whole sim twice — once with the LITERAL shipped
     /// grid (fixed ±500m box) and once with the cell-sized grid — and compare. If
@@ -78,7 +80,10 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Min(10f)] public float faunaSpeed = 250f;
         [Tooltip("Seconds between a fauna re-querying the density algorithm for a new goal.")]
         [Min(0.5f)] public float faunaGoalUpdateIntervalSeconds = 5f;
-        [Tooltip("Per-fauna stable orbit offset radius (m) — spreads the swarm around the goal.")]
+        [Tooltip("Radius (m) of the orbit sphere each fauna sweeps around the density target. " +
+                 "The fauna continuously re-rolls a sub-goal inside this sphere, so the swarm " +
+                 "collectively covers a volume of roughly this + consumeRadius — the sim's " +
+                 "stand-in for boid separation spreading the swarm.")]
         [Min(0f)] public float faunaGoalOrbitRadius = 60f;
         [Tooltip("Max simultaneous fauna.")]
         [Min(1)] public int faunaPopulationCap = 40;
@@ -178,7 +183,14 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
         struct SimPrism { public Vector3 Pos; public Domains Domain; public bool Alive; }
         struct SimFlora { public Vector3 Pos; public Domains Domain; public float GrowthClock; }
-        struct SimFauna { public Vector3 Pos; public Domains Domain; public Vector3 Goal; public Vector3 OrbitOffset; public float GoalClock; }
+        struct SimFauna
+        {
+            public Vector3 Pos;
+            public Domains Domain;
+            public Vector3 DensityTarget; // density-algorithm answer, refreshed on the goal cadence
+            public Vector3 SubGoal;       // a point inside the orbit sphere around DensityTarget; re-rolled on arrival
+            public float GoalClock;
+        }
 
         struct TickRecord
         {
@@ -310,9 +322,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                     {
                         Pos = RandomInBall(rng, cellMembraneRadius * 0.5f),
                         Domain = dominant,
-                        Goal = Vector3.zero,
-                        OrbitOffset = RandomOnSphere(rng) * faunaGoalOrbitRadius,
-                        GoalClock = 999f, // force an immediate goal query
+                        DensityTarget = Vector3.zero,
+                        SubGoal = Vector3.zero,
+                        GoalClock = 999f, // force an immediate density query
                     });
                 }
 
@@ -334,7 +346,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                     {
                         var fa = fauna[fi];
 
-                        // Re-query the density algorithm on the goal cadence.
+                        // Re-query the density target on the goal cadence.
                         fa.GoalClock += dt;
                         if (fa.GoalClock >= faunaGoalUpdateIntervalSeconds)
                         {
@@ -343,14 +355,30 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                             Domains? exclude = aggression == CellAggressionLevel.Level2 ? (Domains?)null : fa.Domain;
                             var r = DensityPartitionBenchmarkAlgorithms.Search(
                                 benchPrisms, exclude, cellMembraneRadius, densityOpt);
-                            fa.Goal = r.Empty ? Vector3.zero : r.Location + fa.OrbitOffset;
+                            fa.DensityTarget = r.Empty ? Vector3.zero : r.Location;
+                            fa.SubGoal = fa.DensityTarget + RandomInBall(rng, faunaGoalOrbitRadius);
                         }
 
-                        // Move toward the goal.
-                        Vector3 toGoal = fa.Goal - fa.Pos;
+                        // Move toward the sub-goal. On arrival, re-roll a new sub-goal
+                        // inside the orbit sphere around the density target — so the
+                        // fauna continuously SWEEPS the goal region instead of parking
+                        // at one offset point. This is the sim's stand-in for boid
+                        // separation spreading the swarm across a volume; without it a
+                        // fauna parks goalOrbitRadius away from the mass and its
+                        // consumeRadius never reaches the prisms — consumption stalls
+                        // at ~0 and the cell shows a false plateau.
+                        Vector3 toGoal = fa.SubGoal - fa.Pos;
                         float dist = toGoal.magnitude;
                         float step = faunaSpeed * dt;
-                        fa.Pos = dist <= step || dist < 0.001f ? fa.Goal : fa.Pos + toGoal * (step / dist);
+                        if (dist <= step || dist < 0.001f)
+                        {
+                            fa.Pos = fa.SubGoal;
+                            fa.SubGoal = fa.DensityTarget + RandomInBall(rng, faunaGoalOrbitRadius);
+                        }
+                        else
+                        {
+                            fa.Pos += toGoal * (step / dist);
+                        }
 
                         // Consume opposing-domain prisms within range.
                         int eaten = 0;
