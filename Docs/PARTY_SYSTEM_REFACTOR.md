@@ -384,21 +384,128 @@ Need to add `using Unity.Netcode;` for `NetworkManager.Singleton` access in
 5. Delete the field declaration (line 167).
 6. Compile, run existing edit-mode tests (no test changes expected).
 
-### `[ ]` Commit 4 — `EnsurePartySessionAsync` introduction
+### `[x]` Commit 4 — `EnsurePartySessionAsync` introduction (merged with original Commit 5)
 
-- Rename `CreateOwnPartySessionAsync` → `EnsurePartySessionAsync` (still private for now).
-- Add idempotent guard at top: `if (IsHostingParty) return;`
-- Delete `RetryCreateOwnPartySessionAsync` wrapper. Make `EnsurePartySessionAsync` public.
-- Update tooltip on `bootStatusRetryRequestedEvent` at `HostConnectionService.cs:54`.
+**Outcome**: `CreateOwnPartySessionAsync` (private) renamed to `EnsurePartySessionAsync`
+(public). Idempotent guard `if (IsHostingParty) return;` added at the fast-path AND
+post-mutex positions. `RetryCreateOwnPartySessionAsync` deleted. `ClearPartySessionRef`
+added as the single explicit clear escape hatch (used only by
+`PartyInviteController.RecoverFromFailedTransitionAsync`). All 8 callsites (5 internal
+to HCS, 2 in `PartyInviteController`, 1 in `AuthenticationSceneController`) updated.
+Stale comments at lines 437/443, 862/866, 1110/1113 in HCS rewritten. Tooltip on
+`bootStatusRetryRequestedEvent` updated. Comment in
+`AuthenticationSceneController.cs:478` updated.
 
-### `[ ]` Commit 5 — Update `EnsurePartySessionAsync` callsites
+Behavior change (intentional, endorsed by locked decisions): the post-mutex
+double-check is now `IsHostingParty` (which requires `NM.IsListening && NM.IsServer`
+in addition to `state == InParty && ActiveSession != null`). This catches the edge
+case where the state machine thinks we're InParty but NM was externally shut down.
+Three callsites that previously called `RetryCreateOwnPartySessionAsync`
+(implicit `ClearSession` + recreate) now call `EnsurePartySessionAsync` directly
+(idempotent) — they were never the recovery path, so dropping their implicit clear
+is correct behavior under the locked invariant "`ActiveSession` is never nulled
+outside an intentional leave."
 
-- `AuthenticationSceneController:465, 478`: call `EnsurePartySessionAsync()`.
-- `PartyInviteController:277`: call `EnsurePartySessionAsync()`.
-- `PartyInviteController:350` (`RecoverFromFailedTransitionAsync`): explicit
-  `_partySessionService.ClearSession();` immediately followed by
-  `await _hostConnectionService.EnsurePartySessionAsync();`.
-- This is the only site that intentionally drops state to escape a stale ref.
+The `CancellationToken` parameter on the old `RetryCreate...` wrapper was dead weight
+(never threaded into the actual work) and is dropped at all callsites.
+
+`HostConnectionService.cs`: 1467 → 1477 lines (+10 from expanded XML doc on
+`EnsurePartySessionAsync` and the new `ClearPartySessionRef` method). Brace balance
+123/123. Zero remaining references to old method names anywhere under `Assets/_Scripts/`.
+
+**Pre-commit findings** (preserved for audit trail):
+
+
+**Decision**: original Commits 4 and 5 merged into a single atomic change. Reason:
+deleting `RetryCreateOwnPartySessionAsync` (Commit 4) without simultaneously updating
+its three external callers in `PartyInviteController` and `AuthenticationSceneController`
+breaks the build, which violates the locked protocol's "each commit compiles" rule.
+Commits 4 and 5 are conceptually two cognitive units (rename + idempotency, then
+caller rewiring) but at the source-of-truth level they are one atomic change.
+
+The numbering is preserved — Commit 5 is now empty / merged here.
+
+**Pre-commit findings** (live source post-Commit 3):
+
+`CreateOwnPartySessionAsync` callers (internal, all in HCS):
+
+| Line | Method | Treatment |
+|---|---|---|
+| 404 | `EnsureInitializedAsync` | rename → `EnsurePartySessionAsync()` |
+| 445 | `SendInviteAsync` (fallback when session lost) | rename |
+| 550 | JoiningParty → HostingParty transition | rename |
+| 616 | `LeavePartyAsync` | rename |
+
+`RetryCreateOwnPartySessionAsync` callers:
+
+| Site | Caller | Currently does | New behavior |
+|---|---|---|---|
+| HCS:322 | `HandleBootStatusRetryRequested` | `RetryCreate...Forget()` | `EnsurePartySessionAsync().Forget()` |
+| PartyInviteController:277 | `LeavePartyAndReturnToMenuAsync` | `hcs.RetryCreate...(ct).AsMainThread()` | `hcs.EnsurePartySessionAsync().AsMainThread()` |
+| PartyInviteController:350 | `RecoverFromFailedTransitionAsync` | `hcs.RetryCreate...().AsMainThread()` | `hcs.ClearPartySessionRef();` then `await hcs.EnsurePartySessionAsync().AsMainThread()` |
+| AuthenticationSceneController:465 | initial create retry loop | `hcs.RetryCreate...(ct).AsMainThread()` | `hcs.EnsurePartySessionAsync().AsMainThread()` |
+
+The `CancellationToken` parameter on `RetryCreateOwnPartySessionAsync` was effectively
+a no-op — the wrapper never threaded it into `CreateOwnPartySessionAsync` (which had
+no ct param). New `EnsurePartySessionAsync()` keeps the no-param signature.
+
+**Idempotent guard placement**:
+```csharp
+public async UniTask EnsurePartySessionAsync()
+{
+    if (IsHostingParty) return;       // fast path
+
+    await _sessionCreationMutex.WaitAsync();
+    try
+    {
+        if (IsHostingParty) return;   // double-check after mutex serialises concurrent callers
+        // ... existing creation body, with the old (state==InParty && ActiveSession!=null) check removed
+    }
+    finally { _sessionCreationMutex.Release(); }
+}
+```
+
+The post-mutex `IsHostingParty` check REPLACES the old `(state == InParty && ActiveSession != null)`
+double-check at lines 687-690. This is a deliberate semantic strengthening — `IsHostingParty`
+also requires `NM.IsListening && NM.IsServer`, so it catches the edge case where the state
+machine says InParty but NM was externally shut down. Endorsed by the locked decision:
+"One public create-or-no-op surface: `EnsurePartySessionAsync` — idempotent (no-op if
+`IsHostingParty`, create otherwise)."
+
+**`ClearPartySessionRef` accessor**:
+
+`RecoverFromFailedTransitionAsync` needs to drop a stale `ActiveSession` ref before
+creating fresh. `_partySessionService` is private in HCS, so a narrow public method is
+added:
+```csharp
+public void ClearPartySessionRef() => _partySessionService.ClearSession();
+```
+Documented as the single escape hatch from a stale ref, intended for the recovery path
+only. Commit 10 (`LeavePartyKeepHostAsync`) will subsume this pattern and may make the
+method internal again or delete it.
+
+**Stale-comment updates** (in-line, not behavior):
+- HCS:437, 443 — comments mentioning `CreateOwnPartySessionAsync` by name → update to `EnsurePartySessionAsync`
+- HCS:852, 856 — comments mentioning `RetryCreateOwnPartySessionAsync` → update to `EnsurePartySessionAsync`
+- HCS:1100, 1103 — comments in `RefreshPartyMembersAsync` referencing `CreateOwnPartySessionAsync` and `RetryCreateOwnPartySessionAsync` chain
+- HCS:53 — tooltip on `bootStatusRetryRequestedEvent`
+- AuthenticationSceneController:478 — comment mentioning `RetryCreateOwnPartySessionAsync`
+
+**Execution plan**:
+
+1. Rename `private async UniTask CreateOwnPartySessionAsync()` → `public async UniTask EnsurePartySessionAsync()`.
+2. Add fast-path idempotent guard `if (IsHostingParty) return;` before the mutex wait.
+3. Replace the post-mutex double-check (state == InParty && ActiveSession != null) with `if (IsHostingParty) return;`.
+4. Delete `RetryCreateOwnPartySessionAsync` (lines 725-734).
+5. Add `public void ClearPartySessionRef() => _partySessionService.ClearSession();`.
+6. Update all 5 internal HCS call sites (line 322 fire-and-forget, lines 404/445/550/616 awaited).
+7. Update `PartyInviteController.cs` line 277 (drop ct) and line 350 (clear-then-ensure).
+8. Update `AuthenticationSceneController.cs` line 465 (drop ct).
+9. Stale-comment fixes across the 5 listed sites + tooltip + AuthenticationSceneController comment.
+
+### `[merged]` Commit 5 — Update `EnsurePartySessionAsync` callsites
+
+Merged into Commit 4 above. See "Decision" note at the top of Commit 4.
 
 ### `[ ]` Commit 6 — Wrap unguarded UGS calls (`KickPartyMemberAsync`)
 

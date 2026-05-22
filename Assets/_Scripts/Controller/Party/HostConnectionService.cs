@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private HostConnectionDataSO connectionData;
 
         [Header("Boot Status SOAP")]
-        [Tooltip("Raised by BootStatusPanel when the user taps the retry button after the auto-retry loop exhausts. Triggers RetryCreateOwnPartySessionAsync.")]
+        [Tooltip("Raised by BootStatusPanel when the user taps the retry button after the auto-retry loop exhausts. Triggers EnsurePartySessionAsync.")]
         [SerializeField] private ScriptableEventNoParam bootStatusRetryRequestedEvent;
 
         [Header("Presence Lobby")]
@@ -319,7 +319,7 @@ namespace CosmicShore.Gameplay
                 Instance = null;
         }
 
-        private void HandleBootStatusRetryRequested() => RetryCreateOwnPartySessionAsync().Forget();
+        private void HandleBootStatusRetryRequested() => EnsurePartySessionAsync().Forget();
 
         /// <summary>
         /// Resets per-session invite state on Menu_Main reload and rebuilds
@@ -401,7 +401,7 @@ namespace CosmicShore.Gameplay
 
                 // Every player always hosts their own solo Relay party session from menu entry.
                 // Creates Relay session and starts NM — vessel spawns when NM is up.
-                await CreateOwnPartySessionAsync();
+                await EnsurePartySessionAsync();
             }
             finally { _joining = false; }
         }
@@ -434,15 +434,14 @@ namespace CosmicShore.Gameplay
             }
 
             // Ensure our own Relay session is live before writing the invite.
-            // CreateOwnPartySessionAsync is mutex-guarded and idempotent — if it is
-            // already running from the startup path this call simply waits for it
-            // to finish; if it already succeeded the double-check guard returns early.
+            // EnsurePartySessionAsync is idempotent — fast-paths if IsHostingParty,
+            // serialises concurrent callers via the mutex, and post-checks again.
             if (_partySessionService.ActiveSession == null)
             {
                 DebugExtensions.LogColored(
-                    "[INVITE-SEND] Relay session not yet ready — awaiting CreateOwnPartySessionAsync...",
+                    "[INVITE-SEND] Relay session not yet ready — awaiting EnsurePartySessionAsync...",
                     Color.yellow);
-                await CreateOwnPartySessionAsync();
+                await EnsurePartySessionAsync();
             }
 
             await _lobbyMutex.WaitAsync();
@@ -547,7 +546,7 @@ namespace CosmicShore.Gameplay
                 if (string.IsNullOrEmpty(realSessionId))
                 {
                     Debug.LogError("[HostConnectionService] AcceptInvite ABORT — invite has no session ID. The host may not have a Relay session.");
-                    await CreateOwnPartySessionAsync(); // JoiningParty → HostingParty → InParty
+                    await EnsurePartySessionAsync(); // JoiningParty → HostingParty → InParty
                     return;
                 }
 
@@ -613,7 +612,7 @@ namespace CosmicShore.Gameplay
             ClearJoinedPartyAsync().Forget();
             await controller.LeavePartyAndReturnToMenuAsync();
             // After leaving the party, recreate our own solo Relay party session.
-            await CreateOwnPartySessionAsync();
+            await EnsurePartySessionAsync();
         }
 
         public async UniTask KickPartyMemberAsync(string playerId)
@@ -668,26 +667,35 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Creates the local player's solo Relay-backed party session and starts
-        /// NetworkManager as a Relay host.  Called automatically after presence lobby
-        /// join and after any event that requires a fresh solo session (leave, reconnect,
-        /// failed join).
+        /// Idempotent: ensures the local player owns a live solo Relay-backed
+        /// party session and that NetworkManager is up as a Relay host.
         ///
-        /// Transitions: current → HostingParty (transient, session creating) → InParty
-        /// (session live, NM listening, vessel will spawn).
+        /// • No-op fast-path when <see cref="IsHostingParty"/> is already true.
+        /// • Otherwise creates the session and starts NM, transitioning
+        ///   current → HostingParty (transient) → InParty.
         ///
-        /// Thread-safety: serialised by <see cref="_sessionCreationMutex"/>; concurrent
-        /// callers wait and then bail out if the first caller already succeeded.
+        /// Thread-safety: serialised by <see cref="_sessionCreationMutex"/>; the
+        /// post-mutex <see cref="IsHostingParty"/> double-check makes concurrent
+        /// callers safely collapse to one creation.
+        ///
+        /// This is the canonical create-or-no-op surface — see
+        /// <c>Docs/PARTY_SYSTEM_REFACTOR.md</c> locked decisions. Callers that
+        /// need to drop a stale session reference first must call
+        /// <see cref="ClearPartySessionRef"/> explicitly (only the recovery
+        /// path in <c>PartyInviteController.RecoverFromFailedTransitionAsync</c>
+        /// does this).
         /// </summary>
-        private async UniTask CreateOwnPartySessionAsync()
+        public async UniTask EnsurePartySessionAsync()
         {
+            // Fast path — already hosting, no work to do.
+            if (IsHostingParty) return;
+
             await _sessionCreationMutex.WaitAsync();
             try
             {
-                // Double-check: a concurrent call may have already reached InParty.
-                if (_stateMachine.CurrentState == PartyState.InParty &&
-                    _partySessionService.ActiveSession != null)
-                    return;
+                // Post-mutex double-check: catches the race where a concurrent
+                // caller reached IsHostingParty == true while we were waiting.
+                if (IsHostingParty) return;
 
                 if (_stateMachine.CurrentState != PartyState.HostingParty)
                     _stateMachine.TryTransition(PartyState.HostingParty);
@@ -723,15 +731,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Public re-entry point for <see cref="Core.AuthenticationSceneController"/> to
-        /// retry Relay session creation without breaking the single-owner rule.
-        /// Clears any stale session reference before retrying.
+        /// Drops the cached party session reference. The single explicit escape
+        /// hatch from a stale <see cref="ISession"/> ref. Intended for the
+        /// recovery path in <c>PartyInviteController.RecoverFromFailedTransitionAsync</c>;
+        /// other callers must use <see cref="EnsurePartySessionAsync"/> alone
+        /// to honour the "ActiveSession is never nulled outside an intentional
+        /// leave" invariant (see <c>Docs/PARTY_SYSTEM_REFACTOR.md</c>).
+        ///
+        /// Commit 10 (`LeavePartyKeepHostAsync`) will subsume this pattern;
+        /// this method may become internal or be removed at that point.
         /// </summary>
-        public async UniTask RetryCreateOwnPartySessionAsync(CancellationToken ct = default)
-        {
-            _partySessionService.ClearSession();
-            await CreateOwnPartySessionAsync();
-        }
+        public void ClearPartySessionRef() => _partySessionService.ClearSession();
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Refresh Loop                                                     ║
@@ -849,12 +859,12 @@ namespace CosmicShore.Gameplay
             {
                 // Surface the failure so any subscribed UI (boot status panel,
                 // in-menu reconnect banner) can show "Connection lost".  We do
-                // NOT call CreateOwnPartySessionAsync from this background
+                // NOT call EnsurePartySessionAsync from this background
                 // loop — that path would shut down NetworkManager and respawn
                 // every menu vessel.  Relay re-creation is driven by an
-                // explicit user action (retry button) via
-                // RetryCreateOwnPartySessionAsync, which keeps the user-visible
-                // recovery in one place.
+                // explicit user action (retry button) via the boot-status
+                // SOAP event → HandleBootStatusRetryRequested → EnsurePartySessionAsync,
+                // which keeps the user-visible recovery in one place.
                 _eventBus.RaiseHostConnectionLost();
 
                 await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
@@ -1097,10 +1107,10 @@ namespace CosmicShore.Gameplay
 
                 // [transient] Everything else: log and retry next tick WITHOUT
                 // clearing the session. Clearing here cascades into host-vessel
-                // despawn via SendInviteAsync → CreateOwnPartySessionAsync →
+                // despawn via SendInviteAsync → EnsurePartySessionAsync →
                 // NetworkTransitionService.ShutdownAsync → NetworkManager.Shutdown.
                 // Session lifetime is owned by explicit user paths (LeavePartyAsync,
-                // kick, NM shutdown, RetryCreateOwnPartySessionAsync) — not by
+                // kick, NM shutdown, user-tapped boot-status retry) — not by
                 // background refresh ticks.
                 //
                 // TODO (Commits 11/12): split this branch into [transient] vs

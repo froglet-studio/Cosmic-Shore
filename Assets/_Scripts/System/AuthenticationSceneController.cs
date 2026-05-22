@@ -462,7 +462,7 @@ namespace CosmicShore.Core
                         CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) — retrying HCS init...");
                         var hcs = HostConnectionService.Instance;
                         if (hcs != null)
-                            await hcs.RetryCreateOwnPartySessionAsync(ct).AsMainThread();
+                            await hcs.EnsurePartySessionAsync().AsMainThread();
                     }
                     else
                     {
@@ -475,7 +475,7 @@ namespace CosmicShore.Core
             {
                 // Auto-retry exhausted. Raise the retry surface via SOAP; the
                 // BootStatusPanel renders it, and HostConnectionService listens
-                // for the retry-requested event and calls RetryCreateOwnPartySessionAsync.
+                // for the retry-requested event and calls EnsurePartySessionAsync.
                 // Resume the wait with no timeout — OnHostConnectionEstablished fires
                 // when manual retry succeeds and the scene load proceeds.
                 bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry,

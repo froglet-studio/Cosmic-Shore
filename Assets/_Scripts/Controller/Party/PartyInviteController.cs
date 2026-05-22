@@ -272,9 +272,11 @@ namespace CosmicShore.Gameplay
 
                 // Recreate the player's own solo Relay session so they return
                 // to lava-lamp as a fresh host.  HCS handles NM startup internally.
+                // EnsurePartySessionAsync is idempotent — no-op if we already
+                // happen to be hosting (e.g. shutdown above was a no-op).
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
-                    await hcs.RetryCreateOwnPartySessionAsync(ct).AsMainThread();
+                    await hcs.EnsurePartySessionAsync().AsMainThread();
 
                 // Reload Menu_Main via the new NM so scene-placed NetworkObjects
                 // initialise cleanly in the fresh Relay session.
@@ -342,12 +344,18 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                // HCS owns NM startup.  RetryCreateOwnPartySessionAsync clears any
-                // stale session reference, creates a fresh solo Relay, and starts NM
-                // as host.  No direct nm.StartHost() calls here.
+                // HCS owns NM startup. RecoverFromFailedTransitionAsync is the ONE
+                // path that intentionally drops a stale party-session reference (the
+                // accept transition failed mid-flow, leaving a possibly-stale ref).
+                // ClearPartySessionRef + EnsurePartySessionAsync is the explicit
+                // clear-and-recreate sequence — see Docs/PARTY_SYSTEM_REFACTOR.md.
+                // No direct nm.StartHost() calls here.
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
-                    await hcs.RetryCreateOwnPartySessionAsync().AsMainThread();
+                {
+                    hcs.ClearPartySessionRef();
+                    await hcs.EnsurePartySessionAsync().AsMainThread();
+                }
 
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer && nm.SceneManager != null)
