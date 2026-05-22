@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   penaltyLevel: -0.5
   recoveryDuration: 3
+  allyBuffAmount: 0.5
   hapticAmplitude: 0.8
   hapticFrequency: 0.7
   hapticDuration: 0.25

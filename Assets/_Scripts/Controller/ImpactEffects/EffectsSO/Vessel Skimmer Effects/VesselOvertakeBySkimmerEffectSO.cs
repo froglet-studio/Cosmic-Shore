@@ -7,10 +7,12 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Overtake impact effect: when a vessel collides with an opponent's skimmer,
-    /// the slower vessel gets all its elements debuffed below baseline (into the first 5 pips)
-    /// with haptics. The debuff recovers over time back to 0 (baseline).
-    /// Nothing happens to the faster vessel.
+    /// Overtake impact effect for the Squirrel's skimmer: when a slower vessel collides with the
+    /// Squirrel's skimmer (the Squirrel is overtaking it), the slower vessel's elements are affected.
+    /// - Opponent (different domain): all elements are debuffed below baseline (into the first 5
+    ///   pips) with haptics, recovering over time back to 0 (baseline).
+    /// - Ally (same domain): all elements are buffed up additively instead.
+    /// Nothing happens to the faster (Squirrel) vessel.
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselOvertakeBySkimmerEffect",
@@ -24,6 +26,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds to recover from penalty back to baseline (0)")]
         [SerializeField] private float recoveryDuration = 3f;
 
+        [Header("Ally Buff")]
+        [Tooltip("Amount each element is raised when the Squirrel overtakes a same-domain ally (additive, normalized — 0.5 = +5 levels)")]
+        [SerializeField] private float allyBuffAmount = 0.5f;
+
         [Header("Haptics")]
         [SerializeField] private float hapticAmplitude = 0.8f;
         [SerializeField] private float hapticFrequency = 0.7f;
@@ -36,8 +42,8 @@ namespace CosmicShore.Gameplay
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
 
-        // Per-vessel tracking: last penalty time and active recovery state
-        private static readonly Dictionary<ResourceSystem, float> _lastPenaltyTime = new();
+        // Per-vessel tracking: last overtake-effect time (cooldown) and active debuff recovery state
+        private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
         private static readonly Dictionary<ResourceSystem, OvertakeRecovery> _activeRecoveries = new();
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
@@ -55,40 +61,67 @@ namespace CosmicShore.Gameplay
             float impactorSpeed = impactorVessel.VesselStatus.Speed;
             float impacteeSpeed = impacteeVessel.VesselStatus.Speed;
 
-            // Only the slower vessel gets penalized
+            // Only the slower vessel — the one being overtaken — is affected
             if (impactorSpeed >= impacteeSpeed) return;
 
-            // The impactor (vessel that hit the skimmer) is the slower one — penalize them
+            // The impactor (vessel that hit the skimmer) is the slower, overtaken one
             var slowerStatus = impactorVessel.VesselStatus;
             var rs = slowerStatus.ResourceSystem;
             if (rs == null) return;
 
-            // Cooldown check
+            // Cooldown check — anti-spam per overtaken vessel
             var now = Time.time;
-            if (_lastPenaltyTime.TryGetValue(rs, out var lastTime))
+            if (_lastEffectTime.TryGetValue(rs, out var lastTime))
             {
                 if (now - lastTime < cooldown)
                     return;
             }
 
-            _lastPenaltyTime[rs] = now;
+            _lastEffectTime[rs] = now;
 
             // Haptic feedback
             HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
 
-            // Slam all elements to penalty level and start recovery
+            // Allies (same domain) get their elements buffed; opponents get debuffed.
+            if (slowerStatus.Domain == impacteeVessel.VesselStatus.Domain)
+                BuffAlly(rs);
+            else
+                DebuffOpponent(rs, slowerStatus.Silhouette?.ElementBars);
+        }
+
+        /// <summary>
+        /// Buffs an allied (same-domain) vessel the Squirrel overtook: every element is nudged up
+        /// additively. Any in-progress overtake debuff recovery is cleared first so the buff isn't
+        /// immediately lerped away by the recovery ticker.
+        /// </summary>
+        void BuffAlly(ResourceSystem rs)
+        {
+            if (_activeRecoveries.TryGetValue(rs, out var recovery))
+            {
+                recovery.ElementBars?.EndOvertake();
+                _activeRecoveries.Remove(rs);
+            }
+
+            for (int i = 0; i < AllElements.Length; i++)
+                rs.AdjustLevel(AllElements[i], allyBuffAmount);
+        }
+
+        /// <summary>
+        /// Debuffs an opposing (different-domain) vessel the Squirrel overtook: all elements are
+        /// slammed below baseline and recover back to 0 (baseline) over <see cref="recoveryDuration"/>.
+        /// </summary>
+        void DebuffOpponent(ResourceSystem rs, ElementalBarsView elementBars)
+        {
             var recovery = new OvertakeRecovery
             {
                 ResourceSystem = rs,
+                ElementBars = elementBars,
                 PenaltyLevel = penaltyLevel,
                 RecoveryDuration = recoveryDuration,
                 ElapsedTime = 0f,
             };
 
             // Begin overtake on the element bars so pips can go below baseline
-            var elementBars = slowerStatus.Silhouette?.ElementBars;
-            recovery.ElementBars = elementBars;
-
             elementBars?.BeginOvertake();
 
             // Slam all elements
