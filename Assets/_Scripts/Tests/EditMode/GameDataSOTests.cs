@@ -291,6 +291,123 @@ namespace CosmicShore.Tests
 
         #endregion
 
+        #region Domain Aggregation Helpers (team-based scoring)
+
+        [Test]
+        public void SumCrystalsCollectedByDomain_AddsOnlySameDomain()
+        {
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, CrystalsCollected = 3 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, CrystalsCollected = 5 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Ruby, CrystalsCollected = 10 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Gold, CrystalsCollected = 2 });
+
+            Assert.AreEqual(8, _gameData.SumCrystalsCollectedByDomain(Domains.Jade));
+            Assert.AreEqual(10, _gameData.SumCrystalsCollectedByDomain(Domains.Ruby));
+            Assert.AreEqual(2, _gameData.SumCrystalsCollectedByDomain(Domains.Gold));
+        }
+
+        [Test]
+        public void SumCrystalsCollectedByDomain_EmptyList_ReturnsZero()
+        {
+            Assert.AreEqual(0, _gameData.SumCrystalsCollectedByDomain(Domains.Jade));
+        }
+
+        [Test]
+        public void SumJoustCollisionsByDomain_AddsOnlySameDomain()
+        {
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, JoustCollisions = 2 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Ruby, JoustCollisions = 4 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Ruby, JoustCollisions = 1 });
+
+            Assert.AreEqual(2, _gameData.SumJoustCollisionsByDomain(Domains.Jade));
+            Assert.AreEqual(5, _gameData.SumJoustCollisionsByDomain(Domains.Ruby));
+            Assert.AreEqual(0, _gameData.SumJoustCollisionsByDomain(Domains.Gold));
+        }
+
+        [Test]
+        public void TryGetDomainReachingCrystalTarget_NoDomainReaches_ReturnsFalseBlue()
+        {
+            _gameData.RequestedDomainCount = 3;
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, CrystalsCollected = 5 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Ruby, CrystalsCollected = 7 });
+
+            bool result = _gameData.TryGetDomainReachingCrystalTarget(target: 20, out var winner);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(Domains.Blue, winner);
+        }
+
+        [Test]
+        public void TryGetDomainReachingCrystalTarget_FirstDomainOverTarget_Wins()
+        {
+            _gameData.RequestedDomainCount = 3;
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, CrystalsCollected = 8 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, CrystalsCollected = 4 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Ruby, CrystalsCollected = 5 });
+
+            bool result = _gameData.TryGetDomainReachingCrystalTarget(target: 10, out var winner);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(Domains.Jade, winner, "Jade aggregate (12) reaches the target before Ruby's (5).");
+        }
+
+        [Test]
+        public void TryGetDomainReachingCrystalTarget_DeterministicOrder_JadeBeforeRubyBeforeGold()
+        {
+            _gameData.RequestedDomainCount = 3;
+            // Three domains all over target — Jade wins on enum order, not RNG.
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Gold, CrystalsCollected = 50 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Ruby, CrystalsCollected = 50 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, CrystalsCollected = 50 });
+
+            bool result = _gameData.TryGetDomainReachingCrystalTarget(target: 10, out var winner);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(Domains.Jade, winner);
+        }
+
+        [Test]
+        public void TryGetDomainReachingCrystalTarget_RespectsRequestedDomainCount()
+        {
+            // DC=2 — Gold is not in the active set even though its sum reaches target.
+            _gameData.RequestedDomainCount = 2;
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Gold, CrystalsCollected = 50 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, CrystalsCollected = 5 });
+
+            bool result = _gameData.TryGetDomainReachingCrystalTarget(target: 10, out var winner);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(Domains.Blue, winner);
+        }
+
+        [Test]
+        public void TryGetDomainReachingJoustTarget_FirstDomainOverTarget_Wins()
+        {
+            _gameData.RequestedDomainCount = 3;
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Ruby, JoustCollisions = 3 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Ruby, JoustCollisions = 4 });
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, JoustCollisions = 2 });
+
+            bool result = _gameData.TryGetDomainReachingJoustTarget(target: 5, out var winner);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(Domains.Ruby, winner);
+        }
+
+        [Test]
+        public void TryGetDomainReachingJoustTarget_NoDomainReaches_ReturnsFalseBlue()
+        {
+            _gameData.RequestedDomainCount = 3;
+            _gameData.RoundStatsList.Add(new MockRoundStats { Domain = Domains.Jade, JoustCollisions = 1 });
+
+            bool result = _gameData.TryGetDomainReachingJoustTarget(target: 5, out var winner);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(Domains.Blue, winner);
+        }
+
+        #endregion
+
         #region SortDomainStats
 
         [Test]

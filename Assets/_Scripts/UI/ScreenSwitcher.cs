@@ -486,7 +486,7 @@ namespace CosmicShore.UI
         {
             if (hostConnectionData == null) return true;
             if (hostConnectionData.PartyMembers == null || hostConnectionData.PartyMembers.Count <= 1) return true;
-            return hostConnectionData.IsHost;
+            return hostConnectionData.IsPartyHost;
         }
 
         private void NavigateTo(int ScreenIndex, bool animate = true)

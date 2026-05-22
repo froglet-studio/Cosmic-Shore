@@ -51,35 +51,24 @@ namespace CosmicShore.UI
         [Header("Screen 1 – Intensity Controls")]
         [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
 
-        [Header("Screen 1 – Player Count (Component Stepper)")]
-        [SerializeField] private PlayerCountStepper playerCountStepper;
-
-        [Header("Screen 1 – Player Count (Inline Stepper)")]
-        [SerializeField] private Button playerCountDecrementButton;
-        [SerializeField] private Button playerCountIncrementButton;
-        [SerializeField] private TMP_Text playerCountValueText;
+        [Header("Screen 1 – Player Count Stepper")]
+        [FormerlySerializedAs("playerCountStepper")]
+        [SerializeField] private IntStepper pcStepper;
 
         [Header("Screen 1 – Domain Count Stepper")]
-        [FormerlySerializedAs("domainCountDecrementButton")]
-        [SerializeField] private Button domainCountDecrementButton;
-        [FormerlySerializedAs("domainCountIncrementButton")]
-        [SerializeField] private Button domainCountIncrementButton;
-        [FormerlySerializedAs("domainsValueText")]
-        [SerializeField] private TMP_Text domainsValueText;
-
-        [Header("Screen 1 – Domain Selection")]
-        [FormerlySerializedAs("domainSelectionPanel")]
-        [SerializeField] private DomainSelectionPanel domainSelectionPanel;
+        [SerializeField] private IntStepper dcStepper;
 
         [Header("Screen 2 – Domain Selection")]
-        [Tooltip("One DomainInfoData per selectable domain. The Blue tile (Domain = Blue) " +
-                 "doubles as the 'Random / not yet picked' home — chips spawn there at modal open.")]
+        [Tooltip("One DomainInfoData per selectable domain (Jade, Ruby, Gold). " +
+                 "Any Blue tile in this list is hidden at runtime — Random is gone, " +
+                 "Jade is the unpicked default. Tiles outside ActiveDomains[0..DC-1] " +
+                 "are dimmed and non-interactable.")]
         [FormerlySerializedAs("domainInfoItems")]
         [SerializeField] private List<DomainInfoData> domainInfoItems = new();
 
         [Tooltip("Avatar chip prefab. One instance is created per human player when the " +
-                 "modal opens, parented to the Blue tile's strip. Reparented to the picked " +
-                 "tile's strip on each player's NetDomain.OnValueChanged.")]
+                 "modal opens, parented to the player's currently-picked tile (Jade by default). " +
+                 "Reparented to the new tile's strip on each player's NetDomain.OnValueChanged.")]
         [SerializeField] private DomainAvatarChip chipPrefab;
 
         [Header("Screen 2 – Selected Vessel Summary")]
@@ -113,15 +102,33 @@ namespace CosmicShore.UI
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
+        [Header("Screen 1 → Screen 2 transition")]
+        [Tooltip("Confirm Configuration button on Screen 1. Disabled after the first click " +
+                 "to defend against spam-clicks (commit fires exactly once per modal session).")]
+        [SerializeField] private Button confirmConfigurationButton;
+
+        [Tooltip("Optional: the Screen-2 Back button. Hidden on Screen-2 entry — the " +
+                 "commit-once flow has no back path. Wire in the inspector if a back " +
+                 "button still exists in the prefab.")]
+        [SerializeField] private GameObject backFromGameSelectButton;
+
         // Hard cap on the number of players/domains the game supports
-        const int MaxSupportedPlayers = 4;
+        const int MaxSupportedPlayers = 12;
         const int MaxSupportedDomains = 3;
         const int MinDomains = 1;
+        const int DefaultDomainCount = 1;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
         bool _isClientMode;
+
+        // Modal-side single-shot guard for the host's "Confirm Configuration"
+        // button. Set true on first click; gates re-entry into OnConfirmConfiguration
+        // so a host spam-click does not re-trigger the chip respawn, audio, or
+        // server commit. Reset on modal-open (SetSelectedGame) and modal-close
+        // (CloseAndNotifyClients) so the next session starts clean.
+        bool _isConfigurationCommitted;
 
         readonly List<SO_Vessel> _availableShips = new();
         int _currentShipIndex = -1;
@@ -162,20 +169,11 @@ namespace CosmicShore.UI
                 intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
             }
 
-            if (playerCountStepper)
-                playerCountStepper.OnValueChanged += HandlePlayerCountSelected;
+            if (pcStepper)
+                pcStepper.OnValueChanged += HandlePlayerCountSelected;
 
-            // Inline player count buttons (development UI)
-            if (playerCountDecrementButton)
-                playerCountDecrementButton.onClick.AddListener(OnPlayerCountDecrement);
-            if (playerCountIncrementButton)
-                playerCountIncrementButton.onClick.AddListener(OnPlayerCountIncrement);
-
-            // Domain count buttons
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.onClick.AddListener(OnDomainCountDecrement);
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.onClick.AddListener(OnDomainCountIncrement);
+            if (dcStepper)
+                dcStepper.OnValueChanged += HandleDomainCountChanged;
 
             // Domain info buttons
             foreach (var item in domainInfoItems)
@@ -188,14 +186,10 @@ namespace CosmicShore.UI
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
 
-            if (domainSelectionPanel)
-                domainSelectionPanel.OnDomainSelected += HandlePanelDomainSelected;
-
             if (arcadeConfigSyncManager)
             {
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
-                arcadeConfigSyncManager.OnConfigUpdatedOnClient += HandleConfigUpdatedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 Debug.Log($"[ArcadeConfigModal] OnEnable — subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
@@ -214,18 +208,11 @@ namespace CosmicShore.UI
                 intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
             }
 
-            if (playerCountStepper)
-                playerCountStepper.OnValueChanged -= HandlePlayerCountSelected;
+            if (pcStepper)
+                pcStepper.OnValueChanged -= HandlePlayerCountSelected;
 
-            if (playerCountDecrementButton)
-                playerCountDecrementButton.onClick.RemoveListener(OnPlayerCountDecrement);
-            if (playerCountIncrementButton)
-                playerCountIncrementButton.onClick.RemoveListener(OnPlayerCountIncrement);
-
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.onClick.RemoveListener(OnDomainCountDecrement);
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.onClick.RemoveListener(OnDomainCountIncrement);
+            if (dcStepper)
+                dcStepper.OnValueChanged -= HandleDomainCountChanged;
 
             foreach (var item in domainInfoItems)
             {
@@ -236,14 +223,10 @@ namespace CosmicShore.UI
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
 
-            if (domainSelectionPanel)
-                domainSelectionPanel.OnDomainSelected -= HandlePanelDomainSelected;
-
             if (arcadeConfigSyncManager)
             {
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
-                arcadeConfigSyncManager.OnConfigUpdatedOnClient -= HandleConfigUpdatedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
             }
@@ -265,9 +248,14 @@ namespace CosmicShore.UI
             _isClientMode = false;
             _selectedGame = selectedGame;
 
+            // Fresh modal session — re-arm the commit guard so OnConfirmConfiguration
+            // can fire again. The Confirm button is re-enabled below in
+            // ResetCommitGuard().
+            ResetCommitGuard();
+
             config.ResetState();
             config.SelectedGame = selectedGame;
-            config.DomainCount  = 1; // default to 1 domain — user can adjust via stepper
+            config.DomainCount  = ComputeDefaultDomainCount();
 
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
@@ -278,25 +266,10 @@ namespace CosmicShore.UI
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
+            // Host configures privately on Screen 1. No client involvement until
+            // the host clicks Confirm Configuration → CommitConfiguration RPC fires.
             ShowConfigurationScreen();
             RaiseConfigChanged();
-
-            // Notify all clients to open their own modal with domain + vessel selection
-            if (arcadeConfigSyncManager)
-            {
-                arcadeConfigSyncManager.NotifyConfigOpened(
-                    (int)selectedGame.Mode,
-                    config.Intensity,
-                    config.PlayerCount,
-                    selectedGame.MaxPlayersAllowed,
-                    CurrentPartyHumanCount);
-            }
-
-            // Spawn one chip per player on the Blue tile, hook each player's
-            // NetDomain.OnValueChanged so that future picks reparent the right chip
-            // to the right tile. No periodic refresh — strictly event-driven.
-            SpawnChipsForAllPlayers();
-            RefreshTileVisibility();
         }
 
         #endregion
@@ -388,20 +361,21 @@ namespace CosmicShore.UI
             // Player count — enforce minimum = party size so host can't select
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
+            int pcMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
 
-            // Component stepper UI (preferred — supports 1-12 range)
-            if (playerCountStepper)
-                playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount);
+            if (pcStepper)
+                pcStepper.Initialize(effectiveMin, pcMax, config.PlayerCount);
 
-            // Inline stepper UI (development UI)
-            RefreshPlayerCountStepper();
-
-            // Domain count stepper
-            RefreshDomainCountStepper();
-
-            if (domainSelectionPanel && gameData != null && gameData.LocalPlayer is Player localPlayer)
-                domainSelectionPanel.SetSelection(localPlayer.NetDomain.Value);
+            // Domain count stepper — max bound depends on current PC (DC <= PC).
+            if (dcStepper)
+                dcStepper.Initialize(MinDomains, ComputeMaxDomainCount(), config.DomainCount);
         }
+
+        int ComputeMaxDomainCount() =>
+            Mathf.Min(config != null ? config.PlayerCount : MaxSupportedDomains, MaxSupportedDomains);
+
+        int ComputeDefaultDomainCount() =>
+            Mathf.Clamp(DefaultDomainCount, MinDomains, ComputeMaxDomainCount());
 
         void BuildAvailableShips(SO_ArcadeGame game)
         {
@@ -518,10 +492,6 @@ namespace CosmicShore.UI
 
             SyncGameDataConfig();
             RaiseConfigChanged();
-
-            // Sync intensity + player count to clients so they see updated read-only values
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
         }
 
         void HandlePlayerCountSelected(int playerCount)
@@ -530,126 +500,51 @@ namespace CosmicShore.UI
             if (IsClientMode) return;
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            playerCount        = Mathf.Clamp(playerCount, effectiveMin, _selectedGame.MaxPlayersAllowed);
+            int pcMax = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+            playerCount        = Mathf.Clamp(playerCount, effectiveMin, pcMax);
             config.PlayerCount = playerCount;
 
-            if (playerCountStepper)
-                playerCountStepper.SetValue(playerCount);
-            RefreshPlayerCountStepper();
+            if (pcStepper)
+                pcStepper.SetValue(playerCount);
 
+            // PC change may shrink the DC bound (DC <= PC). Re-clamp + re-bound the DC stepper.
+            int newDcMax = ComputeMaxDomainCount();
+            int newDc = Mathf.Clamp(config.DomainCount, MinDomains, newDcMax);
+            if (newDc != config.DomainCount)
+                config.DomainCount = newDc;
+            if (dcStepper)
+                dcStepper.Initialize(MinDomains, newDcMax, config.DomainCount);
+
+            RefreshTileVisibility();
             SyncGameDataConfig();
             RaiseConfigChanged();
-
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
-        }
-
-        void HandlePanelDomainSelected(Domains domain)
-        {
-            if (gameData.LocalPlayer is not Player player) return;
-            if (!player.IsOwner) return;
-            player.RequestSetDomain_ServerRpc(domain);
-        }
-
-        #endregion
-
-        #region Inline player count stepper
-
-        public void OnPlayerCountIncrement()
-        {
-            if (_selectedGame == null || config == null) return;
-            if (IsClientMode) return;
-
-            int max = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
-            int next = Mathf.Min(config.PlayerCount + 1, max);
-            SetPlayerCount(next);
-        }
-
-        public void OnPlayerCountDecrement()
-        {
-            if (_selectedGame == null || config == null) return;
-            if (IsClientMode) return;
-
-            int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            int next = Mathf.Max(config.PlayerCount - 1, effectiveMin);
-            SetPlayerCount(next);
-        }
-
-        void SetPlayerCount(int playerCount)
-        {
-            if (config.PlayerCount == playerCount) return;
-
-            config.PlayerCount = playerCount;
-
-            // Update both stepper UIs
-            if (playerCountStepper)
-                playerCountStepper.SetValue(playerCount);
-            RefreshPlayerCountStepper();
-
-            SyncGameDataConfig();
-            RaiseConfigChanged();
-
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
-        }
-
-        void RefreshPlayerCountStepper()
-        {
-            if (playerCountValueText)
-                playerCountValueText.text = config.PlayerCount.ToString();
-
-            if (_selectedGame == null) return;
-
-            int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            int max = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
-
-            if (playerCountDecrementButton)
-                playerCountDecrementButton.interactable = config.PlayerCount > effectiveMin && !IsClientMode;
-
-            if (playerCountIncrementButton)
-                playerCountIncrementButton.interactable = config.PlayerCount < max && !IsClientMode;
         }
 
         #endregion
 
         #region Domain count stepper
 
-        public void OnDomainCountIncrement()
+        void HandleDomainCountChanged(int newDomainCount)
         {
             if (config == null) return;
+            if (IsClientMode) return;
 
-            int next = Mathf.Min(config.DomainCount + 1, MaxSupportedDomains);
-            SetDomainCount(next);
-        }
+            // Pre-commit, host-local DC change. No snap-back: nobody has picked
+            // a domain yet (CommitConfiguration resets all humans to Jade), so
+            // there's nothing to protect against. No client broadcast either —
+            // clients don't open the modal until commit.
+            int proposed = Mathf.Clamp(newDomainCount, MinDomains, ComputeMaxDomainCount());
 
-        public void OnDomainCountDecrement()
-        {
-            if (config == null) return;
+            if (proposed == config.DomainCount)
+            {
+                if (dcStepper) dcStepper.SetValue(config.DomainCount);
+                return;
+            }
 
-            int next = Mathf.Max(config.DomainCount - 1, MinDomains);
-            SetDomainCount(next);
-        }
-
-        void SetDomainCount(int domainCount)
-        {
-            if (config.DomainCount == domainCount) return;
-
-            config.DomainCount = domainCount;
-            RefreshDomainCountStepper();
+            config.DomainCount = proposed;
+            RefreshTileVisibility();
             SyncGameDataConfig();
             RaiseConfigChanged();
-        }
-
-        void RefreshDomainCountStepper()
-        {
-            if (domainsValueText)
-                domainsValueText.text = config.DomainCount.ToString();
-
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.interactable = config.DomainCount > MinDomains;
-
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.interactable = config.DomainCount < MaxSupportedDomains;
         }
 
         #endregion
@@ -659,7 +554,7 @@ namespace CosmicShore.UI
         void InitializeDomainSelection()
         {
             if (config != null)
-                config.SelectedDomain = Domains.Blue;
+                config.SelectedDomain = Domains.Jade;
             RefreshTileVisibility();
         }
 
@@ -724,7 +619,7 @@ namespace CosmicShore.UI
         {
             if (p == null || _playerChips.ContainsKey(p)) return;
 
-            var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Blue);
+            var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Jade);
             if (startTile == null || startTile.AvatarStripTransform == null)
             {
                 Debug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} — chip not spawned.");
@@ -747,7 +642,7 @@ namespace CosmicShore.UI
         void HandlePlayerDomainChanged(Player p, Domains newDomain)
         {
             if (!_playerChips.TryGetValue(p, out var chip) || chip == null) return;
-            var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Blue);
+            var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Jade);
             if (tile == null || tile.AvatarStripTransform == null) return;
             chip.transform.SetParent(tile.AvatarStripTransform, worldPositionStays: false);
         }
@@ -816,21 +711,32 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Updates the selected-vs-unselected sprite on each tile from the local pick.
-        /// All 4 tiles (Random/Jade/Ruby/Gold) are always visible — the host can pick
-        /// any. Does not touch chip lifecycle.
+        /// Refreshes the selected-vs-unselected sprite and interactability on each tile.
+        /// The Blue tile is always hidden (Random is gone; Jade is the unpicked default).
+        /// Tiles outside <c>ActiveDomains[0..DC-1]</c> are dimmed and non-interactable.
+        /// Does not touch chip lifecycle.
         /// </summary>
         void RefreshTileVisibility()
         {
             if (config == null) return;
 
             var selected = config.SelectedDomain;
+            int dc = config.DomainCount;
 
             foreach (var item in domainInfoItems)
             {
                 if (!item) continue;
 
+                // Blue is the "no team" sentinel; never expose it in the modal.
+                if (item.Domain == Domains.Blue)
+                {
+                    item.gameObject.SetActive(false);
+                    continue;
+                }
+
                 item.gameObject.SetActive(true);
+                bool active = GameDataSO.IsActiveDomain(item.Domain, dc);
+                item.SetInteractable(active);
                 item.SetSelected(item.Domain == selected);
             }
         }
@@ -976,23 +882,69 @@ namespace CosmicShore.UI
                 shipVesselNameText.text = nameText;
         }
 
-        // Screen 1 → Screen 2
+        // Screen 1 → Screen 2 — host commits PC + DC + intensity.
+        //
+        // This is the single commit point in the lava-lamp arcade flow. Before
+        // this fires, clients are flying in freestyle and have no modal open.
+        // After it fires, every client opens the modal at GameDetailView with
+        // chips on Jade, tiles dimmed per DC, and back-navigation removed.
+        //
+        // Idempotent — repeated clicks (button mash, repeated input) short-circuit
+        // at the _isConfigurationCommitted gate. The Confirm button is also
+        // disabled visually for snappy feedback.
         public void OnConfirmConfiguration()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
-            ShowGameDetailScreen();
+            if (_isConfigurationCommitted) return;
+            _isConfigurationCommitted = true;
+            SetConfirmButtonInteractable(false);
 
-            if (!IsClientMode && arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyScreenChanged(1);
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+
+            if (!IsClientMode && arcadeConfigSyncManager && _selectedGame != null)
+            {
+                arcadeConfigSyncManager.CommitConfiguration(
+                    (int)_selectedGame.Mode,
+                    config.Intensity,
+                    config.PlayerCount,
+                    _selectedGame.MaxPlayersAllowed,
+                    CurrentPartyHumanCount,
+                    config.DomainCount);
+            }
+
+            // Local: spawn chips (after server reset to Jade), refresh tiles, open
+            // Screen 2, hide the back button. SpawnChipsForAllPlayers is idempotent
+            // — it calls DespawnAllChips first — so even if guard #1 is bypassed
+            // somehow, no duplicate chips leak.
+            SpawnChipsForAllPlayers();
+            RefreshTileVisibility();
+            ShowGameDetailScreen();
+            HideBackFromGameSelectButton();
         }
 
-        // Screen 2 → Screen 1 (Back button)
-        public void OnBackFromGameSelectView()
-        {
-            ShowConfigurationScreen();
+        // Screen 2 → Screen 1 (Back button) — DEPRECATED.
+        //
+        // The new commit-once flow has no Screen 2 → Screen 1 transition. This
+        // method is retained as a no-op stub so prefab UnityEvent wiring doesn't
+        // surface a missing-method warning. The button itself is hidden via
+        // HideBackFromGameSelectButton() on Screen-2 entry.
+        public void OnBackFromGameSelectView() { }
 
-            if (!IsClientMode && arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyScreenChanged(0);
+        void SetConfirmButtonInteractable(bool interactable)
+        {
+            if (confirmConfigurationButton)
+                confirmConfigurationButton.interactable = interactable;
+        }
+
+        void HideBackFromGameSelectButton()
+        {
+            if (backFromGameSelectButton)
+                backFromGameSelectButton.SetActive(false);
+        }
+
+        void ResetCommitGuard()
+        {
+            _isConfigurationCommitted = false;
+            SetConfirmButtonInteractable(true);
         }
 
         // Screen 2 → Screen 3 (Vessel Selection)
@@ -1043,6 +995,10 @@ namespace CosmicShore.UI
             _selectedGame = null;
             if (config) config.ResetState();
 
+            // Re-arm the modal-side commit guard so the next session's
+            // OnConfirmConfiguration is allowed to fire.
+            ResetCommitGuard();
+
             ModalWindowOut();
         }
 
@@ -1076,6 +1032,29 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// True if the local player should fire gameData.InvokeGameLaunch() — i.e.
+        /// they are the launch authority. Three cases launch locally:
+        /// (a) no sync manager at all (legacy solo path),
+        /// (b) sync manager exists but the local player is not in a multi-human
+        ///     party session (PartyMembers <= 1, i.e. just self — presence-lobby
+        ///     membership is irrelevant),
+        /// (c) the local player is the host of an active multi-human party session.
+        ///
+        /// Non-host party clients return false: their modal closes silently and
+        /// they ride Netcode scene replication into the game scene.
+        /// </summary>
+        internal static bool ShouldLocalPlayerLaunch(HostConnectionDataSO data, bool hasSyncManager)
+        {
+            if (!hasSyncManager) return true;
+            if (data == null) return true;
+
+            bool inActiveParty = data.PartyMembers != null && data.PartyMembers.Count > 1;
+            if (!inActiveParty) return true;
+
+            return data.IsPartyHost;
+        }
+
+        /// <summary>
         /// Called on ALL instances (host + clients) when every human player
         /// has pressed Start/Confirm. The host launches the game; clients
         /// close their modal (they'll be pulled into the game scene via Netcode).
@@ -1084,10 +1063,7 @@ namespace CosmicShore.UI
         {
             Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
 
-            // If there's no sync manager, this is a solo/local launch — always proceed.
-            // If there IS a sync manager, only the host should trigger the launch.
-            bool shouldLaunch = !arcadeConfigSyncManager
-                || (hostConnectionData != null && hostConnectionData.IsHost);
+            bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
 
             if (shouldLaunch)
             {
@@ -1205,12 +1181,18 @@ namespace CosmicShore.UI
         /// Called on non-host clients when the host opens the arcade config modal.
         /// Opens the same modal in client mode with host-only controls disabled.
         /// </summary>
-        void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers)
+        void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers, int domainCount)
         {
             Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient — mode={gameModeInt}, intensity={intensity}, " +
-                      $"players={playerCount}, max={maxPlayers}");
+                      $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
             _isClientMode = true;
+
+            // Re-arm the commit guard. Clients never invoke OnConfirmConfiguration
+            // (the Confirm button lives on Screen 1, which clients never see), but
+            // a player who was previously the party host might have a stale
+            // _isConfigurationCommitted=true. Reset for hygiene.
+            ResetCommitGuard();
 
             // Look up the SO_ArcadeGame by mode so we can show the same game info
             SO_ArcadeGame game = arcadeConfigSyncManager.FindGameByMode(gameModeInt);
@@ -1225,7 +1207,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = game;
-            config.DomainCount  = 1; // clients inherit host's domain count via UI sync
+            config.DomainCount  = Mathf.Clamp(domainCount, MinDomains, MaxSupportedDomains);
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 
@@ -1240,12 +1222,15 @@ namespace CosmicShore.UI
             Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
             ModalWindowIn();
 
-            // Clients skip the config screen (intensity/player count) and go
-            // directly to vessel selection since only the host controls those.
+            // Clients skip Screen 1 entirely — modal opens straight at GameDetailView
+            // with the back button hidden. Host has already committed PC + DC + intensity.
             ShowGameDetailScreen();
+            HideBackFromGameSelectButton();
 
             // Same chip-spawn pattern as the host path so clients see live
-            // chip movement when any player picks.
+            // chip movement when any player picks. Server has reset every human's
+            // NetDomain to Jade as part of CommitConfiguration, so all chips spawn
+            // on the Jade tile.
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
         }
@@ -1276,35 +1261,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Called on non-host clients when the host changes intensity or player count.
-        /// Updates the read-only display values.
-        /// </summary>
-        void HandleConfigUpdatedOnClient(int intensity, int playerCount)
-        {
-            if (_selectedGame == null || config == null) return;
-
-            config.Intensity   = intensity;
-            config.PlayerCount = playerCount;
-
-            // Update intensity button visuals (read-only — buttons are not interactable)
-            foreach (var button in intensityButtons)
-            {
-                if (!button) continue;
-                button.SetSelected(button.Intensity == intensity);
-            }
-
-            // Update player count display (read-only — stepper is not interactable)
-            if (playerCountStepper)
-                playerCountStepper.SetValue(playerCount);
-            RefreshPlayerCountStepper();
-
-            // Domain count may have shifted (host's domain stepper) — re-evaluate
-            // per-tile active state. Chip movement is unaffected; reparenting is
-            // driven by NetDomain.OnValueChanged independently.
-            RefreshTileVisibility();
-        }
-
-        /// <summary>
         /// Disables host-only controls when in client mode.
         /// Intensity buttons and player count stepper become non-interactable.
         /// Domain selection, vessel selection, and the Start/Confirm button remain
@@ -1322,21 +1278,9 @@ namespace CosmicShore.UI
                 if (uiButton) uiButton.interactable = isHost;
             }
 
-            // Player count stepper component — visible for all, but only host can change it
-            if (playerCountStepper)
-                playerCountStepper.SetInteractable(isHost);
-
-            // Inline player count buttons
-            if (playerCountDecrementButton)
-                playerCountDecrementButton.interactable = isHost;
-            if (playerCountIncrementButton)
-                playerCountIncrementButton.interactable = isHost;
-
-            // Domain count buttons
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.interactable = isHost;
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.interactable = isHost;
+            // Steppers — visible for all, but only host can change them
+            if (pcStepper) pcStepper.SetInteractable(isHost);
+            if (dcStepper) dcStepper.SetInteractable(isHost);
         }
 
         /// <summary>

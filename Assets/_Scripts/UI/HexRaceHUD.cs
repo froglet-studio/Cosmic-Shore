@@ -21,7 +21,7 @@ namespace CosmicShore.UI
 
         private void HandleCrystalStatChanged(IRoundStats updatedStats)
         {
-            UpdatePlayerCard(updatedStats.Name, updatedStats.OmniCrystalsCollected);
+            HandlePlayerStatChanged(updatedStats);
         }
     }
 }

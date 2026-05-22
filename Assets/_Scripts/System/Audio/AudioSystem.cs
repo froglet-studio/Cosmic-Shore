@@ -1,14 +1,39 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
+using CosmicShore.Gameplay.Audio;
 using CosmicShore.Utility;
+using FMODUnity;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Audio;
 
 /// <summary>
-/// Audio System to contain audio methods accessed by other classes
+/// Central audio service. Two parallel pipelines:
+///
+///   1. **FMOD events** (preferred / new) — one-shot SFX wired in the
+///      inspector as <see cref="EventReference"/> per
+///      <see cref="MenuAudioCategory"/> and <see cref="GameplaySFXCategory"/>.
+///      Routed through <see cref="FMODOneShotVolumeHelper"/> so each one-shot
+///      respects <see cref="GameSetting.SFXLevel"/> / SFXEnabled.
+///
+///   2. **Unity AudioSource** (legacy) — music routing via two
+///      <see cref="AudioSource"/>s (<see cref="MusicSource1"/> /
+///      <see cref="MusicSource2"/>) with crossfade support, plus a single
+///      shared <see cref="sfxSource"/> for the older
+///      <see cref="PlaySFXClip(AudioClip)"/> API still used by
+///      <c>CountdownTimer</c>, <c>ProfileModal</c>, and <c>Crystal</c>.
+///      The mixer-bus volume (<see cref="masterMixer"/>) only affects this
+///      path — FMOD events bypass it entirely.
+///
+/// Migration path: convert callers from <see cref="PlaySFXClip(AudioClip)"/>
+/// to <see cref="PlaySFXEvent(EventReference)"/> (or one of its overloads)
+/// and wire the corresponding <c>EventReference</c> on the caller. Convert
+/// music callers (currently <c>Jukebox</c>) by swapping <c>SO_Song.Clip</c>
+/// for an <c>EventReference</c> field and adding a music-event API to this
+/// class. The Unity AudioSource path can be deleted once all callers have
+/// migrated.
 /// </summary>
 namespace CosmicShore.Core
 {
@@ -62,48 +87,128 @@ namespace CosmicShore.Core
         #region Fields
         [Inject] GameSetting gameSetting;
 
-        [SerializeField] AudioMixer masterMixer;
-        [SerializeField] AudioSource sfxSource;
+        [Header("Music Routing (Unity AudioSource — legacy)")]
+        [SerializeField, Tooltip(
+            "Master AudioMixer driving the legacy music + SFX AudioSources. " +
+            "FMOD events do NOT route through this mixer — their volume is " +
+            "applied per-instance via FMODOneShotVolumeHelper.")]
+        AudioMixer masterMixer;
+
+        [SerializeField, Tooltip(
+            "AudioSource used by the legacy PlaySFXClip(AudioClip) API. " +
+            "FMOD-based PlayMenuAudio / PlayGameplaySFX / PlaySFXEvent do " +
+            "not use this source.")]
+        AudioSource sfxSource;
+
         [SerializeField] AudioSource musicSource1;
         [SerializeField] AudioSource musicSource2;
         [SerializeField] float musicVolume = .1f;
         [SerializeField] float sfxVolume = .1f;
 
-        [Header("Menu Audio")]
-        [SerializeField] AudioClip OptionClickAudioClip;
-        [SerializeField] AudioClip OpenViewAudioClip;
-        [SerializeField] AudioClip SwitchViewAudioClip;
-        [SerializeField] AudioClip CloseViewAudioClip;
-        [SerializeField] AudioClip SmallRewardAudioClip;
-        [SerializeField] AudioClip BigRewardAudioClip;
-        [SerializeField] AudioClip UpgradeAudioClip;
-        [SerializeField] AudioClip DeniedAudioClip;
-        [SerializeField] AudioClip ConfirmedAudioClip;
-        [SerializeField] AudioClip LetsGoAudioClip;
-        [SerializeField] AudioClip SwitchScreenAudioClip;
-        [SerializeField] AudioClip RedeemTicketAudioClip;
+        [Header("Menu Audio Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for MenuAudioCategory.OptionClick.")]
+        EventReference optionClickEvent;
 
-        [Header("Gameplay SFX")]
-        [SerializeField] AudioClip BlockDestroyAudioClip;
-        [SerializeField] AudioClip ShieldActivateAudioClip;
-        [SerializeField] AudioClip ShieldDeactivateAudioClip;
-        [SerializeField] AudioClip MineExplodeAudioClip;
-        [SerializeField] AudioClip ProjectileLaunchAudioClip;
-        [SerializeField] AudioClip CrystalCollectAudioClip;
-        [SerializeField] AudioClip VesselImpactAudioClip;
-        [SerializeField] AudioClip GameEndAudioClip;
-        [SerializeField] AudioClip ScoreRevealAudioClip;
-        [SerializeField] AudioClip PauseOpenAudioClip;
-        [SerializeField] AudioClip PauseCloseAudioClip;
-        [SerializeField] AudioClip GunFireAudioClip;
-        [SerializeField] AudioClip BoostActivateAudioClip;
-        [SerializeField] AudioClip ExplosionAudioClip;
-        [SerializeField] AudioClip CreatureDeathAudioClip;
-        [SerializeField] AudioClip DriftStartAudioClip;
-        [SerializeField] AudioClip DriftEndAudioClip;
-        [SerializeField] AudioClip EnergyGainAudioClip;
-        [SerializeField] AudioClip SpeedBurstAudioClip;
-        [SerializeField] AudioClip CrystalSkimAudioClip;
+        [SerializeField, Tooltip("Played for MenuAudioCategory.OpenView.")]
+        EventReference openViewEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.SwitchView.")]
+        EventReference switchViewEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.CloseView.")]
+        EventReference closeViewEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.SmallReward.")]
+        EventReference smallRewardEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.BigReward.")]
+        EventReference bigRewardEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.Upgrade.")]
+        EventReference upgradeEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.Denied.")]
+        EventReference deniedEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.Confirmed.")]
+        EventReference confirmedEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.LetsGo.")]
+        EventReference letsGoEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.SwitchScreen.")]
+        EventReference switchScreenEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.RedeemTicket.")]
+        EventReference redeemTicketEvent;
+
+        [Header("Gameplay SFX Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.BlockDestroy.")]
+        EventReference blockDestroyEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ShieldActivate.")]
+        EventReference shieldActivateEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ShieldDeactivate.")]
+        EventReference shieldDeactivateEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.MineExplode.")]
+        EventReference mineExplodeEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ProjectileLaunch.")]
+        EventReference projectileLaunchEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.CrystalCollect.")]
+        EventReference crystalCollectEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.VesselImpact.")]
+        EventReference vesselImpactEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.GameEnd.")]
+        EventReference gameEndEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ScoreReveal.")]
+        EventReference scoreRevealEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.PauseOpen.")]
+        EventReference pauseOpenEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.PauseClose.")]
+        EventReference pauseCloseEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.GunFire.")]
+        EventReference gunFireEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.BoostActivate.")]
+        EventReference boostActivateEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.Explosion.")]
+        EventReference explosionEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.CreatureDeath.")]
+        EventReference creatureDeathEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.DriftStart.")]
+        EventReference driftStartEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.DriftEnd.")]
+        EventReference driftEndEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.EnergyGain.")]
+        EventReference energyGainEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.SpeedBurst.")]
+        EventReference speedBurstEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.CrystalSkim.")]
+        EventReference crystalSkimEvent;
+
+        [Header("Logging")]
+        [SerializeField, Tooltip(
+            "When true, log a warning the first time a category is played " +
+            "without an EventReference wired. Useful during the AudioClip " +
+            "→ FMOD migration; turn off once all slots are filled.")]
+        bool warnOnUnwiredCategory = true;
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
@@ -115,8 +220,13 @@ namespace CosmicShore.Core
         bool musicEnabled = true;
         bool sfxEnabled = true;
 
-        Dictionary<MenuAudioCategory, AudioClip> MenuAudioClips;
-        Dictionary<GameplaySFXCategory, AudioClip> GameplaySFXClips;
+        Dictionary<MenuAudioCategory, EventReference> MenuAudioEvents;
+        Dictionary<GameplaySFXCategory, EventReference> GameplaySFXEvents;
+
+        // Tracks per-category warnings so we don't spam the log every frame
+        // when a category is fired with no event wired.
+        readonly HashSet<MenuAudioCategory> _warnedMenuCategories = new();
+        readonly HashSet<GameplaySFXCategory> _warnedGameplayCategories = new();
 
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
@@ -134,8 +244,8 @@ namespace CosmicShore.Core
 
         void Start()
         {
-            InitializeMenuAudioClips();
-            InitializeGameplaySFXClips();
+            InitializeMenuAudioEvents();
+            InitializeGameplaySFXEvents();
 
             // Fallback: when auto-created by AppManager.EnsureService before the
             // Reflex container is built, [Inject] will not have resolved yet.
@@ -174,9 +284,10 @@ namespace CosmicShore.Core
         {
             CSDebug.Log($"AudioSystem.OnChangeAudioEnabledStatus - status: {status}");
 
-            musicEnabled = status;            
+            musicEnabled = status;
             SetMixerMusicVolume(musicEnabled ? musicVolume : 0);
         }
+
         void ChangeSFXEnabledStatus(bool status)
         {
             sfxEnabled = status;
@@ -184,7 +295,7 @@ namespace CosmicShore.Core
 
         void ChangeMusicLevel(float level)
         {
-            CSDebug.Log($"ChangeMusicLevel: {level}, {level/5f}");
+            CSDebug.Log($"ChangeMusicLevel: {level}, {level / 5f}");
             musicVolume = level / 5f;   // max .2 -- default max volume is too high
             if (musicSource1 != null) musicSource1.volume = musicVolume;
             if (musicSource2 != null) musicSource2.volume = musicVolume;
@@ -194,6 +305,8 @@ namespace CosmicShore.Core
         {
             sfxVolume = level / 5f;   // max .2 -- default max volume is too high
         }
+
+        // ---------- Music API (Unity AudioSource — legacy) ----------
 
         public void PlayMusicClip(AudioClip audioClip)
         {
@@ -286,18 +399,84 @@ namespace CosmicShore.Core
             return musicSource1.isPlaying || musicSource2.isPlaying;
         }
 
+        // ---------- SFX API (FMOD — preferred) ----------
+
+        /// <summary>
+        /// Plays the FMOD event wired for <paramref name="category"/>. Volume
+        /// is applied per-instance from <see cref="GameSetting.SFXLevel"/> /
+        /// SFXEnabled via <see cref="FMODOneShotVolumeHelper"/>.
+        /// </summary>
         public void PlayMenuAudio(MenuAudioCategory category)
         {
-            PlaySFXClip(MenuAudioClips[category]);
+            if (MenuAudioEvents == null) InitializeMenuAudioEvents();
+
+            if (MenuAudioEvents.TryGetValue(category, out var reference) && !reference.IsNull)
+            {
+                PlaySFXEvent(reference);
+                return;
+            }
+
+            if (warnOnUnwiredCategory && _warnedMenuCategories.Add(category))
+            {
+                Debug.LogWarning(
+                    $"[AudioSystem] No FMOD EventReference wired for MenuAudioCategory.{category}. " +
+                    $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
+            }
         }
 
+        /// <summary>
+        /// Plays the FMOD event wired for <paramref name="category"/>. Volume
+        /// is applied per-instance from <see cref="GameSetting.SFXLevel"/> /
+        /// SFXEnabled via <see cref="FMODOneShotVolumeHelper"/>.
+        /// </summary>
         public void PlayGameplaySFX(GameplaySFXCategory category)
         {
-            if (GameplaySFXClips.TryGetValue(category, out var clip) && clip != null)
-                PlaySFXClip(clip);
-            else
-                Debug.LogWarning($"AudioSystem.PlayGameplaySFX: No audio clip assigned for {category}");
+            if (GameplaySFXEvents == null) InitializeGameplaySFXEvents();
+
+            if (GameplaySFXEvents.TryGetValue(category, out var reference) && !reference.IsNull)
+            {
+                PlaySFXEvent(reference);
+                return;
+            }
+
+            if (warnOnUnwiredCategory && _warnedGameplayCategories.Add(category))
+            {
+                Debug.LogWarning(
+                    $"[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.{category}. " +
+                    $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
+            }
         }
+
+        /// <summary>
+        /// Plays an arbitrary FMOD event as a 2D one-shot at world origin
+        /// with the SFX slider volume applied. Use for UI / menu sounds
+        /// authored as 2D events in FMOD Studio (no spatializer).
+        /// </summary>
+        public void PlaySFXEvent(EventReference reference)
+        {
+            FMODOneShotVolumeHelper.PlaySFXOneShot(reference, Vector3.zero, ResolveFMODSFXVolume());
+        }
+
+        /// <summary>
+        /// Plays an FMOD event as a one-shot at <paramref name="worldPosition"/>
+        /// with the SFX slider volume applied. Use for spatialized 3D events.
+        /// </summary>
+        public void PlaySFXEvent(EventReference reference, Vector3 worldPosition)
+        {
+            FMODOneShotVolumeHelper.PlaySFXOneShot(reference, worldPosition, ResolveFMODSFXVolume());
+        }
+
+        /// <summary>
+        /// Plays an FMOD event attached to <paramref name="attachTo"/> with
+        /// the SFX slider volume applied. The instance follows the GameObject
+        /// for the duration of playback.
+        /// </summary>
+        public void PlaySFXEventAttached(EventReference reference, GameObject attachTo)
+        {
+            FMODOneShotVolumeHelper.PlaySFXOneShotAttached(reference, attachTo, ResolveFMODSFXVolume());
+        }
+
+        // ---------- SFX API (Unity AudioSource — legacy) ----------
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
@@ -310,6 +489,9 @@ namespace CosmicShore.Core
             sfxSource.volume = SFXVolume;
             sfxSource.PlayOneShot(audioClip);
         }
+
+        // ---------- Mixer ----------
+
         #region Mixer Methods
 
         public void SetMixerMusicVolume(float value)
@@ -321,51 +503,70 @@ namespace CosmicShore.Core
         {
             masterMixer.SetFloat("SFXVolume", value);
         }
+
         #endregion
 
-        void InitializeMenuAudioClips()
+        // ---------- Internals ----------
+
+        /// <summary>
+        /// Linear 0..1 volume for FMOD SFX one-shots. Returns 0 when SFX is
+        /// muted via the settings panel; otherwise returns the slider value.
+        /// Decoupled from <see cref="sfxVolume"/> (which uses a /5 scale for
+        /// the legacy AudioSource path) — FMOD events are authored at
+        /// project-appropriate levels in FMOD Studio so we pass the slider
+        /// through unscaled.
+        /// </summary>
+        float ResolveFMODSFXVolume()
         {
-            MenuAudioClips = new Dictionary<MenuAudioCategory, AudioClip>()
+            if (!sfxEnabled) return 0f;
+            var gs = gameSetting != null ? gameSetting : GameSetting.Instance;
+            if (gs == null) return 1f;
+            return Mathf.Clamp01(gs.SFXLevel);
+        }
+
+        void InitializeMenuAudioEvents()
+        {
+            MenuAudioEvents = new Dictionary<MenuAudioCategory, EventReference>()
             {
-                {MenuAudioCategory.OptionClick, OptionClickAudioClip},
-                {MenuAudioCategory.OpenView, OpenViewAudioClip},
-                {MenuAudioCategory.SwitchView, SwitchViewAudioClip},
-                {MenuAudioCategory.CloseView, CloseViewAudioClip},
-                {MenuAudioCategory.SmallReward, SmallRewardAudioClip},
-                {MenuAudioCategory.BigReward, BigRewardAudioClip},
-                {MenuAudioCategory.Upgrade, UpgradeAudioClip},
-                {MenuAudioCategory.Denied, DeniedAudioClip},
-                {MenuAudioCategory.Confirmed, ConfirmedAudioClip},
-                {MenuAudioCategory.LetsGo, LetsGoAudioClip},
-                {MenuAudioCategory.SwitchScreen, SwitchScreenAudioClip},
-                {MenuAudioCategory.RedeemTicket, RedeemTicketAudioClip},
+                {MenuAudioCategory.OptionClick, optionClickEvent},
+                {MenuAudioCategory.OpenView, openViewEvent},
+                {MenuAudioCategory.SwitchView, switchViewEvent},
+                {MenuAudioCategory.CloseView, closeViewEvent},
+                {MenuAudioCategory.SmallReward, smallRewardEvent},
+                {MenuAudioCategory.BigReward, bigRewardEvent},
+                {MenuAudioCategory.Upgrade, upgradeEvent},
+                {MenuAudioCategory.Denied, deniedEvent},
+                {MenuAudioCategory.Confirmed, confirmedEvent},
+                {MenuAudioCategory.LetsGo, letsGoEvent},
+                {MenuAudioCategory.SwitchScreen, switchScreenEvent},
+                {MenuAudioCategory.RedeemTicket, redeemTicketEvent},
             };
         }
 
-        void InitializeGameplaySFXClips()
+        void InitializeGameplaySFXEvents()
         {
-            GameplaySFXClips = new Dictionary<GameplaySFXCategory, AudioClip>()
+            GameplaySFXEvents = new Dictionary<GameplaySFXCategory, EventReference>()
             {
-                {GameplaySFXCategory.BlockDestroy, BlockDestroyAudioClip},
-                {GameplaySFXCategory.ShieldActivate, ShieldActivateAudioClip},
-                {GameplaySFXCategory.ShieldDeactivate, ShieldDeactivateAudioClip},
-                {GameplaySFXCategory.MineExplode, MineExplodeAudioClip},
-                {GameplaySFXCategory.ProjectileLaunch, ProjectileLaunchAudioClip},
-                {GameplaySFXCategory.CrystalCollect, CrystalCollectAudioClip},
-                {GameplaySFXCategory.VesselImpact, VesselImpactAudioClip},
-                {GameplaySFXCategory.GameEnd, GameEndAudioClip},
-                {GameplaySFXCategory.ScoreReveal, ScoreRevealAudioClip},
-                {GameplaySFXCategory.PauseOpen, PauseOpenAudioClip},
-                {GameplaySFXCategory.PauseClose, PauseCloseAudioClip},
-                {GameplaySFXCategory.GunFire, GunFireAudioClip},
-                {GameplaySFXCategory.BoostActivate, BoostActivateAudioClip},
-                {GameplaySFXCategory.Explosion, ExplosionAudioClip},
-                {GameplaySFXCategory.CreatureDeath, CreatureDeathAudioClip},
-                {GameplaySFXCategory.DriftStart, DriftStartAudioClip},
-                {GameplaySFXCategory.DriftEnd, DriftEndAudioClip},
-                {GameplaySFXCategory.EnergyGain, EnergyGainAudioClip},
-                {GameplaySFXCategory.SpeedBurst, SpeedBurstAudioClip},
-                {GameplaySFXCategory.CrystalSkim, CrystalSkimAudioClip},
+                {GameplaySFXCategory.BlockDestroy, blockDestroyEvent},
+                {GameplaySFXCategory.ShieldActivate, shieldActivateEvent},
+                {GameplaySFXCategory.ShieldDeactivate, shieldDeactivateEvent},
+                {GameplaySFXCategory.MineExplode, mineExplodeEvent},
+                {GameplaySFXCategory.ProjectileLaunch, projectileLaunchEvent},
+                {GameplaySFXCategory.CrystalCollect, crystalCollectEvent},
+                {GameplaySFXCategory.VesselImpact, vesselImpactEvent},
+                {GameplaySFXCategory.GameEnd, gameEndEvent},
+                {GameplaySFXCategory.ScoreReveal, scoreRevealEvent},
+                {GameplaySFXCategory.PauseOpen, pauseOpenEvent},
+                {GameplaySFXCategory.PauseClose, pauseCloseEvent},
+                {GameplaySFXCategory.GunFire, gunFireEvent},
+                {GameplaySFXCategory.BoostActivate, boostActivateEvent},
+                {GameplaySFXCategory.Explosion, explosionEvent},
+                {GameplaySFXCategory.CreatureDeath, creatureDeathEvent},
+                {GameplaySFXCategory.DriftStart, driftStartEvent},
+                {GameplaySFXCategory.DriftEnd, driftEndEvent},
+                {GameplaySFXCategory.EnergyGain, energyGainEvent},
+                {GameplaySFXCategory.SpeedBurst, speedBurstEvent},
+                {GameplaySFXCategory.CrystalSkim, crystalSkimEvent},
             };
         }
     }

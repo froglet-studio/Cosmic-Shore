@@ -24,17 +24,38 @@ namespace CosmicShore.Gameplay
                 $"Players={gameData.RoundStatsList.Count}, " +
                 $"Names=[{string.Join(", ", gameData.RoundStatsList.Select(s => s.Name))}]");
 
-            // ALL machines subscribe — client needs to report its own collisions up to server
+            // ALL machines subscribe — client needs to report its own collisions up to server,
+            // and the HUD's "jousts remaining" readout needs to reflect the local player's
+            // DOMAIN aggregate, which changes whenever ANY teammate jousts.
             foreach (var stat in gameData.RoundStatsList)
+            {
                 stat.OnJoustCollisionChanged += OnCollisionChanged;
+                stat.OnJoustCollisionChanged += OnAnyJoustChangedUI;
+            }
+
+            UpdateDomainRemainingUI();
         }
 
         public override void StopMonitor()
         {
             foreach (var stat in gameData.RoundStatsList)
+            {
                 stat.OnJoustCollisionChanged -= OnCollisionChanged;
+                stat.OnJoustCollisionChanged -= OnAnyJoustChangedUI;
+            }
 
             base.StopMonitor();
+        }
+
+        void OnAnyJoustChangedUI(IRoundStats _) => UpdateDomainRemainingUI();
+
+        void UpdateDomainRemainingUI()
+        {
+            if (gameData.LocalPlayer == null) return;
+            int domainSum = gameData.SumJoustCollisionsByDomain(gameData.LocalPlayer.Domain);
+            int remaining = Mathf.Max(0, CollisionsNeeded - domainSum);
+            if (onUpdateTurnMonitorDisplay)
+                onUpdateTurnMonitorDisplay.Raise(remaining.ToString());
         }
 
         void OnCollisionChanged(IRoundStats stats)
@@ -85,8 +106,10 @@ namespace CosmicShore.Gameplay
             // Only server ends the turn authoritatively
             if (!IsServer) return false;
 
-            return gameData.RoundStatsList
-                .Any(stats => stats.JoustCollisions >= CollisionsNeeded);
+            // Team-aware end condition: the turn ends when any active domain's
+            // summed JoustCollisions reaches the target. Domain teammates (humans
+            // and AI on the same domain) finish the objective together.
+            return gameData.TryGetDomainReachingJoustTarget(CollisionsNeeded, out _);
         }
     }
 }
