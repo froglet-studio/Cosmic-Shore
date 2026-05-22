@@ -105,11 +105,9 @@ namespace CosmicShore.Gameplay
                 var vesselType = player.Vessel.VesselStatus.VesselType;
                 var config = comebackProfile.GetConfig(vesselType);
 
-                ApplyInitialValues(rs, config);
-
-                var baseline = new float[AllElements.Length];
-                for (int i = 0; i < AllElements.Length; i++)
-                    baseline[i] = rs.GetNormalizedLevel(AllElements[i]);
+                // Use the configured base directly as the baseline — GetNormalizedLevel returns the
+                // effective level and would fold a still-decaying overtake modifier into it.
+                var baseline = ApplyInitialValues(rs, config);
 
                 _baselines[player.Name] = baseline;
 
@@ -183,15 +181,19 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void ApplyInitialValues(ResourceSystem rs, SO_ElementalComebackProfile.VesselComebackConfig config)
+        // Writes the configured initial base levels onto the vessel and returns them as the comeback baseline.
+        float[] ApplyInitialValues(ResourceSystem rs, SO_ElementalComebackProfile.VesselComebackConfig config)
         {
+            var baseline = new float[AllElements.Length];
             for (int i = 0; i < AllElements.Length; i++)
             {
                 float initialLevel = config.GetInitialLevel(AllElements[i]);
                 // Clamp initial values to 0.0–1.5 range
                 float normalized = Mathf.Clamp(initialLevel / 10f, 0f, 1.5f);
                 rs.SetElementLevel(AllElements[i], normalized);
+                baseline[i] = normalized;
             }
+            return baseline;
         }
 
         // ---------------------------------------------------------------
