@@ -411,7 +411,7 @@ namespace CosmicShore.Core
             );
 
             builder.RegisterFactory<IPartySessionService>(
-                _ => new PartySessionService(hostConnectionData),
+                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

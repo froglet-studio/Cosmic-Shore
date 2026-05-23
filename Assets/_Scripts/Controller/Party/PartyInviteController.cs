@@ -171,10 +171,9 @@ namespace CosmicShore.Gameplay
 
                 await HostConnectionService.Instance.AcceptInviteAsync(invite).AsMainThread();
 
-                // Store the party session so MultiplayerSetup in the game scene
-                // knows to reuse the existing Relay connection (client side).
-                if (gameData != null && HostConnectionService.Instance.PartySession != null)
-                    gameData.ActiveSession = HostConnectionService.Instance.PartySession;
+                // gameData.ActiveSession IS HCS.PartySession (single backing field
+                // since Commit 8 — see Docs/PARTY_SYSTEM_REFACTOR.md). The accept
+                // path inside HCS already updated the shared ref via PartySessionService.
 
                 Debug.Log("[PartyInviteController] Joined party session via UGS.");
 

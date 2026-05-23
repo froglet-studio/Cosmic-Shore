@@ -686,13 +686,120 @@ No additional callsites change. Behavior change: zero — both paths reach
 `EnsureInitializedAsync` exactly once, and the profile-wait timeout semantics
 are preserved.
 
-### `[ ]` Commit 8 — Single source of truth for `ActiveSession`
+### `[x]` Commit 8 — Single source of truth for `ActiveSession`
 
-- Add `GameDataSO` to `PartySessionService` constructor (Reflex injection).
-- Replace `PartySessionService.ActiveSession` private auto-property with property that
-  reads/writes `_gameData.ActiveSession`. Backing field on `GameDataSO`.
-- Update `HostConnectionService` where `_partySessionService` is constructed to pass
-  `_gameData`.
+**Outcome**: `PartySessionService.ActiveSession` is now a derived property over
+`_gameData.ActiveSession` — one backing field, two access surfaces, reference-equal
+at every observation point. The "ActiveSession is never nulled outside an
+intentional leave" invariant now actually holds.
+
+Eight files touched:
+
+| File | Change |
+|---|---|
+| `PartySessionService.cs` | + `GameDataSO _gameData` field, ctor param. `ActiveSession` property reads/writes `_gameData.ActiveSession`. |
+| `AppManager.cs` | Factory at 413 resolves `GameDataSO` and passes it to the ctor. |
+| `PartyInviteController.cs` | Removed tautological sync at lines 174-179 (`gameData.ActiveSession = HCS.PartySession`). |
+| `QuickPlayButton.cs` | Removed tautological sync at lines 67-70. |
+| `ArcadeGameConfigureModal.cs` | Removed tautological sync at lines 1108-1113. |
+| `MultiplayerSetup.cs` | Removed invariant-violating `gameData.ActiveSession = null;` in `LeaveSession()`. Updated comment. |
+| `GameDataSO.cs` | Removed `ActiveSession = null;` from `ResetAllData()`. Added comment explaining the invariant. |
+| `SceneLoader.cs` | Updated stale comment that claimed `LeaveSession` nulls the ref. |
+
+The two null removals (MultiplayerSetup line 410, ResetAllData line 313) were
+side effects of the consolidation: under the old dual-field design those nulls
+only cleared the game-side ref and HCS held onto the Relay through its own
+field; under the unified design they would orphan the live Relay session. The
+fix preserves the original comment intent ("Relay stays alive") and the locked
+invariant.
+
+`MultiplayerSetup.cs:442` (OnTransportFailure null after Delete/Leave) is a
+legitimate intentional-leave and is preserved.
+
+Brace balance verified across all 8 files. `PartySessionService.cs`: 285 → 315
+lines (+30, mostly XML doc).
+
+**Pre-commit findings** (preserved for audit trail):
+
+
+**Pre-commit findings** (live source post-Commit 7):
+
+`PartySessionService.cs`:
+- Field declaration at line 92: `public ISession ActiveSession { get; private set; }`
+  — independent backing field.
+- Ctor at line 108: `public PartySessionService(HostConnectionDataSO connectionData)`.
+- 4 internal writes (`CreateAsync:144`, `JoinByIdAsync:184`, `LeaveAsync:198` via
+  `ClearSession`, `ClearSession:240`).
+- ~9 internal reads (130, 144, 146, 184, 188, 197, 198, 221, 222, 238, 239).
+
+`GameDataSO.cs:160`: `public ISession ActiveSession { get; set; }` — already exists as
+a separate backing field; the consolidation target.
+
+`AppManager.cs:413-417`: `PartySessionService` factory currently:
+```csharp
+builder.RegisterFactory<IPartySessionService>(
+    _ => new PartySessionService(hostConnectionData),
+    lifetime: Lifetime.Singleton,
+    resolution: Resolution.Lazy);
+```
+Pattern for adding `GameDataSO` resolution mirrors `NetworkTransitionService.cs:426`:
+`c => new NetworkTransitionService(c.Resolve<GameDataSO>())`.
+
+**Three external manual-sync sites that become tautologies** (`HCS.PartySession`
+already proxies `_partySessionService.ActiveSession`, which post-Commit-8 IS
+`_gameData.ActiveSession`):
+- `PartyInviteController.cs:176-177` — sync after `AcceptInviteAsync`. Delete.
+- `QuickPlayButton.cs:68-69` — sync before launch. Delete.
+- `ArcadeGameConfigureModal.cs:1111-1112` — sync before launch. Delete.
+
+**Two `gameData.ActiveSession = null` writes that violate the locked invariant
+post-consolidation**:
+
+1. `MultiplayerSetup.LeaveSession:410`. The surrounding comment (lines 401-409)
+   explicitly says: *"Phase 15 'Always InParty': gameData.ActiveSession IS the
+   party Relay session. Do NOT delete or leave — HCS owns the session lifetime.
+   Just clear the game reference; the Relay stays alive..."* Under the OLD dual-
+   field design, "clear the game reference" only nulled `gameData.ActiveSession`
+   while `_partySessionService.ActiveSession` stayed live — so HCS still held a
+   valid ref. **Post-Commit-8 both refs are the same field — nulling here would
+   orphan the live UGS Relay session.** The comment's intent is preserved by
+   simply removing the null assignment.
+
+2. `GameDataSO.ResetAllData:313`. Same hazard. Called from `SceneLoader.cs:319`
+   (HandleActiveSessionEnd) and `AppManager.cs:508` (ConfigureMenuGameData) +
+   bootstrap. Removing it preserves the Relay reference across game-end and menu
+   resets, aligning with "Always InParty."
+
+`MultiplayerSetup.cs:440` (OnTransportFailure) DOES legitimately null after
+calling `DeleteAsync`/`LeaveAsync` — that's an intentional leave. Preserve.
+
+`SceneLoader.cs:311-316` comment says "MultiplayerSetup.LeaveSession() already
+nulled gameData.ActiveSession" — that observation becomes false after the fix in
+step 4. Update comment to match.
+
+**Execution plan**:
+
+1. `PartySessionService.cs`:
+   - Add `private readonly GameDataSO _gameData;` field.
+   - Ctor: `public PartySessionService(HostConnectionDataSO connectionData, GameDataSO gameData)`, assign `_gameData = gameData;`.
+   - Replace `public ISession ActiveSession { get; private set; }` with property that reads/writes `_gameData.ActiveSession`.
+   - The 9 internal reads + 4 internal writes via the property work unchanged.
+
+2. `AppManager.cs:413-417`: change factory to `c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>())`.
+
+3. Delete tautological syncs at `PartyInviteController.cs:174-179`, `QuickPlayButton.cs:67-70`, `ArcadeGameConfigureModal.cs:1108-1113`. Update surrounding comments.
+
+4. Delete `gameData.ActiveSession = null;` at `MultiplayerSetup.cs:410`. Update the surrounding comment to drop the now-incorrect "Just clear the game reference" phrasing.
+
+5. Delete `ActiveSession = null;` at `GameDataSO.cs:313`. Add a comment noting why (the locked invariant; session lifetime owned by HCS / explicit leave paths).
+
+6. Update stale comment at `SceneLoader.cs:311-316`.
+
+Behavior change summary: post-Commit-8, the Relay session reference survives all
+non-leave operations (game-end, menu reset, scene transitions). HCS's
+`IsHostingParty` predicate stays true across these transitions, which is the
+correct "Always InParty" behavior. This is a fix for a latent regression that
+the plan's source-of-truth consolidation exposes.
 
 ### `[ ]` Commit 9 — `MultiplayerService.Instance` → class member
 

@@ -398,16 +398,18 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                // Phase 15 "Always InParty": gameData.ActiveSession IS the party Relay
-                // session.  Do NOT delete or leave — HCS owns the session lifetime.
-                // Just clear the game reference; the Relay stays alive so all party
-                // members reload Menu_Main on the same NM session.
+                // "Always InParty" model: gameData.ActiveSession IS the party Relay
+                // session (single backing field; see Docs/PARTY_SYSTEM_REFACTOR.md).
+                // Do NOT null the reference — that would orphan the live UGS Relay
+                // and force HCS to recreate, violating the locked invariant
+                // "ActiveSession is never nulled outside an intentional leave."
+                // Just raise the game-ended SOAP event; the Relay stays alive so
+                // all party members reload Menu_Main on the same NM session.
                 //
                 // NM is intentionally NOT shut down here.  ReturnToMainMenu() sets
                 // IsReturnToMenuTransition=true so ServerPlayerVesselInitializer skips
                 // its own Shutdown(), and nm.SceneManager.LoadScene carries all connected
                 // clients back to Menu_Main on the live Relay.
-                gameData.ActiveSession = null;
                 gameData.InvokeOnSessionEnded();
             }
             catch (Exception e)

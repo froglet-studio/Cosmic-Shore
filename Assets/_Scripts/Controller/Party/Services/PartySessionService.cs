@@ -83,13 +83,24 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         private readonly HostConnectionDataSO _connectionData;
+        private readonly GameDataSO _gameData;
 
         // ─────────────────────────────────────────────────────────────────────
         // IPartySessionService — state properties
         // ─────────────────────────────────────────────────────────────────────
 
         /// <inheritdoc/>
-        public ISession ActiveSession { get; private set; }
+        /// <remarks>
+        /// Backed by <c>GameDataSO.ActiveSession</c> — single source of truth
+        /// for the active Relay session reference, shared with every other
+        /// reader (HCS, MultiplayerSetup, MultiplayerMiniGameControllerBase,
+        /// Player, etc.). See Docs/PARTY_SYSTEM_REFACTOR.md locked decisions.
+        /// </remarks>
+        public ISession ActiveSession
+        {
+            get => _gameData.ActiveSession;
+            private set => _gameData.ActiveSession = value;
+        }
 
         /// <inheritdoc/>
         public float CreatedAtUnscaledTime { get; private set; }
@@ -105,9 +116,15 @@ namespace CosmicShore.Gameplay
         /// Shared party state container.  Read for player identity (display name,
         /// avatar id) when building player properties for session create/join.
         /// </param>
-        public PartySessionService(HostConnectionDataSO connectionData)
+        /// <param name="gameData">
+        /// Shared game-data SO. Backs <see cref="ActiveSession"/> — every reader
+        /// of the active session reference (this service, HCS, game controllers,
+        /// MultiplayerSetup) goes through the same field.
+        /// </param>
+        public PartySessionService(HostConnectionDataSO connectionData, GameDataSO gameData)
         {
             _connectionData = connectionData;
+            _gameData = gameData;
         }
 
         // ─────────────────────────────────────────────────────────────────────
