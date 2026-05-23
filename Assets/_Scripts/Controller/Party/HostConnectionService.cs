@@ -615,9 +615,9 @@ namespace CosmicShore.Gameplay
             _memberService.ClearWithEvents(connectionData.LocalPlayerId);
 
             ClearJoinedPartyAsync().Forget();
+            // LeavePartyAndReturnToMenuAsync now uses LeavePartyKeepHostAsync internally,
+            // which already ensures a fresh solo session — no trailing call needed.
             await controller.LeavePartyAndReturnToMenuAsync();
-            // After leaving the party, recreate our own solo Relay party session.
-            await EnsurePartySessionAsync();
         }
 
         public async UniTask KickPartyMemberAsync(string playerId)
@@ -743,16 +743,69 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Drops the cached party session reference. The single explicit escape
-        /// hatch from a stale <see cref="ISession"/> ref. Intended for the
-        /// recovery path in <c>PartyInviteController.RecoverFromFailedTransitionAsync</c>;
-        /// other callers must use <see cref="EnsurePartySessionAsync"/> alone
-        /// to honour the "ActiveSession is never nulled outside an intentional
-        /// leave" invariant (see <c>Docs/PARTY_SYSTEM_REFACTOR.md</c>).
+        /// hatch from a stale <see cref="ISession"/> ref.
         ///
-        /// Commit 10 (`LeavePartyKeepHostAsync`) will subsume this pattern;
-        /// this method may become internal or be removed at that point.
+        /// <para>
+        /// <b>Currently unused.</b> Commit 10 subsumed the only caller
+        /// (<c>PartyInviteController.RecoverFromFailedTransitionAsync</c>) by
+        /// routing it through <see cref="LeavePartyKeepHostAsync"/>, which
+        /// calls <see cref="PartySessionService.LeaveAsync"/> for a proper UGS
+        /// leave (including <c>DeleteAsync</c>/<c>LeaveAsync</c> on the host or
+        /// client respectively) before recreating. Retained for now as a
+        /// defensive escape hatch; may be deleted in a follow-up if no caller
+        /// emerges.
+        /// </para>
         /// </summary>
         public void ClearPartySessionRef() => _partySessionService.ClearSession();
+
+        /// <summary>
+        /// Leaves the current party session and immediately recreates a fresh
+        /// solo Relay-backed session in its place. The canonical leave-to-solo
+        /// surface — replaces the older "explicit ShutdownAsync + recreate"
+        /// pattern that callers used to inline.
+        ///
+        /// <para>
+        /// Flow:
+        /// <list type="number">
+        ///   <item><see cref="PartySessionService.LeaveAsync"/> — calls
+        ///         <c>DeleteAsync</c> (host) or <c>session.LeaveAsync</c> (client)
+        ///         on the UGS session. Clears the shared session ref. Safe to
+        ///         call when no session is active.</item>
+        ///   <item><see cref="EnsurePartySessionAsync"/> — creates a fresh solo
+        ///         Relay session and re-enters InParty.</item>
+        /// </list>
+        /// </para>
+        ///
+        /// <para>
+        /// Used by every leave path: <c>PartyInviteController.LeavePartyAndReturnToMenuAsync</c>
+        /// (user-driven leave) and <c>PartyInviteController.RecoverFromFailedTransitionAsync</c>
+        /// (post-failure recovery). The accept flow does NOT use this method — it
+        /// leaves-to-join the inviter's session, not leave-to-host-solo.
+        /// </para>
+        ///
+        /// <para>
+        /// See <c>Docs/PARTY_SYSTEM_REFACTOR.md</c> (Q6, Commit 10) for the
+        /// design rationale. <see cref="PartySessionService.LeaveAsync"/>
+        /// currently swallows its own exceptions, so the outer try/catch here
+        /// is defensive — kept for future-proofing.
+        /// </para>
+        /// </summary>
+        public async UniTask LeavePartyKeepHostAsync()
+        {
+            try
+            {
+                if (_partySessionService.ActiveSession != null)
+                    await _partySessionService.LeaveAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(
+                    $"[HostConnectionService] LeavePartyKeepHostAsync: " +
+                    $"LeaveAsync threw ({ex.GetType().Name}): {ex.Message} — " +
+                    "proceeding to recreate solo session.");
+            }
+            await EnsurePartySessionAsync();
+        }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Refresh Loop                                                     ║

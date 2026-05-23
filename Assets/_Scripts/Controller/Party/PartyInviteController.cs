@@ -265,17 +265,17 @@ namespace CosmicShore.Gameplay
                     gameData.DestroyPlayerAndVessel();
                     gameData.ResetRuntimeData();
                 }
-                // .AsMainThread() guarantees each cross-thread await resumes on
-                // Unity's main thread.
-                await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct).AsMainThread();
 
-                // Recreate the player's own solo Relay session so they return
-                // to lava-lamp as a fresh host.  HCS handles NM startup internally.
-                // EnsurePartySessionAsync is idempotent — no-op if we already
-                // happen to be hosting (e.g. shutdown above was a no-op).
+                // Leave the current party session and recreate a fresh solo Relay
+                // in its place via the canonical leave-to-solo surface. Internally:
+                //   PartySessionService.LeaveAsync()  → DeleteAsync (host) /
+                //                                       session.LeaveAsync (client)
+                //   EnsurePartySessionAsync()         → fresh solo Relay + NM host
+                // .AsMainThread() guarantees the continuation lands on Unity's main thread.
+                // See Docs/PARTY_SYSTEM_REFACTOR.md (Commit 10).
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
-                    await hcs.EnsurePartySessionAsync().AsMainThread();
+                    await hcs.LeavePartyKeepHostAsync().AsMainThread();
 
                 // Reload Menu_Main via the new NM so scene-placed NetworkObjects
                 // initialise cleanly in the fresh Relay session.
@@ -343,18 +343,15 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                // HCS owns NM startup. RecoverFromFailedTransitionAsync is the ONE
-                // path that intentionally drops a stale party-session reference (the
-                // accept transition failed mid-flow, leaving a possibly-stale ref).
-                // ClearPartySessionRef + EnsurePartySessionAsync is the explicit
-                // clear-and-recreate sequence — see Docs/PARTY_SYSTEM_REFACTOR.md.
-                // No direct nm.StartHost() calls here.
+                // HCS owns NM startup. After a failed accept transition the active
+                // party session may be in an inconsistent state — leave it cleanly
+                // (DeleteAsync/LeaveAsync internally) and recreate a fresh solo
+                // session via the canonical leave-to-solo surface. No direct
+                // nm.StartHost() calls here. See Docs/PARTY_SYSTEM_REFACTOR.md
+                // (Commit 10).
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
-                {
-                    hcs.ClearPartySessionRef();
-                    await hcs.EnsurePartySessionAsync().AsMainThread();
-                }
+                    await hcs.LeavePartyKeepHostAsync().AsMainThread();
 
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer && nm.SceneManager != null)

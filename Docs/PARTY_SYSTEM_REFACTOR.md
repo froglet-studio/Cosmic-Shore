@@ -856,33 +856,136 @@ backing interface is `IMultiplayerService` (matches UGS naming convention used b
    `MultiplayerService.Instance` at construction time. Production behavior identical.
 4. The optional ctor parameter gives tests a seam to pass a fake/mock without DI changes.
 
-### `[ ]` Commit 10 — `LeavePartyKeepHostAsync` + adopt at every leave path
+### `[x]` Commit 10 — `LeavePartyKeepHostAsync` + adopt at every leave path
 
-New method on `HostConnectionService` (or `PartySessionService` — TBD when reading
-surrounding code; revise this commit's section before executing):
+**Outcome**: new `LeavePartyKeepHostAsync` method added to HCS (positioned next to
+`EnsurePartySessionAsync` and `ClearPartySessionRef`). Two callers rewired:
 
+- `PartyInviteController.LeavePartyAndReturnToMenuAsync`: dropped explicit
+  `_networkTransition.ShutdownAsync()`; now calls `hcs.LeavePartyKeepHostAsync()`
+  which internally does `_partySessionService.LeaveAsync()` (proper UGS
+  `DeleteAsync`/`session.LeaveAsync` per role) followed by `EnsurePartySessionAsync()`.
+- `PartyInviteController.RecoverFromFailedTransitionAsync`: replaced
+  `ClearPartySessionRef + EnsurePartySessionAsync` chain with a single
+  `LeavePartyKeepHostAsync()` call — cleaner UGS-backend state on recovery.
+
+`HCS.LeavePartyAsync`: dropped its trailing `await EnsurePartySessionAsync()` —
+`LeavePartyAndReturnToMenuAsync` now ensures it internally.
+
+`ClearPartySessionRef` (added in Commit 4): no in-code callers remain. Kept in
+place as a defensive escape hatch; XML doc updated to flag "currently unused" and
+state the path that subsumed it (Commit 10).
+
+Remaining `_networkTransition.ShutdownAsync` callsites in the codebase:
+- `PartyInviteController.AcceptInviteAsync:158` — accept-flow shutdown (leave-to-join,
+  not leave-to-host-solo). Out of Commit 10 scope.
+- `HostConnectionService.EnsurePartySessionAsync:717` — internal to the create
+  path. UGS `CreateSessionAsync(opts.WithRelayNetwork())` requires NM in a known
+  state.
+
+The plan's Q6 "no NM cycle" goal is partially achieved: leave paths are now
+*consolidated* through one method, but the internal `EnsurePartySessionAsync`
+still calls `ShutdownAsync` before `CreateAsync` (so NM is cycled once). Full
+"zero cycle" requires teaching `EnsurePartySessionAsync` to skip Shutdown when
+NM is already up and SDK lifecycle constraints permit it — tracked in the
+Deferred section.
+
+Brace balance verified (HCS 129/129, PartyInviteController 28/28).
+HCS: 1483 → 1562 (+79, mostly XML doc on the new method).
+
+**Pre-commit findings** (preserved for audit trail):
+
+
+**Pre-commit findings** (live source post-Commit 9):
+
+Leave paths today:
+
+| Site | Currently does | Notes |
+|---|---|---|
+| `HCS.LeavePartyAsync:600` | Delegates to `controller.LeavePartyAndReturnToMenuAsync()`, then post-call `await EnsurePartySessionAsync()` | The trailing EnsurePartySession becomes redundant once the controller's flow ensures it internally. |
+| `PartyInviteController.LeavePartyAndReturnToMenuAsync:240` | `_networkTransition.ShutdownAsync()` → `hcs.EnsurePartySessionAsync()` → `nm.SceneManager.LoadScene(Menu_Main)` | Target for replacement. Explicit Shutdown becomes implicit via LeavePartyKeepHostAsync (which calls `_partySessionService.LeaveAsync` → `EnsurePartySessionAsync`). |
+| `PartyInviteController.RecoverFromFailedTransitionAsync:337` | `hcs.ClearPartySessionRef()` → `hcs.EnsurePartySessionAsync()` → `nm.SceneManager.LoadScene(Menu_Main)` | Target for replacement. Plan §Q3 site #4. |
+| `PartyInviteController.AcceptInviteAsync:158` | `_networkTransition.ShutdownAsync()` → join the inviter's session | **Out of scope.** This is a leave-to-JOIN (not leave-to-host-solo). LeavePartyKeepHostAsync would recreate a solo Relay — wrong for accept. |
+| `HCS.KickPartyMemberAsync:623` | Explicitly **rejects self-kicks** at line 631-633 | **No self-kick path exists.** The plan's "KickPartyMemberAsync self-kick path → use new path" bullet appears to refer to a code shape no longer present. No change. |
+
+`PartySessionService.LeaveAsync` (lines 213-227) details:
 ```csharp
-public async UniTask LeavePartyKeepHostAsync()
+public async UniTask LeaveAsync()
 {
-    try
-    {
-        if (_partySessionService.ActiveSession != null)
-            await _partySessionService.LeaveAsync();
-    }
-    catch (Exception ex)
-    {
-        Debug.LogError($"[HostConnectionService] LeavePartyKeepHostAsync: LeaveAsync threw: {ex}");
-        // ref cleared inside LeaveAsync regardless; proceed.
-    }
-    await EnsurePartySessionAsync();
+    if (ActiveSession == null) return;
+    var session = ActiveSession;
+    ClearSession();          // clears ref BEFORE the network call
+    try { ... await session.AsHost().DeleteAsync() OR session.LeaveAsync() ... }
+    catch (Exception e) { Debug.LogWarning(...); }  // swallows
 }
 ```
+- `ClearSession()` runs first, so even if the network call throws, the ref is cleared.
+- Internal catch swallows — `LeaveAsync` never propagates exceptions to its caller.
+- This means the outer try/catch in `LeavePartyKeepHostAsync` is defensive (good practice
+  for future-proofing if `LeaveAsync` semantics change, but currently can't fire).
 
-Caller updates:
-- `LeavePartyAndReturnToMenuAsync` → use new path; drop `ShutdownAsync` call.
-- `KickPartyMemberAsync` self-kick path → use new path.
-- `RecoverFromFailedTransitionAsync` → use new path (replaces explicit `ClearSession` +
-  `EnsurePartySessionAsync` chain from commit #5; revise commit #5 if this lands first).
+`EnsurePartySessionAsync` internal behavior:
+- Fast-paths on `IsHostingParty`. After `LeaveAsync` clears `ActiveSession`, IsHostingParty
+  is false → goes into the create path.
+- Inside the create path, calls `_networkTransition.ShutdownAsync` at line 717. If
+  `LeaveAsync` already left NM in a "down" state, this Shutdown is a no-op. If NM is
+  still up (UGS SDK didn't tear it down), it shuts it down.
+- Either way: ONE effective NM cycle per leave, not two.
+
+**Caveat on "no NM cycle" promise**: the plan Q1 says "the recovery path no longer
+cycles NM at all" once LeavePartyKeepHostAsync replaces the unconditional ShutdownAsync.
+That literal "no cycle" goal requires `EnsurePartySessionAsync` to skip its internal
+`ShutdownAsync` when NM is already up and `CreateSessionAsync` would conflict. The current
+SDK behavior probably forces a cycle (CreateSessionAsync needs NM to be in a known state).
+Commit 10 as written achieves **consolidation** of the leave pattern (one method, one
+place) but does NOT yet achieve "literally zero NM cycles." Tracking that residual
+optimization in §Deferred at the bottom of this doc.
+
+**Execution plan**:
+
+1. Add `public async UniTask LeavePartyKeepHostAsync()` to `HostConnectionService`,
+   positioned near `EnsurePartySessionAsync` and `ClearPartySessionRef`:
+   ```csharp
+   public async UniTask LeavePartyKeepHostAsync()
+   {
+       try
+       {
+           if (_partySessionService.ActiveSession != null)
+               await _partySessionService.LeaveAsync();
+       }
+       catch (Exception ex)
+       {
+           Debug.LogError($"[HostConnectionService] LeavePartyKeepHostAsync: " +
+                          $"LeaveAsync threw ({ex.GetType().Name}): {ex.Message} — " +
+                          "proceeding to recreate solo session.");
+       }
+       await EnsurePartySessionAsync();
+   }
+   ```
+2. `PartyInviteController.LeavePartyAndReturnToMenuAsync` (lines 260-285):
+   - Drop the explicit `await _networkTransition.ShutdownAsync(...)` call.
+   - Replace `await hcs.EnsurePartySessionAsync().AsMainThread()` with
+     `await hcs.LeavePartyKeepHostAsync().AsMainThread()`.
+   - Update surrounding comments.
+3. `PartyInviteController.RecoverFromFailedTransitionAsync` (lines 344-357):
+   - Replace `hcs.ClearPartySessionRef();` + `await hcs.EnsurePartySessionAsync()...`
+     with `await hcs.LeavePartyKeepHostAsync().AsMainThread();`.
+   - Update comment.
+4. `HCS.LeavePartyAsync:620`: remove the trailing `await EnsurePartySessionAsync()` —
+   `LeavePartyAndReturnToMenuAsync` now ensures it internally via
+   `LeavePartyKeepHostAsync`.
+5. `ClearPartySessionRef` (added in Commit 4): no longer called by anyone after step 3.
+   Leave it in place for now as a defensive escape hatch; mark "currently unused" in
+   its XML doc. Commit 14 (comment cleanup) or a follow-up can delete it if it stays
+   unreferenced.
+
+`KickPartyMemberAsync` and `AcceptInviteAsync`: no change (justification in findings
+table above).
+
+Expected behavior change: leave paths now go through `PartySessionService.LeaveAsync`
+which properly calls `DeleteAsync` (host) or `session.LeaveAsync` (client) on the UGS
+session — replacing the prior "Shutdown + recreate" pattern that just dropped the
+session ref locally without telling UGS. Cleaner backend state; same NM cycle count.
 
 ### `[ ]` Commit 11 — Refresh error classification (transient vs definite)
 
