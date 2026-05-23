@@ -836,10 +836,10 @@ the plan's source-of-truth consolidation exposes.
 ### `[x]` Commit 9 — `MultiplayerService.Instance` → class member
 
 **Outcome**: 5 of 8 `MultiplayerService.Instance` callsites in the codebase now go
-through a lazily-resolved `Multiplayer` property. `PartySessionService` and
-`PresenceLobbyService` each have a test-injection ctor seam (`IMultiplayerService
-multiplayerService = null`) and a `private IMultiplayerService Multiplayer =>
-_injectedMultiplayer ?? MultiplayerService.Instance;` property.
+through a lazily-resolved property:
+`private IMultiplayerService _multiplayerService => MultiplayerService.Instance;`
+on both `PartySessionService` and `PresenceLobbyService`. No constructor parameter,
+no cached field — the property reads the live `Instance` at each call site.
 
 The remaining 3 callsites in `MultiplayerSetup.cs` (game-launch path) are out of
 the Commit 9 scope per plan.
@@ -850,11 +850,11 @@ the Commit 9 scope per plan.
 > constructed during Bootstrap DI resolution — before `UnityServices.InitializeAsync()`
 > completes — `MultiplayerService.Instance` is null at construction**, so the field was
 > pinned null forever. This surfaced as a `NullReferenceException` in
-> `PartySessionService.CreateAsync` (`_multiplayer.CreateSessionAsync`) on the
-> auth-scene initial party creation. Fixed by switching to the lazy `Multiplayer`
-> property that reads `Instance` fresh at use time (test fake still takes precedence).
-> The CLAUDE.md anti-pattern entry was corrected to prescribe the property form, not
-> ctor caching.
+> `PartySessionService.CreateAsync` on the auth-scene initial party creation. Fixed by
+> switching to a plain `_multiplayerService` property that reads `Instance` fresh at
+> use time. The earlier test-injection ctor seam was dropped at the prompter's request
+> — it's a plain property now, no DI parameter. The CLAUDE.md anti-pattern entry was
+> corrected to prescribe this property form, not ctor caching.
 
 Brace balance verified for both touched files (`PartySessionService` 30/30,
 `PresenceLobbyService` 47/47).

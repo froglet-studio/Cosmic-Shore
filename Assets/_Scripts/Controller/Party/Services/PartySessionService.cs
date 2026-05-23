@@ -84,27 +84,16 @@ namespace CosmicShore.Gameplay
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly GameDataSO _gameData;
-        /// <summary>
-        /// Test-injected UGS multiplayer service, or null in production. Read
-        /// through <see cref="Multiplayer"/> — never directly.
-        /// </summary>
-        private readonly IMultiplayerService _injectedMultiplayer;
 
         /// <summary>
-        /// UGS multiplayer service. Resolved lazily at use time: prefers a
-        /// test-injected fake, otherwise reads <see cref="MultiplayerService.Instance"/>
-        /// fresh on every access.
-        ///
-        /// <para>
-        /// MUST NOT be cached at construction. This service is a lazy DI singleton
-        /// constructed the first time it is injected (during Bootstrap DI
-        /// resolution), which happens BEFORE <c>UnityServices.InitializeAsync()</c>
-        /// completes — so <see cref="MultiplayerService.Instance"/> is null at
-        /// construction time. Caching it there would pin null forever. See
+        /// UGS multiplayer service, resolved fresh at use time. Never cache
+        /// <see cref="MultiplayerService.Instance"/> in the constructor — this
+        /// service is a lazy DI singleton constructed during Bootstrap DI
+        /// resolution, before <c>UnityServices.InitializeAsync()</c> completes,
+        /// so a constructor-time read would pin null. See
         /// Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
-        /// </para>
         /// </summary>
-        private IMultiplayerService Multiplayer => _injectedMultiplayer ?? MultiplayerService.Instance;
+        private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
 
         // ─────────────────────────────────────────────────────────────────────
         // IPartySessionService — state properties
@@ -142,19 +131,10 @@ namespace CosmicShore.Gameplay
         /// of the active session reference (this service, HCS, game controllers,
         /// MultiplayerSetup) goes through the same field.
         /// </param>
-        /// <param name="multiplayerService">
-        /// Optional UGS multiplayer service for tests. Null in production, in which
-        /// case <see cref="Multiplayer"/> reads <see cref="MultiplayerService.Instance"/>
-        /// lazily at use time.
-        /// </param>
-        public PartySessionService(
-            HostConnectionDataSO connectionData,
-            GameDataSO gameData,
-            IMultiplayerService multiplayerService = null)
+        public PartySessionService(HostConnectionDataSO connectionData, GameDataSO gameData)
         {
             _connectionData = connectionData;
             _gameData = gameData;
-            _injectedMultiplayer = multiplayerService;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -188,7 +168,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    ActiveSession          = await Multiplayer.CreateSessionAsync(opts).AsMainThread();
+                    ActiveSession          = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
                     CreatedAtUnscaledTime  = Time.unscaledTime;
                     Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
                     return;
@@ -228,7 +208,7 @@ namespace CosmicShore.Gameplay
         /// </param>
         public async UniTask JoinByIdAsync(string sessionId)
         {
-            ActiveSession = await Multiplayer.JoinSessionByIdAsync(
+            ActiveSession = await _multiplayerService.JoinSessionByIdAsync(
                 sessionId,
                 new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
 
