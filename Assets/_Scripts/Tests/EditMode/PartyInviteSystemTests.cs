@@ -1106,11 +1106,11 @@ namespace CosmicShore.Tests
         [Test]
         public void ParseInviteLine_AcceptsPendingSentinel()
         {
-            // In Phase 15 "Always InParty", SendInviteAsync uses the real session ID
+            // With eager per-user Relay, SendInviteAsync uses the real session ID
             // directly (the Relay session is created at startup, before any invite is
             // sent), so PENDING is never written to player properties. The parser still
             // accepts it without error for backward compatibility with any cached/in-flight
-            // payload from a pre-Phase-15 client.
+            // payload from an older client.
             var result = InvokeParseInvite("host123|PENDING|HostPilot|2");
 
             Assert.IsTrue(result.HasValue,
@@ -1356,7 +1356,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
         }
 
-        // ─── New "Always InParty" model transitions ─────────────────────────────
+        // ─── Eager per-user Relay model transitions ──────────────────────────────
 
         [Test]
         public void StateMachine_InPresenceLobbyToHostingParty_IsLegal()

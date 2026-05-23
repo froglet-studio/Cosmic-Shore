@@ -1224,11 +1224,25 @@ locked decision "Every null guard logs Debug.LogError with field name and suspec
 cause. Loud, traceable failures." OnDestroy is best-effort cleanup — we cannot recover
 during teardown, but loud logs surface missing prefab refs / DI failures in the editor.
 
-### `[ ]` Commit 14 — Comment cleanup
+### `[x]` Commit 14 — Comment cleanup
 
-- Rewrite every "lazy Relay" / "Phase 15 Always InParty" comment in
-  `HostConnectionService.cs` (lines 333–338, 810–815, 826–827, 894–903, 1142–1148) to
-  describe the current eager architecture in plain language.
+**Outcome**: replaced the `"Always InParty" model` design-jargon lead-ins with
+plain-language "eager per-user Relay" descriptions at five comment sites:
+- `HostConnectionService.cs:881` (acceptance-signal scan)
+- `MultiplayerSetup.cs:401` (LeaveSession)
+- `SceneLoader.cs:311` (HandleActiveSessionEnd)
+- `PartyInviteSystemTests.cs:1109` (ParseInviteLine test) + `:1359` (transition test header)
+
+The `lazy`-creation comments the original plan targeted were already removed in
+Commits 1 and 4, so no `lazy Relay` references remained to rewrite. Verified zero
+`"Always InParty"` / `lazy Relay` references remain anywhere under `Assets/_Scripts/`
+(outside `.md` docs). Brace balance unchanged on all touched files.
+
+**Out of scope (noted for a future commit)**: the PENDING-sentinel three-phase
+acceptance protocol (`InviteService`, `AcceptanceSignalService`, `LobbyRefreshScheduler`,
+interfaces) is still present even though eager creation means invites use the real
+session ID directly. Auditing/removing PENDING spans 5+ files and is a separate
+surgical task, not comment cleanup. Added to the Deferred section.
 
 ### `[ ]` Commit 15 — Documentation roadmap + `CLAUDE.md` additions
 
@@ -1252,6 +1266,14 @@ during teardown, but loud logs surface missing prefab refs / DI failures in the 
   container.
 - MPPM-driven play-mode integration tests for accept / decline / leave / refresh-fail /
   session-gone-auto-recovery.
+- **Audit/remove the PENDING-sentinel three-phase acceptance protocol.** With eager
+  per-user Relay, invites carry the real session ID directly, so the PENDING handshake
+  (`InviteService.PENDING_SESSION_ID`, `AcceptanceSignalService.PublishSignalAsync` /
+  `WaitForRealSessionIdAsync` / `RepublishWithRealIdAsync`, `LobbyRefreshScheduler`'s
+  PENDING-republish boost window) may be dead. Confirm no live path writes PENDING,
+  then remove the protocol across `InviteService`, `AcceptanceSignalService`,
+  `LobbyRefreshScheduler`, and their interfaces. Spans 5+ files — a dedicated commit,
+  not comment cleanup.
 
 ## Unbreakable exit criteria — when do we stop?
 

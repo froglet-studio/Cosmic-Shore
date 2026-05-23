@@ -878,8 +878,10 @@ namespace CosmicShore.Gameplay
 
                     if (acceptingId != null)
                     {
-                        // In the "Always InParty" model, the Relay session already exists
-                        // before the invite was sent — no session creation needed here.
+                        // Every player hosts their own Relay session from menu entry
+                        // (eager creation), so the session already exists before the
+                        // invite was sent — no session creation needed here.
+                        // See Docs/PARTY_SYSTEM_REFACTOR.md.
                         string activeSessionId = _partySessionService.ActiveSession?.Id;
                         if (string.IsNullOrEmpty(activeSessionId))
                         {

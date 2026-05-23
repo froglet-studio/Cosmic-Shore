@@ -308,7 +308,7 @@ namespace CosmicShore.Core
                 return;
             }
 
-            // "Always InParty" model: the party Relay session is NOT cleared here.
+            // Eager per-user Relay: the party Relay session is NOT cleared here.
             // MultiplayerSetup.LeaveSession() raises OnSessionEnded but leaves the
             // shared gameData.ActiveSession reference intact (Commit 8 unified it
             // with PartySessionService.ActiveSession; nulling here would orphan
