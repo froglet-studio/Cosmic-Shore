@@ -987,17 +987,101 @@ which properly calls `DeleteAsync` (host) or `session.LeaveAsync` (client) on th
 session — replacing the prior "Shutdown + recreate" pattern that just dropped the
 session ref locally without telling UGS. Cleaner backend state; same NM cycle count.
 
-### `[ ]` Commit 11 — Refresh error classification (transient vs definite)
+### `[x]` Commit 11 — Refresh error classification (transient vs definite)
 
-- Add helper `IsDefiniteSessionGoneException(Exception)`:
-  - HTTP 404 from UGS
-  - `SessionException` with code/message indicating "not found" / "deleted"
-  - Inner `WebRequestException` with 404
-- Read surrounding SDK code before finalising the predicate; revise this commit's
-  section before executing.
-- In `RefreshPartyMembersAsync` catch:
-  - If `IsDefiniteSessionGoneException` → call `HandleDefiniteSessionGoneAsync()` (commit #12).
-  - Otherwise → existing transient path (log + retry next tick).
+**Outcome**: `RefreshPartyMembersAsync` now distinguishes a definite server-side
+session loss from a transient refresh failure. New `IsDefiniteSessionGoneException`
+predicate (structured `SessionError` enum match + HTTP-404 `RequestFailedException`
++ narrow message fallback, walking the InnerException chain). New `[definite]` catch
+branch between `[rate-limit]` and `[transient]` routes to `HandleDefiniteSessionGoneAsync`,
+which (Commit-11 minimal body) re-entrancy-guards and calls `LeavePartyKeepHostAsync`
+to recover into a fresh solo session. Re-entrancy guard field
+`_handlingDefiniteSessionGone` added.
+
+Functional recovery is complete in Commit 11 (no more infinite retry on a dead
+session). Commit 12 adds the UI-clearing events so stale party slots clear
+immediately rather than on the next member sync.
+
+`Unity.Services.Multiplayer` already imported (covers `SessionException`/`SessionError`);
+`RequestFailedException` used fully-qualified (no new import). Brace balance 135/135.
+HCS: 1562 → 1648 (+86 from predicate + recovery method + XML doc).
+
+**Pre-commit findings** (preserved for audit trail):
+
+UGS exception surface (confirmed against SDK 1.1.8 docs):
+- `SessionException.Error` is a `SessionError` enum. Relevant values:
+  `SessionError.SessionNotFound`, `SessionError.SessionDeleted`,
+  `SessionError.NotInLobby`. All three mean "the session/lobby is gone for us."
+- `Unity.Services.Core.RequestFailedException.ErrorCode` carries HTTP-ish codes
+  (existing rate-limit check uses `== 429`). 404 ≈ not found.
+- Both `SessionException` and `RequestFailedException` are in namespaces already
+  reachable (HCS imports `Unity.Services.Multiplayer`; `RequestFailedException` is
+  used fully-qualified elsewhere as `Unity.Services.Core.RequestFailedException`).
+
+Existing classifiers in `PartySessionService` (lines 303-328) for reference:
+- `IsRateLimitException` → `RequestFailedException.ErrorCode == 429`.
+- `IsTransientSessionException` → `SessionException` + message heuristics
+  (`Object reference`, `23006`, `valid Lobby ID`).
+
+Current `RefreshPartyMembersAsync` catch (lines 1155-1187): benign → rate-limit →
+transient (log + retry). The `[transient]` branch already carries a TODO breadcrumb
+(added in Commit 2) for the definite split.
+
+Grace period at the top of `RefreshPartyMembersAsync` (post-creation window) means
+definite-gone detection only fires on an *established* session, not a freshly-
+provisioned one — avoids tearing down a session that just hasn't propagated yet.
+
+`HandleDefiniteSessionGoneAsync` recovery: `LeavePartyKeepHostAsync` (Commit 10)
+already does the leave-and-recreate, so Commit 11 can deliver functional recovery
+on its own. Commit 12 enriches it with UI-clearing events.
+
+**Predicate design** — structured-first, message-fallback:
+```csharp
+private static bool IsDefiniteSessionGoneException(Exception e)
+{
+    for (var current = e; current != null; current = current.InnerException)
+    {
+        if (current is SessionException se &&
+            se.Error is SessionError.SessionNotFound
+                     or SessionError.SessionDeleted
+                     or SessionError.NotInLobby)
+            return true;
+
+        if (current is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 404)
+            return true;
+
+        // Narrow message fallback: require "session" co-occurrence to avoid
+        // misclassifying generic "not found" transients as definite.
+        var msg = current.Message;
+        if (!string.IsNullOrEmpty(msg) &&
+            msg.IndexOf("session", StringComparison.OrdinalIgnoreCase) >= 0 &&
+            (msg.IndexOf("not found",      StringComparison.OrdinalIgnoreCase) >= 0 ||
+             msg.IndexOf("deleted",        StringComparison.OrdinalIgnoreCase) >= 0 ||
+             msg.IndexOf("does not exist", StringComparison.OrdinalIgnoreCase) >= 0))
+            return true;
+    }
+    return false;
+}
+```
+Walks the InnerException chain (UGS / UniTask wrap exceptions), matching the existing
+`IsBenignLobbyPatcherError` walk pattern.
+
+**Execution plan**:
+
+1. Add `IsDefiniteSessionGoneException(Exception)` static predicate next to the
+   existing `IsRateLimitException` / `IsBenignLobbyPatcherError` helpers in HCS.
+2. Add `private bool _handlingDefiniteSessionGone;` re-entrancy guard field.
+3. Add `private async UniTask HandleDefiniteSessionGoneAsync()` — Commit-11 minimal
+   body: re-entrancy guard + `await LeavePartyKeepHostAsync()`. Commit 12 enriches
+   with the member snapshot + per-member `OnPartyMemberLeft` + `OnHostConnectionLost`.
+4. In `RefreshPartyMembersAsync` catch, insert the `[definite]` branch between
+   `[rate-limit]` and `[transient]`: if definite → log + `HandleDefiniteSessionGoneAsync().Forget()` → return.
+5. Replace the Commit-2 TODO breadcrumb with a comment pointing at the now-real branch.
+
+Behavior change: a server-side session deletion (404 / SessionNotFound / SessionDeleted
+/ NotInLobby) now triggers auto-recovery into a fresh solo session instead of an
+infinite log-and-retry loop. The re-entrancy guard prevents overlapping recoveries
+from the 1.5s refresh cadence.
 
 ### `[ ]` Commit 12 — Auto-recover on definite session-gone
 

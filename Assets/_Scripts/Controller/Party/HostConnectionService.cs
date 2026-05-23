@@ -168,6 +168,7 @@ namespace CosmicShore.Gameplay
         private bool   _joining;
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
+        private bool   _handlingDefiniteSessionGone;
         private float  _rateLimitBackoffUntil;
         private float  _nextForcedRefreshAllowed;
         private int    _consecutiveRefreshErrors;
@@ -1169,18 +1170,27 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
+                // [definite] Session is gone server-side (404 / SessionNotFound /
+                // SessionDeleted / NotInLobby). Retrying forever would leave the UI
+                // showing a stale "in party" state. Auto-recover into a fresh solo
+                // session so the user is back in a functional menu with no manual
+                // action. See HandleDefiniteSessionGoneAsync.
+                if (IsDefiniteSessionGoneException(e))
+                {
+                    Debug.LogWarning(
+                        $"[HostConnectionService] Party session gone server-side " +
+                        $"({e.GetType().Name}): {e.Message} — auto-recovering to solo session.");
+                    HandleDefiniteSessionGoneAsync().Forget();
+                    return;
+                }
+
                 // [transient] Everything else: log and retry next tick WITHOUT
                 // clearing the session. Clearing here cascades into host-vessel
                 // despawn via SendInviteAsync → EnsurePartySessionAsync →
                 // NetworkTransitionService.ShutdownAsync → NetworkManager.Shutdown.
                 // Session lifetime is owned by explicit user paths (LeavePartyAsync,
-                // kick, NM shutdown, user-tapped boot-status retry) — not by
-                // background refresh ticks.
-                //
-                // TODO (Commits 11/12): split this branch into [transient] vs
-                // [definite session-gone] (HTTP 404 / SessionNotFound) and auto-
-                // recover via LeavePartyKeepHostAsync so the UI never shows stale
-                // "in party" when the server has dropped the session.
+                // kick, NM shutdown, user-tapped boot-status retry) and the
+                // [definite] auto-recovery above — not by background refresh ticks.
                 Debug.LogWarning(
                     $"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message} — keeping session, will retry next tick");
                 return;
@@ -1196,6 +1206,38 @@ namespace CosmicShore.Gameplay
             // If we're Inviting (sent an invite and they connected), transition to InParty.
             if (joinedPlayerIds.Count > 0 && _stateMachine.CurrentState == PartyState.Inviting)
                 _stateMachine.TryTransition(PartyState.InParty);
+        }
+
+        /// <summary>
+        /// Recovery action for a definite server-side session loss (see
+        /// <see cref="IsDefiniteSessionGoneException"/>). Leaves the dead session
+        /// and recreates a fresh solo Relay so the user returns to a functional
+        /// menu with no manual action.
+        ///
+        /// <para>
+        /// Re-entrancy guarded: the refresh loop fires every ~1.5s while recovery
+        /// (leave + recreate) takes a couple of seconds, so without the guard a
+        /// second definite-gone tick could start an overlapping recovery.
+        /// </para>
+        ///
+        /// <para>
+        /// Commit 12 enriches this with UI-clearing events (snapshot members,
+        /// raise per-member <c>OnPartyMemberLeft</c> + <c>OnHostConnectionLost</c>)
+        /// so stale party slots clear immediately rather than on the next sync.
+        /// </para>
+        /// </summary>
+        private async UniTask HandleDefiniteSessionGoneAsync()
+        {
+            if (_handlingDefiniteSessionGone) return;
+            _handlingDefiniteSessionGone = true;
+            try
+            {
+                await LeavePartyKeepHostAsync();
+            }
+            finally
+            {
+                _handlingDefiniteSessionGone = false;
+            }
         }
 
         private void RepopulatePartyMembersFromSession()
@@ -1538,6 +1580,50 @@ namespace CosmicShore.Gameplay
 
         private static bool IsRateLimitException(Exception e) =>
             e.Message != null && e.Message.Contains("Too Many Requests");
+
+        /// <summary>
+        /// Detects a "session is definitely gone server-side" error — as opposed
+        /// to a transient refresh failure that the SDK self-corrects on the next
+        /// tick. A definite-gone error means our cached <see cref="ISession"/> no
+        /// longer maps to a live UGS session (host deleted it, server reaped it,
+        /// or we were removed). The <see cref="RefreshPartyMembersAsync"/> catch
+        /// auto-recovers into a fresh solo session on this signal instead of
+        /// retrying forever.
+        ///
+        /// <para>
+        /// Structured-first: matches <see cref="SessionError.SessionNotFound"/>,
+        /// <see cref="SessionError.SessionDeleted"/>, and
+        /// <see cref="SessionError.NotInLobby"/> on a <see cref="SessionException"/>,
+        /// plus an HTTP-404 <c>RequestFailedException</c>. Falls back to a narrow
+        /// message match (requires the word "session" to co-occur with a
+        /// gone-flavored phrase) for SDK paths that surface as plain text. Walks
+        /// the <see cref="Exception.InnerException"/> chain because UGS / UniTask
+        /// wrap exceptions.
+        /// </para>
+        /// </summary>
+        private static bool IsDefiniteSessionGoneException(Exception e)
+        {
+            for (var current = e; current != null; current = current.InnerException)
+            {
+                if (current is SessionException se &&
+                    se.Error is SessionError.SessionNotFound
+                             or SessionError.SessionDeleted
+                             or SessionError.NotInLobby)
+                    return true;
+
+                if (current is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 404)
+                    return true;
+
+                var msg = current.Message;
+                if (!string.IsNullOrEmpty(msg) &&
+                    msg.IndexOf("session", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    (msg.IndexOf("not found",      StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     msg.IndexOf("deleted",        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     msg.IndexOf("does not exist", StringComparison.OrdinalIgnoreCase) >= 0))
+                    return true;
+            }
+            return false;
+        }
 
         /// <summary>
         /// Detects the harmless <see cref="ArgumentOutOfRangeException"/> the UGS
