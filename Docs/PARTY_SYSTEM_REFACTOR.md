@@ -507,10 +507,70 @@ method internal again or delete it.
 
 Merged into Commit 4 above. See "Decision" note at the top of Commit 4.
 
-### `[ ]` Commit 6 — Wrap unguarded UGS calls (`KickPartyMemberAsync`)
+### `[x]` Commit 6 — Improve `KickPartyMemberAsync` catch diagnostics (re-scoped)
 
-- Wrap `session.AsHost().RemovePlayerAsync(targetId)` in try/catch.
-- Log error with target id. State machine unchanged. Host can retry.
+**Outcome**: catch-block log message expanded to include the target `playerId` and
+the exception type name, aligning with the rest of the file's catch-log convention.
+A short comment ties the catch to the error-handling matrix. No behavior change —
+the wrap itself was already shipped (the plan's matrix entry assumed it was
+unguarded, which is stale).
+
+`HostConnectionService.cs`: 1477 → 1483 lines (+6 for the expanded message + comment).
+Brace balance 123/123.
+
+**Pre-commit findings** (preserved for audit trail):
+
+
+**Pre-commit findings** (live source post-Commit 4):
+
+`KickPartyMemberAsync` at `HostConnectionService.cs:618-645`:
+```csharp
+public async UniTask KickPartyMemberAsync(string playerId)
+{
+    if (!connectionData.IsPartyHost) { LogWarning("Only the party host..."); return; }
+    if (playerId == connectionData.LocalPlayerId) { LogWarning("Cannot kick yourself..."); return; }
+
+    connectionData.RemovePartyMember(playerId);
+
+    if (_partySessionService.ActiveSession != null)
+    {
+        try
+        {
+            await _partySessionService.ActiveSession.AsHost().RemovePlayerAsync(playerId).AsMainThread();
+            Debug.Log($"[HostConnectionService] Kicked {playerId} from party session.");
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[HostConnectionService] KickPartyMember session error: {e.Message}");
+        }
+    }
+}
+```
+
+The `RemovePlayerAsync` call **is already wrapped** in try/catch (lines 635-643).
+The catch logs a warning and leaves state unchanged — exactly the behavior the
+locked design's error-handling matrix specifies. **The plan's matrix entry**
+("Currently unwrapped — propagates. Wrap in try/catch...") **is stale** — likely
+shipped in an earlier surgical fix.
+
+Callers: invoked from UI (`KickPartyMemberAsync` is part of HCS's public API per
+`PartyInviteSystemTests.cs:1083`). Per matrix: "Log, state unchanged. Host can retry."
+
+What's left to improve:
+1. The log omits the target `playerId`. Plan says explicitly "Log error with target id."
+2. The log omits `e.GetType().Name`, inconsistent with the rest of the file (e.g.
+   line 1078: `({e.GetType().Name}): {e.Message}`).
+
+`connectionData.RemovePartyMember(playerId)` runs unconditionally before the
+UGS call. That's a local-only SOAP mutation — UI sees the member gone immediately,
+even if the UGS-side kick fails. If the target is still in the session, they'll
+reappear on the next refresh tick. Best-effort semantics, correct for kick.
+
+**Execution plan**:
+
+1. Improve the catch log: include `playerId` and exception type name. Single-line edit.
+
+No structural change. No new methods. No state-machine work.
 
 ### `[ ]` Commit 7 — Event-driven trim (`Start` + `WaitForProfileInit`)
 

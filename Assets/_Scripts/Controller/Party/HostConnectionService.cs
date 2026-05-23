@@ -639,7 +639,13 @@ namespace CosmicShore.Gameplay
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[HostConnectionService] KickPartyMember session error: {e.Message}");
+                    // Per Docs/PARTY_SYSTEM_REFACTOR.md error-handling matrix:
+                    // log, state unchanged. The local SOAP removal above already
+                    // updated the UI; if the UGS-side kick fails the target will
+                    // reappear on the next refresh tick and the host can retry.
+                    Debug.LogWarning(
+                        $"[HostConnectionService] Kick of '{playerId}' failed " +
+                        $"({e.GetType().Name}): {e.Message} — local view updated, host can retry.");
                 }
             }
         }
