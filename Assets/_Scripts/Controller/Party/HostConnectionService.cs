@@ -279,13 +279,18 @@ namespace CosmicShore.Gameplay
                 bootStatusRetryRequestedEvent.OnRaised += HandleBootStatusRetryRequested;
         }
 
-        async void Start()
+        void Start()
         {
             // All [Inject] fields (services + gameData) are populated before Start.
-            while (!IsAuthSignedInAndHasId())
-                await UniTask.Delay(300);
-
-            await EnsureInitializedAsync();
+            // Two entry paths feed initialization:
+            //   1. Auth signed in BEFORE this Start runs → HandleSignedInEvent
+            //      runs init synchronously here.
+            //   2. Auth signs in AFTER this Start runs → the SOAP OnSignedIn
+            //      event (wired in the inspector to HandleSignedInEvent via an
+            //      EventListenerNoParam) wakes us later.
+            // HandleSignedInEvent is idempotent — concurrent calls collapse
+            // through EnsureInitializedAsync's IsInPresenceLobby || _joining guard.
+            HandleSignedInEvent();
         }
 
         void Update()
@@ -1354,18 +1359,39 @@ namespace CosmicShore.Gameplay
         {
             if (playerDataService == null || playerDataService.IsInitialized) return;
 
-            int elapsed = 0;
-            const int stepMs = 100;
-            while (!playerDataService.IsInitialized && elapsed < timeoutMs)
+            // Event-driven: subscribe to OnProfileChanged and complete the TCS the
+            // first time the event fires with IsInitialized == true. PlayerDataService
+            // flips IsInitialized = true IMMEDIATELY before raising OnProfileChanged
+            // (see PlayerDataService.HandleDataServiceReady), so this is race-free.
+            // Timeout via linked CTS — no polling.
+            using var cts = new CancellationTokenSource(timeoutMs);
+            var tcs = new UniTaskCompletionSource();
+
+            void OnProfileChanged(PlayerProfileData _)
             {
-                await UniTask.Delay(stepMs);
-                elapsed += stepMs;
+                if (playerDataService.IsInitialized)
+                    tcs.TrySetResult();
             }
 
-            if (!playerDataService.IsInitialized)
+            playerDataService.OnProfileChanged += OnProfileChanged;
+            try
+            {
+                // Re-check inside the subscribe window: the profile may have
+                // resolved between the early-return check and the subscription.
+                if (playerDataService.IsInitialized) return;
+
+                await tcs.Task.AttachExternalCancellation(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
                 Debug.LogWarning(
                     $"[HostConnectionService] PlayerDataService.IsInitialized still false after {timeoutMs}ms — " +
                     "proceeding with local default identity; profile-change republish will correct it.");
+            }
+            finally
+            {
+                playerDataService.OnProfileChanged -= OnProfileChanged;
+            }
         }
 
         private void SyncLocalIdentity()

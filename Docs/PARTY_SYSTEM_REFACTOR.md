@@ -572,12 +572,119 @@ reappear on the next refresh tick. Best-effort semantics, correct for kick.
 
 No structural change. No new methods. No state-machine work.
 
-### `[ ]` Commit 7 — Event-driven trim (`Start` + `WaitForProfileInit`)
+### `[x]` Commit 7 — Event-driven trim (`Start` + `WaitForProfileInit`)
 
-- `Start()` becomes `void Start() => HandleSignedInEvent();` (`HandleSignedInEvent` is
-  already idempotent; deletes the awaitable polling there).
-- `WaitForProfileInitAsync` switches from 100ms polling to one-shot `OnProfileChanged`
-  subscribe + linked CTS timeout.
+**Outcome**: two polling loops in `HostConnectionService.cs` replaced with
+event-driven equivalents. No behavior change; both paths reach the same downstream
+state, and the profile-wait timeout semantics are preserved.
+
+1. `Start()`: dropped `while (!IsAuthSignedInAndHasId) await UniTask.Delay(300)`.
+   Now `void Start() => HandleSignedInEvent()` (plus an explanatory comment). The
+   SOAP `OnSignedIn` event (wired via inspector `EventListener`) handles the
+   signed-in-after-Start case; the direct `HandleSignedInEvent()` call handles
+   the signed-in-before-Start case. Both paths are idempotent through
+   `EnsureInitializedAsync`'s `IsInPresenceLobby || _joining` guard.
+
+2. `WaitForProfileInitAsync`: dropped `while (!IsInitialized && elapsed < timeoutMs)
+   await UniTask.Delay(100)`. Now subscribes to `playerDataService.OnProfileChanged`
+   and waits on a `UniTaskCompletionSource` with `AttachExternalCancellation` for
+   the timeout (linked `CancellationTokenSource(timeoutMs)`). Race-free because
+   `PlayerDataService.HandleDataServiceReady` sets `IsInitialized = true` *before*
+   raising `OnProfileChanged`. Re-checks `IsInitialized` after subscription to
+   close the early-return/subscribe race window.
+
+`HostConnectionService.cs`: 1483 → 1509 lines (+26). Brace balance 126/126.
+
+**Pre-commit findings** (preserved for audit trail):
+
+
+**Pre-commit findings** (live source post-Commit 6):
+
+`Start()` at `HostConnectionService.cs:282-289`:
+```csharp
+async void Start()
+{
+    while (!IsAuthSignedInAndHasId())
+        await UniTask.Delay(300);
+    await EnsureInitializedAsync();
+}
+```
+Polls auth every 300ms until signed in. The polling exists because auth can complete
+either BEFORE or AFTER HCS's `Start` runs. If before: poll catches it immediately.
+If after: an `EventListener` SOAP component (wired in inspector to
+`HandleSignedInEvent`) catches the event. So the poll exists only for the
+already-signed-in case.
+
+`HandleSignedInEvent` at `HostConnectionService.cs:344-348`:
+```csharp
+public async void HandleSignedInEvent()
+{
+    if (!IsAuthSignedInAndHasId()) return;
+    await EnsureInitializedAsync();
+}
+```
+Public method. No internal C# caller — invoked by an `EventListenerNoParam`
+wired in the inspector that subscribes to the SOAP `OnSignedIn` event.
+Idempotent: gates on `IsAuthSignedInAndHasId()` and delegates to
+`EnsureInitializedAsync`, which itself guards `IsInPresenceLobby || _joining`.
+
+`WaitForProfileInitAsync` at `HostConnectionService.cs:1353-1369`:
+```csharp
+if (playerDataService == null || playerDataService.IsInitialized) return;
+int elapsed = 0;
+const int stepMs = 100;
+while (!playerDataService.IsInitialized && elapsed < timeoutMs)
+{
+    await UniTask.Delay(stepMs);
+    elapsed += stepMs;
+}
+if (!playerDataService.IsInitialized) Debug.LogWarning(...);
+```
+Polls `IsInitialized` every 100ms. Only caller: `EnsureInitializedAsync` at line 380.
+
+`PlayerDataService.HandleDataServiceReady` (line 72-82 of `PlayerDataService.cs`):
+```csharp
+IsInitialized = true;
+OnProfileChanged?.Invoke(CurrentProfile);
+```
+**`IsInitialized` flips true IMMEDIATELY before `OnProfileChanged` fires.** So
+subscribing to `OnProfileChanged` and completing when `IsInitialized == true`
+is equivalent to waiting for the init flag to flip. Race-free.
+
+`OnProfileChanged` signature: `event Action<PlayerProfileData>`. Subsequent
+invocations (profile mutations) also occur with `IsInitialized == true`, so a
+"complete on next event where IsInitialized" handler still works post-init.
+
+Canonical event-driven pattern in the codebase (`AuthenticationSceneController.cs:520`):
+```csharp
+var tcs = new UniTaskCompletionSource();
+void OnEvent() { if (condition) tcs.TrySetResult(); }
+soapEvent.OnRaised += OnEvent;
+try { await tcs.Task.AttachExternalCancellation(ct); }
+finally { soapEvent.OnRaised -= OnEvent; }
+```
+`AttachExternalCancellation` makes a `UniTask` cancellation-aware so a linked
+`CancellationTokenSource(timeoutMs)` produces the timeout cleanly.
+
+**Execution plan**:
+
+1. Replace `Start()` polling loop with `void Start() => HandleSignedInEvent();`.
+   Fire-and-forget call. If auth isn't yet signed in, `HandleSignedInEvent` returns
+   immediately; the SOAP `OnSignedIn` event later wakes HCS via the inspector-wired
+   `EventListener`. If auth IS signed in, init runs now. Q9 in this doc confirms safety.
+
+2. Rewrite `WaitForProfileInitAsync` as:
+   - Early-return on null service or already-initialized.
+   - Linked `CancellationTokenSource(timeoutMs)` for timeout.
+   - `UniTaskCompletionSource` + `OnProfileChanged` handler that completes when
+     `IsInitialized == true`.
+   - Subscribe → re-check (closes the race between early-return and subscribe) →
+     `await tcs.Task.AttachExternalCancellation(cts.Token)` → unsubscribe.
+   - On `OperationCanceledException`: log warning (preserved verbatim from old code).
+
+No additional callsites change. Behavior change: zero — both paths reach
+`EnsureInitializedAsync` exactly once, and the profile-wait timeout semantics
+are preserved.
 
 ### `[ ]` Commit 8 — Single source of truth for `ActiveSession`
 
