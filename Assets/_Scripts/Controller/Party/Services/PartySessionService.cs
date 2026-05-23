@@ -84,6 +84,13 @@ namespace CosmicShore.Gameplay
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly GameDataSO _gameData;
+        /// <summary>
+        /// UGS multiplayer service. Cached at construction (default
+        /// <see cref="MultiplayerService.Instance"/>) so we don't repeat the
+        /// singleton lookup on every call and tests can substitute a fake.
+        /// See Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
+        /// </summary>
+        private readonly IMultiplayerService _multiplayer;
 
         // ─────────────────────────────────────────────────────────────────────
         // IPartySessionService — state properties
@@ -121,10 +128,18 @@ namespace CosmicShore.Gameplay
         /// of the active session reference (this service, HCS, game controllers,
         /// MultiplayerSetup) goes through the same field.
         /// </param>
-        public PartySessionService(HostConnectionDataSO connectionData, GameDataSO gameData)
+        /// <param name="multiplayerService">
+        /// Optional UGS multiplayer service. Defaults to
+        /// <see cref="MultiplayerService.Instance"/>; tests can pass a fake.
+        /// </param>
+        public PartySessionService(
+            HostConnectionDataSO connectionData,
+            GameDataSO gameData,
+            IMultiplayerService multiplayerService = null)
         {
             _connectionData = connectionData;
             _gameData = gameData;
+            _multiplayer = multiplayerService ?? MultiplayerService.Instance;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -158,7 +173,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    ActiveSession          = await MultiplayerService.Instance.CreateSessionAsync(opts).AsMainThread();
+                    ActiveSession          = await _multiplayer.CreateSessionAsync(opts).AsMainThread();
                     CreatedAtUnscaledTime  = Time.unscaledTime;
                     Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
                     return;
@@ -198,7 +213,7 @@ namespace CosmicShore.Gameplay
         /// </param>
         public async UniTask JoinByIdAsync(string sessionId)
         {
-            ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(
+            ActiveSession = await _multiplayer.JoinSessionByIdAsync(
                 sessionId,
                 new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
 

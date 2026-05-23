@@ -801,12 +801,60 @@ non-leave operations (game-end, menu reset, scene transitions). HCS's
 correct "Always InParty" behavior. This is a fix for a latent regression that
 the plan's source-of-truth consolidation exposes.
 
-### `[ ]` Commit 9 — `MultiplayerService.Instance` → class member
+### `[x]` Commit 9 — `MultiplayerService.Instance` → class member
 
-- `PartySessionService`: ctor takes optional `IMultiplayerService` (default
-  `MultiplayerService.Instance`); stored as `_multiplayerService`; used at the
-  current 2 callsites.
-- `PresenceLobbyService`: same pattern; used at the current 3 callsites.
+**Outcome**: 5 of 8 `MultiplayerService.Instance` callsites in the codebase now go
+through cached fields. `PartySessionService` and `PresenceLobbyService` each have a
+`private readonly IMultiplayerService _multiplayer` field set at construction with
+an optional ctor parameter (defaults to `MultiplayerService.Instance`). Tests can
+substitute a fake without DI changes. AppManager DI factories are unchanged — the
+optional `null` parameter flows through and the ctors apply the default.
+
+The remaining 3 callsites in `MultiplayerSetup.cs` (game-launch path) are out of
+the Commit 9 scope per plan.
+
+Brace balance verified for both touched files (`PartySessionService` 30/30,
+`PresenceLobbyService` 47/47).
+
+**Pre-commit findings** (preserved for audit trail):
+
+
+**Pre-commit findings** (live source post-Commit 8):
+
+`PartySessionService.cs` — 2 callsites:
+- `CreateAsync:161` — `MultiplayerService.Instance.CreateSessionAsync(opts)`
+- `JoinByIdAsync:201` — `MultiplayerService.Instance.JoinSessionByIdAsync(...)`
+
+`PresenceLobbyService.cs` — 3 callsites:
+- `QuerySessionsAsync:299` — `MultiplayerService.Instance.QuerySessionsAsync(...)`
+- `JoinSessionByIdAsync:320` — `MultiplayerService.Instance.JoinSessionByIdAsync(...)`
+- `CreateSessionAsync:368` — `MultiplayerService.Instance.CreateSessionAsync(opts)`
+
+Other `MultiplayerService.Instance` callsites in the codebase (out of Commit 9 scope):
+- `MultiplayerSetup.cs:275, 300, 319` — game-launch path, owned by a separate flow.
+
+Both services are constructed via Reflex DI factories in `AppManager`:
+- `PartySessionService` at `AppManager.cs:413` — `new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>())`
+- `PresenceLobbyService` at `AppManager.cs:407` — `new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>())`
+
+UGS Multiplayer SDK 1.1.8. `MultiplayerService.Instance` is the canonical accessor;
+backing interface is `IMultiplayerService` (matches UGS naming convention used by
+`LobbyService.Instance` / `ILobbyService`, `AuthenticationService.Instance` /
+`IAuthenticationService`).
+
+**Execution plan**:
+
+1. `PartySessionService.cs`:
+   - Add `private readonly IMultiplayerService _multiplayer;` field.
+   - Ctor adds optional `IMultiplayerService multiplayerService = null` parameter; assigns
+     `_multiplayer = multiplayerService ?? MultiplayerService.Instance;`.
+   - Replace 2 `MultiplayerService.Instance.` calls with `_multiplayer.`.
+2. `PresenceLobbyService.cs`:
+   - Same field + ctor pattern.
+   - Replace 3 `MultiplayerService.Instance.` calls with `_multiplayer.`.
+3. AppManager factories: **no change required** — the optional null param defaults to
+   `MultiplayerService.Instance` at construction time. Production behavior identical.
+4. The optional ctor parameter gives tests a seam to pass a fake/mock without DI changes.
 
 ### `[ ]` Commit 10 — `LeavePartyKeepHostAsync` + adopt at every leave path
 

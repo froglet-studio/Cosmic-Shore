@@ -86,6 +86,13 @@ namespace CosmicShore.Gameplay
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly LobbyPropertyWriter  _propertyWriter;
+        /// <summary>
+        /// UGS multiplayer service. Cached at construction (default
+        /// <see cref="MultiplayerService.Instance"/>) so we don't repeat the
+        /// singleton lookup on every call and tests can substitute a fake.
+        /// See Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
+        /// </summary>
+        private readonly IMultiplayerService _multiplayer;
         private ISession _activeLobby;
         private bool     _leaving;
 
@@ -104,10 +111,18 @@ namespace CosmicShore.Gameplay
         /// Owns the lobby mutex and SaveWithRetry pattern; used by
         /// <see cref="SavePropertiesAsync"/> to write player properties safely.
         /// </param>
-        public PresenceLobbyService(HostConnectionDataSO connectionData, LobbyPropertyWriter propertyWriter)
+        /// <param name="multiplayerService">
+        /// Optional UGS multiplayer service. Defaults to
+        /// <see cref="MultiplayerService.Instance"/>; tests can pass a fake.
+        /// </param>
+        public PresenceLobbyService(
+            HostConnectionDataSO connectionData,
+            LobbyPropertyWriter propertyWriter,
+            IMultiplayerService multiplayerService = null)
         {
             _connectionData = connectionData;
             _propertyWriter = propertyWriter;
+            _multiplayer = multiplayerService ?? MultiplayerService.Instance;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -296,7 +311,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions).AsMainThread();
+                    var results = await _multiplayer.QuerySessionsAsync(queryOptions).AsMainThread();
                     sessions = results.Sessions;
                     break;
                 }
@@ -317,7 +332,7 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
-                    var joined = await MultiplayerService.Instance.JoinSessionByIdAsync(
+                    var joined = await _multiplayer.JoinSessionByIdAsync(
                         session.Id,
                         new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
                     Debug.Log($"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
@@ -365,7 +380,7 @@ namespace CosmicShore.Gameplay
                 {
                     try
                     {
-                        _activeLobby = await MultiplayerService.Instance.CreateSessionAsync(opts).AsMainThread();
+                        _activeLobby = await _multiplayer.CreateSessionAsync(opts).AsMainThread();
                         Debug.Log($"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
                         return;
                     }
