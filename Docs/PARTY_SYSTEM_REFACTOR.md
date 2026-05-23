@@ -836,14 +836,25 @@ the plan's source-of-truth consolidation exposes.
 ### `[x]` Commit 9 — `MultiplayerService.Instance` → class member
 
 **Outcome**: 5 of 8 `MultiplayerService.Instance` callsites in the codebase now go
-through cached fields. `PartySessionService` and `PresenceLobbyService` each have a
-`private readonly IMultiplayerService _multiplayer` field set at construction with
-an optional ctor parameter (defaults to `MultiplayerService.Instance`). Tests can
-substitute a fake without DI changes. AppManager DI factories are unchanged — the
-optional `null` parameter flows through and the ctors apply the default.
+through a lazily-resolved `Multiplayer` property. `PartySessionService` and
+`PresenceLobbyService` each have a test-injection ctor seam (`IMultiplayerService
+multiplayerService = null`) and a `private IMultiplayerService Multiplayer =>
+_injectedMultiplayer ?? MultiplayerService.Instance;` property.
 
 The remaining 3 callsites in `MultiplayerSetup.cs` (game-launch path) are out of
 the Commit 9 scope per plan.
+
+> **⚠️ Post-merge bugfix (NRE at runtime)**: the original Commit 9 cached
+> `MultiplayerService.Instance` in the constructor (`_multiplayer = multiplayerService
+> ?? MultiplayerService.Instance`). Because both services are **lazy DI singletons
+> constructed during Bootstrap DI resolution — before `UnityServices.InitializeAsync()`
+> completes — `MultiplayerService.Instance` is null at construction**, so the field was
+> pinned null forever. This surfaced as a `NullReferenceException` in
+> `PartySessionService.CreateAsync` (`_multiplayer.CreateSessionAsync`) on the
+> auth-scene initial party creation. Fixed by switching to the lazy `Multiplayer`
+> property that reads `Instance` fresh at use time (test fake still takes precedence).
+> The CLAUDE.md anti-pattern entry was corrected to prescribe the property form, not
+> ctor caching.
 
 Brace balance verified for both touched files (`PartySessionService` 30/30,
 `PresenceLobbyService` 47/47).

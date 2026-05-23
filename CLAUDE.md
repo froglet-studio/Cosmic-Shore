@@ -1806,7 +1806,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — they don't reliably switch threads on this UniTask version. Use `.AsMainThread()` (see `Docs/THREADING.md`)
 - Raising a SOAP `ScriptableEvent` from a UGS / Netcode `Task` continuation without ensuring the continuation has resumed on the main thread first — SOAP `Raise()` invokes listeners inline, so off-thread raises crash any listener that touches Unity state
 - Touching a `UnityEngine.Object` (incl. `== null` checks routing through `op_Equality`) in a `Task` continuation without `.AsMainThread()` upstream — throws `EnsureRunningOnMainThread`
-- Calling a UGS / Netcode singleton `*.Instance` repeatedly inside a service class — cache it once as a constructor-injected field, falling back to `?? *.Instance` so non-DI callers still work (see `PartySessionService` / `PresenceLobbyService` caching `IMultiplayerService`)
+- Caching a UGS singleton `*.Instance` (e.g. `MultiplayerService.Instance`) in a service **constructor** — lazy DI singletons are constructed during Bootstrap DI resolution, *before* `UnityServices.InitializeAsync()` completes, so `*.Instance` is null at construction and gets pinned null forever. Instead expose a private property that resolves at use time: `private IMultiplayerService Multiplayer => _injectedFake ?? MultiplayerService.Instance;` — keeps a test-injection seam (ctor param, null in production) while always reading the live `Instance` at the call site (see `PartySessionService` / `PresenceLobbyService`)
 
 ## Shader & Visual Development
 

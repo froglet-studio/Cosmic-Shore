@@ -87,12 +87,26 @@ namespace CosmicShore.Gameplay
         private readonly HostConnectionDataSO _connectionData;
         private readonly LobbyPropertyWriter  _propertyWriter;
         /// <summary>
-        /// UGS multiplayer service. Cached at construction (default
-        /// <see cref="MultiplayerService.Instance"/>) so we don't repeat the
-        /// singleton lookup on every call and tests can substitute a fake.
-        /// See Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
+        /// Test-injected UGS multiplayer service, or null in production. Read
+        /// through <see cref="Multiplayer"/> — never directly.
         /// </summary>
-        private readonly IMultiplayerService _multiplayer;
+        private readonly IMultiplayerService _injectedMultiplayer;
+
+        /// <summary>
+        /// UGS multiplayer service. Resolved lazily at use time: prefers a
+        /// test-injected fake, otherwise reads <see cref="MultiplayerService.Instance"/>
+        /// fresh on every access.
+        ///
+        /// <para>
+        /// MUST NOT be cached at construction. This service is a lazy DI singleton
+        /// constructed the first time it is injected (during Bootstrap DI
+        /// resolution), which happens BEFORE <c>UnityServices.InitializeAsync()</c>
+        /// completes — so <see cref="MultiplayerService.Instance"/> is null at
+        /// construction time. Caching it there would pin null forever. See
+        /// Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
+        /// </para>
+        /// </summary>
+        private IMultiplayerService Multiplayer => _injectedMultiplayer ?? MultiplayerService.Instance;
         private ISession _activeLobby;
         private bool     _leaving;
 
@@ -112,8 +126,9 @@ namespace CosmicShore.Gameplay
         /// <see cref="SavePropertiesAsync"/> to write player properties safely.
         /// </param>
         /// <param name="multiplayerService">
-        /// Optional UGS multiplayer service. Defaults to
-        /// <see cref="MultiplayerService.Instance"/>; tests can pass a fake.
+        /// Optional UGS multiplayer service for tests. Null in production, in which
+        /// case <see cref="Multiplayer"/> reads <see cref="MultiplayerService.Instance"/>
+        /// lazily at use time.
         /// </param>
         public PresenceLobbyService(
             HostConnectionDataSO connectionData,
@@ -122,7 +137,7 @@ namespace CosmicShore.Gameplay
         {
             _connectionData = connectionData;
             _propertyWriter = propertyWriter;
-            _multiplayer = multiplayerService ?? MultiplayerService.Instance;
+            _injectedMultiplayer = multiplayerService;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -311,7 +326,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    var results = await _multiplayer.QuerySessionsAsync(queryOptions).AsMainThread();
+                    var results = await Multiplayer.QuerySessionsAsync(queryOptions).AsMainThread();
                     sessions = results.Sessions;
                     break;
                 }
@@ -332,7 +347,7 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
-                    var joined = await _multiplayer.JoinSessionByIdAsync(
+                    var joined = await Multiplayer.JoinSessionByIdAsync(
                         session.Id,
                         new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
                     Debug.Log($"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
@@ -380,7 +395,7 @@ namespace CosmicShore.Gameplay
                 {
                     try
                     {
-                        _activeLobby = await _multiplayer.CreateSessionAsync(opts).AsMainThread();
+                        _activeLobby = await Multiplayer.CreateSessionAsync(opts).AsMainThread();
                         Debug.Log($"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
                         return;
                     }

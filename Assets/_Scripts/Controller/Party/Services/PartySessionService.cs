@@ -85,12 +85,26 @@ namespace CosmicShore.Gameplay
         private readonly HostConnectionDataSO _connectionData;
         private readonly GameDataSO _gameData;
         /// <summary>
-        /// UGS multiplayer service. Cached at construction (default
-        /// <see cref="MultiplayerService.Instance"/>) so we don't repeat the
-        /// singleton lookup on every call and tests can substitute a fake.
-        /// See Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
+        /// Test-injected UGS multiplayer service, or null in production. Read
+        /// through <see cref="Multiplayer"/> — never directly.
         /// </summary>
-        private readonly IMultiplayerService _multiplayer;
+        private readonly IMultiplayerService _injectedMultiplayer;
+
+        /// <summary>
+        /// UGS multiplayer service. Resolved lazily at use time: prefers a
+        /// test-injected fake, otherwise reads <see cref="MultiplayerService.Instance"/>
+        /// fresh on every access.
+        ///
+        /// <para>
+        /// MUST NOT be cached at construction. This service is a lazy DI singleton
+        /// constructed the first time it is injected (during Bootstrap DI
+        /// resolution), which happens BEFORE <c>UnityServices.InitializeAsync()</c>
+        /// completes — so <see cref="MultiplayerService.Instance"/> is null at
+        /// construction time. Caching it there would pin null forever. See
+        /// Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
+        /// </para>
+        /// </summary>
+        private IMultiplayerService Multiplayer => _injectedMultiplayer ?? MultiplayerService.Instance;
 
         // ─────────────────────────────────────────────────────────────────────
         // IPartySessionService — state properties
@@ -129,8 +143,9 @@ namespace CosmicShore.Gameplay
         /// MultiplayerSetup) goes through the same field.
         /// </param>
         /// <param name="multiplayerService">
-        /// Optional UGS multiplayer service. Defaults to
-        /// <see cref="MultiplayerService.Instance"/>; tests can pass a fake.
+        /// Optional UGS multiplayer service for tests. Null in production, in which
+        /// case <see cref="Multiplayer"/> reads <see cref="MultiplayerService.Instance"/>
+        /// lazily at use time.
         /// </param>
         public PartySessionService(
             HostConnectionDataSO connectionData,
@@ -139,7 +154,7 @@ namespace CosmicShore.Gameplay
         {
             _connectionData = connectionData;
             _gameData = gameData;
-            _multiplayer = multiplayerService ?? MultiplayerService.Instance;
+            _injectedMultiplayer = multiplayerService;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -173,7 +188,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    ActiveSession          = await _multiplayer.CreateSessionAsync(opts).AsMainThread();
+                    ActiveSession          = await Multiplayer.CreateSessionAsync(opts).AsMainThread();
                     CreatedAtUnscaledTime  = Time.unscaledTime;
                     Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
                     return;
@@ -213,7 +228,7 @@ namespace CosmicShore.Gameplay
         /// </param>
         public async UniTask JoinByIdAsync(string sessionId)
         {
-            ActiveSession = await _multiplayer.JoinSessionByIdAsync(
+            ActiveSession = await Multiplayer.JoinSessionByIdAsync(
                 sessionId,
                 new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
 
