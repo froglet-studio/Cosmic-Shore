@@ -1149,10 +1149,80 @@ await EnsurePartySessionAsync();              // step 5 (direct — ref already 
 ```
 Re-entrancy guard from Commit 11 stays wrapping the whole body.
 
-### `[ ]` Commit 13 — `OnDestroy` null guards + `Debug.LogError`
+### `[x]` Commit 13 — `OnDestroy` null guards + `Debug.LogError`
 
-- Replace `OnDestroy` with the version from Q8 above. Every nullable branch logs an
-  error naming the field + suspected cause.
+**Outcome**: `OnDestroy` rewritten with an `Instance != this` early-return (fixes the
+duplicate-instance shared-service teardown bug) plus null guards on each teardown
+dependency, every guard logging `Debug.LogError` with the field name + suspected cause:
+- `bootStatusRetryRequestedEvent` null → LogError (SOAP asset unwired), skip unsubscribe.
+- `_lobbyService` null → LogError (DI failure + stale-presence consequence), skip leave.
+- `_propertyWriter` null → LogError (DI failure), skip mutex disposal; otherwise dispose
+  `LobbyMutex`/`SessionCreationMutex` with `?.`.
+
+The `Instance != this` guard is the higher-leverage fix: a duplicate HCS destroyed by
+Awake's singleton guard no longer tears down the shared DI singletons (`_lobbyService`,
+`_propertyWriter`) of the live instance, and no longer NREs on its own un-injected
+fields.
+
+Confirmed `LobbyMutex`/`SessionCreationMutex` are `public readonly` on
+`LobbyPropertyWriter` — accessible from HCS. Brace balance 137/137.
+HCS: 1675 → 1701 (+26).
+
+**Pre-commit findings** (preserved for audit trail):
+
+Current `OnDestroy` (lines 310-326):
+```csharp
+async void OnDestroy()
+{
+    SceneManager.sceneLoaded -= OnSceneLoaded;
+    UnsubscribeFromProfileChanges();
+    UnsubscribeFromGameLaunch();
+    if (bootStatusRetryRequestedEvent != null)
+        bootStatusRetryRequestedEvent.OnRaised -= HandleBootStatusRetryRequested;
+    await _lobbyService.LeaveAsync();          // NRE if DI failed
+    _lobbyMutex.Dispose();                       // NRE if _propertyWriter null
+    _sessionCreationMutex.Dispose();             // NRE if _propertyWriter null
+    if (Instance == this) Instance = null;
+}
+```
+
+Field reality (Q8 table needs correcting):
+- `_lobbyMutex` / `_sessionCreationMutex` are **properties** (lines 151-152) delegating
+  to `_propertyWriter.LobbyMutex` / `.SessionCreationMutex`. The semaphores are
+  `public readonly SemaphoreSlim = new(1,1)` on `LobbyPropertyWriter` (lines 70, 78) —
+  never null if `_propertyWriter` is non-null. So the real nullable thing is
+  `_propertyWriter` (`[Inject] LobbyPropertyWriter`, line 118), not the mutexes.
+- `_lobbyService` is `[Inject] IPresenceLobbyService` (line 130) — null if DI failed.
+- `bootStatusRetryRequestedEvent` is the serialized SOAP event — null if unwired.
+
+**Latent bug discovered** (worth fixing here, aligns with "no NRE in OnDestroy"):
+Awake's singleton guard `if (Instance != null && Instance != this) { Destroy(gameObject); return; }`
+destroys a *duplicate* HCS. That duplicate's `OnDestroy` still fires — and currently runs
+the full cleanup, including `await _lobbyService.LeaveAsync()` (leaves the shared lobby)
+and `_lobbyMutex.Dispose()` (disposes the shared DI singleton's semaphores) — **corrupting
+the live instance's services.** A duplicate may also have null `[Inject]` fields (Reflex
+may not have injected before the Awake-time Destroy), so it would NRE in OnDestroy too.
+
+Fix: `if (Instance != this) return;` at the top of OnDestroy — a duplicate (or
+already-replaced) instance does no cleanup. This both prevents the shared-service
+teardown AND avoids spurious null-guard logs from an un-injected duplicate.
+
+**Execution plan** — rewrite `OnDestroy`:
+1. `if (Instance != this) return;` — duplicate/replaced instance is a clean no-op.
+2. Keep the harmless unsubscribes (sceneLoaded, profile, gameLaunch — all no-op if never
+   subscribed).
+3. `bootStatusRetryRequestedEvent`: keep `!= null` unsubscribe; add `else` LogError
+   naming the field + "SOAP event asset not wired on the prefab."
+4. `_lobbyService`: guard `!= null`; LogError on null naming DI failure + the
+   ~30s-stale-presence consequence; skip the leave.
+5. `_propertyWriter`: guard `!= null`; dispose `LobbyMutex` + `SessionCreationMutex`
+   (with `?.`); LogError on null naming DI failure; skip disposal.
+6. `Instance = null;` at the end (the top guard already established `Instance == this`).
+
+Each null branch logs `Debug.LogError` with the field name + suspected cause, per the
+locked decision "Every null guard logs Debug.LogError with field name and suspected
+cause. Loud, traceable failures." OnDestroy is best-effort cleanup — we cannot recover
+during teardown, but loud logs surface missing prefab refs / DI failures in the editor.
 
 ### `[ ]` Commit 14 — Comment cleanup
 

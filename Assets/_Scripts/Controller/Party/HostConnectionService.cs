@@ -309,20 +309,46 @@ namespace CosmicShore.Gameplay
 
         async void OnDestroy()
         {
+            // Duplicate instance (Awake's singleton guard already Destroy()'d this
+            // gameObject) or we've been replaced — do NO cleanup. The DI-injected
+            // _lobbyService / _propertyWriter are SHARED singletons; tearing them
+            // down from a duplicate would corrupt the live instance. A duplicate
+            // may also have un-injected (null) fields, so this also avoids
+            // spurious null-guard logs.
+            if (Instance != this) return;
+
+            // Unsubscribes are no-ops if we never subscribed.
             SceneManager.sceneLoaded -= OnSceneLoaded;
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
 
             if (bootStatusRetryRequestedEvent != null)
                 bootStatusRetryRequestedEvent.OnRaised -= HandleBootStatusRetryRequested;
+            else
+                Debug.LogError(
+                    "[HostConnectionService] OnDestroy: bootStatusRetryRequestedEvent is null — " +
+                    "SOAP event asset not wired on the prefab. Boot-status retry would not have functioned.");
 
-            await _lobbyService.LeaveAsync();
+            if (_lobbyService != null)
+                await _lobbyService.LeaveAsync();
+            else
+                Debug.LogError(
+                    "[HostConnectionService] OnDestroy: _lobbyService is null — Reflex DI never populated it. " +
+                    "Skipping presence-lobby leave; other users may see this player online for ~30s until UGS reaps the entry.");
 
-            _lobbyMutex.Dispose();
-            _sessionCreationMutex.Dispose();
+            if (_propertyWriter != null)
+            {
+                _propertyWriter.LobbyMutex?.Dispose();
+                _propertyWriter.SessionCreationMutex?.Dispose();
+            }
+            else
+            {
+                Debug.LogError(
+                    "[HostConnectionService] OnDestroy: _propertyWriter is null — Reflex DI never populated it. " +
+                    "Skipping mutex disposal.");
+            }
 
-            if (Instance == this)
-                Instance = null;
+            Instance = null;
         }
 
         private void HandleBootStatusRetryRequested() => EnsurePartySessionAsync().Forget();
