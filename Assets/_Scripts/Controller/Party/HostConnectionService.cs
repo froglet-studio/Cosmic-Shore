@@ -1221,9 +1221,22 @@ namespace CosmicShore.Gameplay
         /// </para>
         ///
         /// <para>
-        /// Commit 12 enriches this with UI-clearing events (snapshot members,
-        /// raise per-member <c>OnPartyMemberLeft</c> + <c>OnHostConnectionLost</c>)
-        /// so stale party slots clear immediately rather than on the next sync.
+        /// Recovery sequence:
+        /// <list type="number">
+        ///   <item>Snapshot whether we had remote members (before clearing).</item>
+        ///   <item><see cref="PartySessionService.ClearSession"/> — drop the dead
+        ///         ref directly. We KNOW the session is gone, so we skip the doomed
+        ///         UGS <c>DeleteAsync</c> that <see cref="LeavePartyKeepHostAsync"/>
+        ///         would attempt.</item>
+        ///   <item><see cref="PartyMemberService.ClearWithEvents"/> — clears member
+        ///         slots and raises <c>OnPartyMemberLeft</c> per non-local member so
+        ///         party panels update immediately, not on the next sync.</item>
+        ///   <item>Raise <c>OnHostConnectionLost</c> — but only if a real party
+        ///         dropped; a solo player whose solo session was reaped recovers
+        ///         invisibly (no spurious toast).</item>
+        ///   <item><see cref="EnsurePartySessionAsync"/> — fresh solo Relay so the
+        ///         user is back in a functional menu with no manual action.</item>
+        /// </list>
         /// </para>
         /// </summary>
         private async UniTask HandleDefiniteSessionGoneAsync()
@@ -1232,7 +1245,21 @@ namespace CosmicShore.Gameplay
             _handlingDefiniteSessionGone = true;
             try
             {
-                await LeavePartyKeepHostAsync();
+                bool hadRemoteMembers = connectionData.PartyMembers != null &&
+                    connectionData.PartyMembers.Any(m => m.PlayerId != connectionData.LocalPlayerId);
+
+                // Known-gone: drop the ref directly (no doomed UGS DeleteAsync).
+                _partySessionService.ClearSession();
+
+                // Clear party-member UI slots + raise OnPartyMemberLeft per member.
+                _memberService.ClearWithEvents(connectionData.LocalPlayerId);
+
+                // Only toast when a real party dropped — solo recovery is silent.
+                if (hadRemoteMembers)
+                    _eventBus.RaiseHostConnectionLost();
+
+                // Recreate a fresh solo Relay session.
+                await EnsurePartySessionAsync();
             }
             finally
             {

@@ -1083,16 +1083,71 @@ Behavior change: a server-side session deletion (404 / SessionNotFound / Session
 infinite log-and-retry loop. The re-entrancy guard prevents overlapping recoveries
 from the 1.5s refresh cadence.
 
-### `[ ]` Commit 12 — Auto-recover on definite session-gone
+### `[x]` Commit 12 — Auto-recover on definite session-gone
 
-New `HandleDefiniteSessionGoneAsync()`:
-1. Snapshot current `_connectionData.PartyMembers` list.
-2. Call `_partySessionService.ClearSession()` (state escape — invariant exception #7).
-3. Raise `OnPartyMemberLeft` for each member except the local player (UI clears slots).
-4. Raise `OnHostConnectionLost` (UI toast: "Party connection lost").
-5. Call `LeavePartyKeepHostAsync()` (creates fresh solo session, no NM cycle).
+**Outcome**: `HandleDefiniteSessionGoneAsync` enriched with UI-clearing steps. On a
+definite server-side session loss the recovery now: snapshots remote-member presence,
+drops the dead ref (`ClearSession`), clears member slots + raises `OnPartyMemberLeft`
+per member (`_memberService.ClearWithEvents`), conditionally raises `OnHostConnectionLost`
+(only if a real party dropped), then recreates a fresh solo session
+(`EnsurePartySessionAsync`). Re-entrancy guard from Commit 11 retained.
 
-Result: UI never shows stale "in party". No manual action required.
+Reused `IPartyMemberService.ClearWithEvents` (interface member, line 95) — the existing
+tested utility — instead of re-implementing the snapshot+raise loop. Verified all
+called members resolve: `_eventBus` (`SoapPartyEventBus`) → `RaiseHostConnectionLost`;
+`_memberService` (`IPartyMemberService`) → `ClearWithEvents`; `_partySessionService`
+→ `ClearSession`. Brace balance 135/135. HCS: 1648 → 1675 (+27).
+
+This completes the "no stuck UI" exit criterion: a server-side session deletion now
+clears stale party slots within one refresh tick (≤~1.5s) and returns the user to a
+solo party with no manual action.
+
+**Pre-commit findings** (preserved for audit trail):
+
+`HandleDefiniteSessionGoneAsync` (added in Commit 11) currently: re-entrancy guard +
+`await LeavePartyKeepHostAsync()`. Commit 12 inserts the UI-clearing steps.
+
+Existing utilities that collapse the plan's manual steps:
+- `PartyMemberService.ClearWithEvents(localPlayerId)` (lines 175-188) — iterates
+  `_connectionData.PartyMembers`, skips the local player, removes each other member
+  AND raises `OnPartyMemberLeft` per member via `_eventBus`. This **is** the plan's
+  steps 1 (snapshot) + 3 (per-member raise) combined into one tested call. Already
+  used by `LeavePartyAsync:615`.
+- `SoapPartyEventBus.RaiseHostConnectionLost()` (line 91) → `_data.OnHostConnectionLost?.Raise()`.
+- `SoapPartyEventBus.RaisePartyMemberLeft(PartyPlayerData)` (line 167).
+
+`OnHostConnectionLost` is an established event (also raised by `HandleSignedOutEvent:357`
+and the refresh-reconnect path), so listeners already exist.
+
+`connectionData.PartyMembers` supports Linq (`OnlinePlayers.ToList()` used at line 501);
+`using System.Linq;` is imported. `PartyPlayerData` has `.PlayerId` / `.DisplayName`.
+
+**Deviations from the plan's literal 5 steps** (both justified):
+
+1. Steps 1+3 (snapshot + per-member raise) → single `_memberService.ClearWithEvents(localId)`
+   call. Reuses the existing tested utility instead of re-implementing the loop.
+2. Step 5 `LeavePartyKeepHostAsync()` → direct `EnsurePartySessionAsync()`. Because step 2
+   explicitly `ClearSession()`s first, the `LeaveAsync` inside `LeavePartyKeepHostAsync`
+   would see `ActiveSession == null` and no-op — calling `EnsurePartySessionAsync`
+   directly avoids issuing a doomed UGS `DeleteAsync` on a session we already know is gone.
+
+**Refinement** beyond the plan: only raise `OnHostConnectionLost` when there were
+actually remote members (snapshot a `hadRemoteMembers` bool before clearing). A solo
+player whose solo session was reaped recovers invisibly — no spurious "Party connection
+lost" toast. Still honors the locked invariant (nothing stale to clear for a solo player).
+
+**Execution plan** — enrich `HandleDefiniteSessionGoneAsync` body:
+```csharp
+bool hadRemoteMembers = connectionData.PartyMembers != null &&
+    connectionData.PartyMembers.Any(m => m.PlayerId != connectionData.LocalPlayerId);
+
+_partySessionService.ClearSession();          // drop the dead ref (known gone)
+_memberService.ClearWithEvents(connectionData.LocalPlayerId);  // steps 1+3
+if (hadRemoteMembers)
+    _eventBus.RaiseHostConnectionLost();      // step 4 (gated)
+await EnsurePartySessionAsync();              // step 5 (direct — ref already cleared)
+```
+Re-entrancy guard from Commit 11 stays wrapping the whole body.
 
 ### `[ ]` Commit 13 — `OnDestroy` null guards + `Debug.LogError`
 
