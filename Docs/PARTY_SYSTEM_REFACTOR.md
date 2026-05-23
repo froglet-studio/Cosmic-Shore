@@ -1,5 +1,37 @@
 # HostConnectionService Refactor — Iterative commits toward an unbreakable party system
 
+## Status (last updated: Commit 15)
+
+All planned commits landed on `claude/blissful-tesla-9nefa`. Commit 5 was merged into
+Commit 4 for compile-atomicity, so the backlog is 14 commits + this doc.
+
+| # | Commit | Status |
+|---|---|---|
+| 1 | Dead-code removal (4 methods + lobby-patcher log filter) | ✅ |
+| 2 | Annotate `RefreshPartyMembersAsync` catch (Bug A fix was already shipped) | ✅ |
+| 3 | `IsInitialized` / `IsInPresenceLobby` / `IsHostingParty` helpers; delete `_initialized` | ✅ |
+| 4 (+5) | `EnsurePartySessionAsync` (idempotent create-or-no-op) + caller rewiring | ✅ |
+| 6 | `KickPartyMemberAsync` catch diagnostics (wrap was already shipped) | ✅ |
+| 7 | Event-driven `Start` + `WaitForProfileInit` (no polling) | ✅ |
+| 8 | Single source of truth — `PartySessionService.ActiveSession` → `gameData.ActiveSession` | ✅ |
+| 9 | Cache `IMultiplayerService` field in PartySessionService + PresenceLobbyService | ✅ |
+| 10 | `LeavePartyKeepHostAsync` canonical leave-to-solo surface | ✅ |
+| 11 | `IsDefiniteSessionGoneException` classification + `[definite]` catch branch | ✅ |
+| 12 | `HandleDefiniteSessionGoneAsync` auto-recovery (UI events) | ✅ |
+| 13 | `OnDestroy` null guards + duplicate-instance early-return | ✅ |
+| 14 | Comment cleanup (eager-Relay plain language) | ✅ |
+| 15 | This doc finalization + CLAUDE.md anti-pattern | ✅ |
+
+**Recurring discovery**: several of the plan's "fix" steps (Bug A catch simplification,
+`KickPartyMemberAsync` try/catch wrap) were already shipped by earlier surgical commits,
+so Commits 2 and 6 were re-scoped to documentation/diagnostics. The structurally novel
+work landed in Commits 3, 4, 7–13.
+
+**Verification gap**: edit-mode compile + brace-balance checks were done per commit, but
+the Unity Editor / play-mode test suite and the 2-VP MPPM scenarios (exit criteria 6–8)
+were **not** runnable from the development environment. They require a human/CI pass in
+Unity. See the exit-criteria section.
+
 ## Context
 
 Two open bugs in the party-invite flow:
@@ -1244,15 +1276,20 @@ interfaces) is still present even though eager creation means invites use the re
 session ID directly. Auditing/removing PENDING spans 5+ files and is a separate
 surgical task, not comment cleanup. Added to the Deferred section.
 
-### `[ ]` Commit 15 — Documentation roadmap + `CLAUDE.md` additions
+### `[x]` Commit 15 — Documentation roadmap + `CLAUDE.md` additions
 
-- This doc IS the roadmap. Update its status sections (completed commits log, deferred
-  items, exit-criteria check) to reflect the final state.
-- Update `CLAUDE.md`:
-  - Add to "Anti-patterns to avoid": *"Calling a UGS / Netcode singleton `*.Instance`
-    repeatedly inside a service class — cache once as a constructor-injected field,
-    fall back to `?? *.Instance` so non-DI callers still work."*
-  - Confirm `PARTY_SYSTEM_REFACTOR.md` is in the documentation index.
+**Outcome**:
+- Added the Status table + recurring-discovery note + verification-gap note at the top
+  of this doc.
+- Annotated every exit criterion with ✅ (addressed in code) / 🔬 (needs Unity-runtime
+  or MPPM verification). Criteria 3, 4, 5 and the OnDestroy part of 1 are done by
+  inspection; 6, 7, 8 (and timing/integration parts of 1, 2) remain gated on a Unity
+  Editor + MPPM pass the dev environment can't run.
+- Added to `CLAUDE.md` "Anti-Patterns to Avoid": cache UGS/Netcode `*.Instance` as a
+  constructor-injected field with `?? *.Instance` fallback (cites
+  `PartySessionService`/`PresenceLobbyService` caching `IMultiplayerService`).
+- `PARTY_SYSTEM_REFACTOR.md` was already in the CLAUDE.md documentation index (added in
+  Phase 0); confirmed present.
 
 ## Deferred (captured here, future commits)
 
@@ -1277,34 +1314,44 @@ surgical task, not comment cleanup. Added to the Deferred section.
 
 ## Unbreakable exit criteria — when do we stop?
 
-**All of these hold simultaneously in editor + 2-VP MPPM verification:**
+**All of these hold simultaneously in editor + 2-VP MPPM verification.** Status after
+the 14-commit pass — ✅ addressed in code / 🔬 needs Unity-runtime or MPPM verification:
 
-1. **No fatal failures.** Inviting, accepting, leaving, kicking, refresh failures
+1. 🔬 **No fatal failures.** Inviting, accepting, leaving, kicking, refresh failures
    never:
-   - Despawn the host's menu vessel mid-session.
-   - Crash with an NRE in `OnDestroy`.
-   - Kick joined clients due to a host-side transient refresh error.
-2. **No stuck UI.** A user never has to explicitly "leave" to clear stale state. If the
-   server deletes the session, the UI updates within one refresh tick (≤3s) and the
-   user is back in a solo party slot.
-3. **One source of truth.** `_partySessionService.ActiveSession` and
-   `gameData.ActiveSession` are reference-equal at every observation point.
-4. **No silent failures.** Every catch site either restores state, transitions the state
-   machine, or logs a `Debug.LogError` with stack and context. No `catch (Exception) {}`.
-5. **No `ActiveSession = null` outside intentional leave.** Verified by `grep` across
-   the three service files.
-6. **All existing edit-mode tests green** (`CosmicShore.Multiplayer.Tests`,
-   `CosmicShore.Tests.EditMode`).
-7. **2-VP MPPM happy path**: VP-A creates party, VP-B accepts invite. Both vessels
-   replicate. Both clients can fly. No `[Player] OnNetworkDespawn` on host during invite
-   send. VP-B fade-overlay clears within pair init.
-8. **2-VP MPPM failure path**: Force VP-A to delete the session via UGS dashboard mid-
-   session. VP-A's UI returns to solo state within 3s. VP-B's UI shows party-lost toast
-   and reverts to solo state. No crash on either client.
+   - Despawn the host's menu vessel mid-session — *addressed*: refresh catch never
+     clears the session (Commits 2, 8); leave goes through `LeavePartyKeepHostAsync`
+     (Commit 10). Needs MPPM confirmation.
+   - Crash with an NRE in `OnDestroy` — ✅ guarded + duplicate early-return (Commit 13).
+   - Kick joined clients due to a host-side transient refresh error — *addressed*:
+     transient vs definite split (Commit 11). Needs MPPM confirmation.
+2. ✅/🔬 **No stuck UI.** Server-side session deletion → `HandleDefiniteSessionGoneAsync`
+   clears slots + recreates solo within one refresh tick (Commits 11, 12). Logic in
+   place; the ≤3s timing needs MPPM confirmation.
+3. ✅ **One source of truth.** `PartySessionService.ActiveSession` is a derived view of
+   `gameData.ActiveSession` (Commit 8) — reference-equal by construction.
+4. ✅ **No silent failures.** Every catch logs / classifies / recovers (Commits 2, 6,
+   11, 12, 13). No `catch (Exception) {}` introduced.
+5. ✅ **No `ActiveSession = null` outside intentional leave.** Commit 8 removed the two
+   offending nulls (`MultiplayerSetup.LeaveSession`, `GameDataSO.ResetAllData`); the
+   only remaining null is post-Delete/Leave in `OnTransportFailure` + the property
+   setter. `grep` clean.
+6. 🔬 **All existing edit-mode tests green** (`CosmicShore.Multiplayer.Tests`,
+   `CosmicShore.Tests.EditMode`). Per-commit changes preserved test compatibility
+   (reflection assertions updated in Commit 1), but the suite was **not run** — needs
+   a Unity Test Runner pass.
+7. 🔬 **2-VP MPPM happy path**: VP-A creates party, VP-B accepts. Both vessels replicate,
+   both fly, no host `OnNetworkDespawn` on invite send, VP-B fade clears. **Not run.**
+8. 🔬 **2-VP MPPM failure path**: Force-delete VP-A's session mid-session → both clients
+   return to solo within 3s, no crash. **Not run.**
 
-Once all 8 hold, the unbreakable goal is met for this surface. This doc records any
-remaining deferred items; it lives on as the source of truth for ongoing
-refinement.
+Criteria 3, 4, 5, and the OnDestroy part of 1 are satisfiable by inspection and are
+done. Criteria 6, 7, 8 (and the timing/integration parts of 1, 2) require a Unity
+Editor + MPPM verification pass that the development environment can't run — these are
+the remaining gate before declaring the surface "unbreakable."
+
+This doc records remaining deferred items; it lives on as the source of truth for
+ongoing refinement.
 
 ## Per-commit revision protocol
 
