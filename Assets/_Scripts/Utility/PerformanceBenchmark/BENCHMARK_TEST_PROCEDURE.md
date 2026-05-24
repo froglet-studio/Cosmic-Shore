@@ -26,7 +26,7 @@ Create via `Create > CosmicShore > Tools > Benchmark Config`. Configure:
 | Capture Memory Stats | true | Heap size, GC allocations per frame |
 | Capture Physics Stats | true | Active rigidbody count |
 | Output Folder | `Benchmarks` | Subfolder in `Application.persistentDataPath` |
-| Benchmark Label | (empty) | Human-readable tag for this run (e.g., "GDC_Demo", "Squirrel_Race") |
+| Benchmark Label | (empty) | Human-readable tag for this run (e.g., "Demo_Build", "Squirrel_Race") |
 
 ### Optional: BenchmarkDataSO
 
@@ -123,7 +123,7 @@ Every benchmark run is automatically indexed. The History tab shows all saved sn
 
 ### Tagging Snapshots
 
-Click **Tag** on any entry to label it (e.g., "baseline", "after-optimization", "GDC-build"). Tags help identify important runs when comparing.
+Click **Tag** on any entry to label it (e.g., "baseline", "after-optimization", "release-build"). Tags help identify important runs when comparing.
 
 ### Rebuilding the Index
 

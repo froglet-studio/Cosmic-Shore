@@ -105,10 +105,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         public void BenchmarkLabel_ReflectsSerializedField()
         {
             var so = new UnityEditor.SerializedObject(_config);
-            so.FindProperty("benchmarkLabel").stringValue = "GDC_Demo";
+            so.FindProperty("benchmarkLabel").stringValue = "Demo_Build";
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            Assert.AreEqual("GDC_Demo", _config.BenchmarkLabel);
+            Assert.AreEqual("Demo_Build", _config.BenchmarkLabel);
         }
 
         #endregion

@@ -1880,29 +1880,6 @@ When investigating issues, follow this systematic approach:
 
 Do not guess at performance problems. Profile first.
 
-## Current Priority Context
-
-### GDC 2026 (March 9-13)
-
-Active build target is a 15-minute investor demo for MeetToMatch pitch meetings. The demo must showcase:
-
-- Squirrel vessel (racing/drift gameplay)
-- Sparrow vessel (shooter gameplay)
-- Party game mechanics and how vessel classes connect players
-- Multiplayer with AI opponents for solo demo capability
-- Polish level that communicates production readiness
-
-Every technical decision should be weighed against: **does this help the GDC demo?**
-
-### Build Priority Stack (in order)
-
-1. Core gameplay loop stability for both demo vessels
-2. Visual polish that communicates quality to investors
-3. Performance — must be smooth during live demo
-4. UI/UX clarity for first-time players watching a pitch
-5. Multiplayer stability (with AI backfill for reliable demos)
-6. Everything else
-
 ## Communication Preferences
 
 - Be direct and technical. Skip preamble and motivational framing.
