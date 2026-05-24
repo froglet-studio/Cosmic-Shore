@@ -295,14 +295,22 @@ namespace CosmicShore.Gameplay
         void Start()
         {
             // All [Inject] fields (services + gameData) are populated before Start.
-            // Two entry paths feed initialization:
-            //   1. Auth signed in BEFORE this Start runs → HandleSignedInEvent
-            //      runs init synchronously here.
-            //   2. Auth signs in AFTER this Start runs → the SOAP OnSignedIn
-            //      event (wired in the inspector to HandleSignedInEvent via an
-            //      EventListenerNoParam) wakes us later.
-            // HandleSignedInEvent is idempotent — concurrent calls collapse
-            // through EnsureInitializedAsync's IsInPresenceLobby || _joining guard.
+            // UGS auth completes asynchronously AFTER Start in the normal flow, so
+            // OnSignedIn is the PRIMARY init trigger — subscribe in code, the same
+            // pattern used by MultiplayerSetup / UGSDataService / UnityAnalytics.
+            // There is no inspector EventListenerNoParam for this handler.
+            // HandleSignedInEvent is idempotent — the immediate call (for the
+            // already-signed-in case) and the event collapse through
+            // EnsureInitializedAsync's IsInPresenceLobby || _joining guard.
+            if (authenticationDataVariable == null)
+            {
+                Debug.LogError(
+                    "[HostConnectionService] authenticationDataVariable not wired — " +
+                    "party init cannot start (presence lobby will never be created).");
+                return;
+            }
+
+            authenticationDataVariable.Value.OnSignedIn.OnRaised += HandleSignedInEvent;
             HandleSignedInEvent();
         }
 
@@ -331,6 +339,8 @@ namespace CosmicShore.Gameplay
 
             // Unsubscribes are no-ops if we never subscribed.
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            if (authenticationDataVariable != null)
+                authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
 
