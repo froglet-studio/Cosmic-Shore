@@ -182,7 +182,6 @@ namespace CosmicShore.Gameplay
         private float  _rateLimitBackoffUntil;
         private float  _nextForcedRefreshAllowed;
         private float  _nextConvergeAllowed;
-        private float  _nextDiagAllowed;          // [PARTY-DIAG] temporary throttle
         private int    _consecutiveRefreshErrors;
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
@@ -903,19 +902,6 @@ namespace CosmicShore.Gameplay
                 // Diff-based update — never Clear() + re-Add() (would flicker UI).
                 if (connectionData.OnlinePlayers != null)
                     RefreshOnlinePlayersDiff();
-
-                // [PARTY-DIAG] temporary — throttled roster snapshot. One MPPM run
-                // tells us: same lobby id on both VPs? roster includes the peer?
-                // Remove once Online discovery is confirmed working.
-                if (Time.unscaledTime >= _nextDiagAllowed)
-                {
-                    _nextDiagAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
-                    int rosterCount = _lobbyService.ActiveLobby != null
-                        ? _lobbyService.ActiveLobby.Players.Count : -1;
-                    Debug.Log($"[PARTY-DIAG] OnlineDiff — lobby={_lobbyService.ActiveLobby?.Id ?? "NULL"} " +
-                              $"roster={rosterCount} localId={connectionData.LocalPlayerId} " +
-                              $"online={(connectionData.OnlinePlayers != null ? connectionData.OnlinePlayers.Count : -1)}");
-                }
 
                 // Scan composite invite_payloads for lines targeting us.
                 foreach (var p in _lobbyService.ActiveLobby.Players)

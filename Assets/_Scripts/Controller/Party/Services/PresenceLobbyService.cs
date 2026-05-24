@@ -204,22 +204,15 @@ namespace CosmicShore.Gameplay
             // Canonical id = smallest (ordinal) over the visible set ∪ our own lobby.
             // The smallest-id holder is the single point everyone migrates toward.
             string canonicalId = _activeLobby?.Id;
-            var diag = new System.Text.StringBuilder();
             if (sessions != null)
             {
                 foreach (var s in sessions)
                 {
                     if (string.IsNullOrEmpty(s.Id)) continue;
-                    if (diag.Length > 0) diag.Append(',');
-                    diag.Append(s.Id);
                     if (canonicalId == null || string.CompareOrdinal(s.Id, canonicalId) < 0)
                         canonicalId = s.Id;
                 }
             }
-
-            // [PARTY-DIAG] temporary — confirms presence discovery in one MPPM run.
-            Debug.Log($"[PARTY-DIAG] Converge — visible={(sessions?.Count ?? 0)} " +
-                      $"current={_activeLobby?.Id ?? "NULL"} canonical={canonicalId ?? "NULL"} ids=[{diag}]");
 
             // Nothing to converge to, or we already hold the canonical lobby.
             if (canonicalId == null) return;
