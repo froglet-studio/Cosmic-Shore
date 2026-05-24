@@ -57,10 +57,21 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         public int seed = 42;
 
         [Header("Flora layout")]
-        [Tooltip("Flora placed within the production grid's ±500m box (the shipped grid CAN see these).")]
+        [Tooltip("Flora placed within the production grid's ±500m box (the shipped grid CAN see these). " +
+                 "Distributed across innerClusterCount cluster centers — uniform-random placement creates " +
+                 "a flat density field that the algorithm has nothing to lock onto.")]
         [Min(0)] public int innerFloraCount = 60;
-        [Tooltip("Flora placed in the 500m..(membrane-100m) outer shell (the shipped ±500m grid CANNOT see these).")]
+        [Tooltip("Flora placed in the 500m..(membrane-100m) outer shell (the shipped ±500m grid CANNOT see these). " +
+                 "Distributed across outerClusterCount cluster centers.")]
         [Min(0)] public int outerFloraCount = 60;
+        [Tooltip("How many inner cluster centers innerFloraCount flora are distributed across. " +
+                 "Production SpawnProfile data places flora in discrete biome clumps; modeling that gives " +
+                 "the density field real peaks instead of uniform noise.")]
+        [Min(1)] public int innerClusterCount = 2;
+        [Tooltip("How many outer-shell cluster centers outerFloraCount flora are distributed across.")]
+        [Min(1)] public int outerClusterCount = 3;
+        [Tooltip("Gaussian scatter radius (m) of flora positions around their cluster center.")]
+        [Min(1f)] public float floraClusterScatterRadius = 120f;
         [Tooltip("Seconds between prism spawns per flora.")]
         [Min(0.1f)] public float floraGrowthIntervalSeconds = 1.5f;
         [Tooltip("Gaussian scatter radius (m) of spawned prisms around their flora.")]
@@ -108,7 +119,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             sb.AppendLine("=== DensityPartitionTemporalSim v1.0 ===");
             sb.AppendLine($"Date: {dateUtc}   Seed: {seed}");
             sb.AppendLine($"Cell membrane radius: {cellMembraneRadius:F0}m   Sim: {simDurationSeconds:F0}s @ {tickIntervalSeconds:F2}s/tick");
-            sb.AppendLine($"Flora: {innerFloraCount} inner (within ±500m) + {outerFloraCount} outer shell (>500m)");
+            sb.AppendLine($"Flora: {innerFloraCount} inner (within ±500m) across {Math.Max(1, innerClusterCount)} clusters " +
+                          $"+ {outerFloraCount} outer shell (>500m) across {Math.Max(1, outerClusterCount)} clusters, " +
+                          $"σ={floraClusterScatterRadius:F0}m");
             var th = ScaledThresholds();
             sb.AppendLine($"Phase thresholds (Default × {thresholdScale:F2}): Quiet {th.QuietEnter}/{th.QuietExit}  " +
                           $"Settled {th.SettledEnter}/{th.SettledExit}  Restless {th.RestlessEnter}/{th.RestlessExit}  " +
@@ -228,20 +241,36 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             var rng = new System.Random(seed);
             var thresholds = ScaledThresholds();
 
-            // --- Place flora deterministically ---
+            // --- Place flora deterministically, around CLUSTER CENTERS ---
+            // Uniform-random flora over a 1200m sphere produces a near-flat density
+            // field — the algorithm has no clear peaks to lock onto and the swarm
+            // wanders in low-contrast regions where consumption can't keep up with
+            // growth. Production SpawnProfile data places flora in discrete biome
+            // clumps; we model that with a small number of cluster centers.
+            int innerClusters = Math.Max(1, innerClusterCount);
+            int outerClusters = Math.Max(1, outerClusterCount);
+            var innerCenters = new Vector3[innerClusters];
+            for (int i = 0; i < innerClusters; i++)
+                innerCenters[i] = RandomInBall(rng, 400f);
+            var outerCenters = new Vector3[outerClusters];
+            float outerInner = 520f;
+            float outerOuter = Mathf.Max(outerInner + 40f, cellMembraneRadius - 200f);
+            for (int i = 0; i < outerClusters; i++)
+                outerCenters[i] = RandomInShell(rng, outerInner, outerOuter);
+
             var flora = new List<SimFlora>(innerFloraCount + outerFloraCount);
             Domains[] domainCycle = { Domains.Jade, Domains.Ruby, Domains.Gold };
             for (int i = 0; i < innerFloraCount; i++)
                 flora.Add(new SimFlora
                 {
-                    Pos = RandomInBall(rng, 480f),
+                    Pos = innerCenters[i % innerClusters] + GaussianVec(rng) * floraClusterScatterRadius,
                     Domain = domainCycle[i % 3],
                     GrowthClock = (float)rng.NextDouble() * floraGrowthIntervalSeconds, // stagger
                 });
             for (int i = 0; i < outerFloraCount; i++)
                 flora.Add(new SimFlora
                 {
-                    Pos = RandomInShell(rng, 520f, Mathf.Max(560f, cellMembraneRadius - 100f)),
+                    Pos = outerCenters[i % outerClusters] + GaussianVec(rng) * floraClusterScatterRadius,
                     Domain = domainCycle[i % 3],
                     GrowthClock = (float)rng.NextDouble() * floraGrowthIntervalSeconds,
                 });
