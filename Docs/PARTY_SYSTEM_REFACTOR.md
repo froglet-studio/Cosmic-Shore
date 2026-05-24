@@ -1,6 +1,6 @@
 # HostConnectionService Refactor — Iterative commits toward an unbreakable party system
 
-## Status (last updated: Commit 15)
+## Status (last updated: Commit 16)
 
 All planned commits landed on `claude/blissful-tesla-9nefa`. Commit 5 was merged into
 Commit 4 for compile-atomicity, so the backlog is 14 commits + this doc.
@@ -21,6 +21,7 @@ Commit 4 for compile-atomicity, so the backlog is 14 commits + this doc.
 | 13 | `OnDestroy` null guards + duplicate-instance early-return | ✅ |
 | 14 | Comment cleanup (eager-Relay plain language) | ✅ |
 | 15 | This doc finalization + CLAUDE.md anti-pattern | ✅ |
+| 16 | Client-pull roster bootstrap + terminal watchdog (splash-hang root fix) | ✅ |
 
 **Recurring discovery**: several of the plan's "fix" steps (Bug A catch simplification,
 `KickPartyMemberAsync` try/catch wrap) were already shipped by earlier surgical commits,
@@ -1322,6 +1323,50 @@ surgical task, not comment cleanup. Added to the Deferred section.
   then remove the protocol across `InviteService`, `AcceptanceSignalService`,
   `LobbyRefreshScheduler`, and their interfaces. Spans 5+ files — a dedicated commit,
   not comment cleanup.
+
+### `[x]` Commit 16 — Client-pull roster bootstrap + terminal watchdog (splash-hang root fix)
+
+**Problem.** Accepting an invite left the joining client stuck on the splash
+~25-50% of the time. Root cause: the joiner's bootstrap was a host-push, one-shot,
+unacknowledged `InitializeAllPlayersAndVessels_ClientRpc` (`ServerPlayerVesselInitializer.NotifyClients`).
+Netcode 2.x silently drops a ClientRpc whose target NetworkObject hasn't spawned on
+that client yet; the host's `postSpawnDelayMs` waits for the *vessel* to replicate, not
+for the *joiner's scene-sync* (when its scene-placed `ClientPlayerVesselInitializer`
+spawns). Under jitter the push landed before the receiver existed → dropped → `_pendingPairs`
+never populated → `OnClientReady` never fired → the splash (armed only on `OnClientReady`,
+no timeout) hung forever. `AcceptInviteAsync` also ignored its connection / scene-sync
+wait results, and `WaitForSceneSyncAsync` is itself unreliable for late joiners.
+
+This supersedes the earlier **Bug B** understanding (root was the dropped one-shot RPC,
+not only the `ActiveSession`-null cascade).
+
+**Fix — invert host-push → client-pull, make resolution event-independent, add a watchdog.**
+Mirrors the already-reliable `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc`
+pattern (driven from a scene object's `OnNetworkSpawn`).
+
+- `ClientPlayerVesselInitializer`: new `RequestRosterFromHost_ServerRpc` (mirrors
+  `RequestVesselSwap_ServerRpc`) called from the client's own `OnNetworkSpawn` — the
+  receiver provably exists, so the host's reply cannot be dropped. A bounded retry loop
+  (`RosterPullRetryLoop`, 4 × 1.5s) re-asks until the local pair resolves, cancelled in
+  `InitializePair` (local user) / `OnNetworkDespawn`. Objects self-register into
+  `gameData.Players`/`Vessels` on spawn, so a delivered tuple resolves against current
+  state without depending on a transient SOAP event.
+- `ServerPlayerVesselInitializer`: extracted `SendFullRosterToClient`; new
+  `HandleRosterRequest` (wired to `ClientPlayerVesselInitializer.OnRosterRequested`) —
+  idempotent ensure-then-send (kicks the spawn chain if the requester's vessel is
+  missing, then resends the roster). Existing-client delta push unchanged.
+- `PartyInviteController.AcceptInviteAsync`: honors `WaitForClientConnectionAsync`'s
+  result; replaces the ignored scene-sync gate with `WaitForClientReadyAsync` (waits on
+  `OnClientReady` with a `joinReadyTimeoutSeconds` budget). On any failure →
+  `BounceToSoloMenuAsync` → `RecoverFromFailedTransitionAsync` (leave party, restart solo
+  host, reload Menu_Main → fresh `OnClientReady` clears the splash) + a best-effort toast.
+  The splash can never stay stuck. All cross-thread awaits keep `.AsMainThread()`.
+
+Respects the locked design (eager Relay, single `ActiveSession`, state-machine recovery).
+
+**Verification gap (🔬):** needs 2-VP MPPM confirmation — accept ×20+, every run either
+roams in the host's lava-lamp or cleanly bounces to the joiner's own menu; never a black
+hang. `bounceToastChannel` must be wired in the Bootstrap prefab for the toast to appear.
 
 ## Unbreakable exit criteria — when do we stop?
 

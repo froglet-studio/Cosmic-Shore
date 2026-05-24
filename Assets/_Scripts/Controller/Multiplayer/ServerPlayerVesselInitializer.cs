@@ -107,6 +107,9 @@ namespace CosmicShore.Gameplay
             _cts = new CancellationTokenSource();
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
 
+            // Client-pull: answer roster requests from freshly-joined clients.
+            clientPlayerVesselInitializer.OnRosterRequested = HandleRosterRequest;
+
             // Process players that were already spawned before this initializer
             // existed (e.g. the host's Player object spawned in the Auth scene
             // before Menu_Main loaded). Their SOAP event was already raised and missed.
@@ -149,6 +152,8 @@ namespace CosmicShore.Gameplay
         protected virtual void OnNetworkDespawn()
         {
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerNetworkSpawned;
+            if (clientPlayerVesselInitializer != null)
+                clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
 
             _cts?.Cancel();
@@ -297,27 +302,79 @@ namespace CosmicShore.Gameplay
                     newPlayer.PlayerNetId, newPlayer.VesselNetId, existingTarget);
             }
 
-            // Tell the new client to initialize ALL player-vessel pairs
+            // Tell the new client to initialize ALL player-vessel pairs.
             if (newClientId != hostClientId)
-            {
-                var playerIds = new List<ulong>();
-                var vesselIds = new List<ulong>();
-                foreach (var p in gameData.Players)
-                {
-                    if (p.VesselNetId == 0) continue;
-                    playerIds.Add(p.PlayerNetId);
-                    vesselIds.Add(p.VesselNetId);
-                }
+                SendFullRosterToClient(newClientId);
+        }
 
-                var newTarget = new ClientRpcParams
-                {
-                    Send = new ClientRpcSendParams { TargetClientIds = new[] { newClientId } }
-                };
-                clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(
-                    playerIds.ToArray(), vesselIds.ToArray(), newTarget);
+        /// <summary>
+        /// Sends the full current player-vessel roster to a single client via
+        /// <see cref="ClientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc"/>.
+        /// Used both by <see cref="NotifyClients"/> (new-client push) and by the
+        /// client-pull <see cref="HandleRosterRequest"/> (reply / heal a dropped push).
+        /// Idempotent on the client — already-initialised pairs are skipped.
+        /// </summary>
+        protected void SendFullRosterToClient(ulong clientId)
+        {
+            if (clientId == NetworkManager.Singleton.LocalClientId) return;
+
+            var playerIds = new List<ulong>();
+            var vesselIds = new List<ulong>();
+            foreach (var p in gameData.Players)
+            {
+                if (p.VesselNetId == 0) continue;
+                playerIds.Add(p.PlayerNetId);
+                vesselIds.Add(p.VesselNetId);
             }
-            
-            // Invoke Client Ready gameData.InvokeClientReady(); after few interval
+
+            var target = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
+            };
+            clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(
+                playerIds.ToArray(), vesselIds.ToArray(), target);
+        }
+
+        /// <summary>
+        /// Client-pull entry point (wired to <see cref="ClientPlayerVesselInitializer.OnRosterRequested"/>).
+        /// A freshly-joined client asks for the roster from its own OnNetworkSpawn.
+        /// Idempotent ensure-then-send: kick the spawn chain if the requester's vessel
+        /// hasn't spawned yet, then (re)send the full roster. Heals a dropped one-shot
+        /// push and the host's own deferred-spawn edge.
+        /// </summary>
+        void HandleRosterRequest(ulong requesterClientId)
+        {
+            if (!NetworkManager.Singleton.IsServer) return;
+
+            var requester = FindPlayerByOwnerClientId(requesterClientId);
+            if (requester != null
+                && requester.VesselNetId == 0
+                && !_processedPlayers.Contains(requester.NetworkObjectId))
+            {
+                HandlePlayerNetworkSpawned(requesterClientId);
+            }
+
+            SendFullRosterToClient(requesterClientId);
+        }
+
+        /// <summary>
+        /// Finds a spawned Player owned by <paramref name="ownerClientId"/> regardless of
+        /// processed-state (unlike <see cref="FindUnprocessedPlayerByOwnerClientId"/>).
+        /// </summary>
+        Player FindPlayerByOwnerClientId(ulong ownerClientId)
+        {
+            foreach (var p in gameData.Players)
+                if (p is Player netPlayer && netPlayer.IsSpawned && netPlayer.OwnerClientId == ownerClientId)
+                    return netPlayer;
+
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.ConnectedClients.TryGetValue(ownerClientId, out var client))
+            {
+                var playerObj = client.PlayerObject;
+                if (playerObj != null && playerObj.TryGetComponent<Player>(out var player) && player.IsSpawned)
+                    return player;
+            }
+            return null;
         }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer) =>

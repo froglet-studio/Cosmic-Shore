@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
@@ -34,6 +36,10 @@ namespace CosmicShore.Gameplay
         readonly List<(ulong playerNetId, ulong vesselNetId)> _pendingSwaps = new();
         bool _signalClientReadyWhenDone;
 
+        // Client-pull bootstrap state (see RosterPullRetryLoop).
+        CancellationTokenSource _rosterRetryCts;
+        bool _localPairResolved;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -52,6 +58,16 @@ namespace CosmicShore.Gameplay
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += OnPlayerNetworkSpawnedForPending;
             gameData.OnVesselNetworkSpawned.OnRaised += ProcessPendingPairs;
             gameData.OnVesselNetworkSpawned.OnRaised += ProcessPendingSwaps;
+
+            // Client-pull bootstrap (unbreakable join): ask the host for the current
+            // roster from inside our own OnNetworkSpawn. Because this object now
+            // provably exists on the client, the host's reply ClientRpc cannot be
+            // dropped for "target not spawned" — the root cause of the legacy
+            // one-shot-push hang. A bounded retry re-asks if the request or reply is
+            // lost, so convergence never depends on catching a transient SOAP event.
+            _localPairResolved = false;
+            _rosterRetryCts = new CancellationTokenSource();
+            RosterPullRetryLoop(_rosterRetryCts.Token).Forget();
         }
 
         public override void OnNetworkDespawn()
@@ -61,6 +77,12 @@ namespace CosmicShore.Gameplay
             gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingSwaps;
             _pendingPairs.Clear();
             _pendingSwaps.Clear();
+
+            _rosterRetryCts?.Cancel();
+            _rosterRetryCts?.Dispose();
+            _rosterRetryCts = null;
+            _localPairResolved = false;
+
             base.OnNetworkDespawn();
         }
 
@@ -151,6 +173,13 @@ namespace CosmicShore.Gameplay
         public Action<ulong, ulong, VesselClassType, Pose> OnSwapRequested;
 
         /// <summary>
+        /// Server-side callback registered by <see cref="ServerPlayerVesselInitializer"/>
+        /// to build and (re)send the full roster to a requesting client. Invoked by
+        /// <see cref="RequestRosterFromHost_ServerRpc"/>.
+        /// </summary>
+        public Action<ulong> OnRosterRequested;
+
+        /// <summary>
         /// Direct server-side vessel replacement (called by MenuServerPlayerVesselInitializer on host).
         /// The player already has a vessel — this wires the new one in place.
         /// </summary>
@@ -193,6 +222,56 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------
+        // CLIENT-PULL ROSTER BOOTSTRAP (client-side)
+        // ---------------------------------------------------------
+
+        /// <summary>
+        /// Client → host request for the current player-vessel roster. The client
+        /// calls this from its own OnNetworkSpawn (and on a bounded retry), so the
+        /// host's reply (<see cref="InitializeAllPlayersAndVessels_ClientRpc"/>) is
+        /// delivered to an object that provably exists and cannot be dropped.
+        /// </summary>
+        [ServerRpc(RequireOwnership = false)]
+        internal void RequestRosterFromHost_ServerRpc(ServerRpcParams rpcParams = default)
+        {
+            OnRosterRequested?.Invoke(rpcParams.Receive.SenderClientId);
+        }
+
+        /// <summary>
+        /// Bounded self-healing loop: re-asks the host for the roster until the local
+        /// player's pair resolves. Recovers a dropped request, a dropped reply, or a
+        /// late host-side spawn. Cancelled once the local pair is initialised
+        /// (<see cref="InitializePair"/>) or on despawn.
+        /// </summary>
+        async UniTaskVoid RosterPullRetryLoop(CancellationToken ct)
+        {
+            const int maxAttempts = 4;
+            const int intervalMs = 1500;
+
+            for (int attempt = 0; attempt < maxAttempts && !_localPairResolved; attempt++)
+            {
+                if (IsSpawned)
+                    RequestRosterFromHost_ServerRpc();
+
+                try
+                {
+                    await UniTask.Delay(intervalMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+
+                if (_localPairResolved) return;
+
+                // Re-attempt resolution against current authoritative state in case a
+                // reply arrived but its SOAP nudge fired before the tuple was queued.
+                ReRegisterPersistentPlayers();
+                ProcessPendingPairs();
+            }
+        }
+
+        // ---------------------------------------------------------
         // PENDING PAIR RESOLUTION
         // ---------------------------------------------------------
 
@@ -227,6 +306,8 @@ namespace CosmicShore.Gameplay
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
                 _signalClientReadyWhenDone = false;
+                _localPairResolved = true;
+                _rosterRetryCts?.Cancel();
                 // Fallback: if the local player's pair was skipped via the
                 // "already initialized" branch above, InvokeClientReady was
                 // never called inside InitializePair.  Call it here so the
@@ -285,6 +366,9 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser)
             {
+                // Local pair resolved — stop the client-pull retry loop and clear the splash.
+                _localPairResolved = true;
+                _rosterRetryCts?.Cancel();
                 Debug.Log("<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
                 gameData.InvokeClientReady();
             }

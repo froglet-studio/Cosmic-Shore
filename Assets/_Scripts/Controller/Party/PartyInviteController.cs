@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
@@ -36,6 +37,9 @@ namespace CosmicShore.Gameplay
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
 
+        [Tooltip("Optional. Best-effort toast shown when a join fails and the client bounces back to its own menu. May be suppressed during the scene reload.")]
+        [SerializeField] private ToastChannel bounceToastChannel;
+
         [Header("Timing")]
         [Tooltip("Max time (seconds) to wait for NetworkManager shutdown.")]
         [SerializeField] private float shutdownTimeoutSeconds = 2f;
@@ -43,8 +47,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("Max time (seconds) to wait for client connection after joining party session.")]
         [SerializeField] private float connectionTimeoutSeconds = 8f;
 
-        [Tooltip("Max seconds to wait for Netcode's automatic Menu_Main reload after joining.")]
-        [SerializeField] private float sceneSyncTimeoutSeconds = 5f;
+        [Tooltip("Max seconds to wait for the local player's vessel to initialise (OnClientReady fires) after joining. On timeout the client bounces back to its own solo menu.")]
+        [SerializeField] private float joinReadyTimeoutSeconds = 10f;
 
         [Inject] private GameDataSO gameData;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
@@ -108,9 +112,12 @@ namespace CosmicShore.Gameplay
         ///   1.  Shutdown local NetworkManager host.
         ///   1b. Clear stale SOAP refs the shutdown left behind.
         ///   2.  Join the inviter's party session via UGS (Relay transport auto-configures).
-        ///   3.  Wait for Netcode client connection.
-        ///   3b. Wait for Netcode's automatic Menu_Main reload to complete.
-        ///   4.  Raise OnPartyJoinCompleted so Party Area UI refreshes.
+        ///   3.  Wait for Netcode client connection (honored — bounce on failure).
+        ///   4.  Gate on OnClientReady (the local vessel initialised). The client-pull
+        ///       retry loop in ClientPlayerVesselInitializer drives convergence; this is
+        ///       the terminal watchdog. On timeout, bounce back to the player's own solo
+        ///       menu so the splash can never stay stuck.
+        ///   5.  Raise OnPartyJoinCompleted so Party Area UI refreshes.
         /// </summary>
         public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {
@@ -177,17 +184,37 @@ namespace CosmicShore.Gameplay
 
                 Debug.Log("[PartyInviteController] Joined party session via UGS.");
 
-                // Step 3: Wait for Netcode client connection.
-                await _networkTransition.WaitForClientConnectionAsync(connectionTimeoutSeconds, ct).AsMainThread();
+                // Step 3: Wait for Netcode client connection — HONOR the result.
+                // A false here means Netcode never connected (a real failure), so
+                // bounce immediately rather than proceeding into a guaranteed hang.
+                bool connected = await _networkTransition
+                    .WaitForClientConnectionAsync(connectionTimeoutSeconds, ct).AsMainThread();
+                if (!connected)
+                {
+                    Debug.LogError("[PartyInviteController] Netcode client never connected — bouncing to solo menu.");
+                    await BounceToSoloMenuAsync("Couldn't join — returned to your menu.");
+                    return;
+                }
                 Debug.Log("[PartyInviteController] Netcode client connected.");
 
-                // Step 3b: Wait for Netcode's automatic Menu_Main reload.
-                Debug.Log("[PartyInviteController] Awaiting client scene-sync...");
-                await _networkTransition.WaitForSceneSyncAsync("Menu_Main", sceneSyncTimeoutSeconds, ct).AsMainThread();
+                // Step 4: GATE ON THE TRUE SUCCESS SIGNAL.
+                // OnClientReady fires from ClientPlayerVesselInitializer.InitializePair
+                // once the LOCAL player's vessel is wired. The client-pull retry loop
+                // (ClientPlayerVesselInitializer) drives convergence even if the host's
+                // one-shot bootstrap RPC was dropped; this is the terminal watchdog.
+                // On timeout, bounce back to the player's own solo menu — the splash
+                // can never stay stuck.
+                Debug.Log("[PartyInviteController] Awaiting client-ready (local vessel initialized)...");
+                bool ready = await WaitForClientReadyAsync(joinReadyTimeoutSeconds, ct);
+                if (!ready)
+                {
+                    Debug.LogError("[PartyInviteController] OnClientReady never fired within budget — bouncing to solo menu.");
+                    await BounceToSoloMenuAsync("Couldn't join — returned to your menu.");
+                    return;
+                }
 
-                // Step 4: Signal completion.  Isolated try/catch so a listener
-                // throwing during scene-reload teardown can't roll back the outer
-                // flow into the error path — the accept itself has already succeeded.
+                // Step 5: success — refresh the joiner's party UI. Isolated try/catch
+                // so a listener throwing can't roll the succeeded join into recovery.
                 try
                 {
                     connectionData.OnPartyJoinCompleted.Raise();
@@ -329,6 +356,52 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
         // Internal: Error Recovery
         // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Waits for the true end-to-end join success signal — <see cref="GameDataSO.OnClientReady"/>,
+        /// raised once the local player's vessel is initialised. Returns false on timeout
+        /// (the caller then bounces to the solo menu). Re-checks the resolved local pair
+        /// around the subscribe to close the race where OnClientReady fires first.
+        /// </summary>
+        private async UniTask<bool> WaitForClientReadyAsync(float timeoutSeconds, CancellationToken ct)
+        {
+            if (gameData.LocalPlayer?.Vessel != null) return true;
+
+            var tcs = new UniTaskCompletionSource();
+            void OnReady() => tcs.TrySetResult();
+            gameData.OnClientReady.OnRaised += OnReady;
+            try
+            {
+                if (gameData.LocalPlayer?.Vessel != null) return true; // re-check after subscribe
+
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+                await tcs.Task.AttachExternalCancellation(timeoutCts.Token);
+                return true;
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                return false; // budget elapsed without OnClientReady — terminal timeout
+            }
+            finally
+            {
+                gameData.OnClientReady.OnRaised -= OnReady;
+            }
+        }
+
+        /// <summary>
+        /// Terminal "bounce": surface a best-effort toast and return the player to their
+        /// own functional solo menu via <see cref="RecoverFromFailedTransitionAsync"/>.
+        /// Guarantees a failed join never ends in a permanent splash hang.
+        /// </summary>
+        private async UniTask BounceToSoloMenuAsync(string toastMessage)
+        {
+            Debug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
+            // Best-effort UX. May be suppressed during the scene reload that recovery
+            // performs; the no-hang guarantee does not depend on it.
+            bounceToastChannel?.ShowPrefix(toastMessage);
+            await RecoverFromFailedTransitionAsync();
+        }
 
         /// <summary>
         /// Restarts the local NetworkManager host so the user returns to a functional
