@@ -63,21 +63,6 @@ namespace CosmicShore.Gameplay
         IReadOnlyList<string> SyncFromSession(ISession session, string localPlayerId);
 
         /// <summary>
-        /// Clears and rebuilds <see cref="HostConnectionDataSO.PartyMembers"/> from
-        /// the current session.  Seeds with the local player, then adds every
-        /// non-local session player and fires <c>OnPartyMemberJoined</c> for each.
-        ///
-        /// <para>
-        /// Use on scene reload: the SOAP <c>ScriptableList</c> wipes itself on
-        /// <c>LoadSceneMode.Single</c>, so a fresh sync is needed when re-entering
-        /// Menu_Main with an active party session.
-        /// </para>
-        /// </summary>
-        /// <param name="session">The live party session.</param>
-        /// <param name="localPlayerId">The local player's UGS ID.</param>
-        void RepopulateFromSession(ISession session, string localPlayerId);
-
-        /// <summary>
         /// Silently clears <see cref="HostConnectionDataSO.PartyMembers"/> with no
         /// SOAP events raised.  Use in error paths and stale-session cleanup where
         /// the UI will be reset independently.

@@ -284,7 +284,7 @@ namespace CosmicShore.Gameplay
 
             return new Dictionary<string, PlayerProperty>
             {
-                { DISPLAY_NAME_KEY,    new PlayerProperty(_connectionData.LocalDisplayName ?? "Pilot", VisibilityPropertyOptions.Public) },
+                { DISPLAY_NAME_KEY,    new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
                 { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
                 { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
                 { PARTY_MAX_KEY,       new PlayerProperty(partyMax.ToString(),   VisibilityPropertyOptions.Public) },

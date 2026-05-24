@@ -354,10 +354,12 @@ namespace CosmicShore.Gameplay
         private void HandleBootStatusRetryRequested() => EnsurePartySessionAsync().Forget();
 
         /// <summary>
-        /// Resets per-session invite state on Menu_Main reload and rebuilds
-        /// <see cref="HostConnectionDataSO.PartyMembers"/> from the active party session.
-        /// SOAP <c>ScriptableList</c> wipes itself on every <c>LoadSceneMode.Single</c>
-        /// load, so we must re-seed if a session was already active.
+        /// Resets per-session invite state on Menu_Main reload.
+        /// <see cref="HostConnectionDataSO.PartyMembers"/> / <c>OnlinePlayers</c> use
+        /// <c>ResetType.ApplicationStarts</c>, so they persist across scene loads:
+        /// the local player is seeded once at init (<see cref="ApplyPostLobbyJoinState"/>)
+        /// and remote members are reconciled by the refresh loop
+        /// (<see cref="RefreshPartyMembersAsync"/>). No per-scene rebuild is needed.
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
@@ -366,7 +368,6 @@ namespace CosmicShore.Gameplay
             _lastFiredInvite     = null;
             _lastInviteResolved  = false;
             PublishPresenceImmediateAsync().Forget();
-            RepopulatePartyMembersFromSession();
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -1224,8 +1225,14 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Resolve an authoritative local id; if we can't (signed out), skip this
+            // reconcile tick rather than risk adding our own session player as a phantom.
+            string localId = ResolveLocalPlayerId();
+            if (string.IsNullOrEmpty(localId))
+                return;
+
             var joinedPlayerIds = _memberService.SyncFromSession(
-                _partySessionService.ActiveSession, connectionData.LocalPlayerId);
+                _partySessionService.ActiveSession, localId);
 
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join");
@@ -1293,13 +1300,6 @@ namespace CosmicShore.Gameplay
             {
                 _handlingDefiniteSessionGone = false;
             }
-        }
-
-        private void RepopulatePartyMembersFromSession()
-        {
-            if (_partySessionService.ActiveSession == null) return;
-            _memberService.RepopulateFromSession(
-                _partySessionService.ActiveSession, connectionData.LocalPlayerId);
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -1574,6 +1574,31 @@ namespace CosmicShore.Gameplay
 
             if (string.IsNullOrEmpty(connectionData.LocalDisplayName))
                 connectionData.LocalDisplayName = "Pilot";
+        }
+
+        /// <summary>
+        /// Authoritative local player id for party-member self-identification.
+        /// <see cref="HostConnectionDataSO.LocalPlayerId"/> can be transiently empty
+        /// (ResetRuntimeData on a sign-out, followed by a re-init that early-returned
+        /// at the IsInPresenceLobby/_joining guard before SyncLocalIdentity re-ran).
+        /// <c>AuthenticationService.Instance.PlayerId</c> is the same id UGS stamps on
+        /// session players, so recovering from it keeps the self-skip correct and stops
+        /// the local player being re-added to the member list as an "Unknown Pilot".
+        /// Returns empty only when genuinely signed out — callers must skip syncing then.
+        /// </summary>
+        private string ResolveLocalPlayerId()
+        {
+            if (!string.IsNullOrEmpty(connectionData.LocalPlayerId))
+                return connectionData.LocalPlayerId;
+
+            var auth = Unity.Services.Authentication.AuthenticationService.Instance;
+            if (auth != null && auth.IsSignedIn && !string.IsNullOrEmpty(auth.PlayerId))
+            {
+                SyncLocalIdentity();
+                return connectionData.LocalPlayerId;
+            }
+
+            return string.Empty;
         }
 
         private void SubscribeToProfileChanges()
