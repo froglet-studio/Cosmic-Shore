@@ -151,17 +151,14 @@ namespace CosmicShore.Gameplay
                 {
                     await CreateAsync(maxPlayers);
 
-                    // Re-query after a settling delay.  If a rival lobby appeared at
-                    // the same instant (MPPM or near-simultaneous launch), join theirs
-                    // and delete ours to avoid lobby fragmentation.
+                    // A rival may have created a lobby at the same instant (MPPM or
+                    // near-simultaneous launch).  After a short settle for UGS session
+                    // indexing, converge on the canonical (smallest-id) lobby so both
+                    // sides deterministically pick the SAME one instead of staying
+                    // split.  A symmetric "join the first rival" merge could have both
+                    // sides swap into each other's lobby and end up split again.
                     await UniTask.Delay(LOBBY_RACE_SETTLE_MS);
-                    var rival = await TryQueryAndJoinAsync(maxPlayers);
-                    if (rival != null)
-                    {
-                        Debug.Log("[PresenceLobbyService] Race detected — merging into existing lobby.");
-                        await DeleteOwnLobbyQuietlyAsync();
-                        _activeLobby = rival;
-                    }
+                    await ConvergeToCanonicalAsync(maxPlayers);
                 }
             }
             catch (Exception e)
@@ -172,6 +169,80 @@ namespace CosmicShore.Gameplay
             }
 
             Debug.Log($"[PresenceLobbyService] JoinOrCreateAsync complete — lobby: {_activeLobby?.Id ?? "NULL"}");
+        }
+
+        /// <inheritdoc/>
+        public async UniTask ConvergeToCanonicalAsync(int maxPlayers)
+        {
+            // Query the full presence-lobby set (rate-limit aware, like the join path).
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.Add(
+                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+
+            IList<ISessionInfo> sessions = null;
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    var results = await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread();
+                    sessions = results.Sessions;
+                    break;
+                }
+                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[PresenceLobbyService] Rate limited during converge query — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await UniTask.Delay(delay);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
+                    return;
+                }
+            }
+
+            // Canonical id = smallest (ordinal) over the visible set ∪ our own lobby.
+            // The smallest-id holder is the single point everyone migrates toward.
+            string canonicalId = _activeLobby?.Id;
+            var diag = new System.Text.StringBuilder();
+            if (sessions != null)
+            {
+                foreach (var s in sessions)
+                {
+                    if (string.IsNullOrEmpty(s.Id)) continue;
+                    if (diag.Length > 0) diag.Append(',');
+                    diag.Append(s.Id);
+                    if (canonicalId == null || string.CompareOrdinal(s.Id, canonicalId) < 0)
+                        canonicalId = s.Id;
+                }
+            }
+
+            // [PARTY-DIAG] temporary — confirms presence discovery in one MPPM run.
+            Debug.Log($"[PARTY-DIAG] Converge — visible={(sessions?.Count ?? 0)} " +
+                      $"current={_activeLobby?.Id ?? "NULL"} canonical={canonicalId ?? "NULL"} ids=[{diag}]");
+
+            // Nothing to converge to, or we already hold the canonical lobby.
+            if (canonicalId == null) return;
+            if (_activeLobby != null && _activeLobby.Id == canonicalId) return;
+
+            // Migrate down to the canonical lobby: join it FIRST so a failed join
+            // never leaves us lobby-less, then release the one we were holding.
+            try
+            {
+                var joined = await _multiplayerService.JoinSessionByIdAsync(
+                    canonicalId,
+                    new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
+
+                await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
+                _activeLobby = joined;
+                Debug.Log($"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
+            }
+            catch (Exception e)
+            {
+                // Canonical lobby may have died between query and join — keep our
+                // current lobby; the next periodic converge retries.
+                Debug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
+            }
         }
 
         /// <inheritdoc/>
@@ -320,7 +391,13 @@ namespace CosmicShore.Gameplay
 
             if (sessions == null || sessions.Count == 0) return null;
 
-            foreach (var session in sessions)
+            // Deterministic order across all clients: always attempt the
+            // lexicographically smallest id first so simultaneous joiners converge
+            // on the same lobby instead of fanning out across different rivals.
+            var ordered = new List<ISessionInfo>(sessions);
+            ordered.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+
+            foreach (var session in ordered)
             {
                 // Skip if we somehow already hold a session with this id.
                 if (_activeLobby != null && session.Id == _activeLobby.Id) continue;

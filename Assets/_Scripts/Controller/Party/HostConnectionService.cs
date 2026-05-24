@@ -92,6 +92,16 @@ namespace CosmicShore.Gameplay
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
 
         /// <summary>
+        /// Cadence (seconds) for the periodic presence-lobby convergence check
+        /// (<see cref="IPresenceLobbyService.ConvergeToCanonicalAsync"/>).  Heals a
+        /// simultaneous-create split within a few seconds while staying well under
+        /// the UGS QuerySessions rate limit.  Decoupled from
+        /// <see cref="refreshIntervalSeconds"/> so the cheap per-tick refresh stays
+        /// responsive without firing an extra query every tick.
+        /// </summary>
+        private const float PRESENCE_CONVERGE_INTERVAL_SECONDS = 4f;
+
+        /// <summary>
         /// After session creation, suppress <see cref="RefreshPartyMembersAsync"/>
         /// for this many seconds.  A freshly-provisioned session can transiently
         /// fail RefreshAsync; nulling the session in response would cause
@@ -171,6 +181,8 @@ namespace CosmicShore.Gameplay
         private bool   _handlingDefiniteSessionGone;
         private float  _rateLimitBackoffUntil;
         private float  _nextForcedRefreshAllowed;
+        private float  _nextConvergeAllowed;
+        private float  _nextDiagAllowed;          // [PARTY-DIAG] temporary throttle
         private int    _consecutiveRefreshErrors;
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
@@ -854,9 +866,46 @@ namespace CosmicShore.Gameplay
             {
                 await _lobbyService.RefreshAsync();
 
+                // Periodic self-heal: if a simultaneous-create split left us in our
+                // own presence lobby while a peer sits in theirs, converge everyone
+                // onto the canonical (smallest-id) lobby so discovery and invites
+                // work regardless of who started when.  Throttled well under the UGS
+                // query rate limit.  Presence lobby is lobby-only — this never
+                // touches NetworkManager / Relay / vessels.  Runs inside the lobby
+                // mutex (held for this refresh cycle) so the rejoin can't race a
+                // concurrent lobby write.
+                //
+                // Paused while an invite is outstanding or a party has formed:
+                // rejoining a lobby re-publishes player properties (which resets
+                // invite_payloads / accepted_invite to empty), so migrating mid-
+                // handshake could drop an in-flight invite.  Convergence only needs
+                // to run during the free-discovery phase before any invite is sent;
+                // it resumes (and heals any later split) once the flow is idle again.
+                bool inActiveInviteOrParty =
+                    _inviteService.OutgoingCount > 0 ||
+                    (connectionData.PartyMembers != null && connectionData.PartyMembers.Count > 1);
+                if (Time.unscaledTime >= _nextConvergeAllowed && !inActiveInviteOrParty)
+                {
+                    _nextConvergeAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
+                    await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);
+                }
+
                 // Diff-based update — never Clear() + re-Add() (would flicker UI).
                 if (connectionData.OnlinePlayers != null)
                     RefreshOnlinePlayersDiff();
+
+                // [PARTY-DIAG] temporary — throttled roster snapshot. One MPPM run
+                // tells us: same lobby id on both VPs? roster includes the peer?
+                // Remove once Online discovery is confirmed working.
+                if (Time.unscaledTime >= _nextDiagAllowed)
+                {
+                    _nextDiagAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
+                    int rosterCount = _lobbyService.ActiveLobby != null
+                        ? _lobbyService.ActiveLobby.Players.Count : -1;
+                    Debug.Log($"[PARTY-DIAG] OnlineDiff — lobby={_lobbyService.ActiveLobby?.Id ?? "NULL"} " +
+                              $"roster={rosterCount} localId={connectionData.LocalPlayerId} " +
+                              $"online={(connectionData.OnlinePlayers != null ? connectionData.OnlinePlayers.Count : -1)}");
+                }
 
                 // Scan composite invite_payloads for lines targeting us.
                 foreach (var p in _lobbyService.ActiveLobby.Players)
