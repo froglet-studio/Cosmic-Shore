@@ -55,6 +55,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Delay in ms after vessel spawn before notifying clients.")]
         [SerializeField] protected int postSpawnDelayMs = 200;
 
+        // Whether spawned vessels are destroyed with their scene. Game scenes keep
+        // the default (true). Menu_Main overrides to false so a joining client's
+        // vessel survives the client's scene-synchronize batching destroy — the same
+        // race the AI vessels hit (see ServerPlayerVesselInitializerWithAI).
+        protected virtual bool DestroyVesselWithScene => true;
+
         NetcodeHooks _netcodeHooks;
         protected CancellationTokenSource _cts;
 
@@ -337,7 +343,7 @@ namespace CosmicShore.Gameplay
 
             var networkVessel = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
-            networkVessel.SpawnWithOwnership(clientId, true);
+            networkVessel.SpawnWithOwnership(clientId, DestroyVesselWithScene);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
             return networkVessel;
         }
