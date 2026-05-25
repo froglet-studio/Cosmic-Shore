@@ -110,6 +110,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private const float SESSION_CREATION_GRACE_PERIOD_SECONDS = 4f;
 
+        /// <summary>
+        /// <see cref="ReconcilePartyMembersNow"/> retries the refresh+sync this many
+        /// times to absorb UGS leave-propagation lag, stopping early once the roster
+        /// shrinks.
+        /// </summary>
+        private const int RECONCILE_MAX_ATTEMPTS = 3;
+
+        /// <summary>Delay between <see cref="ReconcilePartyMembersNow"/> retry attempts.</summary>
+        private const int RECONCILE_RETRY_DELAY_MS = 500;
+
         // ─────────────────────────────────────────────────────────────────────
         // Synchronization
         //
@@ -727,6 +737,51 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Immediately reconcile the party roster against the authoritative UGS
+        /// session player list, bypassing the post-creation grace gate that the
+        /// periodic poll applies.  Fired on member-departure signals
+        /// (<c>ISession.PlayerLeaving</c>, host-side Netcode <c>OnClientDisconnect</c>)
+        /// so a departed/bounced member is removed without waiting for the poll
+        /// cadence.  Host-only, idempotent, and serialised with the poll via the
+        /// shared lobby mutex.
+        /// </summary>
+        public void ReconcilePartyMembersNow()
+        {
+            if (!connectionData.IsPartyHost) return;
+            if (_partySessionService.ActiveSession == null) return;
+            ReconcilePartyMembersNowAsync().Forget();
+        }
+
+        private async UniTaskVoid ReconcilePartyMembersNowAsync()
+        {
+            // Non-blocking acquire: if the poll already holds the mutex it is
+            // mid-refresh and will observe the departure itself — one authoritative
+            // pass is enough, so we skip rather than queue.
+            if (!await _lobbyMutex.WaitAsync(0)) return;
+            _insideRefreshCycle = true;
+            try
+            {
+                int before = connectionData.PartyMembers?.Count ?? 0;
+                for (int i = 0; i < RECONCILE_MAX_ATTEMPTS; i++)
+                {
+                    // RefreshPartyMembersAsync owns the error matrix + SyncFromSession
+                    // (which removes departed members and raises OnPartyMemberLeft).
+                    // RefreshAsync() is internally .AsMainThread() — do not double-wrap.
+                    await RefreshPartyMembersAsync(bypassGraceGate: true);
+
+                    if ((connectionData.PartyMembers?.Count ?? 0) < before) break;
+                    if (i < RECONCILE_MAX_ATTEMPTS - 1)
+                        await UniTask.Delay(RECONCILE_RETRY_DELAY_MS);
+                }
+            }
+            finally
+            {
+                _insideRefreshCycle = false;
+                _lobbyMutex.Release();
+            }
+        }
+
+        /// <summary>
         /// Idempotent: ensures the local player owns a live solo Relay-backed
         /// party session and that NetworkManager is up as a Relay host.
         ///
@@ -1214,7 +1269,7 @@ namespace CosmicShore.Gameplay
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
         }
 
-        private async UniTask RefreshPartyMembersAsync()
+        private async UniTask RefreshPartyMembersAsync(bool bypassGraceGate = false)
         {
             if (_partySessionService.ActiveSession == null) return;
             if (connectionData.PartyMembers == null) return;
@@ -1222,8 +1277,11 @@ namespace CosmicShore.Gameplay
             // Grace period: a freshly-provisioned session can transiently fail
             // RefreshAsync.  Clearing the session here would cause
             // AcceptanceSignalService.ScanForSignals to recreate it on the next tick,
-            // kicking any joining client.
-            if (Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime < SESSION_CREATION_GRACE_PERIOD_SECONDS)
+            // kicking any joining client.  Bypassed for leave-driven reconcile
+            // (ReconcilePartyMembersNow): the goal there is to remove a departed
+            // member immediately, not to protect a joining one.
+            if (!bypassGraceGate &&
+                Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime < SESSION_CREATION_GRACE_PERIOD_SECONDS)
                 return;
 
             try { await _partySessionService.RefreshAsync(); }
