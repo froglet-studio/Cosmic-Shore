@@ -1,6 +1,6 @@
 # HostConnectionService Refactor — Iterative commits toward an unbreakable party system
 
-## Status (last updated: Commit 16)
+## Status (last updated: Commit 17)
 
 All planned commits landed on `claude/blissful-tesla-9nefa`. Commit 5 was merged into
 Commit 4 for compile-atomicity, so the backlog is 14 commits + this doc.
@@ -22,6 +22,7 @@ Commit 4 for compile-atomicity, so the backlog is 14 commits + this doc.
 | 14 | Comment cleanup (eager-Relay plain language) | ✅ |
 | 15 | This doc finalization + CLAUDE.md anti-pattern | ✅ |
 | 16 | Client-pull roster bootstrap + terminal watchdog (splash-hang root fix) | ✅ |
+| 17 | Host roster cleanup + invite clear on member leave (event-driven `ISession.PlayerLeaving` + Netcode backstop) | ✅ |
 
 **Recurring discovery**: several of the plan's "fix" steps (Bug A catch simplification,
 `KickPartyMemberAsync` try/catch wrap) were already shipped by earlier surgical commits,
@@ -1367,6 +1368,54 @@ Respects the locked design (eager Relay, single `ActiveSession`, state-machine r
 **Verification gap (🔬):** needs 2-VP MPPM confirmation — accept ×20+, every run either
 roams in the host's lava-lamp or cleanly bounces to the joiner's own menu; never a black
 hang. `bounceToastChannel` must be wired in the Bootstrap prefab for the toast to appear.
+
+### `[x]` Commit 17 — Host roster cleanup + invite clear on member leave (event-driven)
+
+**Problem.** After Commit 16's bounce returns a failed-join client to its own solo host,
+the **inviting host's roster stayed stale**: the departed client's `PartyPlayerData`
+lingered in `HostConnectionDataSO.PartyMembers` (the party slot still showed their avatar),
+and any outgoing invite to them lingered until the `ExpireOutgoingInvites` timeout. Root
+cause: host-side member removal was **poll-only**. `PartyMemberService.SyncFromSession`
+(which correctly removes anyone gone from `session.Players` and raises `OnPartyMemberLeft`)
+ran only from `RefreshPartyMembersAsync` on the ≤1.5s poll, and that method returns early
+for 4s after session creation (`SESSION_CREATION_GRACE_PERIOD_SECONDS`). Nothing reconciled
+the roster the moment a client left.
+
+**Fix — event-driven reconcile + invite cleanup, with a Netcode backstop.**
+
+- `PartySessionService` (+ `IPartySessionService`): re-broadcast the party
+  `ISession.PlayerLeaving` (carries the UGS `PlayerId`) as a service-level
+  `event Action<string> PlayerLeaving`, wired immediately after each `ActiveSession`
+  assignment (`CreateAsync` / `JoinByIdAsync`) and unwired in `ClearSession` — the single
+  point that nulls the reference, reached by both `LeaveAsync` and
+  `HandleDefiniteSessionGoneAsync` — so no handler leaks across session reassignment.
+- `HostConnectionService.ReconcilePartyMembersNow()`: host-only on-demand reconcile that
+  reuses `RefreshPartyMembersAsync(bypassGraceGate: true)` (new parameter skips the 4s gate —
+  it protects a *joining* client, not a *leaving* one), with a short bounded retry
+  (`RECONCILE_MAX_ATTEMPTS` × `RECONCILE_RETRY_DELAY_MS`) to absorb leave-propagation lag,
+  serialised with the poll via `_lobbyMutex` + `_insideRefreshCycle`.
+- `HostConnectionService.OnPartySessionPlayerLeaving`: subscribed to the new event via the
+  guarded subscribe/teardown idiom (`_partyLeaveSubscribed`, wired in
+  `EnsureInitializedAsync`, torn down in `OnDestroy`). Clears any outgoing invite to the
+  departing player via the existing `ClearOutgoingInviteIfPresentAsync(playerId, "party-leave")`
+  and calls `ReconcilePartyMembersNow`.
+- `MultiplayerSetup.OnClientDisconnect` (host branch): calls `ReconcilePartyMembersNow` as a
+  Netcode backstop for hard drops (client crash) that may beat the graceful UGS event. It
+  carries only the Netcode `clientId` (no UGS `PlayerId`), so it reconciles the roster and
+  leaves invite cleanup to the `PlayerLeaving` handler / poll. Both triggers are idempotent.
+
+Implements the two follow-ups deferred earlier (event-driven `ISession` player-left
+subscription; host-side outgoing-invite cleanup on member leave). Respects the locked design
+(eager Relay, single `ActiveSession`); the poll remains the ultimate backstop, and
+`SyncFromSession` keys off `session.Players`, so a transient blip never falsely drops a member.
+
+**Verification gap (🔬):** needs 2-VP MPPM — host idles in Menu_Main; client accepts and is
+forced down the bounce path. Confirm on the host: the slot clears effectively immediately
+(UGS `PlayerLeaving`, not the ~1.5s poll), `PartyMembers` returns to `[host]`, the outgoing
+invite is gone (`invite_payloads` republished), and a transient blip where the client is
+still in `session.Players` does not drop them. Also verify a hard client-process kill
+reconciles via the `OnClientDisconnect` backstop, and repeated invite→bounce cycles don't
+accumulate `PlayerLeaving` handlers.
 
 ## Unbreakable exit criteria — when do we stop?
 
