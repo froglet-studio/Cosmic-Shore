@@ -188,6 +188,7 @@ namespace CosmicShore.Gameplay
         private bool   _joining;
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
+        private bool   _partyLeaveSubscribed;
         private bool   _handlingDefiniteSessionGone;
         private float  _rateLimitBackoffUntil;
         private float  _nextForcedRefreshAllowed;
@@ -352,6 +353,7 @@ namespace CosmicShore.Gameplay
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
+            UnsubscribeFromPartySessionEvents();
 
             if (bootStatusRetryRequestedEvent != null)
                 bootStatusRetryRequestedEvent.OnRaised -= HandleBootStatusRetryRequested;
@@ -440,6 +442,7 @@ namespace CosmicShore.Gameplay
             {
                 SubscribeToProfileChanges();
                 SubscribeToGameLaunch();
+                SubscribeToPartySessionEvents();
 
                 await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
                 SyncLocalIdentity();
@@ -1723,6 +1726,36 @@ namespace CosmicShore.Gameplay
             if (profile == null) return;
             SyncLocalIdentity();
             RepublishLocalIdentityAsync().Forget();
+        }
+
+        private void SubscribeToPartySessionEvents()
+        {
+            if (_partyLeaveSubscribed || _partySessionService == null) return;
+            _partySessionService.PlayerLeaving += OnPartySessionPlayerLeaving;
+            _partyLeaveSubscribed = true;
+        }
+
+        private void UnsubscribeFromPartySessionEvents()
+        {
+            if (!_partyLeaveSubscribed || _partySessionService == null) return;
+            _partySessionService.PlayerLeaving -= OnPartySessionPlayerLeaving;
+            _partyLeaveSubscribed = false;
+        }
+
+        /// <summary>
+        /// A player left the host's party session.  Clear any outgoing invite still
+        /// aimed at them and reconcile the roster immediately so the departed/bounced
+        /// member's slot clears without waiting for the poll.  Host-only: only the
+        /// host owns the authoritative roster and outgoing invites; non-host clients
+        /// keep getting reconciled by the periodic poll.  Runs on the main thread
+        /// (UGS session callbacks are already marshaled).
+        /// </summary>
+        private void OnPartySessionPlayerLeaving(string playerId)
+        {
+            if (string.IsNullOrEmpty(playerId)) return;
+            if (!connectionData.IsPartyHost) return;
+            _ = ClearOutgoingInviteIfPresentAsync(playerId, "party-leave");
+            ReconcilePartyMembersNow();
         }
 
         private void SubscribeToGameLaunch()
