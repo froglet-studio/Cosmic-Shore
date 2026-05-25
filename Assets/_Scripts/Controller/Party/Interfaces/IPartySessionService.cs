@@ -7,6 +7,7 @@
 // manages the UGS session object (create, join, leave, refresh).
 // ─────────────────────────────────────────────────────────────────────────────
 
+using System;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
 
@@ -27,6 +28,15 @@ namespace CosmicShore.Gameplay
         /// or joined.
         /// </summary>
         ISession ActiveSession { get; }
+
+        /// <summary>
+        /// Raised with the leaving player's UGS <c>PlayerId</c> when a player leaves the
+        /// active party session.  Re-broadcasts the underlying
+        /// <c>ISession.PlayerLeaving</c> event so consumers don't have to touch the raw
+        /// session object; the service owns subscribe/unsubscribe at the session
+        /// lifecycle chokepoints so handlers never leak across session reassignment.
+        /// </summary>
+        event Action<string> PlayerLeaving;
 
         /// <summary>
         /// The wall-clock time (via <c>Time.unscaledTime</c>) when the current

@@ -115,6 +115,17 @@ namespace CosmicShore.Gameplay
         /// <inheritdoc/>
         public float CreatedAtUnscaledTime { get; private set; }
 
+        /// <inheritdoc/>
+        public event Action<string> PlayerLeaving;
+
+        /// <summary>
+        /// Relay for the underlying <c>ISession.PlayerLeaving</c>.  Wired immediately
+        /// after every <see cref="ActiveSession"/> assignment (create/join) and unwired
+        /// in <see cref="ClearSession"/> — the single point that nulls the reference —
+        /// so no handler outlives the session object it was attached to.
+        /// </summary>
+        private void OnSessionPlayerLeaving(string playerId) => PlayerLeaving?.Invoke(playerId);
+
         // ─────────────────────────────────────────────────────────────────────
         // Construction
         // ─────────────────────────────────────────────────────────────────────
@@ -170,6 +181,7 @@ namespace CosmicShore.Gameplay
                 {
                     ActiveSession          = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
                     CreatedAtUnscaledTime  = Time.unscaledTime;
+                    ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
                     Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
                     return;
                 }
@@ -212,6 +224,7 @@ namespace CosmicShore.Gameplay
                 sessionId,
                 new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
 
+            ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
             Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
         }
 
@@ -264,6 +277,7 @@ namespace CosmicShore.Gameplay
         {
             if (ActiveSession == null) return;
             Debug.Log($"[PartySessionService] Clearing session reference {ActiveSession.Id}.");
+            ActiveSession.PlayerLeaving -= OnSessionPlayerLeaving;
             ActiveSession         = null;
             CreatedAtUnscaledTime = 0f;
         }
