@@ -353,6 +353,11 @@ namespace CosmicShore.Gameplay
                 if (clientId != networkManager.LocalClientId)
                 {
                     CSDebug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    // Netcode backstop for hard drops (client crash) that may beat the
+                    // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is
+                    // available here (no UGS PlayerId), so this reconciles the roster;
+                    // invite cleanup is handled by the PlayerLeaving handler / poll.
+                    HostConnectionService.Instance?.ReconcilePartyMembersNow();
                 }
                 return;
             }
