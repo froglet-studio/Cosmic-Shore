@@ -113,9 +113,10 @@ namespace CosmicShore.Gameplay
             _playerFollowTarget = followTarget;
             _playerCamera?.SetFollowTarget(_playerFollowTarget);
             _deathCamera?.SetFollowTarget(_playerFollowTarget);
-            _themeManagerData.SetBackgroundColor(Camera.main);
 
             SetCloseCameraActive();
+            DisableMinigameBrainCamera();
+            _themeManagerData.SetBackgroundColor(Camera.main);
 
             var shipGO = _playerFollowTarget.gameObject;
             var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
@@ -194,6 +195,16 @@ namespace CosmicShore.Gameplay
         }
 
         public ICameraController GetActiveController() => _activeController;
+
+        // CinemachineBrain camera has no vCams in minigame scenes — disabling its Camera component
+        // skips a redundant full render pass. Keeps the GameObject (and its AudioListener) alive;
+        // CM PlayerCam carries the MainCamera tag now so Camera.main still resolves.
+        private void DisableMinigameBrainCamera()
+        {
+            var go = GameObject.Find("Mini Game Main Camera");
+            if (go != null && go.TryGetComponent<Camera>(out var cam))
+                cam.enabled = false;
+        }
 
         /// <summary>
         /// Deactivates all managed cameras (player, death, end) without activating a replacement.
