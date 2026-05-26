@@ -10,7 +10,7 @@ presence-lobby cluster last, after diagnostics + retests). B1 is the agreed firs
 
 | ID | Title | Group | Confidence | Status |
 |----|-------|-------|-----------|--------|
-| B1 | `ArgumentOutOfRangeException` (LobbyPatcher) spam at game start | SDK-internal | High (cause) | 🔴 |
+| B1 | `ArgumentOutOfRangeException` (LobbyPatcher) spam at game start | SDK-internal | High (cause) | 🟢 (needs Editor retest) |
 | B2 | `ObjectDisposedException` (semaphore) on Play-Mode abort / fast invite-accept | Teardown race | ~95% | 🔴 |
 | B3 | TC4 bounce leaves 2 vessels + dead controls | Bounce cleanup | ~85% | 🔴 |
 | B4 | TC1 second invite not delivered + party members vanish from 3rd player's panel | Presence-lobby race | High, needs retest | 🔴 |
@@ -19,7 +19,7 @@ presence-lobby cluster last, after diagnostics + retests). B1 is the agreed firs
 
 ---
 
-## B1 — `ArgumentOutOfRangeException` in `LobbyPatcher.ApplyPatchesToLobby` at game start  🔴
+## B1 — `ArgumentOutOfRangeException` in `LobbyPatcher.ApplyPatchesToLobby` at game start  🟢 (needs Editor retest)
 
 **Symptom.** Every client logs, at game start, an `ArgumentOutOfRangeException` from
 `LobbyPatcher.ApplyPatchesToLobby` → `LobbyHandler.OnLobbyChanged` → `LobbyChannel.ProcessEvent`/`HandleLobbyChanges`.
@@ -54,6 +54,23 @@ add to the churn.
 made yet). A single, self-correcting occurrence reinforces that it's benign console noise, so
 option 1 (a tightly-scoped log filter) is the low-risk fit; gating it to Editor/Development is
 reasonable since release behavior is still untested.
+
+**Fix (shipped — option 1).** New `BenignLobbyLogFilter`
+(`Assets/_Scripts/Utility/BenignLobbyLogFilter.cs`). A `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`
+installs once (idempotent) a decorator around `Debug.unityLogger.logHandler` that drops **only**
+an `ArgumentOutOfRangeException` whose stack contains `LobbyPatcher` (same classifier as
+`HostConnectionService.IsBenignLobbyPatcherError`); every other log is forwarded verbatim.
+Whole file is gated `#if UNITY_EDITOR || DEVELOPMENT_BUILD`, so release is unchanged.
+
+Note: the swap intercepts `ILogHandler.LogException`, which is how `Debug.LogException` / UGS
+`Logger.LogException` route in the common case. `Application.logMessageReceived` was rejected — it
+is a post-hoc *notification* and cannot suppress. If a future retest shows the line still leaks
+(SDK using a private handler, or logging via `LogError` string instead of `LogException`), extend
+the decorator's `LogFormat` path. **Worst case the filter is a no-op — no regression.**
+
+**Needs Editor retest.** Start a game with ≥2 VPs and confirm the `LobbyPatcher`
+`ArgumentOutOfRangeException` no longer appears (the one-time
+`[BenignLobbyLogFilter] Installed …` line confirms the decorator is active).
 
 **Evidence.** `HostConnectionService.cs:1852` (`IsBenignLobbyPatcherError`), `:1023`, `:1297`;
 `LobbyPropertyWriter.cs:147-153`; `CSDebug.cs` (gates our calls only); SDK stack in the report.
