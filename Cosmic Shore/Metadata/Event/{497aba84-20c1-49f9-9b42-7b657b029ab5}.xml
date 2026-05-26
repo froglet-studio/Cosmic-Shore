@@ -56,7 +56,17 @@
 			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
 		</relationship>
 	</object>
-	<object class="EventAutomatableProperties" id="{67d61f8f-d786-4849-af23-01b6aa730d80}" />
+	<object class="EventAutomatableProperties" id="{67d61f8f-d786-4849-af23-01b6aa730d80}">
+		<property name="maxVoices">
+			<value>16</value>
+		</property>
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>9.80000019</value>
+		</property>
+	</object>
 	<object class="MarkerTrack" id="{0f4d0d82-5d24-4dbe-9244-817705f8ec71}" />
 	<object class="GroupTrack" id="{489034e6-dacf-4751-baf1-1a659b6f3137}">
 		<relationship name="modules">
@@ -136,7 +146,7 @@
 			<value>pitch</value>
 		</property>
 		<property name="amount">
-			<value>4</value>
+			<value>11.5</value>
 		</property>
 	</object>
 	<object class="FadeCurve" id="{c1c95016-c1f5-479f-a151-8a6c75b97184}">
@@ -156,7 +166,14 @@
 	</object>
 	<object class="MixerBusPanner" id="{3a6f9667-fcfb-47fa-a6aa-59b5bd65a1eb}" />
 	<object class="MixerBusFader" id="{7ec1a05e-ee15-4c72-858a-c590ca1ac55c}" />
-	<object class="SpatialiserEffect" id="{0b906957-34c0-4190-8a0c-612e1860a651}" />
+	<object class="SpatialiserEffect" id="{0b906957-34c0-4190-8a0c-612e1860a651}">
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>9.80000019</value>
+		</property>
+	</object>
 	<object class="PitchShifterEffect" id="{8b00c895-77f4-4e03-88a1-ca45d661399c}">
 		<property name="pitch">
 			<value>1</value>
