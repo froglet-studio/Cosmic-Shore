@@ -115,7 +115,11 @@ namespace CosmicShore.Gameplay
             _deathCamera?.SetFollowTarget(_playerFollowTarget);
 
             SetCloseCameraActive();
-            _themeManagerData.SetBackgroundColor(Camera.main);
+            // Use the camera we just activated directly — Camera.main can return null in the
+            // first frame after a scene transition because the tag-based lookup hasn't
+            // observed the newly-activated GameObject yet.
+            var activeCam = (_playerCamera as CustomCameraController)?.Camera;
+            _themeManagerData.SetBackgroundColor(activeCam != null ? activeCam : Camera.main);
 
             var shipGO = _playerFollowTarget.gameObject;
             var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
