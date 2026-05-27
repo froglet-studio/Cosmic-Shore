@@ -55,22 +55,31 @@ made yet). A single, self-correcting occurrence reinforces that it's benign cons
 option 1 (a tightly-scoped log filter) is the low-risk fit; gating it to Editor/Development is
 reasonable since release behavior is still untested.
 
-**Fix (shipped — option 1).** New `BenignLobbyLogFilter`
+**Fix (shipped — option 1, iterated).** `BenignLobbyLogFilter`
 (`Assets/_Scripts/Utility/BenignLobbyLogFilter.cs`). A `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`
 installs once (idempotent) a decorator around `Debug.unityLogger.logHandler` that drops **only**
-an `ArgumentOutOfRangeException` whose stack contains `LobbyPatcher` (same classifier as
-`HostConnectionService.IsBenignLobbyPatcherError`); every other log is forwarded verbatim.
+the benign `LobbyPatcher` `ArgumentOutOfRangeException`; every other log is forwarded verbatim.
 Whole file is gated `#if UNITY_EDITOR || DEVELOPMENT_BUILD`, so release is unchanged.
 
-Note: the swap intercepts `ILogHandler.LogException`, which is how `Debug.LogException` / UGS
-`Logger.LogException` route in the common case. `Application.logMessageReceived` was rejected — it
-is a post-hoc *notification* and cannot suppress. If a future retest shows the line still leaks
-(SDK using a private handler, or logging via `LogError` string instead of `LogException`), extend
-the decorator's `LogFormat` path. **Worst case the filter is a no-op — no regression.**
+- **v1** intercepted only `ILogHandler.LogException` (the route for `Debug.LogException`).
+- **Retest #1 (user, Editor):** the `[BenignLobbyLogFilter] Installed` line printed (decorator
+  active) but the error **still appeared** — confirming the SDK logs it via the **`LogFormat`**
+  route (`Debug.LogError` / `unityLogger.Log(LogType.Exception, e)`), not `LogException`. The
+  `Logger.LogException` frame visible in the console is Unity's captured call-site stack, not the
+  `ILogHandler` entry point our decorator overrode.
+- **v2 (current)** also intercepts `LogFormat` for `LogType.Exception`/`Error`, matching either an
+  `Exception` argument (via the shared `IsBenignLobbyPatcherError` stack classifier) or a
+  pre-rendered message string containing both `LobbyPatcher` and `ArgumentOutOfRangeException`.
+  Rendering is defensive (try/catch → forward on failure), so a real error is never suppressed.
 
-**Needs Editor retest.** Start a game with ≥2 VPs and confirm the `LobbyPatcher`
-`ArgumentOutOfRangeException` no longer appears (the one-time
-`[BenignLobbyLogFilter] Installed …` line confirms the decorator is active).
+`Application.logMessageReceived` was rejected — it is a post-hoc *notification* and cannot
+suppress. **Worst case the filter is a no-op — no regression.**
+
+**Needs Editor retest (v2 — `LogFormat` path).** Start a game with ≥2 VPs and confirm the
+`LobbyPatcher` `ArgumentOutOfRangeException` no longer appears on **any** instance (the one-time
+`[BenignLobbyLogFilter] Installed …` line confirms the decorator is active; ordinary
+errors/warnings must still log). If it still leaks, it is being logged as a plain message string
+with no type/stack in the content — paste the exact one-line text and we add a literal-string match.
 
 **Evidence.** `HostConnectionService.cs:1852` (`IsBenignLobbyPatcherError`), `:1023`, `:1297`;
 `LobbyPropertyWriter.cs:147-153`; `CSDebug.cs` (gates our calls only); SDK stack in the report.
