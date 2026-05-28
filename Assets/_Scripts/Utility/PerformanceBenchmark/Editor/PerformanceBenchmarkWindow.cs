@@ -661,11 +661,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 BenchmarkHistory.RebuildIndex(GetOutputFolder());
                 RefreshHistory();
             }
+            if (GUILayout.Button("Import External Run", GUILayout.Width(150)))
+                ImportExternalRun();
             EditorGUILayout.EndHorizontal();
 
             if (historyEntries.Count == 0)
             {
-                EditorGUILayout.HelpBox("No saved runs yet. Capture a run in the Collect tab and press Save.", MessageType.Info);
+                EditorGUILayout.HelpBox("No saved runs yet. Capture a run in the Collect tab and press Save, " +
+                    "or Import a dev-build run pulled off a device.", MessageType.Info);
                 return;
             }
 
@@ -772,6 +775,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             if (comparisonResult == null) { EditorGUILayout.HelpBox("Pick a baseline and a current run.", MessageType.Info); return; }
 
+            // Cross-source guard — absolute numbers aren't comparable across Editor vs DevBuild or
+            // different platforms/devices; only same-source deltas are meaningful.
+            var bSrc = comparisonResult.baseline?.source;
+            var cSrc = comparisonResult.current?.source;
+            if (bSrc != null && cSrc != null && (bSrc.origin != cSrc.origin || bSrc.platform != cSrc.platform))
+            {
+                EditorGUILayout.HelpBox(
+                    $"Cross-source comparison: {bSrc.origin}/{bSrc.platform} vs {cSrc.origin}/{cSrc.platform}. " +
+                    "Absolute numbers aren't comparable across sources — only same-source before/after deltas are meaningful.",
+                    MessageType.Warning);
+            }
+
             EditorGUILayout.Space(4);
             EditorGUILayout.BeginHorizontal();
             EditorUIStyles.Badge($"{comparisonResult.improvements} better", EditorUIStyles.Mint, 90);
@@ -835,6 +850,38 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             var scenes = EditorBuildSettings.scenes;
             sceneDisplay = scenes.Select(s => Path.GetFileNameWithoutExtension(s.path)).ToArray();
             scenePaths = scenes.Select(s => s.path).ToArray();
+        }
+
+        // Imports a BenchmarkReport JSON pulled off a device (dev-build run) into History.
+        void ImportExternalRun()
+        {
+            string path = EditorUtility.OpenFilePanel("Import Benchmark Run", Application.persistentDataPath, "json");
+            if (string.IsNullOrEmpty(path)) return;
+
+            var report = BenchmarkReport.LoadFromFile(path);
+            if (report == null || report.statistics == null)
+            {
+                EditorUtility.DisplayDialog("Import failed", "Could not read a valid benchmark report from that file.", "OK");
+                return;
+            }
+            if (report.schemaVersion > BenchmarkReport.CurrentSchemaVersion)
+                Debug.LogWarning($"[Benchmark] Imported run is schema v{report.schemaVersion}, newer than this tool " +
+                                 $"(v{BenchmarkReport.CurrentSchemaVersion}); some fields may not display.");
+
+            // Copy into the output folder so it persists alongside the index.
+            try
+            {
+                string destDir = Path.Combine(Application.persistentDataPath, GetOutputFolder());
+                Directory.CreateDirectory(destDir);
+                string dest = Path.Combine(destDir, Path.GetFileName(path));
+                if (Path.GetFullPath(dest) != Path.GetFullPath(path)) File.Copy(path, dest, true);
+                BenchmarkHistory.AddToHistory(report, dest, GetOutputFolder());
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[Benchmark] Import failed: {e.Message}");
+            }
+            RefreshHistory();
         }
     }
 }
