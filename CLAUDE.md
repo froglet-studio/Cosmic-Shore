@@ -251,7 +251,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
-| `BENCHMARK_TEST_PROCEDURE.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance benchmarking procedures |
+| `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, customization) |
 | `GIT_RULES.md` | Project root | Git commit conventions |
 
 ## Architecture Patterns
