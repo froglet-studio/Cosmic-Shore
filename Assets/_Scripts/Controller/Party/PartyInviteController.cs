@@ -416,6 +416,17 @@ namespace CosmicShore.Gameplay
 
             try
             {
+                // B8: menu vessels spawn with destroyWithScene=false
+                // (MenuServerPlayerVesselInitializer), so a vessel created before the
+                // failed transition survives the Menu_Main (Single) reload below →
+                // "2 vessels, 1 player". Mirror the leave-path cleanup and explicitly
+                // destroy the local player+vessel before recreating the solo session.
+                if (gameData != null)
+                {
+                    gameData.DestroyPlayerAndVessel();
+                    gameData.ResetRuntimeData();
+                }
+
                 // HCS owns NM startup. After a failed accept transition the active
                 // party session may be in an inconsistent state — leave it cleanly
                 // (DeleteAsync/LeaveAsync internally) and recreate a fresh solo
