@@ -8671,6 +8671,7 @@ GameObject:
   - component: {fileID: 5363059078414614678}
   - component: {fileID: -6368199322473003075}
   - component: {fileID: 7219854176267508625}
+  - component: {fileID: 7687382462138633726}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -9374,6 +9375,20 @@ MonoBehaviour:
   baseVolumeMultiplier: 1
   restrictToVesselClass: 1
   targetVesselClass: 6
+  debugLog: 0
+--- !u!114 &7687382462138633726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3b21628e47594eaba8394e46e6128ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  localOffset: {x: 0, y: 0, z: 0}
   debugLog: 0
 --- !u!1 &6514516964945388952
 GameObject:
