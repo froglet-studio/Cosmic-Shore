@@ -632,6 +632,7 @@ GameObject:
   - component: {fileID: 760981919}
   - component: {fileID: 760981918}
   - component: {fileID: 760981917}
+  - component: {fileID: 760981920}
   m_Layer: 0
   m_Name: CM PlayerCam
   m_TagString: Untagged
@@ -762,6 +763,20 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &760981920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760981915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86c6556701af9e04380698b89f691b6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nonRigidbodyVelocity: 1
+  attenuationObject: {fileID: 760981915}
 --- !u!1 &820208339
 GameObject:
   m_ObjectHideFlags: 0
@@ -1373,7 +1388,6 @@ GameObject:
   m_Component:
   - component: {fileID: 989920296}
   - component: {fileID: 989920295}
-  - component: {fileID: 989920294}
   - component: {fileID: 989920297}
   - component: {fileID: 989920299}
   m_Layer: 0
@@ -1383,14 +1397,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &989920294
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 989920293}
-  m_Enabled: 1
 --- !u!20 &989920295
 Camera:
   m_ObjectHideFlags: 0
@@ -2018,7 +2024,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 67.8
+  m_fontSize: 18
   m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 1

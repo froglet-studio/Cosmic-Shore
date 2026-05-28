@@ -169,9 +169,8 @@ namespace CosmicShore.Gameplay
 
         void PlayExplosionAudio()
         {
-            AudioSource audioSource = GetComponent<AudioSource>();
             if (audioSystem != null)
-                audioSystem.PlaySFXClip(audioSource.clip, audioSource);
+                audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
         }
 
         public void ActivateCrystal()
