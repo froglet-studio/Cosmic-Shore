@@ -172,6 +172,58 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
 
         #endregion
 
+        #region CPU/GPU & Leak Slope
+
+        [Test]
+        public void Compute_CpuGpu_AveragesAndPeaks()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, cpuFrameTimeMs = 10f, gpuFrameTimeMs = 8f },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, cpuFrameTimeMs = 14f, gpuFrameTimeMs = 12f },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 2f);
+
+            Assert.AreEqual(12f, stats.avgCpuFrameTimeMs, 0.01f);
+            Assert.AreEqual(14f, stats.maxCpuFrameTimeMs, 0.01f);
+            Assert.AreEqual(10f, stats.avgGpuFrameTimeMs, 0.01f);
+            Assert.AreEqual(12f, stats.maxGpuFrameTimeMs, 0.01f);
+        }
+
+        [Test]
+        public void Compute_RisingMemory_ProducesPositiveSlope()
+        {
+            // Memory 100, 200, 300 over frame indices 0,1,2 → slope = 100 bytes/frame.
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 100 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 200 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 300 },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 3f);
+
+            Assert.AreEqual(100f, stats.memorySlopeBytesPerFrame, 0.5f);
+        }
+
+        [Test]
+        public void Compute_FlatMemory_ProducesZeroSlope()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 500 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 500 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 500 },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 3f);
+
+            Assert.AreEqual(0f, stats.memorySlopeBytesPerFrame, 0.01f);
+        }
+
+        #endregion
+
         #region Percentiles
 
         [Test]
