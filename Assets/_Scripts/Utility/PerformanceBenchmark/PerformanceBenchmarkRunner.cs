@@ -98,6 +98,25 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder activeBodiesRecorder;
 
         public bool IsRunning => state == State.WarmingUp || state == State.Sampling;
+
+        /// <summary>Path of the most recently saved report (set when a run finishes). Empty until then.</summary>
+        public string LastReportPath { get; private set; } = string.Empty;
+
+        /// <summary>The most recently completed report. Null until a run finishes.</summary>
+        public BenchmarkReport LastReport { get; private set; }
+
+        /// <summary>
+        /// Assigns config / data / game-data at runtime. Used by tooling (sweep runner,
+        /// editor window) that spawns the runner programmatically, avoiding editor-only
+        /// SerializedObject wiring.
+        /// </summary>
+        public void Configure(BenchmarkConfigSO benchmarkConfig, BenchmarkDataSO data = null, GameDataSO gameDataContainer = null)
+        {
+            config = benchmarkConfig;
+            benchmarkData = data;
+            if (gameDataContainer != null) gameData = gameDataContainer;
+        }
+
         public float Progress
         {
             get
@@ -295,6 +314,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             currentReport.ComputeStatistics();
 
             string filePath = currentReport.SaveToFile(config.OutputFolder);
+            LastReportPath = filePath;
+            LastReport = currentReport;
 
             // Auto-index in history so every run is retrievable for comparison
             BenchmarkHistory.AddToHistory(currentReport, filePath, config.OutputFolder);

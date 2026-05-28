@@ -13,7 +13,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
     public class PerformanceBenchmarkWindow : EditorWindow
     {
         // ── Tab state ───────────────────────────────────
-        enum Tab { Run, History, Compare }
+        enum Tab { Run, Sweep, History, Compare }
         Tab activeTab = Tab.Run;
 
         // ── Run tab ─────────────────────────────────────
@@ -37,6 +37,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         BenchmarkComparer.ComparisonResult comparisonResult;
         string comparisonText;
 
+        // ── Sweep tab ───────────────────────────────────
+        Vector2 sweepScroll;
+        List<(string name, bool include)> sweepScenes;
+        string sweepTag = "sweep";
+        GameDataSO sweepGameData;
+        BenchmarkSweepRunner activeSweep;
+
         [MenuItem("FrogletTools/Performance Benchmark", false, 20)]
         public static void Open()
         {
@@ -57,6 +64,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             switch (activeTab)
             {
                 case Tab.Run: DrawRunTab(); break;
+                case Tab.Sweep: DrawSweepTab(); break;
                 case Tab.History: DrawHistoryTab(); break;
                 case Tab.Compare: DrawCompareTab(); break;
             }
@@ -65,6 +73,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         void Update()
         {
             if (activeRunner != null && activeRunner.IsRunning)
+                Repaint();
+            if (activeSweep != null && activeSweep.IsSweeping)
                 Repaint();
         }
 
@@ -75,6 +85,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             if (GUILayout.Toggle(activeTab == Tab.Run, "Run", EditorStyles.toolbarButton))
                 activeTab = Tab.Run;
+            if (GUILayout.Toggle(activeTab == Tab.Sweep, "Sweep", EditorStyles.toolbarButton))
+                activeTab = Tab.Sweep;
             if (GUILayout.Toggle(activeTab == Tab.History, $"History ({historyEntries.Count})", EditorStyles.toolbarButton))
                 activeTab = Tab.History;
             if (GUILayout.Toggle(activeTab == Tab.Compare, "Compare", EditorStyles.toolbarButton))
@@ -96,6 +108,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             benchmarkData = (BenchmarkDataSO)EditorGUILayout.ObjectField(
                 "Data Container (optional)", benchmarkData, typeof(BenchmarkDataSO), false);
+
+            using (new EditorGUI.DisabledScope(!Application.isPlaying))
+            {
+                if (GUILayout.Button("Spawn Live HUD Overlay (toggle in Game view with F9)"))
+                    SpawnLiveHud();
+            }
 
             if (config == null)
             {
@@ -200,31 +218,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         void DrawHealthGrade(BenchmarkStatistics stats)
         {
-            // Simple health grading: A/B/C/D/F based on avg FPS and frame time stability
-            string grade;
-            string explanation;
-            Color gradeColor;
-
-            if (stats.avgFps >= 55 && stats.p99FrameTimeMs < 25 && stats.stdDevFrameTimeMs < 5)
+            // Grade thresholds live in the shared BenchmarkGrade helper so the editor and the
+            // multi-scene sweep agree. Only the colour mapping is editor-side.
+            string grade = BenchmarkGrade.Evaluate(stats, out string explanation);
+            Color gradeColor = grade switch
             {
-                grade = "A"; explanation = "Excellent — smooth and stable"; gradeColor = new Color(0.2f, 0.8f, 0.3f);
-            }
-            else if (stats.avgFps >= 45 && stats.p99FrameTimeMs < 35)
-            {
-                grade = "B"; explanation = "Good — playable with minor hitches"; gradeColor = new Color(0.5f, 0.8f, 0.2f);
-            }
-            else if (stats.avgFps >= 30 && stats.p99FrameTimeMs < 50)
-            {
-                grade = "C"; explanation = "Acceptable — noticeable frame drops"; gradeColor = new Color(0.9f, 0.75f, 0.1f);
-            }
-            else if (stats.avgFps >= 20)
-            {
-                grade = "D"; explanation = "Poor — frequent stutters, needs optimization"; gradeColor = new Color(0.9f, 0.4f, 0.1f);
-            }
-            else
-            {
-                grade = "F"; explanation = "Critical — not playable"; gradeColor = new Color(0.85f, 0.2f, 0.2f);
-            }
+                "A" => new Color(0.2f, 0.8f, 0.3f),
+                "B" => new Color(0.5f, 0.8f, 0.2f),
+                "C" => new Color(0.9f, 0.75f, 0.1f),
+                "D" => new Color(0.9f, 0.4f, 0.1f),
+                _ => new Color(0.85f, 0.2f, 0.2f),
+            };
 
             var rect = EditorGUILayout.GetControlRect(false, 36);
             EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), new Color(gradeColor.r, gradeColor.g, gradeColor.b, 0.15f));
@@ -306,6 +310,186 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             RefreshHistory();
             Repaint();
+        }
+
+        void SpawnLiveHud()
+        {
+            if (FindFirstObjectByType<BenchmarkHUDOverlay>() != null)
+            {
+                Debug.Log("[Benchmark] Live HUD overlay already present — press F9 in the Game view to toggle.");
+                return;
+            }
+
+            var go = new GameObject("[BenchmarkHUDOverlay]");
+            go.AddComponent<BenchmarkHUDOverlay>();
+            Debug.Log("[Benchmark] Live HUD overlay spawned — press F9 in the Game view to show/hide it.");
+        }
+
+        // ════════════════════════════════════════════════
+        // ── Sweep Tab ───────────────────────────────────
+        // ════════════════════════════════════════════════
+
+        void DrawSweepTab()
+        {
+            EditorGUILayout.Space(8);
+
+            config = (BenchmarkConfigSO)EditorGUILayout.ObjectField(
+                "Config", config, typeof(BenchmarkConfigSO), false);
+            benchmarkData = (BenchmarkDataSO)EditorGUILayout.ObjectField(
+                "Data Container (optional)", benchmarkData, typeof(BenchmarkDataSO), false);
+            sweepGameData = (GameDataSO)EditorGUILayout.ObjectField(
+                "Game Data (optional)", sweepGameData, typeof(GameDataSO), false);
+            sweepTag = EditorGUILayout.TextField("Sweep Tag", sweepTag);
+
+            if (config == null)
+            {
+                EditorGUILayout.Space(8);
+                EditorGUILayout.HelpBox(
+                    "Assign a Benchmark Config to run a multi-scene sweep.\n\n" +
+                    "A sweep loads each selected scene in turn, benchmarks it with the same " +
+                    "config, and tags every run so you can find them together in History.\n\n" +
+                    "Note: scenes are loaded directly. Self-contained scenes (Menu_Main, " +
+                    "single-player minigames) sweep faithfully; networked game scenes that need " +
+                    "the Bootstrap → host → spawn pipeline will benchmark in an uninitialized state.",
+                    MessageType.Info);
+                return;
+            }
+
+            EnsureSweepScenesPopulated();
+
+            EditorGUILayout.Space(6);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Scenes to benchmark (from Build Settings)", EditorStyles.boldLabel);
+            if (GUILayout.Button("Refresh List", GUILayout.Width(95)))
+                PopulateSweepScenes();
+            EditorGUILayout.EndHorizontal();
+
+            if (sweepScenes.Count == 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "No scenes found in Build Settings. Add scenes via File > Build Settings.",
+                    MessageType.Warning);
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("All", GUILayout.Width(50))) SetAllSweep(true);
+                if (GUILayout.Button("None", GUILayout.Width(50))) SetAllSweep(false);
+                EditorGUILayout.EndHorizontal();
+
+                sweepScroll = EditorGUILayout.BeginScrollView(sweepScroll, GUILayout.MaxHeight(180));
+                for (int i = 0; i < sweepScenes.Count; i++)
+                {
+                    bool newInclude = EditorGUILayout.ToggleLeft(sweepScenes[i].name, sweepScenes[i].include);
+                    if (newInclude != sweepScenes[i].include)
+                        sweepScenes[i] = (sweepScenes[i].name, newInclude);
+                }
+                EditorGUILayout.EndScrollView();
+            }
+
+            EditorGUILayout.Space(8);
+
+            bool isPlaying = Application.isPlaying;
+            bool sweepRunning = activeSweep != null && activeSweep.IsSweeping;
+
+            if (sweepRunning)
+            {
+                float p = activeSweep.TotalScenes > 0
+                    ? (float)activeSweep.CurrentIndex / activeSweep.TotalScenes
+                    : 0f;
+                var rect = EditorGUILayout.GetControlRect(false, 22);
+                EditorGUI.ProgressBar(rect, p,
+                    $"Sweeping {activeSweep.CurrentIndex + 1}/{activeSweep.TotalScenes}: {activeSweep.CurrentScene}");
+            }
+            else
+            {
+                if (!isPlaying)
+                {
+                    EditorGUILayout.HelpBox(
+                        "Enter Play Mode (ideally starting from the Bootstrap scene) to run a sweep.",
+                        MessageType.Warning);
+                }
+
+                using (new EditorGUI.DisabledScope(!isPlaying))
+                {
+                    if (GUILayout.Button("Start Sweep", GUILayout.Height(30)))
+                        StartSweep();
+                }
+            }
+
+            // ── Results ────────────────────────────────
+            if (activeSweep != null && activeSweep.Results.Count > 0)
+            {
+                EditorGUILayout.Space(8);
+                EditorGUILayout.LabelField(
+                    activeSweep.IsComplete ? "Sweep Results" : "Sweep Progress",
+                    EditorStyles.boldLabel);
+
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                foreach (var r in activeSweep.Results)
+                {
+                    if (!r.loaded)
+                    {
+                        EditorGUILayout.LabelField($"[skip] {r.sceneName} (not loadable)", EditorStyles.miniLabel);
+                        continue;
+                    }
+                    EditorGUILayout.LabelField(
+                        $"[{r.grade}] {r.sceneName}:  {r.avgFps:F1} fps  (p1 {r.p1Fps:F1}, p99 {r.p99FrameTimeMs:F1} ms)",
+                        EditorStyles.miniLabel);
+                }
+                EditorGUILayout.EndVertical();
+
+                if (activeSweep.IsComplete)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button("Copy Summary"))
+                        GUIUtility.systemCopyBuffer = activeSweep.CombinedSummary;
+                    if (GUILayout.Button("View in History"))
+                    {
+                        RefreshHistory();
+                        activeTab = Tab.History;
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+        }
+
+        void EnsureSweepScenesPopulated()
+        {
+            if (sweepScenes == null)
+                PopulateSweepScenes();
+        }
+
+        void PopulateSweepScenes()
+        {
+            sweepScenes = new List<(string, bool)>();
+            foreach (var scene in EditorBuildSettings.scenes)
+            {
+                if (!scene.enabled) continue;
+                string name = Path.GetFileNameWithoutExtension(scene.path);
+                sweepScenes.Add((name, true));
+            }
+        }
+
+        void SetAllSweep(bool include)
+        {
+            for (int i = 0; i < sweepScenes.Count; i++)
+                sweepScenes[i] = (sweepScenes[i].name, include);
+        }
+
+        void StartSweep()
+        {
+            var selected = new List<string>();
+            foreach (var (name, include) in sweepScenes)
+                if (include) selected.Add(name);
+
+            if (selected.Count == 0)
+            {
+                Debug.LogWarning("[Benchmark] No scenes selected for the sweep.");
+                return;
+            }
+
+            activeSweep = BenchmarkSweepRunner.StartSweep(selected, config, benchmarkData, sweepGameData, sweepTag);
         }
 
         // ════════════════════════════════════════════════
