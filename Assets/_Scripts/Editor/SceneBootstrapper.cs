@@ -74,6 +74,17 @@ namespace CosmicShore.Editor
             set => EditorPrefs.SetBool(SHOULD_LOAD_BOOTSTRAP_SCENE_KEY, value);
         }
 
+        /// <summary>
+        /// Programmatic access to the "load Bootstrap scene on play" toggle (the same setting as the
+        /// FrogletTools menu items). The Performance Benchmark tool flips this off to capture a chosen
+        /// scene directly, then restores it on play-exit.
+        /// </summary>
+        public static bool LoadBootstrapSceneOnPlay
+        {
+            get => s_shouldLoadBootstrapScene;
+            set => s_shouldLoadBootstrapScene = value;
+        }
+
         static SceneBootstrapper()
         {
             EditorApplication.playModeStateChanged += EditorApplicationOnPlayModeStateChanged;
