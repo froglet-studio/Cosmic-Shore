@@ -337,7 +337,8 @@ namespace CosmicShore.Gameplay
 
             var networkVessel = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
-            networkVessel.SpawnWithOwnership(clientId, true);
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.SpawnDespawn.Auto())
+                networkVessel.SpawnWithOwnership(clientId, true);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
             return networkVessel;
         }
@@ -351,7 +352,10 @@ namespace CosmicShore.Gameplay
             gameData.Vessels.Remove(vessel);
 
             if (vessel is VesselController vc && vc.IsSpawned)
-                vc.NetworkObject.Despawn(true);
+            {
+                using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.SpawnDespawn.Auto())
+                    vc.NetworkObject.Despawn(true);
+            }
         }
 
         /// <summary>

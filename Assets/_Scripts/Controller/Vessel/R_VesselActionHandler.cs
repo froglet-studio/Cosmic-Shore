@@ -189,12 +189,24 @@ namespace CosmicShore.Gameplay
         }
 
         [ServerRpc]
-        private void SendButtonPressed_ServerRpc(InputEvents ie) =>
-            SendButtonPressed_ClientRpc(ie);
+        private void SendButtonPressed_ServerRpc(InputEvents ie)
+        {
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
+            {
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+                SendButtonPressed_ClientRpc(ie);
+            }
+        }
 
-        [ClientRpc] 
-        void SendButtonPressed_ClientRpc(InputEvents ie) => 
-            PerformShipControllerActions(ie);
+        [ClientRpc]
+        void SendButtonPressed_ClientRpc(InputEvents ie)
+        {
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
+            {
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+                PerformShipControllerActions(ie);
+            }
+        }
 
         void OnButtonReleased(InputEvents ie)
         {
@@ -214,12 +226,24 @@ namespace CosmicShore.Gameplay
         }
 
         [ServerRpc]
-        private void SendButtonReleased_ServerRpc(InputEvents ie) =>
-            SendButtonReleased_ClientRpc(ie);
+        private void SendButtonReleased_ServerRpc(InputEvents ie)
+        {
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
+            {
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+                SendButtonReleased_ClientRpc(ie);
+            }
+        }
 
         [ClientRpc]
-        void SendButtonReleased_ClientRpc(InputEvents ie) =>
-            StopShipControllerActions(ie);
+        void SendButtonReleased_ClientRpc(InputEvents ie)
+        {
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
+            {
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+                StopShipControllerActions(ie);
+            }
+        }
 
         #region Mute Input
 

@@ -63,6 +63,9 @@ namespace CosmicShore.Gameplay
         [ServerRpc] // RequireOwnership = true is the default — only the player's owner may request
         public void RequestSetDomain_ServerRpc(Domains domain)
         {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
             if (!GameDataSO.IsActiveDomain(domain, gameData.RequestedDomainCount))
             {
                 Debug.LogWarning(
@@ -71,6 +74,7 @@ namespace CosmicShore.Gameplay
             }
 
             NetDomain.Value = domain;
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty();
         }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
