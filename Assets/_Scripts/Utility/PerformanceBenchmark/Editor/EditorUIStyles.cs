@@ -32,7 +32,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             padding = new RectOffset(8, 8, 4, 4)
         };
 
-        public static GUIStyle Badge => s_badge ??= new GUIStyle(EditorStyles.miniButton)
+        public static GUIStyle BadgeStyle => s_badge ??= new GUIStyle(EditorStyles.miniButton)
         {
             fontStyle = FontStyle.Bold,
             alignment = TextAnchor.MiddleCenter
@@ -94,8 +94,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             var prev = GUI.backgroundColor;
             GUI.backgroundColor = color;
-            if (width > 0f) GUILayout.Label(text, Badge, GUILayout.Width(width));
-            else GUILayout.Label(text, Badge);
+            if (width > 0f) GUILayout.Label(text, BadgeStyle, GUILayout.Width(width));
+            else GUILayout.Label(text, BadgeStyle);
             GUI.backgroundColor = prev;
         }
 
