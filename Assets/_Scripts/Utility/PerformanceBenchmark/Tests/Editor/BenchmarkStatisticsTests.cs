@@ -222,6 +222,25 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             Assert.AreEqual(0f, stats.memorySlopeBytesPerFrame, 0.01f);
         }
 
+        [Test]
+        public void Compute_Netcode_AggregatesAndShare()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 10f, fps = 100f, netcodeTimeMs = 2f, rpcsSent = 4, netVarsDirty = 6, netBytesSent = 100 },
+                new FrameSnapshot { deltaTimeMs = 10f, fps = 100f, netcodeTimeMs = 4f, rpcsSent = 6, netVarsDirty = 10, netBytesSent = 200 },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 2f);
+
+            Assert.AreEqual(3f, stats.avgNetcodeTimeMs, 0.01f);
+            Assert.AreEqual(4f, stats.maxNetcodeTimeMs, 0.01f);
+            Assert.AreEqual(5f, stats.avgRpcsSent, 0.01f);
+            Assert.AreEqual(8f, stats.avgNetVarsDirty, 0.01f);
+            Assert.AreEqual(300, stats.totalNetBytesSent);
+            Assert.AreEqual(30f, stats.netcodeSharePercent, 0.1f); // 3ms of a 10ms frame
+        }
+
         #endregion
 
         #region Percentiles

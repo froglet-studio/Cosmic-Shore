@@ -110,6 +110,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         }
 
         [Test]
+        public void Analyze_HighNetcodeShare_FiresHint()
+        {
+            var stats = new BenchmarkStatistics
+            {
+                totalFrames = 100, avgFps = 60, avgFrameTimeMs = 16.6f,
+                avgNetcodeTimeMs = 5f, netcodeSharePercent = 30f
+            };
+
+            var result = BenchmarkAnalysis.Analyze(ReportWith(stats), null);
+
+            Assert.IsTrue(result.hints.Any(h => h.id == "netcode-share"));
+        }
+
+        [Test]
         public void Analyze_CleanRun_NoBlockers()
         {
             var stats = new BenchmarkStatistics
