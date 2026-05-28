@@ -35,6 +35,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public float avgFrameTimeMs;
             public float p99FrameTimeMs;
             public int totalFrames;
+            public int score; // 0-100 performance score (BenchmarkAnalysis)
             public string deviceModel;
         }
 
@@ -71,6 +72,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 avgFrameTimeMs = report.statistics?.avgFrameTimeMs ?? 0,
                 p99FrameTimeMs = report.statistics?.p99FrameTimeMs ?? 0,
                 totalFrames = report.statistics?.totalFrames ?? 0,
+                score = report.analysis?.score ?? BenchmarkAnalysis.ComputeScore(report.statistics),
             };
 
             index.entries.Insert(0, entry); // newest first
@@ -178,6 +180,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                         avgFrameTimeMs = report.statistics?.avgFrameTimeMs ?? 0,
                         p99FrameTimeMs = report.statistics?.p99FrameTimeMs ?? 0,
                         totalFrames = report.statistics?.totalFrames ?? 0,
+                        score = report.analysis?.score ?? BenchmarkAnalysis.ComputeScore(report.statistics),
                     });
                 }
                 catch (Exception e)

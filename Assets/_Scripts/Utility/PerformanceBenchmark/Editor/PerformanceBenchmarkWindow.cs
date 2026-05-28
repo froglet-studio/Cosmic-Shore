@@ -1,10 +1,9 @@
 #if UNITY_EDITOR
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using CosmicShore.Utility;
+using CosmicShore.Utility; // GameDataSO
 using UnityEditor;
 using UnityEngine;
 
@@ -12,17 +11,31 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 {
     public class PerformanceBenchmarkWindow : EditorWindow
     {
-        // ── Tab state ───────────────────────────────────
-        enum Tab { Run, Sweep, History, Compare }
-        Tab activeTab = Tab.Run;
+        enum Tab { Collect, Sweep, History, Compare }
+        [SerializeField] Tab activeTab = Tab.Collect;
 
-        // ── Run tab ─────────────────────────────────────
-        BenchmarkConfigSO config;
-        BenchmarkDataSO benchmarkData;
-        PerformanceBenchmarkRunner activeRunner;
-        BenchmarkReport lastReport;
-        string lastReportPath;
-        bool showSettingsFoldout;
+        // ── Shared assets (serialized so they survive the play-mode domain reload) ──
+        [SerializeField] BenchmarkConfigSO config;
+        [SerializeField] BenchmarkHintRulesSO hintRules;
+        [SerializeField] GameDataSO gameData;
+
+        // ── Collect tab ─────────────────────────────────
+        [SerializeField] int sceneIndex;
+        [SerializeField] bool bootFromBootstrap;
+        [SerializeField] string collectTag = "";
+        string[] sceneDisplay = System.Array.Empty<string>();
+        string[] scenePaths = System.Array.Empty<string>();
+        PerformanceBenchmarkRunner collectRunner;
+        Vector2 collectScroll;
+
+        // ── Sweep tab ───────────────────────────────────
+        Vector2 sweepScroll;
+        List<(string name, bool include)> sweepScenes;
+        [SerializeField] string sweepTag = "sweep";
+        [SerializeField] bool sweepCaptureErrors = true;
+        [SerializeField] bool sweepErrorsOnly;
+        BenchmarkSweepRunner activeSweep;
+        readonly HashSet<int> sweepExpanded = new();
 
         // ── History tab ─────────────────────────────────
         Vector2 historyScroll;
@@ -37,77 +50,110 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         BenchmarkComparer.ComparisonResult comparisonResult;
         string comparisonText;
 
-        // ── Sweep tab ───────────────────────────────────
-        Vector2 sweepScroll;
-        List<(string name, bool include)> sweepScenes;
-        string sweepTag = "sweep";
-        GameDataSO sweepGameData;
-        BenchmarkSweepRunner activeSweep;
-
         [MenuItem("FrogletTools/Performance Benchmark", false, 20)]
         public static void Open()
         {
             var window = GetWindow<PerformanceBenchmarkWindow>("Performance Benchmark");
-            window.minSize = new Vector2(560, 420);
+            window.minSize = new Vector2(620, 520);
             window.Show();
         }
 
         void OnEnable()
         {
+            RefreshSceneList();
             RefreshHistory();
+        }
+
+        void Update()
+        {
+            // Re-acquire the live runner after the play-mode domain reload wiped our reference.
+            if (Application.isPlaying && collectRunner == null)
+                collectRunner = FindFirstObjectByType<PerformanceBenchmarkRunner>();
+
+            if ((collectRunner != null && collectRunner.IsRunning) ||
+                (activeSweep != null && activeSweep.IsSweeping))
+                Repaint();
         }
 
         void OnGUI()
         {
             DrawTabs();
-
             switch (activeTab)
             {
-                case Tab.Run: DrawRunTab(); break;
+                case Tab.Collect: DrawCollectTab(); break;
                 case Tab.Sweep: DrawSweepTab(); break;
                 case Tab.History: DrawHistoryTab(); break;
                 case Tab.Compare: DrawCompareTab(); break;
             }
         }
 
-        void Update()
-        {
-            if (activeRunner != null && activeRunner.IsRunning)
-                Repaint();
-            if (activeSweep != null && activeSweep.IsSweeping)
-                Repaint();
-        }
-
-        // ── Tabs ────────────────────────────────────────
-
         void DrawTabs()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            if (GUILayout.Toggle(activeTab == Tab.Run, "Run", EditorStyles.toolbarButton))
-                activeTab = Tab.Run;
-            if (GUILayout.Toggle(activeTab == Tab.Sweep, "Sweep", EditorStyles.toolbarButton))
-                activeTab = Tab.Sweep;
-            if (GUILayout.Toggle(activeTab == Tab.History, $"History ({historyEntries.Count})", EditorStyles.toolbarButton))
-                activeTab = Tab.History;
-            if (GUILayout.Toggle(activeTab == Tab.Compare, "Compare", EditorStyles.toolbarButton))
-                activeTab = Tab.Compare;
+            DrawTabButton(Tab.Collect, "Collect");
+            DrawTabButton(Tab.Sweep, "Sweep");
+            DrawTabButton(Tab.History, $"History ({historyEntries.Count})");
+            DrawTabButton(Tab.Compare, "Compare");
             EditorGUILayout.EndHorizontal();
         }
 
-        // ════════════════════════════════════════════════
-        // ── Run Tab ─────────────────────────────────────
-        // ════════════════════════════════════════════════
-
-        void DrawRunTab()
+        void DrawTabButton(Tab tab, string label)
         {
-            EditorGUILayout.Space(8);
+            bool on = activeTab == tab;
+            var prev = GUI.backgroundColor;
+            if (on) GUI.backgroundColor = EditorUIStyles.Sky;
+            if (GUILayout.Toggle(on, label, EditorStyles.toolbarButton) && !on)
+                activeTab = tab;
+            GUI.backgroundColor = prev;
+        }
 
-            // ── Config assignment ──────────────────────
-            config = (BenchmarkConfigSO)EditorGUILayout.ObjectField(
-                "Config", config, typeof(BenchmarkConfigSO), false);
+        // ════════════════════════════════════════════════
+        // ── Collect Tab ─────────────────────────────────
+        // ════════════════════════════════════════════════
 
-            benchmarkData = (BenchmarkDataSO)EditorGUILayout.ObjectField(
-                "Data Container (optional)", benchmarkData, typeof(BenchmarkDataSO), false);
+        void DrawCollectTab()
+        {
+            collectScroll = EditorGUILayout.BeginScrollView(collectScroll);
+            EditorGUILayout.Space(6);
+
+            EditorUIStyles.SectionHeader("Setup", EditorUIStyles.Sky);
+
+            config = (BenchmarkConfigSO)EditorGUILayout.ObjectField("Config", config, typeof(BenchmarkConfigSO), false);
+            if (config == null)
+            {
+                EditorGUILayout.HelpBox("No benchmark config assigned.", MessageType.Info);
+                if (GUILayout.Button("Create Default Config"))
+                    CreateDefaultConfig();
+                EditorGUILayout.EndScrollView();
+                return;
+            }
+
+            hintRules = (BenchmarkHintRulesSO)EditorGUILayout.ObjectField(
+                new GUIContent("Hint Rules (optional)", "Customizable rule set for actionable hints. Defaults used when empty."),
+                hintRules, typeof(BenchmarkHintRulesSO), false);
+            gameData = (GameDataSO)EditorGUILayout.ObjectField(
+                new GUIContent("Game Data (optional)", "When assigned, vessel/player counts are recorded."),
+                gameData, typeof(GameDataSO), false);
+
+            // Scene picker
+            if (sceneDisplay.Length == 0)
+            {
+                EditorGUILayout.HelpBox("No scenes in Build Settings. Add scenes via File > Build Settings.", MessageType.Warning);
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
+                sceneIndex = EditorGUILayout.Popup(new GUIContent("Scene to capture"), Mathf.Clamp(sceneIndex, 0, sceneDisplay.Length - 1), sceneDisplay);
+                if (GUILayout.Button("↻", GUILayout.Width(26))) RefreshSceneList();
+                EditorGUILayout.EndHorizontal();
+                bootFromBootstrap = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Boot from Bootstrap first",
+                        "On: the game boots through Bootstrap so networked scenes initialize (capture starts at boot). " +
+                        "Off: the chosen scene is loaded directly — best for self-contained scenes."),
+                    bootFromBootstrap);
+            }
+
+            DrawConfigSummary();
 
             using (new EditorGUI.DisabledScope(!Application.isPlaying))
             {
@@ -115,201 +161,236 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                     SpawnLiveHud();
             }
 
-            if (config == null)
-            {
-                EditorGUILayout.Space(8);
-                EditorGUILayout.HelpBox(
-                    "Getting started:\n" +
-                    "1. Right-click in Project > Create > CosmicShore > Tools > Benchmark Config\n" +
-                    "2. Drag the new asset into the Config slot above\n" +
-                    "3. Enter Play Mode and click 'Start Benchmark'\n\n" +
-                    "Every run is saved automatically. You can compare any two runs in the History tab.",
-                    MessageType.Info);
-                return;
-            }
-
-            // ── Settings foldout ───────────────────────
-            showSettingsFoldout = EditorGUILayout.Foldout(showSettingsFoldout, "Benchmark Settings", true);
-            if (showSettingsFoldout)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.LabelField("Warmup", $"{config.WarmupDuration}s  (scene stabilizes before measurement)");
-                EditorGUILayout.LabelField("Sample Duration", $"{config.SampleDuration}s  (how long to record)");
-                EditorGUILayout.LabelField("Label", string.IsNullOrEmpty(config.BenchmarkLabel) ? "(none — set one to identify this run)" : config.BenchmarkLabel);
-
-                EditorGUILayout.Space(2);
-                EditorGUILayout.LabelField("Capturing:", EditorStyles.miniBoldLabel);
-                DrawCaptureToggle("Rendering (draw calls, batches, triangles)", config.CaptureRenderingStats);
-                DrawCaptureToggle("Memory (heap size, GC allocations)", config.CaptureMemoryStats);
-                DrawCaptureToggle("Physics (active rigidbodies)", config.CapturePhysicsStats);
-                EditorGUI.indentLevel--;
-            }
-
             EditorGUILayout.Space(8);
+            EditorUIStyles.SectionHeader("Run", EditorUIStyles.Mint);
 
-            // ── Run / Progress ─────────────────────────
-            bool isPlaying = Application.isPlaying;
-
-            if (activeRunner != null && activeRunner.IsRunning)
+            bool running = collectRunner != null && collectRunner.IsRunning;
+            if (running)
             {
-                float progress = activeRunner.Progress;
+                string phase = collectRunner.IsWarmingUp ? "Warming up" : "Sampling";
                 var rect = EditorGUILayout.GetControlRect(false, 22);
-                EditorGUI.ProgressBar(rect, progress, $"Benchmarking... {progress * 100:F0}%");
-
-                if (benchmarkData != null && benchmarkData.IsSampling)
-                {
-                    EditorGUILayout.LabelField(
-                        $"  Frames captured: {benchmarkData.FramesCaptured}",
-                        EditorStyles.miniLabel);
-                }
-
-                EditorGUILayout.Space(4);
-                if (GUILayout.Button("Stop Early"))
-                    activeRunner.StopBenchmark();
+                EditorGUI.ProgressBar(rect, collectRunner.Progress, $"{phase}…  {collectRunner.Progress * 100:F0}%   ({collectRunner.FramesCaptured} frames)");
+                EditorGUILayout.Space(2);
+                if (GUILayout.Button("Stop Early")) collectRunner.StopBenchmark();
+            }
+            else if (!Application.isPlaying)
+            {
+                EditorGUILayout.HelpBox(
+                    "Start will enter Play Mode " +
+                    (bootFromBootstrap ? "via Bootstrap (game initializes; capture begins at boot)" : "with the chosen scene loaded directly") +
+                    ", then capture automatically. Open Unity's Profiler (Window > Analysis > Profiler) for the matching timeline.",
+                    MessageType.Info);
+                var prev = GUI.backgroundColor;
+                GUI.backgroundColor = EditorUIStyles.Mint;
+                if (GUILayout.Button("▶  Start Capture (enter Play)", GUILayout.Height(32)))
+                    StartCaptureViaPlay();
+                GUI.backgroundColor = prev;
             }
             else
             {
-                if (!isPlaying)
-                {
-                    EditorGUILayout.HelpBox(
-                        "Enter Play Mode to run a benchmark.\n" +
-                        "Tip: Open Unity's Profiler window (Window > Analysis > Profiler) alongside " +
-                        "this tool to see real-time counters under 'Scripts' module while the benchmark runs.",
-                        MessageType.Warning);
-                }
-
-                using (new EditorGUI.DisabledScope(!isPlaying))
-                {
-                    if (GUILayout.Button("Start Benchmark", GUILayout.Height(32)))
-                        StartBenchmarkInPlayMode();
-                }
+                EditorGUILayout.HelpBox("Already in Play Mode. Capture the scene that's running right now:", MessageType.None);
+                if (GUILayout.Button("●  Capture Current Scene Now", GUILayout.Height(28)))
+                    StartCaptureInCurrentPlay();
             }
 
-            // ── Last result summary ────────────────────
-            if (lastReport?.statistics != null)
-            {
-                EditorGUILayout.Space(12);
-                DrawHealthGrade(lastReport.statistics);
+            // Results
+            var report = collectRunner != null ? collectRunner.LastReport : null;
+            if (report?.statistics != null && report.statistics.totalFrames > 0)
+                DrawResults(report);
+            else if (report?.statistics != null)
+                EditorGUILayout.HelpBox("No data captured (the run was too short or interrupted).", MessageType.Warning);
 
-                EditorGUILayout.Space(4);
-                EditorGUILayout.LabelField("Last Run Results", EditorStyles.boldLabel);
-                DrawStatsSummary(lastReport.statistics);
-
-                EditorGUILayout.Space(4);
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("View in History"))
-                {
-                    RefreshHistory();
-                    activeTab = Tab.History;
-                }
-                if (!string.IsNullOrEmpty(lastReportPath) && GUILayout.Button("Open JSON File"))
-                    EditorUtility.RevealInFinder(lastReportPath);
-                EditorGUILayout.EndHorizontal();
-            }
+            EditorGUILayout.EndScrollView();
         }
 
-        void DrawCaptureToggle(string label, bool enabled)
-        {
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(enabled ? "  [x]" : "  [ ]", GUILayout.Width(30));
-            EditorGUILayout.LabelField(label, EditorStyles.miniLabel);
-            EditorGUILayout.EndHorizontal();
-        }
-
-        void DrawHealthGrade(BenchmarkStatistics stats)
-        {
-            // Grade thresholds live in the shared BenchmarkGrade helper so the editor and the
-            // multi-scene sweep agree. Only the colour mapping is editor-side.
-            string grade = BenchmarkGrade.Evaluate(stats, out string explanation);
-            Color gradeColor = grade switch
-            {
-                "A" => new Color(0.2f, 0.8f, 0.3f),
-                "B" => new Color(0.5f, 0.8f, 0.2f),
-                "C" => new Color(0.9f, 0.75f, 0.1f),
-                "D" => new Color(0.9f, 0.4f, 0.1f),
-                _ => new Color(0.85f, 0.2f, 0.2f),
-            };
-
-            var rect = EditorGUILayout.GetControlRect(false, 36);
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, rect.height), new Color(gradeColor.r, gradeColor.g, gradeColor.b, 0.15f));
-
-            var gradeStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 22, alignment = TextAnchor.MiddleLeft };
-            gradeStyle.normal.textColor = gradeColor;
-            EditorGUI.LabelField(new Rect(rect.x + 8, rect.y, 40, rect.height), grade, gradeStyle);
-
-            var explStyle = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleLeft };
-            EditorGUI.LabelField(new Rect(rect.x + 48, rect.y, rect.width - 56, rect.height), explanation, explStyle);
-        }
-
-        void DrawStatsSummary(BenchmarkStatistics stats)
+        void DrawConfigSummary()
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-
-            DrawStatRow("Avg FPS", $"{stats.avgFps:F1}", "Higher is better. Target: 60 for mobile.");
-            DrawStatRow("Worst 1% FPS", $"{stats.p1Fps:F1}", "FPS during the worst spikes. Below 30 = visible stutter.");
-            DrawStatRow("Avg Frame Time", $"{stats.avgFrameTimeMs:F2} ms", "Time per frame. 16.7ms = 60fps, 33.3ms = 30fps.");
-            DrawStatRow("Worst 1% Frame Time", $"{stats.p99FrameTimeMs:F2} ms", "Frame time during the worst spikes.");
-            DrawStatRow("Stability (StdDev)", $"{stats.stdDevFrameTimeMs:F2} ms", "Lower = more consistent. Above 5ms = noticeable hitching.");
-
-            if (stats.avgDrawCalls > 0)
-            {
-                EditorGUILayout.Space(2);
-                DrawStatRow("Draw Calls", $"{stats.avgDrawCalls:F0}", "GPU commands per frame. Lower is better.");
-                DrawStatRow("Batches", $"{stats.avgBatches:F0}", "Grouped draw calls. Lower = better batching.");
-                DrawStatRow("Triangles", $"{stats.avgTriangles:F0}", "Total scene geometry per frame.");
-            }
-
-            if (stats.peakAllocatedMemory > 0)
-            {
-                EditorGUILayout.Space(2);
-                DrawStatRow("Peak Memory", $"{stats.peakAllocatedMemory / (1024f * 1024f):F1} MB", "Maximum memory used during the run.");
-                DrawStatRow("GC Allocations", $"{stats.totalGcAllocated / (1024f * 1024f):F2} MB", "Total garbage created. Causes stutter when collected.");
-            }
-
+            EditorGUILayout.LabelField($"Warmup {config.WarmupDuration:F0}s · Sample {config.SampleDuration:F0}s · " +
+                $"Capturing: {(config.CaptureRenderingStats ? "render " : "")}{(config.CaptureMemoryStats ? "memory " : "")}" +
+                $"{(config.CapturePhysicsStats ? "physics " : "")}{(config.CaptureGameLoadStats ? "load" : "")}",
+                EditorStyles.miniLabel);
             EditorGUILayout.EndVertical();
         }
 
-        void DrawStatRow(string label, string value, string tooltip)
+        void DrawResults(BenchmarkReport report)
         {
+            var s = report.statistics;
+            var analysis = report.analysis;
+
+            EditorGUILayout.Space(8);
+            EditorUIStyles.SectionHeader("Results", EditorUIStyles.Lavender);
+
+            int score = analysis?.score ?? BenchmarkAnalysis.ComputeScore(s);
+            string grade = BenchmarkGrade.Evaluate(s, out string explanation);
+            EditorUIStyles.ScoreBar(score, $"Score {score}/100   ·   Grade {grade} — {explanation}");
+
+            EditorGUILayout.Space(2);
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent(label, tooltip), GUILayout.Width(160));
-            EditorGUILayout.LabelField(value, EditorStyles.boldLabel);
+            EditorUIStyles.Badge($"Grade {grade}", EditorUIStyles.ForGrade(grade), 80);
+            if (analysis != null) EditorUIStyles.Badge(analysis.boundVerdict, EditorUIStyles.Slate, 110);
+            if (analysis != null && analysis.isBlocked) EditorUIStyles.Badge("BLOCKERS", EditorUIStyles.Rose, 90);
+            GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
-        }
 
-        void StartBenchmarkInPlayMode()
-        {
-            activeRunner = FindFirstObjectByType<PerformanceBenchmarkRunner>();
+            // Core stats
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorUIStyles.StatRow("Avg FPS", $"{s.avgFps:F1}", "Higher is better. Target 60.");
+            EditorUIStyles.StatRow("Worst 1% FPS", $"{s.p1Fps:F1}", "FPS during the worst spikes.");
+            EditorUIStyles.StatRow("Avg Frame Time", $"{s.avgFrameTimeMs:F2} ms", "16.7ms = 60fps, 33.3ms = 30fps.");
+            EditorUIStyles.StatRow("P99 Frame Time", $"{s.p99FrameTimeMs:F2} ms", "Worst-1% frame time.");
+            EditorUIStyles.StatRow("Stability (StdDev)", $"{s.stdDevFrameTimeMs:F2} ms", "Lower = smoother. >6ms = hitching.");
+            EditorGUILayout.EndVertical();
 
-            if (activeRunner == null)
+            // CPU / GPU
+            if (s.avgCpuFrameTimeMs > 0.001f || s.avgGpuFrameTimeMs > 0.001f)
             {
-                var go = new GameObject("[PerformanceBenchmarkRunner]");
-                activeRunner = go.AddComponent<PerformanceBenchmarkRunner>();
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorUIStyles.StatRow("CPU Frame Time", $"{s.avgCpuFrameTimeMs:F2} ms  (max {s.maxCpuFrameTimeMs:F1})", "Main + render thread CPU time.");
+                EditorUIStyles.StatRow("GPU Frame Time", $"{s.avgGpuFrameTimeMs:F2} ms  (max {s.maxGpuFrameTimeMs:F1})", "GPU time (0 if platform can't report it).");
+                EditorGUILayout.EndVertical();
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("CPU/GPU split unavailable — enable 'Frame Timing Stats' in Player Settings (Start does this for you next run).", MessageType.None);
             }
 
-            var so = new SerializedObject(activeRunner);
-            so.FindProperty("config").objectReferenceValue = config;
-            so.FindProperty("benchmarkData").objectReferenceValue = benchmarkData;
-            so.ApplyModifiedProperties();
+            // Rendering + memory
+            if (s.avgDrawCalls > 0 || s.peakAllocatedMemory > 0)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                if (s.avgDrawCalls > 0)
+                {
+                    EditorUIStyles.StatRow("Draw Calls", $"{s.avgDrawCalls:F0}", "Lower is better.");
+                    EditorUIStyles.StatRow("Batches / Tris", $"{s.avgBatches:F0} / {s.avgTriangles:F0}");
+                }
+                if (s.peakAllocatedMemory > 0)
+                {
+                    EditorUIStyles.StatRow("Peak Memory", $"{s.peakAllocatedMemory / (1024f * 1024f):F1} MB");
+                    EditorUIStyles.StatRow("GC Total", $"{s.totalGcAllocated / (1024f * 1024f):F2} MB", "Total garbage created during the run.");
+                }
+                if (s.avgActivePrisms > 0 || s.peakActiveExplosions > 0)
+                    EditorUIStyles.StatRow("Load", $"prisms {s.avgActivePrisms:F0} (peak {s.peakActivePrisms}), VFX peak {s.peakActiveExplosions}/{s.peakActiveImplosions}");
+                EditorGUILayout.EndVertical();
+            }
 
-            if (benchmarkData != null && benchmarkData.OnBenchmarkCompleted != null)
-                benchmarkData.OnBenchmarkCompleted.OnRaised += OnRunFinishedSOAP;
-
-            activeRunner.StartBenchmark();
+            DrawHints(analysis);
+            DrawSpikes(report.spikes);
+            DrawSaveTag(report);
         }
 
-        void OnRunFinishedSOAP(BenchmarkStateData stateData)
+        void DrawHints(BenchmarkAnalysisResult analysis)
         {
-            lastReportPath = stateData.ReportFilePath;
+            if (analysis == null || analysis.hints == null || analysis.hints.Count == 0)
+            {
+                EditorGUILayout.HelpBox("No issues flagged. 🎉", MessageType.None);
+                return;
+            }
 
-            if (!string.IsNullOrEmpty(lastReportPath))
-                lastReport = BenchmarkReport.LoadFromFile(lastReportPath);
+            EditorGUILayout.Space(4);
+            EditorUIStyles.SectionHeader($"Hints ({analysis.hints.Count})", EditorUIStyles.Peach);
 
-            if (benchmarkData != null && benchmarkData.OnBenchmarkCompleted != null)
-                benchmarkData.OnBenchmarkCompleted.OnRaised -= OnRunFinishedSOAP;
+            foreach (var h in analysis.hints.OrderByDescending(h => (int)h.severity))
+            {
+                var rect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorUIStyles.TintLastRect(rect, EditorUIStyles.ForSeverity(h.severity), 0.14f);
 
-            RefreshHistory();
-            Repaint();
+                EditorGUILayout.BeginHorizontal();
+                EditorUIStyles.Badge(h.severity.ToString(), EditorUIStyles.ForSeverity(h.severity), 70);
+                EditorGUILayout.LabelField(h.title, EditorStyles.boldLabel);
+                EditorGUILayout.EndHorizontal();
+
+                if (!string.IsNullOrEmpty(h.finding))
+                    EditorGUILayout.LabelField(h.finding, EditorUIStyles.Wrap);
+                if (!string.IsNullOrEmpty(h.matchedMarker))
+                    EditorGUILayout.LabelField($"Marker: {h.matchedMarker}", EditorStyles.miniLabel);
+                if (!string.IsNullOrEmpty(h.fixAdvice))
+                    EditorGUILayout.LabelField($"Fix: {h.fixAdvice}", EditorUIStyles.Wrap);
+
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.Space(2);
+            }
+        }
+
+        void DrawSpikes(List<SpikeEntry> spikes)
+        {
+            if (spikes == null || spikes.Count == 0) return;
+
+            EditorGUILayout.Space(4);
+            EditorUIStyles.SectionHeader($"Top Spikes ({spikes.Count})", EditorUIStyles.Rose);
+
+            foreach (var spike in spikes.OrderByDescending(sp => sp.frameTimeMs).Take(6))
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                string cpuGpu = (spike.cpuFrameTimeMs > 0.001f || spike.gpuFrameTimeMs > 0.001f)
+                    ? $"  (CPU {spike.cpuFrameTimeMs:F1} / GPU {spike.gpuFrameTimeMs:F1})" : "";
+                EditorGUILayout.LabelField($"Frame {spike.frameIndex}: {spike.frameTimeMs:F1} ms{cpuGpu}", EditorStyles.boldLabel);
+                if (spike.topMarkers != null && spike.topMarkers.Count > 0)
+                {
+                    foreach (var m in spike.topMarkers)
+                        EditorGUILayout.LabelField($"   • {m.name} — {m.ms:F2} ms", EditorStyles.miniLabel);
+                }
+                else
+                {
+                    EditorGUILayout.LabelField("   (no marker data — was the Profiler enabled?)", EditorStyles.miniLabel);
+                }
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.Space(2);
+            }
+        }
+
+        void DrawSaveTag(BenchmarkReport report)
+        {
+            EditorGUILayout.Space(6);
+            EditorGUILayout.BeginHorizontal();
+
+            bool saved = collectRunner != null && !string.IsNullOrEmpty(collectRunner.LastReportPath);
+            using (new EditorGUI.DisabledScope(saved || collectRunner == null))
+            {
+                var prev = GUI.backgroundColor;
+                GUI.backgroundColor = EditorUIStyles.Mint;
+                if (GUILayout.Button(saved ? "Saved ✓" : "Save to History", GUILayout.Height(24)))
+                {
+                    collectRunner.SaveLastReport();
+                    RefreshHistory();
+                }
+                GUI.backgroundColor = prev;
+            }
+
+            using (new EditorGUI.DisabledScope(!saved))
+            {
+                collectTag = EditorGUILayout.TextField(collectTag, GUILayout.Width(120));
+                if (GUILayout.Button("Tag", GUILayout.Width(50)))
+                {
+                    BenchmarkHistory.TagReport(report.reportId, collectTag, GetOutputFolder());
+                    RefreshHistory();
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (!saved && Application.isPlaying)
+                EditorGUILayout.HelpBox("Save before leaving Play Mode to keep this run.", MessageType.None);
+        }
+
+        void StartCaptureViaPlay()
+        {
+            string scenePath = (!bootFromBootstrap && scenePaths.Length > 0)
+                ? scenePaths[Mathf.Clamp(sceneIndex, 0, scenePaths.Length - 1)]
+                : null;
+            collectRunner = null;
+            BenchmarkAutoStart.RequestCaptureOnPlay(config, hintRules, gameData, scenePath, bootFromBootstrap);
+        }
+
+        void StartCaptureInCurrentPlay()
+        {
+            collectRunner = FindFirstObjectByType<PerformanceBenchmarkRunner>();
+            if (collectRunner == null)
+                collectRunner = new GameObject("[PerformanceBenchmarkRunner]").AddComponent<PerformanceBenchmarkRunner>();
+
+            SpikeAnalyzer.SetProfilerEnabled(true);
+            collectRunner.Configure(config, null, gameData, hintRules);
+            collectRunner.AutoSave = false;
+            collectRunner.StartBenchmark();
         }
 
         void SpawnLiveHud()
@@ -319,10 +400,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 Debug.Log("[Benchmark] Live HUD overlay already present — press F9 in the Game view to toggle.");
                 return;
             }
-
-            var go = new GameObject("[BenchmarkHUDOverlay]");
-            go.AddComponent<BenchmarkHUDOverlay>();
+            new GameObject("[BenchmarkHUDOverlay]").AddComponent<BenchmarkHUDOverlay>();
             Debug.Log("[Benchmark] Live HUD overlay spawned — press F9 in the Game view to show/hide it.");
+        }
+
+        void CreateDefaultConfig()
+        {
+            const string root = "Assets/_SO_Assets";
+            const string dir = root + "/Benchmark";
+            const string path = dir + "/BenchmarkConfig.asset";
+
+            config = AssetDatabase.LoadAssetAtPath<BenchmarkConfigSO>(path);
+            if (config != null) return;
+
+            if (!AssetDatabase.IsValidFolder(root)) AssetDatabase.CreateFolder("Assets", "_SO_Assets");
+            if (!AssetDatabase.IsValidFolder(dir)) AssetDatabase.CreateFolder(root, "Benchmark");
+
+            config = CreateInstance<BenchmarkConfigSO>();
+            AssetDatabase.CreateAsset(config, path);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Benchmark] Created default config at {path}");
         }
 
         // ════════════════════════════════════════════════
@@ -331,133 +428,118 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         void DrawSweepTab()
         {
-            EditorGUILayout.Space(8);
+            EditorGUILayout.Space(6);
+            EditorUIStyles.SectionHeader("Multi-Scene Sweep", EditorUIStyles.Sky);
 
-            config = (BenchmarkConfigSO)EditorGUILayout.ObjectField(
-                "Config", config, typeof(BenchmarkConfigSO), false);
-            benchmarkData = (BenchmarkDataSO)EditorGUILayout.ObjectField(
-                "Data Container (optional)", benchmarkData, typeof(BenchmarkDataSO), false);
-            sweepGameData = (GameDataSO)EditorGUILayout.ObjectField(
-                "Game Data (optional)", sweepGameData, typeof(GameDataSO), false);
+            config = (BenchmarkConfigSO)EditorGUILayout.ObjectField("Config", config, typeof(BenchmarkConfigSO), false);
+            gameData = (GameDataSO)EditorGUILayout.ObjectField("Game Data (optional)", gameData, typeof(GameDataSO), false);
             sweepTag = EditorGUILayout.TextField("Sweep Tag", sweepTag);
 
-            if (config == null)
+            EditorGUILayout.BeginHorizontal();
+            sweepCaptureErrors = EditorGUILayout.ToggleLeft("Capture errors", sweepCaptureErrors, GUILayout.Width(140));
+            sweepErrorsOnly = EditorGUILayout.ToggleLeft(new GUIContent("Errors only (fast scan)", "Skip the full benchmark; just load each scene briefly and catch errors."), sweepErrorsOnly);
+            EditorGUILayout.EndHorizontal();
+
+            if (config == null && !sweepErrorsOnly)
             {
-                EditorGUILayout.Space(8);
-                EditorGUILayout.HelpBox(
-                    "Assign a Benchmark Config to run a multi-scene sweep.\n\n" +
-                    "A sweep loads each selected scene in turn, benchmarks it with the same " +
-                    "config, and tags every run so you can find them together in History.\n\n" +
-                    "Note: scenes are loaded directly. Self-contained scenes (Menu_Main, " +
-                    "single-player minigames) sweep faithfully; networked game scenes that need " +
-                    "the Bootstrap → host → spawn pipeline will benchmark in an uninitialized state.",
-                    MessageType.Info);
-                return;
+                EditorGUILayout.HelpBox("Assign a Benchmark Config (or use 'Errors only').", MessageType.Info);
             }
 
             EnsureSweepScenesPopulated();
 
-            EditorGUILayout.Space(6);
+            EditorGUILayout.Space(4);
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Scenes to benchmark (from Build Settings)", EditorStyles.boldLabel);
-            if (GUILayout.Button("Refresh List", GUILayout.Width(95)))
-                PopulateSweepScenes();
+            EditorGUILayout.LabelField("Scenes (from Build Settings)", EditorStyles.boldLabel);
+            if (GUILayout.Button("Refresh", GUILayout.Width(80))) PopulateSweepScenes();
+            if (GUILayout.Button("All", GUILayout.Width(44))) SetAllSweep(true);
+            if (GUILayout.Button("None", GUILayout.Width(50))) SetAllSweep(false);
             EditorGUILayout.EndHorizontal();
 
-            if (sweepScenes.Count == 0)
+            sweepScroll = EditorGUILayout.BeginScrollView(sweepScroll, GUILayout.MaxHeight(150));
+            for (int i = 0; i < sweepScenes.Count; i++)
             {
-                EditorGUILayout.HelpBox(
-                    "No scenes found in Build Settings. Add scenes via File > Build Settings.",
-                    MessageType.Warning);
+                bool inc = EditorGUILayout.ToggleLeft(sweepScenes[i].name, sweepScenes[i].include);
+                if (inc != sweepScenes[i].include) sweepScenes[i] = (sweepScenes[i].name, inc);
             }
-            else
-            {
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("All", GUILayout.Width(50))) SetAllSweep(true);
-                if (GUILayout.Button("None", GUILayout.Width(50))) SetAllSweep(false);
-                EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndScrollView();
 
-                sweepScroll = EditorGUILayout.BeginScrollView(sweepScroll, GUILayout.MaxHeight(180));
-                for (int i = 0; i < sweepScenes.Count; i++)
-                {
-                    bool newInclude = EditorGUILayout.ToggleLeft(sweepScenes[i].name, sweepScenes[i].include);
-                    if (newInclude != sweepScenes[i].include)
-                        sweepScenes[i] = (sweepScenes[i].name, newInclude);
-                }
-                EditorGUILayout.EndScrollView();
-            }
-
-            EditorGUILayout.Space(8);
-
-            bool isPlaying = Application.isPlaying;
+            EditorGUILayout.Space(6);
             bool sweepRunning = activeSweep != null && activeSweep.IsSweeping;
-
             if (sweepRunning)
             {
-                float p = activeSweep.TotalScenes > 0
-                    ? (float)activeSweep.CurrentIndex / activeSweep.TotalScenes
-                    : 0f;
+                float p = activeSweep.TotalScenes > 0 ? (float)activeSweep.CurrentIndex / activeSweep.TotalScenes : 0f;
                 var rect = EditorGUILayout.GetControlRect(false, 22);
-                EditorGUI.ProgressBar(rect, p,
-                    $"Sweeping {activeSweep.CurrentIndex + 1}/{activeSweep.TotalScenes}: {activeSweep.CurrentScene}");
+                EditorGUI.ProgressBar(rect, p, $"Sweeping {activeSweep.CurrentIndex + 1}/{activeSweep.TotalScenes}: {activeSweep.CurrentScene}");
             }
             else
             {
-                if (!isPlaying)
+                if (!Application.isPlaying)
+                    EditorGUILayout.HelpBox("Enter Play Mode (ideally from Bootstrap) to run a sweep.", MessageType.Warning);
+                using (new EditorGUI.DisabledScope(!Application.isPlaying || (config == null && !sweepErrorsOnly)))
                 {
-                    EditorGUILayout.HelpBox(
-                        "Enter Play Mode (ideally starting from the Bootstrap scene) to run a sweep.",
-                        MessageType.Warning);
-                }
-
-                using (new EditorGUI.DisabledScope(!isPlaying))
-                {
-                    if (GUILayout.Button("Start Sweep", GUILayout.Height(30)))
+                    var prev = GUI.backgroundColor;
+                    GUI.backgroundColor = EditorUIStyles.Mint;
+                    if (GUILayout.Button(sweepErrorsOnly ? "Run Error Scan" : "Start Sweep", GUILayout.Height(28)))
                         StartSweep();
+                    GUI.backgroundColor = prev;
                 }
             }
 
-            // ── Results ────────────────────────────────
-            if (activeSweep != null && activeSweep.Results.Count > 0)
-            {
-                EditorGUILayout.Space(8);
-                EditorGUILayout.LabelField(
-                    activeSweep.IsComplete ? "Sweep Results" : "Sweep Progress",
-                    EditorStyles.boldLabel);
+            DrawSweepResults();
+        }
 
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                foreach (var r in activeSweep.Results)
+        void DrawSweepResults()
+        {
+            if (activeSweep == null || activeSweep.Results.Count == 0) return;
+
+            EditorGUILayout.Space(6);
+            EditorUIStyles.SectionHeader(activeSweep.IsComplete ? "Sweep Results" : "Sweep Progress", EditorUIStyles.Lavender);
+
+            for (int i = 0; i < activeSweep.Results.Count; i++)
+            {
+                var r = activeSweep.Results[i];
+                var rect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                if (r.errorCount > 0) EditorUIStyles.TintLastRect(rect, EditorUIStyles.Rose, 0.14f);
+
+                EditorGUILayout.BeginHorizontal();
+                if (!r.loaded) EditorUIStyles.Badge("SKIP", EditorUIStyles.Slate, 54);
+                else if (!sweepErrorsOnly) EditorUIStyles.Badge(r.grade, EditorUIStyles.ForGrade(r.grade), 40);
+                else EditorUIStyles.Badge(r.errorCount > 0 ? "ERR" : "OK", r.errorCount > 0 ? EditorUIStyles.Rose : EditorUIStyles.Mint, 54);
+
+                string stat = (!sweepErrorsOnly && r.loaded) ? $"{r.avgFps:F1} fps (p99 {r.p99FrameTimeMs:F1}ms)" : "";
+                EditorGUILayout.LabelField($"{r.sceneName}   {stat}");
+                if (r.errorCount > 0)
                 {
-                    if (!r.loaded)
+                    var prev = GUI.backgroundColor;
+                    GUI.backgroundColor = EditorUIStyles.Rose;
+                    if (GUILayout.Button($"⚠ {r.errorCount}", EditorStyles.miniButton, GUILayout.Width(50)))
                     {
-                        EditorGUILayout.LabelField($"[skip] {r.sceneName} (not loadable)", EditorStyles.miniLabel);
-                        continue;
+                        if (!sweepExpanded.Add(i)) sweepExpanded.Remove(i);
                     }
-                    EditorGUILayout.LabelField(
-                        $"[{r.grade}] {r.sceneName}:  {r.avgFps:F1} fps  (p1 {r.p1Fps:F1}, p99 {r.p99FrameTimeMs:F1} ms)",
-                        EditorStyles.miniLabel);
+                    GUI.backgroundColor = prev;
+                }
+                EditorGUILayout.EndHorizontal();
+
+                if (r.errorCount > 0 && sweepExpanded.Contains(i) && r.errorMessages != null)
+                {
+                    foreach (var msg in r.errorMessages)
+                        EditorGUILayout.LabelField(msg, EditorUIStyles.Wrap);
                 }
                 EditorGUILayout.EndVertical();
+            }
 
-                if (activeSweep.IsComplete)
-                {
-                    EditorGUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Copy Summary"))
-                        GUIUtility.systemCopyBuffer = activeSweep.CombinedSummary;
-                    if (GUILayout.Button("View in History"))
-                    {
-                        RefreshHistory();
-                        activeTab = Tab.History;
-                    }
-                    EditorGUILayout.EndHorizontal();
-                }
+            if (activeSweep.IsComplete)
+            {
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("Copy Summary")) GUIUtility.systemCopyBuffer = activeSweep.CombinedSummary;
+                if (GUILayout.Button("View in History")) { RefreshHistory(); activeTab = Tab.History; }
+                EditorGUILayout.EndHorizontal();
             }
         }
 
         void EnsureSweepScenesPopulated()
         {
-            if (sweepScenes == null)
-                PopulateSweepScenes();
+            if (sweepScenes == null) PopulateSweepScenes();
         }
 
         void PopulateSweepScenes()
@@ -466,8 +548,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             foreach (var scene in EditorBuildSettings.scenes)
             {
                 if (!scene.enabled) continue;
-                string name = Path.GetFileNameWithoutExtension(scene.path);
-                sweepScenes.Add((name, true));
+                sweepScenes.Add((Path.GetFileNameWithoutExtension(scene.path), true));
             }
         }
 
@@ -479,17 +560,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         void StartSweep()
         {
-            var selected = new List<string>();
-            foreach (var (name, include) in sweepScenes)
-                if (include) selected.Add(name);
+            var selected = sweepScenes.Where(s => s.include).Select(s => s.name).ToList();
+            if (selected.Count == 0) { Debug.LogWarning("[Benchmark] No scenes selected for the sweep."); return; }
 
-            if (selected.Count == 0)
-            {
-                Debug.LogWarning("[Benchmark] No scenes selected for the sweep.");
-                return;
-            }
-
-            activeSweep = BenchmarkSweepRunner.StartSweep(selected, config, benchmarkData, sweepGameData, sweepTag);
+            if (sweepCaptureErrors || sweepErrorsOnly) SpikeAnalyzer.SetProfilerEnabled(true);
+            sweepExpanded.Clear();
+            activeSweep = BenchmarkSweepRunner.StartSweep(selected, config, null, gameData, sweepTag, sweepCaptureErrors, sweepErrorsOnly);
         }
 
         // ════════════════════════════════════════════════
@@ -498,41 +574,29 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         void DrawHistoryTab()
         {
-            EditorGUILayout.Space(8);
+            EditorGUILayout.Space(6);
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Benchmark History", EditorStyles.boldLabel);
-            if (GUILayout.Button("Refresh", GUILayout.Width(60)))
-                RefreshHistory();
-            if (GUILayout.Button("Rebuild Index", GUILayout.Width(95)))
+            EditorUIStyles.SectionHeader("Benchmark History", EditorUIStyles.Sky);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Refresh", GUILayout.Width(70))) RefreshHistory();
+            if (GUILayout.Button("Rebuild Index", GUILayout.Width(110)))
             {
-                int count = BenchmarkHistory.RebuildIndex(GetOutputFolder());
+                BenchmarkHistory.RebuildIndex(GetOutputFolder());
                 RefreshHistory();
-                Debug.Log($"[Benchmark] Index rebuilt: {count} reports found.");
             }
             EditorGUILayout.EndHorizontal();
 
             if (historyEntries.Count == 0)
             {
-                EditorGUILayout.HelpBox(
-                    "No benchmark snapshots yet.\n\n" +
-                    "Every time you run a benchmark from the Run tab, the results are automatically " +
-                    "saved here. You can then tag runs (e.g., 'baseline', 'after-optimization') " +
-                    "and compare any two runs side-by-side in the Compare tab.",
-                    MessageType.Info);
+                EditorGUILayout.HelpBox("No saved runs yet. Capture a run in the Collect tab and press Save.", MessageType.Info);
                 return;
             }
 
-            EditorGUILayout.LabelField($"{historyEntries.Count} snapshots saved", EditorStyles.miniLabel);
-            EditorGUILayout.Space(4);
-
             historyScroll = EditorGUILayout.BeginScrollView(historyScroll);
-
             for (int i = 0; i < historyEntries.Count; i++)
-            {
-                var e = historyEntries[i];
-                DrawHistoryEntry(e, i);
-            }
-
+                DrawHistoryEntry(historyEntries[i], i);
             EditorGUILayout.EndScrollView();
         }
 
@@ -540,87 +604,52 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            // ── Header row: label + tag + branch ──────
             EditorGUILayout.BeginHorizontal();
-
-            string displayLabel = string.IsNullOrEmpty(e.label) ? "(untitled)" : e.label;
-            EditorGUILayout.LabelField(displayLabel, EditorStyles.boldLabel, GUILayout.Width(140));
-
-            if (!string.IsNullOrEmpty(e.tag))
-            {
-                var prevBg = GUI.backgroundColor;
-                GUI.backgroundColor = new Color(0.3f, 0.6f, 1f);
-                GUILayout.Label(e.tag, EditorStyles.miniButton, GUILayout.Width(80));
-                GUI.backgroundColor = prevBg;
-            }
-
+            EditorUIStyles.Badge(e.score.ToString(), EditorUIStyles.ForScore(e.score), 40);
+            EditorGUILayout.LabelField(string.IsNullOrEmpty(e.label) ? "(untitled)" : e.label, EditorStyles.boldLabel, GUILayout.Width(140));
+            if (!string.IsNullOrEmpty(e.tag)) EditorUIStyles.Badge(e.tag, EditorUIStyles.Lavender, 80);
             GUILayout.FlexibleSpace();
             EditorGUILayout.LabelField($"{e.gitBranch}/{e.gitCommitHash}", EditorStyles.miniLabel, GUILayout.Width(180));
             EditorGUILayout.EndHorizontal();
 
-            // ── Stats row ─────────────────────────────
             string date = e.timestamp?.Length > 19 ? e.timestamp[..19].Replace("T", " ") : e.timestamp ?? "?";
             EditorGUILayout.LabelField(
-                $"{date}  |  {e.sceneName}  |  {e.totalFrames} frames  |  " +
-                $"FPS: {e.avgFps:F1} (p1: {e.p1Fps:F1})  |  Frame: {e.avgFrameTimeMs:F1}ms (p99: {e.p99FrameTimeMs:F1}ms)",
+                $"{date}  |  {e.sceneName}  |  {e.totalFrames} frames  |  FPS {e.avgFps:F1} (p1 {e.p1Fps:F1})  |  {e.avgFrameTimeMs:F1}ms (p99 {e.p99FrameTimeMs:F1})",
                 EditorStyles.miniLabel);
 
-            // ── Action row ────────────────────────────
             EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Baseline", GUILayout.Width(70))) { baselineIndex = index; TryCompare(); activeTab = Tab.Compare; }
+            if (GUILayout.Button("Current", GUILayout.Width(64))) { currentIndex = index; TryCompare(); activeTab = Tab.Compare; }
 
-            if (GUILayout.Button("Baseline", GUILayout.Width(65)))
-            {
-                baselineIndex = index;
-                TryCompare();
-                activeTab = Tab.Compare;
-            }
-            if (GUILayout.Button("Current", GUILayout.Width(60)))
-            {
-                currentIndex = index;
-                TryCompare();
-                activeTab = Tab.Compare;
-            }
-
-            // Tag editing
             if (tagEditId == e.reportId)
             {
                 tagEditValue = EditorGUILayout.TextField(tagEditValue, GUILayout.Width(80));
-                if (GUILayout.Button("Save", GUILayout.Width(40)))
+                if (GUILayout.Button("Save", GUILayout.Width(44)))
                 {
                     BenchmarkHistory.TagReport(e.reportId, tagEditValue, GetOutputFolder());
                     tagEditId = null;
                     RefreshHistory();
                 }
-                if (GUILayout.Button("X", GUILayout.Width(20)))
-                    tagEditId = null;
+                if (GUILayout.Button("X", GUILayout.Width(22))) tagEditId = null;
             }
-            else
+            else if (GUILayout.Button("Tag", GUILayout.Width(40)))
             {
-                if (GUILayout.Button("Tag", GUILayout.Width(35)))
-                {
-                    tagEditId = e.reportId;
-                    tagEditValue = e.tag ?? "";
-                }
+                tagEditId = e.reportId;
+                tagEditValue = e.tag ?? "";
             }
 
             GUILayout.FlexibleSpace();
-
-            if (GUILayout.Button("JSON", GUILayout.Width(40)))
+            if (GUILayout.Button("JSON", GUILayout.Width(46)) && File.Exists(e.filePath))
+                EditorUtility.RevealInFinder(e.filePath);
+            if (GUILayout.Button("Del", GUILayout.Width(36)))
             {
-                if (File.Exists(e.filePath))
-                    EditorUtility.RevealInFinder(e.filePath);
-            }
-            if (GUILayout.Button("Del", GUILayout.Width(30)))
-            {
-                if (EditorUtility.DisplayDialog("Delete Snapshot",
-                    $"Delete benchmark snapshot \"{e.label}\" ({e.timestamp})?", "Delete", "Cancel"))
+                if (EditorUtility.DisplayDialog("Delete Snapshot", $"Delete \"{e.label}\" ({e.timestamp})?", "Delete", "Cancel"))
                 {
                     BenchmarkHistory.RemoveEntry(e.reportId, GetOutputFolder());
                     RefreshHistory();
                     GUIUtility.ExitGUI();
                 }
             }
-
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space(2);
@@ -632,41 +661,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         void DrawCompareTab()
         {
-            EditorGUILayout.Space(8);
-            EditorGUILayout.LabelField("Compare Two Snapshots", EditorStyles.boldLabel);
+            EditorGUILayout.Space(6);
+            EditorUIStyles.SectionHeader("Compare Two Runs (before / after)", EditorUIStyles.Sky);
 
             if (historyEntries.Count < 2)
             {
                 EditorGUILayout.HelpBox(
-                    "Run at least 2 benchmarks to compare them.\n\n" +
-                    "Typical workflow:\n" +
-                    "1. Run a benchmark before making changes (tag it 'baseline')\n" +
-                    "2. Make your optimization changes\n" +
-                    "3. Run another benchmark\n" +
-                    "4. Compare the two to see what improved or regressed",
-                    MessageType.Info);
+                    "Save at least 2 runs to compare. Typical flow: capture → tag 'baseline' → make a change → " +
+                    "capture again → compare to see what improved or regressed.", MessageType.Info);
                 return;
             }
 
-            string[] names = historyEntries
-                .Select((e, i) =>
-                {
-                    string tag = string.IsNullOrEmpty(e.tag) ? "" : $" [{e.tag}]";
-                    string date = e.timestamp?.Length > 10 ? e.timestamp[..10] : "?";
-                    return $"{e.label}{tag} ({e.gitBranch} {date})";
-                })
-                .ToArray();
+            string[] names = historyEntries.Select(e =>
+            {
+                string tag = string.IsNullOrEmpty(e.tag) ? "" : $" [{e.tag}]";
+                string date = e.timestamp?.Length > 10 ? e.timestamp[..10] : "?";
+                return $"{e.label}{tag} ({e.gitBranch} {date})";
+            }).ToArray();
 
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Baseline (before):", GUILayout.Width(130));
-            int newBaseline = EditorGUILayout.Popup(baselineIndex, names);
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Current (after):", GUILayout.Width(130));
-            int newCurrent = EditorGUILayout.Popup(currentIndex, names);
-            EditorGUILayout.EndHorizontal();
-
+            int newBaseline = EditorGUILayout.Popup("Baseline (before)", baselineIndex, names);
+            int newCurrent = EditorGUILayout.Popup("Current (after)", currentIndex, names);
             if (newBaseline != baselineIndex || newCurrent != currentIndex)
             {
                 baselineIndex = newBaseline;
@@ -674,88 +688,40 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 TryCompare();
             }
 
-            EditorGUILayout.Space(4);
+            if (GUILayout.Button("Compare", GUILayout.Height(24))) TryCompare();
 
-            if (GUILayout.Button("Compare", GUILayout.Height(24)))
-                TryCompare();
-
-            if (comparisonResult == null || string.IsNullOrEmpty(comparisonText))
-            {
-                EditorGUILayout.HelpBox(
-                    "Pick a 'Baseline' and a 'Current' snapshot from the dropdowns above, " +
-                    "then click Compare.\n\nTip: You can also set these from the History tab by " +
-                    "clicking the Baseline/Current buttons on any snapshot.",
-                    MessageType.Info);
-                return;
-            }
+            if (comparisonResult == null) { EditorGUILayout.HelpBox("Pick a baseline and a current run.", MessageType.Info); return; }
 
             EditorGUILayout.Space(4);
-
-            // ── Summary badges ─────────────────────────
             EditorGUILayout.BeginHorizontal();
-            DrawBadge($"{comparisonResult.improvements} Improved", new Color(0.2f, 0.7f, 0.3f));
-            DrawBadge($"{comparisonResult.neutral} Unchanged", new Color(0.6f, 0.6f, 0.6f));
-            DrawBadge($"{comparisonResult.regressions} Regressed", new Color(0.85f, 0.25f, 0.25f));
+            EditorUIStyles.Badge($"{comparisonResult.improvements} better", EditorUIStyles.Mint, 90);
+            EditorUIStyles.Badge($"{comparisonResult.neutral} same", EditorUIStyles.Slate, 80);
+            EditorUIStyles.Badge($"{comparisonResult.regressions} worse", EditorUIStyles.Rose, 90);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Copy Text Report", GUILayout.Width(120)))
-                GUIUtility.systemCopyBuffer = comparisonText;
+            if (GUILayout.Button("Copy Text", GUILayout.Width(90))) GUIUtility.systemCopyBuffer = comparisonText;
             EditorGUILayout.EndHorizontal();
 
-            EditorGUILayout.Space(4);
-
-            // ── Detailed comparison table ──────────────
             compareScroll = EditorGUILayout.BeginScrollView(compareScroll);
-
-            var headerStyle = new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Bold };
-
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Metric", headerStyle, GUILayout.Width(200));
-            EditorGUILayout.LabelField("Baseline", headerStyle, GUILayout.Width(80));
-            EditorGUILayout.LabelField("Current", headerStyle, GUILayout.Width(80));
-            EditorGUILayout.LabelField("Delta", headerStyle, GUILayout.Width(80));
-            EditorGUILayout.LabelField("%", headerStyle, GUILayout.Width(60));
-            EditorGUILayout.LabelField("Verdict", headerStyle, GUILayout.Width(70));
-            EditorGUILayout.EndHorizontal();
-
             foreach (var d in comparisonResult.deltas)
             {
-                Color rowColor = d.verdict switch
+                var rect = EditorGUILayout.BeginHorizontal();
+                Color row = d.verdict switch
                 {
-                    MetricDelta.Verdict.Improved => new Color(0.2f, 0.8f, 0.3f, 0.15f),
-                    MetricDelta.Verdict.Regressed => new Color(0.9f, 0.2f, 0.2f, 0.15f),
+                    MetricDelta.Verdict.Improved => new Color(EditorUIStyles.Mint.r, EditorUIStyles.Mint.g, EditorUIStyles.Mint.b, 0.14f),
+                    MetricDelta.Verdict.Regressed => new Color(EditorUIStyles.Rose.r, EditorUIStyles.Rose.g, EditorUIStyles.Rose.b, 0.14f),
                     _ => Color.clear
                 };
-
-                var rect = EditorGUILayout.BeginHorizontal();
-                if (rowColor != Color.clear)
-                    EditorGUI.DrawRect(rect, rowColor);
+                if (row != Color.clear) EditorGUI.DrawRect(rect, row);
 
                 EditorGUILayout.LabelField(d.metricName, EditorStyles.miniLabel, GUILayout.Width(200));
                 EditorGUILayout.LabelField(d.baselineValue.ToString("F2"), EditorStyles.miniLabel, GUILayout.Width(80));
                 EditorGUILayout.LabelField(d.currentValue.ToString("F2"), EditorStyles.miniLabel, GUILayout.Width(80));
                 string sign = d.absoluteDelta >= 0 ? "+" : "";
-                EditorGUILayout.LabelField($"{sign}{d.absoluteDelta:F2}", EditorStyles.miniLabel, GUILayout.Width(80));
-                EditorGUILayout.LabelField($"{sign}{d.percentDelta:F1}%", EditorStyles.miniLabel, GUILayout.Width(60));
-
-                string verdictLabel = d.verdict switch
-                {
-                    MetricDelta.Verdict.Improved => "BETTER",
-                    MetricDelta.Verdict.Regressed => "WORSE",
-                    _ => "~"
-                };
-                EditorGUILayout.LabelField(verdictLabel, EditorStyles.miniLabel, GUILayout.Width(70));
+                EditorGUILayout.LabelField($"{sign}{d.percentDelta:F1}%", EditorStyles.miniLabel, GUILayout.Width(70));
+                EditorGUILayout.LabelField(d.verdict == MetricDelta.Verdict.Improved ? "BETTER" : d.verdict == MetricDelta.Verdict.Regressed ? "WORSE" : "~", EditorStyles.miniLabel, GUILayout.Width(70));
                 EditorGUILayout.EndHorizontal();
             }
-
             EditorGUILayout.EndScrollView();
-        }
-
-        void DrawBadge(string text, Color color)
-        {
-            var prevBg = GUI.backgroundColor;
-            GUI.backgroundColor = color;
-            GUILayout.Label(text, EditorStyles.miniButton, GUILayout.Width(110));
-            GUI.backgroundColor = prevBg;
         }
 
         void TryCompare()
@@ -764,35 +730,31 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             if (baselineIndex >= historyEntries.Count || currentIndex >= historyEntries.Count) return;
             if (baselineIndex == currentIndex) return;
 
-            var baselineReport = BenchmarkHistory.LoadReport(historyEntries[baselineIndex]);
-            var currentReport = BenchmarkHistory.LoadReport(historyEntries[currentIndex]);
+            var b = BenchmarkHistory.LoadReport(historyEntries[baselineIndex]);
+            var c = BenchmarkHistory.LoadReport(historyEntries[currentIndex]);
+            if (b == null || c == null) { comparisonResult = null; comparisonText = null; return; }
 
-            if (baselineReport == null || currentReport == null)
-            {
-                comparisonResult = null;
-                comparisonText = null;
-                return;
-            }
-
-            comparisonResult = BenchmarkComparer.Compare(baselineReport, currentReport);
+            comparisonResult = BenchmarkComparer.Compare(b, c);
             comparisonText = BenchmarkComparer.FormatAsText(comparisonResult);
         }
 
-        // ── Data Access ─────────────────────────────────
+        // ── Data access ─────────────────────────────────
 
-        string GetOutputFolder()
-        {
-            if (config != null && !string.IsNullOrEmpty(config.OutputFolder))
-                return config.OutputFolder;
-            return "Benchmarks";
-        }
+        string GetOutputFolder() =>
+            config != null && !string.IsNullOrEmpty(config.OutputFolder) ? config.OutputFolder : "Benchmarks";
 
         void RefreshHistory()
         {
             historyEntries = BenchmarkHistory.GetAll(GetOutputFolder());
-
             if (baselineIndex >= historyEntries.Count) baselineIndex = -1;
             if (currentIndex >= historyEntries.Count) currentIndex = -1;
+        }
+
+        void RefreshSceneList()
+        {
+            var scenes = EditorBuildSettings.scenes;
+            sceneDisplay = scenes.Select(s => Path.GetFileNameWithoutExtension(s.path)).ToArray();
+            scenePaths = scenes.Select(s => s.path).ToArray();
         }
     }
 }
