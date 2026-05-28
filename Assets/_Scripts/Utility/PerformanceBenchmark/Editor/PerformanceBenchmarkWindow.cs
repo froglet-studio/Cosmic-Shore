@@ -27,6 +27,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         string[] scenePaths = System.Array.Empty<string>();
         PerformanceBenchmarkRunner collectRunner;
         Vector2 collectScroll;
+        // Report currently shown in Collect. Cached to disk so it survives leaving Play Mode
+        // (the domain reload wipes in-memory state). collectSavedPath is set once committed to History.
+        [System.NonSerialized] BenchmarkReport collectReport;
+        [SerializeField] string collectSavedPath = "";
+        string cachedReportId = "";
+        static string CollectCachePath =>
+            Path.Combine(Application.persistentDataPath, "Benchmarks", "_collect_lastrun.json");
 
         // ── Sweep tab ───────────────────────────────────
         Vector2 sweepScroll;
@@ -62,6 +69,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             RefreshSceneList();
             RefreshHistory();
+            // Restore the last Collect run after a domain reload (e.g. leaving Play Mode).
+            if (collectReport == null && File.Exists(CollectCachePath))
+                collectReport = BenchmarkReport.LoadFromFile(CollectCachePath);
         }
 
         void Update()
@@ -193,14 +203,39 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                     StartCaptureInCurrentPlay();
             }
 
-            // Results
-            var report = collectRunner != null ? collectRunner.LastReport : null;
+            // When the live runner finishes a run, adopt it and cache to disk so it survives
+            // leaving Play Mode.
+            if (collectRunner != null && collectRunner.LastReport != null &&
+                collectRunner.LastReport.reportId != cachedReportId)
+            {
+                collectReport = collectRunner.LastReport;
+                cachedReportId = collectReport.reportId;
+                collectSavedPath = collectRunner.LastReportPath ?? "";
+                CacheCollectReport(collectReport);
+            }
+
+            // Results (persisted — shows even after Play Mode is stopped)
+            var report = collectReport;
             if (report?.statistics != null && report.statistics.totalFrames > 0)
                 DrawResults(report);
             else if (report?.statistics != null)
                 EditorGUILayout.HelpBox("No data captured (the run was too short or interrupted).", MessageType.Warning);
 
             EditorGUILayout.EndScrollView();
+        }
+
+        void CacheCollectReport(BenchmarkReport report)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(CollectCachePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllText(CollectCachePath, JsonUtility.ToJson(report, false));
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[Benchmark] Could not cache last run for display: {e.Message}");
+            }
         }
 
         void DrawConfigSummary()
@@ -232,6 +267,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             if (analysis != null && analysis.isBlocked) EditorUIStyles.Badge("BLOCKERS", EditorUIStyles.Rose, 90);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
+
+            // Collector self-check — should read ~0 B/frame in steady state.
+            EditorGUILayout.LabelField(
+                $"Collector overhead: {s.collectorAllocBytesPerFrame:F1} B/frame" +
+                (s.collectorAllocBytesPerFrame > 64f ? "  ⚠ above ~0 — investigate" : "  ✓"),
+                EditorStyles.miniLabel);
 
             // Core stats
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -344,14 +385,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorGUILayout.Space(6);
             EditorGUILayout.BeginHorizontal();
 
-            bool saved = collectRunner != null && !string.IsNullOrEmpty(collectRunner.LastReportPath);
-            using (new EditorGUI.DisabledScope(saved || collectRunner == null))
+            // Window-driven save so it works during AND after Play Mode (no runner needed).
+            bool saved = !string.IsNullOrEmpty(collectSavedPath);
+            using (new EditorGUI.DisabledScope(saved))
             {
                 var prev = GUI.backgroundColor;
                 GUI.backgroundColor = EditorUIStyles.Mint;
                 if (GUILayout.Button(saved ? "Saved ✓" : "Save to History", GUILayout.Height(24)))
                 {
-                    collectRunner.SaveLastReport();
+                    string path = report.SaveToFile(GetOutputFolder());
+                    BenchmarkHistory.AddToHistory(report, path, GetOutputFolder());
+                    collectSavedPath = path;
                     RefreshHistory();
                 }
                 GUI.backgroundColor = prev;
@@ -368,8 +412,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             }
             EditorGUILayout.EndHorizontal();
 
-            if (!saved && Application.isPlaying)
-                EditorGUILayout.HelpBox("Save before leaving Play Mode to keep this run.", MessageType.None);
+            EditorGUILayout.LabelField(saved
+                ? "Saved to History (and kept on disk)."
+                : "This run is cached — it stays here after you stop Play. Save to add it to History/Compare.",
+                EditorStyles.miniLabel);
         }
 
         void StartCaptureViaPlay()
@@ -378,6 +424,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 ? scenePaths[Mathf.Clamp(sceneIndex, 0, scenePaths.Length - 1)]
                 : null;
             collectRunner = null;
+            ResetCollectDisplay();
             BenchmarkAutoStart.RequestCaptureOnPlay(config, hintRules, gameData, scenePath, bootFromBootstrap);
         }
 
@@ -388,9 +435,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 collectRunner = new GameObject("[PerformanceBenchmarkRunner]").AddComponent<PerformanceBenchmarkRunner>();
 
             SpikeAnalyzer.SetProfilerEnabled(true);
+            ResetCollectDisplay();
             collectRunner.Configure(config, null, gameData, hintRules);
             collectRunner.AutoSave = false;
             collectRunner.StartBenchmark();
+        }
+
+        void ResetCollectDisplay()
+        {
+            collectReport = null;
+            cachedReportId = "";
+            collectSavedPath = "";
         }
 
         void SpawnLiveHud()

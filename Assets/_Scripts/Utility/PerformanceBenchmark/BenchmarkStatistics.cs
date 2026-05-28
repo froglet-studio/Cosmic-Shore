@@ -51,6 +51,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // the sample, in bytes per frame. A large sustained positive value suggests a leak.
         public float memorySlopeBytesPerFrame;
 
+        // Collector self-check: bytes the benchmark collector itself allocates per sampled
+        // frame. Should be ~0 in steady state (set by the runner, not by Compute).
+        public float collectorAllocBytesPerFrame;
+
         // Physics
         public float avgActiveRigidbodies;
 
