@@ -25,6 +25,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [Tooltip("Capture physics stats (active rigidbodies, contacts).")]
         [SerializeField] private bool capturePhysicsStats = true;
 
+        [Tooltip("Capture gameplay load (active prisms, explosion/implosion VFX, vessels, players) " +
+                 "so frame cost can be read against the on-screen workload.")]
+        [SerializeField] private bool captureGameLoadStats = true;
+
         [Header("Output")]
         [Tooltip("Subfolder inside Application.persistentDataPath for saved reports.")]
         [SerializeField] private string outputFolder = "Benchmarks";
@@ -37,6 +41,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public bool CaptureRenderingStats => captureRenderingStats;
         public bool CaptureMemoryStats => captureMemoryStats;
         public bool CapturePhysicsStats => capturePhysicsStats;
+        public bool CaptureGameLoadStats => captureGameLoadStats;
         public string OutputFolder => outputFolder;
         public string BenchmarkLabel => benchmarkLabel;
     }

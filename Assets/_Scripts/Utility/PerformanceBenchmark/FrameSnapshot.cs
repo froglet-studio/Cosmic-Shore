@@ -27,5 +27,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // Physics
         public int activeRigidbodies;
+
+        // Game load — gameplay object counts so frame cost can be read against
+        // the active workload. 0 when the source manager/data is unavailable.
+        public int activePrisms;
+        public int activeExplosions;
+        public int activeImplosions;
+        public int activeVessels;
+        public int activePlayers;
     }
 }

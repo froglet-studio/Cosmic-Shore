@@ -146,6 +146,32 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
 
         #endregion
 
+        #region Game Load Stats
+
+        [Test]
+        public void Compute_GameLoad_AveragesAndTracksPeaks()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, activePrisms = 100, activeExplosions = 2, activeImplosions = 1, activeVessels = 4, activePlayers = 2 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, activePrisms = 300, activeExplosions = 8, activeImplosions = 3, activeVessels = 4, activePlayers = 2 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, activePrisms = 200, activeExplosions = 5, activeImplosions = 2, activeVessels = 4, activePlayers = 2 },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 3f);
+
+            Assert.AreEqual(200f, stats.avgActivePrisms, 0.01f);
+            Assert.AreEqual(300, stats.peakActivePrisms);
+            Assert.AreEqual(5f, stats.avgActiveExplosions, 0.01f);
+            Assert.AreEqual(8, stats.peakActiveExplosions);
+            Assert.AreEqual(2f, stats.avgActiveImplosions, 0.01f);
+            Assert.AreEqual(3, stats.peakActiveImplosions);
+            Assert.AreEqual(4f, stats.avgActiveVessels, 0.01f);
+            Assert.AreEqual(2f, stats.avgActivePlayers, 0.01f);
+        }
+
+        #endregion
+
         #region Percentiles
 
         [Test]

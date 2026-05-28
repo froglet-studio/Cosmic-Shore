@@ -61,6 +61,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         }
 
         [Test]
+        public void DefaultCaptureGameLoadStats_IsTrue()
+        {
+            Assert.IsTrue(_config.CaptureGameLoadStats);
+        }
+
+        [Test]
         public void DefaultOutputFolder_IsNotEmpty()
         {
             Assert.IsNotNull(_config.OutputFolder);

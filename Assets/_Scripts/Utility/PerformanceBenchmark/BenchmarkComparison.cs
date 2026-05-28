@@ -137,6 +137,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sb.AppendLine($"  {d.metricName,-28} {d.baselineValue,10:F2} {d.currentValue,10:F2} {sign + d.absoluteDelta.ToString("F2"),10} {sign + d.percentDelta.ToString("F1") + "%",7}  {verdictStr}");
             }
 
+            // Game load is context, not a pass/fail metric — heavier load isn't a regression.
+            // Shown so a comparison can confirm both runs faced a similar workload.
+            var bs = result.baseline.statistics;
+            var cs = result.current.statistics;
+            sb.AppendLine();
+            sb.AppendLine("  Game Load (context — not scored):");
+            sb.AppendLine($"    {"Avg Prisms",-22} {bs.avgActivePrisms,10:F0} -> {cs.avgActivePrisms,10:F0}   (peak {bs.peakActivePrisms} -> {cs.peakActivePrisms})");
+            sb.AppendLine($"    {"Avg Explosions",-22} {bs.avgActiveExplosions,10:F1} -> {cs.avgActiveExplosions,10:F1}   (peak {bs.peakActiveExplosions} -> {cs.peakActiveExplosions})");
+            sb.AppendLine($"    {"Avg Implosions",-22} {bs.avgActiveImplosions,10:F1} -> {cs.avgActiveImplosions,10:F1}   (peak {bs.peakActiveImplosions} -> {cs.peakActiveImplosions})");
+            sb.AppendLine($"    {"Avg Vessels",-22} {bs.avgActiveVessels,10:F1} -> {cs.avgActiveVessels,10:F1}");
+            sb.AppendLine($"    {"Avg Players",-22} {bs.avgActivePlayers,10:F1} -> {cs.avgActivePlayers,10:F1}");
+
             sb.AppendLine();
             sb.AppendLine($"  Summary: {result.improvements} improved, {result.regressions} regressed, {result.neutral} unchanged");
             sb.AppendLine();

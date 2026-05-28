@@ -44,6 +44,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // Physics
         public float avgActiveRigidbodies;
 
+        // Game load — averages plus peaks for the spiky workloads (prisms, VFX)
+        public float avgActivePrisms;
+        public int peakActivePrisms;
+        public float avgActiveExplosions;
+        public int peakActiveExplosions;
+        public float avgActiveImplosions;
+        public int peakActiveImplosions;
+        public float avgActiveVessels;
+        public float avgActivePlayers;
+
         public static BenchmarkStatistics Compute(List<FrameSnapshot> snapshots, float durationSec)
         {
             if (snapshots == null || snapshots.Count == 0)
@@ -68,6 +78,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             long sumAllocMem = 0;
             long sumGc = 0;
             float sumRigidbodies = 0;
+            long sumPrisms = 0;
+            long sumExplosions = 0;
+            long sumImplosions = 0;
+            long sumVessels = 0;
+            long sumPlayers = 0;
 
             stats.minFrameTimeMs = float.MaxValue;
             stats.maxFrameTimeMs = float.MinValue;
@@ -91,6 +106,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sumAllocMem += s.totalAllocatedMemory;
                 sumGc += s.gcAllocatedPerFrame;
                 sumRigidbodies += s.activeRigidbodies;
+                sumPrisms += s.activePrisms;
+                sumExplosions += s.activeExplosions;
+                sumImplosions += s.activeImplosions;
+                sumVessels += s.activeVessels;
+                sumPlayers += s.activePlayers;
 
                 if (s.deltaTimeMs < stats.minFrameTimeMs) stats.minFrameTimeMs = s.deltaTimeMs;
                 if (s.deltaTimeMs > stats.maxFrameTimeMs) stats.maxFrameTimeMs = s.deltaTimeMs;
@@ -98,6 +118,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 if (s.fps > stats.maxFps) stats.maxFps = s.fps;
                 if (s.totalAllocatedMemory > stats.peakAllocatedMemory)
                     stats.peakAllocatedMemory = s.totalAllocatedMemory;
+                if (s.activePrisms > stats.peakActivePrisms) stats.peakActivePrisms = s.activePrisms;
+                if (s.activeExplosions > stats.peakActiveExplosions) stats.peakActiveExplosions = s.activeExplosions;
+                if (s.activeImplosions > stats.peakActiveImplosions) stats.peakActiveImplosions = s.activeImplosions;
             }
 
             int n = snapshots.Count;
@@ -111,6 +134,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             stats.avgAllocatedMemory = sumAllocMem / n;
             stats.totalGcAllocated = sumGc;
             stats.avgActiveRigidbodies = sumRigidbodies / n;
+            stats.avgActivePrisms = (float)sumPrisms / n;
+            stats.avgActiveExplosions = (float)sumExplosions / n;
+            stats.avgActiveImplosions = (float)sumImplosions / n;
+            stats.avgActiveVessels = (float)sumVessels / n;
+            stats.avgActivePlayers = (float)sumPlayers / n;
 
             // Standard deviation of frame time
             float sumSqDiff = 0;

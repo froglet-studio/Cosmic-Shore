@@ -50,6 +50,12 @@ namespace CosmicShore.Gameplay
         private readonly List<PrismImplosion> implosionCompletionQueue = new(32);
         private NativeArray<ImplosionJobData> implosionJobData;
 
+        /// <summary>Concurrently active explosion VFX — read-only, allocation-free. Used by the performance benchmark.</summary>
+        public int ActiveExplosionCount => activeExplosions.Count;
+
+        /// <summary>Concurrently active implosion VFX — read-only, allocation-free. Used by the performance benchmark.</summary>
+        public int ActiveImplosionCount => activeImplosions.Count;
+
         // Shared property block for batched shader updates
         private MaterialPropertyBlock sharedMPB;
 

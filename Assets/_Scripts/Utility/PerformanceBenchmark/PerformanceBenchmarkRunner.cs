@@ -4,6 +4,9 @@ using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
+// GameDataSO lives in CosmicShore.Utility (DataContainers); referenced here for
+// optional vessel/player load counts.
+
 namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
@@ -53,6 +56,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                  "Wire the same asset into any UI or system that needs to react to benchmark lifecycle.")]
         [SerializeField] private BenchmarkDataSO benchmarkData;
 
+        [Header("Game Load (optional)")]
+        [Tooltip("Optional GameDataSO — when assigned, vessel/player counts are recorded. " +
+                 "Prism and VFX counts are read from their manager singletons regardless.")]
+        [SerializeField] private GameDataSO gameData;
+
         [Header("Automation")]
         [Tooltip("Automatically start the benchmark when this component is enabled.")]
         [SerializeField] private bool autoStartOnEnable;
@@ -76,6 +84,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         bool cachedCaptureRendering;
         bool cachedCaptureMemory;
         bool cachedCapturePhysics;
+        bool cachedCaptureGameLoad;
 
         // Profiler recorders for rendering stats
         ProfilerRecorder drawCallsRecorder;
@@ -133,6 +142,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             cachedCaptureRendering = config.CaptureRenderingStats;
             cachedCaptureMemory = config.CaptureMemoryStats;
             cachedCapturePhysics = config.CapturePhysicsStats;
+            cachedCaptureGameLoad = config.CaptureGameLoadStats;
 
             int estimatedFrames = Mathf.CeilToInt(config.SampleDuration * 120);
             snapshots = new List<FrameSnapshot>(estimatedFrames);
@@ -251,6 +261,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     // Use ProfilerRecorder instead of FindObjectsByType<Rigidbody>() which
                     // scans the scene hierarchy and allocates a managed array every frame.
                     snapshot.activeRigidbodies = GetRecorderValue(activeBodiesRecorder);
+                }
+
+                if (cachedCaptureGameLoad)
+                {
+                    var load = GameLoadSampler.Sample(gameData);
+                    snapshot.activePrisms = load.activePrisms;
+                    snapshot.activeExplosions = load.activeExplosions;
+                    snapshot.activeImplosions = load.activeImplosions;
+                    snapshot.activeVessels = load.activeVessels;
+                    snapshot.activePlayers = load.activePlayers;
                 }
 
                 snapshots.Add(snapshot);
@@ -390,7 +410,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 $"  FPS — avg: {s.avgFps:F1}, min: {s.minFps:F1}, p1: {s.p1Fps:F1}, p5: {s.p5Fps:F1}\n" +
                 $"  Frame Time — avg: {s.avgFrameTimeMs:F2}ms, p95: {s.p95FrameTimeMs:F2}ms, p99: {s.p99FrameTimeMs:F2}ms, max: {s.maxFrameTimeMs:F2}ms\n" +
                 $"  Draw Calls: {s.avgDrawCalls:F0}, Batches: {s.avgBatches:F0}, Tris: {s.avgTriangles:F0}\n" +
-                $"  Memory Peak: {s.peakAllocatedMemory / (1024f * 1024f):F1} MB, GC Total: {s.totalGcAllocated / (1024f * 1024f):F1} MB");
+                $"  Memory Peak: {s.peakAllocatedMemory / (1024f * 1024f):F1} MB, GC Total: {s.totalGcAllocated / (1024f * 1024f):F1} MB\n" +
+                $"  Load — prisms avg: {s.avgActivePrisms:F0} (peak {s.peakActivePrisms}), " +
+                $"explosions peak: {s.peakActiveExplosions}, implosions peak: {s.peakActiveImplosions}, " +
+                $"vessels avg: {s.avgActiveVessels:F1}");
         }
     }
 }
