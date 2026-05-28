@@ -61,6 +61,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                  "Prism and VFX counts are read from their manager singletons regardless.")]
         [SerializeField] private GameDataSO gameData;
 
+        [Header("Hint Rules (optional)")]
+        [Tooltip("Customizable rule set for the actionable hint engine. Falls back to built-in defaults when null.")]
+        [SerializeField] private BenchmarkHintRulesSO hintRules;
+
         [Header("Automation")]
         [Tooltip("Automatically start the benchmark when this component is enabled.")]
         [SerializeField] private bool autoStartOnEnable;
@@ -97,9 +101,31 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder gcAllocRecorder;
         ProfilerRecorder activeBodiesRecorder;
 
+        // CPU/GPU split via FrameTimingManager (reused single-element buffer).
+        readonly FrameTiming[] _frameTimings = new FrameTiming[1];
+
+        // Spike capture
+        List<SpikeEntry> spikes;
+        readonly List<MarkerSample> _markerScratch = new(8);
+        float runningSampleSum;   // sum of sampled frame times → running mean for the spike threshold
+        int runningSampleCount;
+        const float SpikeMultiplier = 1.75f;      // a frame is a spike when > multiplier × running mean…
+        const float SpikeFloorMs = 1000f / 45f;   // …and above this absolute floor (~22 ms)
+        const int MaxSpikes = 48;
+        const int TopMarkersPerSpike = 5;
+
         public bool IsRunning => state == State.WarmingUp || state == State.Sampling;
 
-        /// <summary>Path of the most recently saved report (set when a run finishes). Empty until then.</summary>
+        /// <summary>When true (default) the run auto-saves + indexes on finish. The Collect tab sets this false and saves explicitly.</summary>
+        public bool AutoSave { get; set; } = true;
+
+        /// <summary>Frames captured so far this run (live, for editor feedback without a Data Container).</summary>
+        public int FramesCaptured => frameCounter;
+
+        public bool IsWarmingUp => state == State.WarmingUp;
+        public bool IsSampling => state == State.Sampling;
+
+        /// <summary>Path of the most recently saved report (set when a run is saved). Empty until then.</summary>
         public string LastReportPath { get; private set; } = string.Empty;
 
         /// <summary>The most recently completed report. Null until a run finishes.</summary>
@@ -110,11 +136,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// editor window) that spawns the runner programmatically, avoiding editor-only
         /// SerializedObject wiring.
         /// </summary>
-        public void Configure(BenchmarkConfigSO benchmarkConfig, BenchmarkDataSO data = null, GameDataSO gameDataContainer = null)
+        public void Configure(BenchmarkConfigSO benchmarkConfig, BenchmarkDataSO data = null,
+            GameDataSO gameDataContainer = null, BenchmarkHintRulesSO rules = null)
         {
             config = benchmarkConfig;
             benchmarkData = data;
             if (gameDataContainer != null) gameData = gameDataContainer;
+            if (rules != null) hintRules = rules;
         }
 
         public float Progress
@@ -165,9 +193,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             int estimatedFrames = Mathf.CeilToInt(config.SampleDuration * 120);
             snapshots = new List<FrameSnapshot>(estimatedFrames);
+            spikes = new List<SpikeEntry>();
             frameCounter = 0;
             runningFpsSum = 0;
             runningFrameTimeMs = 0;
+            runningSampleSum = 0;
+            runningSampleCount = 0;
 
             currentReport = new BenchmarkReport
             {
@@ -257,6 +288,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 runningFpsSum += fps;
                 runningFrameTimeMs += frameTimeMs;
 
+                // CPU/GPU split. Editor side enables FrameTimingManager; if it's off this
+                // returns 0 frames and the fields stay 0 (harmless).
+                FrameTimingManager.CaptureFrameTimings();
+                if (FrameTimingManager.GetLatestTimings(1, _frameTimings) > 0)
+                {
+                    snapshot.cpuFrameTimeMs = (float)_frameTimings[0].cpuFrameTime;
+                    snapshot.gpuFrameTimeMs = (float)_frameTimings[0].gpuFrameTime;
+                }
+
                 if (cachedCaptureRendering)
                 {
                     snapshot.drawCalls = GetRecorderValue(drawCallsRecorder);
@@ -293,6 +333,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 }
 
                 snapshots.Add(snapshot);
+                DetectSpike(snapshot, frameTimeMs);
 
                 // Write to custom profiler counters — visible in Unity Profiler window
                 s_counterFps.Value = fps;
@@ -305,20 +346,57 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
         }
 
+        // When a frame's time exceeds the running threshold, record it as a spike and (in the
+        // editor) attribute the most expensive markers from the profiler's matching frame.
+        void DetectSpike(in FrameSnapshot snapshot, float frameTimeMs)
+        {
+            runningSampleSum += frameTimeMs;
+            runningSampleCount++;
+            if (spikes.Count >= MaxSpikes) return;
+
+            float mean = runningSampleCount > 0 ? runningSampleSum / runningSampleCount : 0f;
+            float threshold = Mathf.Max(SpikeFloorMs, SpikeMultiplier * mean);
+            if (frameTimeMs < threshold) return;
+
+            var spike = new SpikeEntry
+            {
+                frameIndex = snapshot.frameIndex,
+                frameTimeMs = frameTimeMs,
+                cpuFrameTimeMs = snapshot.cpuFrameTimeMs,
+                gpuFrameTimeMs = snapshot.gpuFrameTimeMs
+            };
+
+#if UNITY_EDITOR
+            if (SpikeAnalyzer.TryGetTopMarkers(SpikeAnalyzer.LastFrameIndex, TopMarkersPerSpike, _markerScratch))
+            {
+                for (int i = 0; i < _markerScratch.Count; i++)
+                    spike.topMarkers.Add(_markerScratch[i]);
+            }
+#endif
+            spikes.Add(spike);
+        }
+
         void FinishRun(bool wasStopped)
         {
             state = State.Done;
             DisposeRecorders();
 
             currentReport.snapshots = snapshots;
+            currentReport.spikes = spikes ?? new List<SpikeEntry>();
             currentReport.ComputeStatistics();
+            currentReport.analysis = BenchmarkAnalysis.Analyze(
+                currentReport, hintRules != null ? hintRules.Resolve() : null);
 
-            string filePath = currentReport.SaveToFile(config.OutputFolder);
-            LastReportPath = filePath;
             LastReport = currentReport;
 
-            // Auto-index in history so every run is retrievable for comparison
-            BenchmarkHistory.AddToHistory(currentReport, filePath, config.OutputFolder);
+            // Collect mode saves explicitly (AutoSave=false); Sweep and direct runs auto-save.
+            string filePath = string.Empty;
+            if (AutoSave)
+            {
+                filePath = currentReport.SaveToFile(config.OutputFolder);
+                LastReportPath = filePath;
+                BenchmarkHistory.AddToHistory(currentReport, filePath, config.OutputFolder);
+            }
 
             // Update SOAP data container
             if (benchmarkData != null)
@@ -336,8 +414,25 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     benchmarkData.OnBenchmarkCompleted?.Raise(stateData);
             }
 
-            CSDebug.Log($"[Benchmark] {(wasStopped ? "Stopped early" : "Complete")} — {snapshots.Count} frames captured. Report saved to:\n{filePath}");
+            string savedNote = AutoSave ? $"Report saved to:\n{filePath}" : "Held for explicit Save.";
+            CSDebug.Log($"[Benchmark] {(wasStopped ? "Stopped early" : "Complete")} — {snapshots.Count} frames captured. {savedNote}");
             LogSummary(currentReport.statistics);
+        }
+
+        /// <summary>
+        /// Explicitly saves the most recently completed report to disk and indexes it in History.
+        /// Used by the Collect tab's Save button (which runs with AutoSave=false). No-op if there's
+        /// no report or it was already saved. Returns the saved path (or existing one).
+        /// </summary>
+        public string SaveLastReport()
+        {
+            if (LastReport == null || config == null) return LastReportPath;
+            if (!string.IsNullOrEmpty(LastReportPath)) return LastReportPath; // already saved
+
+            string filePath = LastReport.SaveToFile(config.OutputFolder);
+            LastReportPath = filePath;
+            BenchmarkHistory.AddToHistory(LastReport, filePath, config.OutputFolder);
+            return filePath;
         }
 
         // ── SOAP Progress Broadcasting ──────────────────

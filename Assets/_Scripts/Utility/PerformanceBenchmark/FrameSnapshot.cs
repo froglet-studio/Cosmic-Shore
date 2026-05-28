@@ -13,6 +13,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float deltaTimeMs;
         public float fps;
 
+        // CPU vs GPU frame time (ms) from FrameTimingManager. 0 when frame-timing
+        // stats are unavailable on the platform / not yet warmed up.
+        public float cpuFrameTimeMs;
+        public float gpuFrameTimeMs;
+
         // Rendering
         public int drawCalls;
         public int batches;

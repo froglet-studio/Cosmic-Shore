@@ -21,6 +21,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float p99FrameTimeMs;
         public float stdDevFrameTimeMs;
 
+        // CPU vs GPU frame time (ms) — from FrameTimingManager. 0 when unavailable.
+        public float avgCpuFrameTimeMs;
+        public float maxCpuFrameTimeMs;
+        public float avgGpuFrameTimeMs;
+        public float maxGpuFrameTimeMs;
+
         // FPS
         public float avgFps;
         public float minFps;
@@ -40,6 +46,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public long peakAllocatedMemory;
         public long avgAllocatedMemory;
         public long totalGcAllocated;
+
+        // Memory-leak heuristic: linear-regression slope of total allocated memory across
+        // the sample, in bytes per frame. A large sustained positive value suggests a leak.
+        public float memorySlopeBytesPerFrame;
 
         // Physics
         public float avgActiveRigidbodies;
@@ -83,6 +93,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             long sumImplosions = 0;
             long sumVessels = 0;
             long sumPlayers = 0;
+            float sumCpu = 0;
+            float sumGpu = 0;
+
+            // Accumulators for the memory-vs-frame linear regression (leak slope).
+            double rgX = 0, rgX2 = 0, rgY = 0, rgXY = 0;
 
             stats.minFrameTimeMs = float.MaxValue;
             stats.maxFrameTimeMs = float.MinValue;
@@ -111,6 +126,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sumImplosions += s.activeImplosions;
                 sumVessels += s.activeVessels;
                 sumPlayers += s.activePlayers;
+                sumCpu += s.cpuFrameTimeMs;
+                sumGpu += s.gpuFrameTimeMs;
+
+                rgX += i;
+                rgX2 += (double)i * i;
+                rgY += s.totalAllocatedMemory;
+                rgXY += (double)i * s.totalAllocatedMemory;
 
                 if (s.deltaTimeMs < stats.minFrameTimeMs) stats.minFrameTimeMs = s.deltaTimeMs;
                 if (s.deltaTimeMs > stats.maxFrameTimeMs) stats.maxFrameTimeMs = s.deltaTimeMs;
@@ -118,6 +140,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 if (s.fps > stats.maxFps) stats.maxFps = s.fps;
                 if (s.totalAllocatedMemory > stats.peakAllocatedMemory)
                     stats.peakAllocatedMemory = s.totalAllocatedMemory;
+                if (s.cpuFrameTimeMs > stats.maxCpuFrameTimeMs) stats.maxCpuFrameTimeMs = s.cpuFrameTimeMs;
+                if (s.gpuFrameTimeMs > stats.maxGpuFrameTimeMs) stats.maxGpuFrameTimeMs = s.gpuFrameTimeMs;
                 if (s.activePrisms > stats.peakActivePrisms) stats.peakActivePrisms = s.activePrisms;
                 if (s.activeExplosions > stats.peakActiveExplosions) stats.peakActiveExplosions = s.activeExplosions;
                 if (s.activeImplosions > stats.peakActiveImplosions) stats.peakActiveImplosions = s.activeImplosions;
@@ -139,6 +163,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             stats.avgActiveImplosions = (float)sumImplosions / n;
             stats.avgActiveVessels = (float)sumVessels / n;
             stats.avgActivePlayers = (float)sumPlayers / n;
+            stats.avgCpuFrameTimeMs = sumCpu / n;
+            stats.avgGpuFrameTimeMs = sumGpu / n;
+
+            // Memory-leak slope via least-squares regression (bytes per frame).
+            double denom = n * rgX2 - rgX * rgX;
+            stats.memorySlopeBytesPerFrame = denom != 0
+                ? (float)((n * rgXY - rgX * rgY) / denom)
+                : 0f;
 
             // Standard deviation of frame time
             float sumSqDiff = 0;

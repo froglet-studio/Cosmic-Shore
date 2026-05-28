@@ -8,9 +8,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     {
         public static string Evaluate(BenchmarkStatistics s, out string explanation)
         {
-            if (s == null)
+            if (s == null || s.totalFrames == 0)
             {
-                explanation = "No data";
+                explanation = "No data captured";
                 return "-";
             }
 

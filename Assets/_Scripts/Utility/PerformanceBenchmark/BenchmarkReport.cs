@@ -41,6 +41,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // ── Data ────────────────────────────────────────
         public List<FrameSnapshot> snapshots = new();
         public BenchmarkStatistics statistics;
+        public List<SpikeEntry> spikes = new();
+        public BenchmarkAnalysisResult analysis;
 
         public void PopulateEnvironment()
         {
