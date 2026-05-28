@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using Unity.Netcode;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -92,6 +93,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         bool cachedCaptureMemory;
         bool cachedCapturePhysics;
         bool cachedCaptureGameLoad;
+        bool cachedCaptureNetcode;
 
         ProfilerRecorder drawCallsRecorder;
         ProfilerRecorder batchesRecorder;
@@ -100,6 +102,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder verticesRecorder;
         ProfilerRecorder gcAllocRecorder;
         ProfilerRecorder activeBodiesRecorder;
+
+        // Netcode (NGO) marker + counter recorders
+        ProfilerRecorder netTickRecorder, netSerializeRecorder, netDeserializeRecorder,
+            netSpawnRecorder, netRpcRecorder, rpcsSentRecorder, netVarsDirtyRecorder, netBytesRecorder;
 
         // CPU/GPU split via FrameTimingManager (reused single-element buffer).
         readonly FrameTiming[] _frameTimings = new FrameTiming[1];
@@ -182,6 +188,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             cachedCaptureMemory = config.CaptureMemoryStats;
             cachedCapturePhysics = config.CapturePhysicsStats;
             cachedCaptureGameLoad = config.CaptureGameLoadStats;
+            cachedCaptureNetcode = config.CaptureNetcodeStats;
 
             // Pre-size the flat frame buffer once (no per-frame allocation thereafter).
             int capacity = Mathf.Max(64, Mathf.CeilToInt(config.SampleDuration * MaxAssumedFps));
@@ -204,6 +211,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sampleDuration = config.SampleDuration
             };
             currentReport.PopulateEnvironment();
+            currentReport.networkTickRate = ResolveNetworkTickRate();
 
             StartRecorders();
 
@@ -329,6 +337,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
                 if (cachedCapturePhysics)
                     snapshot.activeRigidbodies = GetRecorderValue(activeBodiesRecorder);
+
+                if (cachedCaptureNetcode)
+                {
+                    // Marker recorders report time in nanoseconds; sum and convert to ms.
+                    long netNs = GetRecorderValueLong(netTickRecorder)
+                               + GetRecorderValueLong(netSerializeRecorder)
+                               + GetRecorderValueLong(netDeserializeRecorder)
+                               + GetRecorderValueLong(netSpawnRecorder)
+                               + GetRecorderValueLong(netRpcRecorder);
+                    snapshot.netcodeTimeMs = netNs / 1_000_000f;
+                    snapshot.rpcsSent = GetRecorderValue(rpcsSentRecorder);
+                    snapshot.netVarsDirty = GetRecorderValue(netVarsDirtyRecorder);
+                    snapshot.netBytesSent = GetRecorderValueLong(netBytesRecorder);
+                }
 
                 if (cachedCaptureGameLoad)
                 {
@@ -494,6 +516,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 gcAllocRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
             if (cachedCapturePhysics)
                 activeBodiesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Physics, "Active Dynamic Bodies");
+            if (cachedCaptureNetcode)
+            {
+                netTickRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM.Net.Tick");
+                netSerializeRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM.Net.Serialize");
+                netDeserializeRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM.Net.Deserialize");
+                netSpawnRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM.Net.SpawnDespawn");
+                netRpcRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM.Net.RpcDispatch");
+                rpcsSentRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM RPCs Sent");
+                netVarsDirtyRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM NetVars Dirty");
+                netBytesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM Bytes Sent");
+            }
         }
 
         void DisposeRecorders()
@@ -505,6 +538,22 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             verticesRecorder.Dispose();
             gcAllocRecorder.Dispose();
             activeBodiesRecorder.Dispose();
+            netTickRecorder.Dispose();
+            netSerializeRecorder.Dispose();
+            netDeserializeRecorder.Dispose();
+            netSpawnRecorder.Dispose();
+            netRpcRecorder.Dispose();
+            rpcsSentRecorder.Dispose();
+            netVarsDirtyRecorder.Dispose();
+            netBytesRecorder.Dispose();
+        }
+
+        static int ResolveNetworkTickRate()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.IsListening && nm.NetworkTickSystem != null)
+                return (int)nm.NetworkTickSystem.TickRate;
+            return 0;
         }
 
         static int GetRecorderValue(ProfilerRecorder recorder) =>

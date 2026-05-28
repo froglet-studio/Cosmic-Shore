@@ -85,6 +85,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 new MetricDelta("Peak Allocated (MB)", bStats.peakAllocatedMemory / (1024f * 1024f), cStats.peakAllocatedMemory / (1024f * 1024f), true, neutralThresholdPercent),
                 new MetricDelta("Avg Allocated (MB)", bStats.avgAllocatedMemory / (1024f * 1024f), cStats.avgAllocatedMemory / (1024f * 1024f), true, neutralThresholdPercent),
                 new MetricDelta("Total GC (MB)", bStats.totalGcAllocated / (1024f * 1024f), cStats.totalGcAllocated / (1024f * 1024f), true, neutralThresholdPercent),
+
+                // Netcode (lower is better) — so a netcode optimization shows up before/after
+                new MetricDelta("Netcode Share (%)", bStats.netcodeSharePercent, cStats.netcodeSharePercent, true, neutralThresholdPercent),
+                new MetricDelta("Avg RPCs/frame", bStats.avgRpcsSent, cStats.avgRpcsSent, true, neutralThresholdPercent),
+                new MetricDelta("Avg NetVars Dirty/frame", bStats.avgNetVarsDirty, cStats.avgNetVarsDirty, true, neutralThresholdPercent),
             };
 
             int improvements = 0, regressions = 0, neutralCount = 0;

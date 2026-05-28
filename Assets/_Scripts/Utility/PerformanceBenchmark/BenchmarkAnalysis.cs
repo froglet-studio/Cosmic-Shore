@@ -44,7 +44,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         GpuBound = 3,            // avgGpu > avgCpu * threshold (and gpu measured)
         CpuBound = 4,            // avgCpu > avgGpu * threshold (and cpu measured)
         FrameInstability = 5,    // stdDevFrameTimeMs > threshold
-        SpikeMarkerName = 6      // any spike top-marker name contains markerPattern
+        SpikeMarkerName = 6,     // any spike top-marker name contains markerPattern
+        NetcodeSharePercent = 7, // netcodeSharePercent > threshold
+        RpcsPerFrame = 8         // avgRpcsSent > threshold
     }
 
     /// <summary>
@@ -186,6 +188,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     finding = $"Frame-time std-dev {s.stdDevFrameTimeMs:F1} ms (threshold {rule.threshold:F0} ms) — hitching.";
                     break;
                 }
+                case HintRuleType.NetcodeSharePercent:
+                {
+                    if (s.netcodeSharePercent <= rule.threshold) return false;
+                    finding = $"Netcode is {s.netcodeSharePercent:F0}% of frame time ({s.avgNetcodeTimeMs:F2} ms/frame).";
+                    break;
+                }
+                case HintRuleType.RpcsPerFrame:
+                {
+                    if (s.avgRpcsSent <= rule.threshold) return false;
+                    finding = $"{s.avgRpcsSent:F0} RPCs/frame (threshold {rule.threshold:F0}); NetVars dirty {s.avgNetVarsDirty:F0}/frame.";
+                    break;
+                }
                 case HintRuleType.SpikeMarkerName:
                 {
                     if (string.IsNullOrEmpty(rule.markerPattern)) return false;
@@ -279,6 +293,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             },
             new HintRule
             {
+                id = "netcode-share", type = HintRuleType.NetcodeSharePercent, threshold = 15f, severity = HintSeverity.Warning,
+                title = "Netcode-heavy frame",
+                fixAdvice = "Netcode markers dominate a notable share of the frame. Reduce per-frame NetworkVariable writes " +
+                            "(send on change / at the network tick, not every frame), trim OnSerialize payloads, and avoid " +
+                            "per-input RPCs — batch or rate-limit them."
+            },
+            new HintRule
+            {
+                id = "rpc-flood", type = HintRuleType.RpcsPerFrame, threshold = 20f, severity = HintSeverity.Warning,
+                title = "High RPC volume",
+                fixAdvice = "Many RPCs per frame. Coalesce input/state RPCs, send at the network tick rate rather than per " +
+                            "frame, and prefer NetworkVariables (delta-compressed) over RPCs for continuous state."
+            },
+            new HintRule
+            {
                 id = "gc-collect-spike", type = HintRuleType.SpikeMarkerName, markerPattern = "GC.Collect", severity = HintSeverity.Warning,
                 title = "GC collection spike",
                 fixAdvice = "A garbage collection ran mid-frame. Eliminate per-frame allocations so the GC has nothing to collect " +
@@ -297,6 +326,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 title = "UI canvas rebuild spike",
                 fixAdvice = "A Canvas rebuilt mid-frame. Split static and dynamic UI onto separate canvases and avoid changing " +
                             "layout/text every frame."
+            },
+            new HintRule
+            {
+                id = "netcode-spike", type = HintRuleType.SpikeMarkerName, markerPattern = "CSM.Net", severity = HintSeverity.Warning,
+                title = "Netcode spike",
+                fixAdvice = "A netcode marker spiked this frame — usually a burst of spawns/despawns or a large serialize. " +
+                            "Spread spawns across frames, pool networked objects, and shrink serialized payloads."
             },
         };
     }

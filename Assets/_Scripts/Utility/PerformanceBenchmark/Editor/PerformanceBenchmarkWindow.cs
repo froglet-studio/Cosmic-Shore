@@ -315,6 +315,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 EditorGUILayout.EndVertical();
             }
 
+            // Netcode
+            bool hasNetcode = s.avgNetcodeTimeMs > 0.0001f || s.avgRpcsSent > 0f || s.avgNetVarsDirty > 0f;
+            EditorUIStyles.SectionHeader("Netcode", EditorUIStyles.Sky);
+            if (hasNetcode)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorUIStyles.StatRow("Netcode Share", $"{s.netcodeSharePercent:F0}%  ({s.avgNetcodeTimeMs:F2} ms/frame, max {s.maxNetcodeTimeMs:F1})", "CSM.Net.* marker time as a share of frame time.");
+                EditorUIStyles.StatRow("RPCs / frame", $"{s.avgRpcsSent:F1}");
+                EditorUIStyles.StatRow("NetVars dirty / frame", $"{s.avgNetVarsDirty:F1}");
+                if (s.totalNetBytesSent > 0)
+                    EditorUIStyles.StatRow("Bytes sent (total)", $"{s.totalNetBytesSent / 1024f:F1} KB");
+                if (report.networkTickRate > 0)
+                    EditorUIStyles.StatRow("Network tick rate", $"{report.networkTickRate} Hz  (~{(s.avgFps > 0 ? s.avgFps / report.networkTickRate : 0):F1} render frames/tick)");
+                EditorGUILayout.EndVertical();
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("No netcode activity recorded — non-networked scene, or the NGO hot paths aren't instrumented with NetMarkers here.", MessageType.None);
+            }
+
             DrawHints(analysis);
             DrawSpikes(report.spikes);
             DrawSaveTag(report);
@@ -663,6 +683,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorUIStyles.Badge(e.score.ToString(), EditorUIStyles.ForScore(e.score), 40);
             EditorGUILayout.LabelField(string.IsNullOrEmpty(e.label) ? "(untitled)" : e.label, EditorStyles.boldLabel, GUILayout.Width(140));
             if (!string.IsNullOrEmpty(e.tag)) EditorUIStyles.Badge(e.tag, EditorUIStyles.Lavender, 80);
+            if (!string.IsNullOrEmpty(e.origin))
+            {
+                var oc = e.origin == "DevBuild" ? EditorUIStyles.Peach : e.origin == "Legacy" ? EditorUIStyles.Slate : EditorUIStyles.Sky;
+                EditorUIStyles.Badge(e.origin, oc, 70);
+            }
             GUILayout.FlexibleSpace();
             EditorGUILayout.LabelField($"{e.gitBranch}/{e.gitCommitHash}", EditorStyles.miniLabel, GUILayout.Width(180));
             EditorGUILayout.EndHorizontal();

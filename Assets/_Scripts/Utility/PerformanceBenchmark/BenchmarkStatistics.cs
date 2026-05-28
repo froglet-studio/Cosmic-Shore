@@ -58,6 +58,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // Physics
         public float avgActiveRigidbodies;
 
+        // Netcode (NGO)
+        public float avgNetcodeTimeMs;
+        public float maxNetcodeTimeMs;
+        public float netcodeSharePercent; // avg netcode time as a % of avg frame time
+        public float avgRpcsSent;
+        public float avgNetVarsDirty;
+        public long totalNetBytesSent;
+
         // Game load — averages plus peaks for the spiky workloads (prisms, VFX)
         public float avgActivePrisms;
         public int peakActivePrisms;
@@ -99,6 +107,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             long sumPlayers = 0;
             float sumCpu = 0;
             float sumGpu = 0;
+            float sumNetcode = 0;
+            long sumRpcs = 0;
+            long sumNetVars = 0;
+            long sumNetBytes = 0;
 
             // Accumulators for the memory-vs-frame linear regression (leak slope).
             double rgX = 0, rgX2 = 0, rgY = 0, rgXY = 0;
@@ -132,6 +144,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sumPlayers += s.activePlayers;
                 sumCpu += s.cpuFrameTimeMs;
                 sumGpu += s.gpuFrameTimeMs;
+                sumNetcode += s.netcodeTimeMs;
+                sumRpcs += s.rpcsSent;
+                sumNetVars += s.netVarsDirty;
+                sumNetBytes += s.netBytesSent;
+                if (s.netcodeTimeMs > stats.maxNetcodeTimeMs) stats.maxNetcodeTimeMs = s.netcodeTimeMs;
 
                 rgX += i;
                 rgX2 += (double)i * i;
@@ -169,6 +186,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             stats.avgActivePlayers = (float)sumPlayers / n;
             stats.avgCpuFrameTimeMs = sumCpu / n;
             stats.avgGpuFrameTimeMs = sumGpu / n;
+            stats.avgNetcodeTimeMs = sumNetcode / n;
+            stats.avgRpcsSent = (float)sumRpcs / n;
+            stats.avgNetVarsDirty = (float)sumNetVars / n;
+            stats.totalNetBytesSent = sumNetBytes;
+            stats.netcodeSharePercent = stats.avgFrameTimeMs > 0.001f
+                ? stats.avgNetcodeTimeMs / stats.avgFrameTimeMs * 100f
+                : 0f;
 
             // Memory-leak slope via least-squares regression (bytes per frame).
             double denom = n * rgX2 - rgX * rgX;

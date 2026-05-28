@@ -37,7 +37,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public int totalFrames;
             public int score; // 0-100 performance score (BenchmarkAnalysis)
             public string deviceModel;
+            public string origin;        // "Editor" / "DevBuild" / "Legacy"
+            public int schemaVersion;    // 0 = legacy/unversioned
         }
+
+        static string ResolveOrigin(BenchmarkReport report) =>
+            report.schemaVersion <= 0 ? "Legacy" : (report.source?.origin.ToString() ?? "Editor");
 
         [Serializable]
         class IndexFile
@@ -73,6 +78,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 p99FrameTimeMs = report.statistics?.p99FrameTimeMs ?? 0,
                 totalFrames = report.statistics?.totalFrames ?? 0,
                 score = report.analysis?.score ?? BenchmarkAnalysis.ComputeScore(report.statistics),
+                origin = ResolveOrigin(report),
+                schemaVersion = report.schemaVersion,
             };
 
             index.entries.Insert(0, entry); // newest first
@@ -181,6 +188,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                         p99FrameTimeMs = report.statistics?.p99FrameTimeMs ?? 0,
                         totalFrames = report.statistics?.totalFrames ?? 0,
                         score = report.analysis?.score ?? BenchmarkAnalysis.ComputeScore(report.statistics),
+                        origin = ResolveOrigin(report),
+                        schemaVersion = report.schemaVersion,
                     });
                 }
                 catch (Exception e)
