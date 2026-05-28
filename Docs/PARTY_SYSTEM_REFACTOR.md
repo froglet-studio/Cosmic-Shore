@@ -1324,6 +1324,22 @@ surgical task, not comment cleanup. Added to the Deferred section.
   then remove the protocol across `InviteService`, `AcceptanceSignalService`,
   `LobbyRefreshScheduler`, and their interfaces. Spans 5+ files — a dedicated commit,
   not comment cleanup.
+- **Refactor `PartyInviteController`'s host→client transition — it is racy/fragile.**
+  The accept path reuses one `NetworkManager`: it tears down the joiner's own eager
+  host session and restarts as a client on the *same* NM, with the teardown
+  (`NetworkTransitionService.ShutdownAsync`) and the client-start
+  (`PartySessionService.JoinByIdAsync` → `JoinSessionByIdAsync`) split across two
+  classes and sequenced only by ordering + a reset gate. This produced an *intermittent*
+  "Netcode client never connected" bounce (a race, not a deterministic gap). The current
+  mitigation (strong-reset gate in `ShutdownAsync`, leave-own-session before join in
+  `HostConnectionService.AcceptInviteAsync`, transition diagnostics) removes the most
+  likely race, but the transition mechanics deserve a structural pass: make the
+  leave→reset→join sequence a single owned operation (ideally SDK-driven teardown so the
+  Multiplayer SDK releases its own network handler rather than us racing a raw
+  `nm.Shutdown()`), add a bounded connect-retry as a first-class step instead of an 8 s
+  watchdog + bounce, and cover it with the MPPM accept-flow integration test above. Spans
+  `PartyInviteController`, `NetworkTransitionService`, `HostConnectionService`,
+  `PartySessionService` — a dedicated commit.
 
 ### `[x]` Commit 16 — Client-pull roster bootstrap + terminal watchdog (splash-hang root fix)
 

@@ -617,7 +617,20 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
+                // Eager "Always InParty" model: this client hosts its OWN Relay party
+                // session (created on menu entry). Leave it through the SDK BEFORE
+                // joining the inviter's so the SDK releases its host network handler /
+                // session binding from the shared NetworkManager. Skipping this leaves a
+                // stale host binding that races the client-start inside JoinByIdAsync —
+                // the intermittent "Netcode client never connected" bounce. The NM was
+                // already shut down by PartyInviteController.ShutdownAsync, so this is a
+                // server-side delete + binding release. See Docs/PARTY_SYSTEM_REFACTOR.md.
+                Debug.Log($"[HostConnectionService][diag] before leave-own — ActiveSession={_partySessionService.ActiveSession?.Id ?? "null"}");
+                await _partySessionService.LeaveAsync();
+                Debug.Log("[HostConnectionService][diag] left own session — joining inviter's session...");
+
                 await _partySessionService.JoinByIdAsync(realSessionId);
+                Debug.Log($"[HostConnectionService][diag] JoinByIdAsync returned — ActiveSession={_partySessionService.ActiveSession?.Id ?? "null"}");
 
                 connectionData.IsPartyHost = false;
 

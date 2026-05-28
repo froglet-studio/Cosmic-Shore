@@ -80,12 +80,13 @@ namespace CosmicShore.Gameplay
         public async UniTask<bool> ShutdownAsync(float timeoutSeconds, CancellationToken ct)
         {
             var nm = NetworkManager.Singleton;
-            if (nm == null || !nm.IsListening)
+            if (nm == null || IsFullyReset(nm))
             {
                 Debug.Log("[NetworkTransitionService] NetworkManager not running — skipping shutdown.");
                 return true;
             }
 
+            LogNetworkState(nm, "before Shutdown");
             Debug.Log("[NetworkTransitionService] Shutting down NetworkManager...");
             nm.Shutdown();
 
@@ -94,29 +95,68 @@ namespace CosmicShore.Gameplay
 
             try
             {
+                // STRONG reset gate. !IsListening flipping false does NOT mean NGO has
+                // finished its teardown — the transport and the Multiplayer SDK's
+                // network handler can still be detaching. Wait until the NM reports
+                // fully idle (not listening, not serving, not a client, no shutdown in
+                // progress) so the subsequent client-start (JoinSessionByIdAsync) cannot
+                // race a half-reset NetworkManager. That race is the intermittent
+                // party-join bounce — see Docs/PARTY_SYSTEM_REFACTOR.md.
                 await UniTask.WaitUntil(
-                    () => nm == null || !nm.IsListening,
+                    () =>
+                    {
+                        var n = NetworkManager.Singleton;
+                        return n == null || IsFullyReset(n);
+                    },
                     cancellationToken: timeoutCts.Token);
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
                 Debug.LogWarning(
                     $"[NetworkTransitionService] NetworkManager shutdown timed out after {timeoutSeconds}s — forcing.");
+                LogNetworkState(NetworkManager.Singleton, "after shutdown timeout");
                 return false;
             }
 
-            // Brief settle delay for transport cleanup.  Transport cleanup is
-            // effectively instant once NetworkManager.IsListening flips false;
-            // we only need enough time for any queued send buffers to drain
-            // before we open a new Relay client on top.
-            await UniTask.Delay(50, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            // One PlayerLoop tick so any teardown work queued for end-of-frame
+            // (transport dispose, SDK handler unbind) completes before a new client is
+            // started on top. This is frame sequencing, not thread marshaling.
+            await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            LogNetworkState(NetworkManager.Singleton, "after Shutdown settled");
             Debug.Log("[NetworkTransitionService] NetworkManager shutdown complete.");
             return true;
         }
 
+        /// <summary>
+        /// True when the NetworkManager has fully torn down: not listening, not acting
+        /// as server or client, and not mid-shutdown. A stronger signal than
+        /// <c>!IsListening</c> alone — used to gate the host→client transition so a
+        /// client-start cannot race an in-progress shutdown.
+        /// </summary>
+        private static bool IsFullyReset(NetworkManager nm) =>
+            !nm.IsListening && !nm.IsServer && !nm.IsClient && !nm.ShutdownInProgress;
+
         /// <inheritdoc/>
         public async UniTask<bool> WaitForClientConnectionAsync(float timeoutSeconds, CancellationToken ct)
         {
+            var nm = NetworkManager.Singleton;
+            LogNetworkState(nm, "before wait-for-connect");
+
+            // TEMP DIAGNOSTICS (party-join race): capture why the client fails to bind.
+            // DisconnectReason is the key signal — it distinguishes a local transport
+            // race from a Relay allocation-propagation drop on the host side.
+            void OnConnected(ulong clientId) =>
+                Debug.Log($"[NetTransition][diag] OnClientConnected clientId={clientId}");
+            void OnDisconnected(ulong clientId) =>
+                Debug.LogWarning(
+                    $"[NetTransition][diag] OnClientDisconnect clientId={clientId} " +
+                    $"reason='{NetworkManager.Singleton?.DisconnectReason}'");
+            if (nm != null)
+            {
+                nm.OnClientConnectedCallback  += OnConnected;
+                nm.OnClientDisconnectCallback += OnDisconnected;
+            }
+
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
 
@@ -125,8 +165,8 @@ namespace CosmicShore.Gameplay
                 await UniTask.WaitUntil(
                     () =>
                     {
-                        var nm = NetworkManager.Singleton;
-                        return nm != null && nm.IsConnectedClient;
+                        var n = NetworkManager.Singleton;
+                        return n != null && n.IsConnectedClient;
                     },
                     cancellationToken: timeoutCts.Token);
                 Debug.Log("[NetworkTransitionService] Netcode client connected.");
@@ -136,7 +176,17 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning(
                     $"[NetworkTransitionService] Client connection not confirmed after {timeoutSeconds}s — proceeding anyway.");
+                LogNetworkState(NetworkManager.Singleton, "after connect timeout");
                 return false;
+            }
+            finally
+            {
+                var n = NetworkManager.Singleton;
+                if (n != null)
+                {
+                    n.OnClientConnectedCallback  -= OnConnected;
+                    n.OnClientDisconnectCallback -= OnDisconnected;
+                }
             }
         }
 
@@ -203,6 +253,33 @@ namespace CosmicShore.Gameplay
             if (_gameData == null) return;
             _gameData.ResetRuntimeDataForPartyJoin();
             Debug.Log("[NetworkTransitionService] Cleared stale runtime references for party join.");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // TEMP DIAGNOSTICS (party-join race) — remove once root-caused.
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Snapshots NetworkManager + transport state at a labelled phase of the
+        /// host→client transition. Temporary instrumentation for the intermittent
+        /// party-join bounce; compare a failing run against a passing run to pin
+        /// which race fired (NM-reset vs SDK-handler-detach vs Relay-propagation).
+        /// </summary>
+        private static void LogNetworkState(NetworkManager nm, string phase)
+        {
+            if (nm == null)
+            {
+                Debug.Log($"[NetTransition][diag] {phase}: NetworkManager == null");
+                return;
+            }
+
+            string transport = nm.NetworkConfig != null && nm.NetworkConfig.NetworkTransport != null
+                ? nm.NetworkConfig.NetworkTransport.GetType().Name
+                : "null";
+            Debug.Log(
+                $"[NetTransition][diag] {phase}: IsListening={nm.IsListening} IsServer={nm.IsServer} " +
+                $"IsClient={nm.IsClient} IsConnectedClient={nm.IsConnectedClient} " +
+                $"ShutdownInProgress={nm.ShutdownInProgress} transport={transport}");
         }
     }
 }
