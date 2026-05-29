@@ -71,9 +71,11 @@ namespace CosmicShore.UI
 
         [Header("Auto-created Petal Root")]
         [Tooltip("Size (px) of a flower container when one is auto-created.")]
-        [SerializeField] private float autoRootSize = 80f;
-        [Tooltip("Horizontal spacing (px) between auto-created flower containers.")]
-        [SerializeField] private float autoRootSpacing = 96f;
+        [SerializeField] private float autoRootSize = 88f;
+        [Tooltip("Horizontal spacing (px) between auto-created flower centres.")]
+        [SerializeField] private float autoRootSpacing = 104f;
+        [Tooltip("Extra vertical offset (px) applied to the auto-created row, after centring in the container.")]
+        [SerializeField] private float autoRootVerticalOffset = 0f;
 
         [Header("Juice — Petal Transitions")]
         [SerializeField] private float buffPopScale        = 1.3f;
@@ -241,11 +243,18 @@ namespace CosmicShore.UI
             var go = new GameObject($"{bar.element}_Flower", typeof(RectTransform));
             var rt = (RectTransform)go.transform;
             rt.SetParent(transform, false);
-            rt.sizeDelta        = new Vector2(autoRootSize, autoRootSize);
-            rt.anchorMin        = new Vector2(0.5f, 0.5f);
-            rt.anchorMax        = new Vector2(0.5f, 0.5f);
-            rt.pivot            = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = new Vector2((index - (bars.Length - 1) * 0.5f) * autoRootSpacing, 0f);
+            rt.sizeDelta = new Vector2(autoRootSize, autoRootSize);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot     = new Vector2(0.5f, 0.5f);
+
+            // Centre the row inside the container regardless of the container's own pivot, then
+            // apply the optional manual offset. anchoredPosition of a centre-anchored child is
+            // measured from the container centre, so we only need to correct for a non-centre pivot.
+            float x = (index - (bars.Length - 1) * 0.5f) * autoRootSpacing;
+            float pivotYCorrection = (0.5f - _rootRT.pivot.y) * _rootRT.rect.height;
+            float y = pivotYCorrection + autoRootVerticalOffset;
+            rt.anchoredPosition = new Vector2(x, y);
             bar.petalRoot = rt;
             return rt;
         }
