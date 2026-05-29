@@ -76,6 +76,7 @@ namespace CosmicShore.UI
         private Image[][] _petals;       // [barIndex][0..4]
         private int[][]   _petalValues;  // [barIndex][0..4] current per-petal tick value
         private Tween[][] _petalTweens;  // [barIndex][0..4]
+        private Vector3[][] _petalRestPos; // [barIndex][0..4] clean rest localPosition (flower arrangement)
         private Color[]   _originalLabelColors;
         private Vector3[] _originalLabelScales;
         private Tween[]   _driftRotationTweens;
@@ -118,6 +119,7 @@ namespace CosmicShore.UI
             _petals              = new Image[count][];
             _petalValues         = new int[count][];
             _petalTweens         = new Tween[count][];
+            _petalRestPos        = new Vector3[count][];
             _originalLabelColors = new Color[count];
             _originalLabelScales = new Vector3[count];
             _driftRotationTweens = new Tween[count];
@@ -139,7 +141,15 @@ namespace CosmicShore.UI
                 _currentLevels[i] = 0;
                 _petalValues[i]   = new int[PetalCount];
                 _petalTweens[i]   = new Tween[PetalCount];
+                _petalRestPos[i]  = new Vector3[PetalCount];
                 _petals[i]        = BuildPetals(ref bar, i);
+
+                // Capture each petal's clean rest position so an interrupted shake can always be
+                // snapped back to the correct flower arrangement.
+                var builtPetals = _petals[i];
+                if (builtPetals != null)
+                    for (int p = 0; p < PetalCount; p++)
+                        if (builtPetals[p]) _petalRestPos[i][p] = builtPetals[p].rectTransform.localPosition;
 
                 ElementalBarsConfigSO.DistributePetalValues(0, _petalValues[i]); // baseline: all grey
                 ApplyPetalColorsImmediate(i);
@@ -323,10 +333,16 @@ namespace CosmicShore.UI
                 tweens[p]?.Kill();
                 var rt = img.rectTransform;
 
+                // Buff pops scale; debuff shakes position — different transform channels. If one
+                // interrupts the other mid-flight, the killed tween leaves its channel dirty (scale
+                // stuck > 1, or an off-centre shake offset) and the flower looks mis-arranged. Snap
+                // both channels back to rest first so the arrangement is always clean before animating.
+                rt.localScale    = Vector3.one;
+                rt.localPosition = _petalRestPos[idx][p];
+
                 if (newV > oldV)                   // upgraded -> pop in new colour
                 {
                     img.color = target;
-                    rt.localScale = Vector3.one;
                     int bi = idx, pi = p;
                     tweens[p] = rt
                         .DOScale(Vector3.one * config.buffPopScale, config.buffPopDuration * 0.4f)
@@ -358,11 +374,14 @@ namespace CosmicShore.UI
             var petals = _petals[idx];
             if (petals == null) return;
             var vals = _petalValues[idx];
+            var rest = _petalRestPos != null ? _petalRestPos[idx] : null;
             for (int p = 0; p < PetalCount; p++)
             {
                 if (!petals[p]) continue;
                 petals[p].color = config.ColorForTick(vals[p]);
-                petals[p].rectTransform.localScale = Vector3.one;
+                var rt = petals[p].rectTransform;
+                rt.localScale = Vector3.one;
+                if (rest != null) rt.localPosition = rest[p];   // snap arrangement back to rest
             }
         }
 
