@@ -16,7 +16,7 @@ namespace CosmicShore.Editor
     /// </summary>
     public static class ElementalPetalBarWirer
     {
-        const string PetalDir = "Assets/_Graphics/ElementPetals";
+        const string PetalDir = "Assets/Resources/ElementPetals";
 
         // Element enum name -> petal-sprite filename prefix.
         static readonly (string elementName, string prefix)[] ElementOrder =

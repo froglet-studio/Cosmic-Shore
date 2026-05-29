@@ -8,9 +8,9 @@ using CosmicShore.Data;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Displays four element "flowers". Each element supplies a single crisp white petal sprite
-    /// (charge = rounded lobe, mass = pie-slice triangle, space = kite, time = rhombus) whose pivot
-    /// sits at the flower centre; the view stacks five copies rotated 72°·n into a 5-fold flower.
+    /// Displays four element "flowers". Each element is rendered as five copies of a single crisp
+    /// white petal sprite (charge = rounded lobe, mass = pie-slice triangle, space = kite,
+    /// time = rhombus), pivot-centred on the flower and rotated 72°·n into a 5-fold flower.
     ///
     /// The element level is an integer in [-5, 15] (ResourceSystem.GetLevel = floor(level·10),
     /// level ∈ [-0.5, 1.5]). That total is distributed round-robin across the five petals, so each
@@ -18,9 +18,14 @@ namespace CosmicShore.UI
     ///
     ///   all fire = -5 | all grey = 0 | all white = 5 | all blue = 10 | all lime = 15
     ///
-    /// At any total at most two adjacent colours are visible (e.g. 3 → 3 white + 2 grey). Because the
-    /// petals are pure white, a single multiply-tint reproduces every spec colour exactly — no
-    /// hue-shifting required. Each petal is recoloured and scale-popped independently as it changes.
+    /// At any total at most two adjacent colours show (e.g. 3 → 3 white + 2 grey). Because the petals
+    /// are pure white, a single multiply-tint reproduces every spec colour exactly — no hue-shifting
+    /// (which can't reach grey/white from a saturated source). Each petal recolours + scale-pops
+    /// independently as it changes; the pop scales about the flower centre for an outward "bloom".
+    ///
+    /// Self-wiring: <see cref="Build"/> hides any legacy pip art, auto-creates a square petal container
+    /// if one isn't assigned, and loads the petal sprite from <c>Resources/ElementPetals/{element}_petal</c>
+    /// when <see cref="ElementBarBinding.petalSprite"/> is empty — so it works with no manual wiring.
     /// </summary>
     public class ElementalBarsView : MonoBehaviour
     {
@@ -30,11 +35,12 @@ namespace CosmicShore.UI
             [Tooltip("The element this flower represents")]
             public Element element;
 
-            [Tooltip("Square container the 5 rotated petal Images are created under at runtime.")]
+            [Tooltip("Optional square container the 5 rotated petals are created under. " +
+                     "Auto-created as a child of this view when left empty.")]
             public RectTransform petalRoot;
 
-            [Tooltip("One crisp white petal silhouette, pivot-centred on the flower. Rotated 72°·n " +
-                     "to build the 5-fold flower; tinted to the element-tick colours at runtime.")]
+            [Tooltip("Optional crisp white petal silhouette (pivot-centred on the flower). " +
+                     "Falls back to Resources/ElementPetals/{element}_petal when empty.")]
             public Sprite petalSprite;
 
             [Tooltip("Label/icon image below the flower")]
@@ -42,6 +48,12 @@ namespace CosmicShore.UI
 
             [Tooltip("Normal sprite for the label (restored after drift)")]
             public Sprite normalLabelSprite;
+
+            [Header("Legacy (hidden at runtime)")]
+            [Tooltip("Old 15-pip background art — deactivated by the flower view on Build.")]
+            public Image[] bgPips;
+            [Tooltip("Old 15-pip fill art — deactivated by the flower view on Build.")]
+            public Image[] fillPips;
         }
 
         [Header("Bar Bindings")]
@@ -55,6 +67,12 @@ namespace CosmicShore.UI
         [Tooltip(" 3 : lime")]  [SerializeField] private Color limeColor  = new(0.59f, 0.92f, 0.16f, 1f);
         [Tooltip("Color flash on a petal that downgrades, before it settles to its tick color")]
         [SerializeField] private Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
+
+        [Header("Auto-created Petal Root")]
+        [Tooltip("Size (px) of a flower container when one is auto-created.")]
+        [SerializeField] private float autoRootSize = 80f;
+        [Tooltip("Horizontal spacing (px) between auto-created flower containers.")]
+        [SerializeField] private float autoRootSpacing = 96f;
 
         [Header("Juice — Petal Transitions")]
         [SerializeField] private float buffPopScale        = 1.3f;
@@ -80,6 +98,9 @@ namespace CosmicShore.UI
         [SerializeField] private float  driftRotationAngle    = 15f;
         [SerializeField] private float  driftRotationDuration = 0.2f;
         [SerializeField] private Sprite doubleDriftSprite;
+
+        [Tooltip("Resources path (no extension) of the per-element petal sprites, '{0}' = element name lowercased.")]
+        [SerializeField] private string petalResourceFormat = "ElementPetals/{0}_petal";
 
         // Runtime state
         private RectTransform _rootRT;
@@ -140,10 +161,12 @@ namespace CosmicShore.UI
                         bar.normalLabelSprite = bar.labelIcon.sprite;
                 }
 
+                HideLegacyPips(ref bar);
+
                 _currentLevels[i] = 0;
                 _petalValues[i]   = new int[PetalCount];
                 _petalTweens[i]   = new Tween[PetalCount];
-                _petals[i]        = BuildPetals(ref bar);
+                _petals[i]        = BuildPetals(ref bar, i);
 
                 PetalValues(0, _petalValues[i]); // baseline: all grey
                 ApplyPetalColorsImmediate(i);
@@ -152,12 +175,22 @@ namespace CosmicShore.UI
             _built = true;
         }
 
-        Image[] BuildPetals(ref ElementBarBinding bar)
+        static void HideLegacyPips(ref ElementBarBinding bar)
         {
-            if (!bar.petalRoot || !bar.petalSprite)
+            if (bar.bgPips != null)
+                foreach (var pip in bar.bgPips) if (pip) pip.gameObject.SetActive(false);
+            if (bar.fillPips != null)
+                foreach (var pip in bar.fillPips) if (pip) pip.gameObject.SetActive(false);
+        }
+
+        Image[] BuildPetals(ref ElementBarBinding bar, int index)
+        {
+            var root   = ResolvePetalRoot(ref bar, index);
+            var sprite = ResolvePetalSprite(ref bar);
+            if (!root || !sprite)
             {
-                Debug.LogError($"[ElementalBarsView] Element '{bar.element}' is missing its petalRoot or " +
-                               "petalSprite — run Tools > Cosmic Shore > Wire Elemental Petal Bars.", this);
+                Debug.LogError($"[ElementalBarsView] Could not resolve a petal root/sprite for element " +
+                               $"'{bar.element}' (no sprite at Resources/{string.Format(petalResourceFormat, bar.element.ToString().ToLowerInvariant())}?).", this);
                 return null;
             }
 
@@ -166,22 +199,46 @@ namespace CosmicShore.UI
             {
                 var go = new GameObject($"Petal{p}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
                 var rt = (RectTransform)go.transform;
-                rt.SetParent(bar.petalRoot, false);
+                rt.SetParent(root, false);
                 rt.anchorMin = Vector2.zero;
                 rt.anchorMax = Vector2.one;
                 rt.offsetMin = Vector2.zero;
                 rt.offsetMax = Vector2.zero;
-                rt.pivot     = new Vector2(0.5f, 0.5f);             // == flower centre
+                rt.pivot     = new Vector2(0.5f, 0.5f);              // == flower centre
                 rt.localScale = Vector3.one;
                 rt.localRotation = Quaternion.Euler(0f, 0f, -PetalSpacing * p);
 
                 var img = go.GetComponent<Image>();
-                img.sprite = bar.petalSprite;
+                img.sprite = sprite;
                 img.raycastTarget = false;
                 img.preserveAspect = true;
                 petals[p] = img;
             }
             return petals;
+        }
+
+        RectTransform ResolvePetalRoot(ref ElementBarBinding bar, int index)
+        {
+            if (bar.petalRoot) return bar.petalRoot;
+
+            var go = new GameObject($"{bar.element}_Flower", typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(transform, false);
+            rt.sizeDelta        = new Vector2(autoRootSize, autoRootSize);
+            rt.anchorMin        = new Vector2(0.5f, 0.5f);
+            rt.anchorMax        = new Vector2(0.5f, 0.5f);
+            rt.pivot            = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2((index - (bars.Length - 1) * 0.5f) * autoRootSpacing, 0f);
+            bar.petalRoot = rt;
+            return rt;
+        }
+
+        Sprite ResolvePetalSprite(ref ElementBarBinding bar)
+        {
+            if (bar.petalSprite) return bar.petalSprite;
+            string path = string.Format(petalResourceFormat, bar.element.ToString().ToLowerInvariant());
+            bar.petalSprite = Resources.Load<Sprite>(path);
+            return bar.petalSprite;
         }
 
         // ---------------------------------------------------------------
