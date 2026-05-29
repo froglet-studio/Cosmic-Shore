@@ -26,6 +26,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     private CancellationTokenSource _cts;
     private CancellationToken _lifetimeToken;
+    private float _lastFireTime = float.MinValue;
 
     #region Unity Lifecycle
     private void Awake()
@@ -143,6 +144,17 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
         try
         {
+            // Respect rate limit even on a fresh Begin() — wait out the remaining cooldown from the last shot.
+            float waitBeforeFirst = (_lastFireTime + interval) - Time.time;
+            if (waitBeforeFirst > 0f)
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(waitBeforeFirst),
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.PreLateUpdate,
+                    token);
+            }
+
             while (!token.IsCancellationRequested)
             {
                 if (_resources == null || _resources.Resources == null || ammoIndex < 0 || ammoIndex >= _resources.Resources.Count)
@@ -194,6 +206,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     }
 
                     _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
+                    _lastFireTime = Time.time;
                     OnVolleyFired?.Invoke(_status?.PlayerName);
                 }
 
