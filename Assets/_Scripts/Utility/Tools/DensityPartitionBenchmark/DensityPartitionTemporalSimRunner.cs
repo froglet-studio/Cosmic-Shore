@@ -157,18 +157,24 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             var resultMid = RunOne(optMid);
             AppendRun(sb, "MID — GridSmoothedInterp17 (cell-sized + smoothing + sub-voxel interp, c058663)", resultMid, th);
 
-            // --- Run C: cell-sized + smoothing + interp + mean-shift centroid refinement ---
+            // --- Run C: cell-sized + smoothing + interp + mean-shift centroid refinement, 32³ resolution ---
+            // Two changes from MID: voxel count 17³ → 32³ (75m voxels vs 141m,
+            // matching the SHIPPED grid's effective resolution at the inner ball
+            // — 1000m / 17 ≈ 58m voxel), AND mean-shift centroid refinement.
+            //
             // The smoothed argmax + interp is a STICKY target — it locks onto one
-            // cluster until it's been depleted enough to drop below another's
-            // smoothed density. With 40 fauna at one cluster the central core
-            // empties in seconds; the algorithm doesn't notice for the rest of the
-            // 5s goal-update interval. Mean-shift refines the answer onto the
-            // actual local mass concentration, so as fauna eat the core the target
-            // pulls outward to where the remaining prisms live, sustaining
-            // consumption instead of stalling.
-            var optNew = DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpMeanShift17();
+            // cluster until depleted enough to drop below another's smoothed
+            // density. With 141m voxels (one voxel per cluster), the densest
+            // voxel doesn't change as fauna eat — the smoothed value still
+            // dominates because the cluster's outer shell (out of fauna reach)
+            // keeps the histogram bin loaded. Finer voxels let the algorithm
+            // distinguish "core depleted" from "shell intact" so the densest
+            // location shifts. Mean-shift then pulls the answer onto the actual
+            // local mass center, sustaining consumption as fauna eat outward.
+            var optNew = DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpMeanShift32();
+            optNew.massWeighted = false; // match production / OLD / MID: count-weighted, not mass-weighted
             var resultNew = RunOne(optNew);
-            AppendRun(sb, "NEW — GridMassSmoothedInterpMeanShift17 (above + iterative centroid refinement)", resultNew, th);
+            AppendRun(sb, "NEW — 32³ cell-sized + smoothing + interp + mean-shift (5 iter, count-weighted)", resultNew, th);
 
             // --- Verdict ---
             sb.AppendLine("=== Verdict ===");
@@ -199,11 +205,15 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             if (!midOsc && newOsc && !newBlind)
             {
                 sb.AppendLine("  CONFIRMED: the c058663 grid-sizing fix is necessary BUT the algorithm also");
-                sb.AppendLine("  needs centroid refinement. Smoothed argmax (MID) sticks on one cluster and");
-                sb.AppendLine("  fauna idle once the core is depleted; mean-shift (NEW) pulls the answer onto");
-                sb.AppendLine("  the actual local mass center, sustaining consumption as fauna eat outward.");
-                sb.AppendLine("  Production next step: add centroidRefine + 5 iterations to BlockDensityGrid's");
-                sb.AppendLine("  FindDensestRegionJob (mirroring DensityPartitionBenchmarkAlgorithms.Search).");
+                sb.AppendLine("  needs finer voxel resolution + centroid refinement. With 141m voxels (MID)");
+                sb.AppendLine("  one cluster fits per voxel, so the densest voxel doesn't shift as fauna eat");
+                sb.AppendLine("  the core — the cluster's out-of-reach shell keeps the bin loaded. 32³ on the");
+                sb.AppendLine("  cell-sized grid gives 75m voxels, matching the SHIPPED grid's effective");
+                sb.AppendLine("  resolution at the inner ball. Mean-shift then pulls the answer onto the");
+                sb.AppendLine("  local mass center as fauna eat outward, sustaining consumption.");
+                sb.AppendLine("  Production next step: raise BlockDensityGrid.GridPointsPerDimension to 32 and");
+                sb.AppendLine("  add centroidRefine + 5 iterations to FindDensestRegionJob (the algorithm is");
+                sb.AppendLine("  already inline in DensityPartitionBenchmarkAlgorithms.Search).");
             }
             else if (midOsc && !midBlind)
             {
