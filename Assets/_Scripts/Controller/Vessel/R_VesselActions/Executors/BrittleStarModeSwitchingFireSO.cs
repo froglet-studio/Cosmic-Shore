@@ -28,19 +28,24 @@ namespace CosmicShore.Gameplay
             _isHeld = true;
             _registry = execs;
 
+            ShipActionSO next;
+            int nextSelector;
             switch (_selector)
             {
-                case 1: _active = ringFire; _selector = 2; break;
-                case 2: _active = creationMode; _selector = 3; break;
-                case 3: _active = speedMode; _selector = 1; break;
+                case 1: next = ringFire;      nextSelector = 2; break;
+                case 2: next = creationMode;  nextSelector = 3; break;
+                case 3: next = speedMode;     nextSelector = 1; break;
+                default: return;
             }
 
+            if (next == ringFire && Time.time - _lastRingFireTime < ringFireInterval)
+                return;
+
+            _active = next;
+            _selector = nextSelector;
+
             if (_active == ringFire)
-            {
-                if (Time.time - _lastRingFireTime < ringFireInterval)
-                    return;
                 _lastRingFireTime = Time.time;
-            }
 
             _active?.StartAction(execs, vesselStatus);
         }
