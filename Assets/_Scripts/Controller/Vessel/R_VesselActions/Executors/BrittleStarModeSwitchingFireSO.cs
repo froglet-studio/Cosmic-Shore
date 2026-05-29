@@ -12,10 +12,15 @@ namespace CosmicShore.Gameplay
         [SerializeField] private ShipActionSO ringFire;
         [SerializeField] private ShipActionSO creationMode;
 
+        [Header("Ring Fire Rate")]
+        [Tooltip("Minimum seconds between ring fire bursts when mode-switching triggers it.")]
+        [SerializeField] private float ringFireInterval = 1f;
+
         private ActionExecutorRegistry _registry;
         private bool _isHeld;
         private int _selector = 1;
         private ShipActionSO _active;
+        private float _lastRingFireTime = float.MinValue;
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vs)
         {
@@ -28,6 +33,13 @@ namespace CosmicShore.Gameplay
                 case 1: _active = ringFire; _selector = 2; break;
                 case 2: _active = creationMode; _selector = 3; break;
                 case 3: _active = speedMode; _selector = 1; break;
+            }
+
+            if (_active == ringFire)
+            {
+                if (Time.time - _lastRingFireTime < ringFireInterval)
+                    return;
+                _lastRingFireTime = Time.time;
             }
 
             _active?.StartAction(execs, vesselStatus);
