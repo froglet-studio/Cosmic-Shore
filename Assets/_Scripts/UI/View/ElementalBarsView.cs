@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 
 namespace CosmicShore.UI
 {
