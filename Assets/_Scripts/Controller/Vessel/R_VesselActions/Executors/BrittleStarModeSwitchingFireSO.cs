@@ -25,9 +25,21 @@ namespace CosmicShore.Gameplay
 
             switch (_selector)
             {
-                case 1: _active = ringFire; _selector = 2; break;
-                case 2: _active = creationMode; _selector = 3; break;
-                case 3: _active = speedMode; _selector = 1; break;
+                case 1: 
+                    _active = ringFire; 
+                    _selector = 2;
+                    Debug.Log("Ring Fire");
+                    break;
+                case 2: 
+                    _active = creationMode; 
+                    _selector = 3;
+                    Debug.Log("Creation Mode");
+                    break;
+                case 3: 
+                    _active = speedMode; 
+                    _selector = 1;
+                    Debug.Log("Speed Mode");
+                    break;
             }
 
             _active?.StartAction(execs, vesselStatus);

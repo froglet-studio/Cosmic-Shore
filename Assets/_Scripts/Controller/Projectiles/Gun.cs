@@ -153,7 +153,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            Vector3 direction = customDirection ?? transform.forward;
+            Vector3 direction = customDirection ?? containerTransform.forward;
             Vector3 spawnPos  = containerTransform.position;   // using container for spawn point
 
             SafeLookRotation.TryGet(direction, out var rotation, this);

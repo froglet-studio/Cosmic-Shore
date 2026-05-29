@@ -320,7 +320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  firePeriod: 0.2
+  firePeriod: 5
   sideLength: 2
   projectileFactory: {fileID: 6530681738383227403}
 --- !u!1 &1760120135986374556
@@ -700,7 +700,7 @@ Transform:
   m_GameObject: {fileID: 3538467135756948443}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 10, z: -20}
+  m_LocalPosition: {x: 0, y: 0, z: 50}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -998,7 +998,7 @@ GameObject:
   - component: {fileID: 6530681738383227403}
   - component: {fileID: 1396967043685612484}
   m_Layer: 0
-  m_Name: Sparrow ProjectileFactory
+  m_Name: BrittleStar ProjectileFactory
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1046,10 +1046,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5daed71d21246db9fdb15a9d495e1ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
-  defaultCapacity: 25
-  maxSize: 100
-  enableBufferMaintenance: 1
+  prefab: {fileID: 7632677803272750685, guid: dfaf0d694cb864748887b79fb4435061, type: 3}
+  defaultCapacity: 50
+  maxSize: 250
+  enableBufferMaintenance: 0
   bufferSizeTarget: 25
   maxInstantiateRate: 25
   baseInstantiateRate: 10
@@ -1097,6 +1097,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 671963387237832538}
+  - component: {fileID: 7613047974170691429}
+  - component: {fileID: 5146693229036247537}
   m_Layer: 0
   m_Name: GunFocus
   m_TagString: Untagged
@@ -1119,6 +1121,59 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4853044355858455827}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &7613047974170691429
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7685355388261118589}
+  m_Mesh: {fileID: 4178986218149870590, guid: 6762f621cbdcb3b4591336aa864419d3, type: 3}
+--- !u!23 &5146693229036247537
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7685355388261118589}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &7937873714613624952
 GameObject:
   m_ObjectHideFlags: 0
@@ -1470,22 +1525,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Resources:
-  - Name: Missiles
-    initialResourceGainRate: 0
-    resourceGainRate: 0
-    maxAmount: 1
-    initialAmount: 1
-  - Name: Heat
-    initialResourceGainRate: 0
-    resourceGainRate: 0
-    maxAmount: 1
-    initialAmount: 0
   - Name: FullAuto
-    initialResourceGainRate: 0
-    resourceGainRate: 0
-    maxAmount: 1
-    initialAmount: 0
-  - Name: ExhaustBarrage
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
@@ -1611,7 +1651,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 5466809915974853214}
   _inputEventShipActions:
-  - InputEvent: 1
+  - InputEvent: 7
     ShipActions:
     - {fileID: 11400000, guid: 53ab026c3b3475a478ef7cf206bb194e, type: 2}
   - InputEvent: 6
@@ -1739,6 +1779,61 @@ MonoBehaviour:
     type: 2}
   dangerBlocksSpawnedStat: {fileID: 11400000, guid: 2a796726f5a4448cbb76a0275666cafb,
     type: 2}
+--- !u!1 &8768702777538390030
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4876592282506157770}
+  - component: {fileID: 871360826538272823}
+  m_Layer: 8
+  m_Name: BoostAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4876592282506157770
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8768702777538390030}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1556226694549335395}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &871360826538272823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8768702777538390030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b022d3601872e447b4ddfbd2179678a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+  fullAutoActionExecutor: {fileID: 3398802949413375153}
+  muzzlesMain:
+  - {fileID: 6386504376184918062}
+  - {fileID: 8764227844516723978}
+  - {fileID: 2518246021534067613}
+  - {fileID: 1034787370084578590}
+  - {fileID: 7775380202155728324}
+  muzzlesSecondary:
+  - {fileID: 8764227844516723978}
+  - {fileID: 1034787370084578590}
 --- !u!1 &8788541063350086745
 GameObject:
   m_ObjectHideFlags: 0
@@ -1954,6 +2049,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6472508459746517008}
+  - {fileID: 4876592282506157770}
   m_Father: {fileID: 4853044355858455827}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5466809915974853214
@@ -1970,6 +2066,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _executors:
   - {fileID: 3398802949413375153}
+  - {fileID: 871360826538272823}
 --- !u!1001 &779933931439586912
 PrefabInstance:
   m_ObjectHideFlags: 0
