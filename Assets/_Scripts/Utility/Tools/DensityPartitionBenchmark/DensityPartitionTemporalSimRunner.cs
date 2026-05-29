@@ -101,8 +101,12 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Tooltip("Radius (m) of the orbit sphere each fauna sweeps around the density target. " +
                  "The fauna continuously re-rolls a sub-goal inside this sphere, so the swarm " +
                  "collectively covers a volume of roughly this + consumeRadius — the sim's " +
-                 "stand-in for boid separation spreading the swarm.")]
-        [Min(0f)] public float faunaGoalOrbitRadius = 60f;
+                 "stand-in for boid separation spreading the swarm. Default 120m so total reach " +
+                 "(120 + 40 = 160m) matches the algorithm's 150m smoothing kernel — i.e. the " +
+                 "swarm's effective consumption volume equals the volume the algorithm samples " +
+                 "for density. Set lower (~60m) to model a tighter swarm; the cluster shell will " +
+                 "become unreachable and consumption stalls.")]
+        [Min(0f)] public float faunaGoalOrbitRadius = 120f;
         [Tooltip("Max simultaneous fauna.")]
         [Min(1)] public int faunaPopulationCap = 40;
         [Tooltip("Seconds between fauna spawns (for the dominant domain) once phase >= Quiet.")]
