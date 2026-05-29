@@ -1028,7 +1028,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 727.20215, y: -332}
-  m_SizeDelta: {x: 464.5258, y: 359.97}
+  m_SizeDelta: {x: 464.5258, y: 100}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &6460679599271634359
 MonoBehaviour:
@@ -1048,22 +1048,26 @@ MonoBehaviour:
     petalRoot: {fileID: 0}
     petalSpriteOverride: {fileID: 0}
     labelIcon: {fileID: 7765495972499482060}
-    normalLabelSprite: {fileID: 21300000, guid: cbac2ac9cd6900044b197490af5727f1, type: 3}
+    normalLabelSprite: {fileID: 21300000, guid: cbac2ac9cd6900044b197490af5727f1,
+      type: 3}
   - element: 2
     petalRoot: {fileID: 0}
     petalSpriteOverride: {fileID: 0}
     labelIcon: {fileID: 6876775113113134987}
-    normalLabelSprite: {fileID: 21300000, guid: 1eb2c03794f55824d8e01e96c4fe7a3e, type: 3}
+    normalLabelSprite: {fileID: 21300000, guid: 1eb2c03794f55824d8e01e96c4fe7a3e,
+      type: 3}
   - element: 3
     petalRoot: {fileID: 0}
     petalSpriteOverride: {fileID: 0}
     labelIcon: {fileID: 2073992627507280207}
-    normalLabelSprite: {fileID: 21300000, guid: 4e788082740141a45b47f1c51a5c15b0, type: 3}
+    normalLabelSprite: {fileID: 21300000, guid: 4e788082740141a45b47f1c51a5c15b0,
+      type: 3}
   - element: 4
     petalRoot: {fileID: 0}
     petalSpriteOverride: {fileID: 0}
     labelIcon: {fileID: 8690812660076800128}
-    normalLabelSprite: {fileID: 21300000, guid: 809450069823742448227b7dceef6fcc, type: 3}
+    normalLabelSprite: {fileID: 21300000, guid: 809450069823742448227b7dceef6fcc,
+      type: 3}
   autoRootSize: 88
   autoRootSpacing: 104
   autoRootVerticalOffset: 0
@@ -1086,7 +1090,7 @@ MonoBehaviour:
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 4
+  m_ChildAlignment: 8
   m_Spacing: 16
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
@@ -9022,7 +9026,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071, type: 2}
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c65db9958c064485be49a2183f263,
     type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}
