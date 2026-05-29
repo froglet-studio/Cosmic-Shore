@@ -138,9 +138,8 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         var projectileScale = so.ProjectileScale;
         var projectileTime  = so.ProjectileTime;
         var   firingPattern   = so.FiringPattern;
-        var energy              = so.Energy;
-        var speedValue          = so.SpeedValue.Value;
-        var interMuzzleDelayMs  = so.InterMuzzleDelayMs;
+        var energy          = so.Energy;
+        var speedValue      = so.SpeedValue.Value;
 
         try
         {
@@ -192,15 +191,6 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                             firingPattern,
                             energy
                         );
-
-                        if (interMuzzleDelayMs > 0 && i < count - 1)
-                        {
-                            await UniTask.Delay(
-                                interMuzzleDelayMs,
-                                DelayType.DeltaTime,
-                                PlayerLoopTiming.PreLateUpdate,
-                                token);
-                        }
                     }
 
                     _resources.ChangeResourceAmount(ammoIndex, -ammoCost);

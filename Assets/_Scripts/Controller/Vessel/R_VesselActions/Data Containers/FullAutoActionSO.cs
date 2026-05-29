@@ -16,8 +16,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] FiringPatterns firingPattern = FiringPatterns.Default;
         [SerializeField] int   energy = 0;
         [SerializeField] ElementalFloat speedValue;
-        [Tooltip("Milliseconds between each muzzle in a single volley. 0 = simultaneous.")]
-        [SerializeField] int interMuzzleDelayMs = 0;
 
         public int AmmoIndex => ammoIndex;
         public float AmmoCost => ammoCost;
@@ -28,7 +26,6 @@ namespace CosmicShore.Gameplay
         public FiringPatterns FiringPattern => firingPattern;
         public int Energy => energy;
         public ElementalFloat SpeedValue => speedValue;
-        public int InterMuzzleDelayMs => interMuzzleDelayMs;
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<FullAutoActionExecutor>()?.Begin(this);

@@ -26,4 +26,3 @@ MonoBehaviour:
     Min: 1500
     Max: 4000
     element: 3
-  interMuzzleDelayMs: 100
