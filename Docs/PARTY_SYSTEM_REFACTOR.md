@@ -1340,6 +1340,17 @@ surgical task, not comment cleanup. Added to the Deferred section.
   watchdog + bounce, and cover it with the MPPM accept-flow integration test above. Spans
   `PartyInviteController`, `NetworkTransitionService`, `HostConnectionService`,
   `PartySessionService` — a dedicated commit.
+  - **Companion guard already landed in `HostConnectionService.RefreshAsync`.** Same
+    transport-swap churn was *also* tripping a false presence-loss on the joiner: 3+ transient
+    `RefreshAsync` failures during teardown crossed `MAX_REFRESH_ERRORS_BEFORE_RECONNECT` →
+    `ForceReset` + `InParty → Reconnecting` + `RaiseHostConnectionLost` + a throwaway presence
+    lobby, *after* a successful join (broke online-player discovery for the affected joiner
+    for the rest of the session). Inline guard: skip `RefreshAsync` and clear
+    `_consecutiveRefreshErrors` while `PartyInviteController.Instance.IsTransitioning` is true
+    (host is never `IsTransitioning`, so its scan loop is unaffected). Fold this into the same
+    structural refactor once the leave→reset→join is a single owned operation — the refresh
+    loop can then observe a single transition gate instead of inferring it from
+    `IsTransitioning`. See B-entry in `Docs/PARTY_OPEN_BUGS.md`.
 
 ### `[x]` Commit 16 — Client-pull roster bootstrap + terminal watchdog (splash-hang root fix)
 

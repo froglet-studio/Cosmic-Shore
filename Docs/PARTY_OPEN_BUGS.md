@@ -6,7 +6,8 @@ these **one at a time**; each entry records the current hypothesis, not a commit
 Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred.
 
 **Tackle order:** B1 → B2 → B3 → B5 → B4 → B6 (crashes/cleanup first; the racy
-presence-lobby cluster last, after diagnostics + retests). B1 is the agreed first target.
+presence-lobby cluster last, after diagnostics + retests), then B7 once the spawn-path
+fragility is characterized. B1 is the agreed first target.
 
 | ID | Title | Group | Confidence | Status |
 |----|-------|-------|-----------|--------|
@@ -16,6 +17,7 @@ presence-lobby cluster last, after diagnostics + retests). B1 is the agreed firs
 | B4 | TC1 second invite not delivered + party members vanish from 3rd player's panel | Presence-lobby race | High, needs retest | 🔴 |
 | B5 | TC2/TC4 second joiner fails to join | Multi-client join | Uncertain | 🔴 |
 | B6 | TC3 NRE (`WrappedLobbyService`) + empty online/request lists | SDK-internal | Medium | 🔴 |
+| B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Spawn-path timing | Verified mostly benign | ⚪ |
 
 ---
 
@@ -210,6 +212,79 @@ after the next successful refresh?). Likely bundle with B4 diagnostics.
 **Evidence.** SDK stack (`WrappedLobbyService.cs:165/462`, `LobbyChannel.cs:197`);
 our lobby leave/`ForceReset`/refresh-early-return paths in `HostConnectionService` /
 `PresenceLobbyService`.
+
+---
+
+## B7 — Client pair-init runs before remote identity replicates ⚪
+
+**Symptom.** Observed on 3-VP MPPM with YS1/YS2/YS3 after the YS2/YS3 join succeeded. YS2's
+first `[ClientPlayerVesselInitializer] InitializePair` log shows `Player=` (empty); YS3
+spawns on YS2 as `Name=, VesselType=Random`. Self-heals within a few ticks once
+NetworkVariables replicate. Not reproduced on YS3 (pure timing/jitter — applies to any
+remote pair).
+
+**Root cause.** `player.Name` is `NetName.Value` snapshotted at `Player.OnNetworkSpawn`
+(`Player.cs:148`); `NetName` and `NetDefaultVesselType` are **owner-written**
+`NetworkVariable`s (`Player.cs:30,32`) that replicate a tick *after* the `NetworkObject`
+spawns. The server mirrors the same issue with an `IsSpawnReady` gate
+(`Player.cs:486-488`) before it processes a player — but the client `InitializePair` path
+in `ClientPlayerVesselInitializer` (re-triggered by spawn events
+`OnPlayerNetworkSpawnedUlong` / `OnVesselNetworkSpawned`) does *not* gate on identity, so
+a remote pair can wire through with empty `Name` / `Random` vessel-type.
+
+**Verified mostly benign (don't escalate, document and revisit).**
+- **Vessel GameObject correct.** Server spawns the right prefab from the authoritative
+  vessel type; the client attaches via `NetVesselId`. `InitializePair`
+  (`ClientPlayerVesselInitializer.cs:344-349`) doesn't key the vessel off the player's
+  vessel-type var.
+- **Party-member UI correct.** Names come from `PartyPlayerData.DisplayName` (resolved
+  from the lobby/invite via `RaisePartyMemberJoined`), not `player.Name`.
+- **Scoreboard / score cards correct.** `Scoreboard` reads names from `RoundStats.Name`
+  (`Scoreboard.cs:307,315` — `card.Setup(stats.Name, …)`). `RoundStats.Name` is written
+  server-only in `InitializeForMultiplayerMode` (`Player.cs:152-156`, behind
+  `if (!IsServer) return;`) and the server only spawns after its `IsSpawnReady` gate
+  (`Player.cs:486-488`), so the replicated `RoundStats.n_Name` is always the correct name.
+- **Vessel visuals / HUD correct.** HUD/icon/customization key off the spawned vessel's
+  own `vesselType` field and live `Domain`, not the player's `NetDefaultVesselType`.
+- **Residual risk (thin, not menu-reachable).** `OnNetNameValueChanged` updates `Name`
+  then calls the server-only `TryRaiseDeferredSpawnEvent` (`Player.cs:446-464`);
+  `OnNetDefaultVesselTypeChanged` does *only* that server-only call. So `player.Name`
+  self-corrects as a field, but live consumers of it (`GameFeedAPI` joust/disconnect feed
+  text) could read empty if such an event fired inside the sub-replication window. Not
+  reachable in the menu — there's no joust/disconnect feed there.
+
+**Two candidate approaches** (evaluate when this is tackled):
+
+1. **Gate (mirror server `IsSpawnReady`).** Defer client `InitializePair` until `NetName`
+   is non-empty *and* `NetDefaultVesselType` is valid. Reuses the pending-pair queue
+   (`_pendingPairs` + `ProcessPendingPairs`, `ClientPlayerVesselInitializer.cs:35,284`),
+   but is **not a one-liner**: the current re-triggers are spawn events, so a pair
+   deferred for identity would need a **new identity-replication trigger** (raise from the
+   client branch of `OnNetNameValueChanged` / `OnNetDefaultVesselTypeChanged`, mirroring
+   the server's `TryRaiseDeferredSpawnEvent`) **plus a timeout fallback** so a pair always
+   eventually inits. Touches the fragile spawn-critical path.
+2. **Notify-on-change (lighter).** Make the client branch of those two handlers raise a
+   SOAP notification so any live/cached consumer refreshes; don't gate spawn. Smaller
+   blast radius, but no current consumer needs it (everything correctness-critical already
+   keys off `RoundStats` or the vessel itself).
+
+**Open sub-question to investigate alongside the chosen approach.** *Why* is the client
+spawn-critical path described as fragile? Characterize the specific invariants the
+`_pendingPairs` / `ProcessPendingPairs` / `Initialize{All,New}PlayerAndVessel_ClientRpc`
+ordering depends on — what specifically can break if a new identity-replication trigger
+re-fires `ProcessPendingPairs`, or if `InitializePair` is delayed past a vessel-RPC arrival.
+Without this characterization, neither candidate approach can be evaluated safely.
+
+**Evidence.** `Player.cs:148` (snapshot), `Player.cs:30,32` (owner-written
+NetworkVariables), `Player.cs:152-156,486-488` (server-only `RoundStats.Name` + spawn
+gate), `Player.cs:446-464` (server-only deferred-spawn raise from handlers),
+`ClientPlayerVesselInitializer.cs:35,284,344-349` (pending queue, re-trigger, pair init),
+`Scoreboard.cs:307,315` (uses `RoundStats.Name`).
+
+**Not tackled in the current pass.** Related guard for the *primary* presence-reconnect
+false positive (transport-swap churn → `RaiseHostConnectionLost`) landed in
+`HostConnectionService.RefreshAsync` as the `IsTransitioning` skip; see the
+`PartyInviteController` host→client transition entry in `PARTY_SYSTEM_REFACTOR.md`.
 
 ---
 

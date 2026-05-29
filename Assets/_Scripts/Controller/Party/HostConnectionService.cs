@@ -947,6 +947,18 @@ namespace CosmicShore.Gameplay
         {
             if (_lobbyService.ActiveLobby == null) return;
 
+            // Mid party-transition (accept/leave) the host→client transport swap
+            // briefly disrupts presence refreshes. Counting those toward
+            // MAX_REFRESH_ERRORS_BEFORE_RECONNECT would falsely escalate to
+            // ForceReset → Reconnecting → throwaway presence lobby — even on a
+            // successful join. Skip the tick and clear the counter. Host is
+            // never IsTransitioning, so its scan loop keeps running.
+            if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+            {
+                _consecutiveRefreshErrors = 0;
+                return;
+            }
+
             // Quick non-blocking check — if someone else holds the mutex, skip
             // this tick rather than queuing up. The next tick will pick up.
             if (!await _lobbyMutex.WaitAsync(0))
