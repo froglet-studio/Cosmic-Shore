@@ -30,25 +30,22 @@ namespace CosmicShore.Gameplay
             base.Initialize(vs);
             _isHeld = true;
             _registry = execs;
-            ShipActionSO next;
-            int nextSelector;
 
-
-            switch (_selector)
+            // Cycle through modes, skipping any slots that are unassigned
+            ShipActionSO next = null;
+            int nextSelector = _selector;
+            for (int attempts = 0; attempts < 3 && next == null; attempts++)
             {
-                case 1: next = ringFire; nextSelector = 2; break;
-                case 2: next = creationMode; nextSelector = 3; break;
-                case 3: next = speedMode; nextSelector = 1; break;
-                default: return;
+                switch (nextSelector)
+                {
+                    case 1: next = ringFire;     nextSelector = 2; break;
+                    case 2: next = creationMode; nextSelector = 3; break;
+                    case 3: next = speedMode;    nextSelector = 1; break;
+                    default: return;
+                }
             }
 
-            if (_active == ringFire)
-            {
-                if (Time.time - _lastRingFireTime < ringFireInterval)
-                    return;
-                _lastRingFireTime = Time.time;
-            }
-
+            if (next == null) return;
 
             if (next == ringFire && Time.time - _lastRingFireTime < ringFireInterval)
                 return;
@@ -59,7 +56,7 @@ namespace CosmicShore.Gameplay
             if (_active == ringFire)
                 _lastRingFireTime = Time.time;
 
-            _active?.StartAction(execs, vesselStatus);
+            _active.StartAction(execs, vesselStatus);
         }
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vs)

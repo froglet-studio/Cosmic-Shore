@@ -15,4 +15,4 @@ MonoBehaviour:
   speedMode: {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   ringFire: {fileID: 11400000, guid: f6727e026b99ef446988e086b7755fe2, type: 2}
   creationMode: {fileID: 0}
-  ringFireInterval: 5
+  ringFireInterval: 1
