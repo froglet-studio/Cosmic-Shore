@@ -122,10 +122,10 @@ namespace CosmicShore.UI
 
         public bool IsBuilt => _built;
 
-        private const int   PetalCount   = 5;
+        public  const int   PetalCount   = 5;
         private const int   MinLevel     = -PetalCount;     // -5  (all fire)
         private const int   MaxLevel     =  PetalCount * 3; //  15 (all lime)
-        private const float PetalSpacing = 360f / PetalCount;
+        public  const float PetalSpacing = 360f / PetalCount;
 
         void Start()
         {
@@ -198,24 +198,40 @@ namespace CosmicShore.UI
             var petals = new Image[PetalCount];
             for (int p = 0; p < PetalCount; p++)
             {
-                var go = new GameObject($"Petal{p}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                var rt = (RectTransform)go.transform;
-                rt.SetParent(root, false);
-                rt.anchorMin = Vector2.zero;
-                rt.anchorMax = Vector2.one;
-                rt.offsetMin = Vector2.zero;
-                rt.offsetMax = Vector2.zero;
-                rt.pivot     = new Vector2(0.5f, 0.5f);              // == flower centre
-                rt.localScale = Vector3.one;
-                rt.localRotation = Quaternion.Euler(0f, 0f, -PetalSpacing * p);
-
-                var img = go.GetComponent<Image>();
-                img.sprite = sprite;
-                img.raycastTarget = false;
-                img.preserveAspect = true;
+                // Reuse a petal authored in the prefab (named "Petal{p}") if present, else create one.
+                var existing = root.Find($"Petal{p}");
+                Image img = existing ? existing.GetComponent<Image>() : null;
+                if (!img)
+                {
+                    var go = new GameObject($"Petal{p}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                    go.transform.SetParent(root, false);
+                    img = go.GetComponent<Image>();
+                }
+                ConfigurePetal(img, sprite, p);
                 petals[p] = img;
             }
             return petals;
+        }
+
+        /// <summary>
+        /// Applies the shared petal layout: stretch to fill the flower container, pivot on the flower
+        /// centre, rotate 72°·index, assign the sprite. Public so a petal authored in the prefab as
+        /// "Petal{index}" matches exactly what the runtime builds (and is reused, not duplicated).
+        /// </summary>
+        public static void ConfigurePetal(Image img, Sprite sprite, int petalIndex)
+        {
+            var rt = img.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot     = new Vector2(0.5f, 0.5f);
+            rt.localScale = Vector3.one;
+            rt.localRotation = Quaternion.Euler(0f, 0f, -PetalSpacing * petalIndex);
+
+            img.sprite = sprite;
+            img.raycastTarget = false;
+            img.preserveAspect = true;
         }
 
         RectTransform ResolvePetalRoot(ref ElementBarBinding bar, int index)
