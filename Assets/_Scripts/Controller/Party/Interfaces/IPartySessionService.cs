@@ -59,6 +59,10 @@ namespace CosmicShore.Gameplay
         /// <param name="sessionId">
         /// The UGS session ID published by the host.  Must be the real ID (not PENDING).
         /// </param>
+        /// <remarks>
+        /// Retries transient join failures (rate-limit / SDK SessionException NRE /
+        /// lobby-events 23006) with back-off; non-transient errors throw to the caller.
+        /// </remarks>
         UniTask JoinByIdAsync(string sessionId);
 
         /// <summary>

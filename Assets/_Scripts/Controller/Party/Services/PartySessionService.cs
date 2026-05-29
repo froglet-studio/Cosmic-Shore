@@ -19,8 +19,10 @@
 // RETRY POLICY:
 //   CreateAsync retries on host-conflict (happens when the local NM is still
 //   shutting down) and rate-limit (HTTP 429) errors with exponential back-off.
-//   JoinByIdAsync does not retry — the caller (AcceptInviteAsync) handles the
-//   join-failed path.
+//   JoinByIdAsync retries transient errors (rate-limit / SDK SessionException NRE /
+//   lobby-events 23006) — two clients accepting the same host invite can collide on
+//   the host's session state. Non-transient join errors propagate to the caller
+//   (AcceptInviteAsync), which logs and rethrows them for fail-fast recovery.
 //
 // LIFETIME:
 //   Pure C# — no MonoBehaviour.  Instantiated as a field on
@@ -220,12 +222,37 @@ namespace CosmicShore.Gameplay
         /// </param>
         public async UniTask JoinByIdAsync(string sessionId)
         {
-            ActiveSession = await _multiplayerService.JoinSessionByIdAsync(
-                sessionId,
-                new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
+            var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() };
 
-            ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
-            Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
+            // Retry transient join failures (HTTP 429 / SDK SessionException NRE /
+            // lobby-events 23006). Two clients accepting the same host's invite near-
+            // simultaneously can collide on the host's session state, so one join throws
+            // a transient error before the NM client even starts. Mirrors CreateAsync's
+            // retry loop + classifiers. Non-transient errors propagate to the caller
+            // (HostConnectionService.AcceptInviteAsync), which logs and rethrows so
+            // PartyInviteController fails fast. See Docs/PARTY_SYSTEM_REFACTOR.md.
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    ActiveSession = await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread();
+                    ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
+                    Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
+                    return;
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[PartySessionService] Join rate limited — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await UniTask.Delay(delay);
+                }
+                catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
+                {
+                    int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[PartySessionService] Join transient error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
+                    await UniTask.Delay(delay);
+                }
+            }
         }
 
         /// <summary>

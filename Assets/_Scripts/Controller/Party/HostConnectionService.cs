@@ -654,7 +654,19 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] AcceptInvite error: {e.Message}");
+                // Do NOT swallow. A throw here (most often a transient JoinByIdAsync
+                // failure — see PartySessionService's retry) used to return normally, so
+                // PartyInviteController logged a false "joined" and then waited the full
+                // 8s connect timeout on a NetworkManager that was never started as a
+                // client. Log the full exception and rethrow so PIC's catch recovers
+                // immediately (fail fast) and the real cause is visible.
+                // See Docs/PARTY_SYSTEM_REFACTOR.md.
+                Debug.LogError(
+                    $"[HostConnectionService] AcceptInvite error ({e.GetType().Name}): {e}" +
+                    (e.InnerException != null
+                        ? $" — inner ({e.InnerException.GetType().Name}): {e.InnerException}"
+                        : string.Empty));
+                throw;
             }
         }
 
