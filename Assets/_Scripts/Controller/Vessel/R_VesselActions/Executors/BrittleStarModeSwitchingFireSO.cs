@@ -12,35 +12,52 @@ namespace CosmicShore.Gameplay
         [SerializeField] private ShipActionSO ringFire;
         [SerializeField] private ShipActionSO creationMode;
 
+
+        [Header("Ring Fire Rate")]
+        [Tooltip("Minimum seconds between ring fire bursts when mode-switching triggers it.")]
+        [SerializeField] private float ringFireInterval = 1f;
+
         private ActionExecutorRegistry _registry;
         private bool _isHeld;
         private int _selector = 1;
         private ShipActionSO _active;
+
+        private float _lastRingFireTime = float.MinValue;
+
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vs)
         {
             base.Initialize(vs);
             _isHeld = true;
             _registry = execs;
+            ShipActionSO next;
+            int nextSelector;
+
 
             switch (_selector)
             {
-                case 1: 
-                    _active = ringFire; 
-                    _selector = 2;
-                    Debug.Log("Ring Fire");
-                    break;
-                case 2: 
-                    _active = creationMode; 
-                    _selector = 3;
-                    Debug.Log("Creation Mode");
-                    break;
-                case 3: 
-                    _active = speedMode; 
-                    _selector = 1;
-                    Debug.Log("Speed Mode");
-                    break;
+                case 1: next = ringFire; nextSelector = 2; break;
+                case 2: next = creationMode; nextSelector = 3; break;
+                case 3: next = speedMode; nextSelector = 1; break;
+                default: return;
             }
+
+            if (_active == ringFire)
+            {
+                if (Time.time - _lastRingFireTime < ringFireInterval)
+                    return;
+                _lastRingFireTime = Time.time;
+            }
+
+
+            if (next == ringFire && Time.time - _lastRingFireTime < ringFireInterval)
+                return;
+
+            _active = next;
+            _selector = nextSelector;
+
+            if (_active == ringFire)
+                _lastRingFireTime = Time.time;
 
             _active?.StartAction(execs, vesselStatus);
         }
