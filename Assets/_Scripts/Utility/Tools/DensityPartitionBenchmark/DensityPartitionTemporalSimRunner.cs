@@ -28,13 +28,20 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     ///     arrival — the sim's stand-in for boid separation spreading the swarm),
     ///     consuming opposing-domain prisms within consumeRadius along the way.
     ///
-    /// The headline test: run the whole sim twice — once with the LITERAL shipped
-    /// grid (fixed ±500m box) and once with the cell-sized grid — and compare. If
-    /// the shipped grid can't see the outer shell, outer-shell flora produce
-    /// prisms no fauna is ever directed at, that mass accumulates monotonically,
-    /// and the cell pins at Rabid: a plateau, no oscillation possible. The
-    /// cell-sized grid lets fauna reach all the mass, so the count can fall as
-    /// well as rise — oscillation becomes possible.
+    /// The headline test: run the whole sim three times and compare —
+    ///   OLD: the LITERAL shipped grid (fixed ±500m box). Outer-shell mass is
+    ///        invisible to the algorithm, so no fauna is ever directed there.
+    ///   MID: the c058663 fix (cell-sized grid + smoothing + sub-voxel interp).
+    ///        Sees the whole cell but uses a smoothed argmax, which is "sticky":
+    ///        fauna swarm one cluster, deplete its central core in seconds, then
+    ///        idle until the next goal update (the algorithm still reports the
+    ///        same cluster as densest even after its core is gone).
+    ///   NEW: MID + mean-shift centroid refinement. As fauna eat the cluster's
+    ///        core, the algorithm's answer is pulled outward to where the
+    ///        remaining mass lives, so consumption sustains instead of stalling.
+    /// The geometric benchmark proved MID is far more ACCURATE than OLD; this
+    /// sim asks whether that accuracy translates to ecology oscillation, or
+    /// whether the production grid also needs the centroid refinement.
     ///
     /// It is also an ecology *tuning* bench: flora/fauna rates are serialized, so
     /// the parameter regime that produces the desired oscillation can be searched
@@ -110,7 +117,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         //  Public API
         // ==================================================================
 
-        [ContextMenu("Run Temporal Sim (old grid vs new grid)")]
+        [ContextMenu("Run Temporal Sim (OLD vs MID vs NEW)")]
         public string RunComparison()
         {
             var sb = new StringBuilder(8192);
@@ -130,10 +137,14 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             sb.AppendLine($"Flora production capacity: {floraRate:F0} prisms/s   " +
                           $"Fauna consumption capacity: ~{faunaPopulationCap * faunaConsumePerTickInRange / Mathf.Max(0.01f, tickIntervalSeconds):F0} prisms/s (cap × rate)");
             sb.AppendLine();
-            sb.AppendLine("Headline test: the shipped grid is a fixed ±500m box. Outer-shell flora");
-            sb.AppendLine("produce prisms it cannot see → no fauna is ever directed there → that mass");
-            sb.AppendLine("accumulates monotonically → the cell pins at Rabid (plateau). The cell-sized");
-            sb.AppendLine("grid lets fauna reach all the mass, so the count can fall as well as rise.");
+            sb.AppendLine("Three-way comparison: OLD is the literal shipped fixed-±500m grid; MID is the");
+            sb.AppendLine("c058663 fix (grid sized to the cell + smoothing + sub-voxel interp); NEW adds");
+            sb.AppendLine("mean-shift centroid refinement on top. The benchmark's geometric accuracy is a");
+            sb.AppendLine("necessary condition for the ecology to oscillate, not a sufficient one — the");
+            sb.AppendLine("algorithm also has to direct fauna onto locations where consumption is sustainable");
+            sb.AppendLine("as the local mass distribution shifts. Smoothed argmax is sticky (fauna deplete");
+            sb.AppendLine("one cluster's core and idle); mean-shift pulls the target outward as that core");
+            sb.AppendLine("empties, sustaining consumption.");
             sb.AppendLine();
 
             // --- Run A: the LITERAL shipped grid (fixed ±500m box) ---
@@ -141,48 +152,80 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             var resultOld = RunOne(optOld);
             AppendRun(sb, "OLD — ProductionFixedGrid17 (fixed ±500m box, the shipped grid)", resultOld, th);
 
-            // --- Run B: the cell-sized smoothed grid (the c058663 fix) ---
-            var optNew = DensityPartitionBenchmarkAlgorithms.GridSmoothedInterp17();
+            // --- Run B: the cell-sized smoothed-interp grid (the c058663 fix as shipped) ---
+            var optMid = DensityPartitionBenchmarkAlgorithms.GridSmoothedInterp17();
+            var resultMid = RunOne(optMid);
+            AppendRun(sb, "MID — GridSmoothedInterp17 (cell-sized + smoothing + sub-voxel interp, c058663)", resultMid, th);
+
+            // --- Run C: cell-sized + smoothing + interp + mean-shift centroid refinement ---
+            // The smoothed argmax + interp is a STICKY target — it locks onto one
+            // cluster until it's been depleted enough to drop below another's
+            // smoothed density. With 40 fauna at one cluster the central core
+            // empties in seconds; the algorithm doesn't notice for the rest of the
+            // 5s goal-update interval. Mean-shift refines the answer onto the
+            // actual local mass concentration, so as fauna eat the core the target
+            // pulls outward to where the remaining prisms live, sustaining
+            // consumption instead of stalling.
+            var optNew = DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpMeanShift17();
             var resultNew = RunOne(optNew);
-            AppendRun(sb, "NEW — GridSmoothedInterp17 (grid sized to the cell + smoothing + interp)", resultNew, th);
+            AppendRun(sb, "NEW — GridMassSmoothedInterpMeanShift17 (above + iterative centroid refinement)", resultNew, th);
 
             // --- Verdict ---
             sb.AppendLine("=== Verdict ===");
-            sb.AppendLine($"  OLD grid: {resultOld.Verdict}");
-            sb.AppendLine($"  NEW grid: {resultNew.Verdict}");
+            sb.AppendLine($"  OLD: {resultOld.Verdict}");
+            sb.AppendLine($"  MID: {resultMid.Verdict}");
+            sb.AppendLine($"  NEW: {resultNew.Verdict}");
             sb.AppendLine();
-            // The robust discriminator is whether outer-shell mass is bounded — it
-            // doesn't depend on sim length the way IsPlateau does. If the grid can
-            // see the whole cell, fauna get directed at outer-shell clusters and
-            // that mass cycles; if not, it accumulates forever.
+
+            // What the three-way comparison can prove:
+            //  OLD plateau + MID plateau + NEW oscillates → the grid-sizing fix
+            //    is necessary BUT the algorithm also needs mean-shift centroid
+            //    refinement. The bare smoothed argmax sticks on one cluster and
+            //    fauna deplete its core in seconds, then sit idle until the next
+            //    goal update (5s); meanshift pulls the answer outward to where
+            //    the remaining prisms are, sustaining consumption.
+            //  OLD plateau + MID oscillates → c058663 alone is sufficient (the
+            //    earlier sim that showed MID locking was a flora-distribution
+            //    artifact, now fixed by clustering).
+            //  All three plateau → it's parameter-side, not algorithm-side.
+            //    Likely: goal-update interval too long, fauna speed too low,
+            //    or threshold scale needs nudging.
+            bool oldOsc = !resultOld.IsPlateau;
+            bool midOsc = !resultMid.IsPlateau;
+            bool newOsc = !resultNew.IsPlateau;
             bool oldBlind = !resultOld.OuterShellBounded;
-            bool newSees = resultNew.OuterShellBounded;
-            if (oldBlind && newSees)
+            bool midBlind = !resultMid.OuterShellBounded;
+            bool newBlind = !resultNew.OuterShellBounded;
+            if (!midOsc && newOsc && !newBlind)
             {
-                sb.AppendLine("  CONFIRMED: with the shipped ±500m grid, outer-shell mass is never consumed —");
-                sb.AppendLine("  it accumulates monotonically because no fauna is ever directed there. With the");
-                sb.AppendLine("  cell-sized grid, fauna reach the whole cell and outer-shell mass cycles.");
-                sb.AppendLine("  The grid-sizing fix (c058663) is a necessary condition for the ecosystem to");
-                sb.AppendLine("  oscillate instead of plateau. Secondary (Rabid) cycle tuning is now unblocked.");
+                sb.AppendLine("  CONFIRMED: the c058663 grid-sizing fix is necessary BUT the algorithm also");
+                sb.AppendLine("  needs centroid refinement. Smoothed argmax (MID) sticks on one cluster and");
+                sb.AppendLine("  fauna idle once the core is depleted; mean-shift (NEW) pulls the answer onto");
+                sb.AppendLine("  the actual local mass center, sustaining consumption as fauna eat outward.");
+                sb.AppendLine("  Production next step: add centroidRefine + 5 iterations to BlockDensityGrid's");
+                sb.AppendLine("  FindDensestRegionJob (mirroring DensityPartitionBenchmarkAlgorithms.Search).");
             }
-            else if (oldBlind && !newSees)
+            else if (midOsc && !midBlind)
             {
-                sb.AppendLine("  The shipped grid is blind to the outer shell (as expected) — but the cell-sized");
-                sb.AppendLine("  grid ALSO leaves outer-shell mass unbounded. The grid fix landed, so this points");
-                sb.AppendLine("  at a rate-balance problem: consumption capacity can't keep up with flora");
-                sb.AppendLine("  production. Tune floraGrowthInterval up / faunaPopulationCap up / faunaConsume up.");
+                sb.AppendLine("  CONFIRMED: c058663 alone produces oscillation with flora distributed in");
+                sb.AppendLine("  clusters (matching production SpawnProfile geometry). The earlier 'MID");
+                sb.AppendLine("  plateaus' result was a sim flora-distribution artifact.");
             }
-            else if (!oldBlind && newSees)
+            else if (!oldOsc && !midOsc && !newOsc)
             {
-                sb.AppendLine("  Both grids keep outer-shell mass bounded — re-check that outerFloraCount > 0 and");
-                sb.AppendLine("  that the outer flora actually sit outside ±500m (per-run outer-shell peak > 0).");
-                sb.AppendLine("  If the OLD run shows a healthy outer-shell peak that still gets consumed, the");
-                sb.AppendLine("  sim's fauna may be wandering into the outer shell by chance — tighten faunaSpeed");
-                sb.AppendLine("  or goal cadence so they stay on the (blind) grid's targets.");
+                sb.AppendLine("  ALL THREE PLATEAU — algorithm choice is not the load-bearing dimension here.");
+                sb.AppendLine("  Tune parameters: shorten faunaGoalUpdateIntervalSeconds (fauna retarget more");
+                sb.AppendLine("  often as they deplete a cluster), raise faunaPopulationCap, or lower");
+                sb.AppendLine("  thresholdScale so the Frozen entry/exit band is tighter relative to flora");
+                sb.AppendLine("  production rate.");
             }
             else
             {
-                sb.AppendLine("  Inconclusive at the current parameters. Inspect the per-run tables above.");
+                sb.AppendLine("  Mixed result — inspect the per-run tables above. The robust discriminator is");
+                sb.AppendLine("  whether outer-shell mass is BOUNDED (count rises and falls) vs UNBOUNDED");
+                sb.AppendLine("  (count never decreases). A run that plateaus in Frozen will look UNBOUNDED");
+                sb.AppendLine("  because Frozen freezes flora at the moment of entry; that's a phase-lock,");
+                sb.AppendLine("  not a grid-blindness problem.");
             }
 
             lastReport = sb.ToString();
@@ -517,9 +560,13 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             }
             result.RabidEntries = rabidEntries;
 
-            // Plateau: steady-window swing is < 10% of the max.
+            // Plateau threshold: 5%. The Frozen entry/exit band is naturally ~5%
+            // wide (1500/1425 = 5% of 1500), so a healthy primary cycle that
+            // overshoots the band edges should easily exceed 5% swing. Anything
+            // tighter than that is either a true plateau or a faint oscillation
+            // hugging the band — both indistinguishable from "no real cycle".
             float swing = maxTotal > 0 ? (float)(maxTotal - minTotal) / maxTotal : 0f;
-            result.IsPlateau = swing < 0.10f;
+            result.IsPlateau = swing < 0.05f;
 
             var last = series[series.Count - 1];
             if (result.IsPlateau)
