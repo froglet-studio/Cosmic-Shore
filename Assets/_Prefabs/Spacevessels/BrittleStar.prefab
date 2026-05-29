@@ -1616,7 +1616,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 53ab026c3b3475a478ef7cf206bb194e, type: 2}
   - InputEvent: 6
     ShipActions:
-    - {fileID: 11400000, guid: 072a19a85e76fe34ab83b891e8536d4d, type: 2}
+    - {fileID: 11400000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []
