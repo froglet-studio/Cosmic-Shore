@@ -2,107 +2,71 @@ using System;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Displays four element "flowers". Each element is rendered as five copies of a single crisp
-    /// white petal sprite (charge = rounded lobe, mass = pie-slice triangle, space = kite,
-    /// time = rhombus), pivot-centred on the flower and rotated 72°·n into a 5-fold flower.
+    /// Shared elemental-bar HUD widget for every vessel. Renders four element "flowers"; each element
+    /// is five copies of one crisp white petal sprite (charge = irregular pentagon, mass = triangle,
+    /// space = kite, time = rhombus), pivot-centred and rotated 72°·n into a 5-fold flower.
     ///
     /// The element level is an integer in [-5, 15] (ResourceSystem.GetLevel = floor(level·10),
-    /// level ∈ [-0.5, 1.5]). That total is distributed round-robin across the five petals, so each
-    /// petal holds a per-tick value in {-1,0,1,2,3} mapped to {fire, grey, white, blue, lime}:
+    /// level ∈ [-0.5, 1.5]) distributed round-robin across the five petals, so each petal holds a
+    /// per-tick value in {-1,0,1,2,3} → {fire, grey, white, blue, lime}:
     ///
     ///   all fire = -5 | all grey = 0 | all white = 5 | all blue = 10 | all lime = 15
     ///
-    /// At any total at most two adjacent colours show (e.g. 3 → 3 white + 2 grey). Because the petals
-    /// are pure white, a single multiply-tint reproduces every spec colour exactly — no hue-shifting
-    /// (which can't reach grey/white from a saturated source). Each petal recolours + scale-pops
-    /// independently as it changes; the pop scales about the flower centre for an outward "bloom".
+    /// At any total at most two adjacent colours show. Petals are pure white, so a single multiply-tint
+    /// reproduces every spec colour exactly (no hue-shifting). Each petal recolours + scale-pops about
+    /// the flower centre (outward bloom) as it changes.
     ///
-    /// Self-wiring: <see cref="Build"/> hides any legacy pip art, auto-creates a square petal container
-    /// if one isn't assigned, and loads the petal sprite from <c>Resources/ElementPetals/{element}_petal</c>
-    /// when <see cref="ElementBarBinding.petalSprite"/> is empty — so it works with no manual wiring.
+    /// All shared look/feel (colours, petal sprites, juice timings) lives in <see cref="ElementalBarsConfigSO"/>
+    /// so every vessel stays consistent. Wiring is optional: with no config assigned the view loads the
+    /// default from <c>Resources/ElementalBarsConfig</c>, auto-creates a centred flower per element, and
+    /// loads petal sprites from <c>Resources/ElementPetals/{element}_petal</c>.
     /// </summary>
     public class ElementalBarsView : MonoBehaviour
     {
         [Serializable]
         public struct ElementBarBinding
         {
-            [Tooltip("The element this flower represents")]
+            [Tooltip("The element this flower represents.")]
             public Element element;
 
-            [Tooltip("Optional square container the 5 rotated petals are created under. " +
-                     "Auto-created as a child of this view when left empty.")]
+            [Tooltip("Optional square container the 5 rotated petals live under. Auto-created when empty.")]
             public RectTransform petalRoot;
 
-            [Tooltip("Optional crisp white petal silhouette (pivot-centred on the flower). " +
-                     "Falls back to Resources/ElementPetals/{element}_petal when empty.")]
-            public Sprite petalSprite;
+            [Tooltip("Optional per-bar petal sprite override. Falls back to the config / Resources sprite.")]
+            public Sprite petalSpriteOverride;
 
-            [Tooltip("Label/icon image below the flower")]
+            [Tooltip("Optional label/icon image below the flower (drift/joust/crystal juice target).")]
             public Image labelIcon;
 
-            [Tooltip("Normal sprite for the label (restored after drift)")]
+            [Tooltip("Normal sprite for the label (restored after drift). Defaults to the label's sprite.")]
             public Sprite normalLabelSprite;
-
-            [Header("Legacy (hidden at runtime)")]
-            [Tooltip("Old 15-pip background art — deactivated by the flower view on Build.")]
-            public Image[] bgPips;
-            [Tooltip("Old 15-pip fill art — deactivated by the flower view on Build.")]
-            public Image[] fillPips;
         }
+
+        [Header("Config (shared spec — single source of truth)")]
+        [Tooltip("Colours, petal sprites and juice timings. Loaded from Resources/ElementalBarsConfig when empty.")]
+        [SerializeField] private ElementalBarsConfigSO config;
 
         [Header("Bar Bindings")]
         [SerializeField] private ElementBarBinding[] bars = new ElementBarBinding[0];
-
-        [Header("Element Tick Colors (per-petal value)")]
-        [Tooltip("-1 : fire")]  [SerializeField] private Color fireColor  = new(1f,    0.33f, 0.10f, 1f);
-        [Tooltip(" 0 : grey")]  [SerializeField] private Color greyColor  = new(0.51f, 0.51f, 0.54f, 1f);
-        [Tooltip(" 1 : white")] [SerializeField] private Color whiteColor = new(0.96f, 0.96f, 1f,    1f);
-        [Tooltip(" 2 : blue")]  [SerializeField] private Color blueColor  = new(0.22f, 0.51f, 1f,    1f);
-        [Tooltip(" 3 : lime")]  [SerializeField] private Color limeColor  = new(0.59f, 0.92f, 0.16f, 1f);
-        [Tooltip("Color flash on a petal that downgrades, before it settles to its tick color")]
-        [SerializeField] private Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
 
         [Header("Auto-created Petal Root")]
         [Tooltip("Size (px) of a flower container when one is auto-created.")]
         [SerializeField] private float autoRootSize = 88f;
         [Tooltip("Horizontal spacing (px) between auto-created flower centres.")]
         [SerializeField] private float autoRootSpacing = 104f;
-        [Tooltip("Extra vertical offset (px) applied to the auto-created row, after centring in the container.")]
+        [Tooltip("Extra vertical offset (px) for the auto-created row, after centring in the container.")]
         [SerializeField] private float autoRootVerticalOffset = 0f;
 
-        [Header("Juice — Petal Transitions")]
-        [SerializeField] private float buffPopScale        = 1.3f;
-        [SerializeField] private float buffPopDuration     = 0.22f;
-        [SerializeField] private float debuffShakeDuration = 0.20f;
-        [SerializeField] private float debuffShakeStrength = 8f;
-
-        [Header("Juice — Haptics")]
-        [SerializeField] private bool  hapticOnDebuff        = true;
-        [SerializeField] private float debuffHapticAmplitude = 0.6f;
-        [SerializeField] private float debuffHapticFrequency = 0.5f;
-        [SerializeField] private float debuffHapticDuration  = 0.15f;
-
-        [Header("Juice — General")]
-        [SerializeField] private float iconPunchDuration  = 0.25f;
-        [SerializeField] private float iconPunchScale     = 1.4f;
-        [SerializeField] private float colorTweenDuration = 0.35f;
-
-        [Header("Juice — Joust")]
-        [SerializeField] private Color joustFlashColor = Color.red;
-
-        [Header("Juice — Drift")]
-        [SerializeField] private float  driftRotationAngle    = 15f;
-        [SerializeField] private float  driftRotationDuration = 0.2f;
-        [SerializeField] private Sprite doubleDriftSprite;
-
-        [Tooltip("Resources path (no extension) of the per-element petal sprites, '{0}' = element name lowercased.")]
+        [Tooltip("Resources path of the default config, used when none is assigned in the inspector.")]
+        [SerializeField] private string configResourcePath = "ElementalBarsConfig";
+        [Tooltip("Resources path of per-element petal sprites; '{0}' = element name lowercased.")]
         [SerializeField] private string petalResourceFormat = "ElementPetals/{0}_petal";
 
         // Runtime state
@@ -119,15 +83,14 @@ namespace CosmicShore.UI
         private Tween[]   _labelColorTweens;
         private bool _built;
 
-        // Scratch buffer reused by PetalValues to avoid per-call allocations.
-        private readonly int[] _tmpVals = new int[PetalCount];
+        // Scratch buffer reused by DistributePetalValues to avoid per-call allocations.
+        private readonly int[] _tmpVals = new int[ElementalBarsConfigSO.PetalCount];
 
         public bool IsBuilt => _built;
 
-        public  const int   PetalCount   = 5;
-        private const int   MinLevel     = -PetalCount;     // -5  (all fire)
-        private const int   MaxLevel     =  PetalCount * 3; //  15 (all lime)
-        public  const float PetalSpacing = 360f / PetalCount;
+        private const int PetalCount = ElementalBarsConfigSO.PetalCount;
+        private const int MinLevel   = ElementalBarsConfigSO.MinLevel;
+        private const int MaxLevel   = ElementalBarsConfigSO.MaxLevel;
 
         void Start()
         {
@@ -138,6 +101,15 @@ namespace CosmicShore.UI
         {
             if (_built) return;
             if (bars == null || bars.Length == 0) return;
+
+            if (!config)
+                config = Resources.Load<ElementalBarsConfigSO>(configResourcePath);
+            if (!config)
+            {
+                Debug.LogError($"[ElementalBarsView] No ElementalBarsConfigSO assigned and none found at " +
+                               $"Resources/{configResourcePath}. Bars cannot be built.", this);
+                return;
+            }
 
             _rootRT = (RectTransform)transform;
 
@@ -164,43 +136,34 @@ namespace CosmicShore.UI
                         bar.normalLabelSprite = bar.labelIcon.sprite;
                 }
 
-                HideLegacyPips(ref bar);
-
                 _currentLevels[i] = 0;
                 _petalValues[i]   = new int[PetalCount];
                 _petalTweens[i]   = new Tween[PetalCount];
                 _petals[i]        = BuildPetals(ref bar, i);
 
-                PetalValues(0, _petalValues[i]); // baseline: all grey
+                ElementalBarsConfigSO.DistributePetalValues(0, _petalValues[i]); // baseline: all grey
                 ApplyPetalColorsImmediate(i);
             }
 
             _built = true;
         }
 
-        static void HideLegacyPips(ref ElementBarBinding bar)
-        {
-            if (bar.bgPips != null)
-                foreach (var pip in bar.bgPips) if (pip) pip.gameObject.SetActive(false);
-            if (bar.fillPips != null)
-                foreach (var pip in bar.fillPips) if (pip) pip.gameObject.SetActive(false);
-        }
-
         Image[] BuildPetals(ref ElementBarBinding bar, int index)
         {
             var root   = ResolvePetalRoot(ref bar, index);
-            var sprite = ResolvePetalSprite(ref bar);
+            var sprite = ResolvePetalSprite(in bar);
             if (!root || !sprite)
             {
                 Debug.LogError($"[ElementalBarsView] Could not resolve a petal root/sprite for element " +
-                               $"'{bar.element}' (no sprite at Resources/{string.Format(petalResourceFormat, bar.element.ToString().ToLowerInvariant())}?).", this);
+                               $"'{bar.element}'. Check the config's petal sprites or " +
+                               $"Resources/{string.Format(petalResourceFormat, bar.element.ToString().ToLowerInvariant())}.", this);
                 return null;
             }
 
             var petals = new Image[PetalCount];
             for (int p = 0; p < PetalCount; p++)
             {
-                // Reuse a petal authored in the prefab (named "Petal{p}") if present, else create one.
+                // Reuse a petal authored in the prefab ("Petal{p}") if present, else create one.
                 var existing = root.Find($"Petal{p}");
                 Image img = existing ? existing.GetComponent<Image>() : null;
                 if (!img)
@@ -229,10 +192,10 @@ namespace CosmicShore.UI
             rt.offsetMax = Vector2.zero;
             rt.pivot     = new Vector2(0.5f, 0.5f);
             rt.localScale = Vector3.one;
-            rt.localRotation = Quaternion.Euler(0f, 0f, -PetalSpacing * petalIndex);
+            rt.localRotation = Quaternion.Euler(0f, 0f, -ElementalBarsConfigSO.PetalSpacing * petalIndex);
 
             img.sprite = sprite;
-            img.raycastTarget = false;
+            img.raycastTarget = false;     // decorative — never block touches
             img.preserveAspect = true;
         }
 
@@ -248,23 +211,22 @@ namespace CosmicShore.UI
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot     = new Vector2(0.5f, 0.5f);
 
-            // Centre the row inside the container regardless of the container's own pivot, then
-            // apply the optional manual offset. anchoredPosition of a centre-anchored child is
-            // measured from the container centre, so we only need to correct for a non-centre pivot.
+            // Centre the row inside the container regardless of the container's own pivot, then apply
+            // the manual offset. anchoredPosition of a centre-anchored child is measured from the
+            // container centre, so we only need to correct for a non-centre pivot.
             float x = (index - (bars.Length - 1) * 0.5f) * autoRootSpacing;
             float pivotYCorrection = (0.5f - _rootRT.pivot.y) * _rootRT.rect.height;
-            float y = pivotYCorrection + autoRootVerticalOffset;
-            rt.anchoredPosition = new Vector2(x, y);
+            rt.anchoredPosition = new Vector2(x, pivotYCorrection + autoRootVerticalOffset);
             bar.petalRoot = rt;
             return rt;
         }
 
-        Sprite ResolvePetalSprite(ref ElementBarBinding bar)
+        Sprite ResolvePetalSprite(in ElementBarBinding bar)
         {
-            if (bar.petalSprite) return bar.petalSprite;
-            string path = string.Format(petalResourceFormat, bar.element.ToString().ToLowerInvariant());
-            bar.petalSprite = Resources.Load<Sprite>(path);
-            return bar.petalSprite;
+            if (bar.petalSpriteOverride) return bar.petalSpriteOverride;
+            var fromConfig = config.GetPetalSprite(bar.element);
+            if (fromConfig) return fromConfig;
+            return Resources.Load<Sprite>(string.Format(petalResourceFormat, bar.element.ToString().ToLowerInvariant()));
         }
 
         // ---------------------------------------------------------------
@@ -304,8 +266,8 @@ namespace CosmicShore.UI
         // ---------------------------------------------------------------
 
         /// <param name="domainColor">
-        /// Retained for API compatibility. Petal colours follow the fixed element-tick spec
-        /// (fire/grey/white/blue/lime), not the team domain colour, so this argument is ignored.
+        /// Retained for API compatibility. Petal colours follow the fixed element-tick spec, not the
+        /// team domain colour, so this argument is ignored.
         /// </param>
         public void SetLevel(Element element, int level, Color domainColor) => SetLevel(element, level);
 
@@ -316,15 +278,22 @@ namespace CosmicShore.UI
 
             int clamped = Mathf.Clamp(level, MinLevel, MaxLevel);
             int prev = _currentLevels[idx];
+            if (clamped == prev) return;           // nothing to redraw
+
             _currentLevels[idx] = clamped;
             RefreshBar(idx, prev);
         }
 
+        /// <summary>Re-applies every bar's current level to its petals immediately (no juice). Useful
+        /// after a config swap or a manual sprite/colour change.</summary>
         public void RefreshAllBars()
         {
             if (!_built) return;
             for (int i = 0; i < bars.Length; i++)
-                RefreshBar(i, _currentLevels[i]);
+            {
+                ElementalBarsConfigSO.DistributePetalValues(_currentLevels[i], _petalValues[i]);
+                ApplyPetalColorsImmediate(i);
+            }
         }
 
         void RefreshBar(int idx, int previousLevel)
@@ -333,12 +302,13 @@ namespace CosmicShore.UI
             if (petals == null) return;
 
             int level = _currentLevels[idx];
-            PetalValues(level, _tmpVals);
+            ElementalBarsConfigSO.DistributePetalValues(level, _tmpVals);
 
-            if (level < previousLevel && hapticOnDebuff)
-                HapticController.PlayConstant(debuffHapticAmplitude, debuffHapticFrequency, debuffHapticDuration);
+            if (level < previousLevel && config.hapticOnDebuff)
+                HapticController.PlayConstant(config.debuffHapticAmplitude, config.debuffHapticFrequency, config.debuffHapticDuration);
 
             var oldVals = _petalValues[idx];
+            var tweens  = _petalTweens[idx];
 
             for (int p = 0; p < PetalCount; p++)
             {
@@ -347,37 +317,36 @@ namespace CosmicShore.UI
 
                 int newV = _tmpVals[p];
                 int oldV = oldVals[p];
-                Color target = ColorForTick(newV);
+                if (newV == oldV) continue;        // this petal didn't change colour
 
-                _petalTweens[idx][p]?.Kill();
+                Color target = config.ColorForTick(newV);
+                tweens[p]?.Kill();
                 var rt = img.rectTransform;
 
-                if (newV > oldV)            // petal upgraded -> pop in new colour
+                if (newV > oldV)                   // upgraded -> pop in new colour
                 {
                     img.color = target;
                     rt.localScale = Vector3.one;
                     int bi = idx, pi = p;
-                    _petalTweens[bi][pi] = rt
-                        .DOScale(Vector3.one * buffPopScale, buffPopDuration * 0.4f)
+                    tweens[p] = rt
+                        .DOScale(Vector3.one * config.buffPopScale, config.buffPopDuration * 0.4f)
                         .SetEase(Ease.OutQuad)
+                        .SetLink(img.gameObject)
                         .OnComplete(() =>
                         {
                             _petalTweens[bi][pi] = rt
-                                .DOScale(Vector3.one, buffPopDuration * 0.6f)
-                                .SetEase(Ease.OutBounce);
+                                .DOScale(Vector3.one, config.buffPopDuration * 0.6f)
+                                .SetEase(Ease.OutBounce)
+                                .SetLink(img.gameObject);
                         });
                 }
-                else if (newV < oldV)       // petal downgraded -> flash + shake then settle
+                else                               // downgraded -> flash + shake then settle
                 {
-                    img.color = debuffFlashColor;
-                    _petalTweens[idx][p] = DOTween.Sequence()
-                        .Append(rt.DOShakePosition(debuffShakeDuration, debuffShakeStrength, 20, 90f, false, false))
-                        .Join(img.DOColor(target, debuffShakeDuration + 0.1f).SetEase(Ease.OutQuad));
-                }
-                else                        // unchanged
-                {
-                    img.color = target;
-                    rt.localScale = Vector3.one;
+                    img.color = config.debuffFlashColor;
+                    tweens[p] = DOTween.Sequence()
+                        .Append(rt.DOShakePosition(config.debuffShakeDuration, config.debuffShakeStrength, 20, 90f, false, false))
+                        .Join(img.DOColor(target, config.debuffShakeDuration + 0.1f).SetEase(Ease.OutQuad))
+                        .SetLink(img.gameObject);
                 }
 
                 oldVals[p] = newV;
@@ -392,7 +361,7 @@ namespace CosmicShore.UI
             for (int p = 0; p < PetalCount; p++)
             {
                 if (!petals[p]) continue;
-                petals[p].color = ColorForTick(vals[p]);
+                petals[p].color = config.ColorForTick(vals[p]);
                 petals[p].rectTransform.localScale = Vector3.one;
             }
         }
@@ -414,7 +383,7 @@ namespace CosmicShore.UI
         {
             if (!_built) return;
             for (int i = 0; i < bars.Length; i++)
-                PunchIconWithColor(i, joustFlashColor);
+                PunchIconWithColor(i, config.joustFlashColor);
         }
 
         // ---------------------------------------------------------------
@@ -424,25 +393,27 @@ namespace CosmicShore.UI
         {
             if (!_built) return;
 
-            float targetAngle = isLeft ? driftRotationAngle : -driftRotationAngle;
+            float targetAngle = isLeft ? config.driftRotationAngle : -config.driftRotationAngle;
 
             for (int i = 0; i < bars.Length; i++)
             {
                 var label = bars[i].labelIcon;
                 if (!label) continue;
 
-                if (isDoubleDrift && doubleDriftSprite)
-                    label.sprite = doubleDriftSprite;
+                if (isDoubleDrift && config.doubleDriftSprite)
+                    label.sprite = config.doubleDriftSprite;
 
                 _driftRotationTweens[i]?.Kill();
                 _driftRotationTweens[i] = label.rectTransform
-                    .DOLocalRotate(new Vector3(0, 0, targetAngle), driftRotationDuration)
-                    .SetEase(Ease.OutBack);
+                    .DOLocalRotate(new Vector3(0, 0, targetAngle), config.driftRotationDuration)
+                    .SetEase(Ease.OutBack)
+                    .SetLink(label.gameObject);
 
                 _labelColorTweens[i]?.Kill();
                 _labelColorTweens[i] = label
-                    .DOColor(new Color(0.7f, 0.9f, 1f, 1f), driftRotationDuration)
-                    .SetEase(Ease.OutQuad);
+                    .DOColor(config.driftTintColor, config.driftRotationDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(label.gameObject);
             }
         }
 
@@ -460,42 +431,21 @@ namespace CosmicShore.UI
 
                 _driftRotationTweens[i]?.Kill();
                 _driftRotationTweens[i] = label.rectTransform
-                    .DOLocalRotate(Vector3.zero, driftRotationDuration)
-                    .SetEase(Ease.OutQuad);
+                    .DOLocalRotate(Vector3.zero, config.driftRotationDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(label.gameObject);
 
                 _labelColorTweens[i]?.Kill();
                 _labelColorTweens[i] = label
-                    .DOColor(_originalLabelColors[i], colorTweenDuration)
-                    .SetEase(Ease.OutQuad);
+                    .DOColor(_originalLabelColors[i], config.colorTweenDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(label.gameObject);
             }
         }
 
         // ---------------------------------------------------------------
         // Internal
         // ---------------------------------------------------------------
-
-        /// <summary>
-        /// Distributes a total level in [-5, 15] round-robin across <see cref="PetalCount"/> petals.
-        /// Each petal value lands in {-1,0,1,2,3}; the first <c>extra</c> petals take the higher of
-        /// the two adjacent colours, the rest the lower — exactly the spec fill order.
-        /// </summary>
-        static void PetalValues(int level, int[] dst)
-        {
-            int inc    = Mathf.Clamp(level, MinLevel, MaxLevel) - MinLevel; // 0..20
-            int rounds = inc / PetalCount;   // 0..4
-            int extra  = inc % PetalCount;   // 0..4
-            for (int i = 0; i < PetalCount; i++)
-                dst[i] = -1 + rounds + (i < extra ? 1 : 0);
-        }
-
-        Color ColorForTick(int v) => v switch
-        {
-            <= -1 => fireColor,
-            0     => greyColor,
-            1     => whiteColor,
-            2     => blueColor,
-            _     => limeColor,   // >= 3
-        };
 
         void PunchIconWithColor(int idx, Color flashColor)
         {
@@ -505,23 +455,27 @@ namespace CosmicShore.UI
             var rt        = label.rectTransform;
             var origScale = _originalLabelScales[idx];
 
+            int bi = idx;
             _labelScaleTweens[idx]?.Kill();
             rt.localScale = origScale;
             _labelScaleTweens[idx] = rt
-                .DOScale(origScale * iconPunchScale, iconPunchDuration * 0.3f)
+                .DOScale(origScale * config.iconPunchScale, config.iconPunchDuration * 0.3f)
                 .SetEase(Ease.OutQuad)
+                .SetLink(label.gameObject)
                 .OnComplete(() =>
                 {
-                    _labelScaleTweens[idx] = rt
-                        .DOScale(origScale, iconPunchDuration * 0.7f)
-                        .SetEase(Ease.OutBounce);
+                    _labelScaleTweens[bi] = rt
+                        .DOScale(origScale, config.iconPunchDuration * 0.7f)
+                        .SetEase(Ease.OutBounce)
+                        .SetLink(label.gameObject);
                 });
 
             _labelColorTweens[idx]?.Kill();
             label.color = flashColor;
             _labelColorTweens[idx] = label
-                .DOColor(_originalLabelColors[idx], colorTweenDuration)
-                .SetEase(Ease.OutQuad);
+                .DOColor(_originalLabelColors[idx], config.colorTweenDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(label.gameObject);
         }
 
         int GetBarIndex(Element element)
@@ -532,7 +486,31 @@ namespace CosmicShore.UI
             return -1;
         }
 
-        void OnDestroy()
+        // Kill in-flight tweens and snap everything to its rest pose. Because Build() is guarded by
+        // _built, a disable/re-enable cycle (e.g. a pooled or toggled HUD) won't rebuild — so we leave
+        // the petals at the correct colour/scale and labels at rest rather than mid-tween.
+        void OnDisable()
+        {
+            KillAllTweens();
+            if (!_built) return;
+
+            for (int i = 0; i < bars.Length; i++)
+            {
+                ApplyPetalColorsImmediate(i);      // restores tick colour + scale 1 per petal
+                var label = bars[i].labelIcon;
+                if (label)
+                {
+                    label.color = _originalLabelColors[i];
+                    label.rectTransform.localScale = _originalLabelScales[i];
+                    label.rectTransform.localRotation = Quaternion.identity;
+                    if (bars[i].normalLabelSprite) label.sprite = bars[i].normalLabelSprite;
+                }
+            }
+        }
+
+        void OnDestroy() => KillAllTweens();
+
+        void KillAllTweens()
         {
             _scaleTween?.Kill();
             if (_driftRotationTweens != null) foreach (var t in _driftRotationTweens) t?.Kill();

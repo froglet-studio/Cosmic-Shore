@@ -1,31 +1,29 @@
 using UnityEditor;
 using UnityEngine;
 using CosmicShore.UI;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Wires an <see cref="ElementalBarsView"/> for the single-petal flower design: for each element
-    /// bar it ensures a square <c>petalRoot</c> container exists and assigns the element's crisp white
-    /// petal sprite from <c>Assets/_Graphics/ElementPetals</c>. The view stacks five rotated copies of
-    /// that sprite at play time.
+    /// One-click setup for the shared elemental-bar widget on a vessel HUD. For the selected
+    /// <see cref="ElementalBarsView"/> it: assigns the shared <see cref="ElementalBarsConfigSO"/>
+    /// (the default at <c>Resources/ElementalBarsConfig</c> unless one is already set), ensures the
+    /// four element bars exist, and creates a square <c>petalRoot</c> container per element.
     ///
-    /// Open the prefab that carries the view (the Squirrel vessel HUD) in Prefab Mode, select its root,
-    /// then run the menu item. <c>labelIcon</c> / <c>normalLabelSprite</c> are left untouched (Unity
-    /// preserves them across the script change), so only the new petal fields are populated.
+    /// Petal sprites come from the config, so the per-bar sprite override is left empty. At play time
+    /// the view fills each container with five rotated, tinted petals. <c>labelIcon</c> /
+    /// <c>normalLabelSprite</c> are left untouched.
+    ///
+    /// Usage: open the vessel HUD prefab in Prefab Mode, select the GameObject carrying the view (or any
+    /// parent), then run the menu item. Reposition the generated *_Flower containers to taste.
     /// </summary>
     public static class ElementalPetalBarWirer
     {
-        const string PetalDir = "Assets/Resources/ElementPetals";
+        const string ConfigPath = "Assets/Resources/ElementalBarsConfig.asset";
 
-        // Element enum name -> petal-sprite filename prefix.
-        static readonly (string elementName, string prefix)[] ElementOrder =
-        {
-            ("Charge", "charge"),
-            ("Mass",   "mass"),
-            ("Space",  "space"),
-            ("Time",   "time"),
-        };
+        // Standard element bars created when the view has none yet.
+        static readonly string[] DefaultElements = { "Charge", "Mass", "Space", "Time" };
 
         [MenuItem("Tools/Cosmic Shore/Wire Elemental Petal Bars")]
         static void WireSelected()
@@ -43,50 +41,54 @@ namespace CosmicShore.Editor
             int wired = Wire(view);
             EditorUtility.DisplayDialog("Wire Elemental Petal Bars",
                 wired > 0
-                    ? $"Wired {wired} element flower(s).\n\nReposition the *_Flower containers under " +
-                      $"'{view.name}' to taste — five rotated petals are created inside each at play time."
-                    : "Nothing wired. Confirm the petal sprites exist under " + PetalDir + ".",
+                    ? $"Set up {wired} element flower(s) on '{view.name}'.\n\n" +
+                      "Reposition the *_Flower containers to taste — five rotated petals are created " +
+                      "inside each at play time, tinted from the shared ElementalBarsConfig."
+                    : "Nothing wired. Confirm ElementalBarsConfig exists at " + ConfigPath + ".",
                 "OK");
         }
 
-        /// <summary>Populates petalRoot + petalSprite for every element bar. Returns the count wired.</summary>
+        /// <summary>Assigns the config and creates a petalRoot per element bar. Returns the count wired.</summary>
         public static int Wire(ElementalBarsView view)
         {
-            var so       = new SerializedObject(view);
-            var barsProp = so.FindProperty("bars");
+            var so = new SerializedObject(view);
 
-            // Fresh component? Create the four standard element bars.
+            // Assign the shared config if one isn't already set.
+            var configProp = so.FindProperty("config");
+            if (!configProp.objectReferenceValue)
+            {
+                var cfg = AssetDatabase.LoadAssetAtPath<ElementalBarsConfigSO>(ConfigPath);
+                if (!cfg)
+                {
+                    Debug.LogError($"[ElementalPetalBarWirer] No ElementalBarsConfigSO at {ConfigPath}. " +
+                                   "Create one via Assets > Create > ScriptableObjects > UI > Elemental Bars Config.", view);
+                    return 0;
+                }
+                configProp.objectReferenceValue = cfg;
+            }
+
+            var barsProp = so.FindProperty("bars");
             if (barsProp.arraySize == 0)
             {
-                barsProp.arraySize = ElementOrder.Length;
-                for (int i = 0; i < ElementOrder.Length; i++)
+                barsProp.arraySize = DefaultElements.Length;
+                for (int i = 0; i < DefaultElements.Length; i++)
                 {
                     var elemProp = barsProp.GetArrayElementAtIndex(i).FindPropertyRelative("element");
-                    elemProp.enumValueIndex = EnumIndexForName(elemProp, ElementOrder[i].elementName);
+                    elemProp.enumValueIndex = EnumIndexForName(elemProp, DefaultElements[i]);
                 }
             }
 
             int wired = 0;
             for (int i = 0; i < barsProp.arraySize; i++)
             {
-                var entry    = barsProp.GetArrayElementAtIndex(i);
-                var elemProp = entry.FindPropertyRelative("element");
-                string elementName = elemProp.enumNames[elemProp.enumValueIndex];
-                string prefix = PrefixForElement(elementName);
-                if (prefix == null) continue; // None / Omni — no flower
-
+                var entry = barsProp.GetArrayElementAtIndex(i);
                 var rootProp = entry.FindPropertyRelative("petalRoot");
                 if (!rootProp.objectReferenceValue)
-                    rootProp.objectReferenceValue = CreateFlowerContainer(view.transform, elementName, wired);
-
-                string path = $"{PetalDir}/{prefix}_petal.png";
-                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                if (!sprite)
                 {
-                    Debug.LogError($"[ElementalPetalBarWirer] Missing sprite: {path}", view);
-                    continue;
+                    var elemProp = entry.FindPropertyRelative("element");
+                    string elementName = elemProp.enumNames[elemProp.enumValueIndex];
+                    rootProp.objectReferenceValue = CreateFlowerContainer(view.transform, elementName, wired);
                 }
-                entry.FindPropertyRelative("petalSprite").objectReferenceValue = sprite;
                 wired++;
             }
 
@@ -101,19 +103,12 @@ namespace CosmicShore.Editor
             Undo.RegisterCreatedObjectUndo(go, "Create Element Flower");
             var rt = (RectTransform)go.transform;
             rt.SetParent(parent, false);
-            rt.sizeDelta        = new Vector2(80f, 80f);   // square so rotated petals stay undistorted
+            rt.sizeDelta        = new Vector2(88f, 88f);   // square so rotated petals stay undistorted
             rt.anchorMin        = new Vector2(0.5f, 0.5f);
             rt.anchorMax        = new Vector2(0.5f, 0.5f);
             rt.pivot            = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = new Vector2((index - 1.5f) * 96f, 0f); // default row; artist repositions
+            rt.anchoredPosition = new Vector2((index - 1.5f) * 104f, 0f); // default row; artist repositions
             return rt;
-        }
-
-        static string PrefixForElement(string elementName)
-        {
-            foreach (var (name, prefix) in ElementOrder)
-                if (name == elementName) return prefix;
-            return null;
         }
 
         static int EnumIndexForName(SerializedProperty enumProp, string name)
