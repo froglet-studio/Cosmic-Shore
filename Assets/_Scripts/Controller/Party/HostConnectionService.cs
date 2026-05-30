@@ -1069,6 +1069,22 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     Debug.LogWarning($"[HostConnectionService] Refresh error ({e.GetType().Name}): {e}");
+
+                    // Companion to the entry guard at the top of RefreshAsync — this branch
+                    // catches an in-flight tick that was already past the entry guard (holding
+                    // the lobby mutex, awaiting _lobbyService.RefreshAsync) when _transitioning
+                    // flipped to true. Counting that transport-teardown failure would combine
+                    // with any pre-transition jitter (LobbyRefreshScheduler enters its boost
+                    // window on invite-receive, so the counter can already be at 1-2) and
+                    // falsely escalate to ForceReset + Reconnecting + a throwaway lobby on a
+                    // *successful* join. Reset wipes any stale accumulation too.  The finally
+                    // block below still releases _lobbyMutex / clears _insideRefreshCycle.
+                    if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                    {
+                        _consecutiveRefreshErrors = 0;
+                        return;
+                    }
+
                     _consecutiveRefreshErrors++;
                     if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
                     {

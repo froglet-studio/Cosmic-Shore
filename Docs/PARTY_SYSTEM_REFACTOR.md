@@ -1340,17 +1340,33 @@ surgical task, not comment cleanup. Added to the Deferred section.
   watchdog + bounce, and cover it with the MPPM accept-flow integration test above. Spans
   `PartyInviteController`, `NetworkTransitionService`, `HostConnectionService`,
   `PartySessionService` — a dedicated commit.
-  - **Companion guard already landed in `HostConnectionService.RefreshAsync`.** Same
+  - **Companion two-layer guard landed in `HostConnectionService.RefreshAsync`.** Same
     transport-swap churn was *also* tripping a false presence-loss on the joiner: 3+ transient
     `RefreshAsync` failures during teardown crossed `MAX_REFRESH_ERRORS_BEFORE_RECONNECT` →
     `ForceReset` + `InParty → Reconnecting` + `RaiseHostConnectionLost` + a throwaway presence
     lobby, *after* a successful join (broke online-player discovery for the affected joiner
-    for the rest of the session). Inline guard: skip `RefreshAsync` and clear
-    `_consecutiveRefreshErrors` while `PartyInviteController.Instance.IsTransitioning` is true
-    (host is never `IsTransitioning`, so its scan loop is unaffected). Fold this into the same
-    structural refactor once the leave→reset→join is a single owned operation — the refresh
-    loop can then observe a single transition gate instead of inferring it from
-    `IsTransitioning`. See B-entry in `Docs/PARTY_OPEN_BUGS.md`.
+    for the rest of the session). Mitigation needs two layers because a single entry guard
+    leaves an in-flight-tick race window:
+    - **Layer 1 — entry guard** at the top of `RefreshAsync`: skips the refresh tick and
+      clears `_consecutiveRefreshErrors` while `PartyInviteController.Instance.IsTransitioning`
+      is true. Stops any *new* refresh from starting during teardown.
+    - **Layer 2 — catch-handler guard** inside the non-benign/non-rate-limit `else` branch of
+      `RefreshAsync.catch`: a tick that was already past Layer 1 — holding `_lobbyMutex`,
+      awaiting `_lobbyService.RefreshAsync()` — when `_transitioning` flipped true will see
+      the awaited UGS call fail when `NetworkTransitionService.ShutdownAsync` runs. Without
+      Layer 2 the catch unconditionally `_consecutiveRefreshErrors++`s; combined with
+      pre-transition jitter from `LobbyRefreshScheduler.Boost()` (fast-refresh window opens
+      on invite-receive, well before `AcceptInviteAsync` starts), the counter can have been
+      at 1-2 already, so one in-flight failure pushes it to 3 and the threshold trips on a
+      *successful* join. Layer 2 resets the counter and returns when `IsTransitioning` is
+      true; the existing `finally` still releases `_lobbyMutex` and clears `_insideRefreshCycle`,
+      and `shouldReconnect` stays `false` so the post-finally escalation is skipped. MPPM
+      reproduced the bug on YS2 with Layer 1 alone (`d1f08a7`); Layer 2 closes the in-flight
+      window. Host is never `IsTransitioning`, so its scan loop is unaffected by either layer.
+    - **Refactor note.** Fold both layers into the same structural refactor once
+      leave→reset→join is a single owned operation — the refresh loop can then observe a
+      single transition gate instead of inferring it from `IsTransitioning`. See B-entry in
+      `Docs/PARTY_OPEN_BUGS.md`.
 
 ### `[x]` Commit 16 — Client-pull roster bootstrap + terminal watchdog (splash-hang root fix)
 
