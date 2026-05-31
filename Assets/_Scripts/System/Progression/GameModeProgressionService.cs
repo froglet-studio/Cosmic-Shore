@@ -102,6 +102,10 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
+            // GSplat is a developer prototype mode (splat-cloud flythrough harness) — keep it
+            // always accessible from the arcade without wiring it into the quest progression chain.
+            if (mode == GameModes.GSplat) return true;
+
             // First quest mode is always unlocked
             if (questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
