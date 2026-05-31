@@ -493,7 +493,11 @@ namespace CosmicShore.Core
 
         #region Service Startup
 
-        void StartNetworkMonitor() => networkMonitor?.StartMonitoring();
+        void StartNetworkMonitor()
+        {
+            CosmicShore.Utility.NetworkDiagnostics.Initialize(networkMonitorDataVariable);
+            networkMonitor?.StartMonitoring();
+        }
         void StopNetworkMonitor() => networkMonitor?.StopMonitoring();
         void StartAuthentication() => authenticationServiceFacade?.StartAuthentication();
 

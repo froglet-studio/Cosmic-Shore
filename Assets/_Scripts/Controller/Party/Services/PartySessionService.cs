@@ -201,6 +201,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
                     Debug.LogWarning($"[PartySessionService] Transient session error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
+                    Debug.LogWarning($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     await UniTask.Delay(delay);
                 }
             }
@@ -250,6 +251,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
                     Debug.LogWarning($"[PartySessionService] Join transient error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
+                    Debug.LogWarning($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     await UniTask.Delay(delay);
                 }
             }
@@ -275,6 +277,7 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[PartySessionService] Leave error (session already gone?): {e.Message}");
+                Debug.LogWarning($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
         }
 

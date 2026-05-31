@@ -133,6 +133,12 @@ namespace CosmicShore.Gameplay
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
 
+            // TODO(NetworkMonitor.BoostPolling): if a NetworkMonitor.BoostPolling(int s)
+            // hook is added (mirroring LobbyRefreshScheduler.Boost()), call it here
+            // to tighten reachability polling for the duration of the accept flow.
+            // Improves the `sinceChange=...` resolution in any NetDiag log emitted
+            // by a catch in this flow. Exception classification works without it.
+
             // Cover the screen immediately so the user does not see the old menu
             // state during NM shutdown + UGS join + Relay connect.
             // SceneLoader.OnSceneLoaded re-arms this on Menu_Main load; it is
@@ -242,6 +248,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Yield(PlayerLoopTiming.Update);
                 Debug.LogError($"[PartyInviteController] Accept flow failed " +
                                $"({e.GetType().Name}): {e}");
+                Debug.LogWarning($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 await RecoverFromFailedTransitionAsync();
             }
             finally
@@ -323,6 +330,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Yield(PlayerLoopTiming.Update);
                 Debug.LogError($"[PartyInviteController] Leave-lobby flow failed " +
                                $"({e.GetType().Name}): {e}");
+                Debug.LogWarning($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 await RecoverFromFailedTransitionAsync();
             }
             finally
@@ -444,6 +452,7 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogError($"[PartyInviteController] Recovery failed ({e.GetType().Name}): {e}");
+                Debug.LogWarning($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
         }
     }
