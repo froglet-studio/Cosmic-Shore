@@ -666,7 +666,7 @@ namespace CosmicShore.Gameplay
                     (e.InnerException != null
                         ? $" — inner ({e.InnerException.GetType().Name}): {e.InnerException}"
                         : string.Empty));
-                Debug.LogWarning($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 throw;
             }
         }
@@ -1070,7 +1070,7 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     Debug.LogWarning($"[HostConnectionService] Refresh error ({e.GetType().Name}): {e}");
-                    Debug.LogWarning($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                    CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
 
                     // Companion to the entry guard at the top of RefreshAsync — this branch
                     // catches an in-flight tick that was already past the entry guard (holding

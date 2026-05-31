@@ -248,7 +248,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Yield(PlayerLoopTiming.Update);
                 Debug.LogError($"[PartyInviteController] Accept flow failed " +
                                $"({e.GetType().Name}): {e}");
-                Debug.LogWarning($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CosmicShore.Utility.CSDebug.Log($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 await RecoverFromFailedTransitionAsync();
             }
             finally
@@ -330,7 +330,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Yield(PlayerLoopTiming.Update);
                 Debug.LogError($"[PartyInviteController] Leave-lobby flow failed " +
                                $"({e.GetType().Name}): {e}");
-                Debug.LogWarning($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CosmicShore.Utility.CSDebug.Log($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 await RecoverFromFailedTransitionAsync();
             }
             finally
@@ -452,7 +452,7 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogError($"[PartyInviteController] Recovery failed ({e.GetType().Name}): {e}");
-                Debug.LogWarning($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CosmicShore.Utility.CSDebug.Log($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
         }
     }

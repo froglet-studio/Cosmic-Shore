@@ -1,8 +1,28 @@
 # Network Diagnostics
 
 Cross-cutting diagnostic overlay for party / lobby / session /
-transition failures. Shipped in commit `aaba872`. Pure observability —
-adding a call site never changes behavior.
+transition failures. Pure observability — adding a call site never
+changes behavior.
+
+**Logging channel: `CSDebug.Log` (not `Debug.*`).** Every line this
+overlay emits — the per-catch `NetDiag` lines and the `NetworkMonitor`
+transition lines — goes through `CSDebug.Log`
+(`Assets/_Scripts/Utility/CSDebug.cs`). This is deliberate:
+
+- **Stripped from release builds.** `CSDebug.Log` carries
+  `[Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]`, so
+  in a shipping (non-dev) build the compiler removes the entire call
+  *including its argument evaluation* — `ClassifyException(e)` and
+  `GetSnapshot()` are never invoked, and the interpolated string is
+  never built. **Zero runtime cost, zero allocation in release.**
+- **Muteable at runtime.** In Editor / development builds the line
+  respects `CSDebug.LogEnabled` (and the `CSDebug.LogLevel` preset), so
+  the diagnostic noise can be silenced from `LogControlWindow` without
+  touching code.
+
+Do **not** "promote" these to `Debug.Log` / `Debug.LogWarning` — that
+would reintroduce release-build allocation and console noise that the
+team explicitly does not want for diagnostics.
 
 For party-system architecture see `../PartySystem/ARCHITECTURE.md`. For
 presence-system see `../PresenceSystem/ARCHITECTURE.md`. For
@@ -21,7 +41,7 @@ NetDiag: class=<category> | reach=<UnityReachability> | monitor=<state> | sinceC
 
 | Field | Meaning | Example |
 |---|---|---|
-| `class` | Exception category from `NetworkDiagnostics.ClassifyException` | `Offline`, `SessionGone`, `Cancelled`, `RateLimit`, `Transient`, `AuthRequired`, `Unknown` |
+| `class` | Exception category from `NetworkDiagnostics.ClassifyException` (or the hard-coded `Timeout` at the three `NetworkTransitionService` timeout sites) | `Offline`, `SessionGone`, `Cancelled`, `RateLimit`, `Transient`, `AuthRequired`, `Unknown`, `Timeout` |
 | `reach` | `Application.internetReachability` value | `NotReachable`, `ReachableViaLocalAreaNetwork`, `ReachableViaCarrierDataNetwork` |
 | `monitor` | Live state of `NetworkMonitor` (read from `NetworkMonitorData.IsOnline`) | `Online`, `Offline`, `Uninitialized` |
 | `sinceChange` | Time since the last `NetworkMonitor` transition, in seconds | `0.0s`, `12.3s`, `N/A` |
@@ -61,15 +81,20 @@ public static string ClassifyException(Exception e);
 Polls `Application.internetReachability` every 5 s. On a transition,
 writes the new state to `NetworkMonitorData.IsOnline` +
 `LastTransitionUnscaledTime`, raises the SOAP event
-(`OnNetworkLost` / `OnNetworkFound`), and emits an explicit log:
+(`OnNetworkLost` / `OnNetworkFound`), and emits an explicit
+`CSDebug.Log` line:
 
 ```
-[NetworkMonitor] Online → Offline (reach=NotReachable, t=12.4s)      // Warning
-[NetworkMonitor] Offline → Online (reach=ReachableViaLAN, t=18.9s)    // Info
+[NetworkMonitor] Online → Offline (reach=NotReachable, t=12.4s)
+[NetworkMonitor] Offline → Online (reach=ReachableViaLAN, t=18.9s)
 ```
 
-The Warning on Offline transitions makes it stand out in the Editor
-console — it's the canary for any subsequent party-flow failure.
+Both lines are `CSDebug.Log` (info severity) — stripped from release
+builds and runtime-muteable, same as the NetDiag catch lines. The
+`reach=` + timestamp tag is the canary you pair with a subsequent
+party-flow `NetDiag` line to see whether the network changed around the
+failure. (Logs only fire on an actual Online↔Offline transition, so a
+stable connection produces nothing.)
 
 ### `Assets/_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/NetworkMonitorData.cs`
 
@@ -98,7 +123,12 @@ block that classifies a failure:
 | `Controller/Party/Services/NetworkTransitionService.cs` | `ShutdownAsync` timeout catch, `WaitForClientConnectionAsync` timeout catch, `WaitForSceneSyncAsync` timeout catch |
 
 Existing log literals are preserved verbatim. The NetDiag line is
-appended — never replaces.
+appended (via `CSDebug.Log`) — never replaces. The three
+`NetworkTransitionService` sites fire only on a timeout
+(`OperationCanceledException` when the flow's own token was *not*
+cancelled), so they hard-code `class=Timeout` rather than running it
+through `ClassifyException` (which would always return `Cancelled`
+there and bury the real meaning).
 
 ## Classification rules
 
@@ -157,14 +187,16 @@ future improvement — see `TODOS.md`.
 
 ## Adopting NetDiag in non-party catches
 
-The same pattern applies elsewhere:
+The same pattern applies elsewhere. Use `CSDebug.Log` for the appended
+NetDiag line so it strips from release and stays muteable — leave the
+pre-existing log literal on whatever channel it already uses:
 
 ```csharp
 catch (Exception e)
 {
-    Debug.LogWarning($"[<MyTag>] <existing message>: {e.Message}");
-    // ↓ one new line, appended
-    Debug.LogWarning($"[<MyTag>] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+    Debug.LogWarning($"[<MyTag>] <existing message>: {e.Message}"); // pre-existing — untouched
+    // ↓ one new line, appended — CSDebug.Log so it strips in release + mutes at runtime
+    CosmicShore.Utility.CSDebug.Log($"[<MyTag>] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
     // existing recovery / rethrow / etc
 }
 ```
