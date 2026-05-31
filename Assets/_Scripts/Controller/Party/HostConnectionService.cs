@@ -237,7 +237,7 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
         // Guard predicates — derive from authoritative state (state machine,
         // lobby service ref, NetworkManager) rather than a separate boolean.
-        // See Docs/PARTY_SYSTEM_REFACTOR.md (Helper properties).
+        // See Docs/PartySystem/ARCHITECTURE.md (Investigation answers Q2).
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -624,7 +624,7 @@ namespace CosmicShore.Gameplay
                 // stale host binding that races the client-start inside JoinByIdAsync —
                 // the intermittent "Netcode client never connected" bounce. The NM was
                 // already shut down by PartyInviteController.ShutdownAsync, so this is a
-                // server-side delete + binding release. See Docs/PARTY_SYSTEM_REFACTOR.md.
+                // server-side delete + binding release. See Docs/PartySystem/ARCHITECTURE.md.
                 Debug.Log($"[HostConnectionService][diag] before leave-own — ActiveSession={_partySessionService.ActiveSession?.Id ?? "null"}");
                 await _partySessionService.LeaveAsync();
                 Debug.Log("[HostConnectionService][diag] left own session — joining inviter's session...");
@@ -660,7 +660,7 @@ namespace CosmicShore.Gameplay
                 // 8s connect timeout on a NetworkManager that was never started as a
                 // client. Log the full exception and rethrow so PIC's catch recovers
                 // immediately (fail fast) and the real cause is visible.
-                // See Docs/PARTY_SYSTEM_REFACTOR.md.
+                // See Docs/PartySystem/ARCHITECTURE.md (Error-handling matrix).
                 Debug.LogError(
                     $"[HostConnectionService] AcceptInvite error ({e.GetType().Name}): {e}" +
                     (e.InnerException != null
@@ -732,7 +732,7 @@ namespace CosmicShore.Gameplay
                 }
                 catch (Exception e)
                 {
-                    // Per Docs/PARTY_SYSTEM_REFACTOR.md error-handling matrix:
+                    // Per Docs/PartySystem/ARCHITECTURE.md error-handling matrix:
                     // log, state unchanged. The local SOAP removal above already
                     // updated the UI; if the UGS-side kick fails the target will
                     // reappear on the next refresh tick and the host can retry.
@@ -823,7 +823,7 @@ namespace CosmicShore.Gameplay
         /// callers safely collapse to one creation.
         ///
         /// This is the canonical create-or-no-op surface — see
-        /// <c>Docs/PARTY_SYSTEM_REFACTOR.md</c> locked decisions. Callers that
+        /// <c>Docs/PartySystem/ARCHITECTURE.md</c> locked design. Callers that
         /// need to drop a stale session reference first must call
         /// <see cref="ClearPartySessionRef"/> explicitly (only the recovery
         /// path in <c>PartyInviteController.RecoverFromFailedTransitionAsync</c>
@@ -917,8 +917,8 @@ namespace CosmicShore.Gameplay
         /// </para>
         ///
         /// <para>
-        /// See <c>Docs/PARTY_SYSTEM_REFACTOR.md</c> (Q6, Commit 10) for the
-        /// design rationale. <see cref="PartySessionService.LeaveAsync"/>
+        /// See <c>Docs/PartySystem/ARCHITECTURE.md</c> (Investigation answers
+        /// Q6) for the design rationale. <see cref="PartySessionService.LeaveAsync"/>
         /// currently swallows its own exceptions, so the outer try/catch here
         /// is defensive — kept for future-proofing.
         /// </para>
@@ -1023,7 +1023,7 @@ namespace CosmicShore.Gameplay
                         // Every player hosts their own Relay session from menu entry
                         // (eager creation), so the session already exists before the
                         // invite was sent — no session creation needed here.
-                        // See Docs/PARTY_SYSTEM_REFACTOR.md.
+                        // See Docs/PartySystem/ARCHITECTURE.md (Locked design).
                         string activeSessionId = _partySessionService.ActiveSession?.Id;
                         if (string.IsNullOrEmpty(activeSessionId))
                         {
@@ -1345,7 +1345,7 @@ namespace CosmicShore.Gameplay
             try { await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
-                // Error-handling matrix — see Docs/PARTY_SYSTEM_REFACTOR.md.
+                // Error-handling matrix — see Docs/PartySystem/ARCHITECTURE.md.
                 //
                 // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException —
                 // known harmless SDK noise, self-corrects on the next tick.

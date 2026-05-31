@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
         /// service is a lazy DI singleton constructed during Bootstrap DI
         /// resolution, before <c>UnityServices.InitializeAsync()</c> completes,
         /// so a constructor-time read would pin null. See
-        /// Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
+        /// Docs/PartySystem/ARCHITECTURE.md (Investigation answers Q10).
         /// </summary>
         private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
 
@@ -106,7 +106,7 @@ namespace CosmicShore.Gameplay
         /// Backed by <c>GameDataSO.ActiveSession</c> — single source of truth
         /// for the active Relay session reference, shared with every other
         /// reader (HCS, MultiplayerSetup, MultiplayerMiniGameControllerBase,
-        /// Player, etc.). See Docs/PARTY_SYSTEM_REFACTOR.md locked decisions.
+        /// Player, etc.). See Docs/PartySystem/ARCHITECTURE.md locked design.
         /// </remarks>
         public ISession ActiveSession
         {
@@ -231,7 +231,7 @@ namespace CosmicShore.Gameplay
             // a transient error before the NM client even starts. Mirrors CreateAsync's
             // retry loop + classifiers. Non-transient errors propagate to the caller
             // (HostConnectionService.AcceptInviteAsync), which logs and rethrows so
-            // PartyInviteController fails fast. See Docs/PARTY_SYSTEM_REFACTOR.md.
+            // PartyInviteController fails fast. See Docs/PartySystem/ARCHITECTURE.md (Q5).
             for (int attempt = 0; ; attempt++)
             {
                 try

@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
         /// service is a lazy DI singleton constructed during Bootstrap DI
         /// resolution, before <c>UnityServices.InitializeAsync()</c> completes,
         /// so a constructor-time read would pin null. See
-        /// Docs/PARTY_SYSTEM_REFACTOR.md (Anti-patterns).
+        /// Docs/PartySystem/ARCHITECTURE.md (Investigation answers Q10).
         /// </summary>
         private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
         private ISession _activeLobby;

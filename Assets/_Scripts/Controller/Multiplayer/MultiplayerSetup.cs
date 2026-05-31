@@ -404,7 +404,7 @@ namespace CosmicShore.Gameplay
             try
             {
                 // Eager per-user Relay: gameData.ActiveSession IS the party Relay
-                // session (single backing field; see Docs/PARTY_SYSTEM_REFACTOR.md).
+                // session (single backing field; see Docs/PartySystem/ARCHITECTURE.md Q4).
                 // Do NOT null the reference — that would orphan the live UGS Relay
                 // and force HCS to recreate, violating the locked invariant
                 // "ActiveSession is never nulled outside an intentional leave."

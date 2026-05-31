@@ -101,7 +101,7 @@ namespace CosmicShore.Gameplay
                 // fully idle (not listening, not serving, not a client, no shutdown in
                 // progress) so the subsequent client-start (JoinSessionByIdAsync) cannot
                 // race a half-reset NetworkManager. That race is the intermittent
-                // party-join bounce — see Docs/PARTY_SYSTEM_REFACTOR.md.
+                // party-join bounce — see Docs/PartySystem/ARCHITECTURE.md.
                 await UniTask.WaitUntil(
                     () =>
                     {

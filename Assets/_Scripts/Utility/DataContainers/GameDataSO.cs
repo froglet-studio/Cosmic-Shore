@@ -316,7 +316,7 @@ namespace CosmicShore.Utility
             // PartySessionService); nulling it would orphan the live Relay.
             // The locked invariant: ActiveSession is only nulled by intentional
             // leave paths (PartySessionService.LeaveAsync / OnTransportFailure
-            // after Delete/Leave). See Docs/PARTY_SYSTEM_REFACTOR.md.
+            // after Delete/Leave). See Docs/PartySystem/ARCHITECTURE.md (Locked design).
             selectedVesselClass.Value = VesselClassType.Manta;
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;

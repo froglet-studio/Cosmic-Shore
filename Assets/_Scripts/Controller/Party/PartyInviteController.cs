@@ -185,7 +185,7 @@ namespace CosmicShore.Gameplay
                 await HostConnectionService.Instance.AcceptInviteAsync(invite).AsMainThread();
 
                 // gameData.ActiveSession IS HCS.PartySession (single backing field
-                // since Commit 8 — see Docs/PARTY_SYSTEM_REFACTOR.md). The accept
+                // — see Docs/PartySystem/ARCHITECTURE.md Q4). The accept
                 // path inside HCS already updated the shared ref via PartySessionService.
 
                 Debug.Log("[PartyInviteController] Joined party session via UGS.");
@@ -306,7 +306,7 @@ namespace CosmicShore.Gameplay
                 //                                       session.LeaveAsync (client)
                 //   EnsurePartySessionAsync()         → fresh solo Relay + NM host
                 // .AsMainThread() guarantees the continuation lands on Unity's main thread.
-                // See Docs/PARTY_SYSTEM_REFACTOR.md (Commit 10).
+                // See Docs/PartySystem/ARCHITECTURE.md (Investigation answers Q6).
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
                     await hcs.LeavePartyKeepHostAsync().AsMainThread();
@@ -439,8 +439,8 @@ namespace CosmicShore.Gameplay
                 // party session may be in an inconsistent state — leave it cleanly
                 // (DeleteAsync/LeaveAsync internally) and recreate a fresh solo
                 // session via the canonical leave-to-solo surface. No direct
-                // nm.StartHost() calls here. See Docs/PARTY_SYSTEM_REFACTOR.md
-                // (Commit 10).
+                // nm.StartHost() calls here. See Docs/PartySystem/ARCHITECTURE.md
+                // (Investigation answers Q6).
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
                     await hcs.LeavePartyKeepHostAsync().AsMainThread();

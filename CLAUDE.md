@@ -245,7 +245,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `CLAUDE.md` | Project root | Architecture, patterns, systems reference |
 | `SCENES.md` | `Docs/` | Complete scene inventory, game modes, launch pipeline |
 | `THREADING.md` | `Docs/` | UniTask / SyncContext threading rules, `.AsMainThread()` contract, `MainThreadDispatcher`, canary, history |
-| `PARTY_SYSTEM_REFACTOR.md` | `Docs/` | Canonical party system reference. 15-commit refactor backlog toward an unbreakable party / invite / lobby system. EAGER per-user Relay session is the locked design. |
+| `PartySystem/` | `Docs/` | Party (Relay) layer: `ARCHITECTURE.md` (locked design, investigation Q&A, error-handling matrix, exit criteria), `REFACTOR.md` (active backlog + deferred items + per-commit protocol), `BUGS.md`, `TESTS.md`, `TODOS.md`. EAGER per-user Relay session is the locked design. |
+| `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
+| `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `README.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
@@ -1033,21 +1035,27 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 - **Local-only freestyle toggle**: `MenuCrystalClickHandler` toggles autopilot ↔ freestyle per-client with `IsLocalUser` guard. No network RPC needed — vessel behavior replicates automatically via Netcode.
 - **TimeScale safety**: `MenuCrystalClickHandler.IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) prevents `Time.timeScale` changes in multiplayer, which would freeze all local rendering including other players' vessels.
 
-#### Party system — see `Docs/PARTY_SYSTEM_REFACTOR.md`
+#### Party system — see `Docs/PartySystem/` and `Docs/PresenceSystem/`
 
-The party / invite / lobby system is being hardened toward an unbreakable state
-through a 15-commit backlog tracked in `Docs/PARTY_SYSTEM_REFACTOR.md`. That doc is
-the canonical reference — read it before touching `HostConnectionService.cs`,
-`PartySessionService.cs`, `PresenceLobbyService.cs`, `NetworkTransitionService.cs`,
-or `PartyInviteController.cs`.
+The party / invite / lobby system is hardened toward an unbreakable state. The
+canonical references are split by layer: `Docs/PartySystem/` (the Relay-backed
+party session) and `Docs/PresenceSystem/` (the lobby-only discovery layer). Read
+`Docs/PartySystem/ARCHITECTURE.md` before touching `HostConnectionService.cs`,
+`PartySessionService.cs`, `NetworkTransitionService.cs`, or
+`PartyInviteController.cs`; read `Docs/PresenceSystem/ARCHITECTURE.md` before
+touching `PresenceLobbyService.cs`. The active refactor backlog (the three
+remaining service refactors + deferred items D1-D5 + per-commit protocol) lives
+in `Docs/PartySystem/REFACTOR.md`. Open bugs are split into
+`Docs/PartySystem/BUGS.md` and `Docs/PresenceSystem/BUGS.md`. Catch-block failure
+diagnostics are documented in `Docs/NetworkDiagnostics/README.md`.
 
 **Locked design — do not relitigate.** Every authenticated player hosts their own
 Relay-backed party session from the moment they enter `Menu_Main` (the "Always
-InParty" model, Phase 15 of the earlier refactor). EAGER per-user Relay creation
-is the canonical model. **Do not reintroduce LAZY / on-first-invite creation** —
-the shutdown-and-recreate cascade it caused is the root of every recurring
-party-invite bug. If a future bug appears to argue for lazy creation, re-examine
-the root cause through the lens of the doc's "unbreakable exit criteria" first.
+InParty" model). EAGER per-user Relay creation is the canonical model. **Do not
+reintroduce LAZY / on-first-invite creation** — the shutdown-and-recreate cascade
+it caused is the root of every recurring party-invite bug. If a future bug appears
+to argue for lazy creation, re-examine the root cause through the lens of
+`Docs/PartySystem/ARCHITECTURE.md` "Unbreakable exit criteria" first.
 
 **Threading prerequisite (shipped):** the UGS / Netcode `Task` continuation → SOAP
 off-thread → `EnsureRunningOnMainThread` cascade is resolved by `MainThreadDispatcher`

@@ -1107,7 +1107,7 @@ namespace CosmicShore.UI
                       $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}</color>");
 
             // gameData.ActiveSession IS HCS.PartySession (single backing field
-            // since Commit 8 — see Docs/PARTY_SYSTEM_REFACTOR.md). No hand-off needed.
+            // — see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
         }
 
         #endregion
