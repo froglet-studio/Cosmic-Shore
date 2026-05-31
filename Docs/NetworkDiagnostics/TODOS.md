@@ -52,8 +52,9 @@ line per catch. No DI needed. No constructor changes.
 ```csharp
 catch (Exception e)
 {
-    Debug.LogWarning($"[<MyTag>] <existing message>: {e.Message}");
-    Debug.LogWarning($"[<MyTag>] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+    Debug.LogWarning($"[<MyTag>] <existing message>: {e.Message}"); // pre-existing — untouched
+    // ↓ one new line, appended — CSDebug.Log so it strips in release + mutes at runtime
+    CosmicShore.Utility.CSDebug.Log($"[<MyTag>] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
     // existing recovery / rethrow / etc
 }
 ```
@@ -69,12 +70,14 @@ top of `AcceptInviteAsync` and `LeavePartyAndReturnToMenuAsync` would
 let the catch-time log be diffed against the baseline to compute
 "state changed mid-flow at …".
 
-**Outline.** One info-level log at the top of each public flow method:
+**Outline.** One `CSDebug.Log` (info-level, release-stripped) at the
+top of each public flow method, matching the channel used by every
+other line the overlay emits:
 
 ```csharp
 public async UniTask AcceptInviteAsync(PartyInviteData invite)
 {
-    Debug.Log($"[PartyInviteController] AcceptInviteAsync start | NetDiag: {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+    CosmicShore.Utility.CSDebug.Log($"[PartyInviteController] AcceptInviteAsync start | NetDiag: {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
     // ... existing flow ...
 }
 ```

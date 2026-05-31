@@ -91,10 +91,11 @@ the host stops their VP, triggering a cooperative cancel mid-Accept).
 - The generic catch with `NetDiag: class=Cancelled | …`.
 
 **Possible solutions to discuss later.**
-- **C.1 Demote Cancelled to Info** — in
-  `NetworkDiagnostics.ClassifyException` callers, log at Info severity
-  instead of Warning when `class=Cancelled`. Smallest change; cleans
-  up Console noise during normal Leave / Quit flows.
+- **C.1 ~~Demote Cancelled to Info~~ — superseded by the CSDebug.Log
+  routing (commit `70ae31b`).** All NetDiag lines, regardless of class,
+  now log at info severity via `CSDebug.Log` and strip from release
+  builds entirely, so Cancelled no longer produces Warning noise in dev
+  or any cost in release. No further action needed for this option.
 - **C.2 Suppress toast on Cancelled** — branch in `BounceToSoloMenu`
   to skip the "Couldn't join" toast when the cause is a user cancel.
   The user already knows they pressed Leave.
