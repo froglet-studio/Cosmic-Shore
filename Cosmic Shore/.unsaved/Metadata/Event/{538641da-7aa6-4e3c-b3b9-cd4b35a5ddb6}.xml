@@ -67,7 +67,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>4000</value>
+			<value>1000</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{7b336e24-bb31-49a2-a2cc-a66a53bdd388}" />
@@ -154,7 +154,13 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>4000</value>
+			<value>1000</value>
+		</property>
+		<property name="extentMode">
+			<value>1</value>
+		</property>
+		<property name="soundSize">
+			<value>3.79999995</value>
 		</property>
 	</object>
 	<object class="MixerBusFader" id="{5ceb9d67-8ed8-4697-b490-49280fc17b6c}" />
