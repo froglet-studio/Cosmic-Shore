@@ -47,6 +47,11 @@ namespace CosmicShore.Splats
         private Mesh _generatedFallbackMesh;
         private GameObject _spawnRoot;
 
+        public void SetSourceSet(SplatPrismSet newSet)
+        {
+            set = newSet;
+        }
+
         private void Start()
         {
             if (spawnOnStart) Spawn();
@@ -57,7 +62,9 @@ namespace CosmicShore.Splats
         {
             if (set == null)
             {
-                Debug.LogError($"[SplatPrismSpawner] No SplatPrismSet assigned on {name}.", this);
+                // Soft skip — common during scene boot when the set is assigned a frame later
+                // (e.g. by the runtime loader). Other callers should still see one warning.
+                Debug.LogWarning($"[SplatPrismSpawner] No SplatPrismSet assigned on {name}; skipping spawn.", this);
                 return;
             }
             if (set.points == null || set.points.Length == 0)

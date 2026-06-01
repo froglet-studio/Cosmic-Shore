@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Splats;
@@ -13,21 +11,30 @@ using CosmicShore.Splats;
 namespace CosmicShore.Tools.SplatImport
 {
     // Wires the GSplat minigame into the arcade so it's playable end-to-end:
-    //   - bakes a synthetic SplatPrismSet asset
-    //   - duplicates MinigameFreestyle.unity -> MinigameGSplat.unity
-    //   - drops a SplatCloud GameObject into that new scene
-    //   - adds the scene to build settings
-    //   - creates ArcadeGameGSplat.asset (Squirrel-only) and adds it to the AllGames/ArcadeGames lists
+    //   - bakes a synthetic SplatPrismSet asset under Resources/ for runtime loading
+    //   - creates ArcadeGameGSplat.asset (Squirrel-only, single-player) pointing at the
+    //     stock MinigameFreestyle scene
+    //   - adds the asset to every arcade-shaped SO_GameList found in the project
+    //   - cleans up any leftover MinigameGSplat.unity clone from the earlier approach
+    //
+    // The splat cloud itself is layered onto the freestyle scene at runtime by
+    // SplatCloudRuntimeLoader — see that class. Reusing the stock scene keeps Reflex DI
+    // and freestyle's player spawning intact, which the scene-clone approach broke.
     //
     // Idempotent — re-running only touches assets that don't already exist.
     // Auto-runs once on project open via [InitializeOnLoad] so opening the branch is enough.
     [InitializeOnLoad]
     public static class SplatArcadeSetup
     {
-        const string GSplatSceneName = "MinigameGSplat";
-        const string FreestyleScenePath = "Assets/_Scenes/Singleplayer Scenes/MinigameFreestyle.unity";
-        const string GSplatScenePath   = "Assets/_Scenes/Singleplayer Scenes/MinigameGSplat.unity";
-        const string SyntheticSetPath  = "Assets/CosmicShore/Splats/Baked/SplatPrismSet_Synthetic.asset";
+        // GSplat reuses the stock MinigameFreestyle scene to keep Reflex DI and player spawning
+        // intact — the splat cloud is layered on at runtime by SplatCloudRuntimeLoader when it
+        // detects GameMode == GSplat. The earlier scene-clone approach broke DI in the duplicate.
+        const string FreestyleSceneName = "MinigameFreestyle";
+        const string LegacyGSplatScenePath = "Assets/_Scenes/Singleplayer Scenes/MinigameGSplat.unity";
+        // SplatPrismSet lives under a Resources folder so SplatCloudRuntimeLoader can find it at
+        // runtime without serialized refs in the scene file.
+        const string SyntheticSetPath  = "Assets/CosmicShore/Splats/Resources/SplatPrismSet_Synthetic.asset";
+        const string LegacyBakedFolder = "Assets/CosmicShore/Splats/Baked";
         const string ArcadeGameAsset   = "Assets/_SO_Assets/Games/ArcadeGameGSplat.asset";
         const string SquirrelVessel    = "Assets/_SO_Assets/Classes/SO_Class_Squirrel.asset";
         // Different surfaces of the arcade UI bind to different SO_GameList assets — AppManager
@@ -88,9 +95,8 @@ namespace CosmicShore.Tools.SplatImport
         {
             var arcadeGame = AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(ArcadeGameAsset);
             if (arcadeGame == null) return false;
+            if (arcadeGame.SceneName != FreestyleSceneName) return false;
             if (AssetDatabase.LoadAssetAtPath<SplatPrismSet>(SyntheticSetPath) == null) return false;
-            if (!File.Exists(GSplatScenePath)) return false;
-            if (!EditorBuildSettings.scenes.Any(s => s.path == GSplatScenePath && s.enabled)) return false;
             foreach (var listPath in FindArcadeGameLists())
             {
                 var list = AssetDatabase.LoadAssetAtPath<SO_GameList>(listPath);
@@ -105,11 +111,10 @@ namespace CosmicShore.Tools.SplatImport
         public static void Run(bool silent)
         {
             Debug.Log("[SplatArcadeSetup] Starting setup ...");
-            EnsureFolderTree("Assets/CosmicShore/Splats/Baked");
+            EnsureFolderTree("Assets/CosmicShore/Splats/Resources");
 
-            var splatSet = EnsureSyntheticSplatSet();
-            EnsureGSplatScene(splatSet);
-            EnsureSceneInBuildSettings(GSplatScenePath);
+            EnsureSyntheticSplatSet();
+            CleanupLegacyArtifacts();
             var arcadeGame = EnsureArcadeGameAsset();
 
             var lists = FindArcadeGameLists();
@@ -127,12 +132,41 @@ namespace CosmicShore.Tools.SplatImport
                 EditorUtility.DisplayDialog("GSplat Arcade Game", "Setup complete.\n\n" + summary + "\n\nEnter Play Mode, open the Arcade, pick GSplat, choose Squirrel, and fly.", "OK");
         }
 
+        // Removes scene/build-settings artifacts left behind by the earlier scene-clone approach.
+        // The cloned MinigameGSplat.unity scene broke Reflex DI for the components inside it — we
+        // now layer the splat cloud onto the stock freestyle scene at runtime instead.
+        private static void CleanupLegacyArtifacts()
+        {
+            if (File.Exists(LegacyGSplatScenePath))
+            {
+                AssetDatabase.DeleteAsset(LegacyGSplatScenePath);
+                Debug.Log($"[SplatArcadeSetup] Removed legacy clone {LegacyGSplatScenePath}.");
+            }
+            var scenes = EditorBuildSettings.scenes;
+            if (scenes.Any(s => s.path == LegacyGSplatScenePath))
+            {
+                EditorBuildSettings.scenes = scenes.Where(s => s.path != LegacyGSplatScenePath).ToArray();
+                Debug.Log("[SplatArcadeSetup] Removed legacy clone from build settings.");
+            }
+            // Move any baked synthetic asset out of the legacy non-Resources path.
+            string legacyPath = LegacyBakedFolder + "/SplatPrismSet_Synthetic.asset";
+            if (File.Exists(legacyPath) && !File.Exists(SyntheticSetPath))
+            {
+                EnsureFolderTree(Path.GetDirectoryName(SyntheticSetPath).Replace('\\', '/'));
+                AssetDatabase.MoveAsset(legacyPath, SyntheticSetPath);
+                Debug.Log($"[SplatArcadeSetup] Moved synthetic splat set into Resources: {SyntheticSetPath}");
+            }
+            else if (File.Exists(legacyPath))
+            {
+                AssetDatabase.DeleteAsset(legacyPath);
+            }
+        }
+
         [MenuItem("Tools/Splats/Diagnose GSplat Setup")]
         public static void Diagnose()
         {
             var arcadeGame = AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(ArcadeGameAsset);
             var splatSet = AssetDatabase.LoadAssetAtPath<SplatPrismSet>(SyntheticSetPath);
-            var scene = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(GSplatScenePath);
             var lists = FindArcadeGameLists();
             int containingCount = arcadeGame == null ? 0 :
                 lists.Count(p =>
@@ -140,17 +174,17 @@ namespace CosmicShore.Tools.SplatImport
                     var l = AssetDatabase.LoadAssetAtPath<SO_GameList>(p);
                     return l != null && l.Games != null && l.Games.Contains(arcadeGame);
                 });
-            bool inBuild = EditorBuildSettings.scenes.Any(s => s.path == GSplatScenePath && s.enabled);
+            string sceneOnAsset = arcadeGame != null ? arcadeGame.SceneName : "<no asset>";
 
             string report =
                 $"ArcadeGameGSplat.asset:   {(arcadeGame != null ? "OK" : "MISSING")}\n" +
-                $"SplatPrismSet_Synthetic:  {(splatSet != null ? $"OK ({(splatSet.points?.Length ?? 0)} pts)" : "MISSING")}\n" +
-                $"MinigameGSplat.unity:     {(scene != null ? "OK" : "MISSING")}\n" +
-                $"In build settings:        {(inBuild ? "YES" : "NO")}\n" +
+                $"  -> SceneName:           {sceneOnAsset} (expected {FreestyleSceneName})\n" +
+                $"SplatPrismSet (Resources): {(splatSet != null ? $"OK ({(splatSet.points?.Length ?? 0)} pts)" : "MISSING")}\n" +
                 $"Game lists found:         {lists.Count}\n" +
-                $"Lists containing GSplat:  {containingCount}/{lists.Count}";
+                $"Lists containing GSplat:  {containingCount}/{lists.Count}\n" +
+                $"Legacy clone file:        {(File.Exists(LegacyGSplatScenePath) ? "PRESENT (run setup to delete)" : "absent")}";
             Debug.Log("[SplatArcadeSetup] Diagnosis:\n" + report);
-            EditorUtility.DisplayDialog("GSplat Diagnosis", report + "\n\nIf any line is MISSING/NO/0, run Tools/Splats/Setup GSplat Arcade Game.", "OK");
+            EditorUtility.DisplayDialog("GSplat Diagnosis", report + "\n\nIf any line is MISSING/wrong, run Tools/Splats/Setup GSplat Arcade Game.", "OK");
         }
 
         private static List<string> FindArcadeGameLists()
@@ -171,9 +205,8 @@ namespace CosmicShore.Tools.SplatImport
         {
             var sb = new System.Text.StringBuilder();
             sb.Append("  arcade game asset: ").AppendLine(ArcadeGameAsset);
-            sb.Append("  scene: ").AppendLine(GSplatScenePath);
-            sb.Append("  splat set: ").AppendLine(SyntheticSetPath);
-            sb.Append("  in build settings: ").AppendLine(EditorBuildSettings.scenes.Any(s => s.path == GSplatScenePath && s.enabled) ? "yes" : "no");
+            sb.Append("  scene (reused):   ").AppendLine(FreestyleSceneName);
+            sb.Append("  splat set:        ").AppendLine(SyntheticSetPath);
             sb.AppendLine("  added to:");
             foreach (var p in lists)
             {
@@ -223,98 +256,31 @@ namespace CosmicShore.Tools.SplatImport
             }
         }
 
-        // 2) Duplicate freestyle scene + drop a SplatCloud GameObject in it ------------------------
-        private static void EnsureGSplatScene(SplatPrismSet splatSet)
-        {
-            bool sceneAlreadyExisted = File.Exists(GSplatScenePath);
-            if (!sceneAlreadyExisted)
-            {
-                if (!File.Exists(FreestyleScenePath))
-                    throw new FileNotFoundException($"Freestyle template scene not found at {FreestyleScenePath}.");
-                if (!AssetDatabase.CopyAsset(FreestyleScenePath, GSplatScenePath))
-                    throw new InvalidOperationException($"Failed to copy {FreestyleScenePath} -> {GSplatScenePath}.");
-                AssetDatabase.ImportAsset(GSplatScenePath);
-                Debug.Log($"[SplatArcadeSetup] Duplicated freestyle scene -> {GSplatScenePath}.");
-            }
-
-            // Open additively so we don't disturb whatever the user already has loaded.
-            var scene = EditorSceneManager.OpenScene(GSplatScenePath, OpenSceneMode.Additive);
-            try
-            {
-                bool added = TryAddSplatCloud(scene, splatSet);
-                if (added)
-                {
-                    EditorSceneManager.MarkSceneDirty(scene);
-                    EditorSceneManager.SaveScene(scene);
-                }
-            }
-            finally
-            {
-                if (scene.IsValid() && EditorSceneManager.loadedSceneCount > 1)
-                    EditorSceneManager.CloseScene(scene, removeScene: true);
-            }
-        }
-
-        private static bool TryAddSplatCloud(Scene scene, SplatPrismSet splatSet)
-        {
-            foreach (var root in scene.GetRootGameObjects())
-                if (root.name == "SplatCloud") return false; // already wired
-
-            var go = new GameObject("SplatCloud");
-            SceneManager.MoveGameObjectToScene(go, scene);
-            var spawner = go.AddComponent<SplatPrismSpawner>();
-
-            // Wire the private serialized [SerializeField] private SplatPrismSet set;
-            var serialized = new SerializedObject(spawner);
-            var setProp = serialized.FindProperty("set");
-            if (setProp == null)
-            {
-                Debug.LogError("[SplatArcadeSetup] SplatPrismSpawner.set field not found via SerializedObject.");
-                UnityEngine.Object.DestroyImmediate(go);
-                return false;
-            }
-            setProp.objectReferenceValue = splatSet;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-
-            // Lift the cloud root in front of the spawn so the Squirrel actually flies into it
-            // instead of starting buried inside it. Adjust on the GameObject's transform if needed.
-            go.transform.position = new Vector3(0f, 0f, 30f);
-            Debug.Log("[SplatArcadeSetup] Added SplatCloud GameObject to MinigameGSplat scene.");
-            return true;
-        }
-
-        // 3) Register the new scene in EditorBuildSettings ------------------------------------------
-        private static void EnsureSceneInBuildSettings(string path)
-        {
-            var current = EditorBuildSettings.scenes;
-            if (current.Any(s => s.path == path && s.enabled)) return;
-
-            var updated = new List<EditorBuildSettingsScene>(current);
-            var existing = updated.FindIndex(s => s.path == path);
-            if (existing >= 0)
-            {
-                updated[existing] = new EditorBuildSettingsScene(path, true);
-            }
-            else
-            {
-                var guid = AssetDatabase.AssetPathToGUID(path);
-                if (string.IsNullOrEmpty(guid))
-                    throw new InvalidOperationException($"No asset GUID for {path} — was the scene copy committed?");
-                updated.Add(new EditorBuildSettingsScene(path, true));
-            }
-            EditorBuildSettings.scenes = updated.ToArray();
-            Debug.Log($"[SplatArcadeSetup] Added {path} to build settings.");
-        }
-
-        // 4) Create the SO_ArcadeGame asset --------------------------------------------------------
+        // 2) Create / refresh the SO_ArcadeGame asset (pointing at the stock freestyle scene)
         private static SO_ArcadeGame EnsureArcadeGameAsset()
         {
             var existing = AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(ArcadeGameAsset);
-            if (existing != null) return existing;
-
             var squirrel = AssetDatabase.LoadAssetAtPath<SO_Vessel>(SquirrelVessel);
             if (squirrel == null)
                 throw new FileNotFoundException($"Squirrel vessel SO not found at {SquirrelVessel}.");
+
+            if (existing != null)
+            {
+                bool dirty = false;
+                if (existing.SceneName != FreestyleSceneName) { existing.SceneName = FreestyleSceneName; dirty = true; }
+                if (existing.Mode != GameModes.GSplat) { existing.Mode = GameModes.GSplat; dirty = true; }
+                if (existing.Vessels == null || existing.Vessels.Count != 1 || existing.Vessels[0] != squirrel)
+                {
+                    existing.Vessels = new List<SO_Vessel> { squirrel };
+                    dirty = true;
+                }
+                if (dirty)
+                {
+                    EditorUtility.SetDirty(existing);
+                    Debug.Log($"[SplatArcadeSetup] Refreshed fields on {ArcadeGameAsset} (SceneName -> {FreestyleSceneName}).");
+                }
+                return existing;
+            }
 
             var arcadeGame = ScriptableObject.CreateInstance<SO_ArcadeGame>();
             arcadeGame.name = "ArcadeGameGSplat";
@@ -323,7 +289,7 @@ namespace CosmicShore.Tools.SplatImport
             arcadeGame.DisplayName = "GSplat";
             arcadeGame.Description = "Fly the Squirrel through a HyperSea oddity reconstructed from a 3D Gaussian Splat. No score, no timer — just structure and color.";
             arcadeGame.GolfScoring = false;
-            arcadeGame.SceneName = GSplatSceneName;
+            arcadeGame.SceneName = FreestyleSceneName;
             arcadeGame.Vessels = new List<SO_Vessel> { squirrel };
             arcadeGame.MinPlayersAllowed = 1;
             arcadeGame.MaxPlayersAllowed = 1;
