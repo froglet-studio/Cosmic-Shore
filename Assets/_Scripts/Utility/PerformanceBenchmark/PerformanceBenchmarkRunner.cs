@@ -112,11 +112,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // Spike capture (only allocates on actual spikes, which are bounded).
         List<SpikeEntry> spikes;
-        readonly List<MarkerSample> _markerScratch = new(8);
         const float SpikeMultiplier = 1.75f;
         const float SpikeFloorMs = 1000f / 45f;
         const int MaxSpikes = 256;
-        const int TopMarkersPerSpike = 8;
 
         // Free-form ("record until stopped") capture, used by the Runtime Capture tab.
         bool _freeForm;
@@ -430,11 +428,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             };
 
 #if UNITY_EDITOR
-            if (SpikeAnalyzer.TryGetTopMarkers(SpikeAnalyzer.LastFrameIndex, TopMarkersPerSpike, _markerScratch))
-            {
-                for (int i = 0; i < _markerScratch.Count; i++)
-                    spike.topMarkers.Add(_markerScratch[i]);
-            }
+            // Record WHICH profiler frame to analyze, but don't walk it here. The walk costs
+            // 70-90ms and, run inline on every spike, cascaded into a spike storm of the tool's
+            // own making. The editor window enriches topMarkers off the game thread instead.
+            spike.profilerFrameIndex = SpikeAnalyzer.LastFrameIndex;
 #endif
             spikes.Add(spike);
         }

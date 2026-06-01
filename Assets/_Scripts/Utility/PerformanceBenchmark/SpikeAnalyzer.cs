@@ -17,6 +17,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// <summary>Index of the last fully-captured profiler frame (or -1).</summary>
         public static int LastFrameIndex => ProfilerDriver.lastFrameIndex;
 
+        /// <summary>Oldest profiler frame still in the ring buffer. Frames below this have scrolled out.</summary>
+        public static int FirstFrameIndex => ProfilerDriver.firstFrameIndex;
+
         public static void SetProfilerEnabled(bool enabled)
         {
             try

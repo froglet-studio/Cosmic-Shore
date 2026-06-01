@@ -80,15 +80,59 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 collectReport = BenchmarkReport.LoadFromFile(CollectCachePath);
         }
 
+        // Spike enrichment (editor-side, off the game thread).
+        readonly List<MarkerSample> _enrichScratch = new(16);
+        double _nextEnrichTime;
+        const double EnrichInterval = 0.35;   // seconds between hierarchy walks (keeps the editor responsive)
+        const int TopMarkersToCapture = 8;
+
         void Update()
         {
             // Re-acquire the live runner after the play-mode domain reload wiped our reference.
             if (Application.isPlaying && collectRunner == null)
                 collectRunner = FindFirstObjectByType<PerformanceBenchmarkRunner>();
 
+            EnrichPendingSpikes();
+
             if ((collectRunner != null && collectRunner.IsRunning) ||
                 (activeSweep != null && activeSweep.IsSweeping))
                 Repaint();
+        }
+
+        /// <summary>
+        /// Fills the script breakdown for captured spikes here, on the editor loop, instead of
+        /// inside the game's capture frame. Rate-limited and worst-spike-first so a heavy
+        /// hierarchy walk can't cascade into a spike storm or hang the editor. Runs only while a
+        /// profiler frame for the spike is still in the buffer.
+        /// </summary>
+        void EnrichPendingSpikes()
+        {
+            if (collectRunner == null) return;
+            if (EditorApplication.timeSinceStartup < _nextEnrichTime) return;
+
+            var spikes = collectRunner.Spikes;
+            if (spikes == null || spikes.Count == 0) return;
+
+            int firstFrame = SpikeAnalyzer.FirstFrameIndex;
+            SpikeEntry target = null;
+            for (int i = 0; i < spikes.Count; i++)
+            {
+                var sp = spikes[i];
+                if (sp == null) continue;
+                if (sp.topMarkers != null && sp.topMarkers.Count > 0) continue;   // already done
+                if (sp.profilerFrameIndex < 0 || sp.profilerFrameIndex < firstFrame) continue; // unavailable / scrolled out
+                if (target == null || sp.frameTimeMs > target.frameTimeMs) target = sp;        // worst first
+            }
+            if (target == null) return;
+
+            if (SpikeAnalyzer.TryGetTopMarkers(target.profilerFrameIndex, TopMarkersToCapture, _enrichScratch)
+                && target.topMarkers != null)
+            {
+                for (int m = 0; m < _enrichScratch.Count; m++)
+                    target.topMarkers.Add(_enrichScratch[m]);
+                Repaint();
+            }
+            _nextEnrichTime = EditorApplication.timeSinceStartup + EnrichInterval;
         }
 
         void OnGUI()
