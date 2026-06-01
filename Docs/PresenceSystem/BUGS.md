@@ -23,7 +23,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 
 ---
 
-## B1 — `ArgumentOutOfRangeException` in `LobbyPatcher.ApplyPatchesToLobby` at game start 🟢 (needs Editor retest)
+## B1 — `ArgumentOutOfRangeException` in `LobbyPatcher.ApplyPatchesToLobby` at game start 🟡 (console noise silenced; underlying SDK defect persists)
 
 **Symptom.** Every client logs, at game start, an
 `ArgumentOutOfRangeException` from `LobbyPatcher.ApplyPatchesToLobby` →
@@ -232,7 +232,7 @@ Likely wants more diagnostics first.
 
 ---
 
-## B6 — TC3: `NullReferenceException` (`WrappedLobbyService.GetLobbyAsync`) + empty online/request lists 🔴
+## B6 — TC3: `NullReferenceException` (`WrappedLobbyService.GetLobbyAsync`) + empty online/request lists 🟡 (refresh-path noise silenced in MPPM Session 1; TC3 empty-lists symptom untested since fix)
 
 **Symptom.** A variant of TC3: VP2 logs a UGS `NullReferenceException`
 from `WrappedLobbyService.TryCatchRequest` / `GetLobbyAsync` during
