@@ -83,6 +83,25 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// 0 = adaptive grid sized to the data (what every other variant does).
         /// </summary>
         public float fixedHalfExtentM;
+
+        /// <summary>
+        /// When > 0, gridSize is IGNORED and the resolution is derived from the
+        /// world extent so each voxel is ~this many metres on a side, clamped to
+        /// [9, 33] points per axis. Mirrors production BlockDensityGrid's
+        /// TargetVoxelSizeMeters-driven adaptive resolution: voxel size is a
+        /// physical constant, not a fraction of cell size.
+        /// </summary>
+        public float targetVoxelSizeM;
+
+        /// <summary>
+        /// If true, refine via mean-shift over the RAW VOXEL HISTOGRAM (count-
+        /// weighted voxel centers within smoothingRadiusM), iterated
+        /// centroidIterations times. This is what production FindDensestRegionJob
+        /// does — the grid stores only counts, so prism-position-based centroid
+        /// refinement (centroidRefine) is not available to it. Mutually exclusive
+        /// with centroidRefine; if both are set, voxelMeanShift wins.
+        /// </summary>
+        public bool voxelMeanShift;
     }
 
     /// <summary>
@@ -220,6 +239,26 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             centroidIterations = 5,
         };
 
+        /// <summary>
+        /// The EXACT Phase-2 production pipeline (BlockDensityGrid after the
+        /// audit's §7.3 fix): adaptive resolution targeting 75m voxels (clamped
+        /// 9..33 points/axis), count-weighted, box smoothing at 150m, sub-voxel
+        /// interp, then 5 iterations of mean-shift over the RAW VOXEL HISTOGRAM
+        /// (not prism positions — the production grid only stores counts).
+        /// Run this row to know what production will actually answer.
+        /// </summary>
+        public static SearchOptions ProductionV2() => new SearchOptions
+        {
+            gridSize = 0, // derived from targetVoxelSizeM
+            targetVoxelSizeM = 75f,
+            massWeighted = false,
+            smoothed = true,
+            smoothingRadiusM = DefaultSmoothingRadiusM,
+            subVoxelInterp = true,
+            voxelMeanShift = true,
+            centroidIterations = 5,
+        };
+
         // ==================================================================
         //  Unified Search() — implements every variant.
         // ==================================================================
@@ -234,12 +273,19 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             if (prisms == null || prisms.Count == 0)
                 return new BenchmarkResult { Empty = true, ElapsedMs = sw.Elapsed.TotalMilliseconds };
 
-            int N = opt.gridSize;
             // fixedHalfExtentM > 0 models the shipped BlockDensityGrid, which is
             // hard-coded to a 1000m cube (±500m) regardless of cell size. Prisms
             // outside that box fall out of TryMapToIndex's bounds check and are
             // silently dropped — exactly the production behavior.
             float effectiveHalfExtent = opt.fixedHalfExtentM > 0f ? opt.fixedHalfExtentM : worldHalfExtent;
+
+            // targetVoxelSizeM > 0 derives the resolution from the extent so voxel
+            // size is a physical constant — production BlockDensityGrid's adaptive
+            // resolution. Otherwise the explicit gridSize is used.
+            int N = opt.targetVoxelSizeM > 0f
+                ? Mathf.Clamp(Mathf.CeilToInt(effectiveHalfExtent * 2f / opt.targetVoxelSizeM) + 1, 9, 33)
+                : opt.gridSize;
+
             float stride = effectiveHalfExtent * 2f / N;
             float origin = -effectiveHalfExtent;
             int len = N * N * N;
@@ -297,13 +343,56 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                         origin + (bestY + dy) * stride,
                         origin + (bestZ + dz) * stride);
 
-                    // Phase 5: optional centroid refinement — anchors the answer to
-                    // the actual prism positions, not voxel centers. With
-                    // centroidIterations > 1, repeats with the previous answer
-                    // as the new seed — converges to a kernel-local fixed point
-                    // (box-kernel mean-shift). Early-exit when the answer stops
-                    // moving more than 0.5m between iterations.
-                    if (opt.centroidRefine)
+                    // Phase 5a: voxel-weighted mean-shift — the PRODUCTION refinement.
+                    // Iteratively moves the answer to the count-weighted centroid of
+                    // RAW HISTOGRAM voxels within the kernel radius. The production
+                    // grid stores only counts (no prism positions), so this is the
+                    // refinement FindDensestRegionJob can actually do. Takes priority
+                    // over centroidRefine when both are set.
+                    if (opt.voxelMeanShift)
+                    {
+                        int iters = Mathf.Max(1, opt.centroidIterations);
+                        float msR = opt.smoothingRadiusM / stride; // voxel units
+                        float msR2 = msR * msR;
+                        Vector3 seed = new Vector3(bestX + dx, bestY + dy, bestZ + dz);
+                        for (int it = 0; it < iters; it++)
+                        {
+                            int x0 = Mathf.Max(0, Mathf.FloorToInt(seed.x - msR));
+                            int x1 = Mathf.Min(N - 1, Mathf.CeilToInt(seed.x + msR));
+                            int y0 = Mathf.Max(0, Mathf.FloorToInt(seed.y - msR));
+                            int y1 = Mathf.Min(N - 1, Mathf.CeilToInt(seed.y + msR));
+                            int z0 = Mathf.Max(0, Mathf.FloorToInt(seed.z - msR));
+                            int z1 = Mathf.Min(N - 1, Mathf.CeilToInt(seed.z + msR));
+
+                            Vector3 weighted = Vector3.zero;
+                            float total = 0f;
+                            for (int z = z0; z <= z1; z++)
+                            for (int y = y0; y <= y1; y++)
+                            for (int x = x0; x <= x1; x++)
+                            {
+                                float v = hist[x + y * N + z * N * N]; // RAW counts, not smoothed
+                                if (v <= 0f) continue;
+                                Vector3 p = new Vector3(x, y, z);
+                                if ((p - seed).sqrMagnitude > msR2) continue;
+                                weighted += p * v;
+                                total += v;
+                            }
+
+                            if (total < 1e-3f) break;
+                            Vector3 next = weighted / total;
+                            if ((next - seed).sqrMagnitude < 1e-6f) { seed = next; break; }
+                            seed = next;
+                        }
+                        loc = new Vector3(
+                            origin + seed.x * stride,
+                            origin + seed.y * stride,
+                            origin + seed.z * stride);
+                    }
+                    // Phase 5b: prism-position centroid refinement — the IDEAL
+                    // refinement (requires prism positions, which production's grid
+                    // does not store). Kept as the accuracy ceiling to compare
+                    // voxelMeanShift against.
+                    else if (opt.centroidRefine)
                     {
                         int iters = Mathf.Max(1, opt.centroidIterations);
                         for (int it = 0; it < iters; it++)

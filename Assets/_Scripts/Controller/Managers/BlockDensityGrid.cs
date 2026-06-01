@@ -11,35 +11,45 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Burst job that finds the densest region of a flattened count grid.
     ///
-    /// Pipeline (proven by DensityPartitionBenchmark — GridSmoothedInterp17 row,
-    /// ~28m median error at cell scale vs ~100m for raw argmax):
+    /// Pipeline (proven by DensityPartitionBenchmark + DensityPartitionTemporalSim —
+    /// see Docs/DENSITY_PARTITIONING_AUDIT.md §6/§7):
     ///   1. Separable 3D box filter (sliding window — O(N³) per pass, independent
     ///      of kernel width) of the raw counts into a smoothed float field.
     ///   2. Argmax over the smoothed field.
     ///   3. Parabolic sub-voxel interpolation around the peak, so the answer is
-    ///      not quantized to the (now coarse, cell-sized) grid stride.
+    ///      not quantized to the grid stride.
+    ///   4. Mean-shift refinement over the RAW counts: iteratively move the answer
+    ///      to the centroid of mass within the kernel radius. This is what makes
+    ///      the target TRACK remaining mass as fauna consume a cluster's core —
+    ///      without it the answer stays pinned to the (smoothed) cluster centre
+    ///      even after the centre has been eaten hollow, and consumption stalls
+    ///      (the temporal sim's "plateau at Frozen" failure mode).
     ///
-    /// Output is a world-space position written to result[0].
+    /// Outputs: result[0] = world-space densest point;
+    ///          resultMeta[0] = peak smoothed density (0 ⇒ the grid is empty).
     /// </summary>
     [BurstCompile]
     public struct FindDensestRegionJob : IJob
     {
-        [ReadOnly] public NativeArray<byte> values; // flattened raw counts, length dim³
-        public NativeArray<float> bufA;             // scratch, length dim³
-        public NativeArray<float> bufB;             // scratch, length dim³
-        public NativeArray<float3> result;          // result[0] = world-space densest point
+        [ReadOnly] public NativeArray<ushort> values; // flattened raw counts, length dim³
+        public NativeArray<float> bufA;               // scratch, length dim³
+        public NativeArray<float> bufB;               // scratch, length dim³
+        public NativeArray<float3> result;            // result[0] = world-space densest point
+        public NativeArray<float> resultMeta;         // resultMeta[0] = peak smoothed density
 
         public int dim;                 // grid points per axis
         public float stride;            // metres between grid points
         public float3 origin;           // world-space position of grid index (0,0,0)
         public int kernelHalfWidth;     // box-filter half-width in voxels (>= 1)
+        public float meanShiftRadiusVoxels; // mean-shift kernel radius in voxel units
+        public int meanShiftIterations;     // 0 disables the refinement pass
 
         public void Execute()
         {
             int N = dim;
             int K = kernelHalfWidth < 1 ? 1 : kernelHalfWidth;
 
-            // --- X pass: values(byte) -> bufA(float), sliding-window sum ---
+            // --- X pass: values(ushort) -> bufA(float), sliding-window sum ---
             for (int z = 0; z < N; z++)
             for (int y = 0; y < N; y++)
             {
@@ -103,16 +113,52 @@ namespace CosmicShore.Gameplay
                 float v = bufA[x + y * N + z * N * N];
                 if (v > best) { best = v; bx = x; by = y; bz = z; }
             }
+            resultMeta[0] = best;
 
             // --- Sub-voxel parabolic interpolation around the peak ---
             float dx = ParabolicOffset(SampleAxis(bufA, N, bx, by, bz, 0));
             float dy = ParabolicOffset(SampleAxis(bufA, N, bx, by, bz, 1));
             float dz = ParabolicOffset(SampleAxis(bufA, N, bx, by, bz, 2));
+            float3 seed = new float3(bx + dx, by + dy, bz + dz);
 
-            result[0] = origin + new float3(
-                (bx + dx) * stride,
-                (by + dy) * stride,
-                (bz + dz) * stride);
+            // --- Mean-shift refinement over RAW counts ---
+            // Each iteration moves the answer to the count-weighted centroid of the
+            // voxels within meanShiftRadiusVoxels. Converges to the local mode of
+            // the raw density field. As consumption empties the voxels around the
+            // smoothed peak, the centroid (and therefore the answer) walks outward
+            // to wherever the surviving mass actually is.
+            float msR = meanShiftRadiusVoxels;
+            float msR2 = msR * msR;
+            for (int iter = 0; iter < meanShiftIterations; iter++)
+            {
+                int x0 = math.max(0, (int)math.floor(seed.x - msR));
+                int x1 = math.min(N - 1, (int)math.ceil(seed.x + msR));
+                int y0 = math.max(0, (int)math.floor(seed.y - msR));
+                int y1 = math.min(N - 1, (int)math.ceil(seed.y + msR));
+                int z0 = math.max(0, (int)math.floor(seed.z - msR));
+                int z1 = math.min(N - 1, (int)math.ceil(seed.z + msR));
+
+                float3 weighted = float3.zero;
+                float total = 0f;
+                for (int z = z0; z <= z1; z++)
+                for (int y = y0; y <= y1; y++)
+                for (int x = x0; x <= x1; x++)
+                {
+                    ushort v = values[x + y * N + z * N * N];
+                    if (v == 0) continue;
+                    float3 p = new float3(x, y, z);
+                    if (math.distancesq(p, seed) > msR2) continue;
+                    weighted += p * v;
+                    total += v;
+                }
+
+                if (total < 1e-3f) break;          // no mass in reach — keep the interp answer
+                float3 next = weighted / total;
+                if (math.distancesq(next, seed) < 1e-6f) { seed = next; break; } // converged
+                seed = next;
+            }
+
+            result[0] = origin + seed * stride;
         }
 
         /// <summary>(f(i-1), f(i), f(i+1)) along an axis; (b,b,b) at a boundary.</summary>
@@ -147,37 +193,91 @@ namespace CosmicShore.Gameplay
 
     public class BlockDensityGrid
     {
-        /// <summary>
-        /// Fixed grid resolution: 17 points per axis. DensityPartitionBenchmark
-        /// (GridSmoothedInterp17) proved 17³ + box smoothing + sub-voxel interp
-        /// lands within ~28m of ground truth even at a 1200m-radius cell scale —
-        /// well inside the ~150m swarm consumption radius. The stride is derived
-        /// from the cell size, so this stays at 17³ regardless of cell size.
-        /// </summary>
-        public const int GridPointsPerDimension = 17;
+        // ------------------------------------------------------------------
+        //  Physical constants — all tied to the swarm-effective consumption
+        //  scale, NOT to the grid or the cell. See the audit §6/§7: the swarm
+        //  (consumeRadius 40-72m + boid-separation spread) collectively covers
+        //  a ~150m-radius volume, so that is the scale the algorithm samples
+        //  density at, and the voxel size resolves features at half that scale.
+        // ------------------------------------------------------------------
 
         /// <summary>
         /// Physical smoothing-kernel radius in metres — the swarm-effective
-        /// consumption volume (consumeRadius 40m + goalOrbitRadius 60m + boid
-        /// separation spread). The box-filter half-width in voxels is derived
-        /// from this and the stride, so the smoothing scale stays physical
-        /// regardless of cell size.
+        /// consumption volume (consumeRadius + boid separation spread). The
+        /// box-filter half-width in voxels is derived from this and the stride,
+        /// so the smoothing scale stays physical regardless of cell size.
         /// </summary>
         public const float SmoothingRadiusMeters = 150f;
+
+        /// <summary>
+        /// Target physical voxel size in metres — half the smoothing kernel
+        /// (Nyquist: voxels at half the kernel scale resolve features at the
+        /// kernel scale). Grid resolution is derived per cell from this, so a
+        /// 2400m Blob cell gets ~33 points/axis (~75m voxels) while a small
+        /// cell gets proportionally fewer. The previous fixed 17³ resolution
+        /// gave 141m voxels at Blob-cell scale — coarse enough that an entire
+        /// flora cluster fit in one voxel, so the argmax could not shift as
+        /// fauna depleted the cluster's core (temporal sim: "MID plateaus").
+        /// </summary>
+        public const float TargetVoxelSizeMeters = 75f;
+
+        /// <summary>Resolution floor for very small cells.</summary>
+        public const int MinGridPointsPerDimension = 9;
+
+        /// <summary>
+        /// Resolution ceiling for memory safety. 33³ = 35,937 voxels:
+        /// ushort counts (72KB) + two float scratch buffers (288KB) ≈ 360KB
+        /// per grid, ~1.4MB per cell (4 grids).
+        /// </summary>
+        public const int MaxGridPointsPerDimension = 33;
+
+        /// <summary>Mean-shift refinement iterations inside the Burst job.</summary>
+        public const int MeanShiftIterations = 5;
+
+        /// <summary>
+        /// Minimum seconds between job runs while the grid is changing. Fauna
+        /// re-query their goal every 0.5-2s, so a 0.25s-stale answer is
+        /// indistinguishable from an exact one — but this bound turns
+        /// "every fauna's query runs the job" (100s of redundant runs/sec at
+        /// production population scale) into "at most 4 runs/sec per grid".
+        /// </summary>
+        public const float MinRecomputeIntervalSeconds = 0.25f;
 
         public float Stride;
         public float totalLength;
         public Vector3 origin;
         public Domains Domain;
-        public byte[,,] values;
 
         protected int nGridPointsPerDimension;
         protected int kernelHalfWidth;
-        protected NativeArray<byte> jobValues;
+        protected NativeArray<ushort> jobValues;   // sole count storage — written directly by Add/RemoveBlock
         protected NativeArray<float> jobBufA;
         protected NativeArray<float> jobBufB;
         protected NativeArray<float3> jobResult;
+        protected NativeArray<float> jobResultMeta;
         protected bool jobSystemInitialized = false;
+
+        // ---- Result cache ----
+        // The answer only changes when blocks are added/removed (dirty flag), and
+        // even then fauna can tolerate MinRecomputeIntervalSeconds of staleness.
+        // Without this, every fauna's GetExplosionTarget call re-ran the full job
+        // on identical data — at production population scale (4 fauna per 100
+        // prisms ⇒ 100s of fauna) that was 100s of redundant job runs per second.
+        bool dirty = true;
+        bool hasCachedResult = false;
+        Vector3 cachedResult;
+        float cachedResultDensity;
+        float lastComputeTime = float.NegativeInfinity;
+
+        /// <summary>
+        /// Peak smoothed density found by the most recent job run. 0 means the grid
+        /// was empty — callers should fall back to their anchor position instead of
+        /// using the returned location.
+        /// </summary>
+        public float LastResultDensity => cachedResultDensity;
+
+        /// <summary>Actual grid resolution chosen for this cell (diagnostic).</summary>
+        public int GridPointsPerDimensionActual => nGridPointsPerDimension;
 
         /// <summary>
         /// Initialize the grid to cover a cube of side <paramref name="worldDiameter"/>
@@ -186,30 +286,38 @@ namespace CosmicShore.Gameplay
         /// Sizing the grid to the owning cell — instead of the old hard-coded
         /// 1000m cube anchored at world origin — is the structural fix for the
         /// production grid being blind to ~86% of a 1200m-radius cell's volume.
+        /// Resolution is derived from TargetVoxelSizeMeters so the voxel size is
+        /// a physical constant rather than a fraction of the cell size.
         /// See Docs/DENSITY_PARTITIONING_AUDIT.md.
         /// </summary>
         public void Init(Domains domain, Vector3 cellCenter, float worldDiameter)
         {
             Domain = domain;
             totalLength = Mathf.Max(1f, worldDiameter);
-            nGridPointsPerDimension = GridPointsPerDimension;
+            nGridPointsPerDimension = Mathf.Clamp(
+                Mathf.CeilToInt(totalLength / TargetVoxelSizeMeters) + 1,
+                MinGridPointsPerDimension, MaxGridPointsPerDimension);
             Stride = totalLength / (nGridPointsPerDimension - 1);
             origin = cellCenter - new Vector3(totalLength / 2f, totalLength / 2f, totalLength / 2f);
             kernelHalfWidth = Mathf.Max(1, Mathf.RoundToInt(SmoothingRadiusMeters / Stride));
 
             int totalSize = nGridPointsPerDimension * nGridPointsPerDimension * nGridPointsPerDimension;
-            jobValues = new NativeArray<byte>(totalSize, Allocator.Persistent);
+            jobValues = new NativeArray<ushort>(totalSize, Allocator.Persistent);
             jobBufA = new NativeArray<float>(totalSize, Allocator.Persistent);
             jobBufB = new NativeArray<float>(totalSize, Allocator.Persistent);
             jobResult = new NativeArray<float3>(1, Allocator.Persistent);
+            jobResultMeta = new NativeArray<float>(1, Allocator.Persistent);
             jobSystemInitialized = true;
+
+            dirty = true;
+            hasCachedResult = false;
+            cachedResultDensity = 0f;
+            lastComputeTime = float.NegativeInfinity;
         }
 
         /// <summary>
         /// Releases the persistent NativeArrays. Plain C# class — the owning Cell
-        /// must call this explicitly when discarding a grid. (Pre-existing code
-        /// never called the old OnDestroy, so grids leaked; callers that want to
-        /// stop leaking should route through here.)
+        /// must call this explicitly when discarding a grid.
         /// </summary>
         public void Dispose()
         {
@@ -218,6 +326,7 @@ namespace CosmicShore.Gameplay
             if (jobBufA.IsCreated) jobBufA.Dispose();
             if (jobBufB.IsCreated) jobBufB.Dispose();
             if (jobResult.IsCreated) jobResult.Dispose();
+            if (jobResultMeta.IsCreated) jobResultMeta.Dispose();
             jobSystemInitialized = false;
         }
 
@@ -236,37 +345,44 @@ namespace CosmicShore.Gameplay
             return coords;
         }
 
+        protected bool InBounds(Vector3Int idx) =>
+            idx.x >= 0 && idx.x < nGridPointsPerDimension &&
+            idx.y >= 0 && idx.y < nGridPointsPerDimension &&
+            idx.z >= 0 && idx.z < nGridPointsPerDimension;
+
+        protected int FlatIndex(Vector3Int idx) =>
+            idx.x + idx.y * nGridPointsPerDimension + idx.z * nGridPointsPerDimension * nGridPointsPerDimension;
+
         public int GetDensityAtPosition(Vector3 coords)
         {
+            if (!jobSystemInitialized) return 0;
             Vector3Int idx = MapCoordinatesToGridIndices(coords);
-            // Bounds guard — FindDensestRegion now returns sub-voxel positions and
+            // Bounds guard — FindDensestRegion returns sub-voxel positions and
             // arbitrary callers may pass world points outside the grid. Out-of-grid
             // is density 0 (the caller's "fall back to anchor" path).
-            if (idx.x < 0 || idx.x >= nGridPointsPerDimension ||
-                idx.y < 0 || idx.y >= nGridPointsPerDimension ||
-                idx.z < 0 || idx.z >= nGridPointsPerDimension)
-                return 0;
-            return this.values[idx.x, idx.y, idx.z];
+            if (!InBounds(idx)) return 0;
+            return jobValues[FlatIndex(idx)];
         }
 
-        protected void UpdateJobValues()
-        {
-            // Convert 3D array to flat array for the job system.
-            for (int x = 0; x < nGridPointsPerDimension; x++)
-            for (int y = 0; y < nGridPointsPerDimension; y++)
-            for (int z = 0; z < nGridPointsPerDimension; z++)
-            {
-                int index = x + y * nGridPointsPerDimension + z * nGridPointsPerDimension * nGridPointsPerDimension;
-                jobValues[index] = values[x, y, z];
-            }
-        }
+        /// <summary>Marks the cached result stale. Called by Add/RemoveBlock.</summary>
+        protected void MarkDirty() => dirty = true;
 
         public Vector3 FindDensestRegion()
         {
             if (!jobSystemInitialized)
                 return origin + Vector3.one * (totalLength / 2f); // grid center fallback
 
-            UpdateJobValues();
+            // Cache policy:
+            //  - clean (no block changes since last run) → exact cached answer
+            //  - dirty but computed < MinRecomputeIntervalSeconds ago → cached answer
+            //    (bounded staleness, invisible at fauna's 0.5-2s goal cadence)
+            //  - dirty and stale → run the job
+            if (hasCachedResult)
+            {
+                bool recentlyComputed = Time.time - lastComputeTime < MinRecomputeIntervalSeconds;
+                if (!dirty || recentlyComputed)
+                    return cachedResult;
+            }
 
             var job = new FindDensestRegionJob
             {
@@ -274,16 +390,24 @@ namespace CosmicShore.Gameplay
                 bufA = jobBufA,
                 bufB = jobBufB,
                 result = jobResult,
+                resultMeta = jobResultMeta,
                 dim = nGridPointsPerDimension,
                 stride = Stride,
                 origin = new float3(origin.x, origin.y, origin.z),
                 kernelHalfWidth = kernelHalfWidth,
+                meanShiftRadiusVoxels = SmoothingRadiusMeters / Stride,
+                meanShiftIterations = MeanShiftIterations,
             };
 
             job.Schedule().Complete();
 
             float3 r = jobResult[0];
-            return new Vector3(r.x, r.y, r.z);
+            cachedResult = new Vector3(r.x, r.y, r.z);
+            cachedResultDensity = jobResultMeta[0];
+            hasCachedResult = true;
+            dirty = false;
+            lastComputeTime = Time.time;
+            return cachedResult;
         }
 
         public virtual void AddBlock(Prism block) {}
@@ -295,26 +419,40 @@ namespace CosmicShore.Gameplay
     {
         public BlockCountDensityGrid(Domains domain, Vector3 cellCenter, float worldDiameter)
         {
-            base.Init(domain, cellCenter, worldDiameter);
-            values = new byte[nGridPointsPerDimension, nGridPointsPerDimension, nGridPointsPerDimension];
+            Init(domain, cellCenter, worldDiameter);
         }
 
         public override void AddBlock(Prism block)
         {
+            if (!jobSystemInitialized) return;
             Vector3Int idx = MapCoordinatesToGridIndices(block.transform.position);
-            if (idx.x >= 0 && idx.x < nGridPointsPerDimension &&
-                idx.y >= 0 && idx.y < nGridPointsPerDimension &&
-                idx.z >= 0 && idx.z < nGridPointsPerDimension)
-                this.values[idx.x, idx.y, idx.z] += 1;
+            if (!InBounds(idx)) return;
+
+            int flat = FlatIndex(idx);
+            // Saturate instead of wrapping. (The previous byte storage wrapped at 255 —
+            // production cells reach 10,000+ prisms, so a hot voxel could overflow and
+            // erase its own density.)
+            if (jobValues[flat] < ushort.MaxValue)
+            {
+                jobValues[flat]++;
+                MarkDirty();
+            }
         }
 
         public override void RemoveBlock(Prism block)
         {
+            if (!jobSystemInitialized) return;
             Vector3Int idx = MapCoordinatesToGridIndices(block.transform.position);
-            if (idx.x >= 0 && idx.x < nGridPointsPerDimension &&
-                idx.y >= 0 && idx.y < nGridPointsPerDimension &&
-                idx.z >= 0 && idx.z < nGridPointsPerDimension)
-                this.values[idx.x, idx.y, idx.z] -= 1;
+            if (!InBounds(idx)) return;
+
+            int flat = FlatIndex(idx);
+            // Underflow guard: a remove for a block that was never added at this voxel
+            // (prism moved between Add and Remove, or pre-fix stale data) must not wrap.
+            if (jobValues[flat] > 0)
+            {
+                jobValues[flat]--;
+                MarkDirty();
+            }
         }
     }
 

@@ -553,7 +553,11 @@ namespace CosmicShore.Gameplay
                 return GetCellAnchorPosition();
 
             var region = grid.FindDensestRegion();
-            if (grid.GetDensityAtPosition(region) <= 0)
+            // LastResultDensity is the peak smoothed density the job found — 0 means
+            // the grid is empty. (Checking GetDensityAtPosition(region) here instead
+            // would false-negative when sub-voxel interp / mean-shift lands the
+            // answer in a low-count voxel adjacent to the true mass.)
+            if (grid.LastResultDensity <= 0f)
                 return GetCellAnchorPosition();
             return region;
         }
@@ -571,7 +575,7 @@ namespace CosmicShore.Gameplay
                 return GetCellAnchorPosition();
 
             var region = anyGrid.FindDensestRegion();
-            if (anyGrid.GetDensityAtPosition(region) <= 0)
+            if (anyGrid.LastResultDensity <= 0f)
                 return GetCellAnchorPosition();
             return region;
         }

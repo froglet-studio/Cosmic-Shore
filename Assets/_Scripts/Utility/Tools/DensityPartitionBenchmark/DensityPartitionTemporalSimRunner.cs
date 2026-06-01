@@ -31,17 +31,26 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     /// The headline test: run the whole sim three times and compare —
     ///   OLD: the LITERAL shipped grid (fixed ±500m box). Outer-shell mass is
     ///        invisible to the algorithm, so no fauna is ever directed there.
-    ///   MID: the c058663 fix (cell-sized grid + smoothing + sub-voxel interp).
-    ///        Sees the whole cell but uses a smoothed argmax, which is "sticky":
-    ///        fauna swarm one cluster, deplete its central core in seconds, then
-    ///        idle until the next goal update (the algorithm still reports the
-    ///        same cluster as densest even after its core is gone).
-    ///   NEW: MID + mean-shift centroid refinement. As fauna eat the cluster's
-    ///        core, the algorithm's answer is pulled outward to where the
-    ///        remaining mass lives, so consumption sustains instead of stalling.
+    ///   MID: the c058663 fix (cell-sized grid at 17³ + smoothing + sub-voxel
+    ///        interp). Sees the whole cell but its 141m voxels can't resolve
+    ///        sub-cluster structure: fauna swarm one cluster, deplete its core,
+    ///        then idle (the densest voxel never shifts because the cluster's
+    ///        out-of-reach shell keeps the bin loaded).
+    ///   NEW: ProductionV2 — the Phase-2 BlockDensityGrid pipeline (75m adaptive
+    ///        voxels + smoothing + interp + voxel mean-shift). The answer tracks
+    ///        remaining mass as fauna consume, so consumption sustains.
     /// The geometric benchmark proved MID is far more ACCURATE than OLD; this
-    /// sim asks whether that accuracy translates to ecology oscillation, or
-    /// whether the production grid also needs the centroid refinement.
+    /// sim asks whether that accuracy translates to ecology oscillation, and
+    /// whether the Phase-2 pipeline does better.
+    ///
+    /// KNOWN FAUNA-MODEL APPROXIMATIONS (vs production LightFauna):
+    ///   - Swarm spread is modeled as an orbit-sphere sweep, not boid separation.
+    ///   - Population is a flat cap, not production's base + 4-per-100-prisms
+    ///     scaling (LightFaunaManagerDataSO.extraFaunaPerHundredPrisms).
+    ///   - Sim fauna travel ~7× faster than production (250 vs 35 m/s).
+    ///   These make the sim's absolute numbers unreliable; only the RELATIVE
+    ///   comparison between the three runs (same fauna model) is load-bearing.
+    ///   In-game observation in Menu_Main is the final ecology validation.
     ///
     /// It is also an ecology *tuning* bench: flora/fauna rates are serialized, so
     /// the parameter regime that produces the desired oscillation can be searched
@@ -142,13 +151,13 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                           $"Fauna consumption capacity: ~{faunaPopulationCap * faunaConsumePerTickInRange / Mathf.Max(0.01f, tickIntervalSeconds):F0} prisms/s (cap × rate)");
             sb.AppendLine();
             sb.AppendLine("Three-way comparison: OLD is the literal shipped fixed-±500m grid; MID is the");
-            sb.AppendLine("c058663 fix (grid sized to the cell + smoothing + sub-voxel interp); NEW adds");
-            sb.AppendLine("mean-shift centroid refinement on top. The benchmark's geometric accuracy is a");
-            sb.AppendLine("necessary condition for the ecology to oscillate, not a sufficient one — the");
-            sb.AppendLine("algorithm also has to direct fauna onto locations where consumption is sustainable");
-            sb.AppendLine("as the local mass distribution shifts. Smoothed argmax is sticky (fauna deplete");
-            sb.AppendLine("one cluster's core and idle); mean-shift pulls the target outward as that core");
-            sb.AppendLine("empties, sustaining consumption.");
+            sb.AppendLine("c058663 fix (cell-sized 17³ + smoothing + sub-voxel interp); NEW is ProductionV2 —");
+            sb.AppendLine("the Phase-2 BlockDensityGrid pipeline (75m adaptive voxels + smoothing + interp +");
+            sb.AppendLine("voxel mean-shift). Geometric accuracy is necessary but not sufficient for the");
+            sb.AppendLine("ecology to oscillate — the algorithm also has to direct fauna onto locations where");
+            sb.AppendLine("consumption is sustainable as the mass distribution shifts. Coarse-voxel smoothed");
+            sb.AppendLine("argmax is sticky (fauna deplete one cluster's core and idle); fine voxels + voxel");
+            sb.AppendLine("mean-shift let the target track remaining mass, sustaining consumption.");
             sb.AppendLine();
 
             // --- Run A: the LITERAL shipped grid (fixed ±500m box) ---
@@ -161,24 +170,22 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             var resultMid = RunOne(optMid);
             AppendRun(sb, "MID — GridSmoothedInterp17 (cell-sized + smoothing + sub-voxel interp, c058663)", resultMid, th);
 
-            // --- Run C: cell-sized + smoothing + interp + mean-shift centroid refinement, 32³ resolution ---
-            // Two changes from MID: voxel count 17³ → 32³ (75m voxels vs 141m,
-            // matching the SHIPPED grid's effective resolution at the inner ball
-            // — 1000m / 17 ≈ 58m voxel), AND mean-shift centroid refinement.
+            // --- Run C: ProductionV2 — the EXACT Phase-2 production pipeline ---
+            // What BlockDensityGrid ships after the audit's §7.3 fix: adaptive
+            // resolution targeting 75m voxels (33 points/axis at Blob-cell scale),
+            // box smoothing at 150m, sub-voxel interp, then 5 iterations of
+            // mean-shift over the RAW VOXEL HISTOGRAM (the production grid stores
+            // only counts — no prism positions to refine against).
             //
-            // The smoothed argmax + interp is a STICKY target — it locks onto one
-            // cluster until depleted enough to drop below another's smoothed
-            // density. With 141m voxels (one voxel per cluster), the densest
-            // voxel doesn't change as fauna eat — the smoothed value still
-            // dominates because the cluster's outer shell (out of fauna reach)
-            // keeps the histogram bin loaded. Finer voxels let the algorithm
-            // distinguish "core depleted" from "shell intact" so the densest
-            // location shifts. Mean-shift then pulls the answer onto the actual
-            // local mass center, sustaining consumption as fauna eat outward.
-            var optNew = DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpMeanShift32();
-            optNew.massWeighted = false; // match production / OLD / MID: count-weighted, not mass-weighted
+            // Why this beats MID: with 141m voxels (MID), an entire flora cluster
+            // fits in one voxel, so the argmax can't shift as fauna deplete the
+            // cluster's reachable core — the out-of-reach shell keeps the bin
+            // loaded and fauna idle. 75m voxels resolve sub-cluster structure, and
+            // the voxel mean-shift walks the answer onto whatever mass actually
+            // remains, so the target tracks consumption.
+            var optNew = DensityPartitionBenchmarkAlgorithms.ProductionV2();
             var resultNew = RunOne(optNew);
-            AppendRun(sb, "NEW — 32³ cell-sized + smoothing + interp + mean-shift (5 iter, count-weighted)", resultNew, th);
+            AppendRun(sb, "NEW — ProductionV2 (75m voxels + smoothing + interp + voxel mean-shift — Phase 2 ship)", resultNew, th);
 
             // --- Verdict ---
             sb.AppendLine("=== Verdict ===");
@@ -203,21 +210,17 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             bool oldOsc = !resultOld.IsPlateau;
             bool midOsc = !resultMid.IsPlateau;
             bool newOsc = !resultNew.IsPlateau;
-            bool oldBlind = !resultOld.OuterShellBounded;
             bool midBlind = !resultMid.OuterShellBounded;
             bool newBlind = !resultNew.OuterShellBounded;
             if (!midOsc && newOsc && !newBlind)
             {
-                sb.AppendLine("  CONFIRMED: the c058663 grid-sizing fix is necessary BUT the algorithm also");
-                sb.AppendLine("  needs finer voxel resolution + centroid refinement. With 141m voxels (MID)");
-                sb.AppendLine("  one cluster fits per voxel, so the densest voxel doesn't shift as fauna eat");
-                sb.AppendLine("  the core — the cluster's out-of-reach shell keeps the bin loaded. 32³ on the");
-                sb.AppendLine("  cell-sized grid gives 75m voxels, matching the SHIPPED grid's effective");
-                sb.AppendLine("  resolution at the inner ball. Mean-shift then pulls the answer onto the");
-                sb.AppendLine("  local mass center as fauna eat outward, sustaining consumption.");
-                sb.AppendLine("  Production next step: raise BlockDensityGrid.GridPointsPerDimension to 32 and");
-                sb.AppendLine("  add centroidRefine + 5 iterations to FindDensestRegionJob (the algorithm is");
-                sb.AppendLine("  already inline in DensityPartitionBenchmarkAlgorithms.Search).");
+                sb.AppendLine("  CONFIRMED: the c058663 grid-sizing fix is necessary BUT not sufficient — the");
+                sb.AppendLine("  Phase 2 pipeline (ProductionV2: 75m adaptive voxels + voxel mean-shift) is what");
+                sb.AppendLine("  sustains consumption. With 141m voxels (MID) one cluster fits per voxel, so the");
+                sb.AppendLine("  densest voxel can't shift as fauna eat the core — the out-of-reach shell keeps");
+                sb.AppendLine("  the bin loaded. 75m voxels resolve sub-cluster structure and the voxel");
+                sb.AppendLine("  mean-shift walks the answer onto remaining mass as the core empties.");
+                sb.AppendLine("  This is exactly what the Phase-2 BlockDensityGrid ships — see the audit §7.3.");
             }
             else if (midOsc && !midBlind)
             {

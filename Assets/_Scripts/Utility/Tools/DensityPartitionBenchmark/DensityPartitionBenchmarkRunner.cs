@@ -112,6 +112,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 "GridMassSmoothedInterpMeanShift17",
                 "GridMassSmoothedInterpCentroid32",
                 "GridMassSmoothedInterpMeanShift32",
+                "ProductionV2 (75m voxels + voxel mean-shift — Phase 2 ship)",
             };
             SearchOptions[] algoOpts = new SearchOptions[]
             {
@@ -125,6 +126,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpMeanShift17(),
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpCentroid32(),
                 DensityPartitionBenchmarkAlgorithms.GridMassSmoothedInterpMeanShift32(),
+                DensityPartitionBenchmarkAlgorithms.ProductionV2(),
             };
 
             // Sort scenarios deterministically by label so the report diffs cleanly.
