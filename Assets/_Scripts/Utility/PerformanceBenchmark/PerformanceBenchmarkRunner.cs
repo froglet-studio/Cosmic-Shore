@@ -115,10 +115,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         readonly List<MarkerSample> _markerScratch = new(8);
         const float SpikeMultiplier = 1.75f;
         const float SpikeFloorMs = 1000f / 45f;
-        const int MaxSpikes = 48;
-        const int TopMarkersPerSpike = 5;
+        const int MaxSpikes = 256;
+        const int TopMarkersPerSpike = 8;
+
+        // Free-form ("record until stopped") capture, used by the Runtime Capture tab.
+        bool _freeForm;
+        const int MaxFreeFormSeconds = 300;
 
         public bool IsRunning => state == State.WarmingUp || state == State.Sampling;
+
+        /// <summary>True while a free-form (record-until-stopped) capture is active.</summary>
+        public bool IsFreeForm => _freeForm;
+
+        /// <summary>Live spike list for the Runtime Capture tab (read-only; updated as spikes occur).</summary>
+        public IReadOnlyList<SpikeEntry> Spikes => spikes;
 
         /// <summary>When true (default) the run auto-saves + indexes on finish. The Collect tab sets this false and saves explicitly.</summary>
         public bool AutoSave { get; set; } = true;
@@ -171,7 +181,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             DisposeRecorders();
         }
 
-        public void StartBenchmark()
+        public void StartBenchmark() => StartBenchmark(false);
+
+        /// <summary>
+        /// Starts a capture. When <paramref name="freeForm"/> is true the run skips warmup and
+        /// samples until <see cref="StopBenchmark"/> is called (the Runtime Capture tab) instead
+        /// of stopping after <see cref="BenchmarkConfigSO.SampleDuration"/>.
+        /// </summary>
+        public void StartBenchmark(bool freeForm)
         {
             if (config == null)
             {
@@ -184,6 +201,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 return;
             }
 
+            _freeForm = freeForm;
+
             cachedCaptureRendering = config.CaptureRenderingStats;
             cachedCaptureMemory = config.CaptureMemoryStats;
             cachedCapturePhysics = config.CapturePhysicsStats;
@@ -191,7 +210,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             cachedCaptureNetcode = config.CaptureNetcodeStats;
 
             // Pre-size the flat frame buffer once (no per-frame allocation thereafter).
-            int capacity = Mathf.Max(64, Mathf.CeilToInt(config.SampleDuration * MaxAssumedFps));
+            float budgetSeconds = freeForm ? MaxFreeFormSeconds : config.SampleDuration;
+            int capacity = Mathf.Max(64, Mathf.CeilToInt(budgetSeconds * MaxAssumedFps));
             if (_frameBuffer == null || _frameBuffer.Length < capacity)
                 _frameBuffer = new FrameSnapshot[capacity];
             _frameCount = 0;
@@ -217,23 +237,27 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             stateTimer = 0;
             nextProgressUpdate = 0;
-            state = State.WarmingUp;
+            // Free-form skips warmup and samples immediately (you're already playing).
+            state = _freeForm ? State.Sampling : State.WarmingUp;
 
             if (benchmarkData != null)
             {
                 benchmarkData.IsRunning = true;
-                benchmarkData.IsSampling = false;
+                benchmarkData.IsSampling = _freeForm;
                 benchmarkData.Progress = 0f;
                 benchmarkData.FramesCaptured = 0;
                 benchmarkData.ActiveLabel = config.BenchmarkLabel;
                 benchmarkData.LastReportPath = string.Empty;
                 benchmarkData.OnBenchmarkStarted?.Raise();
+                if (_freeForm) benchmarkData.OnSamplingStarted?.Raise();
             }
 
             _endOfFrame ??= new WaitForEndOfFrame();
             _loop = StartCoroutine(RunLoop());
 
-            CSDebug.Log($"[Benchmark] Started — warming up for {config.WarmupDuration}s, then sampling for {config.SampleDuration}s.");
+            CSDebug.Log(_freeForm
+                ? "[Benchmark] Free-form capture started — recording until stopped."
+                : $"[Benchmark] Started — warming up for {config.WarmupDuration}s, then sampling for {config.SampleDuration}s.");
         }
 
         public void StopBenchmark()
@@ -271,10 +295,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 stateTimer += Time.unscaledDeltaTime;
                 UpdateDataContainerProgress();
                 BroadcastProgressIfDue();
-                if (stateTimer >= config.SampleDuration)
+                // Free-form runs until StopBenchmark(); fixed runs end after SampleDuration.
+                if (!_freeForm && stateTimer >= config.SampleDuration)
                 {
                     _loop = null;
                     FinishRun(wasStopped: false);
+                    yield break;
+                }
+                // Safety: free-form can't outgrow its buffer — auto-finish if it fills.
+                if (_freeForm && _frameCount >= _frameBuffer.Length)
+                {
+                    _loop = null;
+                    FinishRun(wasStopped: true);
                     yield break;
                 }
             }
