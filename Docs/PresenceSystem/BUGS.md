@@ -125,29 +125,49 @@ a `IsBenignLobbyPatcherError` discriminator branch, so adding a sibling
   now strips from release builds and respects runtime mute. Outer
   catch-on-exhaust path unchanged.
 - **`HostConnectionService.cs` new method `IsBenignSdkStaleIndexError`**
-  — matches a `SessionException` whose message contains **either**
-  "Object reference not set" (NRE form) **or** "Index was out of range"
-  (IOOR form). Both are documented surfaces of the same SDK stale-index
-  defect: the NRE form fires when an internal field is null, the IOOR
-  form when an internal collection's index has not caught up to a
-  reconciled length. The SDK retries different code paths on different
-  ticks, so a single MPPM session can produce both message variants
-  from the same root cause. `LobbyPropertyWriter.SaveWithRetryAsync`
-  already filters on both strings (`when (e.Message.Contains("Too Many
-  Requests") || e.Message.Contains("Index was out of range"))`), so this
-  matcher is symmetric with the write-path policy.
+  — matches a `SessionException` whose **structured `Error` property ==
+  `SessionError.Unknown`** (the `[Error: Unknown]` prefix in the log).
+  **NOT the message string.** Message-matching was abandoned after it
+  turned into whack-a-mole — three message variants of the *same* SDK
+  defect appeared across three MPPM restarts:
+  1. `"Object reference not set to an instance of an object"` (NRE form)
+  2. `"Index was out of range. Must be non-negative and less than the size of the collection."`
+  3. `"Index must be within the bounds of the List."`
+  All three are wrapped in a `SessionException` whose structured
+  `Error` is `Unknown`. The structured reason is the stable signal: a
+  genuinely actionable `SessionException` carries a *specific* reason
+  (`SessionNotFound`, `SessionDeleted`, `NotInLobby`, `RateLimited`, …),
+  and those are handled by the `[definite]` / rate-limit branches that
+  run **before** this benign check at both catch sites. Only
+  unclassifiable SDK-internal failures land on `Unknown`, and for those
+  "log-silent, retry next tick" is already the correct and only
+  recovery. Implemented as `se.Error.ToString() == "Unknown"` to avoid
+  pinning the exact enum member across SDK versions.
 
-  **Type + message only — NOT stack.** A first attempt matched on
+  **Stack deliberately NOT used.** A first attempt matched on
   `StackTrace.Contains("WrappedLobbyService")` AND the message, but that
   silently failed in MPPM: `Exception.StackTrace` is unreliable after
   the exception crosses several async `SetException` boundaries
   (UniTask + Task continuations) before our catch — the stack shown in
   the Unity console is Unity's *captured* stack, not the exception
   object's own `.StackTrace` string (often null/truncated
-  post-propagation). Type + message is unambiguous and
-  stack-independent: our code never throws `SessionException`, and no
-  legitimate `SessionException` carries either of these messages (real
-  ones carry `SessionError` reasons like `NotFound` / `RateLimited`).
+  post-propagation).
+
+  **Trade-off (accepted).** Matching `Error == Unknown` is broader than
+  a message match — a future genuinely-actionable failure that also
+  surfaces as `Unknown` would be silenced at these two refresh catches.
+  Mitigated by ordering (the `[definite]` + rate-limit branches catch
+  every *classifiable* reason first) and by the nature of `Unknown`
+  (the SDK couldn't classify it → no actionable recovery exists anyway).
+  If a real failure is ever masked here, this is the first line to
+  revisit.
+
+  `LobbyPropertyWriter.SaveWithRetryAsync` handles the same defect on
+  the write path via a message filter (`"Too Many Requests" || "Index
+  was out of range"`) — it does not have a structured `Error` to
+  inspect at that callsite, so message-matching is unavoidable there;
+  the write path has only ever shown the IOOR string.
+
   Consumed at two catch sites:
   - `HCS:1069` outer presence-lobby refresh catch: silence as a sibling
     of `IsBenignLobbyPatcherError` (no log, no counter increment, no

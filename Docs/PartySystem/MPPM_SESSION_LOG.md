@@ -217,10 +217,10 @@ churn every ~3 s" so happy-path deltas are still readable (look for NEW
 classes — Offline / SessionGone / Timeout — not the steady Transient
 hum).
 
-**Follow-up bug work — DONE in this session (took 3 iterations).**
-Chose option (b) — silence at the catch. The matcher took three
-attempts to land correctly; recorded here so future SDK signature
-changes know what was tried and why:
+**Follow-up bug work — DONE in this session (took 4 iterations).**
+Chose option (b) — silence at the catch. The matcher took four attempts
+to land correctly; recorded here so future SDK signature changes know
+what was tried and why:
 
 1. **First attempt** (`5a634c8`) — `IsBenignSdkStaleIndexNre` matched
    on `Exception.StackTrace.Contains("WrappedLobbyService")` AND the
@@ -231,26 +231,39 @@ changes know what was tried and why:
 2. **Second attempt** (`d2288bd`) — dropped the stack check, matched on
    type (`SessionException`) + NRE message only. Silenced the NRE form,
    but a new MPPM run surfaced the **IOOR form** of the same defect
-   ("Index was out of range") on the presence-lobby read path. Same SDK
-   bug, different message; not caught by the NRE-only match.
-3. **Third attempt** (this commit) — broadened to match either NRE OR
-   IOOR message strings on a `SessionException`. Renamed
-   `IsBenignSdkStaleIndexNre` → `IsBenignSdkStaleIndexError` since it
-   no longer matches only NRE-form. Symmetric with
-   `LobbyPropertyWriter`'s existing two-string filter
-   (`"Too Many Requests" || "Index was out of range"`).
+   ("Index was out of range") on the presence-lobby read path.
+3. **Third attempt** (`959c495`) — broadened to match either NRE OR
+   IOOR message strings. A *fourth* MPPM restart then surfaced a THIRD
+   message variant: `"Index must be within the bounds of the List."` —
+   same defect, same `[Error: Unknown]`, new string. Message-matching
+   was confirmed to be whack-a-mole.
+4. **Fourth attempt** (this commit) — **pivoted off message strings to
+   the structured `SessionException.Error` property.** All three
+   variants share `[Error: Unknown]`; a genuinely actionable
+   `SessionException` carries a specific `SessionError` reason
+   (`SessionNotFound` / `RateLimited` / …) handled by the `[definite]` +
+   rate-limit branches that run *first*. Match is
+   `se.Error.ToString() == "Unknown"` (ToString avoids pinning the enum
+   member across SDK versions). Variant-proof — no future message string
+   can slip past it.
+
+The `IsDefiniteSessionGoneException` method (HCS:1894) already read
+`se.Error is SessionError.SessionNotFound …`, so `.Error` was a known,
+proven property — should have been the first approach, not the fourth.
+Lesson: when the SDK exposes a structured discriminator, match on it
+before reaching for message strings.
 
 `LobbyPropertyWriter.cs:166` "Save failed (… Index was out of range …)
 — retry X/3" was demoted to `CSDebug.Log` in `5a634c8` (release-stripped
-+ runtime-mute) and that was message-based all along, so it was
-unaffected by the stack-vs-message trap. See
-`Docs/PresenceSystem/BUGS.md` B1 "Fix applied (option b)" for the
-locked rationale.
++ runtime-mute); it matches on message because it has no structured
+`Error` at that callsite. Write path has only ever shown the IOOR
+string. See `Docs/PresenceSystem/BUGS.md` B1 "Fix applied (option b)"
+for the locked rationale + the accepted broadening trade-off.
 
-After Editor restart with the third-attempt matcher, both NRE-form and
-IOOR-form `SessionException`s on the presence-lobby + party-session
-refresh paths should be silenced. Phase A baseline becomes truly clean
-(no ongoing B1/B6 churn in console).
+After Editor restart with the structured-Error matcher, *all*
+`SessionException`-with-`Error==Unknown` failures on the presence-lobby
++ party-session refresh paths should be silenced regardless of inner
+message. Phase A baseline becomes truly clean (no ongoing B1/B6 churn).
 
 ### Phase A — Overlay validation
 

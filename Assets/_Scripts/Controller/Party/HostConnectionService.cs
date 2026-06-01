@@ -1933,43 +1933,60 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Detects the harmless <c>SessionException</c> family the UGS SDK throws
         /// from <c>WrappedLobbyService.GetLobbyAsync</c> when a lobby read
-        /// deserialises against a stale local cache. The SDK exposes the *same*
-        /// stale-index defect via two distinct message strings depending on which
-        /// internal field tripped:
-        /// <list type="bullet">
-        /// <item><description><c>"Object reference not set to an instance of an object"</c> — NRE form</description></item>
-        /// <item><description><c>"Index was out of range. Must be non-negative and less than the size of the collection."</c> — IOOR form</description></item>
-        /// </list>
-        /// Same root cause as <see cref="IsBenignLobbyPatcherError"/>, just
-        /// surfacing on the read path instead of the WebSocket-delta path. The
-        /// HTTP GET succeeds; the SDK throws while parsing the response.
-        /// Self-corrects on the next refresh tick once the cache reconciles.
-        /// <see cref="LobbyPropertyWriter.SaveWithRetryAsync"/> already treats the
-        /// IOOR signature as known-transient on the write path — same classification.
+        /// deserialises against a stale local cache. Same root cause as
+        /// <see cref="IsBenignLobbyPatcherError"/>, surfacing on the read path
+        /// instead of the WebSocket-delta path: the HTTP GET succeeds, then the
+        /// SDK throws while parsing the response. Self-corrects on the next
+        /// refresh tick once the cache reconciles.
+        ///
+        /// <para>
+        /// <b>Discriminator: <see cref="SessionException.Error"/> ==
+        /// <see cref="SessionError.Unknown"/></b> — NOT the message string. The
+        /// SDK surfaces this single defect through a moving set of inner-exception
+        /// messages ("Object reference not set…", "Index was out of range…",
+        /// "Index must be within the bounds of the List…", and likely more), all
+        /// wrapped in a <c>SessionException</c> whose structured
+        /// <c>Error</c> is <c>Unknown</c> (visible as <c>[Error: Unknown]</c> in
+        /// the log). Chasing message strings was whack-a-mole — three variants
+        /// appeared across three MPPM restarts. The structured <c>Error</c> is the
+        /// stable signal: a genuinely actionable <c>SessionException</c> carries a
+        /// specific reason (<c>SessionNotFound</c>, <c>RateLimited</c>, …), which
+        /// the <c>[definite]</c> / rate-limit branches handle *before* this check
+        /// runs; only the unclassifiable SDK-internal failures land on
+        /// <c>Unknown</c>, and for those "log-silent, retry next tick" is already
+        /// the correct (and only) recovery.
+        /// </para>
+        ///
+        /// <para>
+        /// Stack is deliberately NOT used: <see cref="Exception.StackTrace"/> is
+        /// unreliable after the exception crosses several async <c>SetException</c>
+        /// boundaries (UniTask + Task continuations) before our catch — the call
+        /// stack in the Unity console is Unity's *captured* stack, not the
+        /// exception object's own string. An earlier stack-substring match
+        /// silently failed for exactly this reason.
+        /// </para>
+        ///
+        /// <para>
+        /// <see cref="LobbyPropertyWriter.SaveWithRetryAsync"/> handles the same
+        /// defect on the write path via a message filter (it does not have a
+        /// structured <c>Error</c> to inspect at that callsite).
         /// See <c>Docs/PresenceSystem/BUGS.md</c> B1 (write/delta-path symptoms)
         /// and B6 (read-path symptom) for the full SDK-defect characterization,
         /// and <c>Docs/PartySystem/MPPM_SESSION_LOG.md</c> Session 1 finding #2
-        /// for the discovery + decision to silence at the catch.
+        /// for the discovery + the message→structured-Error pivot.
+        /// </para>
         /// </summary>
         private static bool IsBenignSdkStaleIndexError(Exception e)
         {
             for (var current = e; current != null; current = current.InnerException)
             {
-                // Match on TYPE + MESSAGE, not stack. Exception.StackTrace is
-                // unreliable here — the exception crosses several async SetException
-                // boundaries (UniTask + Task continuations) before our catch, and
-                // the call stack shown in the Unity console is Unity's captured
-                // stack, NOT this exception object's .StackTrace string (which is
-                // often null/truncated post-propagation). An earlier stack-substring
-                // match silently failed for exactly this reason.
-                //
-                // A SessionException carrying either of the two stale-index
-                // signatures is unambiguous: our code never throws SessionException,
-                // and no legitimate SessionException carries these messages (real
-                // ones carry SessionError reasons like NotFound / RateLimited).
-                if (current is SessionException && current.Message != null
-                    && (current.Message.IndexOf("Object reference not set", StringComparison.Ordinal) >= 0
-                        || current.Message.IndexOf("Index was out of range", StringComparison.Ordinal) >= 0))
+                // Structured match: SessionException with Error == Unknown.
+                // ToString() compare avoids pinning the exact enum member spelling
+                // across SDK versions; SessionError.Unknown is the documented
+                // "unclassified" reason and the common factor across every observed
+                // stale-index message variant.
+                if (current is SessionException se &&
+                    string.Equals(se.Error.ToString(), "Unknown", StringComparison.Ordinal))
                     return true;
             }
             return false;
