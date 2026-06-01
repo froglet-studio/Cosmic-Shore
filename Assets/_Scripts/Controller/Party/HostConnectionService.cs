@@ -90,6 +90,12 @@ namespace CosmicShore.Gameplay
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
+        // B8 fix 2: cap how long a client leave waits for the joined_party
+        // clear-property write before proceeding anyway. WriteAsync is normally
+        // ~1-3s; under B1 stale-index churn its retries can stretch longer, and a
+        // clean leave must not hang on a flaky write (fix 1 already protects the
+        // host from the stale property).
+        private const float CLEAR_JOINED_PARTY_TIMEOUT_SECONDS = 3f;
 
         /// <summary>
         /// Cadence (seconds) for the periodic presence-lobby convergence check
@@ -702,7 +708,28 @@ namespace CosmicShore.Gameplay
             // instead of waiting for the next refresh tick.
             _memberService.ClearWithEvents(connectionData.LocalPlayerId);
 
-            ClearJoinedPartyAsync().Forget();
+            // B8 fix 2: wait for the clear so the stale `joined_party` presence
+            // property is actually removed on the wire BEFORE leave teardown
+            // disrupts the lobby reference — otherwise the host keeps seeing the
+            // stale "I'm in your party" claim (B8 fix 1 makes the host ignore it,
+            // this removes it). Bounded by a timeout: WriteAsync is normally
+            // ~1-3s (mutex + refresh + save-with-retry) but its retries can
+            // stretch longer under B1 stale-index churn, and a clean leave must
+            // not stall on a flaky property write. WriteAsync swallows its own
+            // exceptions, so the clear can only be slow, never throw; if the
+            // timeout wins we proceed (fix 1 already protects the host). Uses
+            // WhenAny + Delay rather than UniTask.Timeout() to stick to core
+            // UniTask primitives this version is known to support.
+            var clearTask = ClearJoinedPartyAsync();
+            int winner = await UniTask.WhenAny(
+                clearTask,
+                UniTask.Delay(TimeSpan.FromSeconds(CLEAR_JOINED_PARTY_TIMEOUT_SECONDS)));
+            if (winner != 0)
+                Debug.LogWarning(
+                    "[HostConnectionService] ClearJoinedParty did not complete within " +
+                    $"{CLEAR_JOINED_PARTY_TIMEOUT_SECONDS}s — proceeding with leave " +
+                    "(host ignores stale joined_party via the session cross-check).");
+
             // LeavePartyAndReturnToMenuAsync now uses LeavePartyKeepHostAsync internally,
             // which already ensures a fresh solo session — no trailing call needed.
             await controller.LeavePartyAndReturnToMenuAsync();
@@ -1612,7 +1639,7 @@ namespace CosmicShore.Gameplay
                 "PublishJoinedParty");
         }
 
-        private async UniTaskVoid ClearJoinedPartyAsync()
+        private async UniTask ClearJoinedPartyAsync()
         {
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;

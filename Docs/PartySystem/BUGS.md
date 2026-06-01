@@ -315,23 +315,41 @@ presence lobby (returning to authentication, restarting Play, etc.).
    any player who recently raised PlayerLeaving" — but this requires
    adding event-history bookkeeping. More complex than 1.
 
-**Status.** 🟡 Fix 1 (defensive host scan) landed — root cause
-neutralized at the read side. Fix 2 (await the clear-property write to
-remove the stale data on the wire) follows as a second commit.
+**Status.** 🟢 Both fixes landed — needs MPPM re-verify (the
+MemberLeft/MemberJoined cycle must stop after a client leaves).
 
-- **Fix 1 (DONE).** `ScanPresenceForJoinedPartyMembers` now builds a
-  `HashSet` of the authoritative party-session player IDs and skips any
-  presence-lobby player not in it (`if (!sessionPlayerIds.Contains(p.Id))
-  continue;`). The host can no longer be tricked into re-adding a
-  departed client by a stale `joined_party` presence property. This
-  makes the host's party-membership view depend solely on the
-  authoritative session, race-free and robust against any
-  presence-staleness cause. Needs MPPM re-verify (cycle must stop).
-- **Fix 2 (pending).** Await `ClearJoinedPartyAsync` in `LeavePartyAsync`
-  (currently `Forget()`) so the stale property is actually cleared on
-  the wire, not just ignored by the host. Hygiene — the property is
-  wrong-on-the-wire until then, but with Fix 1 in place nothing trusts
-  it.
+- **Fix 1 (DONE, commit `cb65cf3`).** `ScanPresenceForJoinedPartyMembers`
+  now builds a `HashSet` of the authoritative party-session player IDs
+  and skips any presence-lobby player not in it
+  (`if (!sessionPlayerIds.Contains(p.Id)) continue;`). The host can no
+  longer be tricked into re-adding a departed client by a stale
+  `joined_party` presence property. Makes the host's party-membership
+  view depend solely on the authoritative session — race-free and
+  robust against any presence-staleness cause.
+- **Fix 2 (DONE).** `ClearJoinedPartyAsync` changed from `UniTaskVoid`
+  to `UniTask`; `LeavePartyAsync` now waits for it (bounded by
+  `CLEAR_JOINED_PARTY_TIMEOUT_SECONDS = 3s` via `UniTask.WhenAny` +
+  `UniTask.Delay`) before starting leave teardown, so the stale
+  `joined_party` property is actually removed on the wire rather than
+  just ignored by the host. `WriteAsync` swallows its own exceptions
+  (so the clear can only be slow, never throw); on timeout the leave
+  proceeds anyway — Fix 1 already protects the host, so a slow/failed
+  clear is non-fatal. Bounded await chosen over a raw `await` precisely
+  because B1 stale-index churn can stretch the write's retries; a clean
+  leave must never hang on a flaky property write.
+
+**Why both, in this order.** Fix 1 is the load-bearing fix (host stops
+*trusting* stale data — race-proof). Fix 2 is hygiene (host stops
+*receiving* stale data — the property is correct on the wire). With Fix
+1 alone the bug is functionally dead; Fix 2 keeps the lobby data honest
+for any other consumer and prevents the stale property from confusing
+future features. Separate commits so a regression can be bisected.
+
+**Residual / follow-up.** Fix 2's effectiveness still depends on the
+clear-write succeeding within 3s; under heavy B1 churn it may time out
+and leave the stale property on the wire — but Fix 1 makes that
+harmless. The deeper B1/B6 SDK stale-index defect (the thing making the
+write flaky) is tracked separately in `../PresenceSystem/BUGS.md` B1.
 
 ---
 
