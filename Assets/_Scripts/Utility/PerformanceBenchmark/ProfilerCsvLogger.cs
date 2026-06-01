@@ -48,6 +48,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [Tooltip("Subfolder inside Application.persistentDataPath for captures.")]
         [SerializeField] string outputFolder = "ProfilerCaptures";
 
+        [Header("Script Markers (CPU attribution)")]
+        [Tooltip("Named ProfilerMarkers to log as extra per-frame ms columns, so the CSV self-attributes " +
+                 "main-thread CPU without a deep-profile capture. Default category is Scripts; prefix with " +
+                 "'Category:' to override (e.g. 'Physics:Physics.Processing', 'Network:CSM.Net.SpawnDespawn'). " +
+                 "A marker only logs once it has been hit at least once; otherwise its column is blank.")]
+        [SerializeField] string[] scriptMarkers =
+        {
+            "ObjectiveIndicator.LateUpdate",
+        };
+
         // ----- static access -------------------------------------------------
         public static ProfilerCsvLogger Instance { get; private set; }
         public static bool IsCapturing => Instance != null && Instance._capturing;
@@ -76,6 +86,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder _vertices;
         ProfilerRecorder _gcAlloc;           // bytes / frame
         ProfilerRecorder _physicsSendEvents; // ns — may be unavailable on some Unity versions
+
+        // Optional named script markers -> one extra ms column each.
+        ProfilerRecorder[] _markerRecorders;
+        string[] _markerColumns;
+        List<float>[] _markerSamples;        // ms per marker, for the summary
 
         // ----- state ---------------------------------------------------------
         bool _capturing;
@@ -130,9 +145,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _gcAlloc           = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
             _physicsSendEvents = ProfilerRecorder.StartNew(ProfilerCategory.Physics, "Physics.SendEvents");
 
+            StartMarkerRecorders();
+
             _buffer = new StringBuilder(1 << 20);
-            _buffer.AppendLine(
+            var header = new StringBuilder(
                 "frame,time_s,frameMs,mainThreadMs,physicsSendEventsMs,gcAllocKB,drawCalls,setPass,triangles,vertices");
+            if (_markerColumns != null)
+                foreach (var col in _markerColumns) header.Append(',').Append(col);
+            _buffer.AppendLine(header.ToString());
 
             _frameMs.Clear(); _timeS.Clear(); _tris.Clear(); _draws.Clear(); _gc.Clear();
             _frame = 0;
@@ -172,7 +192,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                    .Append(draws).Append(',')
                    .Append(setpass).Append(',')
                    .Append(tris).Append(',')
-                   .Append(verts).Append('\n');
+                   .Append(verts);
+
+            if (_markerRecorders != null)
+            {
+                for (int i = 0; i < _markerRecorders.Length; i++)
+                {
+                    double ms = NsToMs(_markerRecorders[i]);
+                    _buffer.Append(',').Append(ms >= 0 ? ms.ToString("F2", ci) : "");
+                    if (ms >= 0) _markerSamples[i].Add((float)ms);
+                }
+            }
+            _buffer.Append('\n');
 
             _frameMs.Add(frameMs);
             _timeS.Add(t);
@@ -185,6 +216,54 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (safetyFlushEveryFrames > 0 && _frame % safetyFlushEveryFrames == 0)
                 Flush();
         }
+
+        void StartMarkerRecorders()
+        {
+            _markerRecorders = null;
+            _markerColumns = null;
+            _markerSamples = null;
+            if (scriptMarkers == null || scriptMarkers.Length == 0) return;
+
+            var recs = new List<ProfilerRecorder>(scriptMarkers.Length);
+            var cols = new List<string>(scriptMarkers.Length);
+            var samples = new List<List<float>>(scriptMarkers.Length);
+
+            foreach (var entry in scriptMarkers)
+            {
+                if (string.IsNullOrWhiteSpace(entry)) continue;
+
+                // Optional "Category:MarkerName" prefix; default category is Scripts.
+                var category = ProfilerCategory.Scripts;
+                string markerName = entry.Trim();
+                int colon = markerName.IndexOf(':');
+                if (colon > 0)
+                {
+                    category = ParseCategory(markerName.Substring(0, colon));
+                    markerName = markerName.Substring(colon + 1).Trim();
+                }
+                if (markerName.Length == 0) continue;
+
+                recs.Add(ProfilerRecorder.StartNew(category, markerName));
+                cols.Add(Sanitize(markerName) + "_ms");
+                samples.Add(new List<float>(4096));
+            }
+
+            if (recs.Count == 0) return;
+            _markerRecorders = recs.ToArray();
+            _markerColumns = cols.ToArray();
+            _markerSamples = samples.ToArray();
+        }
+
+        static ProfilerCategory ParseCategory(string token) => token.Trim().ToLowerInvariant() switch
+        {
+            "scripts" => ProfilerCategory.Scripts,
+            "internal" => ProfilerCategory.Internal,
+            "physics" => ProfilerCategory.Physics,
+            "render" => ProfilerCategory.Render,
+            "network" => ProfilerCategory.Network,
+            "memory" => ProfilerCategory.Memory,
+            _ => ProfilerCategory.Scripts,
+        };
 
         void Flush()
         {
@@ -214,6 +293,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _vertices.Dispose();
             _gcAlloc.Dispose();
             _physicsSendEvents.Dispose();
+            if (_markerRecorders != null)
+                for (int i = 0; i < _markerRecorders.Length; i++) _markerRecorders[i].Dispose();
 
             string summary = BuildSummary();
             string summaryPath = Path.Combine(
@@ -273,9 +354,29 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                               $"{_tris[f],12:N0} | {_draws[f],6:N0} | {_gc[f] / 1024f,9:F1}");
             }
 
+            if (_markerColumns != null && _markerColumns.Length > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("script markers (ms — avg / p95 / max, % of avg frame):");
+                for (int m = 0; m < _markerColumns.Length; m++)
+                {
+                    var s = _markerSamples[m];
+                    if (s.Count == 0)
+                    {
+                        sb.AppendLine($"  {_markerColumns[m]}: (never hit / unavailable)");
+                        continue;
+                    }
+                    var sc = new List<float>(s); sc.Sort();
+                    float ma = 0f; for (int i = 0; i < s.Count; i++) ma += s[i]; ma /= s.Count;
+                    float p95 = sc[Mathf.Clamp(Mathf.RoundToInt(0.95f * (sc.Count - 1)), 0, sc.Count - 1)];
+                    sb.AppendLine($"  {_markerColumns[m]}: avg={ma:F2}  p95={p95:F2}  max={sc[sc.Count - 1]:F2}  " +
+                                  $"({(avg > 0 ? 100f * ma / avg : 0):F1}% of avg frame)");
+                }
+            }
+
             sb.AppendLine();
             sb.AppendLine("Read: a worst frame with tris/draws far above the render median => render/geometry-bound; " +
-                          "high gcKB => GC; neither => CPU (scripts/physics) — deep-profile that frame.");
+                          "high gcKB => GC; neither => CPU (scripts/physics) — check the script-marker columns / deep-profile that frame.");
             return sb.ToString();
         }
 
