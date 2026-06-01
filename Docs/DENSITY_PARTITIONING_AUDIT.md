@@ -1,16 +1,21 @@
 # Density Partitioning — Design Audit
 
-**Status:** Audit + benchmark-driven redesign. **Fixes landed** in `c058663` — see §4.
+**Status:** Audit + benchmark-driven redesign. **Phase 1 fixes landed** in `c058663`
+(see §4); **Phase 2** required by the temporal sim, queued as a follow-up branch
+(see §7).
 **Branch:** `claude/audit-density-partitioning-2EvgR`
-**Companion artifact:** `DensityPartitionBenchmarkRunner` (Edit-Mode scene + Toolbox "Density" tab).
+**Companion artifacts:** `DensityPartitionBenchmarkRunner` (geometric — Edit-Mode
+scene + Toolbox "Density" tab) and `DensityPartitionTemporalSimRunner` (ecology —
+same scene, "Density" tab → Temporal Sim).
 **Acceptance criteria:** the curation rubric in `CLAUDE.md` → *Design Philosophy: Favor Emergent Systems Over Bespoke Solutions*.
 
 > **Reading note.** Sections 1–3 and 5 are the original first-principles audit, preserved
-> as written. Section 0 (this) and Section 4 (Recommendation) and Section 6 (Benchmark
-> findings) were **rewritten after the benchmark ran** — the data falsified the original
-> recommendation in §4 (a scene-wide `PrismAOERegistry` migration) and replaced it with
-> three much smaller surgical fixes. Where §3.7 and the original §4 disagree with §4
-> below, §4 wins; the earlier text is kept for the reasoning trail.
+> as written. Section 0 (this), Section 4 (Recommendation), Section 6 (Benchmark
+> findings) and Section 7 (Temporal sim) were **rewritten / added after the tools ran** —
+> the data falsified the original recommendation in §4 (a scene-wide `PrismAOERegistry`
+> migration) and replaced it with three surgical fixes (Phase 1, landed). The temporal
+> sim then proved Phase 1 is **necessary but not sufficient** for the ecology to
+> oscillate; Phase 2 is described in §7.
 
 ---
 
@@ -41,6 +46,34 @@ scene-wide Burst job over `PrismAOERegistry` — turned out to be unjustified. T
 showed the existing per-Cell `BlockDensityGrid` structure is fine; it was just mis-sized
 and under-processed. The fix is three surgical changes to existing files, not a rewrite.
 See §4.
+
+**What the temporal sim then revealed (§7) — Phase 1 is necessary but not sufficient.**
+The geometric benchmark measures algorithm accuracy on static scenes. The temporal sim
+runs the whole ecology end-to-end (flora grow, phases transition, fauna spawn for
+dominant, fauna seek anti-own-domain density target, consume opposing prisms) and asks
+"does the algorithm + fauna behavior produce the two-frequency oscillation the design
+wants, or a plateau?" Three-way comparison (OLD shipped fixed-±500m vs MID c058663 vs
+NEW 32³+mean-shift):
+
+- **OLD plateaus** at a 7% swing with two cycles — oscillates by accident, because the
+  ±500m clip concentrates fauna where their cramped 100m swarm reach matches the
+  algorithm's 150m sampling kernel. Outer-shell mass accumulates monotonically.
+- **MID** (c058663 as shipped — 17³ on a 2400m cell = 141m voxels) **plateaus dead
+  flat**. Each cluster (σ≈144m) fits in one voxel, so the argmax can't shift as fauna
+  deplete the reachable core; the unreachable shell mass keeps that voxel's bin
+  loaded. Fauna idle indefinitely.
+- **NEW** (32³ → 75m voxels + mean-shift centroid refinement, 5 iter) **briefly
+  oscillates** (2 cycles, Restless dips, outer flora grow during the windows) **then
+  locks**. Multiple voxels per cluster + centroid pull-out delays the lock but doesn't
+  prevent it — fauna swarm reach is still less than cluster σ, so the shell is
+  permanently unreachable.
+
+**Phase 2 fix queued in §7:** raise `BlockDensityGrid.GridPointsPerDimension` 17 → 32
+(memory 7×, smoothing pass ~4×, all already Burst-jobbed), add `centroidRefine` + 5
+iterations to `FindDensestRegionJob` (algorithm body already in
+`DensityPartitionBenchmarkAlgorithms.Search`), and verify production fauna swarm reach
+matches the algorithm's smoothing kernel (~150m). The first two are mechanical; the
+third needs in-game measurement, not more sim tuning.
 
 **What's still open:** the original concerns about API shape (single-peak vs centroid vs
 top-K, §1) and "anti-domain is a derived view, not a fundamental" (§2.3.4) remain valid
@@ -469,3 +502,145 @@ benchmark iteration.
 The benchmark scene remains the place to slot in future variants without touching
 production code; the report format (deterministic, every number has units + a target,
 diff-friendly) is the falsifiable contract for any further change.
+
+---
+
+## 7. What the temporal sim proved (Phase 2 fix queued)
+
+The geometric benchmark answers "is one query accurate?". The audit closed §6 with a
+deferred question: "does the algorithm + flora growth + fauna consumption produce the
+two-frequency oscillation the design wants — or a static plateau?" The companion
+**`DensityPartitionTemporalSimRunner`** answers that.
+
+### 7.1 What it models
+
+Faithful enough to be load-bearing, abstract enough to run in Edit Mode in seconds:
+
+- **Flora at fixed positions, clustered.** Inner / outer-shell flora are placed around
+  a small number of cluster centres (default 2 inner + 3 outer-shell, σ=120m scatter)
+  — the sim's stand-in for production `SpawnProfile` biome clumps. Uniform-random
+  flora was an earlier mistake (flat density field, no peaks to lock onto). Each
+  flora spawns prisms in its own domain at a configurable interval (default 1.5s),
+  but **only while `phase < Frozen`** — matching `FloraGrowingEnabled`.
+- **Cell phase from real `CellPhaseRules`.** Phase is computed each tick by the real
+  `CellPhaseRules.Compute` with a thresholds-scaled `CellPhaseThresholds.Default`
+  (default 0.15 scale → Quiet 150 / Frozen 1500 / Rabid 2250). Hysteresis intact.
+- **Fauna spawn for the dominant domain** once `phase ≥ Quiet`, capped (default 40),
+  spawned every `faunaSpawnIntervalSeconds` (default 2s).
+- **Fauna seek anti-own-domain (Level 0/1) or any-domain (Level 2 / Rabid) densest
+  point** via `DensityPartitionBenchmarkAlgorithms.Search` — the same code path as
+  the geometric benchmark, so changing one algorithm changes both bench *and* sim.
+  Each fauna re-queries every `faunaGoalUpdateIntervalSeconds` (default 5s).
+- **Fauna sweep an orbit sphere.** Each fauna picks a sub-goal inside
+  `faunaGoalOrbitRadius` of the density target; on arrival, it re-rolls a new
+  sub-goal inside the same sphere. This is the sim's stand-in for boid separation
+  spreading the swarm — without it, fauna park `orbitRadius` away from the mass
+  and never consume anything.
+- **Fauna consume opposing-domain prisms within `faunaConsumeRadius` (default 40m)**
+  at up to `faunaConsumePerTickInRange` per tick (default 3).
+
+Three runs per invocation: OLD (`ProductionFixedGrid17`), MID (`GridSmoothedInterp17`
+— c058663 as shipped), NEW (32³ + smoothing + interp + 5-iter mean-shift). Same RNG
+seed → identical scenarios, only the algorithm differs.
+
+### 7.2 What the sim proved
+
+Across the iterations on this branch, the converging finding is:
+
+> **The geometric benchmark's accuracy is a necessary but not sufficient condition for
+> the ecology to oscillate. The algorithm also has to direct fauna at locations
+> where its smoothing-kernel-sampled density actually matches the swarm's reachable
+> volume — otherwise fauna deplete the reachable core, idle in the unreachable shell,
+> and the cell locks at Frozen.**
+
+Concrete numbers on the canonical scenario (seed=42, 120 flora across 5 clusters,
+300s sim, thresholds scaled 0.15):
+
+| Run | Steady total | Swing | Cycles | Outer-shell trend | Verdict |
+|---|---|---|---|---|---|
+| OLD shipped ±500m | 1426-1534 | 7% | 2 | UNBOUNDED 614→871 | Brief, tight cycle by accident |
+| MID 17³ cell + smooth + interp | 1480-1482 | 0% | 0 | LOCKED at 601 | PLATEAU at Frozen |
+| NEW 32³ + mean-shift | 1449-1475 | 2% | 0 | Peaks 634 then locked | Briefly oscillates, then locks |
+
+Per-fauna consumption rate from the same data:
+
+| Run | Drop (t=20→t=30) | Fauna | prisms/s/fauna | Ratio vs OLD |
+|---|---|---|---|---|
+| OLD | 22 | 15 | 0.15 | 1.0× |
+| MID | 5 | 15 | 0.03 | 0.22× |
+| NEW | 14 | 15 | 0.09 | 0.6× |
+
+So 32³ + mean-shift recovers ~60% of OLD's consumption rate. The remaining 40% gap is
+on the fauna side, not the algorithm side: with `faunaGoalOrbitRadius = 60m` and
+`faunaConsumeRadius = 40m`, the swarm reach is **100m**, but cluster effective σ is
+**144m** and the algorithm's smoothing kernel is **150m**. The algorithm tells fauna
+"there is mass here at scale 150m"; fauna can only consume the 100m core; the shell
+mass keeps the histogram bin loaded so the target doesn't shift; fauna idle.
+
+### 7.3 Phase 2 fix — what production needs
+
+The temporal sim's three-way comparison narrows the production changes to a short list.
+**None of them are landed on this branch** — they belong on a focused follow-up branch
+where they can be reviewed and tested in isolation.
+
+1. **Raise `BlockDensityGrid.GridPointsPerDimension` from 17 to 32.** At cell scale
+   (1200m radius / 2400m extent), 17³ gives 141m voxels — too coarse to distinguish a
+   cluster's depleted core from its intact shell. 32³ gives 75m voxels, near parity
+   with the shipped grid's effective resolution at the inner ball (1000m / 17 ≈ 58m).
+   Cost: memory 7×, smoothing pass ~4× (all already in the Burst job). At fauna's
+   1-5s query cadence this is well under budget.
+
+2. **Add centroid refinement (mean-shift, 5 iter) to `FindDensestRegionJob`.** The
+   algorithm body is already implemented and verified in
+   `DensityPartitionBenchmarkAlgorithms.Search` under the `centroidRefine` /
+   `centroidIterations` knobs. Port the inner loop into the Burst job after the
+   smoothed-argmax + sub-voxel-interp stage.
+
+3. **Verify production fauna swarm reach matches the algorithm's 150m smoothing
+   kernel.** The sim used `orbit=60m + consume=40m = 100m`, but the real swarm is
+   bounded by boid separation distance and pack size. If production produces a
+   ~150m-effective swarm radius, no fauna-side change is needed. If it's tighter,
+   either (a) widen boid separation so the swarm spreads more, or (b) shrink the
+   algorithm's `SmoothingRadiusMeters` so the algorithm samples only the volume the
+   swarm actually reaches. The mismatch matters more than the absolute value.
+
+The benchmark's geometric numbers are already strong evidence for (1) and (2): 32³ +
+centroid drops error from 27.6m → 17.7m. But the real argument for shipping them is
+ecology behavior, not accuracy: at 17³ + smoothed-interp the cell *cannot* sustain
+oscillation in a clustered-flora scenario, regardless of how accurate the queries are
+in isolation.
+
+### 7.4 What the sim could not settle — in-game observation needed
+
+The sim is approximate. It models swarm reach via a single `orbitRadius` knob rather
+than real boid behavior; it doesn't model trail decay, prism lifecycle beyond
+fauna-consume, flora spawn probability variation, or the Rabid-only "any-domain
+densest" target. Two questions are out of its reach:
+
+1. **Does the secondary Rabid cycle emerge in production?** The sim's primary cycle
+   is gated by `phase < Frozen` for flora growth; the cell can't climb from Frozen
+   to Rabid (2250) because growth is off. Production may have additional mechanisms
+   (e.g. dominant-domain flora growing during Frozen, fauna-disruption from vessel
+   actions) that let the secondary cycle exist. The sim can be extended to model
+   these once they're spec'd, but for Phase 2 the answer comes from running the
+   real game with the fixes in.
+
+2. **What's the actual production swarm-reach radius?** Out of scope for the sim. A
+   one-tick instrumentation pass on `Fauna` / `LightFauna` swarms in Menu_Main —
+   record the max pairwise distance among pack members on each density-query tick
+   — would close this in an afternoon.
+
+### 7.5 Stopping criteria for further sim work
+
+More sim iterations have diminishing returns. The architectural picture is now solid:
+
+- Phase 1 (grid sizing + smoothing + interp) — landed, correct, necessary.
+- Phase 2 (voxel resolution + centroid refinement, fauna reach verification) — spec'd
+  above, ready to land on a focused branch.
+- In-game observation — needed for the questions in §7.4, not answerable in the sim.
+
+Further tuning of sim parameters (cluster σ, flora rates, fauna cap) is parameter
+fitting, not architectural discovery. The sim component remains in `_Scripts/Utility/
+Tools/DensityPartitionBenchmark/` so the next person can re-run it with different
+assumptions, but the audit considers its question — *does the algorithm choice cause
+plateaus vs oscillation in a faithful ecology model?* — answered.
