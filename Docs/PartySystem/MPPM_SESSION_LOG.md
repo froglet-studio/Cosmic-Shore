@@ -95,12 +95,63 @@ NetDiag line ever **repeats** every ~3 s (refresh cadence) instead of
 firing once at boot, that's a real ongoing problem; one-shot is acceptable
 baseline.
 
+### Pre-flight finding #2 (post gap-closure restart) — sustained NRE every refresh tick
+
+**Observation (after restart on `60c076c`).** The
+`[HostConnectionService] Party session refresh error (SessionException): Object reference not set to an instance of an object — keeping session, will retry next tick`
+warning and the newly-paired `NetDiag: class=Transient | ...` line now
+fire **every ~3 seconds** (one full refresh tick). Not a one-shot.
+
+**Not caused by the gap-closure fix.** The warning literal has existed
+since before commit `aaba872`; `60c076c` added only the appended NetDiag
+line. The fix made the *periodicity* visible because the `class=Tag`
+draws the eye to the pattern; pre-fix the same warning was firing but
+buried in the Console stream.
+
+**Root call site.** `HostConnectionService.cs:1345`:
+```csharp
+try { await _partySessionService.RefreshAsync(); }
+```
+which is a 1-line passthrough to the UGS SDK:
+```csharp
+// PartySessionService.cs:289
+public async UniTask RefreshAsync()
+{
+    await ActiveSession.RefreshAsync().AsMainThread();
+}
+```
+So the NRE is thrown inside the SDK's `ISession.RefreshAsync()`, not in
+our code.
+
+**Working hypothesis.** SDK lobby-events deserializer chokes on a
+solo (host-only) Relay session — the eager-per-user-Relay model means
+every fresh boot has a session with exactly one player (the local host)
+which may be a code path the SDK doesn't handle. Existing
+`IsTransientSessionException` retry policy wraps `CreateAsync` and
+`JoinByIdAsync` only; `RefreshAsync` falls through to the
+`HCS:1346` catch every tick.
+
+**Verification step (pending).** Need the full stack trace from the
+first NRE occurrence (Unity Console detail pane on click). Will identify
+the exact SDK method that NREs.
+
+**Hypothesis confirmation step (pending).** Invite a second VP and have
+them accept; observe whether the NRE stops once the session has 2
+players. If yes → confirms hypothesis → fix is to filter this NRE on
+solo sessions or skip refresh while solo. If no → reject hypothesis;
+investigate further.
+
+**Phase A and beyond — blocked.** Cannot validate Phase A.1 (happy-path
+negative regression) baseline until this sustained NRE is either
+silenced or characterized as known/benign. Every test downstream would
+have polluted NetDiag baseline.
+
 ### Phase A — Overlay validation
 
 | Test | Status | NetDiag observed | Notes |
 |---|---|---|---|
-| A.1 — Test E happy path | _pending_ | _tbd_ | Run after pre-flight gap fix |
-| A.2 — Test C user-cancel | _pending_ | _tbd_ | |
+| A.1 — Test E happy path | _blocked_ | _tbd_ | Awaiting Pre-flight #2 triage |
+| A.2 — Test C user-cancel | _blocked_ | _tbd_ | |
 
 ### Phase B — Party smoke gate
 
