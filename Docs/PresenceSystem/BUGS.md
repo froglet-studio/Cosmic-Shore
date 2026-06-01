@@ -124,20 +124,31 @@ a `IsBenignLobbyPatcherError` discriminator branch, so adding a sibling
   The "Save failed (… Index was out of range …) — retry X/3" message
   now strips from release builds and respects runtime mute. Outer
   catch-on-exhaust path unchanged.
-- **`HostConnectionService.cs` new method `IsBenignSdkStaleIndexNre`**
-  — matches a `SessionException` whose message contains "Object
-  reference not set". **Type + message only — NOT stack.** A first
-  attempt matched on `StackTrace.Contains("WrappedLobbyService")` AND
-  the message, but that silently failed in MPPM: `Exception.StackTrace`
-  is unreliable after the NRE crosses several async `SetException`
-  boundaries (UniTask + Task continuations) before our catch — the
-  stack shown in the Unity console is Unity's *captured* stack, not the
-  exception object's own `.StackTrace` string (often null/truncated
-  post-propagation). Type + message is unambiguous and stack-independent:
-  our code never throws `SessionException`, and no legitimate
-  `SessionException` carries an NRE message (real ones carry
-  `SessionError` reasons like `NotFound` / `RateLimited`). Consumed at
-  two catch sites:
+- **`HostConnectionService.cs` new method `IsBenignSdkStaleIndexError`**
+  — matches a `SessionException` whose message contains **either**
+  "Object reference not set" (NRE form) **or** "Index was out of range"
+  (IOOR form). Both are documented surfaces of the same SDK stale-index
+  defect: the NRE form fires when an internal field is null, the IOOR
+  form when an internal collection's index has not caught up to a
+  reconciled length. The SDK retries different code paths on different
+  ticks, so a single MPPM session can produce both message variants
+  from the same root cause. `LobbyPropertyWriter.SaveWithRetryAsync`
+  already filters on both strings (`when (e.Message.Contains("Too Many
+  Requests") || e.Message.Contains("Index was out of range"))`), so this
+  matcher is symmetric with the write-path policy.
+
+  **Type + message only — NOT stack.** A first attempt matched on
+  `StackTrace.Contains("WrappedLobbyService")` AND the message, but that
+  silently failed in MPPM: `Exception.StackTrace` is unreliable after
+  the exception crosses several async `SetException` boundaries
+  (UniTask + Task continuations) before our catch — the stack shown in
+  the Unity console is Unity's *captured* stack, not the exception
+  object's own `.StackTrace` string (often null/truncated
+  post-propagation). Type + message is unambiguous and
+  stack-independent: our code never throws `SessionException`, and no
+  legitimate `SessionException` carries either of these messages (real
+  ones carry `SessionError` reasons like `NotFound` / `RateLimited`).
+  Consumed at two catch sites:
   - `HCS:1069` outer presence-lobby refresh catch: silence as a sibling
     of `IsBenignLobbyPatcherError` (no log, no counter increment, no
     state change).

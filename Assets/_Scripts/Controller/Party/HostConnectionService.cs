@@ -1062,7 +1062,7 @@ namespace CosmicShore.Gameplay
                 {
                     // intentional: no log, no counter increment, no state change
                 }
-                else if (IsBenignSdkStaleIndexNre(e))
+                else if (IsBenignSdkStaleIndexError(e))
                 {
                     // Same SDK stale-index defect, read-path surface. Silence to
                     // match the IsBenignLobbyPatcherError treatment above.
@@ -1362,7 +1362,7 @@ namespace CosmicShore.Gameplay
                 // the read path. Same recovery (retry next tick); silence to match.
                 // See Docs/PresenceSystem/BUGS.md B6 + Docs/PartySystem/MPPM_SESSION_LOG.md
                 // Session 1 finding #2.
-                if (IsBenignSdkStaleIndexNre(e))
+                if (IsBenignSdkStaleIndexError(e))
                     return;
 
                 // [rate-limit] UGS throttled us — back off, keep ActiveSession.
@@ -1931,39 +1931,45 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Detects the harmless <c>SessionException</c> ("Object reference not set
-        /// to an instance of an object") the UGS SDK throws from
-        /// <c>WrappedLobbyService.GetLobbyAsync</c> when a lobby read
-        /// deserialises against a stale local cache. Same SDK stale-index defect
-        /// as <see cref="IsBenignLobbyPatcherError"/>, just surfacing on the read
-        /// path instead of the WebSocket-delta path. The HTTP GET succeeds; the
-        /// SDK NREs while parsing the response. Self-corrects on the next
-        /// refresh tick once the cache reconciles.
+        /// Detects the harmless <c>SessionException</c> family the UGS SDK throws
+        /// from <c>WrappedLobbyService.GetLobbyAsync</c> when a lobby read
+        /// deserialises against a stale local cache. The SDK exposes the *same*
+        /// stale-index defect via two distinct message strings depending on which
+        /// internal field tripped:
+        /// <list type="bullet">
+        /// <item><description><c>"Object reference not set to an instance of an object"</c> — NRE form</description></item>
+        /// <item><description><c>"Index was out of range. Must be non-negative and less than the size of the collection."</c> — IOOR form</description></item>
+        /// </list>
+        /// Same root cause as <see cref="IsBenignLobbyPatcherError"/>, just
+        /// surfacing on the read path instead of the WebSocket-delta path. The
+        /// HTTP GET succeeds; the SDK throws while parsing the response.
+        /// Self-corrects on the next refresh tick once the cache reconciles.
+        /// <see cref="LobbyPropertyWriter.SaveWithRetryAsync"/> already treats the
+        /// IOOR signature as known-transient on the write path — same classification.
         /// See <c>Docs/PresenceSystem/BUGS.md</c> B1 (write/delta-path symptoms)
         /// and B6 (read-path symptom) for the full SDK-defect characterization,
         /// and <c>Docs/PartySystem/MPPM_SESSION_LOG.md</c> Session 1 finding #2
         /// for the discovery + decision to silence at the catch.
         /// </summary>
-        private static bool IsBenignSdkStaleIndexNre(Exception e)
+        private static bool IsBenignSdkStaleIndexError(Exception e)
         {
             for (var current = e; current != null; current = current.InnerException)
             {
                 // Match on TYPE + MESSAGE, not stack. Exception.StackTrace is
-                // unreliable here — the NRE crosses several async SetException
+                // unreliable here — the exception crosses several async SetException
                 // boundaries (UniTask + Task continuations) before our catch, and
                 // the call stack shown in the Unity console is Unity's captured
                 // stack, NOT this exception object's .StackTrace string (which is
                 // often null/truncated post-propagation). An earlier stack-substring
                 // match silently failed for exactly this reason.
                 //
-                // A SessionException carrying an NRE message is unambiguous: our
-                // code never throws SessionException, and no legitimate
-                // SessionException says "Object reference not set" (real ones carry
-                // SessionError reasons like NotFound / RateLimited). So type +
-                // message is both sufficient and safe.
-                if (current is SessionException
-                    && current.Message != null
-                    && current.Message.IndexOf("Object reference not set", StringComparison.Ordinal) >= 0)
+                // A SessionException carrying either of the two stale-index
+                // signatures is unambiguous: our code never throws SessionException,
+                // and no legitimate SessionException carries these messages (real
+                // ones carry SessionError reasons like NotFound / RateLimited).
+                if (current is SessionException && current.Message != null
+                    && (current.Message.IndexOf("Object reference not set", StringComparison.Ordinal) >= 0
+                        || current.Message.IndexOf("Index was out of range", StringComparison.Ordinal) >= 0))
                     return true;
             }
             return false;
