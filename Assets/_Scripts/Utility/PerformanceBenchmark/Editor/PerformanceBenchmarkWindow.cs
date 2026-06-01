@@ -300,11 +300,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 var prev = GUI.backgroundColor;
                 GUI.backgroundColor = EditorUIStyles.Lavender;
-                if (GUILayout.Button("📋  Copy for Claude", GUILayout.Height(24)))
+                if (GUILayout.Button("📋  Copy error log", GUILayout.Height(24)))
                 {
                     EditorGUIUtility.systemCopyBuffer = BuildClaudeReportText(report);
                     CacheCollectReport(report);   // persist any spikes enriched after the run
-                    ShowNotification(new GUIContent("Copied + cached — paste to Claude"));
+                    ShowNotification(new GUIContent("Error log copied + cached"));
                 }
                 GUI.backgroundColor = prev;
             }
@@ -345,7 +345,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             catch { /* best-effort */ }
         }
 
-        // ── Runtime Capture: live recording + Copy-for-Claude ───────────────
+        // ── Runtime Capture: live recording + Copy error log ───────────────
 
         void DrawRecordingStatus()
         {
