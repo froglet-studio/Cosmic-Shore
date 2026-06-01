@@ -1370,6 +1370,7 @@ namespace CosmicShore.Gameplay
                     Debug.LogWarning(
                         $"[HostConnectionService] Party session gone server-side " +
                         $"({e.GetType().Name}): {e.Message} — auto-recovering to solo session.");
+                    CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     HandleDefiniteSessionGoneAsync().Forget();
                     return;
                 }
@@ -1383,6 +1384,7 @@ namespace CosmicShore.Gameplay
                 // [definite] auto-recovery above — not by background refresh ticks.
                 Debug.LogWarning(
                     $"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message} — keeping session, will retry next tick");
+                CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 return;
             }
 

@@ -163,6 +163,13 @@ teardown → file under `TODOS.md`).
 The exit criteria in `ARCHITECTURE.md` § "Unbreakable exit criteria"
 list what passing these gates means at the system level.
 
+## Session journal
+
+Per-session results — what plan was scheduled, what was observed,
+what changed as a result — live in `MPPM_SESSION_LOG.md`. This file
+(`TESTS.md`) holds the test *procedures*; the session log is the
+*journal* across runs.
+
 ## Automation (deferred — D4 in `REFACTOR.md`)
 
 These procedures are manual today. Deferred item **D4** in `REFACTOR.md`

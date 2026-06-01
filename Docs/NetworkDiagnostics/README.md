@@ -111,12 +111,15 @@ Read-only for everyone else. The existing SOAP events
 
 ## Where it's wired
 
-Six call sites — every party / lobby / session / transition catch
-block that classifies a failure:
+Sixteen catch-block decorations across five files — every party /
+lobby / session / transition catch that classifies a failure (the
+party-session-refresh `[definite]` and `[transient]` sites were added
+in a follow-up after a 2026-06-01 MPPM session surfaced a gap; see
+`../PartySystem/MPPM_SESSION_LOG.md` Session 1):
 
 | File | Catch sites decorated |
 |---|---|
-| `Controller/Party/HostConnectionService.cs` | `RefreshAsync` non-benign else branch, `AcceptInviteAsync` catch |
+| `Controller/Party/HostConnectionService.cs` | `RefreshAsync` non-benign else branch, `AcceptInviteAsync` catch, party-session-refresh `[definite]` branch, party-session-refresh `[transient]` branch |
 | `Controller/Party/PartyInviteController.cs` | `AcceptInviteAsync` generic catch, `LeavePartyAndReturnToMenuAsync` generic catch, `RecoverFromFailedTransitionAsync` catch |
 | `Controller/Party/Services/PresenceLobbyService.cs` | `JoinOrCreateAsync` catch, `CreateAsync` catch, `LeaveAsync` catch |
 | `Controller/Party/Services/PartySessionService.cs` | `CreateAsync` transient retry catch, `JoinByIdAsync` transient retry catch, `LeaveAsync` catch |
