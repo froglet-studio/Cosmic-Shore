@@ -54,6 +54,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         BenchmarkSweepRunner activeSweep;
         readonly HashSet<int> sweepExpanded = new();
 
+        // ── Manual session (primary Sweep mode) ─────────
+        Vector2 sweepOuterScroll;
+        PerformanceBenchmarkRunner sweepRunner;
+        ManualSweepSession sweepSession;
+        [System.NonSerialized] BenchmarkReport sweepReport;
+        string sweepCachedReportId = "";
+        [SerializeField] string sweepSavedPath = "";
+        [SerializeField] string sweepMarkLabel = "";
+        [SerializeField] bool foldAutomatic;
+        [SerializeField] bool foldErrors = true;
+        [SerializeField] bool foldMarks = true;
+        static string SweepCachePath =>
+            Path.Combine(Application.persistentDataPath, "Benchmarks", "_sweep_lastrun.json");
+
         // ── History tab ─────────────────────────────────
         Vector2 historyScroll;
         List<BenchmarkHistory.IndexEntry> historyEntries = new();
@@ -84,6 +98,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             // Restore the last Collect run after a domain reload (e.g. leaving Play Mode).
             if (collectReport == null && File.Exists(CollectCachePath))
                 collectReport = BenchmarkReport.LoadFromFile(CollectCachePath);
+            if (sweepReport == null && File.Exists(SweepCachePath))
+                sweepReport = BenchmarkReport.LoadFromFile(SweepCachePath);
         }
 
         // Spike enrichment (editor-side, off the game thread).
@@ -112,6 +128,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 EnrichPendingSpikes();
 
             bool busy = (collectRunner != null && collectRunner.IsRunning) ||
+                        (sweepRunner != null && sweepRunner.IsRunning) ||
                         (activeSweep != null && activeSweep.IsSweeping);
             if (busy && EditorApplication.timeSinceStartup >= _nextRepaint)
             {
@@ -699,11 +716,249 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         void DrawSweepTab()
         {
+            sweepOuterScroll = EditorGUILayout.BeginScrollView(sweepOuterScroll);
             EditorGUILayout.Space(6);
-            EditorUIStyles.SectionHeader("Multi-Scene Sweep", EditorUIStyles.Sky);
+            EditorUIStyles.SectionHeader("Manual Session", EditorUIStyles.Mint);
+            EditorGUILayout.HelpBox(
+                "Play the game and this records a data set with minimal FPS hit: frame stats, a " +
+                "timestamped error/exception log, and the moments you mark (F8). Stop & Save to keep it.",
+                MessageType.None);
 
-            config = (BenchmarkConfigSO)EditorGUILayout.ObjectField("Config", config, typeof(BenchmarkConfigSO), false);
-            gameData = (GameDataSO)EditorGUILayout.ObjectField("Game Data (optional)", gameData, typeof(GameDataSO), false);
+            // Adopt a finished session so results show the moment it stops.
+            if (sweepRunner != null && sweepRunner.LastReport != null &&
+                sweepRunner.LastReport.reportId != sweepCachedReportId)
+            {
+                sweepReport = sweepRunner.LastReport;
+                sweepCachedReportId = sweepReport.reportId;
+                sweepSavedPath = sweepRunner.LastReportPath ?? "";
+                CacheSweepReport(sweepReport);
+            }
+
+            bool running = sweepRunner != null && sweepRunner.IsRunning;
+            var report = sweepReport;
+            bool hasReport = report?.statistics != null && report.statistics.totalFrames > 0;
+
+            if (running)
+            {
+                DrawSweepRecording();
+            }
+            else if (!Application.isPlaying)
+            {
+                EditorGUILayout.HelpBox("Enter Play Mode, get into the game, then Start Session.", MessageType.Info);
+                DrawAccentButton("▶  Enter Play Mode", EditorUIStyles.Sky, 28, () => EditorApplication.isPlaying = true);
+            }
+            else
+            {
+                bool captureBusy = collectRunner != null && collectRunner.IsRunning;
+                using (new EditorGUI.DisabledScope(captureBusy || config == null))
+                    DrawAccentButton("●  Start Session", EditorUIStyles.Mint, 30, StartManualSweep);
+                if (captureBusy)
+                    EditorGUILayout.LabelField("Stop the Runtime Capture recording first.", EditorStyles.miniLabel);
+                else if (config == null)
+                    EditorGUILayout.LabelField("Assign a Config in the Runtime Capture tab first.", EditorStyles.miniLabel);
+            }
+
+            if (!running)
+            {
+                DrawSweepActionRow(report, hasReport);
+                if (hasReport) DrawSweepResultsManual(report);
+            }
+
+            // ── Automatic multi-scene sweep (secondary / experimental) ──
+            EditorGUILayout.Space(10);
+            foldAutomatic = EditorGUILayout.Foldout(foldAutomatic, "Automatic (multi-scene) — experimental", true, EditorStyles.foldoutHeader);
+            if (foldAutomatic) DrawAutomaticSweep();
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        // ── Manual session ──────────────────────────────────────────────────
+
+        void DrawSweepRecording()
+        {
+            int errs = sweepSession != null ? sweepSession.ErrorCount : 0;
+            int marks = sweepSession != null ? sweepSession.Marks.Count : 0;
+
+            var rect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorUIStyles.TintLastRect(rect, errs > 0 ? EditorUIStyles.Rose : EditorUIStyles.Mint, 0.10f);
+            EditorGUILayout.LabelField($"● Session — {sweepRunner.FramesCaptured} frames · {errs} errors · {marks} marks",
+                EditorStyles.boldLabel);
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.BeginHorizontal();
+            DrawAccentButton("■  Stop & Save", EditorUIStyles.Rose, 26, StopManualSweep);
+            sweepMarkLabel = EditorGUILayout.TextField(sweepMarkLabel, GUILayout.Width(150));
+            using (new EditorGUI.DisabledScope(sweepSession == null))
+                if (GUILayout.Button("Mark (F8)", GUILayout.Width(90)))
+                {
+                    sweepSession.AddMark(sweepMarkLabel);
+                    sweepMarkLabel = "";
+                }
+            EditorGUILayout.EndHorizontal();
+
+            if (sweepSession != null && sweepSession.Errors.Count > 0)
+            {
+                EditorUIStyles.SectionHeader($"Errors ({sweepSession.ErrorCount})", EditorUIStyles.Rose);
+                DrawErrorList(sweepSession.Errors, 6);
+            }
+            if (sweepSession != null && sweepSession.Marks.Count > 0)
+            {
+                EditorUIStyles.SectionHeader($"Marks ({sweepSession.Marks.Count})", EditorUIStyles.Amber);
+                DrawMarkList(sweepSession.Marks, 6);
+            }
+        }
+
+        void DrawSweepActionRow(BenchmarkReport report, bool hasReport)
+        {
+            EditorGUILayout.Space(4);
+            bool saved = !string.IsNullOrEmpty(sweepSavedPath);
+            EditorGUILayout.BeginHorizontal();
+
+            using (new EditorGUI.DisabledScope(!hasReport))
+            {
+                var prev = GUI.backgroundColor; GUI.backgroundColor = EditorUIStyles.Lavender;
+                if (GUILayout.Button("📋  Copy error log", GUILayout.Height(24)))
+                {
+                    EditorGUIUtility.systemCopyBuffer = BuildSweepLogText(report);
+                    CacheSweepReport(report);
+                    ShowNotification(new GUIContent("Error log copied + cached"));
+                }
+                GUI.backgroundColor = prev;
+            }
+            using (new EditorGUI.DisabledScope(!hasReport || saved))
+            {
+                var prev = GUI.backgroundColor; GUI.backgroundColor = EditorUIStyles.Mint;
+                if (GUILayout.Button(saved ? "Saved ✓" : "Save", GUILayout.Height(24)))
+                {
+                    string path = report.SaveToFile(GetOutputFolder());
+                    BenchmarkHistory.AddToHistory(report, path, GetOutputFolder());
+                    sweepSavedPath = path; RefreshHistory();
+                }
+                GUI.backgroundColor = prev;
+            }
+            using (new EditorGUI.DisabledScope(!hasReport))
+            {
+                var prev = GUI.backgroundColor; GUI.backgroundColor = EditorUIStyles.Rose;
+                if (GUILayout.Button("Clear Recent", GUILayout.Height(24))) ClearSweepRecent();
+                GUI.backgroundColor = prev;
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void DrawSweepResultsManual(BenchmarkReport report)
+        {
+            DrawResults(report);   // reuse the stats foldouts (low-overhead: spike breakdowns are off)
+
+            int errCount = report.errors?.Count ?? 0;
+            if (Section(ref foldErrors, $"Errors ({errCount})"))
+            {
+                if (errCount == 0) EditorGUILayout.HelpBox("No errors captured. 🎉", MessageType.None);
+                else DrawErrorList(report.errors, 25);
+            }
+            int markCount = report.marks?.Count ?? 0;
+            if (Section(ref foldMarks, $"Marks ({markCount})"))
+            {
+                if (markCount == 0) EditorGUILayout.HelpBox("No marks. Press F8 while playing to drop one.", MessageType.None);
+                else DrawMarkList(report.marks, 25);
+            }
+        }
+
+        void DrawErrorList(IReadOnlyList<SweepError> errors, int max)
+        {
+            int n = errors.Count;
+            int start = Mathf.Max(0, n - max);
+            for (int i = n - 1; i >= start; i--)   // newest first
+            {
+                var e = errors[i];
+                var prevC = GUI.contentColor;
+                GUI.contentColor = e.type == "Exception"
+                    ? new Color(0.97f, 0.45f, 0.45f) : new Color(0.98f, 0.80f, 0.52f);
+                EditorGUILayout.LabelField($"[{e.timeSeconds:F1}s] {e.type}: {e.message}", EditorUIStyles.Wrap);
+                GUI.contentColor = prevC;
+            }
+            if (start > 0) EditorGUILayout.LabelField($"   …and {start} earlier", EditorStyles.miniLabel);
+        }
+
+        void DrawMarkList(IReadOnlyList<SweepMark> marks, int max)
+        {
+            int n = marks.Count;
+            int start = Mathf.Max(0, n - max);
+            for (int i = n - 1; i >= start; i--)
+            {
+                var m = marks[i];
+                EditorGUILayout.LabelField($"[{m.timeSeconds:F1}s] {m.label} — {m.fps:F0} fps", EditorStyles.miniLabel);
+            }
+            if (start > 0) EditorGUILayout.LabelField($"   …and {start} earlier", EditorStyles.miniLabel);
+        }
+
+        static string BuildSweepLogText(BenchmarkReport report)
+        {
+            var sb = new System.Text.StringBuilder(2048);
+            sb.AppendLine($"Cosmic Shore manual session — {report.sceneName}");
+            var s = report.statistics;
+            if (s != null)
+                sb.AppendLine($"frames {s.totalFrames} · {s.durationSeconds:F0}s · avg {s.avgFps:F1} fps · " +
+                              $"p99 {s.p99FrameTimeMs:F1} ms · stddev {s.stdDevFrameTimeMs:F1} ms · GC {(s.totalFrames > 0 ? (s.totalGcAllocated / (float)s.totalFrames) / 1024f : 0):F1} KB/f");
+
+            var errs = report.errors;
+            sb.AppendLine($"Errors ({errs?.Count ?? 0}):");
+            if (errs != null) foreach (var e in errs) sb.AppendLine($"  [{e.timeSeconds:F1}s] {e.type}: {e.message}");
+
+            var marks = report.marks;
+            if (marks != null && marks.Count > 0)
+            {
+                sb.AppendLine($"Marks ({marks.Count}):");
+                foreach (var m in marks) sb.AppendLine($"  [{m.timeSeconds:F1}s] {m.label} ({m.fps:F0} fps)");
+            }
+            return sb.ToString();
+        }
+
+        void StartManualSweep()
+        {
+            if (config == null) { Debug.LogWarning("[Benchmark] No config for the manual session."); return; }
+            ClearSweepRecent();
+            sweepRunner = new GameObject("[PerformanceBenchmarkRunner]").AddComponent<PerformanceBenchmarkRunner>();
+            sweepRunner.Configure(config, null, gameData, hintRules);
+            sweepRunner.AutoSave = false;
+            sweepRunner.StartBenchmark(true);            // free-form, low overhead (no profiler walks)
+            sweepSession = ManualSweepSession.StartSession();
+        }
+
+        void StopManualSweep()
+        {
+            if (sweepRunner == null) return;
+            sweepRunner.StopBenchmark();                 // FinishRun is synchronous → LastReport set
+            if (sweepSession != null && sweepRunner.LastReport != null)
+                sweepSession.FillReport(sweepRunner.LastReport);
+            ManualSweepSession.Stop();
+            sweepSession = null;
+        }
+
+        void ClearSweepRecent()
+        {
+            sweepReport = null;
+            sweepCachedReportId = "";
+            sweepSavedPath = "";
+            try { if (File.Exists(SweepCachePath)) File.Delete(SweepCachePath); } catch { /* best-effort */ }
+        }
+
+        void CacheSweepReport(BenchmarkReport report)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(SweepCachePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllText(SweepCachePath, JsonUtility.ToJson(report, false));
+            }
+            catch (System.Exception e) { Debug.LogWarning($"[Benchmark] Could not cache sweep run: {e.Message}"); }
+        }
+
+        // ── Automatic multi-scene sweep (experimental, parked) ──────────────
+
+        void DrawAutomaticSweep()
+        {
+            EditorGUILayout.HelpBox("Loads each selected scene directly and benchmarks it. Networked game scenes that need the Bootstrap → host pipeline sweep in an uninitialized state.", MessageType.None);
+
             sweepTag = EditorGUILayout.TextField("Sweep Tag", sweepTag);
 
             EditorGUILayout.BeginHorizontal();
@@ -711,14 +966,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             sweepErrorsOnly = EditorGUILayout.ToggleLeft(new GUIContent("Errors only (fast scan)", "Skip the full benchmark; just load each scene briefly and catch errors."), sweepErrorsOnly);
             EditorGUILayout.EndHorizontal();
 
-            if (config == null && !sweepErrorsOnly)
-            {
-                EditorGUILayout.HelpBox("Assign a Benchmark Config (or use 'Errors only').", MessageType.Info);
-            }
-
             EnsureSweepScenesPopulated();
 
-            EditorGUILayout.Space(4);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Scenes (from Build Settings)", EditorStyles.boldLabel);
             if (GUILayout.Button("Refresh", GUILayout.Width(80))) PopulateSweepScenes();
@@ -734,7 +983,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             }
             EditorGUILayout.EndScrollView();
 
-            EditorGUILayout.Space(6);
+            EditorGUILayout.Space(4);
             bool sweepRunning = activeSweep != null && activeSweep.IsSweeping;
             if (sweepRunning)
             {
@@ -744,13 +993,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             }
             else
             {
-                if (!Application.isPlaying)
-                    EditorGUILayout.HelpBox("Enter Play Mode (ideally from Bootstrap) to run a sweep.", MessageType.Warning);
                 using (new EditorGUI.DisabledScope(!Application.isPlaying || (config == null && !sweepErrorsOnly)))
                 {
                     var prev = GUI.backgroundColor;
                     GUI.backgroundColor = EditorUIStyles.Mint;
-                    if (GUILayout.Button(sweepErrorsOnly ? "Run Error Scan" : "Start Sweep", GUILayout.Height(28)))
+                    if (GUILayout.Button(sweepErrorsOnly ? "Run Error Scan" : "Start Sweep", GUILayout.Height(26)))
                         StartSweep();
                     GUI.backgroundColor = prev;
                 }
