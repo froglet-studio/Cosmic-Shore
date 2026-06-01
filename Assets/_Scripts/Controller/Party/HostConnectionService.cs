@@ -1308,12 +1308,32 @@ namespace CosmicShore.Gameplay
             var joinedPlayerIds = new List<string>();
             var sessionId       = _partySessionService.ActiveSession.Id;
 
+            // Authoritative party membership is the party SESSION's player list,
+            // not the presence-lobby property. Build the session-id set once so
+            // the presence scan can only ADD a player who is genuinely in the
+            // session. Without this cross-check a client that has left the party
+            // but whose stale `joined_party` presence property still points at
+            // this session would be re-added every refresh tick — fighting
+            // PartyMemberService.SyncFromSession (which correctly removes them),
+            // producing an endless MemberLeft/MemberJoined flicker on the host.
+            // See Docs/PartySystem/BUGS.md B8.
+            var sessionPlayerIds = new HashSet<string>();
+            foreach (var sp in _partySessionService.ActiveSession.Players)
+                if (!string.IsNullOrEmpty(sp.Id))
+                    sessionPlayerIds.Add(sp.Id);
+
             foreach (var p in _lobbyService.ActiveLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
                 if (!p.Properties.TryGetValue(JOINED_PARTY_KEY, out var joinedProp)) continue;
                 if (string.IsNullOrEmpty(joinedProp.Value)) continue;
                 if (joinedProp.Value != sessionId) continue;
+
+                // Cross-check against the authoritative session. A presence-lobby
+                // "I joined your party" claim that the session does not corroborate
+                // is stale data (departed client whose clear-property write didn't
+                // land) — never trust it over the session. This is the B8 fix.
+                if (!sessionPlayerIds.Contains(p.Id)) continue;
 
                 var memberData = _memberService.ReadMemberData(p);
                 if (!connectionData.PartyMembers.Contains(memberData))

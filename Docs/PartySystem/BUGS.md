@@ -315,8 +315,23 @@ presence lobby (returning to authentication, restarting Play, etc.).
    any player who recently raised PlayerLeaving" — but this requires
    adding event-history bookkeeping. More complex than 1.
 
-**Status.** 🔴 Open — analysis complete, fix not yet implemented.
-Awaiting user decision on fix path before any code change.
+**Status.** 🟡 Fix 1 (defensive host scan) landed — root cause
+neutralized at the read side. Fix 2 (await the clear-property write to
+remove the stale data on the wire) follows as a second commit.
+
+- **Fix 1 (DONE).** `ScanPresenceForJoinedPartyMembers` now builds a
+  `HashSet` of the authoritative party-session player IDs and skips any
+  presence-lobby player not in it (`if (!sessionPlayerIds.Contains(p.Id))
+  continue;`). The host can no longer be tricked into re-adding a
+  departed client by a stale `joined_party` presence property. This
+  makes the host's party-membership view depend solely on the
+  authoritative session, race-free and robust against any
+  presence-staleness cause. Needs MPPM re-verify (cycle must stop).
+- **Fix 2 (pending).** Await `ClearJoinedPartyAsync` in `LeavePartyAsync`
+  (currently `Forget()`) so the stale property is actually cleared on
+  the wire, not just ignored by the host. Hygiene — the property is
+  wrong-on-the-wire until then, but with Fix 1 in place nothing trusts
+  it.
 
 ---
 
