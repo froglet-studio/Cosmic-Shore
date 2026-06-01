@@ -19,6 +19,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         [SerializeField] BenchmarkHintRulesSO hintRules;
         [SerializeField] GameDataSO gameData;
 
+        // Default config shipped in the repo; auto-loaded when nothing is assigned.
+        const string DefaultConfigPath = "Assets/_SO_Assets/Benchmark/BenchmarkConfig.asset";
+
         // ── Collect tab ─────────────────────────────────
         [SerializeField] int sceneIndex;
         [SerializeField] bool bootFromBootstrap;
@@ -69,6 +72,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             RefreshSceneList();
             RefreshHistory();
+            // Auto-load the repo's default config so the tool works out of the box.
+            if (config == null)
+                config = AssetDatabase.LoadAssetAtPath<BenchmarkConfigSO>(DefaultConfigPath);
             // Restore the last Collect run after a domain reload (e.g. leaving Play Mode).
             if (collectReport == null && File.Exists(CollectCachePath))
                 collectReport = BenchmarkReport.LoadFromFile(CollectCachePath);
