@@ -265,6 +265,44 @@ After Editor restart with the structured-Error matcher, *all*
 + party-session refresh paths should be silenced regardless of inner
 message. Phase A baseline becomes truly clean (no ongoing B1/B6 churn).
 
+### Pre-flight finding #3 — PartySessionService boot-retry chatter (RESOLVED)
+
+**Observation.** After the structured-Error matcher (`a8c7208`) silenced
+the HCS refresh churn, one remaining line appeared at boot — twice:
+```
+[PartySessionService] Transient session error — retry 1/5 … then 2/5 …
+(SessionException: [Error: Unknown] [Message: Object reference not set …])
+```
+Stack: `LobbyHandler.SubscribeToLobbyEventsAsync` (LobbyHandler.cs:808) →
+`CreateLobbyAsync` → `SessionManager.CreateAsync` →
+`WrappedMultiplayerService.CreateSessionAsync` →
+`PartySessionService.CreateAsync:203`.
+
+**Diagnosis — NOT a bug, the retry loop working.** This is the
+"lobby-events 23006" wire-subscription transient documented in
+`PartySessionService.IsTransientSessionException` ("originate in
+LobbyHandler.SubscribeToLobbyEventsAsync after the lobby is created
+server-side, so retrying CreateSessionAsync is safe"). It fired at
+attempt 1, retried, and recovered by attempt 3 — it did NOT reach
+`retry 5/5` + propagate, which would be the genuine-failure case.
+One-shot at session creation, not steady-state churn.
+
+**Fix — demote the four retry-chatter lines to `CSDebug.Log`.** Same
+category and same policy as the `LobbyPropertyWriter` "Save failed —
+retry X/3" demotion in `5a634c8`: a retry that recovers is info, not a
+warning. Demoted all four `Debug.LogWarning` retry lines in
+`PartySessionService` (CreateAsync: host-conflict :192, rate-limit :197,
+transient :203; JoinByIdAsync: rate-limit :247, transient :253) to
+`CSDebug.Log` (release-stripped + runtime-mute). **The genuine-failure
+path is untouched** — when any retry loop exhausts, the `when` filter
+(`attempt < MAX`) fails and the exception propagates to the outer caller
+(`HostConnectionService.AcceptInviteAsync` / `EnsurePartySessionAsync`),
+which still logs loudly. We only quieted the "still retrying, expected
+to recover" chatter, never the "gave up" signal.
+
+This is the last category of pre-flight noise. After restart, pre-flight
+should be fully clean and Phase A is ready to run for real.
+
 ### Phase A — Overlay validation
 
 | Test | Status | NetDiag observed | Notes |
