@@ -146,12 +146,91 @@ negative regression) baseline until this sustained NRE is either
 silenced or characterized as known/benign. Every test downstream would
 have polluted NetDiag baseline.
 
+### Pre-flight finding #2 — RESOLVED: it's B1 + B6, not a new bug
+
+**Stack trace captured.** The NRE bottoms out in the UGS SDK, not our
+code (decoded, meaningful frames only):
+
+```
+HttpClient.MakeRequestAsync          HTTP GET lobby SUCCEEDED (TrySetResult at the very bottom)
+LobbyApiClient.GetLobbyAsync         (LobbyApi.cs:424) got a response
+WrappedLobbyService.TryCatchRequest  (WrappedLobbyService.cs:497) THREW while processing the response
+WrappedLobbyService.GetLobbyAsync    (WrappedLobbyService.cs:170)
+LobbyHandler.RefreshLobbyAsync       (LobbyHandler.cs:431)
+PartySessionService.RefreshAsync     (our 1-line passthrough, cs:292)
+HostConnectionService:1385           (our catch logs it)
+```
+
+**This invalidates the solo-session hypothesis.** The failing frame —
+`WrappedLobbyService.GetLobbyAsync` (`WrappedLobbyService.cs:170`) — is
+the **exact SDK frame already documented in bug B6**
+(`Docs/PresenceSystem/BUGS.md`, recorded there as
+`WrappedLobbyService.cs:165/462` — same methods, minor line drift across
+SDK reads). The HTTP request itself succeeds; the SDK NREs while
+*deserializing the lobby response* against a stale local cache.
+
+**The side-note save-failures are B1.** Before each refresh NRE, the
+user saw three:
+```
+[LobbyPropertyWriter] Save failed (SessionException: Index was out of range.
+Must be non-negative and less than the size of the collection.
+Parameter name: index) — retry 1/3 … 2/3 … 3/3
+```
+`LobbyPropertyWriter.SaveWithRetryAsync` (`cs:158-160`) **already**
+explicitly catches `"Index was out of range"` and retries — this is the
+write-path manifestation of the same SDK stale-index family as B1
+(`LobbyPatcher.ApplyPatchesToLobby` ArgumentOutOfRangeException). The
+property *write* trips the SDK's index bookkeeping; the subsequent
+*read* (`GetLobbyAsync`) then NREs on the same corrupted cache. They are
+the same underlying SDK defect on two API surfaces, firing in a
+feedback loop:
+
+```
+LobbyPropertyWriter.SaveWithRetryAsync  → SaveCurrentPlayerDataAsync corrupts/races SDK index
+  → post-save lobby.RefreshAsync()      → GetLobbyAsync NREs on the stale cache
+  → retry writes again (×3)             → more deltas → more stale-index churn
+  → PartySessionService.RefreshAsync()  → GetLobbyAsync NREs again every 3 s
+```
+
+**Why it's continuous, not one-shot (corrected baseline).** Earlier in
+this log I wrote "one-shot at boot is acceptable, repeats are a real
+problem." The repeats ARE the known B1/B6 SDK churn — they are *already
+classified as known-benign-but-noisy* in the bug docs. The overlay
+correctly classifies them `Transient`. So:
+
+- **The NRE itself is a known SDK defect (B1/B6 family), not a
+  regression and not caused by any commit in this branch.** The
+  warning literals predate the overlay.
+- **The overlay is working as designed** — it surfaced a known-benign
+  churn pattern that was previously buried.
+- **The real defect** is that the B1 `BenignLobbyLogFilter` only
+  suppresses the `LobbyPatcher` `ArgumentOutOfRangeException` signature
+  — it does NOT cover (a) the `WrappedLobbyService.GetLobbyAsync` NRE on
+  the read path, nor (b) the `LobbyPropertyWriter` "Index was out of
+  range" `SessionException` on the write path. Both leak to the console.
+
+**Decision: Phase A UNBLOCKED.** This is documented known noise, not a
+live regression. The test plan's "silent pre-flight" expectation was
+wrong for a branch with active B1/B6 churn. Proceed with Phase A, but
+record the per-test NetDiag baseline as "+ ongoing B1/B6 `class=Transient`
+churn every ~3 s" so happy-path deltas are still readable (look for NEW
+classes — Offline / SessionGone / Timeout — not the steady Transient
+hum).
+
+**Follow-up bug work (deferred — not this session):** B1's
+`BenignLobbyLogFilter` should be extended to also suppress the
+`WrappedLobbyService.GetLobbyAsync` NRE and the `LobbyPropertyWriter`
+"Index was out of range" `SessionException`, OR the HCS:1346 +
+LobbyPropertyWriter catches should treat this specific SDK signature as
+benign (silent) rather than Transient (logged). Filed against B1/B6 in
+`Docs/PresenceSystem/BUGS.md`.
+
 ### Phase A — Overlay validation
 
 | Test | Status | NetDiag observed | Notes |
 |---|---|---|---|
-| A.1 — Test E happy path | _blocked_ | _tbd_ | Awaiting Pre-flight #2 triage |
-| A.2 — Test C user-cancel | _blocked_ | _tbd_ | |
+| A.1 — Test E happy path | _ready to run_ | _tbd_ | Baseline = ongoing B1/B6 Transient churn; look for NEW classes only |
+| A.2 — Test C user-cancel | _ready to run_ | _tbd_ | |
 
 ### Phase B — Party smoke gate
 

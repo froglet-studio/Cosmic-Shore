@@ -90,6 +90,38 @@ match.
 `:1023`, `:1297`; `LobbyPropertyWriter.cs:147-153`; `CSDebug.cs` (gates
 our calls only); SDK stack in the report.
 
+**MPPM Session 1 (2026-06-01) — confirmed still firing, two more leak
+points found.** With the NetDiag overlay live, the B1 stale-index family
+was observed firing continuously (~every 3 s) in solo Menu_Main, on two
+SDK surfaces the `BenignLobbyLogFilter` does NOT cover:
+
+1. **Write path** — `LobbyPropertyWriter.SaveWithRetryAsync` logs
+   `Save failed (SessionException: Index was out of range … Parameter
+   name: index) — retry 1/3…3/3`. The catch at `LobbyPropertyWriter.cs:158-160`
+   already special-cases `"Index was out of range"` and retries, but the
+   retry warning still reaches the console.
+2. **Read path** — the subsequent `lobby.RefreshAsync()` /
+   `PartySessionService.RefreshAsync()` NREs inside
+   `WrappedLobbyService.GetLobbyAsync` (the B6 frame — see below), caught
+   at `HostConnectionService.cs:1346` and logged + NetDiag-classified
+   `Transient`.
+
+Both are the **same SDK stale-index defect** as the `LobbyPatcher`
+`ArgumentOutOfRangeException`, just on the Save and Get API surfaces
+instead of the WebSocket-delta surface. `BenignLobbyLogFilter` matches
+only the `LobbyPatcher` + `ArgumentOutOfRangeException` signature, so
+neither of these is suppressed.
+
+**Proposed fix extension (deferred — needs design sign-off).** Either
+(a) broaden `BenignLobbyLogFilter` to also drop the
+`WrappedLobbyService.GetLobbyAsync` NRE and the `LobbyPropertyWriter`
+"Index was out of range" `SessionException`, or (b) make the
+`HostConnectionService.cs:1346` + `LobbyPropertyWriter` catches treat
+this specific signature as benign-silent rather than Transient-logged.
+Prefer (a) for consistency with the existing B1 filter; whichever, keep
+it `#if UNITY_EDITOR || DEVELOPMENT_BUILD` gated. See
+`../PartySystem/MPPM_SESSION_LOG.md` Session 1, Pre-flight finding #2.
+
 ---
 
 ## B4 — TC1: second invite not delivered + party members vanish from 3rd player's online panel 🔴
@@ -156,6 +188,18 @@ refresh?). Likely bundle with B4 diagnostics.
 `LobbyChannel.cs:197`); our lobby leave / `ForceReset` /
 refresh-early-return paths in `HostConnectionService` /
 `PresenceLobbyService`.
+
+**MPPM Session 1 (2026-06-01) — same SDK frame seen on the refresh
+path.** The `WrappedLobbyService.GetLobbyAsync` NRE
+(`WrappedLobbyService.cs:170` / `TryCatchRequest` `:497`) was captured
+firing every ~3 s from `PartySessionService.RefreshAsync` →
+`HostConnectionService.cs:1346`, not only during the accept-handshake
+leave/rejoin this entry originally described. The HTTP GET succeeds; the
+SDK NREs deserializing the response against a stale cache seeded by the
+B1 write-path churn (see B1's Session 1 note). So B6's NRE and B1's
+stale-index are the same SDK defect — B6 is the read-path symptom, B1
+the write/delta-path symptom. Overlay classifies the read-path NRE
+`Transient` and recovers (keeps session, retries next tick).
 
 ---
 
