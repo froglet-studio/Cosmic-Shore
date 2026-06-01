@@ -30,14 +30,18 @@ namespace CosmicShore.Tools.SplatImport
         const string SyntheticSetPath  = "Assets/CosmicShore/Splats/Baked/SplatPrismSet_Synthetic.asset";
         const string ArcadeGameAsset   = "Assets/_SO_Assets/Games/ArcadeGameGSplat.asset";
         const string SquirrelVessel    = "Assets/_SO_Assets/Classes/SO_Class_Squirrel.asset";
-        // AppManager.gameList points at OrganicRematchGames in CORE/AppManager.prefab; that's the
-        // list ArcadeExploreView injects. The other two are kept in sync as a safety net since
-        // other UI surfaces may pull from them. Add to all that exist.
-        static readonly string[] GameListPaths =
+        // Different surfaces of the arcade UI bind to different SO_GameList assets — AppManager
+        // registers one for DI but several screen prefabs have their own serialized references.
+        // Add to every arcade-shaped list we can find so the game appears regardless of which one
+        // the consumer actually reads from at runtime.
+        const string GameListsFolder = "Assets/_SO_Assets/Games/GameLists";
+        // Lists that should NOT receive GSplat (training programs, leaderboards) — kept as a
+        // small skip list rather than an allow list so newly-added lists default to inclusion.
+        static readonly HashSet<string> GameListsToSkip = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset",
-            "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset",
-            "Assets/_SO_Assets/Games/GameLists/AllGames.asset",
+            "TrainingGames",
+            "MissionGames",
+            "LeaderboardGames",
         };
 
         const int SyntheticSplatCount = 4000;
@@ -63,15 +67,36 @@ namespace CosmicShore.Tools.SplatImport
                 EditorApplication.delayCall += AutoRunIfNeeded;
                 return;
             }
-            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-            // Idempotency gate: assume done if the SO_ArcadeGame asset already exists.
-            if (AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(ArcadeGameAsset) != null) return;
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                EditorApplication.delayCall += AutoRunIfNeeded;
+                return;
+            }
+
+            // Self-heal gate: if every artifact is already in place, skip silently. Otherwise,
+            // run the full Run() — each Ensure* step is individually idempotent so this is cheap.
+            if (IsFullyWired()) return;
 
             try { Run(silent: true); }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[SplatArcadeSetup] Auto-setup failed: {ex.Message}. Run Tools/Splats/Setup GSplat Arcade Game manually.");
+                Debug.LogError($"[SplatArcadeSetup] Auto-setup threw: {ex}\nRun Tools/Splats/Setup GSplat Arcade Game manually for a verbose retry.");
             }
+        }
+
+        private static bool IsFullyWired()
+        {
+            var arcadeGame = AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(ArcadeGameAsset);
+            if (arcadeGame == null) return false;
+            if (AssetDatabase.LoadAssetAtPath<SplatPrismSet>(SyntheticSetPath) == null) return false;
+            if (!File.Exists(GSplatScenePath)) return false;
+            if (!EditorBuildSettings.scenes.Any(s => s.path == GSplatScenePath && s.enabled)) return false;
+            foreach (var listPath in FindArcadeGameLists())
+            {
+                var list = AssetDatabase.LoadAssetAtPath<SO_GameList>(listPath);
+                if (list != null && (list.Games == null || !list.Games.Contains(arcadeGame))) return false;
+            }
+            return true;
         }
 
         [MenuItem("Tools/Splats/Setup GSplat Arcade Game")]
@@ -79,21 +104,84 @@ namespace CosmicShore.Tools.SplatImport
 
         public static void Run(bool silent)
         {
+            Debug.Log("[SplatArcadeSetup] Starting setup ...");
             EnsureFolderTree("Assets/CosmicShore/Splats/Baked");
 
             var splatSet = EnsureSyntheticSplatSet();
             EnsureGSplatScene(splatSet);
             EnsureSceneInBuildSettings(GSplatScenePath);
             var arcadeGame = EnsureArcadeGameAsset();
-            foreach (var listPath in GameListPaths)
-                EnsureGameListContains(listPath, arcadeGame);
-            AssetDatabase.SaveAssets();
 
+            var lists = FindArcadeGameLists();
+            if (lists.Count == 0)
+                Debug.LogWarning($"[SplatArcadeSetup] No SO_GameList assets found under {GameListsFolder}.");
+            foreach (var listPath in lists)
+                EnsureGameListContains(listPath, arcadeGame);
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            string summary = SummarizeWiring(arcadeGame, lists);
+            Debug.Log($"[SplatArcadeSetup] GSplat wiring complete:\n{summary}");
             if (!silent)
-                EditorUtility.DisplayDialog("GSplat Arcade Game",
-                    "Setup complete. Enter Play Mode, open the Arcade screen, pick GSplat, choose Squirrel, and fly.",
-                    "OK");
-            Debug.Log("[SplatArcadeSetup] GSplat is wired in. Play -> Arcade -> GSplat (Squirrel).");
+                EditorUtility.DisplayDialog("GSplat Arcade Game", "Setup complete.\n\n" + summary + "\n\nEnter Play Mode, open the Arcade, pick GSplat, choose Squirrel, and fly.", "OK");
+        }
+
+        [MenuItem("Tools/Splats/Diagnose GSplat Setup")]
+        public static void Diagnose()
+        {
+            var arcadeGame = AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(ArcadeGameAsset);
+            var splatSet = AssetDatabase.LoadAssetAtPath<SplatPrismSet>(SyntheticSetPath);
+            var scene = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(GSplatScenePath);
+            var lists = FindArcadeGameLists();
+            int containingCount = arcadeGame == null ? 0 :
+                lists.Count(p =>
+                {
+                    var l = AssetDatabase.LoadAssetAtPath<SO_GameList>(p);
+                    return l != null && l.Games != null && l.Games.Contains(arcadeGame);
+                });
+            bool inBuild = EditorBuildSettings.scenes.Any(s => s.path == GSplatScenePath && s.enabled);
+
+            string report =
+                $"ArcadeGameGSplat.asset:   {(arcadeGame != null ? "OK" : "MISSING")}\n" +
+                $"SplatPrismSet_Synthetic:  {(splatSet != null ? $"OK ({(splatSet.points?.Length ?? 0)} pts)" : "MISSING")}\n" +
+                $"MinigameGSplat.unity:     {(scene != null ? "OK" : "MISSING")}\n" +
+                $"In build settings:        {(inBuild ? "YES" : "NO")}\n" +
+                $"Game lists found:         {lists.Count}\n" +
+                $"Lists containing GSplat:  {containingCount}/{lists.Count}";
+            Debug.Log("[SplatArcadeSetup] Diagnosis:\n" + report);
+            EditorUtility.DisplayDialog("GSplat Diagnosis", report + "\n\nIf any line is MISSING/NO/0, run Tools/Splats/Setup GSplat Arcade Game.", "OK");
+        }
+
+        private static List<string> FindArcadeGameLists()
+        {
+            var results = new List<string>();
+            if (!AssetDatabase.IsValidFolder(GameListsFolder)) return results;
+            foreach (var guid in AssetDatabase.FindAssets("t:SO_GameList", new[] { GameListsFolder }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var name = Path.GetFileNameWithoutExtension(path);
+                if (GameListsToSkip.Contains(name)) continue;
+                results.Add(path);
+            }
+            return results;
+        }
+
+        private static string SummarizeWiring(SO_ArcadeGame game, List<string> lists)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append("  arcade game asset: ").AppendLine(ArcadeGameAsset);
+            sb.Append("  scene: ").AppendLine(GSplatScenePath);
+            sb.Append("  splat set: ").AppendLine(SyntheticSetPath);
+            sb.Append("  in build settings: ").AppendLine(EditorBuildSettings.scenes.Any(s => s.path == GSplatScenePath && s.enabled) ? "yes" : "no");
+            sb.AppendLine("  added to:");
+            foreach (var p in lists)
+            {
+                var l = AssetDatabase.LoadAssetAtPath<SO_GameList>(p);
+                bool has = l != null && l.Games != null && l.Games.Contains(game);
+                sb.Append("    ").Append(has ? "[+] " : "[ ] ").AppendLine(Path.GetFileNameWithoutExtension(p));
+            }
+            return sb.ToString();
         }
 
         // 1) Bake (or reuse) a synthetic SplatPrismSet ----------------------------------------------
