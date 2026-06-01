@@ -22,12 +22,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         // Default config shipped in the repo; auto-loaded when nothing is assigned.
         const string DefaultConfigPath = "Assets/_SO_Assets/Benchmark/BenchmarkConfig.asset";
 
-        // ── Collect tab ─────────────────────────────────
-        [SerializeField] int sceneIndex;
-        [SerializeField] bool bootFromBootstrap;
+        // ── Runtime Capture tab ─────────────────────────
         [SerializeField] string collectTag = "";
-        string[] sceneDisplay = System.Array.Empty<string>();
-        string[] scenePaths = System.Array.Empty<string>();
         PerformanceBenchmarkRunner collectRunner;
         Vector2 collectScroll;
         // Report currently shown in Collect. Cached to disk so it survives leaving Play Mode
@@ -70,7 +66,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         void OnEnable()
         {
-            RefreshSceneList();
             RefreshHistory();
             // Auto-load the repo's default config so the tool works out of the box.
             if (config == null)
@@ -195,25 +190,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 new GUIContent("Game Data (optional)", "When assigned, vessel/player counts are recorded."),
                 gameData, typeof(GameDataSO), false);
 
-            // Scene picker
-            if (sceneDisplay.Length == 0)
-            {
-                EditorGUILayout.HelpBox("No scenes in Build Settings. Add scenes via File > Build Settings.", MessageType.Warning);
-            }
-            else
-            {
-                EditorGUILayout.BeginHorizontal();
-                sceneIndex = EditorGUILayout.Popup(new GUIContent("Scene to capture"), Mathf.Clamp(sceneIndex, 0, sceneDisplay.Length - 1), sceneDisplay);
-                if (GUILayout.Button("↻", GUILayout.Width(26))) RefreshSceneList();
-                EditorGUILayout.EndHorizontal();
-                bootFromBootstrap = EditorGUILayout.ToggleLeft(
-                    new GUIContent("Boot from Bootstrap first",
-                        "On: the game boots through Bootstrap so networked scenes initialize (capture starts at boot). " +
-                        "Off: the chosen scene is loaded directly — best for self-contained scenes."),
-                    bootFromBootstrap);
-            }
-
-            DrawConfigSummary();
+            // What the recorder samples (free-form: records from ● Start to ■ Stop).
+            EditorGUILayout.LabelField(
+                "Capturing: " +
+                $"{(config.CaptureRenderingStats ? "render " : "")}{(config.CaptureMemoryStats ? "memory " : "")}" +
+                $"{(config.CapturePhysicsStats ? "physics " : "")}{(config.CaptureGameLoadStats ? "load " : "")}{(config.CaptureNetcodeStats ? "netcode" : "")}",
+                EditorStyles.miniLabel);
 
             using (new EditorGUI.DisabledScope(!Application.isPlaying))
             {
@@ -222,7 +204,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             }
 
             EditorGUILayout.Space(8);
-            EditorUIStyles.SectionHeader("Capture", EditorUIStyles.Mint);
+            EditorUIStyles.SectionHeader("Record", EditorUIStyles.Mint);
 
             bool running = collectRunner != null && collectRunner.IsRunning;
             if (running)
@@ -232,27 +214,23 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             else if (!Application.isPlaying)
             {
                 EditorGUILayout.HelpBox(
-                    "Free-play recording happens in Play Mode: press Enter Play Mode, then ● Start Recording, play, " +
-                    "and ■ Stop & Analyze. Or run a fixed-length capture of the chosen scene (the old Collect behaviour).",
+                    "Recording runs in Play Mode. Enter Play, get to the scene you want to profile, then " +
+                    "press ● Start Recording → play freely → ■ Stop & Analyze.",
                     MessageType.Info);
                 var prev = GUI.backgroundColor;
                 GUI.backgroundColor = EditorUIStyles.Mint;
                 if (GUILayout.Button("▶  Enter Play Mode", GUILayout.Height(30)))
                     EditorApplication.isPlaying = true;
                 GUI.backgroundColor = prev;
-                if (GUILayout.Button($"Run Fixed {config.SampleDuration:F0}s Capture (enter Play)"))
-                    StartCaptureViaPlay();
             }
             else
             {
-                EditorGUILayout.HelpBox("In Play Mode — record free play (start/stop yourself), or run a fixed-length capture of the current scene.", MessageType.None);
+                EditorGUILayout.HelpBox("In Play Mode — record while you play freely, then stop to analyze.", MessageType.None);
                 var prev = GUI.backgroundColor;
                 GUI.backgroundColor = EditorUIStyles.Mint;
-                if (GUILayout.Button("●  Start Recording (free play)", GUILayout.Height(30)))
+                if (GUILayout.Button("●  Start Recording", GUILayout.Height(32)))
                     StartFreeFormInCurrentPlay();
                 GUI.backgroundColor = prev;
-                if (GUILayout.Button($"Run Fixed {config.SampleDuration:F0}s Capture of Current Scene"))
-                    StartCaptureInCurrentPlay();
             }
 
             // When the live runner finishes a run, adopt it and cache to disk so it survives
@@ -355,12 +333,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         void DrawCopyForClaude(BenchmarkReport report)
         {
+            bool hasData = report?.statistics != null && report.statistics.totalFrames > 0;
             var prev = GUI.backgroundColor;
             GUI.backgroundColor = EditorUIStyles.Lavender;
-            if (GUILayout.Button("📋  Copy report for Claude (stats + script spikes)", GUILayout.Height(24)))
+            using (new EditorGUI.DisabledScope(!hasData))
             {
-                EditorGUIUtility.systemCopyBuffer = BuildClaudeReportText(report);
-                ShowNotification(new GUIContent("Report copied — paste to Claude"));
+                if (GUILayout.Button("📋  Copy report for Claude (stats + script spikes)", GUILayout.Height(24)))
+                {
+                    EditorGUIUtility.systemCopyBuffer = BuildClaudeReportText(report);
+                    // Re-cache: spikes may have been enriched after the run was first cached.
+                    CacheCollectReport(report);
+                    ShowNotification(new GUIContent("Report copied + cached — paste to Claude"));
+                }
             }
             GUI.backgroundColor = prev;
         }
@@ -440,16 +424,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 Debug.LogWarning($"[Benchmark] Could not cache last run for display: {e.Message}");
             }
-        }
-
-        void DrawConfigSummary()
-        {
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.LabelField($"Warmup {config.WarmupDuration:F0}s · Sample {config.SampleDuration:F0}s · " +
-                $"Capturing: {(config.CaptureRenderingStats ? "render " : "")}{(config.CaptureMemoryStats ? "memory " : "")}" +
-                $"{(config.CapturePhysicsStats ? "physics " : "")}{(config.CaptureGameLoadStats ? "load" : "")}",
-                EditorStyles.miniLabel);
-            EditorGUILayout.EndVertical();
         }
 
         void DrawResults(BenchmarkReport report)
@@ -640,29 +614,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 ? "Saved to History (and kept on disk)."
                 : "This run is cached — it stays here after you stop Play. Save to add it to History/Compare.",
                 EditorStyles.miniLabel);
-        }
-
-        void StartCaptureViaPlay()
-        {
-            string scenePath = (!bootFromBootstrap && scenePaths.Length > 0)
-                ? scenePaths[Mathf.Clamp(sceneIndex, 0, scenePaths.Length - 1)]
-                : null;
-            collectRunner = null;
-            ResetCollectDisplay();
-            BenchmarkAutoStart.RequestCaptureOnPlay(config, hintRules, gameData, scenePath, bootFromBootstrap);
-        }
-
-        void StartCaptureInCurrentPlay()
-        {
-            collectRunner = FindFirstObjectByType<PerformanceBenchmarkRunner>();
-            if (collectRunner == null)
-                collectRunner = new GameObject("[PerformanceBenchmarkRunner]").AddComponent<PerformanceBenchmarkRunner>();
-
-            SpikeAnalyzer.SetProfilerEnabled(true);
-            ResetCollectDisplay();
-            collectRunner.Configure(config, null, gameData, hintRules);
-            collectRunner.AutoSave = false;
-            collectRunner.StartBenchmark();
         }
 
         void ResetCollectDisplay()
@@ -1047,13 +998,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             historyEntries = BenchmarkHistory.GetAll(GetOutputFolder());
             if (baselineIndex >= historyEntries.Count) baselineIndex = -1;
             if (currentIndex >= historyEntries.Count) currentIndex = -1;
-        }
-
-        void RefreshSceneList()
-        {
-            var scenes = EditorBuildSettings.scenes;
-            sceneDisplay = scenes.Select(s => Path.GetFileNameWithoutExtension(s.path)).ToArray();
-            scenePaths = scenes.Select(s => s.path).ToArray();
         }
 
         // Imports a BenchmarkReport JSON pulled off a device (dev-build run) into History.
