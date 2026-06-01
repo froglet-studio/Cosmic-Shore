@@ -1,8 +1,8 @@
 # Density Partitioning — Design Audit
 
 **Status:** Audit + benchmark-driven redesign. **Phase 1 fixes landed** in `c058663`
-(see §4); **Phase 2** required by the temporal sim, queued as a follow-up branch
-(see §7).
+(see §4); **Phase 2 fixes landed** in `9df956f` (see §7.3); branch merged with
+bleeding-edge and ready for PR after in-Editor validation.
 **Branch:** `claude/audit-density-partitioning-2EvgR`
 **Companion artifacts:** `DensityPartitionBenchmarkRunner` (geometric — Edit-Mode
 scene + Toolbox "Density" tab) and `DensityPartitionTemporalSimRunner` (ecology —
@@ -577,38 +577,48 @@ on the fauna side, not the algorithm side: with `faunaGoalOrbitRadius = 60m` and
 "there is mass here at scale 150m"; fauna can only consume the 100m core; the shell
 mass keeps the histogram bin loaded so the target doesn't shift; fauna idle.
 
-### 7.3 Phase 2 fix — what production needs
+### 7.3 Phase 2 fix — what production needs (LANDED in `9df956f`)
 
-The temporal sim's three-way comparison narrows the production changes to a short list.
-**None of them are landed on this branch** — they belong on a focused follow-up branch
-where they can be reviewed and tested in isolation.
+The temporal sim's three-way comparison narrowed the production changes to a short
+list. **All grid-side changes are now landed on this branch**, refined by reading the
+real fauna code (`LightFauna`, `LightFaunaDataSO`, `LightFaunaManagerDataSO`) rather
+than relying on the sim's approximations:
 
-1. **Raise `BlockDensityGrid.GridPointsPerDimension` from 17 to 32.** At cell scale
-   (1200m radius / 2400m extent), 17³ gives 141m voxels — too coarse to distinguish a
-   cluster's depleted core from its intact shell. 32³ gives 75m voxels, near parity
-   with the shipped grid's effective resolution at the inner ball (1000m / 17 ≈ 58m).
-   Cost: memory 7×, smoothing pass ~4× (all already in the Burst job). At fauna's
-   1-5s query cadence this is well under budget.
+1. **Adaptive resolution targeting 75m physical voxels** (was: "raise 17³ to 32³").
+   `BlockDensityGrid.TargetVoxelSizeMeters = 75f` (half the smoothing kernel —
+   Nyquist); resolution is derived per cell and clamped to [9, 33] points/axis. A
+   2400m Blob cell gets 33³; small cells get proportionally fewer. Voxel size is a
+   physical constant, like the kernel — not a fraction of cell size.
 
-2. **Add centroid refinement (mean-shift, 5 iter) to `FindDensestRegionJob`.** The
-   algorithm body is already implemented and verified in
-   `DensityPartitionBenchmarkAlgorithms.Search` under the `centroidRefine` /
-   `centroidIterations` knobs. Port the inner loop into the Burst job after the
-   smoothed-argmax + sub-voxel-interp stage.
+2. **Voxel-weighted mean-shift in `FindDensestRegionJob`** (5 iterations over the raw
+   counts). The production grid stores only counts — no prism positions — so the
+   refinement is mean-shift over count-weighted voxel centers, not the prism-position
+   centroid the benchmark's ideal-ceiling variants use. The benchmark's
+   `ProductionV2` row measures exactly this pipeline.
 
-3. **Verify production fauna swarm reach matches the algorithm's 150m smoothing
-   kernel.** The sim used `orbit=60m + consume=40m = 100m`, but the real swarm is
-   bounded by boid separation distance and pack size. If production produces a
-   ~150m-effective swarm radius, no fauna-side change is needed. If it's tighter,
-   either (a) widen boid separation so the swarm spreads more, or (b) shrink the
-   algorithm's `SmoothingRadiusMeters` so the algorithm samples only the volume the
-   swarm actually reaches. The mismatch matters more than the absolute value.
+3. **Result caching** (not in the original spec — found by reading the production
+   query path). `Cell.GetExplosionTarget` ran the full job per call with zero
+   memoization. Production fauna population scales with prism count
+   (`extraFaunaPerHundredPrisms = 4` ⇒ 100s of fauna at 10K prisms), each querying
+   every 0.5-2s ⇒ 100s of redundant identical job runs/sec. Now: dirty flag + 0.25s
+   min recompute interval ⇒ at most 4 runs/sec per grid, regardless of fauna count.
 
-The benchmark's geometric numbers are already strong evidence for (1) and (2): 32³ +
-centroid drops error from 27.6m → 17.7m. But the real argument for shipping them is
-ecology behavior, not accuracy: at 17³ + smoothed-interp the cell *cannot* sustain
-oscillation in a clustered-flora scenario, regardless of how accurate the queries are
-in isolation.
+4. **Storage hardening** (also found during implementation): direct NativeArray
+   writes (the managed `byte[,,]` mirror and per-query O(N³) copy are gone), and
+   ushort counts (byte wrapped at 255 — production cells reach 10K+ prisms, so a hot
+   voxel could overflow and erase its own density).
+
+5. **Fauna swarm reach** (the remaining open item): production swarm spread comes
+   from boid separation (`separationWeight 10-20` vs `goalWeight 1.5-2`,
+   `separationRadius 70-100m`), and consume radius scales with aggression (40m →
+   56m → 72m). For small packs (2-4 fauna) the effective reach is ~90-130m; for
+   scaled packs (20+) it exceeds 150m. The 150m kernel is in the right band, but
+   this is the parameter to tune **in-game** if Menu_Main observation shows fauna
+   idling next to un-eaten mass.
+
+The geometric benchmark's `ProductionV2` row and the temporal sim's `NEW` run both
+measure the exact shipped pipeline, so re-running either tool after any future change
+re-validates production behavior directly.
 
 ### 7.4 What the sim could not settle — in-game observation needed
 
