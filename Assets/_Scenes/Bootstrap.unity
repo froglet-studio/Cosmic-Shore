@@ -1373,7 +1373,6 @@ GameObject:
   m_Component:
   - component: {fileID: 989920296}
   - component: {fileID: 989920295}
-  - component: {fileID: 989920294}
   - component: {fileID: 989920297}
   - component: {fileID: 989920299}
   m_Layer: 0
@@ -1383,14 +1382,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &989920294
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 989920293}
-  m_Enabled: 1
 --- !u!20 &989920295
 Camera:
   m_ObjectHideFlags: 0
@@ -2018,7 +2009,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 67.8
+  m_fontSize: 18
   m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 1

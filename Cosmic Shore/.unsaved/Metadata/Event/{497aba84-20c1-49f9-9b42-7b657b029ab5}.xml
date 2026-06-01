@@ -64,7 +64,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>3200</value>
+			<value>1000</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{0f4d0d82-5d24-4dbe-9244-817705f8ec71}" />
@@ -132,8 +132,8 @@
 	<object class="MixerBusEffectChain" id="{294e15e4-2210-4f59-88c8-2a8ba18daa6f}">
 		<relationship name="effects">
 			<destination>{7ec1a05e-ee15-4c72-858a-c590ca1ac55c}</destination>
-			<destination>{0b906957-34c0-4190-8a0c-612e1860a651}</destination>
 			<destination>{8b00c895-77f4-4e03-88a1-ca45d661399c}</destination>
+			<destination>{0b906957-34c0-4190-8a0c-612e1860a651}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{78927066-7414-4eb3-acfe-80c2ee67ed57}">
@@ -167,21 +167,17 @@
 	</object>
 	<object class="MixerBusPanner" id="{3a6f9667-fcfb-47fa-a6aa-59b5bd65a1eb}" />
 	<object class="MixerBusFader" id="{7ec1a05e-ee15-4c72-858a-c590ca1ac55c}" />
-	<object class="SpatialiserEffect" id="{0b906957-34c0-4190-8a0c-612e1860a651}">
-		<property name="distanceRolloffType">
+	<object class="PitchShifterEffect" id="{8b00c895-77f4-4e03-88a1-ca45d661399c}">
+		<property name="pitch">
 			<value>1</value>
 		</property>
+	</object>
+	<object class="SpatialiserEffect" id="{0b906957-34c0-4190-8a0c-612e1860a651}">
 		<property name="minimumDistance">
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>3200</value>
-		</property>
-		<property name="extentMode">
-			<value>1</value>
-		</property>
-		<property name="soundSize">
-			<value>10000</value>
+			<value>1000</value>
 		</property>
 		<property name="minimumExtent">
 			<value>360</value>
@@ -194,11 +190,6 @@
 		</property>
 		<property name="userStereoAxis">
 			<value>-173.814697</value>
-		</property>
-	</object>
-	<object class="PitchShifterEffect" id="{8b00c895-77f4-4e03-88a1-ca45d661399c}">
-		<property name="pitch">
-			<value>1</value>
 		</property>
 	</object>
 	<object class="AutomationPoint" id="{ee97874e-5014-4605-a248-3c9449f0965f}">

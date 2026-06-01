@@ -1028,7 +1028,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 727.20215, y: -332}
-  m_SizeDelta: {x: 464.5258, y: 359.97}
+  m_SizeDelta: {x: 464.5258, y: 100}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &6460679599271634359
 MonoBehaviour:
@@ -1042,171 +1042,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f380cf9710e6ec478121956993a387e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: d96cdc6838254cdfb6803b2c56efcdbb, type: 2}
   bars:
   - element: 1
-    bgPips:
-    - {fileID: 7587715619522552876}
-    - {fileID: 7318115444545137750}
-    - {fileID: 731564156702944739}
-    - {fileID: 8761503806327963960}
-    - {fileID: 6210083042395302527}
-    - {fileID: 299842338456274117}
-    - {fileID: 7375764683017567414}
-    - {fileID: 150676778230294525}
-    - {fileID: 8192071793979817063}
-    - {fileID: 3395466229469500575}
-    - {fileID: 641153460933979402}
-    - {fileID: 7654877797120817553}
-    - {fileID: 5189151500975835217}
-    - {fileID: 9088119565541424134}
-    - {fileID: 6069833713760253577}
-    fillPips:
-    - {fileID: 3461627527313742739}
-    - {fileID: 3389658362551381257}
-    - {fileID: 5473315910238599700}
-    - {fileID: 7936808038972848913}
-    - {fileID: 5344886186898853001}
-    - {fileID: 7675640639819728686}
-    - {fileID: 4764794780338048738}
-    - {fileID: 4295267805923851015}
-    - {fileID: 4416601701127839046}
-    - {fileID: 3309408880402700586}
-    - {fileID: 4898439927369587130}
-    - {fileID: 7849168644867243032}
-    - {fileID: 7403498062047256385}
-    - {fileID: 5336919717917348301}
-    - {fileID: 5764724588688564405}
+    petalRoot: {fileID: 0}
+    petalSpriteOverride: {fileID: 0}
     labelIcon: {fileID: 7765495972499482060}
     normalLabelSprite: {fileID: 21300000, guid: cbac2ac9cd6900044b197490af5727f1,
       type: 3}
   - element: 2
-    bgPips:
-    - {fileID: 4290423020971682281}
-    - {fileID: 7521463822324541735}
-    - {fileID: 4202268486504114474}
-    - {fileID: 1097276497434061035}
-    - {fileID: 9127352280596515259}
-    - {fileID: 9111691558359966936}
-    - {fileID: 1503077073654562183}
-    - {fileID: 468686704455220887}
-    - {fileID: 5706869451399480768}
-    - {fileID: 5980002538211472820}
-    - {fileID: 6260492419359106024}
-    - {fileID: 3209764010204339713}
-    - {fileID: 7791593465764586297}
-    - {fileID: 5137151628388315487}
-    - {fileID: 6640763221142487945}
-    fillPips:
-    - {fileID: 6132976059153527871}
-    - {fileID: 7335473859385580599}
-    - {fileID: 4902098333927148615}
-    - {fileID: 8363479453093502594}
-    - {fileID: 2007472241835295002}
-    - {fileID: 5901281129664672091}
-    - {fileID: 1576424146268802858}
-    - {fileID: 5064096882235236775}
-    - {fileID: 2126386563884398209}
-    - {fileID: 7297103167738920812}
-    - {fileID: 7609621968181025468}
-    - {fileID: 6817329227235688631}
-    - {fileID: 3108276227132682771}
-    - {fileID: 1444696947056910769}
-    - {fileID: 3685619560591751681}
+    petalRoot: {fileID: 0}
+    petalSpriteOverride: {fileID: 0}
     labelIcon: {fileID: 6876775113113134987}
     normalLabelSprite: {fileID: 21300000, guid: 1eb2c03794f55824d8e01e96c4fe7a3e,
       type: 3}
   - element: 3
-    bgPips:
-    - {fileID: 7180069356604306924}
-    - {fileID: 1907574934590824484}
-    - {fileID: 8567590345501151057}
-    - {fileID: 1616450839050181906}
-    - {fileID: 4645072454220790857}
-    - {fileID: 4648177538389094457}
-    - {fileID: 1261929929535045324}
-    - {fileID: 4649323948017083134}
-    - {fileID: 8242042820519816329}
-    - {fileID: 7666664826002955830}
-    - {fileID: 647890644802547868}
-    - {fileID: 6588824573196204032}
-    - {fileID: 6982771287218018485}
-    - {fileID: 7912644835949342086}
-    - {fileID: 8464070213653344689}
-    fillPips:
-    - {fileID: 6685646087345592770}
-    - {fileID: 5017312374743840023}
-    - {fileID: 1986459008294325590}
-    - {fileID: 7717799356197763178}
-    - {fileID: 7083920507129355449}
-    - {fileID: 4549106139793241225}
-    - {fileID: 5560178790170143786}
-    - {fileID: 89490239577766546}
-    - {fileID: 3170648396695249584}
-    - {fileID: 538607198978161559}
-    - {fileID: 4375711124581827140}
-    - {fileID: 5208009044049091443}
-    - {fileID: 2871526304711703791}
-    - {fileID: 3771388388741003530}
-    - {fileID: 3798055573850905941}
+    petalRoot: {fileID: 0}
+    petalSpriteOverride: {fileID: 0}
     labelIcon: {fileID: 2073992627507280207}
     normalLabelSprite: {fileID: 21300000, guid: 4e788082740141a45b47f1c51a5c15b0,
       type: 3}
   - element: 4
-    bgPips:
-    - {fileID: 2354176900894037353}
-    - {fileID: 8115365138755185642}
-    - {fileID: 7015325632544926747}
-    - {fileID: 1712491513550259257}
-    - {fileID: 5256893214583661049}
-    - {fileID: 3310567897130854662}
-    - {fileID: 6779518674167954345}
-    - {fileID: 1165322875662328762}
-    - {fileID: 5922150658452207267}
-    - {fileID: 1073614256014535749}
-    - {fileID: 4912067093835019054}
-    - {fileID: 2165736151876324141}
-    - {fileID: 5981253336692433181}
-    - {fileID: 8216094349744510978}
-    - {fileID: 5317458847208932112}
-    fillPips:
-    - {fileID: 1623753953562223542}
-    - {fileID: 3493446977231271363}
-    - {fileID: 8114096824890396792}
-    - {fileID: 208088047899057316}
-    - {fileID: 1570846672049671330}
-    - {fileID: 8434118887719542722}
-    - {fileID: 6459371983986079176}
-    - {fileID: 7984742469372690260}
-    - {fileID: 2701427946137690375}
-    - {fileID: 2537182166661967212}
-    - {fileID: 3572932222684197285}
-    - {fileID: 6860441933600033616}
-    - {fileID: 8841276953266218056}
-    - {fileID: 2904775466500806123}
-    - {fileID: 9131221931632565330}
+    petalRoot: {fileID: 0}
+    petalSpriteOverride: {fileID: 0}
     labelIcon: {fileID: 8690812660076800128}
     normalLabelSprite: {fileID: 21300000, guid: 809450069823742448227b7dceef6fcc,
       type: 3}
-  zeroLineIndex: 5
-  filledColor: {r: 1, g: 1, b: 1, a: 1}
-  negativeFillColor: {r: 1, g: 0.3, b: 0.3, a: 0.8}
-  debuffFlashColor: {r: 1, g: 0.2, b: 0.2, a: 1}
-  buffPopScale: 1.5
-  buffPopDuration: 0.18
-  buffStaggerDelay: 0.04
-  debuffShakeDuration: 0.15
-  debuffShakeStrength: 8
-  hapticOnDebuff: 1
-  debuffHapticAmplitude: 0.6
-  debuffHapticFrequency: 0.5
-  debuffHapticDuration: 0.15
-  iconPunchDuration: 0.25
-  iconPunchScale: 1.4
-  colorTweenDuration: 0.35
-  joustFlashColor: {r: 1, g: 0, b: 0, a: 1}
-  driftRotationAngle: 15
-  driftRotationDuration: 0.2
-  doubleDriftSprite: {fileID: 0}
+  autoRootSize: 88
+  autoRootSpacing: 104
+  autoRootVerticalOffset: 0
+  configResourcePath: ElementalBarsConfig
+  petalResourceFormat: ElementPetals/{0}_petal
 --- !u!114 &4240691284024081349
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1214,18 +1080,18 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 763160479844339353}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: -149
+    m_Left: 0
     m_Right: 0
-    m_Top: 78
+    m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 1
-  m_Spacing: 80
+  m_ChildAlignment: 8
+  m_Spacing: 16
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
@@ -2656,7 +2522,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7585289407397334681
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4884,7 +4750,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4971224943024233078
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5755,7 +5621,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4418300767899086516
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8671,6 +8537,7 @@ GameObject:
   - component: {fileID: 5363059078414614678}
   - component: {fileID: -6368199322473003075}
   - component: {fileID: 7219854176267508625}
+  - component: {fileID: 7687382462138633726}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -9159,7 +9026,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071, type: 2}
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c65db9958c064485be49a2183f263,
     type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}
@@ -9374,6 +9240,20 @@ MonoBehaviour:
   baseVolumeMultiplier: 1
   restrictToVesselClass: 1
   targetVesselClass: 6
+  debugLog: 0
+--- !u!114 &7687382462138633726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3b21628e47594eaba8394e46e6128ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  localOffset: {x: 0, y: 0, z: 0}
   debugLog: 0
 --- !u!1 &6514516964945388952
 GameObject:
@@ -10230,7 +10110,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1723344000590278559
 RectTransform:
   m_ObjectHideFlags: 0

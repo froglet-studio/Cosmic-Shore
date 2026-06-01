@@ -103,7 +103,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
             }
 
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
             ProjectileTime = projectileTime;
 
             if (_detachOnLaunch && transform.parent)
