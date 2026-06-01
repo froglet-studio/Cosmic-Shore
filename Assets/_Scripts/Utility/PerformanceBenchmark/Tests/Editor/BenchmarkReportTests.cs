@@ -126,6 +126,39 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
 
         #endregion
 
+        #region Schema / Source
+
+        [Test]
+        public void LegacyJson_WithoutSchemaVersion_LoadsAsLegacy()
+        {
+            // Simulate a pre-change report: no "schemaVersion" / "source" keys.
+            const string legacyJson =
+                "{\"reportId\":\"legacy1\",\"label\":\"old\",\"sceneName\":\"S\",\"sampleDuration\":5.0}";
+            string filePath = Path.Combine(_testOutputDir, "legacy.json");
+            File.WriteAllText(filePath, legacyJson);
+
+            var loaded = BenchmarkReport.LoadFromFile(filePath);
+
+            Assert.IsNotNull(loaded, "legacy report must load, not crash");
+            Assert.AreEqual(0, loaded.schemaVersion, "missing schemaVersion reads as 0 (legacy)");
+            Assert.AreEqual("legacy1", loaded.reportId);
+        }
+
+        [Test]
+        public void NewReport_StampsSchemaAndSource()
+        {
+            var report = CreateMinimalReport();
+            report.PopulateEnvironment();
+
+            Assert.AreEqual(BenchmarkReport.CurrentSchemaVersion, report.schemaVersion);
+            Assert.IsNotNull(report.source);
+            // In edit-mode tests this runs in the editor.
+            Assert.AreEqual(ReportOrigin.Editor, report.source.origin);
+            Assert.IsNotEmpty(report.source.platform);
+        }
+
+        #endregion
+
         #region Helpers
 
         static BenchmarkReport CreateMinimalReport()

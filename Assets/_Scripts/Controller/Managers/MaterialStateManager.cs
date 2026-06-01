@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using System;
@@ -97,13 +96,7 @@ namespace CosmicShore.Gameplay
                     if (data.progress >= 0.99f)
                     {
                         animator.IsAnimating = false;
-                        bool wasRemoved = activeAnimators.Remove(animator);
-
-                        // Validate removal
-                        if (!wasRemoved)
-                        {
-                            bool contains = activeAnimators.Contains(animator);
-                        }
+                        activeAnimators.Remove(animator);
 
                         if (animator.OnAnimationComplete != null)
                         {
@@ -122,13 +115,12 @@ namespace CosmicShore.Gameplay
             }
 
 
-            // Validate all remaining active animators are actually animating
-            foreach (var animator in activeAnimators.ToArray())
+            // Validate all remaining active animators are actually animating. Reuse the
+            // per-frame snapshot list instead of allocating activeAnimators.ToArray() each frame.
+            foreach (var animator in activeAnimatorsList)
             {
-                if (!animator.IsAnimating)
-                {
+                if (animator != null && !animator.IsAnimating)
                     activeAnimators.Remove(animator);
-                }
             }
 
             // Batch apply property updates

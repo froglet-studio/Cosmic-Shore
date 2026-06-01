@@ -257,7 +257,7 @@ namespace CosmicShore.Gameplay
 
         void InitializePair(IPlayer player, IVessel vessel)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
+            CSDebug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
             player.InitializeForMultiplayerMode(vessel);
             vessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, vessel);
@@ -266,7 +266,7 @@ namespace CosmicShore.Gameplay
             // reset, NormalizeUnassignedHumans reroll, shape-mode SetDomain, etc).
             if (player is Player p) p._vesselThemeManagerData = themeManagerData;
             gameData.AddPlayer(player);
-            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}</color>");
+            CSDebug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count={gameData.Players.Count}, LocalPlayer={gameData.LocalPlayer?.Name}</color>");
 
             // Signal this specific player-vessel pair is fully initialized.
             // Subscribers (e.g. MainMenuController) activate non-local players
@@ -280,7 +280,7 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser)
             {
-                Debug.Log("<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
+                CSDebug.Log("<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
                 gameData.InvokeClientReady();
             }
         }

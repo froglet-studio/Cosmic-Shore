@@ -76,12 +76,17 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!IsSpawned || !IsOwner) 
+            if (!IsSpawned || !IsOwner)
                 return;
-            
-            n_Speed.Value = VesselStatus.Speed;
-            n_Course.Value = VesselStatus.Course;
-            n_BlockRotation.Value = VesselStatus.blockRotation;
+
+            // Per-frame owner→server kinematic replication — the hottest netcode write path.
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Serialize.Auto())
+            {
+                n_Speed.Value = VesselStatus.Speed;
+                n_Course.Value = VesselStatus.Course;
+                n_BlockRotation.Value = VesselStatus.blockRotation;
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty(3);
+            }
         }
 
         public void Initialize(IPlayer player)

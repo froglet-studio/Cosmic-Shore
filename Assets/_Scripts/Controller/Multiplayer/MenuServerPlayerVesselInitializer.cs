@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
+        [Header("Menu Lava-Lamp Trail")]
+        [Tooltip("Per-trail block cap for the cosmetic autopilot trail in Menu_Main. The " +
+                 "oldest blocks recycle to the pool past this count so trail geometry and " +
+                 "trigger colliders stay bounded while the menu idles. 0 = unbounded.")]
+        [SerializeField] int menuTrailBlockCap = 200;
+
         bool _isSwapping;
 
         /// <summary>Whether a vessel swap is currently in progress.</summary>
@@ -209,6 +215,13 @@ namespace CosmicShore.Gameplay
             player.StartPlayer();
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
+
+            // Bound the cosmetic menu trail so prism geometry/colliders don't grow
+            // without bound while the lava-lamp autopilot flies. Gameplay vessels never
+            // call this, so their trails stay unbounded (maxTrailBlocks == 0).
+            var prismController = player.Vessel.VesselStatus?.VesselPrismController;
+            if (prismController != null)
+                prismController.SetMaxTrailBlocks(menuTrailBlockCap);
 
             // Camera setup is handled by MainMenuController.HandleMenuReady()
             // which activates the CM Main Menu Cinemachine camera for menu state.

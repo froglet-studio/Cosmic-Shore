@@ -335,8 +335,13 @@ namespace CosmicShore.Gameplay
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
-            serializer.SerializeValue(ref Position);
-            serializer.SerializeValue(ref Domain);
+            using (serializer.IsReader
+                ? CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Deserialize.Auto()
+                : CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Serialize.Auto())
+            {
+                serializer.SerializeValue(ref Position);
+                serializer.SerializeValue(ref Domain);
+            }
         }
 
         public bool Equals(CrystalSlotData other) =>
@@ -362,9 +367,14 @@ namespace CosmicShore.Gameplay
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
-            serializer.SerializeValue(ref Course);
-            serializer.SerializeValue(ref Speed);
-            serializer.SerializeValue(ref PlayerName);
+            using (serializer.IsReader
+                ? CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Deserialize.Auto()
+                : CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Serialize.Auto())
+            {
+                serializer.SerializeValue(ref Course);
+                serializer.SerializeValue(ref Speed);
+                serializer.SerializeValue(ref PlayerName);
+            }
         }
 
         private NetworkExplodeParams(Vector3 course, float speed, FixedString64Bytes playerName)
