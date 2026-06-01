@@ -92,17 +92,32 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         const double EnrichInterval = 0.35;   // seconds between hierarchy walks (keeps the editor responsive)
         const int TopMarkersToCapture = 8;
 
+        // When off, the tool only records frame time / fps / stability — no Profiler enable,
+        // no per-spike hierarchy walks — so it barely perturbs what it measures. Turn this off
+        // for a true smoothness read; turn it on when you need the script breakdown of a spike.
+        [SerializeField] bool captureSpikeBreakdowns = true;
+
+        // Repaint throttle: redrawing this window every game frame is itself editor overhead
+        // that bleeds into measured frame time. 10 Hz is plenty for a live readout.
+        double _nextRepaint;
+        const double RepaintInterval = 0.1;
+
         void Update()
         {
             // Re-acquire the live runner after the play-mode domain reload wiped our reference.
             if (Application.isPlaying && collectRunner == null)
                 collectRunner = FindFirstObjectByType<PerformanceBenchmarkRunner>();
 
-            EnrichPendingSpikes();
+            if (captureSpikeBreakdowns)
+                EnrichPendingSpikes();
 
-            if ((collectRunner != null && collectRunner.IsRunning) ||
-                (activeSweep != null && activeSweep.IsSweeping))
+            bool busy = (collectRunner != null && collectRunner.IsRunning) ||
+                        (activeSweep != null && activeSweep.IsSweeping);
+            if (busy && EditorApplication.timeSinceStartup >= _nextRepaint)
+            {
+                _nextRepaint = EditorApplication.timeSinceStartup + RepaintInterval;
                 Repaint();
+            }
         }
 
         /// <summary>
@@ -200,11 +215,23 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 config = (BenchmarkConfigSO)EditorGUILayout.ObjectField("Config", config, typeof(BenchmarkConfigSO), false);
                 hintRules = (BenchmarkHintRulesSO)EditorGUILayout.ObjectField("Hint Rules", hintRules, typeof(BenchmarkHintRulesSO), false);
                 gameData = (GameDataSO)EditorGUILayout.ObjectField("Game Data", gameData, typeof(GameDataSO), false);
+                captureSpikeBreakdowns = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Capture spike breakdowns (Profiler — adds overhead)",
+                        "On: each spike gets its script breakdown via the Profiler (what you need to find a culprit). " +
+                        "Off: records frame time / fps / stability only, near-zero overhead — use this for a TRUE smoothness read."),
+                    captureSpikeBreakdowns);
                 using (new EditorGUI.DisabledScope(!Application.isPlaying))
                     if (GUILayout.Button("Spawn Live HUD Overlay (F9 in Game view)"))
                         SpawnLiveHud();
                 EditorGUI.indentLevel--;
             }
+
+            if (!captureSpikeBreakdowns)
+                EditorGUILayout.HelpBox(
+                    "Low-overhead mode: frame time / fps / stability only (no script breakdown). " +
+                    "Also CLOSE the Profiler window and turn OFF Deep Profile for a true read — they dominate editor frame time. " +
+                    "The real ground truth is a Development Build run standalone, not the editor.",
+                    MessageType.Info);
 
             // Adopt a finished run before drawing so results appear the moment recording stops.
             if (collectRunner != null && collectRunner.LastReport != null &&
@@ -469,7 +496,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             if (collectRunner == null)
                 collectRunner = new GameObject("[PerformanceBenchmarkRunner]").AddComponent<PerformanceBenchmarkRunner>();
 
-            SpikeAnalyzer.SetProfilerEnabled(true);
+            // Only force the Profiler on when we actually want spike breakdowns — it adds
+            // overhead. In low-overhead mode we record frame time / fps / stability only.
+            if (captureSpikeBreakdowns)
+                SpikeAnalyzer.SetProfilerEnabled(true);
             ClearRecent();                 // discard any previous unsaved run + its cache
             collectRunner.Configure(config, null, gameData, hintRules);
             collectRunner.AutoSave = false;
