@@ -177,6 +177,149 @@ re-trigger, pair init), `Scoreboard.cs:307,315` (uses `RoundStats.Name`).
 
 ---
 
+## B8 — Host-side phantom-rejoin loop after client leaves party (stale `joined_party` presence property) 🔴
+
+**Symptom (observed in MPPM Session 1, Phase A.1, 2026-06-01).** On a
+2-VP MPPM run: VP-B (Ys2) accepts VP-A's (Ys1) invite, joins the party,
+flies in the lava-lamp, then presses Leave. The client (VP-B) leaves
+cleanly and returns to its own solo Menu_Main. **On the host (VP-A)
+the following log cycle repeats indefinitely at refresh-tick cadence
+(~3 s):**
+
+```
+[SoapPartyEventBus] RaisePartyMemberLeft → Ys2 (<id>)
+[PartyMemberService] Member left: Ys2 (<id>)
+[SoapPartyEventBus] RaisePartyMemberJoined → Ys2 (<id>)
+[INVITE-SEND] Presence scan detected joined member 'Ys2' (<id>)
+[LobbyPropertyWriter] Save failed (SessionException: Index was out of range ...) — retry 1/3 in 2000ms
+[SoapPartyEventBus] RaisePartyMemberJoined → Ys2 (<id>)
+[INVITE-SEND] Presence scan detected joined member 'Ys2' (<id>)
+```
+
+UI manifestation on host: Ys2's profile icon appears in the `+` party
+slot, disappears, reappears — flickering forever. UI on client: no log
+spam, no icon flicker, no host's profile in their `+` slot (client is
+fully disengaged).
+
+**Root cause (code paths verified, hypothesis level: high).** The
+`joined_party` presence-lobby property on the client is not reliably
+cleared when the client leaves the party. The host's
+`HostConnectionService.ScanPresenceForJoinedPartyMembers`
+(`HCS:1303-1333`) reads each presence-lobby player's `JOINED_PARTY_KEY`
+property; if it matches the host's current party session ID and the
+player is not yet in `PartyMembers`, it adds them and raises
+`OnPartyMemberJoined`. Meanwhile `PartyMemberService.SyncFromSession`
+(`PartyMemberService.cs:106-146`) iterates the *party* session's
+players and removes anyone from `PartyMembers` who is no longer in the
+session. **The two scans disagree, every tick, forever:**
+
+1. `SyncFromSession` removes Ys2 (correctly — they really did leave the
+   party session) → `RaisePartyMemberLeft`.
+2. `ScanPresenceForJoinedPartyMembers` then sees Ys2 in the presence
+   lobby with `joined_party == hostSessionId` and re-adds them →
+   `RaisePartyMemberJoined`.
+3. Next refresh tick, repeat.
+
+**Why is `joined_party` stale?** The client's leave path
+(`HostConnectionService.LeavePartyAsync` at `HCS:684-708`) is:
+```csharp
+ClearJoinedPartyAsync().Forget();
+await controller.LeavePartyAndReturnToMenuAsync();
+```
+`ClearJoinedPartyAsync` (`HCS:1595-1604`) is a `UniTaskVoid`
+fire-and-forget that calls
+`_propertyWriter.WriteAsync(... SetProperty(JOINED_PARTY_KEY, ""))`.
+**Three suspected contributors** (any one is sufficient):
+
+- **a) Race with leave teardown.** The fire-and-forget property write
+  is launched, then `LeavePartyAndReturnToMenuAsync` immediately begins
+  Netcode shutdown + session leave + scene reload. The write may not
+  reach the server before the lobby reference is disrupted.
+- **b) `LobbyPropertyWriter` retry exhausts on B1 stale-index churn.**
+  `SaveWithRetryAsync` filters on "Too Many Requests" / "Index was out
+  of range" and retries 3× with 2 s backoff. The cycle logs *include*
+  a `Save failed (Index was out of range)` retry — confirming the
+  write path is hitting B1. If three retries fail, the exception
+  propagates *out* of the fire-and-forget (where it's logged but
+  cannot be acted on by the now-departed leave flow).
+- **c) Host cache not refreshing the cleared property.** Even if the
+  client's write succeeds server-side, the host's
+  `_lobbyService.ActiveLobby` cache must refresh to see the update. If
+  the host's refresh is hitting B1/B6 read-path churn (now silenced by
+  `IsBenignSdkStaleIndexError` — silenced *but still failing* on the
+  inside), the cached lobby data may stay stale indefinitely.
+
+**Functional impact.**
+- Host UI flickers: `+` slot shows/hides Ys2 every ~3 s.
+- Cascading B1 write retries (`partyCount` / `partyMax` updates after
+  the phantom join trigger the SDK stale-index churn on the write
+  path).
+- Console spam — every cycle adds ~7 lines on the host. The
+  user-facing `RaisePartyMemberJoined` / `RaisePartyMemberLeft` SOAP
+  events fire indefinitely, which any listener (UI badges, audio cues,
+  notifications) will react to forever.
+- **Not crashing, not blocking other testing**, but the host's view of
+  party membership is fundamentally unreliable after any party leave.
+
+**Reproduction.** 2-VP MPPM. VP-A invites VP-B → VP-B accepts → VP-B
+leaves. Observe VP-A's console: the cycle starts within one refresh
+tick of the leave and continues until something resets the host's
+presence lobby (returning to authentication, restarting Play, etc.).
+
+**Evidence (file:line).**
+- Cycle producers:
+  - `HostConnectionService.cs:1303-1333` — `ScanPresenceForJoinedPartyMembers`
+    (re-adds based on stale `JOINED_PARTY_KEY`).
+  - `PartyMemberService.cs:106-146` — `SyncFromSession` (removes based
+    on authoritative party session).
+- The clear path that should have prevented this:
+  - `HostConnectionService.cs:705` — `ClearJoinedPartyAsync().Forget()`
+    in `LeavePartyAsync`.
+  - `HostConnectionService.cs:1595-1604` — `ClearJoinedPartyAsync`
+    implementation (fire-and-forget property write).
+- The write path that retries on B1:
+  - `LobbyPropertyWriter.cs:158-181` — `when ("Index was out of range")`
+    retry filter.
+- Property semantics:
+  - `HostConnectionService.cs:653` — `PublishJoinedPartyAsync(realSessionId)`
+    called on accept.
+  - `HostConnectionService.cs:1310-1316` — read predicate
+    (`joinedProp.Value == sessionId`).
+
+**Fix paths under consideration (no commit yet — discussion stage).**
+
+1. **Defensive host scan (preferred — simplest, most robust).** In
+   `ScanPresenceForJoinedPartyMembers`, before raising
+   `OnPartyMemberJoined`, cross-check that `p.Id` is also present in
+   `_partySessionService.ActiveSession.Players`. If not in both, skip.
+   The party session is the authoritative source of truth for party
+   membership; the presence lobby is a discovery signal that should
+   never override the session. Pro: 2-3 lines, no race window, no
+   timing dependency, robust against any presence-property staleness
+   regardless of cause. Con: leaves the stale property in lobby data
+   (cosmetically wrong but functionally irrelevant once the host stops
+   trusting it).
+2. **Await `ClearJoinedPartyAsync` in `LeavePartyAsync`.** Change the
+   `Forget()` to `await` and change the return type to `UniTask`. Pro:
+   guarantees the property write completes before leave teardown
+   begins. Con: introduces a leave-time delay (the write + refresh is
+   1-3 s in good conditions); blocks the leave if the write fails on
+   B1 (current behavior is "leave anyway"); doesn't help if the host
+   cache fails to refresh.
+3. **Both 1 + 2.** Belt + suspenders. Cost: small.
+4. **Host raises a leave from the party session as the authoritative
+   trigger.** Already does this via the `PlayerLeaving` event (Commit
+   17). This is the path that fires `SyncFromSession` removal. The
+   bug is that the *scanner* keeps adding back. So fix 4 is "rely on
+   the PlayerLeaving event and disable the presence-scan add-back for
+   any player who recently raised PlayerLeaving" — but this requires
+   adding event-history bookkeeping. More complex than 1.
+
+**Status.** 🔴 Open — analysis complete, fix not yet implemented.
+Awaiting user decision on fix path before any code change.
+
+---
+
 ## How we work bugs
 
 - One bug at a time, in priority order (B2 → B5 → B3 → B7).

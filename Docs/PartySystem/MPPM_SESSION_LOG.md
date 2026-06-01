@@ -307,8 +307,36 @@ should be fully clean and Phase A is ready to run for real.
 
 | Test | Status | NetDiag observed | Notes |
 |---|---|---|---|
-| A.1 — Test E happy path | _ready to run_ | _tbd_ | Baseline = ongoing B1/B6 Transient churn; look for NEW classes only |
+| A.1 — Test E happy path | **functional pass + new bug B8 surfaced** | `class=Transient` (one-shot boot retry, recovered); `class=Unknown` (1×, on Leave — ObjectDisposedException at SDK teardown, ignored per user — they Stop-ed Play mid-session) | Invite → Accept → fly → Leave cycle functionally complete. **Bug B8 discovered:** host-side phantom-rejoin loop after client leaves — see `BUGS.md` B8 for full diagnosis. Not blocking further testing. |
 | A.2 — Test C user-cancel | _ready to run_ | _tbd_ | |
+
+### Phase A.1 — Detailed findings
+
+**Functional outcome.** Invite/Accept/Leave cycle worked. Host saw
+client's vessel, both could fly, client successfully left and returned
+to solo Menu_Main.
+
+**Diagnostic findings.**
+1. **`class=Transient`** at boot — known lobby-events 23006 retry,
+   recovered. Now at info level via `19a380d`.
+2. **`class=Unknown`** at leave — `ObjectDisposedException` from SDK
+   Wire subscription teardown. User noted this was caused by stopping
+   Play mid-session (manual stop interrupted leave teardown ordering).
+   Ignore as test-environment artifact. **Action item carried forward:
+   extend `NetworkDiagnostics.ClassifyException` to recognise
+   `ObjectDisposedException` → `Disposed` (NetworkDiagnostics/TODOS.md
+   TODO-6).**
+3. **🔴 New bug surfaced: B8 — host-side phantom-rejoin loop after
+   client leaves party.** Stale `joined_party` presence-lobby property
+   on the client causes host's `ScanPresenceForJoinedPartyMembers` to
+   re-add the departed client every refresh tick. Documented in
+   `BUGS.md` B8 with three contributory hypotheses (fire-and-forget
+   race, B1 write-retry exhaust, host-cache staleness) and four fix
+   paths. **No code change yet — awaiting user decision on fix
+   approach.**
+
+B8 takes priority over advancing to Phase A.2 — it's a real
+party-flow regression that affects every leave, not just Phase A.
 
 ### Phase B — Party smoke gate
 
