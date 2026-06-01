@@ -8,9 +8,12 @@ namespace CosmicShore.Gameplay
 {
     public class ElementalCrystalImpactor : CrystalImpactor
     {
-        SkimmerCrystalEffectSO[] elementalCrystalShipEffects;
+        [Header("Collection Effects")]
+        [Tooltip("Effects granted to the skimming vessel when this crystal is collected " +
+                 "(e.g. element level powerup scaled by crystal size).")]
+        [SerializeField] SkimmerCrystalEffectSO[] elementalCrystalShipEffects;
 
-        [Header("Space Collect: move-to-vessel")] 
+        [Header("Space Collect: move-to-vessel")]
         [SerializeField] float moveToVesselDuration = 3f;
         [SerializeField] bool easeMoveToVessel = true;
 
@@ -40,7 +43,6 @@ namespace CosmicShore.Gameplay
 
             if (DoesEffectExist(elementalCrystalShipEffects))
             {
-                var data = CrystalImpactData.FromCrystal(Crystal);
                 foreach (var effect in elementalCrystalShipEffects)
                     effect.Execute(skimmerImpactor, this);
             }
