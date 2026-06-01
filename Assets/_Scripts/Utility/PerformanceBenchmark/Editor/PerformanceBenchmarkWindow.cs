@@ -106,7 +106,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         void DrawTabs()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            DrawTabButton(Tab.Collect, "Collect");
+            DrawTabButton(Tab.Collect, "Runtime Capture");
             DrawTabButton(Tab.Sweep, "Sweep");
             DrawTabButton(Tab.History, $"History ({historyEntries.Count})");
             DrawTabButton(Tab.Compare, "Compare");
@@ -178,34 +178,36 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             }
 
             EditorGUILayout.Space(8);
-            EditorUIStyles.SectionHeader("Run", EditorUIStyles.Mint);
+            EditorUIStyles.SectionHeader("Capture", EditorUIStyles.Mint);
 
             bool running = collectRunner != null && collectRunner.IsRunning;
             if (running)
             {
-                string phase = collectRunner.IsWarmingUp ? "Warming up" : "Sampling";
-                var rect = EditorGUILayout.GetControlRect(false, 22);
-                EditorGUI.ProgressBar(rect, collectRunner.Progress, $"{phase}…  {collectRunner.Progress * 100:F0}%   ({collectRunner.FramesCaptured} frames)");
-                EditorGUILayout.Space(2);
-                if (GUILayout.Button("Stop Early")) collectRunner.StopBenchmark();
+                DrawRecordingStatus();
             }
             else if (!Application.isPlaying)
             {
                 EditorGUILayout.HelpBox(
-                    "Start will enter Play Mode " +
-                    (bootFromBootstrap ? "via Bootstrap (game initializes; capture begins at boot)" : "with the chosen scene loaded directly") +
-                    ", then capture automatically. Open Unity's Profiler (Window > Analysis > Profiler) for the matching timeline.",
+                    "Free-play recording happens in Play Mode: press Enter Play Mode, then ● Start Recording, play, " +
+                    "and ■ Stop & Analyze. Or run a fixed-length capture of the chosen scene (the old Collect behaviour).",
                     MessageType.Info);
                 var prev = GUI.backgroundColor;
                 GUI.backgroundColor = EditorUIStyles.Mint;
-                if (GUILayout.Button("▶  Start Capture (enter Play)", GUILayout.Height(32)))
-                    StartCaptureViaPlay();
+                if (GUILayout.Button("▶  Enter Play Mode", GUILayout.Height(30)))
+                    EditorApplication.isPlaying = true;
                 GUI.backgroundColor = prev;
+                if (GUILayout.Button($"Run Fixed {config.SampleDuration:F0}s Capture (enter Play)"))
+                    StartCaptureViaPlay();
             }
             else
             {
-                EditorGUILayout.HelpBox("Already in Play Mode. Capture the scene that's running right now:", MessageType.None);
-                if (GUILayout.Button("●  Capture Current Scene Now", GUILayout.Height(28)))
+                EditorGUILayout.HelpBox("In Play Mode — record free play (start/stop yourself), or run a fixed-length capture of the current scene.", MessageType.None);
+                var prev = GUI.backgroundColor;
+                GUI.backgroundColor = EditorUIStyles.Mint;
+                if (GUILayout.Button("●  Start Recording (free play)", GUILayout.Height(30)))
+                    StartFreeFormInCurrentPlay();
+                GUI.backgroundColor = prev;
+                if (GUILayout.Button($"Run Fixed {config.SampleDuration:F0}s Capture of Current Scene"))
                     StartCaptureInCurrentPlay();
             }
 
@@ -223,11 +225,163 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             // Results (persisted — shows even after Play Mode is stopped)
             var report = collectReport;
             if (report?.statistics != null && report.statistics.totalFrames > 0)
+            {
+                DrawCopyForClaude(report);
                 DrawResults(report);
+            }
             else if (report?.statistics != null)
                 EditorGUILayout.HelpBox("No data captured (the run was too short or interrupted).", MessageType.Warning);
 
             EditorGUILayout.EndScrollView();
+        }
+
+        // ── Runtime Capture: live recording + Copy-for-Claude ───────────────
+
+        void DrawRecordingStatus()
+        {
+            int spikeCount = collectRunner.Spikes?.Count ?? 0;
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            if (collectRunner.IsFreeForm)
+            {
+                EditorGUILayout.LabelField(
+                    $"● Recording (free play) — {collectRunner.FramesCaptured} frames · {spikeCount} spikes",
+                    EditorStyles.boldLabel);
+            }
+            else
+            {
+                string phase = collectRunner.IsWarmingUp ? "Warming up" : "Sampling";
+                var rect = EditorGUILayout.GetControlRect(false, 20);
+                EditorGUI.ProgressBar(rect, collectRunner.Progress,
+                    $"{phase}…  {collectRunner.Progress * 100:F0}%   ({collectRunner.FramesCaptured} frames · {spikeCount} spikes)");
+            }
+            EditorGUILayout.EndVertical();
+
+            var prev = GUI.backgroundColor;
+            GUI.backgroundColor = EditorUIStyles.Rose;
+            if (GUILayout.Button(collectRunner.IsFreeForm ? "■  Stop & Analyze" : "Stop Early", GUILayout.Height(26)))
+                collectRunner.StopBenchmark();
+            GUI.backgroundColor = prev;
+
+            DrawLiveSpikes(collectRunner.Spikes);
+        }
+
+        void DrawLiveSpikes(IReadOnlyList<SpikeEntry> liveSpikes)
+        {
+            int count = liveSpikes?.Count ?? 0;
+            if (count == 0)
+            {
+                EditorGUILayout.HelpBox("No spikes yet — keep playing. Any frame over the spike threshold gets its script breakdown captured here.", MessageType.None);
+                return;
+            }
+
+            EditorGUILayout.Space(4);
+            EditorUIStyles.SectionHeader($"Live Spikes ({count})", EditorUIStyles.Rose);
+
+            if (GUILayout.Button("📋  Copy spikes for Claude"))
+            {
+                EditorGUIUtility.systemCopyBuffer = BuildClaudeSpikesText(
+                    collectReport?.sceneName ?? "(recording)", collectRunner != null ? collectRunner.FramesCaptured : 0, liveSpikes);
+                ShowNotification(new GUIContent("Spikes copied — paste to Claude"));
+            }
+
+            // Newest first, worst-first within the most recent few.
+            int show = Mathf.Min(8, count);
+            for (int i = count - 1; i >= 0 && i >= count - show; i--)
+                DrawSpikeRow(liveSpikes[i]);
+        }
+
+        void DrawSpikeRow(SpikeEntry spike)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            string cpuGpu = (spike.cpuFrameTimeMs > 0.001f || spike.gpuFrameTimeMs > 0.001f)
+                ? $"  (CPU {spike.cpuFrameTimeMs:F1} / GPU {spike.gpuFrameTimeMs:F1})" : "";
+            EditorGUILayout.LabelField($"Frame {spike.frameIndex}: {spike.frameTimeMs:F1} ms{cpuGpu}", EditorStyles.boldLabel);
+            if (spike.topMarkers != null && spike.topMarkers.Count > 0)
+            {
+                foreach (var m in spike.topMarkers)
+                    EditorGUILayout.LabelField($"   {(m.isScript ? "▸" : "·")} {m.name} — {m.ms:F2} ms", EditorStyles.miniLabel);
+            }
+            else
+            {
+                EditorGUILayout.LabelField("   (no marker data — is the Profiler enabled?)", EditorStyles.miniLabel);
+            }
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(2);
+        }
+
+        void DrawCopyForClaude(BenchmarkReport report)
+        {
+            var prev = GUI.backgroundColor;
+            GUI.backgroundColor = EditorUIStyles.Lavender;
+            if (GUILayout.Button("📋  Copy report for Claude (stats + script spikes)", GUILayout.Height(24)))
+            {
+                EditorGUIUtility.systemCopyBuffer = BuildClaudeReportText(report);
+                ShowNotification(new GUIContent("Report copied — paste to Claude"));
+            }
+            GUI.backgroundColor = prev;
+        }
+
+        static string BuildClaudeSpikesText(string scene, int frames, IReadOnlyList<SpikeEntry> spikes)
+        {
+            var sb = new System.Text.StringBuilder(1024);
+            sb.AppendLine($"Cosmic Shore spike capture — {scene}  ({frames} frames)");
+            sb.AppendLine("Top spikes (self-time; editor noise filtered, ▸ = script):");
+            foreach (var s in spikes.OrderByDescending(x => x.frameTimeMs).Take(12))
+                AppendSpike(sb, s);
+            return sb.ToString();
+        }
+
+        static string BuildClaudeReportText(BenchmarkReport report)
+        {
+            var s = report.statistics;
+            var sb = new System.Text.StringBuilder(2048);
+            sb.AppendLine($"Cosmic Shore perf capture — {report.sceneName}");
+            if (s != null)
+            {
+                sb.AppendLine($"frames {s.totalFrames} · {s.durationSeconds:F0}s · avg {s.avgFps:F1} fps (worst1% {s.p1Fps:F1})");
+                sb.AppendLine($"frame ms: avg {s.avgFrameTimeMs:F1} · p95 {s.p95FrameTimeMs:F1} · p99 {s.p99FrameTimeMs:F1} · max {s.maxFrameTimeMs:F1} · stddev {s.stdDevFrameTimeMs:F1}");
+                if (s.avgCpuFrameTimeMs > 0.001f || s.avgGpuFrameTimeMs > 0.001f)
+                    sb.AppendLine($"CPU {s.avgCpuFrameTimeMs:F1} / GPU {s.avgGpuFrameTimeMs:F1} ms ({report.analysis?.boundVerdict})");
+                sb.AppendLine($"draws {s.avgDrawCalls:F0} · tris {s.avgTriangles:F0} · GC {(s.totalFrames > 0 ? (s.totalGcAllocated / (float)s.totalFrames) / 1024f : 0):F1} KB/frame");
+            }
+            var spikes = report.spikes;
+            if (spikes != null && spikes.Count > 0)
+            {
+                sb.AppendLine("Top spikes (self-time; editor noise filtered, ▸ = script):");
+                foreach (var sp in spikes.OrderByDescending(x => x.frameTimeMs).Take(12))
+                    AppendSpike(sb, sp);
+            }
+            var hints = report.analysis?.hints;
+            if (hints != null && hints.Count > 0)
+            {
+                sb.AppendLine("Hints:");
+                foreach (var h in hints.OrderByDescending(x => (int)x.severity))
+                    sb.AppendLine($"  [{h.severity}] {h.title} — {h.finding}");
+            }
+            return sb.ToString();
+        }
+
+        static void AppendSpike(System.Text.StringBuilder sb, SpikeEntry s)
+        {
+            string cpuGpu = (s.cpuFrameTimeMs > 0.001f || s.gpuFrameTimeMs > 0.001f)
+                ? $" (CPU {s.cpuFrameTimeMs:F1}/GPU {s.gpuFrameTimeMs:F1})" : "";
+            sb.AppendLine($"  frame {s.frameIndex}: {s.frameTimeMs:F1} ms{cpuGpu}");
+            if (s.topMarkers != null)
+                foreach (var m in s.topMarkers)
+                    sb.AppendLine($"      {(m.isScript ? "▸" : "·")} {m.name}  {m.ms:F2} ms");
+        }
+
+        void StartFreeFormInCurrentPlay()
+        {
+            collectRunner = FindFirstObjectByType<PerformanceBenchmarkRunner>();
+            if (collectRunner == null)
+                collectRunner = new GameObject("[PerformanceBenchmarkRunner]").AddComponent<PerformanceBenchmarkRunner>();
+
+            SpikeAnalyzer.SetProfilerEnabled(true);
+            ResetCollectDisplay();
+            collectRunner.Configure(config, null, gameData, hintRules);
+            collectRunner.AutoSave = false;
+            collectRunner.StartBenchmark(true); // free-form: record until Stop
         }
 
         void CacheCollectReport(BenchmarkReport report)
