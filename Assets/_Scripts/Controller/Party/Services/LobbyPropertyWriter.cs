@@ -162,7 +162,16 @@ namespace CosmicShore.Gameplay
                     // UGS rate-limits property writes to ~1/s per client.
                     // Back off exponentially so a burst of rapid retries doesn't
                     // consume the entire rate-limit budget.
-                    Debug.LogWarning(
+                    //
+                    // CSDebug.Log (info-level, release-stripped + runtime-muteable):
+                    // "Index was out of range" is the SDK stale-index defect (same
+                    // family as B1/B6 in Docs/PresenceSystem/BUGS.md), an SDK bug
+                    // we already classify as known-transient and retry. The "retry
+                    // X/3" message is diagnostic chatter, not a real failure
+                    // signal — final state is correct if any retry succeeds, and
+                    // a sustained failure propagates to the outer caller via the
+                    // `when` filter expiring at attempt == maxRetries.
+                    CSDebug.Log(
                         $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) — retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
                     await UniTask.Delay(baseDelayMs);
                     try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort */ }

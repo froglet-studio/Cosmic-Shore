@@ -1062,6 +1062,11 @@ namespace CosmicShore.Gameplay
                 {
                     // intentional: no log, no counter increment, no state change
                 }
+                else if (IsBenignSdkStaleIndexNre(e))
+                {
+                    // Same SDK stale-index defect, read-path surface. Silence to
+                    // match the IsBenignLobbyPatcherError treatment above.
+                }
                 else if (IsRateLimitException(e))
                 {
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
@@ -1350,6 +1355,14 @@ namespace CosmicShore.Gameplay
                 // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException —
                 // known harmless SDK noise, self-corrects on the next tick.
                 if (IsBenignLobbyPatcherError(e))
+                    return;
+
+                // [benign] WrappedLobbyService NRE on lobby refresh — same SDK
+                // stale-index family as the LobbyPatcher case above, surfacing on
+                // the read path. Same recovery (retry next tick); silence to match.
+                // See Docs/PresenceSystem/BUGS.md B6 + Docs/PartySystem/MPPM_SESSION_LOG.md
+                // Session 1 finding #2.
+                if (IsBenignSdkStaleIndexNre(e))
                     return;
 
                 // [rate-limit] UGS throttled us — back off, keep ActiveSession.
@@ -1912,6 +1925,36 @@ namespace CosmicShore.Gameplay
             {
                 if (current is ArgumentOutOfRangeException
                     && (current.StackTrace?.Contains("LobbyPatcher") ?? false))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Detects the harmless <c>SessionException</c> ("Object reference not set
+        /// to an instance of an object") the UGS SDK throws from
+        /// <c>WrappedLobbyService.GetLobbyAsync</c> when a lobby read
+        /// deserialises against a stale local cache. Same SDK stale-index defect
+        /// as <see cref="IsBenignLobbyPatcherError"/>, just surfacing on the read
+        /// path instead of the WebSocket-delta path. The HTTP GET succeeds; the
+        /// SDK NREs while parsing the response. Self-corrects on the next
+        /// refresh tick once the cache reconciles.
+        /// See <c>Docs/PresenceSystem/BUGS.md</c> B1 (write/delta-path symptoms)
+        /// and B6 (read-path symptom) for the full SDK-defect characterization,
+        /// and <c>Docs/PartySystem/MPPM_SESSION_LOG.md</c> Session 1 finding #2
+        /// for the discovery + decision to silence at the catch.
+        /// </summary>
+        private static bool IsBenignSdkStaleIndexNre(Exception e)
+        {
+            for (var current = e; current != null; current = current.InnerException)
+            {
+                // Match: NRE-message AND stack passes through SDK's WrappedLobbyService.
+                // Both required — message alone could come from elsewhere; stack alone
+                // could be a different SDK issue we DO want to see.
+                bool hasNreMessage = current.Message != null
+                    && current.Message.IndexOf("Object reference not set", StringComparison.Ordinal) >= 0;
+                bool stackInSdkLobby = current.StackTrace?.Contains("WrappedLobbyService") ?? false;
+                if (hasNreMessage && stackInSdkLobby)
                     return true;
             }
             return false;

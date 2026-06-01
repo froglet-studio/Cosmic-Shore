@@ -112,15 +112,42 @@ instead of the WebSocket-delta surface. `BenignLobbyLogFilter` matches
 only the `LobbyPatcher` + `ArgumentOutOfRangeException` signature, so
 neither of these is suppressed.
 
-**Proposed fix extension (deferred — needs design sign-off).** Either
-(a) broaden `BenignLobbyLogFilter` to also drop the
-`WrappedLobbyService.GetLobbyAsync` NRE and the `LobbyPropertyWriter`
-"Index was out of range" `SessionException`, or (b) make the
-`HostConnectionService.cs:1346` + `LobbyPropertyWriter` catches treat
-this specific signature as benign-silent rather than Transient-logged.
-Prefer (a) for consistency with the existing B1 filter; whichever, keep
-it `#if UNITY_EDITOR || DEVELOPMENT_BUILD` gated. See
-`../PartySystem/MPPM_SESSION_LOG.md` Session 1, Pre-flight finding #2.
+**Fix applied (option b — silence at the catch).** Chosen because the
+catches were the closer fit: `LobbyPropertyWriter.SaveWithRetryAsync`
+already explicitly filters to "Index was out of range" / "Too Many
+Requests" via a `when` clause, so demoting the warning there is
+surgical; and `HostConnectionService`'s two refresh catches already had
+a `IsBenignLobbyPatcherError` discriminator branch, so adding a sibling
+`IsBenignSdkStaleIndexNre` follows the existing pattern.
+
+- **`LobbyPropertyWriter.cs:166`** — `Debug.LogWarning` → `CSDebug.Log`.
+  The "Save failed (… Index was out of range …) — retry X/3" message
+  now strips from release builds and respects runtime mute. Outer
+  catch-on-exhaust path unchanged.
+- **`HostConnectionService.cs` new method `IsBenignSdkStaleIndexNre`**
+  — matches `SessionException` ("Object reference not set …") whose
+  stack passes through `WrappedLobbyService`. Both required — message
+  alone could come from elsewhere; stack alone could be a different SDK
+  issue we DO want to see. Consumed at two catch sites:
+  - `HCS:1069` outer presence-lobby refresh catch: silence as a sibling
+    of `IsBenignLobbyPatcherError` (no log, no counter increment, no
+    state change).
+  - `HCS:1346` party-session refresh catch: silence as a sibling of
+    `IsBenignLobbyPatcherError` (early return).
+
+Option (a) — broadening `BenignLobbyLogFilter` — was rejected:
+`BenignLobbyLogFilter` exists for SDK-emitted logs that fire before
+our catch can run (`LobbyChannel.HandleLobbyChanges` etc.). The two new
+signatures both go through our own `Debug.LogWarning` calls inside our
+catches, where we have full control without needing to hook the global
+log handler.
+
+Discriminator behaves gracefully in IL2CPP if stack info is unavailable
+(returns `false` → exception falls through to existing transient log
+path; we just see the warning again).
+
+See `../PartySystem/MPPM_SESSION_LOG.md` Session 1, Pre-flight finding #2
+for the discovery context.
 
 ---
 

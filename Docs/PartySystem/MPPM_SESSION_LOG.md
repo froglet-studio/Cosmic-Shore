@@ -217,13 +217,21 @@ churn every ~3 s" so happy-path deltas are still readable (look for NEW
 classes — Offline / SessionGone / Timeout — not the steady Transient
 hum).
 
-**Follow-up bug work (deferred — not this session):** B1's
-`BenignLobbyLogFilter` should be extended to also suppress the
-`WrappedLobbyService.GetLobbyAsync` NRE and the `LobbyPropertyWriter`
-"Index was out of range" `SessionException`, OR the HCS:1346 +
-LobbyPropertyWriter catches should treat this specific SDK signature as
-benign (silent) rather than Transient (logged). Filed against B1/B6 in
-`Docs/PresenceSystem/BUGS.md`.
+**Follow-up bug work — DONE in this session.** Chose option (b) —
+silence at the catch. New `IsBenignSdkStaleIndexNre` discriminator in
+`HostConnectionService` matches `SessionException` ("Object reference
+not set …") whose stack passes through `WrappedLobbyService`; consumed
+as a silent-return branch at both HCS:1069 and HCS:1346, sibling to the
+existing `IsBenignLobbyPatcherError`. `LobbyPropertyWriter.cs:166`
+"Save failed (… Index was out of range …) — retry X/3" demoted from
+`Debug.LogWarning` to `CSDebug.Log` (release-stripped + runtime-mute,
+matching the rest of the diagnostic chatter policy). See
+`Docs/PresenceSystem/BUGS.md` B1 "Fix applied (option b)" for the full
+rationale.
+
+After Editor restart, the every-3s NRE warning + the three save-retry
+warnings should be gone. Phase A baseline becomes truly clean (no
+ongoing B1/B6 churn in console).
 
 ### Phase A — Overlay validation
 
