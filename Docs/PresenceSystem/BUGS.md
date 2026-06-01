@@ -125,10 +125,19 @@ a `IsBenignLobbyPatcherError` discriminator branch, so adding a sibling
   now strips from release builds and respects runtime mute. Outer
   catch-on-exhaust path unchanged.
 - **`HostConnectionService.cs` new method `IsBenignSdkStaleIndexNre`**
-  — matches `SessionException` ("Object reference not set …") whose
-  stack passes through `WrappedLobbyService`. Both required — message
-  alone could come from elsewhere; stack alone could be a different SDK
-  issue we DO want to see. Consumed at two catch sites:
+  — matches a `SessionException` whose message contains "Object
+  reference not set". **Type + message only — NOT stack.** A first
+  attempt matched on `StackTrace.Contains("WrappedLobbyService")` AND
+  the message, but that silently failed in MPPM: `Exception.StackTrace`
+  is unreliable after the NRE crosses several async `SetException`
+  boundaries (UniTask + Task continuations) before our catch — the
+  stack shown in the Unity console is Unity's *captured* stack, not the
+  exception object's own `.StackTrace` string (often null/truncated
+  post-propagation). Type + message is unambiguous and stack-independent:
+  our code never throws `SessionException`, and no legitimate
+  `SessionException` carries an NRE message (real ones carry
+  `SessionError` reasons like `NotFound` / `RateLimited`). Consumed at
+  two catch sites:
   - `HCS:1069` outer presence-lobby refresh catch: silence as a sibling
     of `IsBenignLobbyPatcherError` (no log, no counter increment, no
     state change).

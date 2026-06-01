@@ -1948,13 +1948,22 @@ namespace CosmicShore.Gameplay
         {
             for (var current = e; current != null; current = current.InnerException)
             {
-                // Match: NRE-message AND stack passes through SDK's WrappedLobbyService.
-                // Both required — message alone could come from elsewhere; stack alone
-                // could be a different SDK issue we DO want to see.
-                bool hasNreMessage = current.Message != null
-                    && current.Message.IndexOf("Object reference not set", StringComparison.Ordinal) >= 0;
-                bool stackInSdkLobby = current.StackTrace?.Contains("WrappedLobbyService") ?? false;
-                if (hasNreMessage && stackInSdkLobby)
+                // Match on TYPE + MESSAGE, not stack. Exception.StackTrace is
+                // unreliable here — the NRE crosses several async SetException
+                // boundaries (UniTask + Task continuations) before our catch, and
+                // the call stack shown in the Unity console is Unity's captured
+                // stack, NOT this exception object's .StackTrace string (which is
+                // often null/truncated post-propagation). An earlier stack-substring
+                // match silently failed for exactly this reason.
+                //
+                // A SessionException carrying an NRE message is unambiguous: our
+                // code never throws SessionException, and no legitimate
+                // SessionException says "Object reference not set" (real ones carry
+                // SessionError reasons like NotFound / RateLimited). So type +
+                // message is both sufficient and safe.
+                if (current is SessionException
+                    && current.Message != null
+                    && current.Message.IndexOf("Object reference not set", StringComparison.Ordinal) >= 0)
                     return true;
             }
             return false;
