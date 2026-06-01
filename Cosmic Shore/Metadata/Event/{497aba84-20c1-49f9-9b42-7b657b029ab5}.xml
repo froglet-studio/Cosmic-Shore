@@ -2,13 +2,13 @@
 <objects serializationModel="Studio.02.02.00">
 	<object class="Event" id="{497aba84-20c1-49f9-9b42-7b657b029ab5}">
 		<property name="name">
-			<value>Crystal_Collision_Amplified</value>
+			<value>Block Destroy Clip</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>
 		</property>
 		<relationship name="folder">
-			<destination>{973179a4-8803-4e6c-8ca6-89d010ec9ca1}</destination>
+			<destination>{2bbab971-3f3e-4f99-a6e0-584fa1d58d64}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{fd0c47ef-df60-4c42-a072-6be1d87138a3}</destination>
@@ -56,7 +56,17 @@
 			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
 		</relationship>
 	</object>
-	<object class="EventAutomatableProperties" id="{67d61f8f-d786-4849-af23-01b6aa730d80}" />
+	<object class="EventAutomatableProperties" id="{67d61f8f-d786-4849-af23-01b6aa730d80}">
+		<property name="maxVoices">
+			<value>16</value>
+		</property>
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>3200</value>
+		</property>
+	</object>
 	<object class="MarkerTrack" id="{0f4d0d82-5d24-4dbe-9244-817705f8ec71}" />
 	<object class="GroupTrack" id="{489034e6-dacf-4751-baf1-1a659b6f3137}">
 		<relationship name="modules">
@@ -106,9 +116,6 @@
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{c4cdccec-106c-464e-a099-9c1027473c9d}">
-		<property name="volume">
-			<value>-19</value>
-		</property>
 		<property name="name">
 			<value>Audio 1</value>
 		</property>
@@ -129,14 +136,18 @@
 			<destination>{8b00c895-77f4-4e03-88a1-ca45d661399c}</destination>
 		</relationship>
 	</object>
-	<object class="MixerBusPanner" id="{78927066-7414-4eb3-acfe-80c2ee67ed57}" />
+	<object class="MixerBusPanner" id="{78927066-7414-4eb3-acfe-80c2ee67ed57}">
+		<property name="surroundLFELevel">
+			<value>-7.5</value>
+		</property>
+	</object>
 	<object class="MixerBusFader" id="{a06d938f-b314-4671-9372-702c98523bdd}" />
 	<object class="RandomizerModulator" id="{bd9d77b3-d39c-4939-a11a-680a1a82f822}">
 		<property name="nameOfPropertyBeingModulated">
 			<value>pitch</value>
 		</property>
 		<property name="amount">
-			<value>14</value>
+			<value>11.5</value>
 		</property>
 	</object>
 	<object class="FadeCurve" id="{c1c95016-c1f5-479f-a151-8a6c75b97184}">
@@ -156,7 +167,35 @@
 	</object>
 	<object class="MixerBusPanner" id="{3a6f9667-fcfb-47fa-a6aa-59b5bd65a1eb}" />
 	<object class="MixerBusFader" id="{7ec1a05e-ee15-4c72-858a-c590ca1ac55c}" />
-	<object class="SpatialiserEffect" id="{0b906957-34c0-4190-8a0c-612e1860a651}" />
+	<object class="SpatialiserEffect" id="{0b906957-34c0-4190-8a0c-612e1860a651}">
+		<property name="distanceRolloffType">
+			<value>1</value>
+		</property>
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>3200</value>
+		</property>
+		<property name="extentMode">
+			<value>1</value>
+		</property>
+		<property name="soundSize">
+			<value>10000</value>
+		</property>
+		<property name="minimumExtent">
+			<value>360</value>
+		</property>
+		<property name="panBlend">
+			<value>0</value>
+		</property>
+		<property name="userStereoSeparation">
+			<value>-180</value>
+		</property>
+		<property name="userStereoAxis">
+			<value>-173.814697</value>
+		</property>
+	</object>
 	<object class="PitchShifterEffect" id="{8b00c895-77f4-4e03-88a1-ca45d661399c}">
 		<property name="pitch">
 			<value>1</value>

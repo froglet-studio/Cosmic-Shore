@@ -1341,15 +1341,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1628508325}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30f5bd573bfc4a29891fc9a175083c37, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Script: {fileID: 11500000, guid: d862f8cf825f46b9a64c001dd3627bfc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
   ShowTopMostFoldoutHeaderGroup: 1
   _updateInterval: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  duration: 120
+  CrystalCollisions: 20
+  optionalEnvironment: {fileID: 0}
+  optionalLaps: 4
 --- !u!114 &1628508338
 MonoBehaviour:
   m_ObjectHideFlags: 0

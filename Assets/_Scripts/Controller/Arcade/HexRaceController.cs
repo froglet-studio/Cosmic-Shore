@@ -220,19 +220,28 @@ namespace CosmicShore.Gameplay
             if (!IsServer || _raceEnded) return;
 
             int target = ResolveCrystalsToFinishTarget();
-            var winner = gameData.RoundStatsList.FirstOrDefault(s => s.CrystalsCollected >= target);
-            if (winner == null) return;
+
+            // Domain-aggregated winner: the first active domain whose summed
+            // CrystalsCollected reaches the target wins together. Teammates (human
+            // and AI on the same domain) finish the race as a team.
+            if (!gameData.TryGetDomainReachingCrystalTarget(target, out var winningDomain))
+                return;
 
             _raceEnded = true;
 
-            // All players share the same elapsed time since turn start.
-            // The score tracker updates LocalRoundStats.Score every frame with elapsed time.
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;
-            Domains winningDomain = winner.Domain;
 
-            // Team-aware scoring: every player on the winner's Domain inherits the
-            // finish time — they share the victory. Players on other domains get the
-            // losing penalty score based on their own crystals remaining.
+            // Representative winner-name = best individual contributor on the winning
+            // domain. Used for the WinnerName legacy field (display strings only —
+            // VICTORY/DEFEAT attribution is via WinnerDomain).
+            var winnerRep = gameData.RoundStatsList
+                .Where(s => s.Domain == winningDomain)
+                .OrderByDescending(s => s.CrystalsCollected)
+                .FirstOrDefault();
+            string winnerName = winnerRep?.Name ?? "";
+
+            // Losing-side penalty is based on the DOMAIN crystal deficit so the
+            // scoreboard's "crystals left" reflects how close the team came overall.
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (stats.Domain == winningDomain)
@@ -241,14 +250,15 @@ namespace CosmicShore.Gameplay
                 }
                 else
                 {
-                    int crystalsLeft = Mathf.Max(0, target - stats.CrystalsCollected);
+                    int domainSum = gameData.SumCrystalsCollectedByDomain(stats.Domain);
+                    int crystalsLeft = Mathf.Max(0, target - domainSum);
                     stats.Score = 10000f + crystalsLeft;
                 }
             }
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
-            SyncFinalScoresSnapshot(winner.Name, winningDomain);
+            SyncFinalScoresSnapshot(winnerName, winningDomain);
         }
 
         /// <summary>

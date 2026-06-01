@@ -42,33 +42,48 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Highest JoustCollisions wins — the turn monitor already guarantees
-        /// the turn only ends when a player reaches the collision target.
-        /// Winner and all teammates (same Domain) get elapsed time as score;
-        /// other teams get 99999f (golf: lower = better).
+        /// Domain-aggregated winner: the active domain with the highest summed
+        /// JoustCollisions wins. The turn monitor already guarantees the turn
+        /// only ends when a domain's sum reaches the joust target. Winner and
+        /// all teammates (same Domain) get elapsed time as score; other teams
+        /// get 99999f (golf: lower = better).
         /// </summary>
         void CalculateJoustScores_Server()
         {
             float currentTime = Time.time - gameData.TurnStartTime;
 
-            // Tiebreaker within tied JoustCollisions handled by golf sort later; the first
-            // to reach the threshold is what we want but we only know the highest collision
-            // count here. All tied players share the max so their team wins together.
-            var winner = gameData.RoundStatsList
-                .OrderByDescending(s => s.JoustCollisions)
-                .FirstOrDefault();
+            Domains winningDomain = Domains.Blue;
+            int bestDomainSum = -1;
+            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
+            {
+                var d = GameDataSO.ActiveDomains[i];
+                int sum = gameData.SumJoustCollisionsByDomain(d);
+                if (sum > bestDomainSum)
+                {
+                    bestDomainSum = sum;
+                    winningDomain = d;
+                }
+            }
 
-            string winnerName = winner?.Name ?? "";
-            Domains winningDomain = winner?.Domain ?? Domains.Blue;
+            // Representative winner-name = best individual contributor on the winning
+            // domain. Used for the WinnerName legacy field (display strings only —
+            // VICTORY/DEFEAT attribution is via WinnerDomain).
+            var winnerRep = winningDomain == Domains.Blue
+                ? null
+                : gameData.RoundStatsList
+                    .Where(s => s.Domain == winningDomain)
+                    .OrderByDescending(s => s.JoustCollisions)
+                    .FirstOrDefault();
+            string winnerName = winnerRep?.Name ?? "";
 
-            CSDebug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Domain={winningDomain} Time={currentTime:F2}s " +
+            CSDebug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Domain={winningDomain} " +
+                      $"DomainSum={bestDomainSum} Time={currentTime:F2}s " +
                       $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.JoustCollisions}j"))}]");
 
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (winningDomain != Domains.Blue && stats.Domain == winningDomain)
-                    stats.Score = currentTime;
-                else if (stats.Name == winnerName)
                     stats.Score = currentTime;
                 else
                     stats.Score = 99999f;

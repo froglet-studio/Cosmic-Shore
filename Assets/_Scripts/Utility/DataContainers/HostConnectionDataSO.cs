@@ -89,7 +89,23 @@ namespace CosmicShore.Utility
             new(LocalPlayerId, LocalDisplayName, LocalAvatarId);
 
         [HideInInspector] public bool IsConnected;
-        [HideInInspector] public bool IsHost;
+
+        /// <summary>
+        /// True when the local player owns the shared UGS presence/discovery lobby
+        /// (i.e. they were the first user to sign in and create it). This has no
+        /// bearing on game-launch authority or party ownership — it only reflects
+        /// who happens to own the global discovery session.
+        /// </summary>
+        [HideInInspector] public bool IsPresenceLobbyHost;
+
+        /// <summary>
+        /// True when the local player is the host of the active Relay-backed
+        /// party session. This is the flag that gates game-launch authority,
+        /// kick permissions, and party-host UI affordances. False for solo
+        /// players with no party session, and false for clients who joined
+        /// someone else's party via an accepted invite.
+        /// </summary>
+        [HideInInspector] public bool IsPartyHost;
 
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle
@@ -139,7 +155,8 @@ namespace CosmicShore.Utility
             LocalDisplayName = string.Empty;
             LocalAvatarId = 0;
             IsConnected = false;
-            IsHost = false;
+            IsPresenceLobbyHost = false;
+            IsPartyHost = false;
 
             OnlinePlayers?.Clear();
             PartyMembers?.Clear();

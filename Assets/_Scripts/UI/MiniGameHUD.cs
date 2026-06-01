@@ -163,17 +163,8 @@ namespace CosmicShore.UI
         /// </summary>
         protected virtual void EnsureObjectiveIndicator()
         {
-            if (!autoCreateObjectiveIndicator)
-            {
-                Debug.Log("[MiniGameHUD] EnsureObjectiveIndicator skipped — autoCreate=false");
-                return;
-            }
-
-            if (FindAnyObjectByType<ObjectiveIndicator>() != null)
-            {
-                Debug.Log("[MiniGameHUD] EnsureObjectiveIndicator skipped — already exists in scene");
-                return;
-            }
+            if (!autoCreateObjectiveIndicator) return;
+            if (FindAnyObjectByType<ObjectiveIndicator>() != null) return;
 
             IObjectiveProvider provider = gameData != null
                 ? CreateObjectiveProviderForGameMode(gameData.GameMode)
@@ -181,9 +172,6 @@ namespace CosmicShore.UI
 
             Transform canvasRoot = transform.parent != null ? transform.parent : transform;
             _autoCreatedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, provider);
-
-            Debug.Log($"[MiniGameHUD] EnsureObjectiveIndicator — created under '{canvasRoot.name}', " +
-                      $"gameMode={gameData?.GameMode}, provider={provider != null}");
         }
 
         IObjectiveProvider CreateObjectiveProviderForGameMode(GameModes mode)
