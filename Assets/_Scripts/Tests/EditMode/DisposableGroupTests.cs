@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using NUnit.Framework;
 using CosmicShore.Utility;
@@ -172,3 +173,4 @@ namespace CosmicShore.Tests
         #endregion
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
@@ -369,3 +370,4 @@ namespace CosmicShore.Core
         #endregion
     }
 }
+#endif
