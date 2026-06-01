@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
@@ -68,7 +69,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     string name = view.GetItemName(id);
                     if (string.IsNullOrEmpty(name)) continue;
 
-                    samples.Add(new MarkerSample { name = name, ms = selfMs });
+                    // Ignore "editor spikes" — profiler/editor UI, GPU/CPU sync waits, JIT,
+                    // asset loading and structural PlayerLoop nodes — so the breakdown
+                    // concentrates on gameplay work.
+                    if (IsEditorOrEngineNoise(name)) continue;
+
+                    samples.Add(new MarkerSample
+                    {
+                        name = name,
+                        ms = selfMs,
+                        isScript = IsScriptSample(name)
+                    });
                 }
 
                 samples.Sort((a, b) => b.ms.CompareTo(a.ms));
@@ -82,6 +93,44 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 return false;
             }
         }
+
+        // --- Filtering ------------------------------------------------------
+
+        /// <summary>
+        /// Dropped entirely from spike attribution: profiler/editor UI, GPU/CPU sync waits,
+        /// structural PlayerLoop nodes, JIT and asset loading. These are the "editor spikes"
+        /// we never act on, so removing them lets the real gameplay cost surface.
+        /// </summary>
+        static readonly string[] s_noise =
+        {
+            "EditorLoop", "GUIView", "GUIUtility", "GUIClip", "IMGUIContainer", "InspectorWindow",
+            "EditorOverlay", "Overlay", "Toolbar", "DockArea", "HostView", "EditorApplication",
+            "EditorWindow", "RepaintAll", "GameView", "SceneView", "ProjectBrowser", "ConsoleWindow",
+            "Handles", "EditorGUI", "DragAndDrop", "Profiler", "ProfilerWindow",
+            "Gfx.WaitFor", "Gfx.PresentFrame", "Gfx.ProcessCommands", "WaitForTargetFPS",
+            "Semaphore.WaitForSignal", "GfxDeviceClient", "PresentFrame", "Mono.JIT",
+            "AssetGarbageCollect", "GarbageCollectAssets", "UnloadUnusedAssets",
+            "Application.TickTimer", "PlayerLoop", "Initialization.", "WaitForEndOfFrame",
+            "Render Thread",
+        };
+
+        static bool IsEditorOrEngineNoise(string name)
+        {
+            for (int i = 0; i < s_noise.Length; i++)
+                if (name.IndexOf(s_noise[i], StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// A gameplay script sample. Unity names per-MonoBehaviour method samples "Type.Method()"
+        /// and coroutines "Foo() [Coroutine: MoveNext]"; our own ProfilerMarkers carry CS prefixes.
+        /// </summary>
+        static bool IsScriptSample(string name) =>
+            name.IndexOf("()", StringComparison.Ordinal) >= 0 ||
+            name.IndexOf("[Coroutine", StringComparison.Ordinal) >= 0 ||
+            name.IndexOf("CSM.", StringComparison.Ordinal) >= 0 ||
+            name.IndexOf("CosmicShore", StringComparison.Ordinal) >= 0;
     }
 }
 #endif

@@ -10,7 +10,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     public struct MarkerSample
     {
         public string name;
-        public float ms;
+        public float ms;        // self time (ms) on the main thread
+        public bool isScript;   // true when the sample is a gameplay script method / coroutine / CS marker
     }
 
     /// <summary>A frame whose time exceeded the spike threshold, with the markers that cost the most.</summary>
