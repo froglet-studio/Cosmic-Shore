@@ -58,8 +58,37 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Domains, int> domainBlockCounts = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
-        readonly HashSet<Prism> trackedBlocks = new();
+        // Prism → the domain it was REGISTERED under. RemoveBlock decrements the
+        // grids/counts for the registration-time domain, not the prism's current
+        // one — so steals / ChangeTeam between Add and Remove can't desync the
+        // per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
+        readonly Dictionary<Prism, Domains> trackedBlocks = new();
         SnowChanger spawnedCytoplasm;
+
+        // ---------------------------------------------------------------------
+        // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
+        // use this to find their containing cell — they have no scene identity
+        // to wire a CellRuntimeDataSO into, and the per-prefab-asset alternative
+        // breaks in multi-cell scenes where one prefab would need to point at
+        // every cell's runtime SO at once.
+        // ---------------------------------------------------------------------
+        static readonly List<Cell> ActiveCells = new();
+
+        /// <summary>
+        /// The enabled cell whose membrane contains <paramref name="position"/>,
+        /// or null when the position is in open space. O(cells-in-scene) — call
+        /// at object lifecycle points (spawn/destroy), not per frame.
+        /// </summary>
+        public static Cell FindCellContaining(Vector3 position)
+        {
+            for (int i = 0; i < ActiveCells.Count; i++)
+            {
+                var c = ActiveCells[i];
+                if (c && c.ContainsPosition(position))
+                    return c;
+            }
+            return null;
+        }
 
         CellPhase phase = CellPhase.Sprout;
 
@@ -216,6 +245,12 @@ namespace CosmicShore.Gameplay
 
         void OnEnable()
         {
+            // Spatial registry — lets pooled, prefab-spawned objects (trail prisms)
+            // find which cell contains them without per-prefab SO wiring or the
+            // deprecated CellControlManager singleton. See FindCellContaining.
+            if (!ActiveCells.Contains(this))
+                ActiveCells.Add(this);
+
             // Clear stale config BEFORE subscribing to events.
             // CellRuntimeDataSO is a shared SO asset — Menu_Main's Cell sets
             // runtime.Config to Blob Cell Config, which persists into the next
@@ -253,6 +288,8 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            ActiveCells.Remove(this);
+
             if (gameData != null)
                 gameData.OnInitializeGame.OnRaised -= Initialize;
 
@@ -505,39 +542,56 @@ namespace CosmicShore.Gameplay
             // removed from trackedBlocks via the matching RemoveBlock path; otherwise
             // LiveBlockCount drifts upward when prisms die outside the normal flow.
             if (block is null) return;
-            if (!trackedBlocks.Add(block)) return; // already counted
+            if (trackedBlocks.ContainsKey(block)) return; // already counted
+
+            // Snapshot the domain at registration time — RemoveBlock uses this snapshot
+            // so a team change (steal) between Add and Remove can't desync the grids.
+            Domains registeredDomain = block ? block.Domain : Domains.Blue;
+            trackedBlocks[block] = registeredDomain;
 
             if (block)
             {
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (var t in teams)
-                    if (t != block.Domain) countGrids[t].AddBlock(block);
+                    if (t != registeredDomain) countGrids[t].AddBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.AddBlock(block);
 
-                domainBlockCounts.TryGetValue(block.Domain, out int count);
-                domainBlockCounts[block.Domain] = count + 1;
+                domainBlockCounts.TryGetValue(registeredDomain, out int count);
+                domainBlockCounts[registeredDomain] = count + 1;
             }
         }
 
         public void RemoveBlock(Prism block)
         {
             if (block is null) return;
-            if (!trackedBlocks.Remove(block)) return; // not counted
+            if (!trackedBlocks.Remove(block, out Domains registeredDomain)) return; // not counted
 
             if (block)
             {
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (Domains t in teams)
-                    if (t != block.Domain) countGrids[t].RemoveBlock(block);
+                    if (t != registeredDomain) countGrids[t].RemoveBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.RemoveBlock(block);
 
-                if (domainBlockCounts.TryGetValue(block.Domain, out int count) && count > 0)
-                    domainBlockCounts[block.Domain] = count - 1;
+                if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
+                    domainBlockCounts[registeredDomain] = count - 1;
             }
+        }
+
+        /// <summary>
+        /// Re-registers a tracked prism whose domain changed (steal / ChangeTeam) so the
+        /// per-domain grids and counts move it from the old domain's buckets to the new
+        /// one's. No-op for prisms this cell isn't tracking.
+        /// </summary>
+        public void NotifyBlockDomainChanged(Prism block)
+        {
+            if (block is null || !trackedBlocks.ContainsKey(block)) return;
+            RemoveBlock(block);
+            AddBlock(block);
         }
 
         /// <summary>
@@ -601,8 +655,12 @@ namespace CosmicShore.Gameplay
 
         public bool ContainsPosition(Vector3 position)
         {
-            if (membrane is null) return false;
-            return Vector3.Distance(position, transform.position) < membrane.transform.localScale.x;
+            // MembraneRadius reads CapsuleMembrane.Radius when present (the authored
+            // radius), falling back to localScale.x — strictly more correct than the
+            // old raw localScale read for capsule membranes.
+            float radius = MembraneRadius;
+            if (radius <= 0f) return false;
+            return Vector3.Distance(position, transform.position) < radius;
         }
 
         public void ChangeVolume(Domains domain, float volume)
