@@ -229,8 +229,34 @@ the await is bounded and the host ignores the property via B8 fix-1).
 - **D. All three** — they target different facets (duplicate, lifecycle
   ordering, pairing). Likely need B+C at minimum.
 
-**Status.** 🟡 Fix landed (`PartyInviteController` despawn-before-reload,
-both leave path and bounce path). Needs MPPM re-verify.
+**Status.** 🟢 Fixed via architectural refactor — needs MPPM re-verify.
+
+**Note on the fix path.** An earlier band-aid (commit `3e0c5bc`) added a
+`gameData.LocalPlayer.Vessel.DestroyVessel()` call between
+`LeavePartyKeepHostAsync` and `LoadScene("Menu_Main")` to despawn one of
+the two vessels. **That band-aid has been reverted** and replaced with
+the architectural fix described below — the user (correctly) rejected
+the band-aid as a smelly temp fix.
+
+**Architectural fix (active).** The leave flow's two methods —
+`PartyInviteController.LeavePartyAndReturnToMenuAsync` and
+`RecoverFromFailedTransitionAsync` — were rewritten to sequence the
+Menu_Main scene reload **before** the solo Relay session is recreated,
+mirroring cold-boot exactly: tear down vessel/Player/SOAP refs → leave
+UGS session (new bare-leave primitive `HostConnectionService.LeavePartySessionAsync`)
+→ shut down NM via `NetworkTransitionService.ShutdownAsync` → clear
+stale refs → load Menu_Main locally via `UnityEngine.SceneManagement.SceneManager.LoadSceneAsync`
+(NM is down, so not via Netcode's SceneManager) → recreate solo session
+via `HostConnectionService.EnsurePartySessionAsync`. Because the scene
+is already fresh by the time `EnsurePartySessionAsync` auto-starts NM
+and the persistent host Player respawns, the scene-placed
+`ServerPlayerVesselInitializer` (now also fresh) catches the Player
+exactly once → one vessel, no orphan. The old combined
+`LeavePartyKeepHostAsync` primitive was deleted (no callers remain). The
+hardcoded `"Menu_Main"` string literals in PIC were replaced with
+`SceneNameListSO.MainMenuScene` (injected). No spawn paths were touched —
+`ServerPlayerVesselInitializer.SpawnVesselForPlayer` remains the single
+canonical Netcode vessel spawn site.
 
 **Root cause confirmed via a second, sequential MPPM trace
 (2026-06-02).** The trace bracketed `[PartyInviteController] Starting

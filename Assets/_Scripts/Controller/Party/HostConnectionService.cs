@@ -730,8 +730,9 @@ namespace CosmicShore.Gameplay
                     $"{CLEAR_JOINED_PARTY_TIMEOUT_SECONDS}s — proceeding with leave " +
                     "(host ignores stale joined_party via the session cross-check).");
 
-            // LeavePartyAndReturnToMenuAsync now uses LeavePartyKeepHostAsync internally,
-            // which already ensures a fresh solo session — no trailing call needed.
+            // LeavePartyAndReturnToMenuAsync owns the full leave sequence:
+            // session-leave → NM shutdown → Menu_Main reload → EnsurePartySessionAsync.
+            // No trailing call needed.
             await controller.LeavePartyAndReturnToMenuAsync();
         }
 
@@ -906,12 +907,11 @@ namespace CosmicShore.Gameplay
         /// hatch from a stale <see cref="ISession"/> ref.
         ///
         /// <para>
-        /// <b>Currently unused.</b> Commit 10 subsumed the only caller
-        /// (<c>PartyInviteController.RecoverFromFailedTransitionAsync</c>) by
-        /// routing it through <see cref="LeavePartyKeepHostAsync"/>, which
-        /// calls <see cref="PartySessionService.LeaveAsync"/> for a proper UGS
-        /// leave (including <c>DeleteAsync</c>/<c>LeaveAsync</c> on the host or
-        /// client respectively) before recreating. Retained for now as a
+        /// <b>Currently unused.</b> The leave/recovery flows now decompose into
+        /// <see cref="LeavePartySessionAsync"/> + <see cref="EnsurePartySessionAsync"/>
+        /// with explicit NM-shutdown and Menu_Main reload between them, which
+        /// performs a proper UGS leave (<c>DeleteAsync</c>/<c>LeaveAsync</c>) and
+        /// recreates the session in the right scene. Retained for now as a
         /// defensive escape hatch; may be deleted in a follow-up if no caller
         /// emerges.
         /// </para>
@@ -919,38 +919,31 @@ namespace CosmicShore.Gameplay
         public void ClearPartySessionRef() => _partySessionService.ClearSession();
 
         /// <summary>
-        /// Leaves the current party session and immediately recreates a fresh
-        /// solo Relay-backed session in its place. The canonical leave-to-solo
-        /// surface — replaces the older "explicit ShutdownAsync + recreate"
-        /// pattern that callers used to inline.
+        /// Leaves the current party session via <see cref="PartySessionService.LeaveAsync"/>
+        /// — calls <c>DeleteAsync</c> (host) or <c>session.LeaveAsync</c> (client)
+        /// on the UGS session and clears the shared session ref. Safe to call
+        /// when no session is active.
         ///
         /// <para>
-        /// Flow:
-        /// <list type="number">
-        ///   <item><see cref="PartySessionService.LeaveAsync"/> — calls
-        ///         <c>DeleteAsync</c> (host) or <c>session.LeaveAsync</c> (client)
-        ///         on the UGS session. Clears the shared session ref. Safe to
-        ///         call when no session is active.</item>
-        ///   <item><see cref="EnsurePartySessionAsync"/> — creates a fresh solo
-        ///         Relay session and re-enters InParty.</item>
-        /// </list>
+        /// Bare leave primitive: does NOT touch NetworkManager, does NOT recreate
+        /// a solo session. The caller (currently <c>PartyInviteController</c>'s
+        /// leave + failed-transition recovery flows) is responsible for sequencing
+        /// the subsequent NM shutdown, Menu_Main reload, and
+        /// <see cref="EnsurePartySessionAsync"/> calls in the right order — see
+        /// <c>Docs/PartySystem/ARCHITECTURE.md</c> (Investigation answers Q6) for
+        /// the rationale. The decomposed primitives ensure
+        /// <see cref="EnsurePartySessionAsync"/> only ever runs against a
+        /// freshly-loaded Menu_Main scene, so vessel spawn fires exactly once
+        /// via the scene-placed initializer's catch.
         /// </para>
         ///
         /// <para>
-        /// Used by every leave path: <c>PartyInviteController.LeavePartyAndReturnToMenuAsync</c>
-        /// (user-driven leave) and <c>PartyInviteController.RecoverFromFailedTransitionAsync</c>
-        /// (post-failure recovery). The accept flow does NOT use this method — it
-        /// leaves-to-join the inviter's session, not leave-to-host-solo.
-        /// </para>
-        ///
-        /// <para>
-        /// See <c>Docs/PartySystem/ARCHITECTURE.md</c> (Investigation answers
-        /// Q6) for the design rationale. <see cref="PartySessionService.LeaveAsync"/>
-        /// currently swallows its own exceptions, so the outer try/catch here
-        /// is defensive — kept for future-proofing.
+        /// <see cref="PartySessionService.LeaveAsync"/> currently swallows its
+        /// own exceptions, so the outer try/catch here is defensive — kept for
+        /// future-proofing.
         /// </para>
         /// </summary>
-        public async UniTask LeavePartyKeepHostAsync()
+        public async UniTask LeavePartySessionAsync()
         {
             try
             {
@@ -960,11 +953,9 @@ namespace CosmicShore.Gameplay
             catch (Exception ex)
             {
                 Debug.LogError(
-                    $"[HostConnectionService] LeavePartyKeepHostAsync: " +
-                    $"LeaveAsync threw ({ex.GetType().Name}): {ex.Message} — " +
-                    "proceeding to recreate solo session.");
+                    $"[HostConnectionService] LeavePartySessionAsync: " +
+                    $"LeaveAsync threw ({ex.GetType().Name}): {ex.Message}.");
             }
-            await EnsurePartySessionAsync();
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
@@ -1484,7 +1475,7 @@ namespace CosmicShore.Gameplay
         ///   <item>Snapshot whether we had remote members (before clearing).</item>
         ///   <item><see cref="PartySessionService.ClearSession"/> — drop the dead
         ///         ref directly. We KNOW the session is gone, so we skip the doomed
-        ///         UGS <c>DeleteAsync</c> that <see cref="LeavePartyKeepHostAsync"/>
+        ///         UGS <c>DeleteAsync</c> that <see cref="LeavePartySessionAsync"/>
         ///         would attempt.</item>
         ///   <item><see cref="PartyMemberService.ClearWithEvents"/> — clears member
         ///         slots and raises <c>OnPartyMemberLeft</c> per non-local member so

@@ -391,6 +391,42 @@ in both `LeavePartyAndReturnToMenuAsync` (clean leave) and
 `RecoverFromFailedTransitionAsync` (bounce path). Same single-file
 commit. B3.b → 🟡 awaiting MPPM re-verify.
 
+### Phase A.1 B3.b architectural refactor — band-aid reverted (2026-06-02)
+
+User rejected the despawn-before-reload band-aid as "nasty temp fix"
+and directed a clean architectural fix. After verifying that vessel
+spawn already has ONE canonical Netcode call site
+(`ServerPlayerVesselInitializer.SpawnVesselForPlayer`), the smell was
+identified as: the leave path sequenced `LeavePartyKeepHostAsync`
+(which recreates the Relay session and via UGS SDK auto-starts NM →
+spawns vessel #1 in the doomed scene) **before**
+`nm.SceneManager.LoadScene("Menu_Main")` (which mounts a fresh
+ServerVesselInit instance → spawns vessel #2). Cold-boot doesn't have
+this problem because the scene-placed ServerVesselInit only mounts
+once, in a fresh Menu_Main.
+
+Refactor (one commit):
+- New bare-leave primitive `HostConnectionService.LeavePartySessionAsync()`
+  — only does `PartySessionService.LeaveAsync`. No NM lifecycle, no
+  session recreate.
+- Old combined `HostConnectionService.LeavePartyKeepHostAsync` deleted
+  (no callers remain).
+- `PartyInviteController.LeavePartyAndReturnToMenuAsync` and
+  `RecoverFromFailedTransitionAsync` rewritten to the explicit
+  cold-boot-mirroring sequence: tear down → leave session → NM shutdown →
+  clear stale refs → load Menu_Main locally via Unity SceneManager →
+  recreate solo via `EnsurePartySessionAsync`. The new
+  `EnsurePartySessionAsync` call now runs against a freshly-loaded
+  Menu_Main where the scene-placed ServerVesselInit is also fresh →
+  catches the persistent Player exactly once → ONE vessel.
+- `SceneNameListSO` injected into PIC; both `"Menu_Main"` string
+  literals replaced with `_sceneNames.MainMenuScene`.
+- Band-aid blocks from `3e0c5bc` deleted.
+- B3.b → 🟢 (fixed via refactor) — needs MPPM re-verify.
+
+Net effect: -42 lines, no new spawn paths, no band-aid, no dead methods,
+no string literals. Single canonical spawn pipeline preserved.
+
 ### Phase B — Party smoke gate
 
 | Test | Status | NetDiag observed | Notes |
