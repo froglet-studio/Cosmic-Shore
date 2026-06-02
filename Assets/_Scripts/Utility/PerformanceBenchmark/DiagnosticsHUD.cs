@@ -67,9 +67,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder _drawCalls, _setPass, _batches, _triangles, _vertices, _gcAlloc;
         ProfilerRecorder _rpcs, _netVars, _netBytes;
 
-        // ui
-        Text _readout, _valueCol, _advBtnLabel, _diagBtnLabel;
-        RectTransform _panel, _readoutRT, _valueRT, _buttonRow;
+        // ui — two side-by-side blocks, each a label sub-column + value sub-column
+        Text _labelA, _valueA, _labelB, _valueB, _advBtnLabel, _diagBtnLabel;
+        RectTransform _panel, _labelART, _valueART, _labelBRT, _valueBRT, _buttonRow;
         GameObject _canvasGO;
         Font _font;
 
@@ -159,7 +159,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                      Bad = "#ff6b6b", Accent = "#7cc2ff", Dim = "#6b7686";
 
         // layout
-        const float Pad = 10f, ValueX = 132f, BtnH = 22f, RowGap = 10f, TopY = 8f;
+        const float Pad = 10f, BtnH = 22f, RowGap = 10f, TopY = 8f, LblValGap = 8f, ColGap = 26f;
 
         static string Col(string hex, string body) => "<color=" + hex + ">" + body + "</color>";
         static string FpsColor(float fps) => fps >= 55f ? Good : fps >= 30f ? Warn : Bad;
@@ -179,56 +179,62 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         void RefreshText()
         {
-            if (_readout == null) return;
-            var l = new StringBuilder(384);
-            var v = new StringBuilder(384);
+            if (_labelA == null) return;
+            // Left block: most-important live data + render. Right block: memory / network / region.
+            var la = new StringBuilder(256);
+            var va = new StringBuilder(256);
+            var lb = new StringBuilder(256);
+            var vb = new StringBuilder(256);
 
             if (_recording)
             {
                 float left = Mathf.Max(0f, _recEnd - Time.unscaledTime);
-                Row(l, v, "● Recording", Col(Warn, left.ToString("F0") + "s left"));
-                Row(l, v, "Captured", Col(Dim, _recFrames + " f · " + _recSpikes.Count + " spikes"));
+                Row(la, va, "● Recording", Col(Warn, left.ToString("F0") + "s left"));
+                Row(la, va, "Captured", Col(Dim, _recFrames + " f · " + _recSpikes.Count + " spikes"));
             }
 
-            // ── live ──
-            Row(l, v, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
-            Row(l, v, "Frame Time", Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
+            Row(la, va, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
+            Row(la, va, "Frame Time", Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
 
             if (_advanced)
             {
-                Header(l, v, "Render");
-                Row(l, v, "Draw Calls", Col(White, RInt(_drawCalls).ToString()));
-                Row(l, v, "Batches", Col(White, RInt(_batches).ToString()));
-                Row(l, v, "SetPass", Col(White, RInt(_setPass).ToString()));
-                Row(l, v, "Triangles", Col(White, RLong(_triangles).ToString("N0")));
-                Row(l, v, "Vertices", Col(White, RLong(_vertices).ToString("N0")));
+                // Left block — local frame cost (render + memory).
+                Header(la, va, "Render");
+                Row(la, va, "Draw Calls", Col(White, RInt(_drawCalls).ToString()));
+                Row(la, va, "Batches", Col(White, RInt(_batches).ToString()));
+                Row(la, va, "SetPass", Col(White, RInt(_setPass).ToString()));
+                Row(la, va, "Triangles", Col(White, RLong(_triangles).ToString("N0")));
+                Row(la, va, "Vertices", Col(White, RLong(_vertices).ToString("N0")));
 
-                Header(l, v, "Memory");
+                Header(la, va, "Memory");
                 float gcKB = RLong(_gcAlloc) / 1024f;
-                Row(l, v, "GC / frame", Col(gcKB > 4f ? Warn : Good, gcKB.ToString("F1") + " KB"));
+                Row(la, va, "GC / frame", Col(gcKB > 4f ? Warn : Good, gcKB.ToString("F1") + " KB"));
 
-                Header(l, v, "Network");
+                // Right block — connection (network + region).
+                Header(lb, vb, "Network");
                 double rtt = Rtt();
-                Row(l, v, "Ping", rtt >= 0
+                Row(lb, vb, "Ping", rtt >= 0
                     ? Col(rtt <= 80 ? Good : rtt <= 160 ? Warn : Bad, rtt.ToString("F0") + " ms")
                     : Col(Dim, "offline"));
-                Row(l, v, "NetVars", Col(White, RInt(_netVars).ToString()));
-                Row(l, v, "RPCs", Col(White, RInt(_rpcs).ToString()));
-                Row(l, v, "Bytes / frame", Col(White, RLong(_netBytes).ToString("N0")));
+                Row(lb, vb, "NetVars", Col(White, RInt(_netVars).ToString()));
+                Row(lb, vb, "RPCs", Col(White, RInt(_rpcs).ToString()));
+                Row(lb, vb, "Bytes / f", Col(White, RLong(_netBytes).ToString("N0")));
 
-                Header(l, v, "Region");
-                Row(l, v, "Location", Col(White, RegionName()));
-                Row(l, v, "UTC offset", Col(White, UtcOffset()));
+                Header(lb, vb, "Region");
+                Row(lb, vb, "Location", Col(White, RegionName()));
+                Row(lb, vb, "UTC", Col(White, UtcOffset()));
             }
 
             if (Time.unscaledTime - _lastSavedShownAt < 6f && !string.IsNullOrEmpty(_lastSavedPath))
             {
-                Header(l, v, "Saved");
-                Row(l, v, "File", Col(Dim, _lastSavedPath));
+                Header(lb, vb, "Saved");
+                Row(lb, vb, "File", Col(Dim, Path.GetFileName(_lastSavedPath)));
             }
 
-            _readout.text = l.ToString();
-            if (_valueCol != null) _valueCol.text = v.ToString();
+            _labelA.text = la.ToString();
+            _valueA.text = va.ToString();
+            _labelB.text = lb.ToString();
+            _valueB.text = vb.ToString();
             Relayout();
         }
 
@@ -251,19 +257,44 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return _utcCache;
         }
 
-        // Resize the panel to fit the current rows (small in normal mode, taller in advanced) and
-        // slide the bottom button row up to sit just under the table.
+        // Position the two blocks side by side, each sub-column sized to its widest row, then fit
+        // the panel and slide the button row up under whichever block is taller.
         void Relayout()
         {
-            if (_panel == null || _readout == null) return;
-            float textH = _readout.preferredHeight;
-            float valW = _valueCol != null ? _valueCol.preferredWidth : 80f;
-            float panelW = Mathf.Clamp(ValueX + valW + Pad, 300f, 680f);
+            if (_panel == null || _labelA == null) return;
+
+            float aLblW = _labelA.preferredWidth;
+            float aValW = _valueA.preferredWidth;
+            bool hasB = _labelB.text.Length > 0;
+            float bLblW = hasB ? _labelB.preferredWidth : 0f;
+            float bValW = hasB ? _valueB.preferredWidth : 0f;
+
+            float textH = Mathf.Max(_labelA.preferredHeight, hasB ? _labelB.preferredHeight : 0f);
+
+            // X positions of each sub-column.
+            float valAX = Pad + aLblW + LblValGap;
+            float blockBX = valAX + aValW + ColGap;
+            float valBX = blockBX + bLblW + LblValGap;
+
+            float dataRight = hasB ? valBX + bValW : valAX + aValW;
+            // Min width so the four buttons (run to ~254px) always fit.
+            float panelW = Mathf.Max(dataRight + Pad, 272f);
             float panelH = TopY + textH + RowGap + BtnH + Pad;
             _panel.sizeDelta = new Vector2(panelW, panelH);
-            if (_readoutRT != null) _readoutRT.sizeDelta = new Vector2(ValueX - Pad - 4f, textH);
-            if (_valueRT != null) _valueRT.sizeDelta = new Vector2(panelW - ValueX - Pad, textH);
+
+            Place(_labelART, Pad, textH, aLblW);
+            Place(_valueART, valAX, textH, aValW);
+            Place(_labelBRT, blockBX, textH, bLblW);
+            Place(_valueBRT, valBX, textH, bValW);
+
             if (_buttonRow != null) _buttonRow.anchoredPosition = new Vector2(Pad, -(TopY + textH + RowGap));
+        }
+
+        static void Place(RectTransform rt, float x, float height, float width)
+        {
+            if (rt == null) return;
+            rt.anchoredPosition = new Vector2(x, -TopY);
+            rt.sizeDelta = new Vector2(Mathf.Max(1f, width), height);
         }
 
         void ToggleAdvanced()
@@ -428,15 +459,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var bg = _panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.72f);
 
-            // Two-column table: labels on the left, values aligned in a column at ValueX.
-            _readoutRT = CreateRect("Labels", _panel, new Vector2(0, 1), new Vector2(0, 1),
-                new Vector2(Pad, -TopY), new Vector2(ValueX - Pad - 4f, 40));
-            _readout = MakeColumn(_readoutRT, TextAnchor.UpperLeft);
-            _readout.text = "FPS —";
+            // Two side-by-side blocks; each is a label sub-column + value sub-column. Exact x
+            // positions and the panel size are computed every refresh by Relayout().
+            _labelART = CreateRect("LabelsA", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Pad, -TopY), new Vector2(90, 40));
+            _labelA = MakeColumn(_labelART, TextAnchor.UpperLeft);
+            _labelA.text = "FPS";
 
-            _valueRT = CreateRect("Values", _panel, new Vector2(0, 1), new Vector2(0, 1),
-                new Vector2(ValueX, -TopY), new Vector2(160, 40));
-            _valueCol = MakeColumn(_valueRT, TextAnchor.UpperLeft);
+            _valueART = CreateRect("ValuesA", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(100, -TopY), new Vector2(90, 40));
+            _valueA = MakeColumn(_valueART, TextAnchor.UpperLeft);
+
+            _labelBRT = CreateRect("LabelsB", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(220, -TopY), new Vector2(90, 40));
+            _labelB = MakeColumn(_labelBRT, TextAnchor.UpperLeft);
+
+            _valueBRT = CreateRect("ValuesB", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(310, -TopY), new Vector2(90, 40));
+            _valueB = MakeColumn(_valueBRT, TextAnchor.UpperLeft);
 
             // Button row — a container Relayout() slides up to sit just below the table.
             _buttonRow = CreateRect("ButtonRow", _panel, new Vector2(0, 1), new Vector2(0, 1),
