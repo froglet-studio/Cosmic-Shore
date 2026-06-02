@@ -3,6 +3,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -60,6 +61,15 @@ namespace CosmicShore.UI
         [Tooltip("If assigned, the indicator reads from this cell directly. Leave null to auto-resolve via the local player's vessel position (or the first active cell as a last resort).")]
         [SerializeField] Cell explicitCell;
 
+        [Header("Diagnostics (optional)")]
+        [Tooltip("When assigned, shows live tuning numbers: per-domain counts, total vs frenzy " +
+                 "threshold, phase, and the net prism rate (growth minus consumption, prisms/sec). " +
+                 "The rate is the key tuning signal — positive while flora outgrow fauna, negative " +
+                 "while fauna are winning, ~0 when the ecology is pinned (the 'static' failure mode).")]
+        [SerializeField] TMP_Text debugReadout;
+        [Tooltip("Seconds of history for the smoothed rate-of-change estimate.")]
+        [Min(1f)] [SerializeField] float rateWindowSeconds = 5f;
+
         // Each wedge can fill at most a third of the full circle — 120°.
         const float WedgeMaxFill = 1f / 3f;
 
@@ -69,6 +79,11 @@ namespace CosmicShore.UI
         float _nextSampleAt;
         float _jadeTarget, _rubyTarget, _goldTarget;
         float _jadeNow, _rubyNow, _goldNow;
+
+        // Rate-of-change tracking for the diagnostic readout.
+        int _lastTotal = -1;
+        float _lastTotalTime;
+        float _smoothedRate;
 
         // ------------------------------------------------------------------
         //  Lifecycle
@@ -106,6 +121,7 @@ namespace CosmicShore.UI
             if (!cell)
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
+                UpdateReadout(null, 0, 0, 0, 0);
                 return;
             }
 
@@ -113,8 +129,13 @@ namespace CosmicShore.UI
             if (rabid <= 0)
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
+                UpdateReadout(cell, 0, 0, 0, 0);
                 return;
             }
+
+            int jade = cell.GetDomainBlockCount(Domains.Jade);
+            int ruby = cell.GetDomainBlockCount(Domains.Ruby);
+            int gold = cell.GetDomainBlockCount(Domains.Gold);
 
             // Each wedge's max angular extent is 1/3 of the circle. Mapping the raw
             // count fraction (count_d / RabidEnter) into that range with a clamp
@@ -122,9 +143,41 @@ namespace CosmicShore.UI
             // that domain's wedge maxes out (1/3 of the circle). When mass is
             // evenly distributed across domains and totals RabidEnter, the three
             // 1/3 wedges sum to a full circle = visible frenzy.
-            _jadeTarget = Mathf.Clamp((float)cell.GetDomainBlockCount(Domains.Jade) / rabid, 0f, WedgeMaxFill);
-            _rubyTarget = Mathf.Clamp((float)cell.GetDomainBlockCount(Domains.Ruby) / rabid, 0f, WedgeMaxFill);
-            _goldTarget = Mathf.Clamp((float)cell.GetDomainBlockCount(Domains.Gold) / rabid, 0f, WedgeMaxFill);
+            _jadeTarget = Mathf.Clamp((float)jade / rabid, 0f, WedgeMaxFill);
+            _rubyTarget = Mathf.Clamp((float)ruby / rabid, 0f, WedgeMaxFill);
+            _goldTarget = Mathf.Clamp((float)gold / rabid, 0f, WedgeMaxFill);
+
+            UpdateReadout(cell, jade, ruby, gold, rabid);
+        }
+
+        void UpdateReadout(Cell cell, int jade, int ruby, int gold, int rabid)
+        {
+            if (!debugReadout) return;
+
+            if (!cell)
+            {
+                debugReadout.text = "no cell";
+                return;
+            }
+
+            int total = jade + ruby + gold;
+
+            // Smoothed net rate (prisms/sec). Positive = flora winning, negative =
+            // fauna winning, ~0 = pinned (the static-ecology failure mode).
+            float now = Time.unscaledTime;
+            if (_lastTotal >= 0 && now > _lastTotalTime)
+            {
+                float instantRate = (total - _lastTotal) / (now - _lastTotalTime);
+                float alpha = Mathf.Clamp01((now - _lastTotalTime) / Mathf.Max(1f, rateWindowSeconds));
+                _smoothedRate = Mathf.Lerp(_smoothedRate, instantRate, alpha);
+            }
+            _lastTotal = total;
+            _lastTotalTime = now;
+
+            debugReadout.text =
+                $"J:{jade} R:{ruby} G:{gold}\n" +
+                $"{total}/{rabid} {cell.Phase}\n" +
+                $"{(_smoothedRate >= 0 ? "+" : "")}{_smoothedRate:F1}/s";
         }
 
         void StepTowardTargets()

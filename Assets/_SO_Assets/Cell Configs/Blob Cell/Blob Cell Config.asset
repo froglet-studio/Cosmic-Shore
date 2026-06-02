@@ -28,12 +28,12 @@ MonoBehaviour:
   SpawnProfile: {fileID: 11400000, guid: 4c06f97afbda28c4ea70d435976318d2, type: 2}
   PhaseThresholds:
     QuietEnter: 100
-    QuietExit: 75
+    QuietExit: 50
     SettledEnter: 300
-    SettledExit: 250
+    SettledExit: 180
     RestlessEnter: 500
-    RestlessExit: 425
+    RestlessExit: 300
     FrozenEnter: 700
-    FrozenExit: 625
+    FrozenExit: 420
     RabidEnter: 900
-    RabidExit: 825
+    RabidExit: 540
