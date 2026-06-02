@@ -448,6 +448,30 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Plays the FMOD event wired for <paramref name="category"/> as a
+        /// spatialized one-shot at <paramref name="worldPosition"/>. Use for
+        /// in-world events (crystal explosions, skims) where the sound should
+        /// emanate from the collision site rather than the listener origin.
+        /// </summary>
+        public void PlayGameplaySFX(GameplaySFXCategory category, Vector3 worldPosition)
+        {
+            if (GameplaySFXEvents == null) InitializeGameplaySFXEvents();
+
+            if (GameplaySFXEvents.TryGetValue(category, out var reference) && !reference.IsNull)
+            {
+                PlaySFXEvent(reference, worldPosition);
+                return;
+            }
+
+            if (warnOnUnwiredCategory && _warnedGameplayCategories.Add(category))
+            {
+                Debug.LogWarning(
+                    $"[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.{category}. " +
+                    $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
+            }
+        }
+
+        /// <summary>
         /// Plays an arbitrary FMOD event as a 2D one-shot at world origin
         /// with the SFX slider volume applied. Use for UI / menu sounds
         /// authored as 2D events in FMOD Studio (no spatializer).

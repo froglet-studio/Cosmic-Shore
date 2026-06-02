@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -172,3 +173,4 @@ namespace CosmicShore.Gameplay
         }
     }
 }
+#endif

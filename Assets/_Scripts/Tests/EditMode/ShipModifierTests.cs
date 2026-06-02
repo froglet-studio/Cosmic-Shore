@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using NUnit.Framework;
 using UnityEngine;
 using CosmicShore.Data;
@@ -154,3 +155,4 @@ namespace CosmicShore.Tests
         #endregion
     }
 }
+#endif

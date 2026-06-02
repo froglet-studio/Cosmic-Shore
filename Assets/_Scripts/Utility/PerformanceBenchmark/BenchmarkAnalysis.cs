@@ -10,7 +10,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     public struct MarkerSample
     {
         public string name;
-        public float ms;
+        public float ms;        // self time (ms) on the main thread
+        public bool isScript;   // true when the sample is a gameplay script method / coroutine / CS marker
     }
 
     /// <summary>A frame whose time exceeded the spike threshold, with the markers that cost the most.</summary>
@@ -22,6 +23,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float cpuFrameTimeMs;
         public float gpuFrameTimeMs;
         public List<MarkerSample> topMarkers = new();
+
+        // The profiler frame to read the script breakdown from. The runtime collector records
+        // this cheaply; the editor window enriches topMarkers off the game thread so the
+        // hierarchy walk (70-90ms) never inflates the captured frame. -1 = unknown / no profiler.
+        public int profilerFrameIndex = -1;
     }
 
     /// <summary>An actionable finding: what's wrong, how bad, and what to do about it.</summary>

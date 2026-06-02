@@ -21,6 +21,24 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public string unityVersion;
     }
 
+    /// <summary>An error / exception / assert captured during a manual sweep session.</summary>
+    [Serializable]
+    public class SweepError
+    {
+        public float timeSeconds;   // seconds since the session started
+        public string type;         // Error / Exception / Assert
+        public string message;      // log condition + first stack line
+    }
+
+    /// <summary>A moment the user marked during a manual sweep session.</summary>
+    [Serializable]
+    public class SweepMark
+    {
+        public float timeSeconds;   // seconds since the session started
+        public float fps;           // smoothed fps at the moment
+        public string label;        // "Mark 3" or a custom note
+    }
+
     [Serializable]
     public class BenchmarkReport
     {
@@ -64,6 +82,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public BenchmarkStatistics statistics;
         public List<SpikeEntry> spikes = new();
         public BenchmarkAnalysisResult analysis;
+
+        // ── Manual sweep extras (empty for ordinary captures) ──
+        public List<SweepError> errors = new();
+        public List<SweepMark> marks = new();
 
         public void PopulateEnvironment()
         {

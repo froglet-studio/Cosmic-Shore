@@ -5,7 +5,7 @@
 			<value>Crystal Collect</value>
 		</property>
 		<property name="outputFormat">
-			<value>2</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
 			<destination>{2bbab971-3f3e-4f99-a6e0-584fa1d58d64}</destination>
@@ -67,7 +67,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>45</value>
+			<value>4000</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{7b336e24-bb31-49a2-a2cc-a66a53bdd388}" />
@@ -129,7 +129,6 @@
 	<object class="MixerBusEffectChain" id="{9972d2b5-c792-4284-870c-a0b971184f31}">
 		<relationship name="effects">
 			<destination>{e8ecee89-7b05-49ad-b891-81c14a4779b5}</destination>
-			<destination>{eef52a43-a1c5-4cb7-b353-8c514cd8be32}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{9766a5e1-1785-4549-ac84-965b895e4c84}" />
@@ -149,13 +148,5 @@
 	</object>
 	<object class="MixerBusPanner" id="{c99b3fd2-1c7f-4d02-ad7e-cd6912a9f2a8}" />
 	<object class="MixerBusFader" id="{e8ecee89-7b05-49ad-b891-81c14a4779b5}" />
-	<object class="SpatialiserEffect" id="{eef52a43-a1c5-4cb7-b353-8c514cd8be32}">
-		<property name="minimumDistance">
-			<value>0</value>
-		</property>
-		<property name="maximumDistance">
-			<value>45</value>
-		</property>
-	</object>
 	<object class="MixerBusFader" id="{5ceb9d67-8ed8-4697-b490-49280fc17b6c}" />
 </objects>

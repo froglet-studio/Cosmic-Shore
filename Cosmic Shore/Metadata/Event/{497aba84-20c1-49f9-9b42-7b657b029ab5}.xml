@@ -64,7 +64,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>9.80000019</value>
+			<value>3200</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{0f4d0d82-5d24-4dbe-9244-817705f8ec71}" />
@@ -116,9 +116,6 @@
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{c4cdccec-106c-464e-a099-9c1027473c9d}">
-		<property name="volume">
-			<value>-19</value>
-		</property>
 		<property name="name">
 			<value>Audio 1</value>
 		</property>
@@ -139,7 +136,11 @@
 			<destination>{8b00c895-77f4-4e03-88a1-ca45d661399c}</destination>
 		</relationship>
 	</object>
-	<object class="MixerBusPanner" id="{78927066-7414-4eb3-acfe-80c2ee67ed57}" />
+	<object class="MixerBusPanner" id="{78927066-7414-4eb3-acfe-80c2ee67ed57}">
+		<property name="surroundLFELevel">
+			<value>-7.5</value>
+		</property>
+	</object>
 	<object class="MixerBusFader" id="{a06d938f-b314-4671-9372-702c98523bdd}" />
 	<object class="RandomizerModulator" id="{bd9d77b3-d39c-4939-a11a-680a1a82f822}">
 		<property name="nameOfPropertyBeingModulated">
@@ -167,11 +168,32 @@
 	<object class="MixerBusPanner" id="{3a6f9667-fcfb-47fa-a6aa-59b5bd65a1eb}" />
 	<object class="MixerBusFader" id="{7ec1a05e-ee15-4c72-858a-c590ca1ac55c}" />
 	<object class="SpatialiserEffect" id="{0b906957-34c0-4190-8a0c-612e1860a651}">
+		<property name="distanceRolloffType">
+			<value>1</value>
+		</property>
 		<property name="minimumDistance">
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>9.80000019</value>
+			<value>3200</value>
+		</property>
+		<property name="extentMode">
+			<value>1</value>
+		</property>
+		<property name="soundSize">
+			<value>10000</value>
+		</property>
+		<property name="minimumExtent">
+			<value>360</value>
+		</property>
+		<property name="panBlend">
+			<value>0</value>
+		</property>
+		<property name="userStereoSeparation">
+			<value>-180</value>
+		</property>
+		<property name="userStereoAxis">
+			<value>-173.814697</value>
 		</property>
 	</object>
 	<object class="PitchShifterEffect" id="{8b00c895-77f4-4e03-88a1-ca45d661399c}">

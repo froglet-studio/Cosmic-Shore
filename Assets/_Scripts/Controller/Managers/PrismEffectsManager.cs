@@ -65,6 +65,13 @@ namespace CosmicShore.Gameplay
         private static readonly int ImplosionProgressID = Shader.PropertyToID("_State");
         private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [Header("Diagnostics (Editor / Dev builds only)")]
+        [Tooltip("Seconds between the leaked-VFX safety audit. The audit uses FindObjectsByType (a full-scene scan), so keep this infrequent. Set <= 0 to disable.")]
+        [SerializeField] private float zombieAuditIntervalSeconds = 5f;
+        private float _nextZombieAuditTime;
+#endif
+
         public override void Awake()
         {
             base.Awake();
@@ -133,8 +140,12 @@ namespace CosmicShore.Gameplay
             // Safety audit: detect explosion / implosion VFX with enabled renderers
             // that aren't actively managed. Catches "zombie" pool instances whose
             // OnReturnToPool callback chain failed to deactivate the GameObject.
-            if (Time.frameCount % 60 == 0) // Check once per ~second at 60fps
+            // Uses FindObjectsByType (a full-scene scan), so it runs on an infrequent
+            // time-based throttle rather than every frame — running it once per second
+            // showed up as a recurring spike in dev-build profiling.
+            if (zombieAuditIntervalSeconds > 0f && Time.unscaledTime >= _nextZombieAuditTime)
             {
+                _nextZombieAuditTime = Time.unscaledTime + zombieAuditIntervalSeconds;
                 var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
                 foreach (var exp in allExplosions)
                 {
@@ -174,7 +185,7 @@ namespace CosmicShore.Gameplay
                 // so the console isn't spammy on quiet scenes.
                 if (zombies > 0 || activeGameObjects > 32)
                 {
-                    Debug.Log($"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies} (manager-tracked={activeImplosions.Count})");
+                    CSDebug.Log($"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies} (manager-tracked={activeImplosions.Count})");
                 }
             }
 #endif
