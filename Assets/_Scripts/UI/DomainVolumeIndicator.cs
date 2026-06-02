@@ -169,15 +169,17 @@ namespace CosmicShore.UI
 
             // Prefer the cell containing the local player's vessel. Falls through to
             // the nearest active cell if the player hasn't spawned yet or is between
-            // cells.
-            var vessel = gameData?.LocalPlayer?.Vessel;
-            if (vessel)
+            // cells. IVessel exposes its transform via the ITransform interface
+            // (capital T) — and is a plain interface ref, so a Unity-style implicit
+            // bool check would always be false; null-check explicitly.
+            Transform vesselT = gameData?.LocalPlayer?.Vessel?.Transform;
+            if (vesselT != null)
             {
-                _cachedCell = Cell.FindCellContaining(vessel.transform.position);
+                _cachedCell = Cell.FindCellContaining(vesselT.position);
                 if (_cachedCell) return _cachedCell;
             }
 
-            _cachedCell = Cell.FindNearestActiveCell(vessel ? vessel.transform.position : Vector3.zero);
+            _cachedCell = Cell.FindNearestActiveCell(vesselT != null ? vesselT.position : Vector3.zero);
             return _cachedCell;
         }
 
