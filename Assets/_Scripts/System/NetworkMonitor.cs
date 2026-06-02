@@ -25,6 +25,12 @@ namespace CosmicShore.Core
         {
             _networkMonitorDataVariable = networkMonitorDataVariable;
             _connected = IsCurrentlyReachable(); // initialize current state
+
+            if (_networkMonitorData != null)
+            {
+                _networkMonitorData.IsOnline = _connected;
+                _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
+            }
         }
 
         /// <summary>
@@ -64,14 +70,18 @@ namespace CosmicShore.Core
                 if (!reachable && _connected)
                 {
                     _connected = false;
+                    _networkMonitorData.IsOnline = false;
+                    _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
                     _networkMonitorData.OnNetworkLost?.Raise();
-                    CSDebug.Log("NetworkMonitor - Error. Check internet connection");
+                    CSDebug.Log($"[NetworkMonitor] Online → Offline (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
                 }
                 else if (reachable && !_connected)
                 {
                     _connected = true;
+                    _networkMonitorData.IsOnline = true;
+                    _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
                     _networkMonitorData.OnNetworkFound?.Raise();
-                    CSDebug.Log("NetworkMonitor Success. Internet connection established");
+                    CSDebug.Log($"[NetworkMonitor] Offline → Online (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
                 }
 
                 await UniTask.Delay(TimeSpan.FromSeconds(intervalSeconds), cancellationToken: token);

@@ -59,15 +59,21 @@ namespace CosmicShore.Gameplay
             // available from the inspector-serialized field.
             WirePartySubscriptions();
 
-            // If auth completed before this Start() ran (e.g. fast-boot or scene
-            // reload), bootstrap friends immediately. Otherwise the inspector-wired
-            // SOAP EventListenerNoParam on OnSignedIn will call HandleSignedInEvent.
+            // UGS auth completes asynchronously AFTER Start in the normal flow, so
+            // OnSignedIn is the primary trigger — subscribe in code (same pattern as
+            // MultiplayerSetup). There is no inspector EventListenerNoParam for this
+            // handler. The immediate call covers the already-signed-in case;
+            // HandleSignedInEvent is idempotent (guarded by _initialized).
+            if (authenticationDataVariable != null)
+                authenticationDataVariable.Value.OnSignedIn.OnRaised += HandleSignedInEvent;
             if (IsAuthSignedIn())
                 HandleSignedInEvent();
         }
 
         void OnDestroy()
         {
+            if (authenticationDataVariable != null)
+                authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnwirePartySubscriptions();
             SetPresenceOffline();
         }

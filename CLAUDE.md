@@ -245,9 +245,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `CLAUDE.md` | Project root | Architecture, patterns, systems reference |
 | `SCENES.md` | `Docs/` | Complete scene inventory, game modes, launch pipeline |
 | `THREADING.md` | `Docs/` | UniTask / SyncContext threading rules, `.AsMainThread()` contract, `MainThreadDispatcher`, canary, history |
-| `PARTY_INVITE_DEBUGGING.md` | `Docs/` | Outstanding party-invite bugs (host vessel despawn on send, client splash-stuck on accept) with investigation checklists |
-| `PARTY_SYSTEM_REFACTOR.md` | `Docs/` | Party system AAA refactor — 9 services, state machine, SOAP event bus |
-| `PartySystemAudit.md` | `Docs/` | Earlier party system audit (pre-refactor) |
+| `PartySystem/` | `Docs/` | Party (Relay) layer: `ARCHITECTURE.md` (locked design, investigation Q&A, error-handling matrix, exit criteria), `REFACTOR.md` (active backlog + deferred items + per-commit protocol), `BUGS.md`, `TESTS.md`, `TODOS.md`. EAGER per-user Relay session is the locked design. |
+| `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
+| `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `README.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
@@ -1035,50 +1035,34 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 - **Local-only freestyle toggle**: `MenuCrystalClickHandler` toggles autopilot ↔ freestyle per-client with `IsLocalUser` guard. No network RPC needed — vessel behavior replicates automatically via Netcode.
 - **TimeScale safety**: `MenuCrystalClickHandler.IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) prevents `Time.timeScale` changes in multiplayer, which would freeze all local rendering including other players' vessels.
 
-#### Pending Critical Refactors (next session)
+#### Party system — see `Docs/PartySystem/` and `Docs/PresenceSystem/`
 
-Queued for a focused pass — these are root-cause fixes, not symptom patches.
+The party / invite / lobby system is hardened toward an unbreakable state. The
+canonical references are split by layer: `Docs/PartySystem/` (the Relay-backed
+party session) and `Docs/PresenceSystem/` (the lobby-only discovery layer). Read
+`Docs/PartySystem/ARCHITECTURE.md` before touching `HostConnectionService.cs`,
+`PartySessionService.cs`, `NetworkTransitionService.cs`, or
+`PartyInviteController.cs`; read `Docs/PresenceSystem/ARCHITECTURE.md` before
+touching `PresenceLobbyService.cs`. The active refactor backlog (the three
+remaining service refactors + deferred items D1-D5 + per-commit protocol) lives
+in `Docs/PartySystem/REFACTOR.md`. Open bugs are split into
+`Docs/PartySystem/BUGS.md` and `Docs/PresenceSystem/BUGS.md`. Catch-block failure
+diagnostics are documented in `Docs/NetworkDiagnostics/README.md`.
 
-**Recently completed (branch `claude/investigate-startup-warnings-yuLbq`):** the entire
-threading cascade — UGS / Netcode `Task` continuations resuming on the .NET ThreadPool → SOAP
-raises running off-thread → `EnsureRunningOnMainThread` crashes — was resolved by introducing
-`MainThreadDispatcher` (Unity-`SynchronizationContext`-backed) plus the `.AsMainThread()`
-boundary helper at every UGS / Netcode `await`. See `Docs/THREADING.md`. **Do not** introduce
-`UniTask.SwitchToMainThread()` or `UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling
-fix — both have been tried and proven unreliable on this UniTask version.
+**Locked design — do not relitigate.** Every authenticated player hosts their own
+Relay-backed party session from the moment they enter `Menu_Main` (the "Always
+InParty" model). EAGER per-user Relay creation is the canonical model. **Do not
+reintroduce LAZY / on-first-invite creation** — the shutdown-and-recreate cascade
+it caused is the root of every recurring party-invite bug. If a future bug appears
+to argue for lazy creation, re-examine the root cause through the lens of
+`Docs/PartySystem/ARCHITECTURE.md` "Unbreakable exit criteria" first.
 
-**Two follow-up bugs remain after the threading fix** (see `Docs/PARTY_INVITE_DEBUGGING.md` for
-full debugging notes, including suspected root causes, files / line numbers, log instrumentation
-plan, and reproduction scenarios):
-
-- **Bug A — Host vessel despawn on invite send.** Pressing "+" to send an invite causes the host's
-  own vessel to `OnNetworkDespawn`. Suspected root: `CreateOwnPartySessionAsync` unconditionally
-  calls `_networkTransition.ShutdownAsync` before recreating the Relay session, despawning the
-  host's Player + Vessel. Likely fully resolved by the lazy party-session refactor below.
-- **Bug B — Client stuck on splash after accepting invite.** Joining client's fade-overlay stays
-  opaque after a successful Relay join. Most likely culprit: `gameData.OnClientReady` never fires
-  on the joining client (either because `ClientPlayerVesselInitializer.InitializePair` is not
-  reached on their side, or because `WaitForSceneSyncAsync` times out without a host-side scene
-  load). Tractable with one log-instrumentation pass.
-
-1. **Lazy party-session creation** *(highest leverage)*
-   - Today every authenticated user eagerly creates a Relay-backed session on startup via `HostConnectionService.Start()` → `CreatePartySessionAsync()` → `CreateSessionAsync(WithRelayNetwork())`, which internally calls `NetworkManager.StartHost()`. Every user burns a Relay allocation + UGS session whether or not they invite anyone.
-   - Cost: the accept flow has to `ShutdownNetworkManagerAsync` before joining the inviter's session. That shutdown-and-reconnect dance is the origin of the scene-sync race (fixed in `b84fe6e4`), the `get_isPlaying` log noise on scene-load ticks (`b5f13ca7`), stale `LocalPlayer`/`Vessels` refs (same), the local-host fallback race (`HOST_CONFLICT_MAX_RETRIES` in `CreatePartySessionCoreAsync`), and the whole "why does Menu_Main reload on accept?" pain that `b74a311c` tried to paper over.
-   - Target design: users join only the presence lobby on startup (lobby-only session, no Relay, no NM). `CreateSessionAsync(WithRelayNetwork())` fires **on first invite sent**. Accept flow becomes `JoinSessionByIdAsync` directly — no prior shutdown, no scene-sync race, no stale refs, no steps 1b/3b needed.
-   - Files that change: `HostConnectionService.CreatePartySessionAsync`/`Start`/`Update` (remove eager creation + the Update-loop recreation), `AuthenticationSceneController.LoadMainMenuNetworkedAsync` (Menu_Main loads locally, not networked, until the user enters a party), `TryStartLocalHostFallback` (delete — no longer needed), `PartyInviteController.AcceptInviteAsync` (shutdown step + 1b + 3b become no-ops; strip them), `MenuServerPlayerVesselInitializer` (only spawns when a party is actually live), `TransitionToPartyHostAsync` (stop being a no-op and actually do the host transition on first-invite).
-   - Expected gains: accept latency ~1.5-3s → ~500-800ms; Relay session count drops ~10×; removes a whole class of "client orphaned after accept" bugs; makes the `b74a311c` "direct-join, no scene reload" intent actually achievable (today Netcode reloads anyway because the host loaded Menu_Main via `nm.SceneManager.LoadScene`).
-   - Scope: ~1 day, touches ~6 files, needs careful verification with 2+ MPPM VPs.
-
-2. **Play-mode integration tests for the accept/decline/leave flow**
-   - `_Scripts/Tests/EditMode/PartyInviteControllerTests.cs:17-18` explicitly says integration tests are "tracked separately" — they do not exist. Every party fix in this branch was verified by eyeballing the Console.
-   - Minimum viable: MPPM-driven play-mode test (VP-A signs in → creates party → VP-B signs in → receives invite → accepts → assert both Player + Vessel NetworkObjects exist on both clients + `gameData.LocalPlayer != null` on both + `connectionData.PartyMembers.Count == 2`).
-   - Add to `_Scripts/Controller/Multiplayer/Tests/` (new `.asmdef` probably).
-   - Without this, every fix in this file is silently re-breakable.
-
-3. **Secondary items** (fold into #1 if possible)
-   - `HostConnectionService.OnSceneLoaded` `_lastFiredInvite = null` reset on Menu_Main reload can mask a legitimate re-invite from the same sender mid-session.
-   - `PartyInviteController.RecoverFromFailedTransitionAsync` has no path to re-notify the sender or re-surface the invite when `HostConnectionService.AcceptInviteAsync` partially succeeds (sets `_lastInviteResolved = true`) and then Relay join fails — user ends up with no row and no party.
-   - No server-side invite-token check: anyone with a session ID can `JoinSessionByIdAsync`; the `IsPrivate=true` flag is the only gate.
+**Threading prerequisite (shipped):** the UGS / Netcode `Task` continuation → SOAP
+off-thread → `EnsureRunningOnMainThread` cascade is resolved by `MainThreadDispatcher`
++ `.AsMainThread()` at every UGS / Netcode `await`. See `Docs/THREADING.md`.
+**Do not** introduce `UniTask.SwitchToMainThread()` or
+`UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — both have
+been tried and proven unreliable on this UniTask version.
 
 ### Friend System
 
@@ -1830,6 +1814,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — they don't reliably switch threads on this UniTask version. Use `.AsMainThread()` (see `Docs/THREADING.md`)
 - Raising a SOAP `ScriptableEvent` from a UGS / Netcode `Task` continuation without ensuring the continuation has resumed on the main thread first — SOAP `Raise()` invokes listeners inline, so off-thread raises crash any listener that touches Unity state
 - Touching a `UnityEngine.Object` (incl. `== null` checks routing through `op_Equality`) in a `Task` continuation without `.AsMainThread()` upstream — throws `EnsureRunningOnMainThread`
+- Caching a UGS singleton `*.Instance` (e.g. `MultiplayerService.Instance`) in a service **constructor** — lazy DI singletons are constructed during Bootstrap DI resolution, *before* `UnityServices.InitializeAsync()` completes, so `*.Instance` is null at construction and gets pinned null forever. Instead expose a private property that resolves at use time: `private IMultiplayerService _multiplayerService => MultiplayerService.Instance;` — always reads the live `Instance` at the call site (see `PartySessionService` / `PresenceLobbyService`)
 
 ## Shader & Visual Development
 
@@ -1902,29 +1887,6 @@ When investigating issues, follow this systematic approach:
 5. Fix, profile again, confirm improvement with data
 
 Do not guess at performance problems. Profile first.
-
-## Current Priority Context
-
-### GDC 2026 (March 9-13)
-
-Active build target is a 15-minute investor demo for MeetToMatch pitch meetings. The demo must showcase:
-
-- Squirrel vessel (racing/drift gameplay)
-- Sparrow vessel (shooter gameplay)
-- Party game mechanics and how vessel classes connect players
-- Multiplayer with AI opponents for solo demo capability
-- Polish level that communicates production readiness
-
-Every technical decision should be weighed against: **does this help the GDC demo?**
-
-### Build Priority Stack (in order)
-
-1. Core gameplay loop stability for both demo vessels
-2. Visual polish that communicates quality to investors
-3. Performance — must be smooth during live demo
-4. UI/UX clarity for first-time players watching a pitch
-5. Multiplayer stability (with AI backfill for reliable demos)
-6. Everything else
 
 ## Communication Preferences
 

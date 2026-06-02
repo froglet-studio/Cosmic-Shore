@@ -411,7 +411,7 @@ namespace CosmicShore.Core
             );
 
             builder.RegisterFactory<IPartySessionService>(
-                _ => new PartySessionService(hostConnectionData),
+                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
@@ -493,7 +493,11 @@ namespace CosmicShore.Core
 
         #region Service Startup
 
-        void StartNetworkMonitor() => networkMonitor?.StartMonitoring();
+        void StartNetworkMonitor()
+        {
+            CosmicShore.Utility.NetworkDiagnostics.Initialize(networkMonitorDataVariable);
+            networkMonitor?.StartMonitoring();
+        }
         void StopNetworkMonitor() => networkMonitor?.StopMonitoring();
         void StartAuthentication() => authenticationServiceFacade?.StartAuthentication();
 

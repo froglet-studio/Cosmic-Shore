@@ -308,12 +308,14 @@ namespace CosmicShore.Core
                 return;
             }
 
-            // Phase 15 "Always InParty": the party Relay session is NOT cleared here.
-            // MultiplayerSetup.LeaveSession() already nulled gameData.ActiveSession
-            // without deleting the underlying UGS session, so HCS still has a live
-            // Relay and NM is still running.  ReturnToMainMenu() uses
-            // nm.SceneManager.LoadScene to carry all party members back to Menu_Main
-            // on the same Relay connection — no disconnection, no re-creation.
+            // Eager per-user Relay: the party Relay session is NOT cleared here.
+            // MultiplayerSetup.LeaveSession() raises OnSessionEnded but leaves the
+            // shared gameData.ActiveSession reference intact (Commit 8 unified it
+            // with PartySessionService.ActiveSession; nulling here would orphan
+            // the live Relay).  HCS still has a live Relay and NM is still
+            // running.  ReturnToMainMenu() uses nm.SceneManager.LoadScene to
+            // carry all party members back to Menu_Main on the same Relay
+            // connection — no disconnection, no re-creation.
 
             ReturnToMainMenu();
             gameData.ResetAllData();

@@ -31,6 +31,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Whether a vessel swap is currently in progress.</summary>
         public bool IsSwapping => _isSwapping;
 
+        // Menu vessels spawn with destroyWithScene=false so a joining client's vessel
+        // survives the client's Single-mode Menu_Main scene-synchronize, which would
+        // otherwise batch with and destroy the just-spawned vessel (the AI-vessel race).
+        // Menu→game and leave-party paths despawn all vessels explicitly
+        // (SceneLoader.ClearPlayerVesselReferences / GameDataSO.DestroyPlayerAndVessel),
+        // so there is no leak.
+        protected override bool DestroyVesselWithScene => false;
+
         protected override void Awake()
         {
             // Menu_Main must NOT shutdown NetworkManager on despawn —

@@ -81,5 +81,22 @@ namespace CosmicShore.Gameplay
         /// </para>
         /// </summary>
         void ForceReset();
+
+        /// <summary>
+        /// Converges every client onto a single canonical presence lobby — the one
+        /// with the lexicographically smallest session id — healing a
+        /// simultaneous-create split where two clients each created their own lobby
+        /// at the same instant (MPPM / near-simultaneous launches) and UGS session
+        /// indexing lag let both miss each other on the initial query.
+        ///
+        /// <para>
+        /// Idempotent and swap-free: the smallest-id holder stays put; everyone else
+        /// leaves their lobby and joins the canonical one.  A no-op once the set has
+        /// converged, so it is safe to call on a timer to self-heal late splits.
+        /// Must NOT touch NetworkManager or Relay (presence lobby is lobby-only).
+        /// </para>
+        /// </summary>
+        /// <param name="maxPlayers">Capacity to use if a (re)join is required.</param>
+        UniTask ConvergeToCanonicalAsync(int maxPlayers);
     }
 }

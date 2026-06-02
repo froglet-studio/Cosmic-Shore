@@ -116,7 +116,7 @@ namespace CosmicShore.Gameplay
             var joinedPlayerIds = new List<string>();
             foreach (var p in session.Players)
             {
-                if (p.Id == localPlayerId) continue;
+                if (string.IsNullOrEmpty(p.Id) || p.Id == localPlayerId) continue;
 
                 var memberData = ReadMemberData(p);
                 if (!_connectionData.PartyMembers.Contains(memberData))
@@ -143,25 +143,6 @@ namespace CosmicShore.Gameplay
             }
 
             return joinedPlayerIds;
-        }
-
-        /// <inheritdoc/>
-        public void RepopulateFromSession(ISession session, string localPlayerId)
-        {
-            if (_connectionData == null || _connectionData.PartyMembers == null) return;
-
-            _connectionData.PartyMembers.Clear();
-            _connectionData.PartyMembers.Add(_connectionData.LocalPlayerData);
-
-            foreach (var p in session.Players)
-            {
-                if (p.Id == localPlayerId) continue;
-                var memberData = ReadMemberData(p);
-                _connectionData.PartyMembers.Add(memberData);
-                _eventBus.RaisePartyMemberJoined(memberData);
-            }
-
-            Debug.Log($"[PartyMemberService] Repopulated from session: {_connectionData.PartyMembers.Count} member(s).");
         }
 
         /// <inheritdoc/>

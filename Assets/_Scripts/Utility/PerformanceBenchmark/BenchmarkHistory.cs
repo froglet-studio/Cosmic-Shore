@@ -79,7 +79,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// Tag a report for easy identification (e.g., "baseline", "pre-optimization", "GDC-build").
+        /// Tag a report for easy identification (e.g., "baseline", "pre-optimization", "release-build").
         /// </summary>
         public static void TagReport(string reportId, string tag, string folder)
         {
