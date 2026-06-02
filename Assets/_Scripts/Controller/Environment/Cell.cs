@@ -90,6 +90,27 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
+        /// <summary>
+        /// The enabled cell whose transform is closest to <paramref name="position"/>,
+        /// or null if no cells are active. Distance is centre-to-point; ties resolve
+        /// in iteration order. Useful as a fallback for HUDs that need *a* cell to
+        /// read state from when the player isn't inside any (e.g. Menu_Main's
+        /// orbital camera, between-cell transit).
+        /// </summary>
+        public static Cell FindNearestActiveCell(Vector3 position)
+        {
+            Cell best = null;
+            float bestSqr = float.PositiveInfinity;
+            for (int i = 0; i < ActiveCells.Count; i++)
+            {
+                var c = ActiveCells[i];
+                if (!c) continue;
+                float d = (c.transform.position - position).sqrMagnitude;
+                if (d < bestSqr) { bestSqr = d; best = c; }
+            }
+            return best;
+        }
+
         CellPhase phase = CellPhase.Sprout;
 
         /// <summary>
@@ -125,6 +146,22 @@ namespace CosmicShore.Gameplay
                 return leader;
             }
         }
+
+        /// <summary>
+        /// Live count of prisms tracked under <paramref name="domain"/>. Mirrors the
+        /// per-domain bookkeeping that <see cref="DominantDomain"/> reads, exposed so
+        /// HUD widgets (volume wedges, etc.) don't need to walk Add/RemoveBlock state
+        /// themselves. Returns 0 for untracked domains.
+        /// </summary>
+        public int GetDomainBlockCount(Domains domain) =>
+            domainBlockCounts.TryGetValue(domain, out int c) ? c : 0;
+
+        /// <summary>
+        /// LiveBlockCount at which the cell crosses into Rabid (frenzy). HUD widgets
+        /// use this as the "max" — when summed mass approaches it, the cell is about
+        /// to enter Level2 aggression and the UI should communicate that.
+        /// </summary>
+        public int RabidEnterThreshold => ResolveThresholds().RabidEnter;
 
         /// <summary>
         /// Current phase. Written exclusively by <see cref="CellNetworkSync"/> via

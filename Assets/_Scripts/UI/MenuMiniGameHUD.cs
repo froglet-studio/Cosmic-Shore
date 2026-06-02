@@ -30,6 +30,9 @@ namespace CosmicShore.UI
 
         [Header("Volume / Pause Button")]
         [SerializeField] Button volumePauseButton;
+        [Tooltip("Three-wedge per-domain volume indicator on the pause button face. " +
+                 "Optional — leave null if the button has no indicator wired yet.")]
+        [SerializeField] DomainVolumeIndicator domainVolumeIndicator;
         [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
