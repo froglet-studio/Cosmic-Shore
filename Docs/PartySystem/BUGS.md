@@ -91,6 +91,167 @@ the bounce.
 `MenuServerPlayerVesselInitializer.cs:40`; `MenuCrystalClickHandler.cs`
 (toggle + OnEnable); `MainMenuController.cs:~198-267`.
 
+### B3.b — same symptom on the CLEAN-LEAVE path (MPPM Session 1, 2026-06-02)
+
+**This is a distinct variant of B3.** The original B3 (above) is the
+*bounce* path (`RecoverFromFailedTransitionAsync` after a failed join).
+B3.b reproduces the **identical symptom — two vessels + a vessel that
+won't steer and whose AI no longer seeks crystals — on the deliberate
+Leave Party button**, which goes through
+`LeavePartyAndReturnToMenuAsync`, the path B3 calls "the working one".
+So the original B3 root cause (missing `DestroyPlayerAndVessel` in the
+bounce path) does **not** explain B3.b — the leave path *does* call
+`gameData.DestroyPlayerAndVessel()` (`PartyInviteController.cs:299`).
+
+**Reproduction (2-VP, clean happy path until leave).** VP-A (Ys1, host)
+invites VP-B (Ys2, client). VP-B accepts, both fly, all good. **VP-B
+presses Leave Party.** VP-B returns to its own solo host session but
+ends with **two vessels** (NetObjId 4 and 6 both re-spawn) and one
+`Player`; the local vessel cannot be controlled and its AI wanders
+without seeking crystals. Host (VP-A) side is clean. No log repetition
+on the client (unlike B8).
+
+**Log trace (client / VP-B, sequential key lines).**
+```
+[SoapPartyEventBus] RaiseInviteResolved                          ← LeavePartyAsync entry (HCS:705, benign UI clear — NOT the bug)
+[SoapPartyEventBus] RaisePartyMemberLeft → Ys2
+[PartyMemberService] Party members cleared with Left events.
+[LobbyPropertyWriter] ClearJoinedParty error (SessionException: [Error: Unknown] Object reference not set ...)   ← B8 fix-2 clear write hits B1/B6 SDK NRE
+[PartyInviteController] Starting leave-lobby flow...
+[PartySessionService] Clearing session reference xifykg7...
+[VESSEL] OnNetworkDespawn 'Squirrel(Clone)' NetObjId=6  IsOwner=True   ← client's own vessel despawns
+[VESSEL] OnNetworkDespawn 'Squirrel(Clone)' NetObjId=4  IsOwner=False  ← host's replicated vessel despawns
+[MultiplayerSetup] Disconnected from host. Returning to menu
+[SceneLoader] HandleActiveSessionEnd deferring to server — IsListening=True, IsServer=False, IsClient=True
+[VESSEL] OnDestroy NetObjId=6
+[VESSEL] OnDestroy NetObjId=4
+[PartySessionService] Left party session xifykg7...
+[PartyStateMachine] InParty → HostingParty
+[NetworkTransitionService] NetworkManager not running — skipping shutdown.
+... (solo restart) ...
+[VESSEL] OnNetworkSpawn 'Squirrel(Clone)' NetObjId=4  IsServer=True IsOwner=True   ← FIRST respawn
+[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)
+[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId(0) returned NULL  ← ⚠ spawn-chain desync
+[HostConnectionService] Solo party session ready: TR8irv... — InParty, vessel will spawn
+[PartyInviteController] Leave-lobby flow completed.
+[CellRuntimeDataSO] Runtime data reset complete
+Container Menu_Main (-4960322) disposed
+NullReferenceException: MainMenuCameraController.StartRandomSwitchLoopIfEnabled (MainMenuCameraController.cs:647) ← via OnValidate during teardown
+Scene (Menu_Main) Bindings Installed
+[VESSEL] OnNetworkSpawn 'Squirrel(Clone)' NetObjId=6  IsServer=True IsOwner=True   ← SECOND respawn = two vessels
+[FLOW-6] [ClientVesselInit] AddPlayer done. Players.Count=1, LocalPlayer=Ys1
+[FLOW-6] [ClientVesselInit] Raising OnClientReady
+[FLOW-8] [SceneLoader] FadeFromSplashOnReady — OnClientReady fired!
+[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId(0) returned NULL  ← ⚠ again
+UnknownContractException: Cannot resolve contract 'CosmicShore.Utility.GameDataSO'  ← AOEExplosion DI inject fails post-teardown
+```
+
+**Root-cause hypotheses (ordered by confidence).**
+
+1. **Two-respawn / scene-reload race (high).** The vessel spawns
+   **twice** (NetObjId 4 then 6, both `IsServer=True IsOwner=True`). The
+   sequence shows a vessel respawn (NetObjId 4) and an `OnClientReady`
+   *before* `Container Menu_Main disposed` + `Scene (Menu_Main) Bindings
+   Installed`, then a *second* respawn (NetObjId 6) + second
+   `OnClientReady` after. So the solo host's `EnsurePartySessionAsync`
+   spawn-chain fires a vessel **before** the `Menu_Main` network scene
+   reload completes, and the scene reload spawns **another**. The first
+   vessel (NetObjId 4) is a scene-survivor (menu vessels are
+   `DestroyVesselWithScene=false`, `MenuServerPlayerVesselInitializer.cs:40`)
+   that is *not* cleaned up by the reload — same root mechanism as the
+   original B3, but reached via the ordering of solo-restart-vs-reload
+   on the leave path rather than the missing-cleanup-call of the bounce
+   path.
+
+2. **`FindUnprocessedPlayerByOwnerClientId(0) returned NULL` →
+   spawn-chain desync (high).** Fires twice. The host's
+   `ServerPlayerVesselInitializer.HandlePlayerNetworkSpawnedAsync`
+   (`:188-193`) early-returns when it can't find an unprocessed Player
+   for clientId 0 (the host's own id after solo restart). The Player
+   list was cleared by `ResetRuntimeData()` and the persistent Player
+   NetworkObject's `OnNetworkSpawn` doesn't re-fire (it survives scene
+   loads, `DestroyWithScene=false`), so `ProcessPreExistingPlayers` /
+   the `ConnectedClients` re-trigger path (`:130-145`) is supposed to
+   re-kick it — but the NULL return means the pairing between the
+   respawned vessel (NetObjId 4/6) and the Player did not complete.
+   **A vessel with no completed player-pairing = no input controller
+   wired = "wanders on AI, won't steer"** — this is almost certainly the
+   dead-control half of the symptom.
+
+3. **`MainMenuController.ActivateLocalPlayerAutopilot` races the
+   double-spawn (medium).** `HandleMenuReady` (`MainMenuController.cs:198`)
+   → `ActivateLocalPlayerAutopilot` (`:249`) fires on `OnClientReady`.
+   `OnClientReady` fires **twice** in the trace (once per respawn). The
+   autopilot/input state is set against whichever `LocalPlayer` is
+   current at each fire; with two vessels and a NULL-paired one, the
+   toggle/input ends up bound to the wrong or a half-initialized vessel.
+
+**Secondary errors in the same trace (likely consequences, not causes).**
+- `MainMenuCameraController.StartRandomSwitchLoopIfEnabled` NRE
+  (`MainMenuCameraController.cs:647`) — fires via `OnValidate` during
+  `Container Menu_Main disposed`. Editor-time validation running against
+  a half-disposed scene; probably benign teardown noise but worth a
+  null-guard.
+- `UnknownContractException: GameDataSO` on `AOEExplosion.gameData`
+  inject (`ExplosionHelper.cs:79` via a crystal-impact RPC) — a vessel
+  from the *old* session is still alive and processing a crystal-impact
+  `ClientRpc` after its DI `Container Menu_Main` was disposed, so the
+  recursive injector can't resolve `GameDataSO`. **This is direct
+  evidence of hypothesis 1** — a leftover vessel from the pre-leave
+  session is still live and interacting with crystals after teardown.
+
+**Distinction from B8.** B8 was host-side, fixed by the session
+cross-check + awaited clear. B3.b is **client-side**, on the leaving
+client's own solo restart, and is about vessel/scene lifecycle ordering
+— a different subsystem. The `ClearJoinedParty error` line in the trace
+is the B8 fix-2 write hitting the B1/B6 SDK NRE (expected; non-fatal —
+the await is bounded and the host ignores the property via B8 fix-1).
+
+**Candidate approaches (discussion stage — NO code yet).**
+
+- **A. Order solo-restart AFTER the scene reload settles.** The leave
+  flow currently does `LeavePartyKeepHostAsync` (which calls
+  `EnsurePartySessionAsync` → fresh solo Relay + spawn) *then*
+  `LoadScene(Menu_Main)`. If the spawn chain is kicked before the scene
+  reload completes, we get the double-spawn. Investigate gating the
+  solo-session vessel spawn on scene-load completion (mirror how the
+  initial Menu_Main load sequences it).
+- **B. Explicit despawn of scene-surviving vessels before the reload.**
+  The original B3 fix idea (explicit despawn before solo restart)
+  applied here too — ensure NetObjId 4 (the scene-survivor) is despawned
+  so only the reload's fresh vessel exists.
+- **C. Fix the `FindUnprocessedPlayerByOwnerClientId` NULL on solo
+  restart.** Ensure the persistent host Player is re-registered into
+  `gameData.Players` and re-processed after `ResetRuntimeData()` clears
+  it, so the respawned vessel completes its player-pairing (restores
+  input control). This likely fixes the dead-control half independently
+  of the duplicate.
+- **D. All three** — they target different facets (duplicate, lifecycle
+  ordering, pairing). Likely need B+C at minimum.
+
+**Status.** 🔴 Open — analysis complete from a single MPPM trace, root
+cause is vessel/scene lifecycle ordering on the client's solo restart
+after a clean leave. Distinct from the original B3 bounce-path cause.
+**No code change yet — awaiting discussion + user decision on approach,
+and likely 1-2 more targeted log captures to confirm hypothesis 1 vs 2
+ordering.**
+
+**Evidence (file:line).**
+- `PartyInviteController.cs:274-340` — `LeavePartyAndReturnToMenuAsync`
+  (calls `DestroyPlayerAndVessel` at `:299`, then `LeavePartyKeepHostAsync`
+  at `:312`, then `LoadScene` at `:318`).
+- `GameDataSO.cs:188` — `DestroyPlayerAndVessel` (clears `Players`,
+  destroys vessels).
+- `ServerPlayerVesselInitializer.cs:130-145` — `ConnectedClients`
+  re-kick of persistent Players after a scene load.
+- `ServerPlayerVesselInitializer.cs:188-193` — the NULL early-return.
+- `MenuServerPlayerVesselInitializer.cs:40` — `DestroyVesselWithScene=false`.
+- `MainMenuController.cs:198,249` — `HandleMenuReady` /
+  `ActivateLocalPlayerAutopilot` (fires per `OnClientReady`, twice here).
+- `MainMenuCameraController.cs:647` — secondary NRE.
+- `ExplosionHelper.cs:79` — secondary `GameDataSO` resolve failure
+  (leftover-vessel evidence).
+
 ---
 
 ## B5 — TC2/TC4: the second joiner fails to join 🔴
@@ -177,7 +338,7 @@ re-trigger, pair init), `Scoreboard.cs:307,315` (uses `RoundStats.Name`).
 
 ---
 
-## B8 — Host-side phantom-rejoin loop after client leaves party (stale `joined_party` presence property) 🔴
+## B8 — Host-side phantom-rejoin loop after client leaves party (stale `joined_party` presence property) 🟢 (fixed + MPPM-verified 2026-06-02)
 
 **Symptom (observed in MPPM Session 1, Phase A.1, 2026-06-01).** On a
 2-VP MPPM run: VP-B (Ys2) accepts VP-A's (Ys1) invite, joins the party,

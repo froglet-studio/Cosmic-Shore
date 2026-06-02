@@ -338,6 +338,38 @@ to solo Menu_Main.
 B8 takes priority over advancing to Phase A.2 — it's a real
 party-flow regression that affects every leave, not just Phase A.
 
+### Phase A.1 re-verify after B8 fixes (cb65cf3 + 59fda81) — 2026-06-02
+
+**B8 result: FIXED.** Invite + accept verified perfect on both VPs —
+each controls its own vessel and flies. The host-side phantom-rejoin
+flicker is gone. B8 status → 🟢 (pending only the residual-under-churn
+note).
+
+**But the clean-leave path surfaced a new bug: B3.b.** When the client
+presses Leave Party, it returns to its solo host but with **two vessels
++ one Player**, the vessel won't steer, and its AI no longer seeks
+crystals. Full trace + 3 root-cause hypotheses documented in `BUGS.md`
+B3.b. Key points:
+- This is the SAME symptom as the registered B3 but on the CLEAN-LEAVE
+  path (`LeavePartyAndReturnToMenuAsync`), which B3 described as "the
+  working one" — so it's a distinct variant. The leave path DOES call
+  `DestroyPlayerAndVessel` (PIC:299), so B3's original root cause does
+  not apply.
+- Smoking guns: vessel spawns TWICE (NetObjId 4 then 6, around the
+  `Container Menu_Main disposed` / `Scene Bindings Installed`
+  boundary); `FindUnprocessedPlayerByOwnerClientId(0) returned NULL`
+  fires twice (spawn-chain desync → no input pairing → dead controls);
+  a leftover old-session vessel processes a crystal-impact RPC AFTER
+  its DI container disposed (`UnknownContractException: GameDataSO` via
+  `AOEExplosion` / `ExplosionHelper.cs:79`) — direct evidence a vessel
+  survived the leave.
+- The user confirmed `RaiseInviteResolved` (HCS:705) is the benign
+  Leave-button entry, NOT the bug.
+
+**B3.b is the new priority.** No code change yet — analysis done from
+one trace; likely needs 1-2 more targeted captures to confirm the
+spawn-vs-reload ordering before fixing.
+
 ### Phase B — Party smoke gate
 
 | Test | Status | NetDiag observed | Notes |
