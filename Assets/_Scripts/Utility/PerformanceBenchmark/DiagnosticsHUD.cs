@@ -68,14 +68,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder _rpcs, _netVars, _netBytes;
 
         // ui
-        Text _readout, _advBtnLabel, _diagBtnLabel;
-        RectTransform _panel, _readoutRT, _buttonRow;
+        Text _readout, _valueCol, _advBtnLabel, _diagBtnLabel;
+        RectTransform _panel, _readoutRT, _valueRT, _buttonRow;
         GameObject _canvasGO;
         Font _font;
 
         // cached once — local machine region + UTC offset (UGS auto-picks the Relay region and
         // doesn't surface it, so we report the client's OS region; ping gives latency to host).
-        string _regionCache;
+        string _regionCache, _utcCache;
 
         void Awake()
         {
@@ -155,95 +155,115 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         // palette
-        const string Label = "#8b97a8", Good = "#5fe07a", Warn = "#ffd066", Bad = "#ff6b6b",
-                     Accent = "#7cc2ff", Dim = "#6b7686";
+        const string Label = "#8b97a8", White = "#ffffff", Good = "#5fe07a", Warn = "#ffd066",
+                     Bad = "#ff6b6b", Accent = "#7cc2ff", Dim = "#6b7686";
+
+        // layout
+        const float Pad = 10f, ValueX = 132f, BtnH = 22f, RowGap = 10f, TopY = 8f;
 
         static string Col(string hex, string body) => "<color=" + hex + ">" + body + "</color>";
         static string FpsColor(float fps) => fps >= 55f ? Good : fps >= 30f ? Warn : Bad;
         static string MsColor(float ms) => ms <= 17f ? Good : ms <= 33.4f ? Warn : Bad;
 
+        static void Row(StringBuilder l, StringBuilder v, string label, string value)
+        {
+            l.Append(Col(Label, label)).Append('\n');
+            v.Append(value).Append('\n');
+        }
+
+        static void Header(StringBuilder l, StringBuilder v, string title)
+        {
+            l.Append(Col(Accent, title)).Append('\n');
+            v.Append('\n');
+        }
+
         void RefreshText()
         {
             if (_readout == null) return;
-            var sb = new StringBuilder(512);
+            var l = new StringBuilder(384);
+            var v = new StringBuilder(384);
 
             if (_recording)
             {
                 float left = Mathf.Max(0f, _recEnd - Time.unscaledTime);
-                sb.Append(Col(Bad, "● REC ")).Append(Col(Warn, left.ToString("F0") + "s"))
-                  .Append(Col(Dim, "   " + _recFrames + "f · " + _recSpikes.Count + " spikes")).Append('\n');
+                Row(l, v, "● Recording", Col(Warn, left.ToString("F0") + "s left"));
+                Row(l, v, "Captured", Col(Dim, _recFrames + " f · " + _recSpikes.Count + " spikes"));
             }
 
-            // ── normal: framerate + frame time ──
-            sb.Append(Col(Label, "FPS "))
-              .Append(Col(FpsColor(_displayFps), _displayFps.ToString("F0")))
-              .Append(Col(Label, "    Frame Time "))
-              .Append(Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
+            // ── live ──
+            Row(l, v, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
+            Row(l, v, "Frame Time", Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
 
             if (_advanced)
             {
-                // ── render ──
-                sb.Append('\n').Append(Col(Accent, "Render  "))
-                  .Append(Col(Label, "Draw Calls ")).Append(Col("#ffffff", RInt(_drawCalls).ToString()))
-                  .Append(Col(Label, "  Batches ")).Append(Col("#ffffff", RInt(_batches).ToString()))
-                  .Append(Col(Label, "  SetPass ")).Append(Col("#ffffff", RInt(_setPass).ToString()));
-                sb.Append('\n').Append(Col(Label, "        Tris "))
-                  .Append(Col("#ffffff", RLong(_triangles).ToString("N0")))
-                  .Append(Col(Label, "  Verts ")).Append(Col("#ffffff", RLong(_vertices).ToString("N0")));
+                Header(l, v, "Render");
+                Row(l, v, "Draw Calls", Col(White, RInt(_drawCalls).ToString()));
+                Row(l, v, "Batches", Col(White, RInt(_batches).ToString()));
+                Row(l, v, "SetPass", Col(White, RInt(_setPass).ToString()));
+                Row(l, v, "Triangles", Col(White, RLong(_triangles).ToString("N0")));
+                Row(l, v, "Vertices", Col(White, RLong(_vertices).ToString("N0")));
 
-                // ── memory ──
+                Header(l, v, "Memory");
                 float gcKB = RLong(_gcAlloc) / 1024f;
-                sb.Append('\n').Append(Col(Accent, "Memory  "))
-                  .Append(Col(Label, "GC ")).Append(Col(gcKB > 4f ? Warn : Good, gcKB.ToString("F1") + " KB/frame"));
+                Row(l, v, "GC / frame", Col(gcKB > 4f ? Warn : Good, gcKB.ToString("F1") + " KB"));
 
-                // ── network ──
+                Header(l, v, "Network");
                 double rtt = Rtt();
-                sb.Append('\n').Append(Col(Accent, "Network ")).Append(Col(Label, "Ping "))
-                  .Append(rtt >= 0
-                      ? Col(rtt <= 80 ? Good : rtt <= 160 ? Warn : Bad, rtt.ToString("F0") + " ms")
-                      : Col(Dim, "offline"))
-                  .Append(Col(Label, "  NetVars ")).Append(Col("#ffffff", RInt(_netVars).ToString()))
-                  .Append(Col(Label, "  RPCs ")).Append(Col("#ffffff", RInt(_rpcs).ToString()));
-                sb.Append('\n').Append(Col(Label, "        Bytes/f "))
-                  .Append(Col("#ffffff", RLong(_netBytes).ToString("N0")));
+                Row(l, v, "Ping", rtt >= 0
+                    ? Col(rtt <= 80 ? Good : rtt <= 160 ? Warn : Bad, rtt.ToString("F0") + " ms")
+                    : Col(Dim, "offline"));
+                Row(l, v, "NetVars", Col(White, RInt(_netVars).ToString()));
+                Row(l, v, "RPCs", Col(White, RInt(_rpcs).ToString()));
+                Row(l, v, "Bytes / frame", Col(White, RLong(_netBytes).ToString("N0")));
 
-                // ── region ──
-                sb.Append('\n').Append(Col(Accent, "Region  ")).Append(Col("#ffffff", Region()));
+                Header(l, v, "Region");
+                Row(l, v, "Location", Col(White, RegionName()));
+                Row(l, v, "UTC offset", Col(White, UtcOffset()));
             }
 
             if (Time.unscaledTime - _lastSavedShownAt < 6f && !string.IsNullOrEmpty(_lastSavedPath))
-                sb.Append('\n').Append(Col(Good, "Saved: ")).Append(Col(Dim, _lastSavedPath));
+            {
+                Header(l, v, "Saved");
+                Row(l, v, "File", Col(Dim, _lastSavedPath));
+            }
 
-            _readout.text = sb.ToString();
+            _readout.text = l.ToString();
+            if (_valueCol != null) _valueCol.text = v.ToString();
             Relayout();
         }
 
-        string Region()
+        string RegionName()
         {
             if (_regionCache != null) return _regionCache;
-            string country;
-            try { country = System.Globalization.RegionInfo.CurrentRegion.DisplayName; }
-            catch { country = "Unknown"; }
+            try { _regionCache = System.Globalization.RegionInfo.CurrentRegion.DisplayName; }
+            catch { _regionCache = "Unknown"; }
+            return _regionCache;
+        }
+
+        string UtcOffset()
+        {
+            if (_utcCache != null) return _utcCache;
             TimeSpan off;
             try { off = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now); }
             catch { off = TimeSpan.Zero; }
             string sign = off < TimeSpan.Zero ? "-" : "+";
-            _regionCache = $"{country}  UTC{sign}{Math.Abs(off.Hours):D2}:{Math.Abs(off.Minutes):D2}";
-            return _regionCache;
+            _utcCache = $"UTC{sign}{Math.Abs(off.Hours):D2}:{Math.Abs(off.Minutes):D2}";
+            return _utcCache;
         }
 
-        // Resize the panel to fit the current text (small in normal mode, taller in advanced) and
-        // slide the bottom button row up to sit just under the readout.
+        // Resize the panel to fit the current rows (small in normal mode, taller in advanced) and
+        // slide the bottom button row up to sit just under the table.
         void Relayout()
         {
             if (_panel == null || _readout == null) return;
-            const float pad = 8f, gap = 8f, btnH = 22f, topY = 6f;
             float textH = _readout.preferredHeight;
-            float panelH = topY + textH + gap + btnH + pad;
-            float panelW = Mathf.Clamp(_readout.preferredWidth + pad * 2f, 300f, 640f);
+            float valW = _valueCol != null ? _valueCol.preferredWidth : 80f;
+            float panelW = Mathf.Clamp(ValueX + valW + Pad, 300f, 680f);
+            float panelH = TopY + textH + RowGap + BtnH + Pad;
             _panel.sizeDelta = new Vector2(panelW, panelH);
-            if (_readoutRT != null) _readoutRT.sizeDelta = new Vector2(-pad * 2f, textH);
-            if (_buttonRow != null) _buttonRow.anchoredPosition = new Vector2(6f, -(topY + textH + gap));
+            if (_readoutRT != null) _readoutRT.sizeDelta = new Vector2(ValueX - Pad - 4f, textH);
+            if (_valueRT != null) _valueRT.sizeDelta = new Vector2(panelW - ValueX - Pad, textH);
+            if (_buttonRow != null) _buttonRow.anchoredPosition = new Vector2(Pad, -(TopY + textH + RowGap));
         }
 
         void ToggleAdvanced()
@@ -402,28 +422,25 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var scaler = _canvasGO.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
 
-            // Panel (top-left). Height is recomputed every refresh by Relayout().
+            // Panel (top-left). Size is recomputed every refresh by Relayout().
             _panel = CreateRect("Panel", _canvasGO.transform, new Vector2(0, 1), new Vector2(0, 1),
                 new Vector2(8, -8), new Vector2(300, 80));
             var bg = _panel.gameObject.AddComponent<Image>();
-            bg.color = new Color(0f, 0f, 0f, 0.66f);
+            bg.color = new Color(0f, 0f, 0f, 0.72f);
 
-            // Readout text (top of panel, full width).
-            _readoutRT = CreateRect("Readout", _panel, new Vector2(0, 1), new Vector2(1, 1),
-                new Vector2(8, -6), new Vector2(-16, 40));
-            _readout = _readoutRT.gameObject.AddComponent<Text>();
-            _readout.font = _font;
-            _readout.fontSize = 14;
-            _readout.color = Color.white;
-            _readout.supportRichText = true;
-            _readout.alignment = TextAnchor.UpperLeft;
-            _readout.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _readout.verticalOverflow = VerticalWrapMode.Overflow;
-            _readout.text = "FPS —   Frame Time — ms";
+            // Two-column table: labels on the left, values aligned in a column at ValueX.
+            _readoutRT = CreateRect("Labels", _panel, new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(Pad, -TopY), new Vector2(ValueX - Pad - 4f, 40));
+            _readout = MakeColumn(_readoutRT, TextAnchor.UpperLeft);
+            _readout.text = "FPS —";
 
-            // Button row — a container Relayout() slides up to sit just below the readout.
+            _valueRT = CreateRect("Values", _panel, new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(ValueX, -TopY), new Vector2(160, 40));
+            _valueCol = MakeColumn(_valueRT, TextAnchor.UpperLeft);
+
+            // Button row — a container Relayout() slides up to sit just below the table.
             _buttonRow = CreateRect("ButtonRow", _panel, new Vector2(0, 1), new Vector2(0, 1),
-                new Vector2(6, -52), new Vector2(0, 22));
+                new Vector2(Pad, -52), new Vector2(0, BtnH));
             _advBtnLabel = CreateButton("Advanced", _buttonRow, 0, 92, ToggleAdvanced);
             _diagBtnLabel = CreateButton("Run 10s", _buttonRow, 98, 84, ToggleDiagnostic);
             CreateButton("-", _buttonRow, 188, 30, () => { _diagSeconds = Mathf.Max(1, _diagSeconds - 5); UpdateDiagButtonLabel(); });
@@ -452,6 +469,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             rt.anchoredPosition = anchoredPos;
             rt.sizeDelta = size;
             return rt;
+        }
+
+        Text MakeColumn(RectTransform rt, TextAnchor anchor)
+        {
+            var t = rt.gameObject.AddComponent<Text>();
+            t.font = _font;
+            t.fontSize = 14;
+            t.color = Color.white;
+            t.supportRichText = true;
+            t.alignment = anchor;
+            t.lineSpacing = 1.1f;
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.verticalOverflow = VerticalWrapMode.Overflow;
+            return t;
         }
 
         Text CreateButton(string label, Transform parent, float x, float width, Action onClick)
