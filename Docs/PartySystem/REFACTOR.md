@@ -8,7 +8,7 @@ targets, in priority order.
 > **Per-commit risk gate.** Every refactor commit ships with its own
 > risk table (added inline as the commit is planned). No commit is
 > pushed without first walking through which risks apply. See
-> `../NetworkDiagnostics/README.md` for the diagnostic overlay that
+> `../NetworkDiagnostics/ARCHITECTURE.md` for the diagnostic overlay that
 > makes any regression interpretable.
 
 ## Refactor 1 — `PartyInviteController` (highest priority)
@@ -196,4 +196,4 @@ and how the prompter keeps visibility into every method touched.
 - `ARCHITECTURE.md` — current state, locked design, key files
 - `BUGS.md` — open bugs to consider during refactor
 - `TESTS.md` — manual test procedures
-- `../NetworkDiagnostics/README.md` — diagnostic overlay every refactor commit ships behind
+- `../NetworkDiagnostics/ARCHITECTURE.md` — diagnostic overlay every refactor commit ships behind

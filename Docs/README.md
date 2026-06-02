@@ -28,7 +28,7 @@ Docs/
 │   └── TODOS.md
 │
 ├── NetworkDiagnostics/          ← the NetDiag overlay (cross-cutting)
-│   ├── README.md                what the overlay does, where it's wired
+│   ├── ARCHITECTURE.md          what the overlay does, where it's wired
 │   ├── TESTS.md                 Tests A-E
 │   └── TODOS.md                 deferred adoption + extensions
 │
@@ -56,9 +56,46 @@ session-scoped findings that benefit from a timeline view.
 | See what we're refactoring next | `PartySystem/REFACTOR.md` § "Sequencing" |
 | Run the manual smoke / stress tests | `PartySystem/TESTS.md` § "Smoke gate" |
 | See the latest MPPM session findings | `PartySystem/MPPM_SESSION_LOG.md` |
-| Understand the diagnostic overlay | `NetworkDiagnostics/README.md` |
+| Understand the diagnostic overlay | `NetworkDiagnostics/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |
+
+## Shared conventions
+
+These apply across all three folders. They live here once; the
+per-folder docs point back to this section instead of restating them.
+
+### MPPM test convention
+
+- All manual tests run in the Unity Editor under **Multiplayer Play
+  Mode (MPPM)**. Each **VP** ("virtual player") is a separate Editor
+  instance. "VP1" is the first / host VP; "VP2"–"VP4" are the other /
+  joining VPs.
+- Tests reference NetDiag log classes (`class=Offline`,
+  `class=SessionGone`, etc.) — see `NetworkDiagnostics/ARCHITECTURE.md`
+  for the classifier and `NetworkDiagnostics/TESTS.md` for the
+  diagnostic procedures (Tests A–E).
+
+### How we work bugs
+
+- One bug at a time, in the priority order each `BUGS.md` lists.
+- For each: confirm the root cause (capture a NetDiag log line where
+  possible) → agree the approach → ship as its own commit with an
+  inline risk table → update the bug's status (see "Status legend"
+  below).
+- Before touching the locked-design area (`HostConnectionService`,
+  `PresenceLobbyService`, `PartySessionService`, `PartyInviteController`,
+  invite services), read the relevant `ARCHITECTURE.md` first. **Do not
+  reintroduce LAZY / on-first-invite session creation** (see "Locked
+  design" below).
+
+### Per-commit refactor protocol
+
+The per-commit risk gate, commit cadence, and the 6-step "read the
+source fresh" revision protocol that governs every party/presence
+refactor commit live canonically in `PartySystem/REFACTOR.md`
+(§ "Per-refactor commit cadence" + § "Per-commit revision protocol").
+Presence-side refactors follow the same protocol.
 
 ## Status legend (used in BUGS.md files)
 
