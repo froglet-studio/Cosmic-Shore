@@ -64,7 +64,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>1000</value>
+			<value>60</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{0f4d0d82-5d24-4dbe-9244-817705f8ec71}" />
@@ -177,10 +177,13 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>1000</value>
+			<value>60</value>
 		</property>
-		<property name="minimumExtent">
-			<value>360</value>
+		<property name="extentMode">
+			<value>1</value>
+		</property>
+		<property name="soundSize">
+			<value>3.60000014</value>
 		</property>
 		<property name="panBlend">
 			<value>0</value>
