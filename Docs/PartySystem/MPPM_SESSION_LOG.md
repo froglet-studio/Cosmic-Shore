@@ -308,7 +308,7 @@ should be fully clean and Phase A is ready to run for real.
 | Test | Status | NetDiag observed | Notes |
 |---|---|---|---|
 | A.1 — Test E happy path | **functional pass + new bug B8 surfaced** | `class=Transient` (one-shot boot retry, recovered); `class=Unknown` (1×, on Leave — ObjectDisposedException at SDK teardown, ignored per user — they Stop-ed Play mid-session) | Invite → Accept → fly → Leave cycle functionally complete. **Bug B8 discovered:** host-side phantom-rejoin loop after client leaves — see `BUGS.md` B8 for full diagnosis. Not blocking further testing. |
-| A.2 — Test C user-cancel | _ready to run_ | _tbd_ | |
+| A.2 — Test C user-cancel | _ready to run (next session)_ | _tbd_ | B3.b clean-leave verified-fixed on `74cde70`; A.2 is the next test in sequence. |
 
 ### Phase A.1 — Detailed findings
 
@@ -426,6 +426,22 @@ Refactor (one commit):
 
 Net effect: -42 lines, no new spawn paths, no band-aid, no dead methods,
 no string literals. Single canonical spawn pipeline preserved.
+
+**MPPM-verified 2026-06-02 (commit `74cde70`).** User ran the 2-VP
+leave repro and confirmed the fix:
+- VP-B leaves → exactly ONE vessel in solo Menu_Main, controllable, AI
+  seeks crystals.
+- No `[PLAYER] OnNetVesselIdChanged prev=N, new=M` during the leave flow
+  (that log line was the orphan-vessel signature — its absence is the
+  proof).
+- No `UnknownContractException: GameDataSO` (no orphan vessel ticking
+  against a disposed DI container).
+- Cold-boot smoke clean — the untouched cold-boot path did not regress.
+
+B3.b clean-leave → 🟢 verified. The bounce/recovery path shares the same
+decomposed sequence (fixed-by-construction); its independent repro is
+Phase C.2 below. **Next session advances to Phase A.2 (Test C —
+user-driven cancel).**
 
 ### Phase B — Party smoke gate
 

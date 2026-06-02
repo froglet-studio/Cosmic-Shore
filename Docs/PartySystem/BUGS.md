@@ -229,7 +229,16 @@ the await is bounded and the host ignores the property via B8 fix-1).
 - **D. All three** — they target different facets (duplicate, lifecycle
   ordering, pairing). Likely need B+C at minimum.
 
-**Status.** 🟢 Fixed via architectural refactor — needs MPPM re-verify.
+**Status.** 🟢 Fixed via architectural refactor — **clean-leave path
+MPPM-verified 2026-06-02 (commit `74cde70`).** User confirmed: after
+VP-B leaves the party, exactly ONE vessel in solo Menu_Main, controllable,
+AI seeks crystals; no `[PLAYER] OnNetVesselIdChanged prev=N, new=M`
+during the leave flow (the bug's signature); no `UnknownContractException:
+GameDataSO`. Cold-boot smoke also clean (untouched path, no regression).
+The bounce/recovery path (`RecoverFromFailedTransitionAsync`) shares the
+**identical** decomposed sequence, so it is fixed-by-construction — but it
+has not been independently exercised yet; its dedicated repro is Phase C.2
+(B3 original / TC4 bounce) in `MPPM_SESSION_LOG.md`.
 
 **Note on the fix path.** An earlier band-aid (commit `3e0c5bc`) added a
 `gameData.LocalPlayer.Vessel.DestroyVessel()` call between
