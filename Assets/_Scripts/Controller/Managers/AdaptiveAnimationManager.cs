@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
         protected readonly List<TAnimator> activeAnimatorsList = new List<TAnimator>();
         protected NativeArray<TAnimationData> animationData;
 
+        /// <summary>Number of live (registered, enabled) animators — read-only, allocation-free. Used by the performance benchmark to correlate frame cost with object load.</summary>
+        public int RegisteredAnimatorCount => registeredAnimators.Count;
+
+        /// <summary>Number of animators currently mid-animation — read-only, allocation-free.</summary>
+        public int ActiveAnimatorCount => activeAnimators.Count;
+
         // Performance monitoring
         private readonly Queue<float> frameTimeHistory = new Queue<float>();
         private float lastIntervalUpdateTime;

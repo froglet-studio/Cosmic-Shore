@@ -5,10 +5,10 @@
 			<value>Skim</value>
 		</property>
 		<property name="outputFormat">
-			<value>1</value>
+			<value>2</value>
 		</property>
 		<relationship name="folder">
-			<destination>{973179a4-8803-4e6c-8ca6-89d010ec9ca1}</destination>
+			<destination>{2bbab971-3f3e-4f99-a6e0-584fa1d58d64}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{3eca5d9e-5c8f-4aa8-ab46-b6710579528f}</destination>
@@ -56,7 +56,17 @@
 			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
 		</relationship>
 	</object>
-	<object class="EventAutomatableProperties" id="{0ffbdabd-bdb0-487f-a6e0-98f3dc90dc59}" />
+	<object class="EventAutomatableProperties" id="{0ffbdabd-bdb0-487f-a6e0-98f3dc90dc59}">
+		<property name="maxVoices">
+			<value>5</value>
+		</property>
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>500</value>
+		</property>
+	</object>
 	<object class="MarkerTrack" id="{c186db8c-ddef-4459-accf-3833aa89b660}" />
 	<object class="GroupTrack" id="{2296eae0-287b-45fc-82c7-1d919b46c821}">
 		<relationship name="automationTracks">
@@ -112,7 +122,7 @@
 	</object>
 	<object class="EventMixerGroup" id="{6dc1da1a-ad30-4cf3-ab89-598bfa82bec0}">
 		<property name="volume">
-			<value>-19.5</value>
+			<value>-3.5</value>
 		</property>
 		<property name="name">
 			<value>Audio 1</value>
@@ -144,15 +154,24 @@
 			<value>pitch</value>
 		</property>
 		<property name="amount">
-			<value>5</value>
+			<value>22.5</value>
 		</property>
 	</object>
 	<object class="MixerBusEffectChain" id="{0c3629fd-811c-440b-b166-b39caf574fbd}">
 		<relationship name="effects">
 			<destination>{9af92703-472a-4112-92c4-241af908b98d}</destination>
+			<destination>{94247e80-d843-46a2-8ef3-050f0fa092ba}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{23790002-0b52-4fa4-8b3d-eca72e67fe49}" />
 	<object class="MixerBusFader" id="{ec74acfb-542c-45bd-8f00-b36b4aa89b93}" />
 	<object class="MixerBusFader" id="{9af92703-472a-4112-92c4-241af908b98d}" />
+	<object class="SpatialiserEffect" id="{94247e80-d843-46a2-8ef3-050f0fa092ba}">
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>500</value>
+		</property>
+	</object>
 </objects>

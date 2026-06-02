@@ -71,8 +71,15 @@ namespace CosmicShore.Gameplay
                 if (GetControllingVolume(gameData) < spawnProfile.FloraSpawnVolumeCeiling)
                     SpawnFlora(host, floraCfg.FloraPrefab, excluded);
 
-                if (initialInterval > 0f && i < initialCount - 1)
-                    yield return new WaitForSeconds(initialInterval);
+                // Spread instantiation across frames. WaitForSeconds when an interval
+                // is configured; otherwise yield a single frame so a large InitialSpawnCount
+                // doesn't instantiate every (prism-bodied) life form in one frame — that
+                // showed up as a ~48% frame spike in Cell.SpawnFaunaTypeLoop_Random.
+                if (i < initialCount - 1)
+                {
+                    if (initialInterval > 0f) yield return new WaitForSeconds(initialInterval);
+                    else yield return null;
+                }
             }
 
             // Continuous
@@ -111,8 +118,15 @@ namespace CosmicShore.Gameplay
                 if (GetControllingVolume(gameData) > spawnProfile.FaunaSpawnVolumeThreshold && TryGetCrystalGoal(runtime, out var goal))
                     SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
 
-                if (initialInterval > 0f && i < initialCount - 1)
-                    yield return new WaitForSeconds(initialInterval);
+                // Spread instantiation across frames. WaitForSeconds when an interval
+                // is configured; otherwise yield a single frame so a large InitialSpawnCount
+                // doesn't instantiate every (prism-bodied) life form in one frame — that
+                // showed up as a ~48% frame spike in Cell.SpawnFaunaTypeLoop_Random.
+                if (i < initialCount - 1)
+                {
+                    if (initialInterval > 0f) yield return new WaitForSeconds(initialInterval);
+                    else yield return null;
+                }
             }
 
             // Continuous threshold loop (keeps your old random behaviour)

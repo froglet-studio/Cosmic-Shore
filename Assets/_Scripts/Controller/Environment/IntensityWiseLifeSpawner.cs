@@ -62,8 +62,15 @@ namespace CosmicShore.Gameplay
                 if (host && host.FloraPlantingEnabled && AllowSpawn(floraCfg.SpawnProbability))
                     SpawnFlora(host, floraCfg.FloraPrefab, excluded);
 
-                if (initialInterval > 0f && i < initialCount - 1)
-                    yield return new WaitForSeconds(initialInterval);
+                // Spread instantiation across frames. WaitForSeconds when an interval
+                // is configured; otherwise yield a single frame so a large InitialSpawnCount
+                // doesn't instantiate every (prism-bodied) life form in one frame — that
+                // showed up as a ~48% frame spike in Cell.SpawnFaunaTypeLoop_Random.
+                if (i < initialCount - 1)
+                {
+                    if (initialInterval > 0f) yield return new WaitForSeconds(initialInterval);
+                    else yield return null;
+                }
             }
 
             // Continuous spawn — the loop keeps ticking so spawning resumes if the
@@ -139,8 +146,15 @@ namespace CosmicShore.Gameplay
                 if (host && host.FaunaSpawningEnabled && AllowSpawn(faunaCfg.SpawnProbability))
                     TrySpawnFauna(host, runtime, faunaCfg);
 
-                if (initialInterval > 0f && i < initialCount - 1)
-                    yield return new WaitForSeconds(initialInterval);
+                // Spread instantiation across frames. WaitForSeconds when an interval
+                // is configured; otherwise yield a single frame so a large InitialSpawnCount
+                // doesn't instantiate every (prism-bodied) life form in one frame — that
+                // showed up as a ~48% frame spike in Cell.SpawnFaunaTypeLoop_Random.
+                if (i < initialCount - 1)
+                {
+                    if (initialInterval > 0f) yield return new WaitForSeconds(initialInterval);
+                    else yield return null;
+                }
             }
 
             // Continuous spawn — interval scales with aggression so reinforcements

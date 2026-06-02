@@ -176,6 +176,8 @@ namespace CosmicShore.Core
 
             if (_bootstrapConfig.TargetFrameRate > 0)
                 Application.targetFrameRate = _bootstrapConfig.TargetFrameRate;
+            else
+                Application.targetFrameRate = -1;   // <= 0 = uncapped (render as fast as possible)
 
             QualitySettings.vSyncCount = _bootstrapConfig.VSyncCount;
 

@@ -157,6 +157,12 @@ namespace CosmicShore.Gameplay
             vessel.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
             vessel.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             vessel.SetSkimmerMaterial(materialSet.SkimmerMaterial);
+
+            if (themeManagerData.ColorSet != null &&
+                themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var colorSet))
+            {
+                vessel.SetTrailColors(colorSet.TrailHighlightColor, colorSet.TrailCoreColor);
+            }
         }
     }
 }

@@ -275,6 +275,8 @@ namespace CosmicShore.Gameplay.Audio
         IVesselStatus _status;
         ResourceSystem _resourceSystem;
         StudioListener _listener;
+        bool _listenerSearched;
+        bool _listenerAttachFailed;
         EventInstance _instance;
         PARAMETER_ID _speedParamId;
         PARAMETER_ID _tiltParamId;
@@ -768,6 +770,10 @@ namespace CosmicShore.Gameplay.Audio
 
             AttachMode desired = ResolveDesiredAttachMode();
             if (desired == _attachMode) return;
+            // Once we've discovered there's no listener to attach to, stop retrying every
+            // frame — the project-wide FindFirstObjectByType in GetListenerTransform is the
+            // dominant audio cost when this loop runs unbounded.
+            if (desired == AttachMode.Listener && _listenerAttachFailed) return;
 
             // Detach from the previous target (harmless if not attached).
             RuntimeManager.DetachInstanceFromGameObject(_instance);
@@ -787,12 +793,13 @@ namespace CosmicShore.Gameplay.Audio
                     {
                         attachTarget = listenerTransform;
                         _attachMode = AttachMode.Listener;
+                        _listenerAttachFailed = false;
                     }
                     else
                     {
-                        // No listener found yet — fall back to ship attachment and try again next frame.
                         attachTarget = transform;
                         _attachMode = AttachMode.Ship;
+                        _listenerAttachFailed = true;
                     }
                     break;
 
@@ -831,14 +838,18 @@ namespace CosmicShore.Gameplay.Audio
         {
             if (_listener != null) return _listener.transform;
 
-            // StudioListener is the canonical FMOD listener. Fall back to Camera.main only
-            // if nothing else is found (rare; most FMOD projects place a StudioListener on
-            // the main camera).
+            // StudioListener is the canonical FMOD listener. The project-wide search is
+            // expensive, so do it at most once per controller lifetime; if nothing is
+            // found, _listenerAttachFailed will gate the caller off entirely.
+            if (!_listenerSearched)
+            {
 #if UNITY_2023_1_OR_NEWER
-            _listener = Object.FindFirstObjectByType<StudioListener>();
+                _listener = Object.FindFirstObjectByType<StudioListener>();
 #else
-            _listener = Object.FindObjectOfType<StudioListener>();
+                _listener = Object.FindObjectOfType<StudioListener>();
 #endif
+                _listenerSearched = true;
+            }
             if (_listener != null) return _listener.transform;
 
             var cam = Camera.main;

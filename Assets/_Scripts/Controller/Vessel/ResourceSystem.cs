@@ -28,11 +28,11 @@ namespace CosmicShore.Gameplay
                 EmitResourceChanged(i);  
             }
             
-            // Elemental events
-            OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(ChargeLevel * LevelScale));
-            OnElementLevelChange?.Invoke(Element.Mass,   Mathf.FloorToInt(MassLevel * LevelScale));
-            OnElementLevelChange?.Invoke(Element.Space,  Mathf.FloorToInt(SpaceLevel * LevelScale));
-            OnElementLevelChange?.Invoke(Element.Time,   Mathf.FloorToInt(TimeLevel * LevelScale));
+            // Emit initial elemental levels
+            EmitElementLevel(Element.Charge);
+            EmitElementLevel(Element.Mass);
+            EmitElementLevel(Element.Space);
+            EmitElementLevel(Element.Time);
 
             yield return StartCoroutine(GainResourcesCoroutine());
         }
@@ -55,6 +55,8 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            TickElementalEffects();
+
             if (ElementalLevels.Count > 0)
             {
                 if (ChargeTestHarness != 0) ElementalLevels[Element.Charge] = ChargeTestHarness;
@@ -62,10 +64,10 @@ namespace CosmicShore.Gameplay
                 if (SpaceTestHarness  != 0) ElementalLevels[Element.Space]  = SpaceTestHarness;
                 if (TimeTestHarness   != 0) ElementalLevels[Element.Time]   = TimeTestHarness;
 
-                ChargeLevel = ElementalLevels[Element.Charge];
-                MassLevel   = ElementalLevels[Element.Mass];
-                SpaceLevel  = ElementalLevels[Element.Space];
-                TimeLevel   = ElementalLevels[Element.Time];
+                ChargeLevel = GetEffectiveLevel(Element.Charge);
+                MassLevel   = GetEffectiveLevel(Element.Mass);
+                SpaceLevel  = GetEffectiveLevel(Element.Space);
+                TimeLevel   = GetEffectiveLevel(Element.Time);
             }
         }
 
@@ -126,7 +128,18 @@ namespace CosmicShore.Gameplay
         const float MinElementalLevel = -0.5f;
         const float MaxElementalLevel = 1.5f;
         const int   LevelScale = 10;
+
+        static readonly Element[] AllElements =
+            { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
+        // Base (persistent) levels — written by crystals, the comeback system, init, etc.
         Dictionary<Element, float> ElementalLevels = new();
+
+        // Temporary, decaying modifiers layered on top of the base levels.
+        readonly List<ElementalEffect> _activeEffects = new();
+        readonly Dictionary<Element, float> _elementModifiers = new();
+        // Last integer level emitted per element, so OnElementLevelChange only fires on real changes.
+        readonly Dictionary<Element, int> _emittedLevels = new();
 
         public void InitializeElementLevels(ResourceCollection resourceGroup)
         {
@@ -136,30 +149,108 @@ namespace CosmicShore.Gameplay
             ElementalLevels[Element.Time]   = resourceGroup.Time;
         }
 
+        /// <summary>Effective level = base level + active temporary modifiers, clamped to range.</summary>
+        float GetEffectiveLevel(Element element)
+        {
+            float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
+            float modifier  = _elementModifiers.TryGetValue(element, out var m) ? m : 0f;
+            return Mathf.Clamp(baseLevel + modifier, MinElementalLevel, MaxElementalLevel);
+        }
+
         public int GetLevel(Element element)
-            => !ElementalLevels.TryGetValue(element, out var level) ? 0 : Mathf.FloorToInt(level * LevelScale);
+            => Mathf.FloorToInt(GetEffectiveLevel(element) * LevelScale);
 
         public float GetNormalizedLevel(Element element)
-            => ElementalLevels.TryGetValue(element, out var level) ? level : 0f;
+            => GetEffectiveLevel(element);
 
         public void IncrementLevel(Element element) => AdjustLevel(element, .1f);
 
+        /// <summary>Permanently adjusts the base level of an element. Returns true if the integer level rose.</summary>
         public bool AdjustLevel(Element element, float amount)
         {
-            var previous = ElementalLevels[element];
-            ElementalLevels[element] = Math.Clamp(ElementalLevels[element] + amount, MinElementalLevel, MaxElementalLevel);
-            if (Mathf.Approximately(previous, ElementalLevels[element])) return false;
-
-            OnElementLevelChange?.Invoke(element, Mathf.FloorToInt(ElementalLevels[element] * LevelScale));
-            return Mathf.FloorToInt(ElementalLevels[element] * LevelScale) - Mathf.FloorToInt(previous * LevelScale) >= 1;
+            int previousLevel = GetLevel(element);
+            float previousBase = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
+            ElementalLevels[element] = Mathf.Clamp(previousBase + amount, MinElementalLevel, MaxElementalLevel);
+            EmitElementLevel(element);
+            return GetLevel(element) - previousLevel >= 1;
         }
 
+        /// <summary>Permanently sets the base level of an element.</summary>
         public void SetElementLevel(Element element, float normalizedLevel)
         {
-            float previous = ElementalLevels.ContainsKey(element) ? ElementalLevels[element] : 0f;
-            ElementalLevels[element] = Math.Clamp(normalizedLevel, MinElementalLevel, MaxElementalLevel);
-            if (!Mathf.Approximately(previous, ElementalLevels[element]))
-                OnElementLevelChange?.Invoke(element, Mathf.FloorToInt(ElementalLevels[element] * LevelScale));
+            ElementalLevels[element] = Mathf.Clamp(normalizedLevel, MinElementalLevel, MaxElementalLevel);
+            EmitElementLevel(element);
+        }
+
+        /// <summary>
+        /// Standardized elemental buff/debuff. Positive <paramref name="magnitude"/> buffs the
+        /// element, negative debuffs it — the two are fully symmetric.
+        /// <para><paramref name="duration"/> &gt; 0 → temporary: applied as a modifier that decays
+        /// linearly back to zero over <paramref name="duration"/> seconds, leaving the base level
+        /// untouched so persistent progress (crystals, comeback, etc.) is preserved.</para>
+        /// <para><paramref name="duration"/> &lt;= 0 → permanent: added straight to the base level.</para>
+        /// </summary>
+        public void ApplyElementalEffect(Element element, float magnitude, float duration)
+        {
+            if (duration <= 0f)
+            {
+                AdjustLevel(element, magnitude);
+                return;
+            }
+
+            _activeEffects.Add(new ElementalEffect
+            {
+                Element = element,
+                Magnitude = magnitude,
+                Duration = duration,
+                Elapsed = 0f,
+            });
+            RecomputeModifiers();
+        }
+
+        // Advances active temporary effects, drops expired ones, and refreshes modifier totals.
+        void TickElementalEffects()
+        {
+            if (_activeEffects.Count == 0) return;
+
+            float dt = Time.deltaTime;
+            for (int i = _activeEffects.Count - 1; i >= 0; i--)
+            {
+                var effect = _activeEffects[i];
+                effect.Elapsed += dt;
+                if (effect.Elapsed >= effect.Duration)
+                    _activeEffects.RemoveAt(i);
+            }
+
+            RecomputeModifiers();
+        }
+
+        // Recomputes the per-element modifier total and emits any resulting level changes.
+        void RecomputeModifiers()
+        {
+            for (int i = 0; i < AllElements.Length; i++)
+            {
+                var element = AllElements[i];
+                float sum = 0f;
+                for (int j = 0; j < _activeEffects.Count; j++)
+                {
+                    var effect = _activeEffects[j];
+                    if (effect.Element == element)
+                        sum += effect.CurrentContribution;
+                }
+                _elementModifiers[element] = sum;
+                EmitElementLevel(element);
+            }
+        }
+
+        // Fires OnElementLevelChange only when the integer effective level actually changes.
+        void EmitElementLevel(Element element)
+        {
+            int level = GetLevel(element);
+            if (_emittedLevels.TryGetValue(element, out var previous) && previous == level)
+                return;
+            _emittedLevels[element] = level;
+            OnElementLevelChange?.Invoke(element, level);
         }
         
         void EmitResourceChanged(int index)
@@ -169,6 +260,15 @@ namespace CosmicShore.Gameplay
             OnResourceChanged?.Invoke(index, r.CurrentAmount, r.MaxAmount);
         }
 
+        // A single temporary elemental effect that decays from full magnitude to zero.
+        sealed class ElementalEffect
+        {
+            public Element Element;
+            public float Magnitude;
+            public float Duration;
+            public float Elapsed;
 
+            public float CurrentContribution => Mathf.Lerp(Magnitude, 0f, Elapsed / Duration);
+        }
     }
 }

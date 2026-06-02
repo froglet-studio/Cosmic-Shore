@@ -51,6 +51,28 @@ namespace CosmicShore.Gameplay
         public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
+        // ── Active-crystal registry ──────────────────────────────────────────
+        // Lets systems (e.g. HexRaceObjectiveProvider) enumerate live crystals without a
+        // per-call FindObjectsByType scene scan. Maintained via OnEnable/OnDisable so it
+        // works for both pooled (SetActive) and Instantiate/Destroy lifecycles.
+        static readonly List<Crystal> s_active = new();
+
+        /// <summary>Live crystals currently enabled in the scene. Read-only — do not mutate.</summary>
+        public static IReadOnlyList<Crystal> Active => s_active;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetRegistry() => s_active.Clear();
+
+        protected virtual void OnEnable()
+        {
+            if (!s_active.Contains(this)) s_active.Add(this);
+        }
+
+        protected virtual void OnDisable()
+        {
+            s_active.Remove(this);
+        }
+
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
@@ -169,9 +191,8 @@ namespace CosmicShore.Gameplay
 
         void PlayExplosionAudio()
         {
-            AudioSource audioSource = GetComponent<AudioSource>();
             if (audioSystem != null)
-                audioSystem.PlaySFXClip(audioSource.clip, audioSource);
+                audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
         }
 
         public void ActivateCrystal()

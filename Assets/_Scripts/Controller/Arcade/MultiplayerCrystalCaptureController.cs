@@ -43,7 +43,9 @@ namespace CosmicShore.Gameplay
             var winner = DetermineWinner();
             if (winner == null) return;
 
-            // Map CrystalsCollected → Score for all players
+            // Per-player Score still tracks individual contribution (for the
+            // scoreboard's secondary stat); domain aggregation is what determines
+            // the winner and is computed below in CalculateDomainStats.
             foreach (var stats in gameData.RoundStatsList)
                 stats.Score = stats.CrystalsCollected;
 
@@ -55,25 +57,36 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Winning team = domain with highest aggregate CrystalsCollected.
-        /// Winner name = best individual on that team (used as tie-break display label
-        /// and legacy WinnerName consumers). Victory/defeat attribution in end-game
-        /// screens uses WinnerDomain, not WinnerName.
+        /// Winning team = active domain with the highest aggregate CrystalsCollected.
+        /// Returns the best individual contributor on that team as the representative
+        /// "winner name" used for legacy display fields. Victory/defeat attribution
+        /// in end-game screens uses WinnerDomain, not WinnerName.
         /// </summary>
         IRoundStats DetermineWinner()
         {
             if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0)
                 return null;
 
-            var winningDomain = gameData.RoundStatsList
-                .GroupBy(s => s.Domain)
-                .OrderByDescending(g => g.Sum(s => s.CrystalsCollected))
-                .First().Key;
+            Domains winningDomain = Domains.Blue;
+            int bestDomainSum = -1;
+            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
+            {
+                var d = GameDataSO.ActiveDomains[i];
+                int sum = gameData.SumCrystalsCollectedByDomain(d);
+                if (sum > bestDomainSum)
+                {
+                    bestDomainSum = sum;
+                    winningDomain = d;
+                }
+            }
+
+            if (winningDomain == Domains.Blue) return null;
 
             return gameData.RoundStatsList
                 .Where(s => s.Domain == winningDomain)
                 .OrderByDescending(s => s.CrystalsCollected)
-                .First();
+                .FirstOrDefault();
         }
 
         /// <summary>

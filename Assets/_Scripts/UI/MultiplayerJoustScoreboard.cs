@@ -35,7 +35,9 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Winning team members (score &lt; 99999) show MM:SS:CS finish time.
-        /// Losers (score = 99999) show "{N} Jousts Left".
+        /// Losers (score = 99999) show "{N} Jousts Left" where N is the DOMAIN
+        /// deficit (target − SumJoustCollisionsByDomain), so teammates on the
+        /// same losing domain see the same number.
         /// </summary>
         protected override string FormatPlayerScore(IRoundStats stats)
         {
@@ -48,7 +50,8 @@ namespace CosmicShore.UI
             }
 
             int needed = joustTurnMonitor ? joustTurnMonitor.CollisionsNeeded : 0;
-            int joustsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
+            int domainSum = gameData ? gameData.SumJoustCollisionsByDomain(stats.Domain) : 0;
+            int joustsLeft = Mathf.Max(0, needed - domainSum);
             string plural = joustsLeft == 1 ? "" : "s";
             return $"{joustsLeft} Joust{plural} Left";
         }

@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
         private void Explode(Vector3 velocity)
         {
             mineCollider.enabled = false;
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.MineExplode);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.MineExplode, transform.position);
             foreach (var modelData in mineModels)
             {
                 _tempMaterial = new Material(modelData.explodingMaterial);

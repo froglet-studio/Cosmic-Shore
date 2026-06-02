@@ -197,35 +197,56 @@ namespace CosmicShore.Gameplay
         // ---------------------------------------------------------------
         // Value reading — uses the configured ScoreDifferenceSource
         // ---------------------------------------------------------------
+        // Comeback buffs are now keyed off DOMAIN aggregates: a player on the
+        // leading domain doesn't get a comeback buff even if they personally
+        // contribute less than the team leader. The "deficit" each player
+        // experiences is their team's deficit, not their individual one.
 
         float GetLeaderValue()
         {
-            var stats = gameData.RoundStatsList;
-            if (stats == null || stats.Count == 0) return 0f;
+            var list = gameData.RoundStatsList;
+            if (list == null || list.Count == 0) return 0f;
 
-            float leader = ReadValue(stats[0]);
-            for (int i = 1; i < stats.Count; i++)
+            float leader = 0f;
+            bool first = true;
+            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
             {
-                float v = ReadValue(stats[i]);
-                if (IsHigherBetter() ? v > leader : v < leader)
+                var d = GameDataSO.ActiveDomains[i];
+                float v = ReadDomainValue(d);
+                if (first || (IsHigherBetter() ? v > leader : v < leader))
+                {
                     leader = v;
+                    first = false;
+                }
             }
-            return leader;
+            return first ? 0f : leader;
         }
 
         float GetPlayerValue(IPlayer player)
         {
-            return gameData.TryGetRoundStats(player.Name, out var stats) ? ReadValue(stats) : 0f;
+            // A player's "value" for comeback purposes is their domain's aggregate.
+            return player != null ? ReadDomainValue(player.Domain) : 0f;
         }
 
-        float ReadValue(IRoundStats stats)
+        float ReadDomainValue(Domains domain)
         {
-            return differenceSource switch
+            switch (differenceSource)
             {
-                ScoreDifferenceSource.CrystalsCollected => stats.CrystalsCollected,
-                ScoreDifferenceSource.Score => stats.Score,
-                _ => stats.Score
-            };
+                case ScoreDifferenceSource.CrystalsCollected:
+                    return gameData.SumCrystalsCollectedByDomain(domain);
+                case ScoreDifferenceSource.Score:
+                    float sum = 0f;
+                    var list = gameData.RoundStatsList;
+                    for (int i = 0, count = list.Count; i < count; i++)
+                    {
+                        var s = list[i];
+                        if (s != null && s.Domain == domain) sum += s.Score;
+                    }
+                    return sum;
+                default:
+                    return 0f;
+            }
         }
 
         bool IsHigherBetter()

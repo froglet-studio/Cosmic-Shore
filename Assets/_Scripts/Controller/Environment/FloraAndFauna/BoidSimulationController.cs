@@ -176,7 +176,6 @@ namespace CosmicShore.Gameplay
                         Entity entity = entityArray[i];
                         entity.teamWeights = currentWeights;
                         entityArray[i] = entity;
-                        CSDebug.Log($"BoidManager.entityArray[{i}].position {entityArray[i].position}");
                     }
                 }
 

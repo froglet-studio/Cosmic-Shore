@@ -69,7 +69,8 @@ namespace CosmicShore.UI
         [Range(0f, 0.5f)]
         [SerializeField] float pulseGlowAmplitude = 0.22f;
 
-        float _glowAlphaPhase;
+        float _currentScale = 1f;
+        float _currentRendererAlpha = 1f;
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
@@ -82,8 +83,10 @@ namespace CosmicShore.UI
             float cy = r.center.y;
 
             // Back-to-front: glow halo, outer stroke, bright core.
-            AddChevron(vh, cx, cy, halfW * glowScale, halfH * glowScale,
-                       OffsetAlpha(glowColor, _glowAlphaPhase));
+            // Mesh is static — pulse animation modulates canvasRenderer alpha
+            // and rectTransform scale at runtime, neither of which rebuilds
+            // this mesh.
+            AddChevron(vh, cx, cy, halfW * glowScale, halfH * glowScale, glowColor);
             AddChevron(vh, cx, cy, halfW, halfH, outerColor);
             AddChevron(vh, cx, cy, halfW * innerScale, halfH * innerScale, innerColor);
         }
@@ -118,21 +121,19 @@ namespace CosmicShore.UI
             return new UIVertex { position = pos, color = c, uv0 = Vector2.zero };
         }
 
-        static Color OffsetAlpha(Color baseColor, float extraAlpha)
-        {
-            baseColor.a = Mathf.Clamp01(baseColor.a + extraAlpha);
-            return baseColor;
-        }
-
         void Update()
         {
             if (!pulse)
             {
-                if (_glowAlphaPhase != 0f)
+                if (_currentScale != 1f)
                 {
-                    _glowAlphaPhase = 0f;
+                    _currentScale = 1f;
                     rectTransform.localScale = Vector3.one;
-                    SetVerticesDirty();
+                }
+                if (_currentRendererAlpha != 1f)
+                {
+                    _currentRendererAlpha = 1f;
+                    canvasRenderer.SetAlpha(1f);
                 }
                 return;
             }
@@ -140,13 +141,23 @@ namespace CosmicShore.UI
             float t = Mathf.Sin(Time.unscaledTime * pulseSpeed);
 
             float scale = 1f + t * pulseScaleAmplitude;
-            rectTransform.localScale = new Vector3(scale, scale, 1f);
-
-            float glowPhase = t * pulseGlowAmplitude;
-            if (!Mathf.Approximately(glowPhase, _glowAlphaPhase))
+            if (scale != _currentScale)
             {
-                _glowAlphaPhase = glowPhase;
-                SetVerticesDirty();
+                _currentScale = scale;
+                rectTransform.localScale = new Vector3(scale, scale, 1f);
+            }
+
+            // Pulse the whole graphic's canvasRenderer alpha — does NOT
+            // rebuild the mesh. The previous implementation mutated the glow
+            // chevron's vertex colors via SetVerticesDirty every frame, which
+            // forced OnPopulateMesh + a parent Canvas batch rebuild every
+            // frame — extremely expensive when this lives on a shared HUD
+            // canvas alongside many other Graphics.
+            float rendererAlpha = Mathf.Clamp01(1f + t * pulseGlowAmplitude);
+            if (rendererAlpha != _currentRendererAlpha)
+            {
+                _currentRendererAlpha = rendererAlpha;
+                canvasRenderer.SetAlpha(rendererAlpha);
             }
         }
     }
