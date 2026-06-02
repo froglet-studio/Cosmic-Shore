@@ -164,6 +164,14 @@ namespace CosmicShore.Gameplay
         public int RabidEnterThreshold => ResolveThresholds().RabidEnter;
 
         /// <summary>
+        /// True once this cell's CellConfig has been assigned (Initialize ran). While
+        /// false, threshold reads fall back to CellPhaseThresholds.Default — HUD
+        /// diagnostics surface this so a mis-scaled indicator is explainable at a
+        /// glance instead of looking like dead data.
+        /// </summary>
+        public bool HasConfigAssigned => cellConfigData != null;
+
+        /// <summary>
         /// Current phase. Written exclusively by <see cref="CellNetworkSync"/> via
         /// <see cref="ApplyAuthoritativePhaseAndDomain"/> — the server's compute on a
         /// networked cell, or the local-only fallback in single-player. Cell never

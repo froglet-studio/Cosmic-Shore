@@ -53,6 +53,25 @@ namespace CosmicShore.UI
             volumePauseButton.onClick.AddListener(OnVolumePauseClicked);
         }
 
+        /// <summary>
+        /// Self-healing indicator attachment. Runs in Start (not Awake) so [Inject]
+        /// fields are populated and can be handed to the indicator. Components added
+        /// via AddComponent never receive Reflex injection, so the explicit
+        /// SetGameData handoff is required for the vessel-position-based cell
+        /// resolution to work.
+        /// </summary>
+        void EnsureDomainVolumeIndicator()
+        {
+            if (!volumePauseButton) return;
+
+            if (!domainVolumeIndicator)
+                domainVolumeIndicator = volumePauseButton.GetComponent<DomainVolumeIndicator>();
+            if (!domainVolumeIndicator)
+                domainVolumeIndicator = volumePauseButton.gameObject.AddComponent<DomainVolumeIndicator>();
+
+            domainVolumeIndicator.SetGameData(gameData);
+        }
+
         void OnEnable()
         {
             if (onShipHUDInitialized)
@@ -66,6 +85,7 @@ namespace CosmicShore.UI
         void Start()
         {
             InstantiatePauseMenu();
+            EnsureDomainVolumeIndicator();
         }
 
         void OnDisable()

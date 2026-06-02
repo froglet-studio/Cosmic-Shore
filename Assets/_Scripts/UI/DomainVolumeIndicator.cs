@@ -17,24 +17,26 @@ namespace CosmicShore.UI
     /// wedges visually approaches a full circle, the cell is about to enter Level2
     /// aggression (frenzy).
     ///
+    /// ZERO-AUTHORING: following the ElementalBarsView pattern, this component
+    /// self-constructs everything it needs at runtime when nothing is wired:
+    ///   - Wedge Images are created as children, using the host button's own sprite
+    ///     (radial-filled) so they match the button face. No prefab edit needed.
+    ///   - A diagnostic readout (TMP) is created below the button when
+    ///     autoCreateReadout is on.
+    ///   - MenuMiniGameHUD auto-attaches this component to its pause button when the
+    ///     scene doesn't have one. Pull → play → it works.
+    ///
     /// Reads:
     ///   - <see cref="Cell.GetDomainBlockCount"/> for the per-domain mass signal
     ///   - <see cref="Cell.RabidEnterThreshold"/> for the "max" (frenzy point)
     /// Resolves the cell via <see cref="Cell.FindCellContaining"/> using the local
-    /// player's vessel position, falling back to the first active cell — so this
-    /// works in Menu_Main (single cell at origin) and gameplay scenes without per-
-    /// scene rewiring.
-    ///
-    /// Wedge geometry (per Image): Radial360 fill, centred sprite, optionally rotated
-    /// to its 120° start angle (Jade 0°, Ruby -120°, Gold -240°). The component sets
-    /// the rotations on enable if <see cref="autoArrangeWedgeRotations"/> is true, so
-    /// authoring just needs three overlapping radial Images on the prefab.
+    /// player's vessel position, falling back to the nearest active cell.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
     {
-        [Header("Wedge Images (one per playable domain)")]
-        [Tooltip("Radial360 Image — Jade wedge. fillMethod=Radial360, fillOrigin=Top, fillCenter=true.")]
+        [Header("Wedge Images (optional — self-constructed when empty)")]
+        [Tooltip("Radial360 Image — Jade wedge. Leave null to auto-create from the button's own sprite.")]
         [SerializeField] Image jadeWedge;
         [Tooltip("Radial360 Image — Ruby wedge.")]
         [SerializeField] Image rubyWedge;
@@ -45,9 +47,9 @@ namespace CosmicShore.UI
         [Tooltip("Source for per-domain colors. Optional — falls back to the explicit fallback colors below if missing.")]
         [SerializeField] ThemeManagerDataContainerSO themeData;
         [Tooltip("Used as the wedge tint when themeData is missing or the domain lookup fails.")]
-        [SerializeField] Color jadeFallback = new(0.20f, 0.85f, 0.55f, 1f);
-        [SerializeField] Color rubyFallback = new(0.95f, 0.25f, 0.30f, 1f);
-        [SerializeField] Color goldFallback = new(0.95f, 0.80f, 0.20f, 1f);
+        [SerializeField] Color jadeFallback = new(0.20f, 0.85f, 0.55f, 0.9f);
+        [SerializeField] Color rubyFallback = new(0.95f, 0.25f, 0.30f, 0.9f);
+        [SerializeField] Color goldFallback = new(0.95f, 0.80f, 0.20f, 0.9f);
 
         [Header("Animation")]
         [Tooltip("Seconds between samples. The cell phase tick is 0.5s; 0.25s keeps the wedge ahead of phase transitions without burning CPU.")]
@@ -58,15 +60,17 @@ namespace CosmicShore.UI
         [SerializeField] bool autoArrangeWedgeRotations = true;
 
         [Header("Cell resolution")]
-        [Tooltip("If assigned, the indicator reads from this cell directly. Leave null to auto-resolve via the local player's vessel position (or the first active cell as a last resort).")]
+        [Tooltip("If assigned, the indicator reads from this cell directly. Leave null to auto-resolve via the local player's vessel position (or the nearest active cell as a last resort).")]
         [SerializeField] Cell explicitCell;
 
-        [Header("Diagnostics (optional)")]
+        [Header("Diagnostics")]
         [Tooltip("When assigned, shows live tuning numbers: per-domain counts, total vs frenzy " +
                  "threshold, phase, and the net prism rate (growth minus consumption, prisms/sec). " +
                  "The rate is the key tuning signal — positive while flora outgrow fauna, negative " +
                  "while fauna are winning, ~0 when the ecology is pinned (the 'static' failure mode).")]
         [SerializeField] TMP_Text debugReadout;
+        [Tooltip("Auto-create the diagnostic readout below the button when none is wired. Turn OFF for the production HUD.")]
+        [SerializeField] bool autoCreateReadout = true;
         [Tooltip("Seconds of history for the smoothed rate-of-change estimate.")]
         [Min(1f)] [SerializeField] float rateWindowSeconds = 5f;
 
@@ -85,12 +89,23 @@ namespace CosmicShore.UI
         float _lastTotalTime;
         float _smoothedRate;
 
+        /// <summary>
+        /// Explicit dependency handoff for the AddComponent path: components added at
+        /// runtime never go through Reflex scene injection, so the creator (e.g.
+        /// MenuMiniGameHUD) passes its own injected GameDataSO here. The [Inject]
+        /// attribute still covers the case where this component is authored into a
+        /// scene/prefab and injected normally.
+        /// </summary>
+        public void SetGameData(GameDataSO data) => gameData = data;
+
         // ------------------------------------------------------------------
         //  Lifecycle
         // ------------------------------------------------------------------
 
         void OnEnable()
         {
+            EnsureWedges();
+            EnsureReadout();
             ApplyDomainColors();
             if (autoArrangeWedgeRotations) ArrangeWedgeRotations();
 
@@ -112,6 +127,67 @@ namespace CosmicShore.UI
         }
 
         // ------------------------------------------------------------------
+        //  Self-construction (zero-authoring path)
+        // ------------------------------------------------------------------
+
+        void EnsureWedges()
+        {
+            if (jadeWedge && rubyWedge && goldWedge) return; // manually authored — leave alone
+
+            // Use the host button's own sprite as the wedge shape so the wedges match
+            // the button's circular face without any authored assets.
+            var hostImage = GetComponent<Image>();
+            Sprite wedgeSprite = hostImage ? hostImage.sprite : null;
+
+            if (!jadeWedge) jadeWedge = CreateWedge("JadeWedge (auto)", wedgeSprite);
+            if (!rubyWedge) rubyWedge = CreateWedge("RubyWedge (auto)", wedgeSprite);
+            if (!goldWedge) goldWedge = CreateWedge("GoldWedge (auto)", wedgeSprite);
+        }
+
+        Image CreateWedge(string wedgeName, Sprite sprite)
+        {
+            var go = new GameObject(wedgeName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(transform, false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            var img = go.GetComponent<Image>();
+            img.sprite = sprite;
+            img.type = Image.Type.Filled;
+            img.fillMethod = Image.FillMethod.Radial360;
+            img.fillOrigin = (int)Image.Origin360.Top;
+            img.fillClockwise = true;
+            img.fillCenter = true;
+            img.fillAmount = 0f;
+            img.raycastTarget = false; // never intercept the button's click
+            return img;
+        }
+
+        void EnsureReadout()
+        {
+            if (debugReadout || !autoCreateReadout) return;
+
+            var go = new GameObject("DomainVolumeReadout (auto)", typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(transform, false);
+            // Hang below the button: anchored to its bottom edge, growing downward.
+            rt.anchorMin = new Vector2(0.5f, 0f);
+            rt.anchorMax = new Vector2(0.5f, 0f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(0f, -8f);
+            rt.sizeDelta = new Vector2(260f, 80f);
+
+            var tmp = go.AddComponent<TextMeshProUGUI>();
+            tmp.fontSize = 16f;
+            tmp.alignment = TextAlignmentOptions.Top;
+            tmp.raycastTarget = false;
+            debugReadout = tmp;
+        }
+
+        // ------------------------------------------------------------------
         //  Sampling
         // ------------------------------------------------------------------
 
@@ -129,7 +205,7 @@ namespace CosmicShore.UI
             if (rabid <= 0)
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
-                UpdateReadout(cell, 0, 0, 0, 0);
+                UpdateReadout(cell, 0, 0, 0, rabid);
                 return;
             }
 
@@ -156,7 +232,9 @@ namespace CosmicShore.UI
 
             if (!cell)
             {
-                debugReadout.text = "no cell";
+                // Self-diagnosis: no cell could be resolved at all. Either no Cell
+                // exists in the scene or none have been enabled yet.
+                debugReadout.text = "DVI: no active cell";
                 return;
             }
 
@@ -174,9 +252,15 @@ namespace CosmicShore.UI
             _lastTotal = total;
             _lastTotalTime = now;
 
+            // Self-diagnosis: flag when the cell is still on fallback thresholds
+            // (its CellConfig hasn't been assigned — Initialize hasn't run), since
+            // that means the frenzy scale is the 15000-prism default, not the
+            // biome's tuned value.
+            string cfgTag = cell.HasConfigAssigned ? "" : " [NO CFG]";
+
             debugReadout.text =
                 $"J:{jade} R:{ruby} G:{gold}\n" +
-                $"{total}/{rabid} {cell.Phase}\n" +
+                $"{total}/{rabid} {cell.Phase}{cfgTag}\n" +
                 $"{(_smoothedRate >= 0 ? "+" : "")}{_smoothedRate:F1}/s";
         }
 
