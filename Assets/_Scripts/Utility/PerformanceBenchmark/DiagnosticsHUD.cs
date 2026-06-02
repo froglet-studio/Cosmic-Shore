@@ -69,8 +69,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // ui
         Text _readout, _advBtnLabel, _diagBtnLabel;
+        RectTransform _panel, _readoutRT, _buttonRow;
         GameObject _canvasGO;
         Font _font;
+
+        // cached once — local machine region + UTC offset (UGS auto-picks the Relay region and
+        // doesn't surface it, so we report the client's OS region; ping gives latency to host).
+        string _regionCache;
 
         void Awake()
         {
@@ -130,7 +135,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (kb != null)
             {
                 if (kb[ToggleKey].wasPressedThisFrame) SetVisible(!_visible);
-                if (kb[AdvancedKey].wasPressedThisFrame) _advanced = !_advanced;
+                if (kb[AdvancedKey].wasPressedThisFrame) ToggleAdvanced();
                 if (kb[DiagnosticKey].wasPressedThisFrame) ToggleDiagnostic();
             }
 
@@ -149,41 +154,103 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
         }
 
+        // palette
+        const string Label = "#8b97a8", Good = "#5fe07a", Warn = "#ffd066", Bad = "#ff6b6b",
+                     Accent = "#7cc2ff", Dim = "#6b7686";
+
+        static string Col(string hex, string body) => "<color=" + hex + ">" + body + "</color>";
+        static string FpsColor(float fps) => fps >= 55f ? Good : fps >= 30f ? Warn : Bad;
+        static string MsColor(float ms) => ms <= 17f ? Good : ms <= 33.4f ? Warn : Bad;
+
         void RefreshText()
         {
             if (_readout == null) return;
-            var sb = new StringBuilder(256);
+            var sb = new StringBuilder(512);
 
             if (_recording)
             {
                 float left = Mathf.Max(0f, _recEnd - Time.unscaledTime);
-                sb.Append("● RECORDING  ").Append(left.ToString("F0")).Append("s left\n");
-                sb.Append(_recFrames).Append(" frames · ").Append(_recSpikes.Count).Append(" spikes\n");
+                sb.Append(Col(Bad, "● REC ")).Append(Col(Warn, left.ToString("F0") + "s"))
+                  .Append(Col(Dim, "   " + _recFrames + "f · " + _recSpikes.Count + " spikes")).Append('\n');
             }
 
-            sb.Append("FPS ").Append(_displayFps.ToString("F1"))
-              .Append("    Frame Time ").Append(_displayMs.ToString("F1")).Append(" ms");
+            // ── normal: framerate + frame time ──
+            sb.Append(Col(Label, "FPS "))
+              .Append(Col(FpsColor(_displayFps), _displayFps.ToString("F0")))
+              .Append(Col(Label, "    Frame Time "))
+              .Append(Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
 
             if (_advanced)
             {
-                sb.Append('\n');
-                sb.Append("Draw Calls ").Append(RInt(_drawCalls))
-                  .Append("  Batches ").Append(RInt(_batches)).Append('\n');
-                sb.Append("Tris ").Append(RLong(_triangles).ToString("N0"))
-                  .Append("  SetPass ").Append(RInt(_setPass)).Append('\n');
-                sb.Append("GC ").Append((RLong(_gcAlloc) / 1024f).ToString("F1")).Append(" KB/frame\n");
+                // ── render ──
+                sb.Append('\n').Append(Col(Accent, "Render  "))
+                  .Append(Col(Label, "Draw Calls ")).Append(Col("#ffffff", RInt(_drawCalls).ToString()))
+                  .Append(Col(Label, "  Batches ")).Append(Col("#ffffff", RInt(_batches).ToString()))
+                  .Append(Col(Label, "  SetPass ")).Append(Col("#ffffff", RInt(_setPass).ToString()));
+                sb.Append('\n').Append(Col(Label, "        Tris "))
+                  .Append(Col("#ffffff", RLong(_triangles).ToString("N0")))
+                  .Append(Col(Label, "  Verts ")).Append(Col("#ffffff", RLong(_vertices).ToString("N0")));
 
+                // ── memory ──
+                float gcKB = RLong(_gcAlloc) / 1024f;
+                sb.Append('\n').Append(Col(Accent, "Memory  "))
+                  .Append(Col(Label, "GC ")).Append(Col(gcKB > 4f ? Warn : Good, gcKB.ToString("F1") + " KB/frame"));
+
+                // ── network ──
                 double rtt = Rtt();
-                sb.Append("RTT ").Append(rtt >= 0 ? rtt.ToString("F0") + " ms" : "—")
-                  .Append("  NetVars ").Append(RInt(_netVars))
-                  .Append("  RPCs ").Append(RInt(_rpcs)).Append('\n');
-                sb.Append("Net Bytes/f ").Append(RLong(_netBytes).ToString("N0"));
+                sb.Append('\n').Append(Col(Accent, "Network ")).Append(Col(Label, "Ping "))
+                  .Append(rtt >= 0
+                      ? Col(rtt <= 80 ? Good : rtt <= 160 ? Warn : Bad, rtt.ToString("F0") + " ms")
+                      : Col(Dim, "offline"))
+                  .Append(Col(Label, "  NetVars ")).Append(Col("#ffffff", RInt(_netVars).ToString()))
+                  .Append(Col(Label, "  RPCs ")).Append(Col("#ffffff", RInt(_rpcs).ToString()));
+                sb.Append('\n').Append(Col(Label, "        Bytes/f "))
+                  .Append(Col("#ffffff", RLong(_netBytes).ToString("N0")));
+
+                // ── region ──
+                sb.Append('\n').Append(Col(Accent, "Region  ")).Append(Col("#ffffff", Region()));
             }
 
             if (Time.unscaledTime - _lastSavedShownAt < 6f && !string.IsNullOrEmpty(_lastSavedPath))
-                sb.Append("\nSaved: ").Append(_lastSavedPath);
+                sb.Append('\n').Append(Col(Good, "Saved: ")).Append(Col(Dim, _lastSavedPath));
 
             _readout.text = sb.ToString();
+            Relayout();
+        }
+
+        string Region()
+        {
+            if (_regionCache != null) return _regionCache;
+            string country;
+            try { country = System.Globalization.RegionInfo.CurrentRegion.DisplayName; }
+            catch { country = "Unknown"; }
+            TimeSpan off;
+            try { off = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now); }
+            catch { off = TimeSpan.Zero; }
+            string sign = off < TimeSpan.Zero ? "-" : "+";
+            _regionCache = $"{country}  UTC{sign}{Math.Abs(off.Hours):D2}:{Math.Abs(off.Minutes):D2}";
+            return _regionCache;
+        }
+
+        // Resize the panel to fit the current text (small in normal mode, taller in advanced) and
+        // slide the bottom button row up to sit just under the readout.
+        void Relayout()
+        {
+            if (_panel == null || _readout == null) return;
+            const float pad = 8f, gap = 8f, btnH = 22f, topY = 6f;
+            float textH = _readout.preferredHeight;
+            float panelH = topY + textH + gap + btnH + pad;
+            float panelW = Mathf.Clamp(_readout.preferredWidth + pad * 2f, 300f, 640f);
+            _panel.sizeDelta = new Vector2(panelW, panelH);
+            if (_readoutRT != null) _readoutRT.sizeDelta = new Vector2(-pad * 2f, textH);
+            if (_buttonRow != null) _buttonRow.anchoredPosition = new Vector2(6f, -(topY + textH + gap));
+        }
+
+        void ToggleAdvanced()
+        {
+            _advanced = !_advanced;
+            if (_advBtnLabel != null) _advBtnLabel.text = _advanced ? "Simple" : "Advanced";
+            if (_visible) RefreshText();
         }
 
         // ── diagnostic recording ──────────────────────────────────────────
@@ -335,33 +402,35 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var scaler = _canvasGO.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
 
-            // Panel (top-left).
-            var panel = CreateRect("Panel", _canvasGO.transform, new Vector2(0, 1), new Vector2(0, 1),
-                new Vector2(8, -8), new Vector2(330, 190));
-            var bg = panel.gameObject.AddComponent<Image>();
-            bg.color = new Color(0f, 0f, 0f, 0.6f);
+            // Panel (top-left). Height is recomputed every refresh by Relayout().
+            _panel = CreateRect("Panel", _canvasGO.transform, new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(8, -8), new Vector2(300, 80));
+            var bg = _panel.gameObject.AddComponent<Image>();
+            bg.color = new Color(0f, 0f, 0f, 0.66f);
 
-            // Readout text.
-            var textRect = CreateRect("Readout", panel, new Vector2(0, 1), new Vector2(1, 1),
-                new Vector2(8, -6), new Vector2(-16, 150));
-            textRect.pivot = new Vector2(0, 1);
-            _readout = textRect.gameObject.AddComponent<Text>();
+            // Readout text (top of panel, full width).
+            _readoutRT = CreateRect("Readout", _panel, new Vector2(0, 1), new Vector2(1, 1),
+                new Vector2(8, -6), new Vector2(-16, 40));
+            _readout = _readoutRT.gameObject.AddComponent<Text>();
             _readout.font = _font;
             _readout.fontSize = 14;
             _readout.color = Color.white;
+            _readout.supportRichText = true;
             _readout.alignment = TextAnchor.UpperLeft;
             _readout.horizontalOverflow = HorizontalWrapMode.Overflow;
             _readout.verticalOverflow = VerticalWrapMode.Overflow;
             _readout.text = "FPS —   Frame Time — ms";
 
-            // Button row along the bottom.
-            float y = 6f;
-            _advBtnLabel = CreateButton("Advanced", panel, 6, y, 92, () => _advanced = !_advanced);
-            _diagBtnLabel = CreateButton("Run 10s", panel, 104, y, 84, ToggleDiagnostic);
-            CreateButton("-", panel, 194, y, 30, () => { _diagSeconds = Mathf.Max(1, _diagSeconds - 5); UpdateDiagButtonLabel(); });
-            CreateButton("+", panel, 230, y, 30, () => { _diagSeconds = Mathf.Min(600, _diagSeconds + 5); UpdateDiagButtonLabel(); });
+            // Button row — a container Relayout() slides up to sit just below the readout.
+            _buttonRow = CreateRect("ButtonRow", _panel, new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(6, -52), new Vector2(0, 22));
+            _advBtnLabel = CreateButton("Advanced", _buttonRow, 0, 92, ToggleAdvanced);
+            _diagBtnLabel = CreateButton("Run 10s", _buttonRow, 98, 84, ToggleDiagnostic);
+            CreateButton("-", _buttonRow, 188, 30, () => { _diagSeconds = Mathf.Max(1, _diagSeconds - 5); UpdateDiagButtonLabel(); });
+            CreateButton("+", _buttonRow, 224, 30, () => { _diagSeconds = Mathf.Min(600, _diagSeconds + 5); UpdateDiagButtonLabel(); });
 
             SetVisible(_visible);
+            RefreshText();
         }
 
         void EnsureEventSystem()
@@ -385,11 +454,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return rt;
         }
 
-        Text CreateButton(string label, Transform parent, float x, float y, float width, Action onClick)
+        Text CreateButton(string label, Transform parent, float x, float width, Action onClick)
         {
-            var rt = CreateRect("Btn_" + label, parent, new Vector2(0, 0), new Vector2(0, 0),
-                new Vector2(x, y), new Vector2(width, 22));
-            rt.pivot = new Vector2(0, 0);
+            var rt = CreateRect("Btn_" + label, parent, new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(x, 0), new Vector2(width, 22));
             var img = rt.gameObject.AddComponent<Image>();
             img.color = new Color(0.25f, 0.3f, 0.4f, 0.95f);
             var btn = rt.gameObject.AddComponent<Button>();
