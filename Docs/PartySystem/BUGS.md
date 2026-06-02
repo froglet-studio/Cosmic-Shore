@@ -229,12 +229,82 @@ the await is bounded and the host ignores the property via B8 fix-1).
 - **D. All three** — they target different facets (duplicate, lifecycle
   ordering, pairing). Likely need B+C at minimum.
 
-**Status.** 🔴 Open — analysis complete from a single MPPM trace, root
-cause is vessel/scene lifecycle ordering on the client's solo restart
-after a clean leave. Distinct from the original B3 bounce-path cause.
-**No code change yet — awaiting discussion + user decision on approach,
-and likely 1-2 more targeted log captures to confirm hypothesis 1 vs 2
-ordering.**
+**Status.** 🟡 Fix landed (`PartyInviteController` despawn-before-reload,
+both leave path and bounce path). Needs MPPM re-verify.
+
+**Root cause confirmed via a second, sequential MPPM trace
+(2026-06-02).** The trace bracketed `[PartyInviteController] Starting
+leave-lobby flow...` through the second `OnNetworkSpawn NetObjId=6` and
+showed:
+
+```
+... LeavePartyKeepHostAsync runs ...
+[FLOW-4] [Player] OnNetworkSpawn — persistent host Player (NetObjId=1)
+[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync ownerClientId=0
+[FLOW-5] Found player Ys1
+[VESSEL] OnNetworkSpawn NetObjId=4           ← FIRST vessel, BEFORE the reload
+[PLAYER] OnNetVesselIdChanged prev=0, new=4
+[FLOW-6] OnClientReady #1
+[PartySessionService] Created party session nEAQ
+[HostConnectionService] Solo party session ready
+[PartyInviteController] Leave-lobby flow completed.
+Container Menu_Main disposed
+Scene (Menu_Main) Bindings Installed         ← scene reload completes
+[FLOW-5] [ServerVesselInit] OnNetworkSpawn  ← NEW scene-placed initializer instance
+[FLOW-5] HandlePlayerNetworkSpawnedAsync ownerClientId=0
+[FLOW-5] Found player Ys1                    ← persistent Player, found again
+[VESSEL] OnNetworkSpawn NetObjId=6           ← SECOND vessel, AFTER the reload
+[PLAYER] OnNetVesselIdChanged prev=4, new=6  ← Player ditches vessel 4 → 6
+[FLOW-6] OnClientReady #2
+```
+
+**The mechanism (definitive):** the post-reload `ServerPlayerVesselInitializer`
+is a **brand-new scene-placed instance** with an **empty `_processedPlayers`
+HashSet**. The persistent host `Player` (DestroyWithScene=false) survives
+the reload, so the new initializer iterates `nm.ConnectedClients`
+(`ServerPlayerVesselInitializer.cs:130-145`), finds the Player still
+connected and unprocessed, runs `HandlePlayerNetworkSpawned`, and spawns
+a second vessel. `Player.NetVesselId` updates `4→6`. **Vessel 4 is left
+alive but orphaned** — no Player pairing, AI ticks against a disposed
+`Menu_Main` DI container (proven by the `UnknownContractException:
+GameDataSO` on crystal-impact RPC seen in the prior trace).
+
+**Correction to earlier hypothesis 2.** Yesterday I claimed
+`FindUnprocessedPlayerByOwnerClientId(0) returned NULL` was the
+"dead-controls cause." On a re-read of the trace, that NULL is benign
+noise: `HandlePlayerNetworkSpawnedAsync` is invoked twice for the same
+`ownerClientId` (visible in both the buggy *and* working cycles); the
+second call lands after the Player was added to `_processedPlayers` by
+the first, returns NULL, early-returns harmlessly. It fires every cycle,
+not just buggy ones. **Hypothesis 1 (orphan vessel from spawn-vs-reload
+ordering) is the sole root cause** — fixed below.
+
+**Fix landed (single commit).** `PartyInviteController.LeavePartyAndReturnToMenuAsync`
+and `RecoverFromFailedTransitionAsync` both call
+`gameData.LocalPlayer.Vessel.DestroyVessel()` between
+`LeavePartyKeepHostAsync` (which spawns vessel 4) and the
+`LoadScene("Menu_Main")` call. `VesselController.DestroyVessel()` does
+`NetworkObject.Despawn(true)` for spawned server-owned vessels — the
+exact teardown `GameDataSO.DestroyPlayerAndVessel` already uses
+(`VesselController.cs:209-210`, `GameDataSO.cs:195`). After the
+despawn the reload proceeds with no scene-survivor: the post-reload
+initializer spawns **one** vessel (the equivalent of NetObjId 6), the
+Player's `NetVesselId` re-pairs naturally via `OnNetVesselIdChanged`,
+input controller wires to the single live vessel, AI seeks crystals
+normally.
+
+**Why not the "reorder so reload precedes solo restart" path.** Would
+require shutting NM down as a client and using
+`UnityEngine.SceneManagement.SceneManager.LoadScene` (not Netcode's),
+which is a much larger surface area and crosses state-machine
+boundaries. The surgical despawn is the right size for the fix and
+keeps the existing flow intact.
+
+**Risk gate accepted.** Single-file +37 lines, only the leave + bounce
+paths. Despawn fires `OnNetworkDespawn` like any normal teardown
+(paths exercised every game session). `gameData?.LocalPlayer?.Vessel`
+null-guarded. If anything regresses, removing the despawn blocks
+reverts to current behavior.
 
 **Evidence (file:line).**
 - `PartyInviteController.cs:274-340` — `LeavePartyAndReturnToMenuAsync`

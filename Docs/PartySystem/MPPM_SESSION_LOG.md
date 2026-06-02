@@ -370,6 +370,27 @@ B3.b. Key points:
 one trace; likely needs 1-2 more targeted captures to confirm the
 spawn-vs-reload ordering before fixing.
 
+### Phase A.1 second leave attempt — full sequential trace captured (2026-06-02)
+
+User provided the complete sequential block from `[PartyInviteController]
+Starting leave-lobby flow...` through `OnNetworkSpawn NetObjId=6`,
+confirming hypothesis 1 (spawn-vs-reload ordering) and **invalidating**
+my prior "dead controls = NULL find" claim. Two key signals from the trace:
+
+1. **`[PLAYER] OnNetVesselIdChanged prev=4, new=6`** — the Player class
+   only tracks one vessel; vessel 4 is *orphaned* the moment vessel 6
+   spawns. That is the dead-controls cause.
+2. **`FindUnprocessedPlayerByOwnerClientId(0) returned NULL`** fires on
+   the SECOND `HandlePlayerNetworkSpawnedAsync` per cycle, *after* the
+   Player was added to `_processedPlayers` by the first. Benign noise,
+   would fire on every cycle. Not a bug signal. Corrected in `BUGS.md`
+   B3.b root-cause section.
+
+**Fix landed:** despawn the just-spawned vessel before the scene reload
+in both `LeavePartyAndReturnToMenuAsync` (clean leave) and
+`RecoverFromFailedTransitionAsync` (bounce path). Same single-file
+commit. B3.b → 🟡 awaiting MPPM re-verify.
+
 ### Phase B — Party smoke gate
 
 | Test | Status | NetDiag observed | Notes |

@@ -311,6 +311,29 @@ namespace CosmicShore.Gameplay
                 if (hcs != null)
                     await hcs.LeavePartyKeepHostAsync().AsMainThread();
 
+                // B3.b fix: despawn the vessel just spawned by EnsurePartySessionAsync
+                // BEFORE the Menu_Main reload below. Without this, the reload mounts
+                // a new scene-placed ServerPlayerVesselInitializer with an EMPTY
+                // _processedPlayers HashSet, which re-processes the persistent host
+                // Player (DestroyWithScene=false survives the reload) and spawns a
+                // SECOND vessel. Player.NetVesselId then jumps prev→new (visible as
+                // [PLAYER] OnNetVesselIdChanged), leaving the first vessel orphaned
+                // with no Player pairing: it wanders on AI, doesn't seek crystals,
+                // and crystal-impact RPCs against it throw UnknownContractException
+                // for GameDataSO because the OLD Menu_Main DI container has been
+                // disposed. See Docs/PartySystem/BUGS.md B3.b for the full trace.
+                //
+                // DestroyVessel() = NetworkObject.Despawn(true) when spawned+server
+                // (VesselController.cs:209-210), the exact teardown
+                // GameDataSO.DestroyPlayerAndVessel uses. Player.NetVesselId is
+                // naturally re-set when the post-reload vessel spawns.
+                var soloVessel = gameData?.LocalPlayer?.Vessel;
+                if (soloVessel != null)
+                {
+                    Debug.Log("[PartyInviteController] Despawning pre-reload solo vessel to prevent B3.b orphan.");
+                    soloVessel.DestroyVessel();
+                }
+
                 // Reload Menu_Main via the new NM so scene-placed NetworkObjects
                 // initialise cleanly in the fresh Relay session.
                 var nm = NetworkManager.Singleton;
@@ -444,6 +467,20 @@ namespace CosmicShore.Gameplay
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
                     await hcs.LeavePartyKeepHostAsync().AsMainThread();
+
+                // B3.b fix (also applies here): despawn the vessel just spawned by
+                // EnsurePartySessionAsync inside LeavePartyKeepHostAsync, before
+                // the reload below. Same orphan-spawn cycle as the leave path —
+                // see PartyInviteController.LeavePartyAndReturnToMenuAsync for
+                // the full rationale. The DestroyPlayerAndVessel call above
+                // cleaned up the failed-transition vessel; this handles the new
+                // vessel that EnsurePartySessionAsync just spawned.
+                var soloVessel = gameData?.LocalPlayer?.Vessel;
+                if (soloVessel != null)
+                {
+                    Debug.Log("[PartyInviteController] Despawning pre-reload solo vessel to prevent B3.b orphan (recovery path).");
+                    soloVessel.DestroyVessel();
+                }
 
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer && nm.SceneManager != null)
