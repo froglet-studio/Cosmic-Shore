@@ -94,8 +94,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
 
             var result = BenchmarkComparer.Compare(baseline, current);
 
-            // Should have deltas for: 5 FPS + 5 frame time + 4 rendering + 3 memory = 17
-            Assert.AreEqual(17, result.deltas.Length);
+            // Should have deltas for: 5 FPS + 5 frame time + 4 rendering + 3 memory + 3 netcode = 20
+            Assert.AreEqual(20, result.deltas.Length);
         }
 
         [Test]

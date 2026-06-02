@@ -1,8 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore.Utility;
-using System;
-using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
@@ -31,19 +29,14 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (transparentBlocks != null)
+            // Restore last frame's transparent blocks to their original materials.
+            foreach (Prism block in transparentBlocks)
             {
-                CSDebug.Log("Number of entries in originalMaterials: " + originalMaterials.Count);
-                foreach (Prism block in transparentBlocks)
-                {
-                    if (block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
-                    {
-                        CSDebug.Log("restoring material");
-                        block.GetComponent<Renderer>().sharedMaterial = originalMaterials[block];  // Retrieve the original material
-                    }
-                }
-                transparentBlocks.Clear();
+                if (block == null || !block.TryGetComponent(out Renderer renderer)) continue;
+                if (renderer.sharedMaterial.Equals(TransparentMaterial) && originalMaterials.TryGetValue(block, out var original))
+                    renderer.sharedMaterial = original;
             }
+            transparentBlocks.Clear();
 
             lineRenderer.enabled = false;
 
@@ -57,24 +50,22 @@ namespace CosmicShore.Gameplay
             // Set materials of blocks in view distance
             for (int i = attachedBlockIndex - radiusInBlocks; i < attachedBlockIndex + radiusInBlocks; i++)
             {
-                Material tempMaterial;
                 if (i >= attachedTrail.TrailList.Count - 1 || i <= 0) continue;
                 var block = attachedTrail.TrailList[i];
-                if (!block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+                if (!block.TryGetComponent(out Renderer renderer)) continue;
+                if (!renderer.sharedMaterial.Equals(TransparentMaterial))
                 {
-                    CSDebug.Log("set material");
-                    tempMaterial = (block.GetComponent<Renderer>().material);
-                    block.GetComponent<Renderer>().sharedMaterial = TransparentMaterial;
+                    originalMaterials[block] = renderer.sharedMaterial;
+                    renderer.sharedMaterial = TransparentMaterial;
                     transparentBlocks.Add(block);
-                    originalMaterials[block] = tempMaterial;
                 }
             }
 
             // Draw line
             lineRenderer.positionCount = transparentBlocks.Count;
-            foreach (Prism block in transparentBlocks)
+            for (int i = 0; i < transparentBlocks.Count; i++)
             {
-                lineRenderer.SetPosition(transparentBlocks.IndexOf(block), block.transform.position);
+                lineRenderer.SetPosition(i, transparentBlocks[i].transform.position);
             }
             lineRenderer.enabled = true;
 

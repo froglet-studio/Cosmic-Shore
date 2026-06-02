@@ -146,6 +146,103 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
 
         #endregion
 
+        #region Game Load Stats
+
+        [Test]
+        public void Compute_GameLoad_AveragesAndTracksPeaks()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, activePrisms = 100, activeExplosions = 2, activeImplosions = 1, activeVessels = 4, activePlayers = 2 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, activePrisms = 300, activeExplosions = 8, activeImplosions = 3, activeVessels = 4, activePlayers = 2 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, activePrisms = 200, activeExplosions = 5, activeImplosions = 2, activeVessels = 4, activePlayers = 2 },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 3f);
+
+            Assert.AreEqual(200f, stats.avgActivePrisms, 0.01f);
+            Assert.AreEqual(300, stats.peakActivePrisms);
+            Assert.AreEqual(5f, stats.avgActiveExplosions, 0.01f);
+            Assert.AreEqual(8, stats.peakActiveExplosions);
+            Assert.AreEqual(2f, stats.avgActiveImplosions, 0.01f);
+            Assert.AreEqual(3, stats.peakActiveImplosions);
+            Assert.AreEqual(4f, stats.avgActiveVessels, 0.01f);
+            Assert.AreEqual(2f, stats.avgActivePlayers, 0.01f);
+        }
+
+        #endregion
+
+        #region CPU/GPU & Leak Slope
+
+        [Test]
+        public void Compute_CpuGpu_AveragesAndPeaks()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, cpuFrameTimeMs = 10f, gpuFrameTimeMs = 8f },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, cpuFrameTimeMs = 14f, gpuFrameTimeMs = 12f },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 2f);
+
+            Assert.AreEqual(12f, stats.avgCpuFrameTimeMs, 0.01f);
+            Assert.AreEqual(14f, stats.maxCpuFrameTimeMs, 0.01f);
+            Assert.AreEqual(10f, stats.avgGpuFrameTimeMs, 0.01f);
+            Assert.AreEqual(12f, stats.maxGpuFrameTimeMs, 0.01f);
+        }
+
+        [Test]
+        public void Compute_RisingMemory_ProducesPositiveSlope()
+        {
+            // Memory 100, 200, 300 over frame indices 0,1,2 → slope = 100 bytes/frame.
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 100 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 200 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 300 },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 3f);
+
+            Assert.AreEqual(100f, stats.memorySlopeBytesPerFrame, 0.5f);
+        }
+
+        [Test]
+        public void Compute_FlatMemory_ProducesZeroSlope()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 500 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 500 },
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 500 },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 3f);
+
+            Assert.AreEqual(0f, stats.memorySlopeBytesPerFrame, 0.01f);
+        }
+
+        [Test]
+        public void Compute_Netcode_AggregatesAndShare()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 10f, fps = 100f, netcodeTimeMs = 2f, rpcsSent = 4, netVarsDirty = 6, netBytesSent = 100 },
+                new FrameSnapshot { deltaTimeMs = 10f, fps = 100f, netcodeTimeMs = 4f, rpcsSent = 6, netVarsDirty = 10, netBytesSent = 200 },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 2f);
+
+            Assert.AreEqual(3f, stats.avgNetcodeTimeMs, 0.01f);
+            Assert.AreEqual(4f, stats.maxNetcodeTimeMs, 0.01f);
+            Assert.AreEqual(5f, stats.avgRpcsSent, 0.01f);
+            Assert.AreEqual(8f, stats.avgNetVarsDirty, 0.01f);
+            Assert.AreEqual(300, stats.totalNetBytesSent);
+            Assert.AreEqual(30f, stats.netcodeSharePercent, 0.1f); // 3ms of a 10ms frame
+        }
+
+        #endregion
+
         #region Percentiles
 
         [Test]
