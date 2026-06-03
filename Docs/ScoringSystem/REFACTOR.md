@@ -60,11 +60,18 @@ system). **Touches** winner calc, score sync, HUD layout selection, lobby
 buttons — gated on **Q1** sign-off. Ship in small steps (one fork site / small
 group per commit).
 
-### R2 — 🔴 Deduplicate the score-text animation (DRY)
-`PlayCounterRoll` / `PlayScorePunch` / `PlayColorFlash` / entrance are
+### R2 — 🟢 Deduplicate the score-text animation (DRY) — incl. R2b (entrance)
+`PlayCounterRoll` / `PlayScorePunch` / `PlayColorFlash` / entrance were
 copy-pasted across `PlayerScoreEntry`, `PlayerScoreCard`, and `DomainScorePanel`
-(~80 lines ×3). Extract one shared animated-score component/helper driven by
-`HUDAnimationSettingsSO`. Pure refactor; verify visuals unchanged.
+(~80 lines ×3). **Done** (commit `3f708a5b`):
+- `ScoreNumberAnimator` (new plain C# helper) owns the counter-roll + punch +
+  color-flash trio, the displayed value, the base color, and the three tweens —
+  composed by all three widgets.
+- `CardEntranceAnimator` (new static helper) owns the staggered scale+fade
+  entrance shared by the two card widgets (this is R2b, folded in).
+Behavior-preserving — all public APIs unchanged, no caller/prefab changes; net
+−80 lines. `DomainScorePanel` no longer depends on `DG.Tweening` directly; its
+themed base-color path is preserved via `ScoreNumberAnimator.SetBaseColor`.
 
 ### R3 — 🔴 Single source of truth for the winner crystal reward
 `Scoreboard.winnerCrystalReward` (=5) and
