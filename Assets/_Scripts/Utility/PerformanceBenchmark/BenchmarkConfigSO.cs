@@ -37,7 +37,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [Tooltip("Subfolder inside Application.persistentDataPath for saved reports.")]
         [SerializeField] private string outputFolder = "Benchmarks";
 
-        [Tooltip("Optional label to tag this benchmark run (e.g. 'GDC_Demo', 'Squirrel_Race').")]
+        [Tooltip("Optional label to tag this benchmark run (e.g. 'Demo_Build', 'Squirrel_Race').")]
         [SerializeField] private string benchmarkLabel = "";
 
         public float WarmupDuration => warmupDuration;

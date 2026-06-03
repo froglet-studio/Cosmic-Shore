@@ -12,7 +12,7 @@ namespace CosmicShore.Tests
     /// Each vessel type has its own CameraSettingsSO asset that controls camera distance,
     /// smoothing, clip planes, and zoom behavior. If default values drift (e.g., someone
     /// changes the class and forgets to update assets), the camera could clip through
-    /// geometry, zoom to zero, or feel unresponsive during the GDC demo. These tests
+    /// geometry, zoom to zero, or feel unresponsive during gameplay. These tests
     /// lock the defaults and verify the ScriptableObject instantiation works.
     /// </summary>
     [TestFixture]
