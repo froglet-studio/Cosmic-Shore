@@ -33,8 +33,9 @@ namespace CosmicShore.Gameplay
 
             VesselTelemetry telemetry = vesselStatus.VesselType switch
             {
-                VesselClassType.Sparrow  => gameObject.AddComponent<SparrowVesselTelemetry>(),
-                VesselClassType.Squirrel => gameObject.AddComponent<SquirrelVesselTelemetry>(),
+                VesselClassType.Sparrow     => gameObject.AddComponent<SparrowVesselTelemetry>(),
+                VesselClassType.Squirrel    => gameObject.AddComponent<SquirrelVesselTelemetry>(),
+                VesselClassType.BrittleStar => gameObject.AddComponent<BrittleStarVesselTelemetry>(),
                 _ => gameObject.AddComponent<DefaultVesselTelemetry>()
             };
 

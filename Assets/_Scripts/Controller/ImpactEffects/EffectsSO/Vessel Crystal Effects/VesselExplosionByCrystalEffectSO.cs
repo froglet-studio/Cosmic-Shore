@@ -91,6 +91,8 @@ namespace CosmicShore.Gameplay
                     break;
                 case VesselClassType.Sparrow:
                     break;
+                case VesselClassType.BrittleStar:
+                    break;
             }
         }
     }

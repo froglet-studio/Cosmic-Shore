@@ -46,6 +46,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Falcon, 9)]
         [TestCase(VesselClassType.Shrike, 10)]
         [TestCase(VesselClassType.Sparrow, 11)]
+        [TestCase(VesselClassType.BrittleStar, 12)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
