@@ -1,4 +1,4 @@
-# Network Diagnostics
+# Network Diagnostics — Overlay Architecture
 
 Cross-cutting diagnostic overlay for party / lobby / session /
 transition failures. Pure observability — adding a call site never

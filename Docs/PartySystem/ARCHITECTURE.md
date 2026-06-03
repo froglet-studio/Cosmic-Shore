@@ -102,7 +102,7 @@ NM reset with timeout), `WaitForClientConnectionAsync` (poll
 client's first `SceneEvent` after host scene-load). All three use
 linked-CTS-with-timeout patterns. Each timeout path emits a NetDiag
 log line per the diagnostics overlay (see
-`../NetworkDiagnostics/README.md`).
+`../NetworkDiagnostics/ARCHITECTURE.md`).
 
 ### `PartyInviteController` (MonoBehaviour, singleton)
 
@@ -144,7 +144,7 @@ PartyInviteController.AcceptInviteAsync
 
 Each `await` is `.AsMainThread()`-wrapped per `Docs/THREADING.md`. Each
 catch block now appends a NetDiag log line classifying the failure (see
-`../NetworkDiagnostics/README.md`).
+`../NetworkDiagnostics/ARCHITECTURE.md`).
 
 ## Unbreakable exit criteria
 
@@ -315,17 +315,20 @@ already-initialized state and no-ops). Safe.
 
 ### Q10. `MultiplayerService.Instance` as a class member
 
-Resolved at use time via a private property (`private IMultiplayerService _multiplayerService => MultiplayerService.Instance;`),
-never cached in a constructor. Lazy DI singletons are constructed during Bootstrap DI
-resolution, *before* `UnityServices.InitializeAsync()` completes, so a constructor-time
-read would pin null forever. Documented in `CLAUDE.md` as a project-wide anti-pattern.
+Rationale for the locked-design rule above ("`MultiplayerService.Instance`
+is always resolved at use time"): expose it via a private property
+(`private IMultiplayerService _multiplayerService => MultiplayerService.Instance;`)
+and never cache it in a constructor. Lazy DI singletons are constructed during
+Bootstrap DI resolution, *before* `UnityServices.InitializeAsync()` completes, so a
+constructor-time read would pin null forever. Also a project-wide anti-pattern in
+`CLAUDE.md`.
 
 ## Error-handling matrix — recovery action for every catch site
 
 Every catch in `HostConnectionService` / `PartySessionService` /
 `PresenceLobbyService` maps to one of these recovery actions. **No catch silently
 drops state.** This is the recovery-policy spec; it is distinct from the NetDiag
-log classifier (see `../NetworkDiagnostics/README.md`, "Not a retry-control
+log classifier (see `../NetworkDiagnostics/ARCHITECTURE.md`, "Not a retry-control
 predicate") — the matrix decides *what to do*, NetDiag only decides *what to log*.
 
 | Catch site | Failure class | Recovery |
@@ -350,5 +353,5 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 - `TESTS.md` — manual MPPM test procedures
 - `TODOS.md` — minor parking-lot items
 - `../PresenceSystem/ARCHITECTURE.md` — presence-lobby layer
-- `../NetworkDiagnostics/README.md` — NetDiag overlay used by all party catches
+- `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by all party catches
 - `../THREADING.md` — main-thread affinity rules (mandatory for every UGS / Netcode await)

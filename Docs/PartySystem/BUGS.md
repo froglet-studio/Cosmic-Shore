@@ -2,7 +2,7 @@
 
 Living tracker for party-side issues found in MPPM testing. Companion
 to `ARCHITECTURE.md` (locked design), `REFACTOR.md` (active refactor
-queue), and `../NetworkDiagnostics/README.md` (catch-block diagnostics).
+queue), and `../NetworkDiagnostics/ARCHITECTURE.md` (catch-block diagnostics).
 
 Presence-lobby-specific bugs (B1, B4, B6 from the old tracker) moved
 to `../PresenceSystem/BUGS.md`.
@@ -621,12 +621,7 @@ write flaky) is tracked separately in `../PresenceSystem/BUGS.md` B1.
 
 ## How we work bugs
 
-- One bug at a time, in priority order (B2 → B5 → B3 → B7).
-- For each: confirm root cause via NetDiag log capture if possible →
-  agree the approach → implement on `claude/blissful-tesla-9nefa` as
-  its own commit with risk table → update status.
-- The presence-lobby cluster (B1, B4, B6) is the locked-design area
-  and lives in `../PresenceSystem/BUGS.md` — read
-  `ARCHITECTURE.md` and `../PresenceSystem/ARCHITECTURE.md` before
-  touching `HostConnectionService` / `PresenceLobbyService` / invite
-  services. Do not reintroduce LAZY session creation.
+Method: see `../README.md` § "How we work bugs". Party-side priority
+order: **B2 → B5 → B3 → B7** (B8 fixed). The presence-lobby cluster
+(B1, B4, B6) is the locked-design area and lives in
+`../PresenceSystem/BUGS.md`.
