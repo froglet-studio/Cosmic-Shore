@@ -94,9 +94,13 @@ is a single rendering route in `MultiplayerHUD`.
 field as an avatar-only chip. Introduce a small dedicated avatar-chip widget for
 clarity (low priority).
 
-### R8 — 🔴 Remove `[FLOW-*]` `Debug.Log` spam from `MiniGameHUD`
-The colored `[FLOW-HUD]`/`[FLOW-8]` logs are production diagnostic noise
-(CLAUDE.md: Debug.Log is not a solution). Remove or gate behind a verbose flag.
+### R8 — 🟢 Remove `[FLOW-*]` `Debug.Log` spam from `MiniGameHUD`
+The colored `[FLOW-HUD]`/`[FLOW-8]` logs were production diagnostic noise
+(CLAUDE.md: Debug.Log is not a solution). **Done** (commit `b245e41b`): deleted
+all 8 statements in `MiniGameHUD` (`Start`, `OnClientReady`, `HandleClientReady`);
+the `OperationCanceledException` catch is annotated as an intentional
+cancellation swallow. Pure deletion, zero behavior change. Scoped to the Scoring
+System only — the `[FLOW-*]` convention in spawn/controller files is untouched.
 
 ### R9 — 🔴 Document/enforce the end-game ordering contract
 `Scoreboard.DetermineWinnerDomain` reads `DomainStatsList[0]`, assuming the
