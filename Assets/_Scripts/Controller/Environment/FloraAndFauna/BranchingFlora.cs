@@ -19,6 +19,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] int maxTrunks = 1;
 
         [SerializeField] int maxDepth = 10;
+        [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget — a grazed " +
+                 "flora regrows toward this cap instead of staying a permanent un-growing fragment.")]
         [SerializeField] int maxTotalSpawnedObjects = 1000;
         [SerializeField] float leafChance = 0.05f;
         [SerializeField] float leafChanceIncrement = 0.01f;
@@ -42,8 +44,6 @@ namespace CosmicShore.Gameplay
             public GameObject gameObject;
             public int depth;
         }
-
-        private int spawnedItemCount = 0;
 
         public override void Initialize(Cell cell)
         {
@@ -114,7 +114,26 @@ namespace CosmicShore.Gameplay
 
         public override void Grow()
         {
-            if (spawnedItemCount >= maxTotalSpawnedObjects) return;
+            // Live-prism budget: consumption frees budget so a grazed flora regrows.
+            // (Was: a lifetime spawn counter that never decremented — see AssembledFlora.)
+            if (healthTracker != null && healthTracker.Count >= maxTotalSpawnedObjects) return;
+
+            // Phase gate (was missing here entirely — only AssembledFlora had it):
+            // growth pauses at Frozen and resumes when consumption brings the cell back
+            // below the Frozen exit threshold.
+            if (cell && !cell.FloraGrowingEnabled) return;
+
+            // Reawakening: re-seed trunk branches when all of them have grown out or
+            // been consumed, so the flora keeps producing instead of going inert.
+            // Guarded on having surviving prisms — BranchingFlora seeds its first
+            // trunks in Initialize() AFTER the first synchronous Grow() tick, so an
+            // unguarded reseed here would double-seed every new flora.
+            if (activeBranches.Count == 0)
+            {
+                if (healthTracker != null && healthTracker.Count > 0)
+                    SeedBranches();
+                return;
+            }
 
             List<Branch> newBranches = new List<Branch>();
             List<Branch> branchesToRemove = new List<Branch>();
@@ -175,8 +194,13 @@ namespace CosmicShore.Gameplay
 
         public override void Plant()
         {
-            if (plantAroundCrystal) 
-                transform.position = cellData.CrystalTransform.position + (plantRadius * Random.onUnitSphere);
+            if (plantAroundCrystal)
+            {
+                // Disperse across the cell (fraction of membrane radius — see Flora base)
+                // instead of the legacy fixed plantRadius huddle around the crystal.
+                float radius = ResolvePlantRadius(legacyRadius: plantRadius);
+                transform.position = cellData.CrystalTransform.position + (radius * Random.onUnitSphere);
+            }
         }
 
         void ScaleAndPositionBranch(ref Branch newBranch, Branch branch)
@@ -188,7 +212,6 @@ namespace CosmicShore.Gameplay
             newBranch.gameObject.transform.parent = branch.gameObject.transform;
 
             newBranch.depth = branch.depth + 1;
-            spawnedItemCount++;
         }
 
         private Quaternion RandomVectorRotation(float minBranchAngle, float maxBranchAngle) // TODO: move to utility class

@@ -58,8 +58,58 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Domains, int> domainBlockCounts = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
-        readonly HashSet<Prism> trackedBlocks = new();
+        // Prism → the domain it was REGISTERED under. RemoveBlock decrements the
+        // grids/counts for the registration-time domain, not the prism's current
+        // one — so steals / ChangeTeam between Add and Remove can't desync the
+        // per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
+        readonly Dictionary<Prism, Domains> trackedBlocks = new();
         SnowChanger spawnedCytoplasm;
+
+        // ---------------------------------------------------------------------
+        // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
+        // use this to find their containing cell — they have no scene identity
+        // to wire a CellRuntimeDataSO into, and the per-prefab-asset alternative
+        // breaks in multi-cell scenes where one prefab would need to point at
+        // every cell's runtime SO at once.
+        // ---------------------------------------------------------------------
+        static readonly List<Cell> ActiveCells = new();
+
+        /// <summary>
+        /// The enabled cell whose membrane contains <paramref name="position"/>,
+        /// or null when the position is in open space. O(cells-in-scene) — call
+        /// at object lifecycle points (spawn/destroy), not per frame.
+        /// </summary>
+        public static Cell FindCellContaining(Vector3 position)
+        {
+            for (int i = 0; i < ActiveCells.Count; i++)
+            {
+                var c = ActiveCells[i];
+                if (c && c.ContainsPosition(position))
+                    return c;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The enabled cell whose transform is closest to <paramref name="position"/>,
+        /// or null if no cells are active. Distance is centre-to-point; ties resolve
+        /// in iteration order. Useful as a fallback for HUDs that need *a* cell to
+        /// read state from when the player isn't inside any (e.g. Menu_Main's
+        /// orbital camera, between-cell transit).
+        /// </summary>
+        public static Cell FindNearestActiveCell(Vector3 position)
+        {
+            Cell best = null;
+            float bestSqr = float.PositiveInfinity;
+            for (int i = 0; i < ActiveCells.Count; i++)
+            {
+                var c = ActiveCells[i];
+                if (!c) continue;
+                float d = (c.transform.position - position).sqrMagnitude;
+                if (d < bestSqr) { bestSqr = d; best = c; }
+            }
+            return best;
+        }
 
         CellPhase phase = CellPhase.Sprout;
 
@@ -94,6 +144,87 @@ namespace CosmicShore.Gameplay
                     }
                 }
                 return leader;
+            }
+        }
+
+        /// <summary>
+        /// Live count of prisms tracked under <paramref name="domain"/>. Mirrors the
+        /// per-domain bookkeeping that <see cref="DominantDomain"/> reads, exposed so
+        /// HUD widgets (volume wedges, etc.) don't need to walk Add/RemoveBlock state
+        /// themselves. Returns 0 for untracked domains.
+        /// </summary>
+        public int GetDomainBlockCount(Domains domain) =>
+            domainBlockCounts.TryGetValue(domain, out int c) ? c : 0;
+
+        /// <summary>
+        /// LiveBlockCount at which the cell crosses into Rabid (frenzy). HUD widgets
+        /// use this as the "max" — when summed mass approaches it, the cell is about
+        /// to enter Level2 aggression and the UI should communicate that.
+        /// </summary>
+        public int RabidEnterThreshold => ResolveThresholds().RabidEnter;
+
+        /// <summary>
+        /// True once this cell's CellConfig has been assigned (Initialize ran). While
+        /// false, threshold reads fall back to CellPhaseThresholds.Default — HUD
+        /// diagnostics surface this so a mis-scaled indicator is explainable at a
+        /// glance instead of looking like dead data.
+        /// </summary>
+        public bool HasConfigAssigned => cellConfigData != null;
+
+        // ---------------------------------------------------------------------
+        //  Fauna spawn cycle telemetry — read by the volume-indicator ring HUD.
+        //  Written by IntensityWiseLifeSpawner.SpawnFaunaTypeLoop when it ticks a
+        //  periodic fauna spawn. The Cell exposes a 0..1 progress fraction toward
+        //  the next spawn so the indicator can draw a rotating ring without
+        //  knowing anything about the spawner's internals.
+        // ---------------------------------------------------------------------
+
+        float _lastFaunaSpawnTime = -1f;
+
+        /// <summary>
+        /// Records that a periodic fauna spawn just happened. The spawn-cycle ring
+        /// resets to 0% and counts back up to 100% over the next CurrentFaunaSpawnPeriod
+        /// seconds. Called by IntensityWiseLifeSpawner's fauna loop.
+        /// </summary>
+        public void RecordFaunaSpawn() => _lastFaunaSpawnTime = Time.time;
+
+        /// <summary>
+        /// Effective period (seconds) between this cell's periodic fauna spawns,
+        /// scaled by current aggression: BaseFaunaSpawnTime * SpawnIntervalByAggression.
+        /// Mirrors the math in IntensityWiseLifeSpawner.ScaleFaunaInterval, kept here
+        /// so HUDs can read the period without taking a dependency on the spawner.
+        /// Returns 0 when no profile is wired (HUD treats 0 as "no cycle to show").
+        /// </summary>
+        public float CurrentFaunaSpawnPeriod
+        {
+            get
+            {
+                var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+                if (!profile) return 0f;
+                float baseTime = Mathf.Max(0.05f, profile.BaseFaunaSpawnTime);
+                // Multipliers parallel IntensityWiseLifeSpawner.FaunaSpawnIntervalByAggression.
+                float mult = AggressionLevel switch
+                {
+                    CellAggressionLevel.Level1 => 0.55f,
+                    CellAggressionLevel.Level2 => 0.25f,
+                    _ => 1f,
+                };
+                return baseTime * mult;
+            }
+        }
+
+        /// <summary>
+        /// 0..1 progress through the current fauna spawn cycle. 0 = just spawned,
+        /// 1 = about to spawn. Returns 0 when no period is configured or no spawn
+        /// has been recorded yet.
+        /// </summary>
+        public float FaunaSpawnCycleFraction
+        {
+            get
+            {
+                float period = CurrentFaunaSpawnPeriod;
+                if (period <= 0f || _lastFaunaSpawnTime < 0f) return 0f;
+                return Mathf.Clamp01((Time.time - _lastFaunaSpawnTime) / period);
             }
         }
 
@@ -216,6 +347,12 @@ namespace CosmicShore.Gameplay
 
         void OnEnable()
         {
+            // Spatial registry — lets pooled, prefab-spawned objects (trail prisms)
+            // find which cell contains them without per-prefab SO wiring or the
+            // deprecated CellControlManager singleton. See FindCellContaining.
+            if (!ActiveCells.Contains(this))
+                ActiveCells.Add(this);
+
             // Clear stale config BEFORE subscribing to events.
             // CellRuntimeDataSO is a shared SO asset — Menu_Main's Cell sets
             // runtime.Config to Blob Cell Config, which persists into the next
@@ -253,6 +390,8 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            ActiveCells.Remove(this);
+
             if (gameData != null)
                 gameData.OnInitializeGame.OnRaised -= Initialize;
 
@@ -348,8 +487,11 @@ namespace CosmicShore.Gameplay
             runtime.EnsureCellStats(ID);
 
             AssignConfig();
-            SetupDensityGrids();
+            // SpawnVisuals must run before SetupDensityGrids: the density grids
+            // are now sized to the cell's membrane radius, and MembraneRadius
+            // reads the membrane GameObject that SpawnVisuals instantiates.
             SpawnVisuals();
+            SetupDensityGrids();
             ResetVolumes();
 
             UpdateCellStats();
@@ -398,16 +540,34 @@ namespace CosmicShore.Gameplay
 
         void SetupDensityGrids()
         {
+            // Size the density grids to the cell's actual membrane, not the old
+            // hard-coded 1000m cube anchored at world origin. With a 1200m-radius
+            // membrane the fixed cube saw only ~14% of the cell's volume — outer-
+            // shell mass was invisible to FindDensestRegion, so fauna were never
+            // directed at it and it accumulated unconsumed. See
+            // Docs/DENSITY_PARTITIONING_AUDIT.md.
+            float membraneRadius = MembraneRadius;
+            float worldDiameter = membraneRadius > 0f
+                ? membraneRadius * 2f
+                : 2400f; // fallback when the membrane prefab is missing
+            Vector3 cellCenter = transform.position;
+
+            // Dispose any existing grids before replacing them — each holds
+            // persistent NativeArrays, and Initialize() can run more than once
+            // across a session (e.g. replay).
+            foreach (var existing in countGrids.Values)
+                existing?.Dispose();
+
             Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
             foreach (Domains t in teams)
-                countGrids[t] = new BlockCountDensityGrid(t);
+                countGrids[t] = new BlockCountDensityGrid(t, cellCenter, worldDiameter);
 
             // Blue-keyed grid accumulates every block regardless of domain so
             // GetDensestRegionAnyDomain() can answer aggression-2 fauna's "head toward
             // nearest centroid" goal — friendly + enemy mass both count. Blue is the
             // "no specific team" sentinel; this grid does double duty as the wildcard.
-            countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue);
+            countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue, cellCenter, worldDiameter);
         }
 
         void SpawnVisuals()
@@ -484,39 +644,56 @@ namespace CosmicShore.Gameplay
             // removed from trackedBlocks via the matching RemoveBlock path; otherwise
             // LiveBlockCount drifts upward when prisms die outside the normal flow.
             if (block is null) return;
-            if (!trackedBlocks.Add(block)) return; // already counted
+            if (trackedBlocks.ContainsKey(block)) return; // already counted
+
+            // Snapshot the domain at registration time — RemoveBlock uses this snapshot
+            // so a team change (steal) between Add and Remove can't desync the grids.
+            Domains registeredDomain = block ? block.Domain : Domains.Blue;
+            trackedBlocks[block] = registeredDomain;
 
             if (block)
             {
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (var t in teams)
-                    if (t != block.Domain) countGrids[t].AddBlock(block);
+                    if (t != registeredDomain) countGrids[t].AddBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.AddBlock(block);
 
-                domainBlockCounts.TryGetValue(block.Domain, out int count);
-                domainBlockCounts[block.Domain] = count + 1;
+                domainBlockCounts.TryGetValue(registeredDomain, out int count);
+                domainBlockCounts[registeredDomain] = count + 1;
             }
         }
 
         public void RemoveBlock(Prism block)
         {
             if (block is null) return;
-            if (!trackedBlocks.Remove(block)) return; // not counted
+            if (!trackedBlocks.Remove(block, out Domains registeredDomain)) return; // not counted
 
             if (block)
             {
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
                 foreach (Domains t in teams)
-                    if (t != block.Domain) countGrids[t].RemoveBlock(block);
+                    if (t != registeredDomain) countGrids[t].RemoveBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.RemoveBlock(block);
 
-                if (domainBlockCounts.TryGetValue(block.Domain, out int count) && count > 0)
-                    domainBlockCounts[block.Domain] = count - 1;
+                if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
+                    domainBlockCounts[registeredDomain] = count - 1;
             }
+        }
+
+        /// <summary>
+        /// Re-registers a tracked prism whose domain changed (steal / ChangeTeam) so the
+        /// per-domain grids and counts move it from the old domain's buckets to the new
+        /// one's. No-op for prisms this cell isn't tracking.
+        /// </summary>
+        public void NotifyBlockDomainChanged(Prism block)
+        {
+            if (block is null || !trackedBlocks.ContainsKey(block)) return;
+            RemoveBlock(block);
+            AddBlock(block);
         }
 
         /// <summary>
@@ -532,7 +709,11 @@ namespace CosmicShore.Gameplay
                 return GetCellAnchorPosition();
 
             var region = grid.FindDensestRegion();
-            if (grid.GetDensityAtPosition(region) <= 0)
+            // LastResultDensity is the peak smoothed density the job found — 0 means
+            // the grid is empty. (Checking GetDensityAtPosition(region) here instead
+            // would false-negative when sub-voxel interp / mean-shift lands the
+            // answer in a low-count voxel adjacent to the true mass.)
+            if (grid.LastResultDensity <= 0f)
                 return GetCellAnchorPosition();
             return region;
         }
@@ -550,7 +731,7 @@ namespace CosmicShore.Gameplay
                 return GetCellAnchorPosition();
 
             var region = anyGrid.FindDensestRegion();
-            if (anyGrid.GetDensityAtPosition(region) <= 0)
+            if (anyGrid.LastResultDensity <= 0f)
                 return GetCellAnchorPosition();
             return region;
         }
@@ -576,8 +757,12 @@ namespace CosmicShore.Gameplay
 
         public bool ContainsPosition(Vector3 position)
         {
-            if (membrane is null) return false;
-            return Vector3.Distance(position, transform.position) < membrane.transform.localScale.x;
+            // MembraneRadius reads CapsuleMembrane.Radius when present (the authored
+            // radius), falling back to localScale.x — strictly more correct than the
+            // old raw localScale read for capsule membranes.
+            float radius = MembraneRadius;
+            if (radius <= 0f) return false;
+            return Vector3.Distance(position, transform.position) < radius;
         }
 
         public void ChangeVolume(Domains domain, float volume)
