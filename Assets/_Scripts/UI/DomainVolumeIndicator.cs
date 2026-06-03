@@ -37,11 +37,8 @@ namespace CosmicShore.UI
         [SerializeField] DomainVolumeHexGraphic hexGraphic;
 
         [Header("Theme")]
-        [Tooltip("Source for per-domain colors. Optional — falls back to the explicit fallback colors below if missing.")]
-        [SerializeField] ThemeManagerDataContainerSO themeData;
-        [SerializeField] Color jadeFallback = new(0.20f, 0.85f, 0.55f, 0.95f);
-        [SerializeField] Color rubyFallback = new(0.95f, 0.25f, 0.30f, 0.95f);
-        [SerializeField] Color goldFallback = new(0.95f, 0.80f, 0.20f, 0.95f);
+        [Tooltip("Optional override. By default colors are pulled from GameDataSO.ThemeManagerData.ColorSet, matching MultiplayerHUD and every other domain-tinted UI.")]
+        [SerializeField] ThemeManagerDataContainerSO themeDataOverride;
 
         [Header("Behavior")]
         [Tooltip("Seconds between cell samples. The phase tick is 0.5s; 0.25s keeps the gauge ahead of transitions.")]
@@ -124,23 +121,50 @@ namespace CosmicShore.UI
             rt.anchorMax = Vector2.one;
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
+            rt.localRotation = Quaternion.identity;
+            rt.localScale = Vector3.one;
 
             hexGraphic = go.AddComponent<DomainVolumeHexGraphic>();
             hexGraphic.raycastTarget = false; // never intercept the button click
+
+            // Hide the host button's original sprite — it sits BEHIND our new hex
+            // graphic and was bleeding through in-game. Keep the Image component so
+            // the Button's raycast/state machinery still works; just zero its alpha.
+            // (Disabling the Image would break Button.targetGraphic tint transitions
+            // on prefabs that drive selection state through the original face.)
+            if (TryGetComponent<Image>(out var hostImage))
+            {
+                var c = hostImage.color; c.a = 0f; hostImage.color = c;
+            }
         }
 
         void EnsureReadout()
         {
             if (debugReadout || !autoCreateReadout) return;
 
+            // Parent to the CANVAS ROOT instead of the button. Buttons sit inside
+            // layout groups / rotated parents that the user's pause-button parent
+            // happens to have — under those, the readout inherited an "odd angle"
+            // and looked tilted. Anchoring to the canvas keeps the text axis-aligned
+            // regardless of how the button is laid out.
+            var canvas = GetComponentInParent<Canvas>();
+            var parentRT = canvas ? (RectTransform)canvas.rootCanvas.transform : transform;
+
             var go = new GameObject("DomainVolumeReadout (auto)", typeof(RectTransform));
             var rt = (RectTransform)go.transform;
-            rt.SetParent(transform, false);
-            rt.anchorMin = new Vector2(0.5f, 0f);
-            rt.anchorMax = new Vector2(0.5f, 0f);
-            rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = new Vector2(0f, -8f);
+            rt.SetParent(parentRT, false);
+            rt.localRotation = Quaternion.identity;
+            rt.localScale = Vector3.one;
             rt.sizeDelta = new Vector2(260f, 80f);
+
+            // Pin under the button: convert the button's bottom-centre to the
+            // canvas's local space and place the readout there with a small gap.
+            var hostRT = (RectTransform)transform;
+            Vector3[] corners = new Vector3[4];
+            hostRT.GetWorldCorners(corners); // 0:BL 1:TL 2:TR 3:BR
+            Vector3 bottomCentreWorld = (corners[0] + corners[3]) * 0.5f;
+            rt.position = bottomCentreWorld;
+            rt.anchoredPosition += new Vector2(0f, -48f);
 
             var tmp = go.AddComponent<TextMeshProUGUI>();
             tmp.fontSize = 16f;
@@ -279,16 +303,33 @@ namespace CosmicShore.UI
 
         void ResolveDomainColors(out Color jade, out Color ruby, out Color gold)
         {
-            jade = jadeFallback; ruby = rubyFallback; gold = goldFallback;
-            if (themeData && themeData.ColorSet)
-            {
-                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Jade, out var j) && j != null) jade = Opaque(j.OutsideBlockColor);
-                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Ruby, out var r) && r != null) ruby = Opaque(r.OutsideBlockColor);
-                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Gold, out var g) && g != null) gold = Opaque(g.OutsideBlockColor);
-            }
+            // Canonical source — the same path MultiplayerHUD and every other
+            // domain-tinted UI uses. The serialized override exists for prefabs that
+            // want to lock to a specific theme variant during pitch demos.
+            var colorSet = themeDataOverride
+                ? themeDataOverride.ColorSet
+                : gameData?.ThemeManagerData?.ColorSet;
+
+            // Last-resort neutral so the gauge stays visible if the theme container
+            // genuinely isn't wired yet (e.g. tooling scenes). The DI registration in
+            // AppManager makes this branch unreachable in shipping flows.
+            if (colorSet == null) { jade = ruby = gold = Color.white; return; }
+
+            jade = ResolveDomainColor(colorSet, Domains.Jade);
+            ruby = ResolveDomainColor(colorSet, Domains.Ruby);
+            gold = ResolveDomainColor(colorSet, Domains.Gold);
         }
 
-        // Theme block colors are HDR/low-alpha; force a HUD-readable alpha.
-        static Color Opaque(Color c) { c.a = 0.95f; return c; }
+        static Color ResolveDomainColor(SO_ColorSet colorSet, Domains domain)
+        {
+            if (!colorSet.TryGetColorSetByDomain(domain, out var dcs) || dcs == null)
+                return Color.white;
+            // OutsideBlockColor is the canonical "domain identity" hue used by trail
+            // prisms, AOE rings, and the elemental bars. HDR with variable alpha —
+            // force a HUD-readable alpha so the gauge actually shows.
+            var c = dcs.OutsideBlockColor;
+            c.a = 0.95f;
+            return c;
+        }
     }
 }
