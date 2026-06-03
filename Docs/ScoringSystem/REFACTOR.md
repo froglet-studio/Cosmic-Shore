@@ -100,10 +100,25 @@ there were the real drift hazard). Removed the drift-prone `penaltyScoreBase`
 serialized field (its only scene value equalled the constant). Behavior-preserving
 — every rewrite is algebraically identical to the literal it replaced.
 
-### R5 — 🔴 Unify domain → color resolution
-Three paths today (`ThemeManagerData.ColorSet` / `DomainColorPaletteSO` /
-`MiniGameHUDView.domainColors`) plus hardcoded banner fallbacks in `Scoreboard`.
-Consolidate on the theme palette as the single domain-color source.
+### R5 — 🟢 Unify domain → color resolution
+Three paths (`ThemeManagerData.ColorSet` / `DomainColorPaletteSO` /
+`MiniGameHUDView.domainColors`) plus **5 hardcoded banner `Color` fields** in
+`Scoreboard`. **Done** (commit `53b973b5`): the scoring UI now resolves domain
+color from the single canonical source vessels and prisms already use —
+`GameDataSO.ThemeManagerData.ColorSet` — via `SO_ColorSet.GetDomainUIColor(domain)`
+→ `TrailHighlightColor` (+ a null-safe `ThemeManagerDataContainerSO` wrapper).
+Removed the Scoreboard banner-color fields + the `DomainColorPaletteSO` field, and
+the `MiniGameHUDView.domainColors` list/`DomainColorDef`/`GetColorForDomain`; the
+HUD controllers now share `MiniGameHUD.ResolveDomainColor` (domain panels already
+read the theme ColorSet — only the player cards used the list). Also fixed a real
+mismatch: the hardcoded banner showed Jade=green / Ruby=red, but the theme's Jade
+is teal and Ruby magenta — banner/cards now match the vessels on screen.
+
+**Remaining domain-color sources (outside the Scoring System — separate follow-up
+if we want truly app-wide single-source):** `DomainColorPaletteSO` via
+`SilhouetteConfigSO` / `SquirrelVesselHUDController` (vessel HUD / elemental), and
+`GameEventFeed.domainColors` + the static `GameFeedAPI.DomainColors` dictionary
+(game feed). All would route to `ThemeManagerData.ColorSet` the same way.
 
 ### R6 — 🔴 Remove the legacy per-player HUD layout
 Once the unified path lands, the domain-panel layout is the only layout. After
