@@ -139,7 +139,6 @@ namespace CosmicShore.UI
 
         protected virtual void Start()
         {
-            Debug.Log($"<color=#FFFFFF><b>[FLOW-HUD] [MiniGameHUD] Start — gameData={gameData != null}, enableCinematic={enablePreGameCinematic}</b></color>");
             SubscribeToEvents();
 
             EnsureObjectiveIndicator();
@@ -149,7 +148,6 @@ namespace CosmicShore.UI
             // handle it now. LocalPlayer.Vessel being set means InitializePair() already ran.
             if (gameData?.LocalPlayer?.Vessel != null)
             {
-                Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] Late subscription — OnClientReady already fired, handling now</b></color>");
                 HandleClientReady().Forget();
             }
         }
@@ -246,7 +244,6 @@ namespace CosmicShore.UI
 
         private void OnClientReady()
         {
-            Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] OnClientReady received!</b></color>");
             HandleClientReady().Forget();
         }
 
@@ -256,7 +253,6 @@ namespace CosmicShore.UI
 
             try
             {
-                Debug.Log($"<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] HandleClientReady — LocalPlayer={gameData?.LocalPlayer?.Name}, Vessel={gameData?.LocalPlayer?.Vessel != null}</b></color>");
                 Show();
                 CleanupUI();
                 HideLocalVesselHUD();
@@ -269,7 +265,6 @@ namespace CosmicShore.UI
                 if (enablePreGameCinematic && preGameCinematic != null)
                 {
                     Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
-                    Debug.Log($"<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] Pre-game cinematic: enabled={enablePreGameCinematic}, controller={preGameCinematic != null}, playerTarget={playerTarget != null}</b></color>");
                     if (playerTarget != null)
                     {
                         bool cinematicDone = false;
@@ -278,17 +273,15 @@ namespace CosmicShore.UI
 
                         while (!cinematicDone)
                             await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
-                        Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] Pre-game cinematic DONE</b></color>");
                     }
                 }
 
-                Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] ToggleReadyButton(true) — Ready button visible</b></color>");
                 _readyButtonUnlocked = true;
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException)
             {
-                Debug.Log("<color=#FFA500>[FLOW-8] [MiniGameHUD] HandleClientReady CANCELLED</color>");
+                // cancelled — nothing to do
             }
         }
 
