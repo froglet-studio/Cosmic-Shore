@@ -2,10 +2,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using CosmicShore.Data;
 using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.UI
@@ -36,7 +33,6 @@ namespace CosmicShore.UI
         [Header("Player/AI Score Entries (in-game)")]
         [SerializeField] private Transform playerScoreContainer;
         [SerializeField] private PlayerScoreEntry playerScoreEntryPrefab;
-        [SerializeField] private List<DomainColorDef> domainColors;
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
@@ -179,19 +175,6 @@ namespace CosmicShore.UI
             {
                 Destroy(child.gameObject);
             }
-        }
-
-        public Color GetColorForDomain(Domains domain)
-        {
-            var def = domainColors.FirstOrDefault(d => d.Domain == domain);
-            return def.Equals(default(DomainColorDef)) ? Color.white : def.Color;
-        }
-
-        [Serializable]
-        public struct DomainColorDef
-        {
-            public Domains Domain;
-            public Color Color;
         }
         
         public TMP_Text LeftNumberDisplay => leftNumberDisplay;

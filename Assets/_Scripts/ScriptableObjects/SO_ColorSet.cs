@@ -24,11 +24,21 @@ namespace CosmicShore.ScriptableObjects
                 _ => null
             };
 
-            if (colorSet != null) 
+            if (colorSet != null)
                 return true;
 
             return false;
         }
+
+        /// <summary>
+        /// The single representative domain color for flat UI surfaces (scoreboard banner,
+        /// player score cards, in-game HUD entries). Returns the domain's
+        /// <see cref="DomainColorSet.TrailHighlightColor"/> — the same vivid color players
+        /// see on that domain's vessel trails — so UI matches what's on the field. Neutral
+        /// gray for domains with no color set.
+        /// </summary>
+        public Color GetDomainUIColor(Domains domain) =>
+            TryGetColorSetByDomain(domain, out var colorSet) ? colorSet.TrailHighlightColor : Color.gray;
     }
 
     [System.Serializable]

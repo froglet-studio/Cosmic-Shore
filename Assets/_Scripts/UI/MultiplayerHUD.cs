@@ -129,7 +129,7 @@ namespace CosmicShore.UI
         {
             var card = Instantiate(view.PlayerScoreEntryPrefab, view.PlayerScoreContainer);
             var isLocal = gameData.LocalPlayer != null && stats.Name == gameData.LocalPlayer.Name;
-            var teamColor = view.GetColorForDomain(stats.Domain);
+            var teamColor = ResolveDomainColor(stats.Domain);
 
             card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal, staggerIndex);
 
@@ -198,10 +198,10 @@ namespace CosmicShore.UI
             if (colorSet != null)
                 panel.Setup(domain, colorSet, sum);
             else
-                panel.Setup(domain, multiplayerView.GetColorForDomain(domain), sum);
+                panel.Setup(domain, ResolveDomainColor(domain), sum);
 
             // Color used to tint per-teammate avatar entries below the sum.
-            var color = colorSet != null ? colorSet.ShipColor1 : multiplayerView.GetColorForDomain(domain);
+            var color = colorSet != null ? colorSet.ShipColor1 : ResolveDomainColor(domain);
 
             // Add a small icon per teammate (humans + AI on this domain). Local
             // player's name is shown; others render avatar-only.

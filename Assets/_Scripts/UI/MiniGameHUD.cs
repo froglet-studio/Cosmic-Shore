@@ -330,7 +330,7 @@ namespace CosmicShore.UI
 
             var localPlayer = gameData.LocalPlayer;
             var card = Instantiate(view.PlayerScoreEntryPrefab, view.PlayerScoreContainer);
-            var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
+            var teamColor = ResolveDomainColor(localPlayer.RoundStats?.Domain ?? Domains.Jade);
             card.Setup(localPlayer.Name, 0, teamColor, true, 0);
 
             var sprite = ResolveAvatarSprite(localPlayer.AvatarId);
@@ -338,6 +338,16 @@ namespace CosmicShore.UI
 
             _localPlayerCard = card;
         }
+
+        /// <summary>
+        /// Single source of truth for a domain's UI color — the same ColorSet the vessels
+        /// and prisms read from (ThemeManagerData.ColorSet -> TrailHighlightColor). Neutral
+        /// gray if the theme isn't available. See Docs/ScoringSystem/REFACTOR.md R5.
+        /// </summary>
+        protected Color ResolveDomainColor(Domains domain) =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
+                : Color.gray;
 
         private void CleanupLocalPlayerCard()
         {
@@ -363,7 +373,7 @@ namespace CosmicShore.UI
                 if (stats == localRoundStats) continue;
 
                 var card = Instantiate(view.PlayerScoreEntryPrefab, view.PlayerScoreContainer);
-                var teamColor = view.GetColorForDomain(stats.Domain);
+                var teamColor = ResolveDomainColor(stats.Domain);
                 card.Setup(stats.Name, (int)stats.Score, teamColor, false, staggerIdx++);
 
                 // Resolve avatar: try AI profile first, then fall back to player AvatarId

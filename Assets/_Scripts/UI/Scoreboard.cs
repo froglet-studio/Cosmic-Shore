@@ -48,19 +48,12 @@ namespace CosmicShore.UI
         [Header("Banner")]
         [SerializeField] Image BannerImage;
         [SerializeField] protected TMP_Text BannerText;
-        [SerializeField] Color SinglePlayerBannerColor = new Color(0.2f, 0.6f, 0.9f);
-        [SerializeField] Color JadeTeamBannerColor    = new Color(0.0f, 0.8f, 0.4f);
-        [SerializeField] Color RubyTeamBannerColor    = new Color(0.9f, 0.2f, 0.2f);
-        [SerializeField] Color GoldTeamBannerColor    = new Color(1.0f, 0.8f, 0.0f);
-        [SerializeField] Color BlueTeamBannerColor    = new Color(0.2f, 0.4f, 0.9f);
 
         [Header("Player Score Cards")]
         [Tooltip("Container transform that will host one PlayerScoreCard per player (e.g. ScrollView/Viewport/Content).")]
         [SerializeField] protected Transform playerCardContainer;
         [Tooltip("Prefab instance to clone for each player row.")]
         [SerializeField] protected PlayerScoreCard playerCardPrefab;
-        [Tooltip("Domain color palette for card background tint (falls back to banner colors if unassigned).")]
-        [SerializeField] protected DomainColorPaletteSO domainColorPalette;
         [Tooltip("Profile icon list used to resolve player avatars by AvatarId.")]
         [SerializeField] protected SO_ProfileIconList profileIconList;
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
@@ -371,19 +364,14 @@ namespace CosmicShore.UI
             CSDebug.Log($"[Scoreboard] Awarded {winnerCrystalReward} crystals to '{localName}'. New balance: {newBalance}");
         }
 
+        // Single source of truth for domain color: the same ColorSet the vessels and
+        // prisms read from (GameDataSO.ThemeManagerData.ColorSet -> TrailHighlightColor).
+        // No per-Scoreboard palette or hardcoded fallbacks — see Docs/ScoringSystem/REFACTOR.md R5.
         Color GetDomainColor(Domains domain)
         {
-            if (domainColorPalette)
-                return domainColorPalette.Get(domain);
-
-            return domain switch
-            {
-                Domains.Jade => JadeTeamBannerColor,
-                Domains.Ruby => RubyTeamBannerColor,
-                Domains.Gold => GoldTeamBannerColor,
-                Domains.Blue => BlueTeamBannerColor,
-                _            => SinglePlayerBannerColor,
-            };
+            return gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
+                : Color.gray;
         }
 
         Sprite ResolveAvatarSprite(IRoundStats stats)
