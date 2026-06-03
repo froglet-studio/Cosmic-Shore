@@ -10,72 +10,56 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Three-wedge volume indicator that lives on the pause / freestyle-toggle button.
-    /// Each wedge fills 1/3 of a circle (120°), one per playable Domain (Jade, Ruby,
-    /// Gold). The wedge's fillAmount tracks the domain's per-cell prism count
-    /// normalized to the cell's Rabid-enter threshold — so when the SUM of the three
-    /// wedges visually approaches a full circle, the cell is about to enter Level2
-    /// aggression (frenzy).
+    /// Drives the hexagonal domain-volume gauge on the pause / freestyle-toggle
+    /// button. Reads the local player's cell each tick and feeds per-domain fill
+    /// fractions + the dominant domain to a <see cref="DomainVolumeHexGraphic"/>.
     ///
-    /// ZERO-AUTHORING: following the ElementalBarsView pattern, this component
-    /// self-constructs everything it needs at runtime when nothing is wired:
-    ///   - Wedge Images are created as children, using the host button's own sprite
-    ///     (radial-filled) so they match the button face. No prefab edit needed.
-    ///   - A diagnostic readout (TMP) is created below the button when
-    ///     autoCreateReadout is on.
-    ///   - MenuMiniGameHUD auto-attaches this component to its pause button when the
-    ///     scene doesn't have one. Pull → play → it works.
+    /// Spec (restored): a pointy-top hexagon, each domain owning a fixed 1/3
+    /// (two of six edges) — Jade top, Ruby lower-left, Gold lower-right. Each sector
+    /// always spans its full angular width; the colored band fills RADIALLY INWARD
+    /// toward the centre as the domain's mass approaches the frenzy (Rabid) threshold.
+    /// The centre hexagon is tinted by the dominant domain.
     ///
-    /// Reads:
-    ///   - <see cref="Cell.GetDomainBlockCount"/> for the per-domain mass signal
-    ///   - <see cref="Cell.RabidEnterThreshold"/> for the "max" (frenzy point)
-    /// Resolves the cell via <see cref="Cell.FindCellContaining"/> using the local
+    /// ZERO-AUTHORING (ElementalBarsView pattern): when no graphic is wired the
+    /// component creates a full-rect child <see cref="DomainVolumeHexGraphic"/> at
+    /// runtime, and (optionally) a diagnostic readout below the button. MenuMiniGameHUD
+    /// self-attaches this to its pause button and hands over the injected GameDataSO.
+    ///
+    /// Reads <see cref="Cell.GetDomainBlockCount"/> and
+    /// <see cref="Cell.RabidEnterThreshold"/>; resolves the cell via the local
     /// player's vessel position, falling back to the nearest active cell.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
     {
-        [Header("Wedge Images (optional — self-constructed when empty)")]
-        [Tooltip("Radial360 Image — Jade wedge. Leave null to auto-create from the button's own sprite.")]
-        [SerializeField] Image jadeWedge;
-        [Tooltip("Radial360 Image — Ruby wedge.")]
-        [SerializeField] Image rubyWedge;
-        [Tooltip("Radial360 Image — Gold wedge.")]
-        [SerializeField] Image goldWedge;
+        [Header("Gauge (optional — self-constructed when empty)")]
+        [Tooltip("The procedural hexagon gauge. Leave null to auto-create a full-rect child graphic.")]
+        [SerializeField] DomainVolumeHexGraphic hexGraphic;
 
         [Header("Theme")]
         [Tooltip("Source for per-domain colors. Optional — falls back to the explicit fallback colors below if missing.")]
         [SerializeField] ThemeManagerDataContainerSO themeData;
-        [Tooltip("Used as the wedge tint when themeData is missing or the domain lookup fails.")]
-        [SerializeField] Color jadeFallback = new(0.20f, 0.85f, 0.55f, 0.9f);
-        [SerializeField] Color rubyFallback = new(0.95f, 0.25f, 0.30f, 0.9f);
-        [SerializeField] Color goldFallback = new(0.95f, 0.80f, 0.20f, 0.9f);
+        [SerializeField] Color jadeFallback = new(0.20f, 0.85f, 0.55f, 0.95f);
+        [SerializeField] Color rubyFallback = new(0.95f, 0.25f, 0.30f, 0.95f);
+        [SerializeField] Color goldFallback = new(0.95f, 0.80f, 0.20f, 0.95f);
 
-        [Header("Animation")]
-        [Tooltip("Seconds between samples. The cell phase tick is 0.5s; 0.25s keeps the wedge ahead of phase transitions without burning CPU.")]
+        [Header("Behavior")]
+        [Tooltip("Seconds between cell samples. The phase tick is 0.5s; 0.25s keeps the gauge ahead of transitions.")]
         [Min(0.05f)] [SerializeField] float sampleIntervalSeconds = 0.25f;
-        [Tooltip("Lerp speed for fillAmount changes between samples. 0 = instant; higher = smoother.")]
+        [Tooltip("Lerp speed for fill changes between samples. 0 = instant; higher = smoother.")]
         [Min(0f)] [SerializeField] float fillLerpSpeed = 8f;
-        [Tooltip("If true, sets each wedge's local Z rotation so the three wedges sit at 0/120/240°. Off = use the authored prefab rotations.")]
-        [SerializeField] bool autoArrangeWedgeRotations = true;
 
         [Header("Cell resolution")]
-        [Tooltip("If assigned, the indicator reads from this cell directly. Leave null to auto-resolve via the local player's vessel position (or the nearest active cell as a last resort).")]
+        [Tooltip("If assigned, the indicator reads from this cell directly. Leave null to auto-resolve via the local player's vessel position (or the nearest active cell).")]
         [SerializeField] Cell explicitCell;
 
         [Header("Diagnostics")]
-        [Tooltip("When assigned, shows live tuning numbers: per-domain counts, total vs frenzy " +
-                 "threshold, phase, and the net prism rate (growth minus consumption, prisms/sec). " +
-                 "The rate is the key tuning signal — positive while flora outgrow fauna, negative " +
-                 "while fauna are winning, ~0 when the ecology is pinned (the 'static' failure mode).")]
+        [Tooltip("Live tuning numbers: per-domain counts, total vs frenzy threshold, phase, and net prisms/sec. " +
+                 "The rate is the key tuning signal — +ve while flora outgrow fauna, -ve while fauna win, ~0 when pinned.")]
         [SerializeField] TMP_Text debugReadout;
         [Tooltip("Auto-create the diagnostic readout below the button when none is wired. Turn OFF for the production HUD.")]
         [SerializeField] bool autoCreateReadout = true;
-        [Tooltip("Seconds of history for the smoothed rate-of-change estimate.")]
         [Min(1f)] [SerializeField] float rateWindowSeconds = 5f;
-
-        // Each wedge can fill at most a third of the full circle — 120°.
-        const float WedgeMaxFill = 1f / 3f;
 
         [Inject] GameDataSO gameData;
 
@@ -83,6 +67,7 @@ namespace CosmicShore.UI
         float _nextSampleAt;
         float _jadeTarget, _rubyTarget, _goldTarget;
         float _jadeNow, _rubyNow, _goldNow;
+        int _dominant = -1;
 
         // Rate-of-change tracking for the diagnostic readout.
         int _lastTotal = -1;
@@ -90,11 +75,10 @@ namespace CosmicShore.UI
         float _smoothedRate;
 
         /// <summary>
-        /// Explicit dependency handoff for the AddComponent path: components added at
-        /// runtime never go through Reflex scene injection, so the creator (e.g.
-        /// MenuMiniGameHUD) passes its own injected GameDataSO here. The [Inject]
-        /// attribute still covers the case where this component is authored into a
-        /// scene/prefab and injected normally.
+        /// Explicit dependency handoff for the AddComponent path: runtime-added
+        /// components never receive Reflex scene injection, so the creator passes its
+        /// injected GameDataSO here. The [Inject] attribute still covers the authored-
+        /// in-scene case.
         /// </summary>
         public void SetGameData(GameDataSO data) => gameData = data;
 
@@ -104,16 +88,13 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            EnsureWedges();
+            EnsureHexGraphic();
             EnsureReadout();
-            ApplyDomainColors();
-            if (autoArrangeWedgeRotations) ArrangeWedgeRotations();
 
-            // Snap to zero on first enable so the indicator doesn't pop in mid-fill.
             _jadeNow = _rubyNow = _goldNow = 0f;
             _jadeTarget = _rubyTarget = _goldTarget = 0f;
-            ApplyFillImmediate();
             _nextSampleAt = 0f;
+            PushState();
         }
 
         void Update()
@@ -130,23 +111,13 @@ namespace CosmicShore.UI
         //  Self-construction (zero-authoring path)
         // ------------------------------------------------------------------
 
-        void EnsureWedges()
+        void EnsureHexGraphic()
         {
-            if (jadeWedge && rubyWedge && goldWedge) return; // manually authored — leave alone
+            if (hexGraphic) return;
 
-            // Use the host button's own sprite as the wedge shape so the wedges match
-            // the button's circular face without any authored assets.
-            var hostImage = GetComponent<Image>();
-            Sprite wedgeSprite = hostImage ? hostImage.sprite : null;
-
-            if (!jadeWedge) jadeWedge = CreateWedge("JadeWedge (auto)", wedgeSprite);
-            if (!rubyWedge) rubyWedge = CreateWedge("RubyWedge (auto)", wedgeSprite);
-            if (!goldWedge) goldWedge = CreateWedge("GoldWedge (auto)", wedgeSprite);
-        }
-
-        Image CreateWedge(string wedgeName, Sprite sprite)
-        {
-            var go = new GameObject(wedgeName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            // The pause button already owns an Image graphic, and two Graphics can't
+            // share a GameObject — so the gauge lives on a full-rect child.
+            var go = new GameObject("DomainVolumeHex (auto)", typeof(RectTransform));
             var rt = (RectTransform)go.transform;
             rt.SetParent(transform, false);
             rt.anchorMin = Vector2.zero;
@@ -154,16 +125,8 @@ namespace CosmicShore.UI
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
 
-            var img = go.GetComponent<Image>();
-            img.sprite = sprite;
-            img.type = Image.Type.Filled;
-            img.fillMethod = Image.FillMethod.Radial360;
-            img.fillOrigin = (int)Image.Origin360.Top;
-            img.fillClockwise = true;
-            img.fillCenter = true;
-            img.fillAmount = 0f;
-            img.raycastTarget = false; // never intercept the button's click
-            return img;
+            hexGraphic = go.AddComponent<DomainVolumeHexGraphic>();
+            hexGraphic.raycastTarget = false; // never intercept the button click
         }
 
         void EnsureReadout()
@@ -173,7 +136,6 @@ namespace CosmicShore.UI
             var go = new GameObject("DomainVolumeReadout (auto)", typeof(RectTransform));
             var rt = (RectTransform)go.transform;
             rt.SetParent(transform, false);
-            // Hang below the button: anchored to its bottom edge, growing downward.
             rt.anchorMin = new Vector2(0.5f, 0f);
             rt.anchorMax = new Vector2(0.5f, 0f);
             rt.pivot = new Vector2(0.5f, 1f);
@@ -197,71 +159,42 @@ namespace CosmicShore.UI
             if (!cell)
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
+                _dominant = -1;
                 UpdateReadout(null, 0, 0, 0, 0);
                 return;
             }
 
             int rabid = cell.RabidEnterThreshold;
-            if (rabid <= 0)
-            {
-                _jadeTarget = _rubyTarget = _goldTarget = 0f;
-                UpdateReadout(cell, 0, 0, 0, rabid);
-                return;
-            }
-
             int jade = cell.GetDomainBlockCount(Domains.Jade);
             int ruby = cell.GetDomainBlockCount(Domains.Ruby);
             int gold = cell.GetDomainBlockCount(Domains.Gold);
 
-            // Each wedge's max angular extent is 1/3 of the circle. Mapping the raw
-            // count fraction (count_d / RabidEnter) into that range with a clamp
-            // means: when a single domain's mass equals the FULL frenzy threshold,
-            // that domain's wedge maxes out (1/3 of the circle). When mass is
-            // evenly distributed across domains and totals RabidEnter, the three
-            // 1/3 wedges sum to a full circle = visible frenzy.
-            _jadeTarget = Mathf.Clamp((float)jade / rabid, 0f, WedgeMaxFill);
-            _rubyTarget = Mathf.Clamp((float)ruby / rabid, 0f, WedgeMaxFill);
-            _goldTarget = Mathf.Clamp((float)gold / rabid, 0f, WedgeMaxFill);
+            if (rabid > 0)
+            {
+                // Per-domain radial fill = that domain's mass as a fraction of the
+                // frenzy threshold. A single domain reaching the full threshold (which
+                // alone trips frenzy) fills its sector all the way to the centre.
+                _jadeTarget = Mathf.Clamp01((float)jade / rabid);
+                _rubyTarget = Mathf.Clamp01((float)ruby / rabid);
+                _goldTarget = Mathf.Clamp01((float)gold / rabid);
+            }
+            else
+            {
+                _jadeTarget = _rubyTarget = _goldTarget = 0f;
+            }
+
+            // Dominant domain → centre hexagon tint. -1 when the cell is empty.
+            _dominant = ResolveDominant(jade, ruby, gold);
 
             UpdateReadout(cell, jade, ruby, gold, rabid);
         }
 
-        void UpdateReadout(Cell cell, int jade, int ruby, int gold, int rabid)
+        static int ResolveDominant(int jade, int ruby, int gold)
         {
-            if (!debugReadout) return;
-
-            if (!cell)
-            {
-                // Self-diagnosis: no cell could be resolved at all. Either no Cell
-                // exists in the scene or none have been enabled yet.
-                debugReadout.text = "DVI: no active cell";
-                return;
-            }
-
-            int total = jade + ruby + gold;
-
-            // Smoothed net rate (prisms/sec). Positive = flora winning, negative =
-            // fauna winning, ~0 = pinned (the static-ecology failure mode).
-            float now = Time.unscaledTime;
-            if (_lastTotal >= 0 && now > _lastTotalTime)
-            {
-                float instantRate = (total - _lastTotal) / (now - _lastTotalTime);
-                float alpha = Mathf.Clamp01((now - _lastTotalTime) / Mathf.Max(1f, rateWindowSeconds));
-                _smoothedRate = Mathf.Lerp(_smoothedRate, instantRate, alpha);
-            }
-            _lastTotal = total;
-            _lastTotalTime = now;
-
-            // Self-diagnosis: flag when the cell is still on fallback thresholds
-            // (its CellConfig hasn't been assigned — Initialize hasn't run), since
-            // that means the frenzy scale is the 15000-prism default, not the
-            // biome's tuned value.
-            string cfgTag = cell.HasConfigAssigned ? "" : " [NO CFG]";
-
-            debugReadout.text =
-                $"J:{jade} R:{ruby} G:{gold}\n" +
-                $"{total}/{rabid} {cell.Phase}{cfgTag}\n" +
-                $"{(_smoothedRate >= 0 ? "+" : "")}{_smoothedRate:F1}/s";
+            if (jade <= 0 && ruby <= 0 && gold <= 0) return -1;
+            if (jade >= ruby && jade >= gold) return 0;
+            if (ruby >= gold) return 1;
+            return 2;
         }
 
         void StepTowardTargets()
@@ -279,36 +212,60 @@ namespace CosmicShore.UI
                 _rubyNow = Mathf.Lerp(_rubyNow, _rubyTarget, t);
                 _goldNow = Mathf.Lerp(_goldNow, _goldTarget, t);
             }
-            ApplyFillImmediate();
+            PushState();
         }
 
-        void ApplyFillImmediate()
+        void PushState()
         {
-            if (jadeWedge) jadeWedge.fillAmount = _jadeNow;
-            if (rubyWedge) rubyWedge.fillAmount = _rubyNow;
-            if (goldWedge) goldWedge.fillAmount = _goldNow;
+            if (!hexGraphic) return;
+            ResolveDomainColors(out var jadeC, out var rubyC, out var goldC);
+            // SetState rebuilds the mesh only on a meaningful delta, so calling it
+            // every frame during a lerp is cheap once the values settle.
+            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant);
         }
 
         // ------------------------------------------------------------------
-        //  Cell resolution
+        //  Diagnostics
+        // ------------------------------------------------------------------
+
+        void UpdateReadout(Cell cell, int jade, int ruby, int gold, int rabid)
+        {
+            if (!debugReadout) return;
+
+            if (!cell)
+            {
+                debugReadout.text = "DVI: no active cell";
+                return;
+            }
+
+            int total = jade + ruby + gold;
+
+            float now = Time.unscaledTime;
+            if (_lastTotal >= 0 && now > _lastTotalTime)
+            {
+                float instantRate = (total - _lastTotal) / (now - _lastTotalTime);
+                float alpha = Mathf.Clamp01((now - _lastTotalTime) / Mathf.Max(1f, rateWindowSeconds));
+                _smoothedRate = Mathf.Lerp(_smoothedRate, instantRate, alpha);
+            }
+            _lastTotal = total;
+            _lastTotalTime = now;
+
+            string cfgTag = cell.HasConfigAssigned ? "" : " [NO CFG]";
+            debugReadout.text =
+                $"J:{jade} R:{ruby} G:{gold}\n" +
+                $"{total}/{rabid} {cell.Phase}{cfgTag}\n" +
+                $"{(_smoothedRate >= 0 ? "+" : "")}{_smoothedRate:F1}/s";
+        }
+
+        // ------------------------------------------------------------------
+        //  Cell + color resolution
         // ------------------------------------------------------------------
 
         Cell ResolveCell()
         {
-            // Explicit override wins — covers single-scene cases (Menu_Main) where a
-            // designer wants the indicator tied to one specific cell.
             if (explicitCell) return explicitCell;
-
-            // Cache: cell references are stable in a scene, so a one-frame lookup
-            // covers the long run. If a cached cell gets destroyed (round reset),
-            // fall through and re-resolve.
             if (_cachedCell) return _cachedCell;
 
-            // Prefer the cell containing the local player's vessel. Falls through to
-            // the nearest active cell if the player hasn't spawned yet or is between
-            // cells. IVessel exposes its transform via the ITransform interface
-            // (capital T) — and is a plain interface ref, so a Unity-style implicit
-            // bool check would always be false; null-check explicitly.
             Transform vesselT = gameData?.LocalPlayer?.Vessel?.Transform;
             if (vesselT != null)
             {
@@ -320,55 +277,18 @@ namespace CosmicShore.UI
             return _cachedCell;
         }
 
-        // ------------------------------------------------------------------
-        //  Authoring helpers
-        // ------------------------------------------------------------------
-
-        void ApplyDomainColors()
+        void ResolveDomainColors(out Color jade, out Color ruby, out Color gold)
         {
-            // SOAP-style fallback: themeData is OPTIONAL; if missing the explicit
-            // fallback colors keep the wedges visible. This is a HUD — failing loud
-            // here would just blank the indicator on prefab variants that haven't
-            // been re-wired yet.
-            Color jade = jadeFallback, ruby = rubyFallback, gold = goldFallback;
+            jade = jadeFallback; ruby = rubyFallback; gold = goldFallback;
             if (themeData && themeData.ColorSet)
             {
-                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Jade, out var jcs) && jcs != null) jade = jcs.OutsideBlockColor;
-                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Ruby, out var rcs) && rcs != null) ruby = rcs.OutsideBlockColor;
-                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Gold, out var gcs) && gcs != null) gold = gcs.OutsideBlockColor;
+                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Jade, out var j) && j != null) jade = Opaque(j.OutsideBlockColor);
+                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Ruby, out var r) && r != null) ruby = Opaque(r.OutsideBlockColor);
+                if (themeData.ColorSet.TryGetColorSetByDomain(Domains.Gold, out var g) && g != null) gold = Opaque(g.OutsideBlockColor);
             }
-            if (jadeWedge) jadeWedge.color = jade;
-            if (rubyWedge) rubyWedge.color = ruby;
-            if (goldWedge) goldWedge.color = gold;
         }
 
-        void ArrangeWedgeRotations()
-        {
-            // Three wedges at 0°/120°/240° local Z. Unity's Radial360 image fills
-            // clockwise from fillOrigin (Top by default), so rotating the Image by
-            // -120° moves its starting edge clockwise by 120° — putting the next
-            // wedge's start where the previous wedge's max-fill ends.
-            SetLocalZ(jadeWedge, 0f);
-            SetLocalZ(rubyWedge, -120f);
-            SetLocalZ(goldWedge, -240f);
-        }
-
-        static void SetLocalZ(Image img, float zDegrees)
-        {
-            if (!img) return;
-            var rt = img.rectTransform;
-            var e = rt.localEulerAngles;
-            e.z = zDegrees;
-            rt.localEulerAngles = e;
-        }
-
-#if UNITY_EDITOR
-        void OnValidate()
-        {
-            // Live-preview color and rotation changes in the inspector.
-            ApplyDomainColors();
-            if (autoArrangeWedgeRotations) ArrangeWedgeRotations();
-        }
-#endif
+        // Theme block colors are HDR/low-alpha; force a HUD-readable alpha.
+        static Color Opaque(Color c) { c.a = 0.95f; return c; }
     }
 }
