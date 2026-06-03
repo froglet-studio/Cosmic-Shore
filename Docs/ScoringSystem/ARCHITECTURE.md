@@ -23,6 +23,102 @@ systems; they render the same `GameDataSO` / `IRoundStats` data two ways.
 
 ---
 
+## Diagrams: current → target
+
+These two diagrams are the **map for the refactor**: we are moving from CURRENT
+to TARGET. TARGET keeps the same class hierarchy + SOAP lifecycle — it removes a
+fork, deletes a dead layout, and de-duplicates (one animator, one color source,
+one reward, one sentinel helper). It is consolidation, not a rewrite. See
+`REFACTOR.md` for the sequenced steps.
+
+### Current (as-built)
+
+```
+[DATA — shared]
+RoundStats : NetworkBehaviour (IRoundStats)
+  └ NetworkVariables ──replicate──► observer events
+       (OnScoreChanged, OnCrystalsCollectedChanged, OnJoustCollisionChanged…)
+GameDataSO : data container + SOAP channels
+  • RoundStatsList · DomainStatsList · LocalRoundStats
+  • WinnerName · WinnerDomain
+  • flags: IsMultiplayerMode (!) · IsGolfRules · RequestedDomainCount
+  • SOAP: OnMiniGameTurnStarted/End · OnWinnerCalculated ·
+          OnShowGameEndScreen · OnResetForReplay
+        ▲ writes winner + CalculateDomainStats   │ raises SOAP
+[server] MiniGameControllerBase ▸ per-mode (domain-aggregated winner)
+
+[SURFACE A — in-game HUD (live)]
+MiniGameHUD ─► MultiplayerHUD (abstract)
+  ├ GetInitialCardValue()             ◄ per-mode metric
+  ├ layout = HasDomainPanelWiring ? domain : legacy        (!)
+  │    ├ domain ─► DomainScorePanel   (team sum + avatars)
+  │    └ legacy ─► PlayerScoreEntry   (one card per player)
+  └ centerline score ◄ local OnScoreChanged
+  per-mode: HexRaceHUD · MultiplayerJoustHUD · MultiplayerCrystalCaptureHUD
+
+[SURFACE B — end-game (results)]
+OnWinnerCalculated
+  └ EndGameCinematicController (+Hex/Joust/Crystal)    reads IsMultiplayerMode (!)
+      └ …cinematic… ─► InvokeShowGameEndScreen
+          └ Scoreboard (+Hex/Joust/Crystal/Duel/CoOp)  reads IsMultiplayerMode (!)
+              ├ SortPlayers / FormatPlayerScore   ◄ per-mode
+              ├ PlayerScoreCard
+              └ ScoreboardStatsProvider ─► StatRowUI
+
+[shared] HUDAnimationSettingsSO (config asset)
+
+(!) SMELLS
+ 1  score-anim CODE duplicated ×3 → PlayerScoreEntry, PlayerScoreCard, DomainScorePanel
+ 2  IsMultiplayerMode fork        → Scoreboard, PauseMenu, EndGameCinematic, MultiplayerSetup…
+ 3  two HUD layouts coexist       → domain vs legacy per-player
+ 4  domain→color resolved 3 ways  → ThemeManagerData / DomainColorPaletteSO / view list
+ 5  2 crystal-reward amounts + magic loser sentinels (10000 / 99999)
+ 6  [FLOW-*] Debug.Log spam in MiniGameHUD
+```
+
+### Target (goal — approved)
+
+```
+(consolidation, NOT a rewrite — same hierarchy + same SOAP lifecycle)
+
+[DATA — shared]   (same shape; one removal)
+RoundStats : NetworkBehaviour (IRoundStats)
+  └ NetworkVariables ──replicate──► observer events        (unchanged)
+GameDataSO : data container + SOAP channels
+  • RoundStatsList · DomainStatsList · LocalRoundStats · Winner{Name,Domain}
+  • IsGolfRules · RequestedDomainCount       ◄ IsMultiplayerMode REMOVED
+  • SOAP lifecycle events                     (unchanged)
+
+[server] per-mode controller — domain-aggregated, RPC-synced   (unchanged)
+
+══ ONE unified, always-networked path ══   (solo = host + AI  ≡  online)
+
+[SURFACE A — in-game HUD]
+MiniGameHUD ─► MultiplayerHUD
+  ├ GetInitialCardValue()        ◄ per-mode metric   (unchanged)
+  └ DomainScorePanel  ── the ONLY layout   (legacy per-player REMOVED)
+
+[SURFACE B — end-game]
+OnWinnerCalculated ─► EndGameCinematicController (+per-mode)
+  └ InvokeShowGameEndScreen ─► Scoreboard (+per-mode)
+      ├ SortPlayers / FormatPlayerScore   ◄ per-mode
+      ├ PlayerScoreCard
+      └ ScoreboardStatsProvider ─► StatRowUI
+  lobby buttons keyed off concrete signals (host? connected-client count?)
+     ── NOT IsMultiplayerMode
+
+[shared — NEW, extracted once]
+ScoreNumberAnimator   (roll · punch · color-flash; driven by HUDAnimationSettingsSO)
+  reused by ► DomainScorePanel · PlayerScoreEntry · PlayerScoreCard   (DRY)
+
+domain→color : ONE source (theme palette)
+crystal reward: ONE source of truth
+loser score  : ONE encode/decode helper (no magic literals)
+logging      : no [FLOW-*] spam
+```
+
+---
+
 ## 1. The two surfaces at a glance
 
 | | In-game HUD | Final scoreboard |
