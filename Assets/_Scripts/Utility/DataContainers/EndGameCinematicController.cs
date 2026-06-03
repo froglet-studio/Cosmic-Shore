@@ -6,8 +6,6 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using DG.Tweening;
-using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -23,17 +21,13 @@ namespace CosmicShore.Utility
         [Header("View")]
         [SerializeField] protected EndGameCinematicView view;
 
-        [Header("Crystal Reward")]
-        [Tooltip("Amount of crystals awarded per game.")]
-        [SerializeField] private int crystalsPerGame = 5;
-        [Tooltip("Root GameObject to enable/disable for the crystal reward display.")]
+        [Header("Crystal Reward (legacy UI — kept hidden)")]
+        [Tooltip("Legacy cinematic crystal-reward container. The winner crystal " +
+                 "reward is now awarded and displayed solely by the Scoreboard " +
+                 "(single source of truth — Docs/ScoringSystem/REFACTOR.md R3). " +
+                 "This reference is retained only so OnEnable can hide any " +
+                 "scene-authored reward UI that defaults to active.")]
         [SerializeField] private GameObject crystalRewardRoot;
-        [Tooltip("Text showing how many crystals were earned.")]
-        [SerializeField] private TMP_Text crystalRewardText;
-        [Tooltip("Duration of the fade-in animation.")]
-        [SerializeField] private float crystalFadeDuration = 0.5f;
-        [Tooltip("If true, skip the crystal reward flow here — the Scoreboard is expected to award and display crystals instead (prevents double-awarding).")]
-        [SerializeField] private bool delegateCrystalRewardToScoreboard = true;
 
         protected bool isRunning;
         protected bool localPlayerWon;
@@ -125,7 +119,6 @@ namespace CosmicShore.Utility
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
-            yield return StartCoroutine(AwardCrystalReward());
             yield return StartCoroutine(ShowIntensityUnlockSequence());
             yield return StartCoroutine(ShowQuestCompletionSequence());
 
@@ -304,36 +297,6 @@ namespace CosmicShore.Utility
                 score,
                 cinematic.scoreRevealSettings
             );
-        }
-        
-        protected virtual IEnumerator AwardCrystalReward()
-        {
-            if (crystalsPerGame <= 0) yield break;
-            if (delegateCrystalRewardToScoreboard) yield break;
-
-            var service = PlayerDataService.Instance;
-            if (service != null)
-            {
-                int newBalance = service.AddCrystals(crystalsPerGame);
-                CSDebug.Log($"[EndGameCinematic] Awarded {crystalsPerGame} crystals. New balance: {newBalance}");
-            }
-
-            if (crystalRewardRoot && crystalRewardText)
-            {
-                crystalRewardText.text = $"+{crystalsPerGame}";
-                crystalRewardRoot.SetActive(true);
-
-                var cg = crystalRewardRoot.GetComponent<CanvasGroup>();
-                if (cg)
-                {
-                    cg.alpha = 0f;
-                    yield return cg.DOFade(1f, crystalFadeDuration)
-                        .SetEase(Ease.OutQuad)
-                        .WaitForCompletion();
-                }
-
-                yield return new WaitForSeconds(1.5f);
-            }
         }
 
         /// <summary>
