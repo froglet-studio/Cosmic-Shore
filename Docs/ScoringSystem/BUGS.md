@@ -55,9 +55,9 @@ Files: `_Scripts/UI/Scoreboard.cs`,
 ### B5 — ⚪ Winner-delta recomputed independently per surface
 The "won/lost by N" delta is computed independently inside each mode's
 `EndGameCinematicController` and again (for ordering/format) in each scoreboard.
-If a mode changes its scoring formula, the two can disagree. Track as a
-consolidation candidate once R1/R4 land (centralize result computation on the
-server / `GameDataSO`).
+If a mode changes its scoring formula, the two can disagree. **Tracked by
+`REFACTOR.md` R10** (one server-authoritative ranked results list) — centralize
+result computation on the server so every surface reads the same ordered results.
 
 ---
 

@@ -109,11 +109,37 @@ the `OperationCanceledException` catch is annotated as an intentional
 cancellation swallow. Pure deletion, zero behavior change. Scoped to the Scoring
 System only — the `[FLOW-*]` convention in spawn/controller files is untouched.
 
-### R9 — 🔴 Document/enforce the end-game ordering contract
-`Scoreboard.DetermineWinnerDomain` reads `DomainStatsList[0]`, assuming the
-controller called `CalculateDomainStats(golf)` (which sorts) **before**
-`InvokeShowGameEndScreen()`. Make the contract explicit (doc + assert) so a new
-mode can't silently show the wrong banner.
+### R9 — 🟢 Scoreboard banner uses authoritative `WinnerDomain`
+`Scoreboard.DetermineWinnerDomain` used to derive the banner winner from
+`DomainStatsList[0]` — a second "who won" path that matched the authoritative
+winner only because of the loser-sentinel score design (and could diverge on a
+tie). **Done** (commit `80b14de4`): the banner now prefers the server-authoritative
+`gameData.WinnerDomain` (the same value the cinematic uses), falling back to
+`DomainStatsList[0]`/`orderedStats[0]` for modes that don't set it (single-player /
+co-op / DuelForCell — `WinnerDomain` stays `Blue`, already reset every scene load +
+replay). Behavior-preserving in normal play; fixes the tie divergence. No reset
+code needed (existing infra). Full consolidation is **R10**.
+
+### R10 — 🔴 [discuss-first] One server-authoritative ranked results list
+**Root fix for the redundant winner/ranking representations** (subsumes R9's
+residue and `BUGS.md` B5). Today "who won / in what order" exists four ways:
+`WinnerName`/`WinnerDomain` (authoritative, synced), sorted `RoundStatsList`,
+sorted `DomainStatsList`, and the Scoreboard's local `SortPlayers` →
+`orderedStats`. The server already computes the authoritative winner, assigns
+scores, sorts, and syncs (`SyncFinalScores_ClientRpc` et al.) — so this is a
+**consumer-side consolidation, not a rebuild**.
+
+Target: the server produces one ordered `List<ScoreResult>` (`Rank, Name, Domain,
+Score, secondary`) once, syncs it (replacing the parallel name/score/domain arrays
+already sent), and every surface reads it — banner = `results[0].Domain`, cards
+iterate in order, crystal reward = `results[0]` / winning-domain members, cinematic
+reads the same. `WinnerName`/`WinnerDomain`, `DomainStatsList[0]`, and the per-mode
+`SortPlayers` overrides collapse into it; per-mode **formatting** (time vs crystals)
+stays a consumer concern (SRP).
+
+Sequence **with R1** (unified always-networked path) — both touch the scoring sync
++ data model, so the results structure should be designed once across both.
+Discuss-first; do not start before R1's design is agreed.
 
 ---
 
