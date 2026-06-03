@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
                 if (winningDomain != Domains.Blue && stats.Domain == winningDomain)
                     stats.Score = currentTime;
                 else
-                    stats.Score = 99999f;
+                    stats.Score = GolfScoreSentinels.JoustLoserScore;
             }
 
             gameData.SortRoundStats(UseGolfRules);

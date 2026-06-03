@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -36,13 +37,13 @@ namespace CosmicShore.UI
         {
             float score = stats.Score;
 
-            if (score < 10000f)
+            if (GolfScoreSentinels.IsFinishTime(score))
             {
                 TimeSpan t = TimeSpan.FromSeconds(score);
                 return $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
             }
 
-            int crystalsLeft = Mathf.Max(0, (int)(score - 10000f));
+            int crystalsLeft = GolfScoreSentinels.DecodeHexRaceCrystalsLeft(score);
             return $"{crystalsLeft} Crystals Left";
         }
 

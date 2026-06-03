@@ -43,7 +43,7 @@ namespace CosmicShore.UI
         {
             float score = stats.Score;
 
-            if (score < 99999f)
+            if (!GolfScoreSentinels.IsJoustLoserScore(score))
             {
                 TimeSpan t = TimeSpan.FromSeconds(score);
                 return $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";

@@ -54,7 +54,7 @@ namespace CosmicShore.Utility
             else
             {
                 label = "CRYSTALS LEFT";
-                displayValue = Mathf.Max(0, (int)(localStats.Score - 10000f));
+                displayValue = GolfScoreSentinels.DecodeHexRaceCrystalsLeft(localStats.Score);
                 formatAsTime = false;
             }
 

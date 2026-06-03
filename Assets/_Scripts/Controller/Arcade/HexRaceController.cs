@@ -252,7 +252,7 @@ namespace CosmicShore.Gameplay
                 {
                     int domainSum = gameData.SumCrystalsCollectedByDomain(stats.Domain);
                     int crystalsLeft = Mathf.Max(0, target - domainSum);
-                    stats.Score = 10000f + crystalsLeft;
+                    stats.Score = GolfScoreSentinels.EncodeHexRaceLoserScore(crystalsLeft);
                 }
             }
 
