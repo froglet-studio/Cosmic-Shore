@@ -29,13 +29,23 @@ namespace CosmicShore.UI
     {
         [Header("Geometry (fractions of the rect's half-min-extent)")]
         [Tooltip("Outer radius of the colored bands. <1 leaves a gap to the boundary ring.")]
-        [Range(0.3f, 1f)] [SerializeField] float bandOuterFrac = 0.92f;
+        [Range(0.3f, 1f)] [SerializeField] float bandOuterFrac = 0.78f;
         [Tooltip("Radius of the centre 'dominant' hexagon. Bands reach this at fill = 1.")]
         [Range(0.05f, 0.4f)] [SerializeField] float centerHexFrac = 0.18f;
         [Tooltip("Minimum band thickness (fraction) so an empty domain still shows a sliver at full width.")]
         [Range(0f, 0.2f)] [SerializeField] float minBandThicknessFrac = 0.06f;
         [Tooltip("Faint boundary hexagon marking the frenzy extent. 0 thickness = off.")]
         [Range(0f, 0.12f)] [SerializeField] float boundaryThicknessFrac = 0.04f;
+
+        [Header("Spawn-cycle ring (outside the hex)")]
+        [Tooltip("Inner radius of the spawn-cycle ring (fraction). Sits OUTSIDE the band/boundary so it doesn't obscure the volume gauge.")]
+        [Range(0.6f, 1f)] [SerializeField] float ringInnerFrac = 0.86f;
+        [Tooltip("Outer radius of the spawn-cycle ring (fraction).")]
+        [Range(0.6f, 1f)] [SerializeField] float ringOuterFrac = 0.98f;
+        [Tooltip("Faint background track behind the ring's progress arc. 0 alpha = off.")]
+        [SerializeField] Color ringTrackColor = new(1f, 1f, 1f, 0.10f);
+        [Tooltip("Number of arc segments — higher = smoother ring at the cost of more triangles.")]
+        [Range(12, 128)] [SerializeField] int ringSegments = 64;
 
         [Header("Colors")]
         [SerializeField] Color boundaryColor = new(1f, 1f, 1f, 0.18f);
@@ -57,6 +67,7 @@ namespace CosmicShore.UI
         readonly float[] _fill = new float[3];           // 0..1 radial depth per domain
         readonly Color[] _domainColor = { Color.green, Color.red, Color.yellow };
         int _dominant = -1;                              // 0/1/2 or -1 (none)
+        float _spawnCycle;                               // 0..1 progress toward next fauna spawn
 
         /// <summary>
         /// Push the live gauge state. Rebuilds the mesh only when something changed
@@ -64,13 +75,15 @@ namespace CosmicShore.UI
         /// Canvas batch rebuild every frame once the values settle.
         /// </summary>
         public void SetState(float fillJade, float fillRuby, float fillGold,
-                             Color cJade, Color cRuby, Color cGold, int dominant)
+                             Color cJade, Color cRuby, Color cGold, int dominant,
+                             float spawnCycle)
         {
             bool changed =
                 !Approximately(_fill[0], fillJade) ||
                 !Approximately(_fill[1], fillRuby) ||
                 !Approximately(_fill[2], fillGold) ||
                 _dominant != dominant ||
+                !Approximately(_spawnCycle, spawnCycle) ||
                 _domainColor[0] != cJade || _domainColor[1] != cRuby || _domainColor[2] != cGold;
 
             if (!changed) return;
@@ -78,6 +91,7 @@ namespace CosmicShore.UI
             _fill[0] = fillJade; _fill[1] = fillRuby; _fill[2] = fillGold;
             _domainColor[0] = cJade; _domainColor[1] = cRuby; _domainColor[2] = cGold;
             _dominant = dominant;
+            _spawnCycle = spawnCycle;
             SetVerticesDirty();
         }
 
@@ -114,6 +128,23 @@ namespace CosmicShore.UI
             // 3) Centre hexagon — tinted by the dominant domain (who leads on volume).
             Color centerColor = (_dominant >= 0 && _dominant < 3) ? _domainColor[_dominant] : neutralCenterColor;
             AddHexFill(vh, c, centerR, centerColor);
+
+            // 4) Spawn-cycle ring around the outside. Empty background track + a
+            //    progress arc starting at the top and sweeping clockwise. The arc
+            //    is tinted by the DOMINANT domain because every periodic fauna
+            //    spawn produces the leader's color — when the arc completes a
+            //    full revolution, a new pack of that color spawns.
+            float ringInner = R * Mathf.Min(ringInnerFrac, ringOuterFrac);
+            float ringOuter = R * Mathf.Max(ringInnerFrac, ringOuterFrac);
+            int segs = Mathf.Max(12, ringSegments);
+            if (ringTrackColor.a > 0f)
+                AddRingArc(vh, c, ringOuter, ringInner, 0f, 1f, segs, ringTrackColor);
+            float cycle = Mathf.Clamp01(_spawnCycle);
+            if (cycle > 0.001f)
+            {
+                Color arcColor = (_dominant >= 0 && _dominant < 3) ? _domainColor[_dominant] : neutralCenterColor;
+                AddRingArc(vh, c, ringOuter, ringInner, 0f, cycle, segs, arcColor);
+            }
         }
 
         // ------------------------------------------------------------------
@@ -164,6 +195,38 @@ namespace CosmicShore.UI
                 vh.AddVert(MakeVert(c + dir * rInner, color)); // 2i+1 inner
             }
             for (int seg = 0; seg < angles.Length - 1; seg++)
+            {
+                int o0 = b + 2 * seg,       i0 = b + 2 * seg + 1;
+                int o1 = b + 2 * (seg + 1), i1 = b + 2 * (seg + 1) + 1;
+                vh.AddTriangle(o0, o1, i1);
+                vh.AddTriangle(o0, i1, i0);
+            }
+        }
+
+        /// <summary>
+        /// Circular annulus arc from <paramref name="startFrac"/> to
+        /// <paramref name="endFrac"/> of a full circle, sweeping CLOCKWISE from the
+        /// top (12 o'clock). Used for the spawn-cycle ring.
+        /// </summary>
+        static void AddRingArc(VertexHelper vh, Vector2 c, float rOuter, float rInner,
+                               float startFrac, float endFrac, int totalSegments, Color color)
+        {
+            startFrac = Mathf.Clamp01(startFrac);
+            endFrac = Mathf.Clamp01(endFrac);
+            if (endFrac <= startFrac) return;
+
+            int segsThisArc = Mathf.Max(1, Mathf.CeilToInt((endFrac - startFrac) * totalSegments));
+            int b = vh.currentVertCount;
+            for (int i = 0; i <= segsThisArc; i++)
+            {
+                float t = Mathf.Lerp(startFrac, endFrac, i / (float)segsThisArc);
+                // Clockwise from top: angle = 90° - t·360°
+                float angle = (90f - t * 360f) * Mathf.Deg2Rad;
+                Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                vh.AddVert(MakeVert(c + dir * rOuter, color)); // 2i
+                vh.AddVert(MakeVert(c + dir * rInner, color)); // 2i+1
+            }
+            for (int seg = 0; seg < segsThisArc; seg++)
             {
                 int o0 = b + 2 * seg,       i0 = b + 2 * seg + 1;
                 int o1 = b + 2 * (seg + 1), i1 = b + 2 * (seg + 1) + 1;

@@ -144,7 +144,10 @@ namespace CosmicShore.Gameplay
             }
 
             // Continuous spawn — interval scales with aggression so reinforcements
-            // arrive faster when the cell is under stress.
+            // arrive faster when the cell is under stress. Seed the spawn-cycle
+            // telemetry before the first wait so the indicator ring starts at 0%
+            // instead of stuck-at-100% (the "never spawned" sentinel value).
+            host.RecordFaunaSpawn();
             while (true)
             {
                 float wait = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
@@ -156,6 +159,7 @@ namespace CosmicShore.Gameplay
                 if (!AllowSpawn(faunaCfg.SpawnProbability)) continue;
 
                 TrySpawnFauna(host, runtime, faunaCfg);
+                host.RecordFaunaSpawn();
             }
         }
 

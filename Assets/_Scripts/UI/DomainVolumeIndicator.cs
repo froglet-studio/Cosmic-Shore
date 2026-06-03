@@ -65,6 +65,7 @@ namespace CosmicShore.UI
         float _jadeTarget, _rubyTarget, _goldTarget;
         float _jadeNow, _rubyNow, _goldNow;
         int _dominant = -1;
+        float _spawnCycle;
 
         // Rate-of-change tracking for the diagnostic readout.
         int _lastTotal = -1;
@@ -127,14 +128,35 @@ namespace CosmicShore.UI
             hexGraphic = go.AddComponent<DomainVolumeHexGraphic>();
             hexGraphic.raycastTarget = false; // never intercept the button click
 
-            // Hide the host button's original sprite — it sits BEHIND our new hex
-            // graphic and was bleeding through in-game. Keep the Image component so
-            // the Button's raycast/state machinery still works; just zero its alpha.
-            // (Disabling the Image would break Button.targetGraphic tint transitions
-            // on prefabs that drive selection state through the original face.)
-            if (TryGetComponent<Image>(out var hostImage))
+            HideHostButtonFace();
+        }
+
+        /// <summary>
+        /// Erase the pause button's authored face so it doesn't peek out around the
+        /// hex. Keep the Image component so the Button's raycast/state machinery
+        /// still works — clearing sprite + zeroing color is enough to make it
+        /// invisible while the rect-based hit test continues to register clicks.
+        /// </summary>
+        void HideHostButtonFace()
+        {
+            // Host Image stays enabled so Button raycast keeps working; sprite +
+            // color zeroed so it draws nothing.
+            Image hostImage = null;
+            if (TryGetComponent(out hostImage))
             {
-                var c = hostImage.color; c.a = 0f; hostImage.color = c;
+                hostImage.sprite = null;
+                hostImage.color = new Color(0f, 0f, 0f, 0f);
+            }
+
+            // Defensive cleanup of leftover graphics from previous iterations of
+            // this script (the three Radial360 child Images, or any custom art
+            // layer authored on top of the button face). Skip the host Image (still
+            // needed for raycast) and our own hex graphic.
+            foreach (var g in GetComponentsInChildren<Graphic>(true))
+            {
+                if (!g || g == hexGraphic || g == hostImage || g is TMP_Text) continue;
+                if (g.gameObject == gameObject) continue; // never touch components on our own GO
+                g.gameObject.SetActive(false);
             }
         }
 
@@ -210,6 +232,11 @@ namespace CosmicShore.UI
             // Dominant domain → centre hexagon tint. -1 when the cell is empty.
             _dominant = ResolveDominant(jade, ruby, gold);
 
+            // Fauna spawn cycle progress. Cell drives this from the spawner's
+            // periodic loop; 0 = just spawned, 1 = about to spawn (in the
+            // dominant domain's color).
+            _spawnCycle = cell.FaunaSpawnCycleFraction;
+
             UpdateReadout(cell, jade, ruby, gold, rabid);
         }
 
@@ -243,9 +270,12 @@ namespace CosmicShore.UI
         {
             if (!hexGraphic) return;
             ResolveDomainColors(out var jadeC, out var rubyC, out var goldC);
-            // SetState rebuilds the mesh only on a meaningful delta, so calling it
-            // every frame during a lerp is cheap once the values settle.
-            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant);
+            // Spawn-cycle fraction is read LIVE each frame (cheap Time.time math)
+            // so the ring sweeps smoothly between the 0.25s volume samples. Use the
+            // cached cell to avoid re-running cell resolution every frame.
+            float cycle = _cachedCell ? _cachedCell.FaunaSpawnCycleFraction : _spawnCycle;
+            // SetState rebuilds the mesh only on a meaningful delta.
+            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle);
         }
 
         // ------------------------------------------------------------------
@@ -324,10 +354,14 @@ namespace CosmicShore.UI
         {
             if (!colorSet.TryGetColorSetByDomain(domain, out var dcs) || dcs == null)
                 return Color.white;
-            // OutsideBlockColor is the canonical "domain identity" hue used by trail
-            // prisms, AOE rings, and the elemental bars. HDR with variable alpha —
-            // force a HUD-readable alpha so the gauge actually shows.
-            var c = dcs.OutsideBlockColor;
+            // TrailHighlightColor is the BRIGHT IDENTITY hue (cyan/magenta/orange
+            // in the original palette) — the same field VesselHelper uses for trail
+            // identity and the only color set field that gives each domain a
+            // recognizable face. OutsideBlockColor is the dim outer shell of a
+            // prism, which for Ruby reads as a near-black indigo — that's what the
+            // user spotted as "fire instead of Ruby" (Gold's warm hue showing
+            // through next to Ruby's near-black).
+            var c = dcs.TrailHighlightColor;
             c.a = 0.95f;
             return c;
         }

@@ -171,6 +171,63 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool HasConfigAssigned => cellConfigData != null;
 
+        // ---------------------------------------------------------------------
+        //  Fauna spawn cycle telemetry — read by the volume-indicator ring HUD.
+        //  Written by IntensityWiseLifeSpawner.SpawnFaunaTypeLoop when it ticks a
+        //  periodic fauna spawn. The Cell exposes a 0..1 progress fraction toward
+        //  the next spawn so the indicator can draw a rotating ring without
+        //  knowing anything about the spawner's internals.
+        // ---------------------------------------------------------------------
+
+        float _lastFaunaSpawnTime = -1f;
+
+        /// <summary>
+        /// Records that a periodic fauna spawn just happened. The spawn-cycle ring
+        /// resets to 0% and counts back up to 100% over the next CurrentFaunaSpawnPeriod
+        /// seconds. Called by IntensityWiseLifeSpawner's fauna loop.
+        /// </summary>
+        public void RecordFaunaSpawn() => _lastFaunaSpawnTime = Time.time;
+
+        /// <summary>
+        /// Effective period (seconds) between this cell's periodic fauna spawns,
+        /// scaled by current aggression: BaseFaunaSpawnTime * SpawnIntervalByAggression.
+        /// Mirrors the math in IntensityWiseLifeSpawner.ScaleFaunaInterval, kept here
+        /// so HUDs can read the period without taking a dependency on the spawner.
+        /// Returns 0 when no profile is wired (HUD treats 0 as "no cycle to show").
+        /// </summary>
+        public float CurrentFaunaSpawnPeriod
+        {
+            get
+            {
+                var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+                if (!profile) return 0f;
+                float baseTime = Mathf.Max(0.05f, profile.BaseFaunaSpawnTime);
+                // Multipliers parallel IntensityWiseLifeSpawner.FaunaSpawnIntervalByAggression.
+                float mult = AggressionLevel switch
+                {
+                    CellAggressionLevel.Level1 => 0.55f,
+                    CellAggressionLevel.Level2 => 0.25f,
+                    _ => 1f,
+                };
+                return baseTime * mult;
+            }
+        }
+
+        /// <summary>
+        /// 0..1 progress through the current fauna spawn cycle. 0 = just spawned,
+        /// 1 = about to spawn. Returns 0 when no period is configured or no spawn
+        /// has been recorded yet.
+        /// </summary>
+        public float FaunaSpawnCycleFraction
+        {
+            get
+            {
+                float period = CurrentFaunaSpawnPeriod;
+                if (period <= 0f || _lastFaunaSpawnTime < 0f) return 0f;
+                return Mathf.Clamp01((Time.time - _lastFaunaSpawnTime) / period);
+            }
+        }
+
         /// <summary>
         /// Current phase. Written exclusively by <see cref="CellNetworkSync"/> via
         /// <see cref="ApplyAuthoritativePhaseAndDomain"/> — the server's compute on a
