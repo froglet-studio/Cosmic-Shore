@@ -246,11 +246,21 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Default: first domain in DomainStatsList → first player's domain → Unassigned.
-        /// Subclasses can override if they need different winner-domain logic.
+        /// Winning domain for the banner. Prefers the server-authoritative
+        /// <see cref="GameDataSO.WinnerDomain"/> — the SAME value the end-game
+        /// cinematic uses — so the banner and the cinematic can't disagree on a tie
+        /// and there is one source of truth for "who won". Modes that don't set it
+        /// (single-player / co-op / DuelForCell) leave it <see cref="Domains.Blue"/>
+        /// — it is reset on every scene load (SceneLoader → GameDataSO.ResetRuntimeData)
+        /// and on replay (ResetRuntimeDataForReplay) — and fall back to the per-domain
+        /// sum order exactly as before. Subclasses may override.
+        /// (Interim step: R10 will replace WinnerDomain + DomainStatsList with one
+        /// synced ranked-results list — see Docs/ScoringSystem/REFACTOR.md.)
         /// </summary>
         protected virtual Domains DetermineWinnerDomain(List<IRoundStats> orderedStats)
         {
+            if (gameData.WinnerDomain != Domains.Blue)
+                return gameData.WinnerDomain;
             if (gameData.DomainStatsList is { Count: > 0 })
                 return gameData.DomainStatsList[0].Domain;
             if (orderedStats is { Count: > 0 })
