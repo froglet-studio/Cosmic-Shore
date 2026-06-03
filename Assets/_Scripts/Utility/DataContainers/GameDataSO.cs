@@ -102,6 +102,38 @@ namespace CosmicShore.Utility
         [NonSerialized] public Domains WinnerDomain = Domains.Blue;
 
         /// <summary>
+        /// Single source of truth for the final ranked results (per-player, sorted, with
+        /// 1-based <see cref="ScoreResult.Rank"/>). Produced once per game end by the mode:
+        /// server-side in networked modes (and assembled identically on each client from the
+        /// already-synced score arrays), or locally in single-player. Every end-game surface
+        /// — scoreboard banner + cards, end-game cinematic, crystal reward — reads this.
+        /// <see cref="WinnerName"/>/<see cref="WinnerDomain"/> are a thin derived view over
+        /// <c>Results[0]</c> (see <see cref="SetResults"/>). Empty until the mode computes
+        /// results. Reset in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// See Docs/ScoringSystem/REFACTOR.md R10.
+        /// </summary>
+        [NonSerialized] public List<ScoreResult> Results = new();
+
+        /// <summary>
+        /// Sets <see cref="Results"/> (reusing the same list instance so existing references
+        /// stay valid) and derives <see cref="WinnerName"/>/<see cref="WinnerDomain"/> from
+        /// the top row, keeping them a convenience view over the single source. Call once per
+        /// game end on the server and on each client.
+        /// </summary>
+        public void SetResults(IEnumerable<ScoreResult> results)
+        {
+            Results.Clear();
+            if (results != null)
+                Results.AddRange(results);
+
+            if (Results.Count > 0)
+            {
+                WinnerName = Results[0].Name;
+                WinnerDomain = Results[0].Domain;
+            }
+        }
+
+        /// <summary>
         /// The resolved crystal collection target for the current session.
         /// Written by <see cref="NetworkCrystalCollisionTurnMonitor"/> in StartMonitor (server),
         /// synced to clients via NetworkVariable.OnValueChanged.
@@ -254,6 +286,7 @@ namespace CosmicShore.Utility
             LocalRoundStats = null;
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            Results.Clear();
             CrystalTargetCount = 0;
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -289,6 +322,7 @@ namespace CosmicShore.Utility
             _playerSpawnPoseList.Clear();
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            Results.Clear();
             CrystalTargetCount = 0;
         }
 
