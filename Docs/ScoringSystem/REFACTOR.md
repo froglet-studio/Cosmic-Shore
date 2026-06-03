@@ -85,11 +85,20 @@ coroutine + its call. `Scoreboard.winnerCrystalReward` + `AwardCrystalsIfLocalWi
 `OnEnable` hide were kept so scene-authored legacy reward UI (e.g. HexRace's
 active `CrystalDisplayBG`) stays hidden. Behavior-preserving; closes `BUGS.md` B4.
 
-### R4 — 🔴 Centralize the loser-score sentinel encode/decode
-HexRace (`10000 + crystalsLeft`) and Joust (`99999`) encode loser scores as
-magic numbers, decoded by literals (`< 10000f` / `< 99999f`) duplicated in the
-scoreboards. Put encode + decode behind named constants/helpers shared by the
-controller (write) and scoreboard (read) so they cannot drift.
+### R4 — 🟢 Centralize the loser-score sentinel encode/decode
+HexRace (`10000 + crystalsLeft`) and Joust (`99999`) encoded loser scores as
+magic numbers decoded by duplicated literals — and HexRace had **two** encode
+sites that could drift (controller literal vs `HexRaceScoreTracker.penaltyScoreBase`).
+**Done** (commit `68550228`): new static `GolfScoreSentinels` (`CosmicShore.Gameplay`)
+holds the constants (`DnfThreshold`, `HexRaceLoserBase`, `JoustLoserScore`) +
+helpers (`Encode/DecodeHexRaceCrystalsLeft`, `IsHexRaceLoserScore`,
+`IsJoustLoserScore`, `IsFinishTime`). Migrated every write (HexRaceController,
+HexRaceScoreTracker, MultiplayerJoustController) and read (HexRaceScoreboard,
+HexRaceEndGameController, MultiplayerJoustScoreboard) — **plus** the same-sentinel
+DNF threshold in `UGSStatsManager` + `GameModeProgressionService` (the literals
+there were the real drift hazard). Removed the drift-prone `penaltyScoreBase`
+serialized field (its only scene value equalled the constant). Behavior-preserving
+— every rewrite is algebraically identical to the literal it replaced.
 
 ### R5 — 🔴 Unify domain → color resolution
 Three paths today (`ThemeManagerData.ColorSet` / `DomainColorPaletteSO` /
