@@ -965,7 +965,7 @@ MonoBehaviour:
   domainIndicatorImage: {fileID: 3852717692724242735}
   backgroundTintAlpha: 1
   dataPanelsRoot: {fileID: 1932331347982584288}
-  secondaryStatText: {fileID: 0}
+  secondaryStatText: {fileID: 5416643531318451560}
   crystalRewardRoot: {fileID: 3188080394840642049}
   crystalRewardText: {fileID: 5173732155583569338}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
