@@ -158,7 +158,9 @@ code needed (existing infra). Full consolidation is **R10**.
 
 ### R10 — 🔴 [discuss-first] One server-authoritative ranked results list
 **Root fix for the redundant winner/ranking representations** (subsumes R9's
-residue and `BUGS.md` B5). Today "who won / in what order" exists four ways:
+residue, `BUGS.md` B5, and `BUGS.md` B2 — the Joust "jousts left" divergence,
+fixed once `Secondary` is computed server-side). Today "who won / in what order"
+exists four ways:
 `WinnerName`/`WinnerDomain` (authoritative, synced), sorted `RoundStatsList`,
 sorted `DomainStatsList`, and the Scoreboard's local `SortPlayers` →
 `orderedStats`. The server already computes the authoritative winner, assigns

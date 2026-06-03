@@ -29,21 +29,18 @@ remaining jousts as **individual**: `needed - localStats.JoustCollisions`. The
 **final scoreboard** (`MultiplayerJoustScoreboard.FormatPlayerScore`) computes
 it as the **domain deficit**: `needed - SumJoustCollisionsByDomain(domain)`. In
 team games a losing player can see one number on the reveal and a different one
-on the scoreboard. Decide the canonical definition (domain deficit is consistent
-with the domain-aggregated design) and use it in both places. Ties into
-`REFACTOR.md` R4.
+on the scoreboard. Canonical = **domain deficit** (consistent with the
+domain-aggregated design). **Scheduled as part of `REFACTOR.md` R10** — the
+unified `ScoreResult.Secondary` is computed once on the server, so the reveal and
+scoreboard read the same string and can't diverge.
 Files: `_Scripts/Utility/DataContainers/MultiplayerJoustEndGameController.cs`,
 `_Scripts/UI/MultiplayerJoustScoreboard.cs`.
 
-### B3 — ⚪ `scoreboardRowStagger` is dead config
-`HUDAnimationSettingsSO.scoreboardRowStagger` is never read.
-`Scoreboard.PopulatePlayerCards` passes the row index to
-`PlayerScoreCard.Setup`, but `PlayerScoreCard.PlayEntrance` staggers by
-`cardEntranceStagger`, not `scoreboardRowStagger`. Either wire the scoreboard
-rows to `scoreboardRowStagger` or delete the field. Cosmetic, but it misleads
-anyone tuning the entrance.
-Files: `_Scripts/UI/HUDAnimationSettingsSO.cs`, `_Scripts/UI/Scoreboard.cs`,
-`_Scripts/UI/PlayerScoreCard.cs`.
+### B3 — 🟢 `scoreboardRowStagger` is dead config
+`HUDAnimationSettingsSO.scoreboardRowStagger` was never read — `PlayerScoreCard`'s
+entrance staggers by `cardEntranceStagger`, so tuning it did nothing. **Done**
+(commit `b0d30871`): deleted the unused field. Pure removal, no behavior change.
+File: `_Scripts/UI/HUDAnimationSettingsSO.cs`.
 
 ### B4 — 🟢 Two crystal-reward amounts can double-award / drift
 The winner reward existed twice: `Scoreboard.winnerCrystalReward` (winner-only,
@@ -77,6 +74,6 @@ position visually in a HexRace/Joust end-game.
 
 ---
 
-B1, B4 and B6 fixed (verify only — B6 also warrants a visual position check).
-B2/B3/B5 are read-through findings — promote to 🔴 with a repro (and a
-NetDiag/CSDebug log line where relevant) when picked up.
+B1, B3, B4, B6 fixed (verify only — B6 also warrants a visual position check).
+B2 and B5 are scheduled into **R10** (the unified ranked `ScoreResult` list
+dissolves both). No open read-through findings remain.
