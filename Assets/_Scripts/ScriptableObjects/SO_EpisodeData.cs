@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -15,6 +16,7 @@ namespace CosmicShore.ScriptableObjects
         public string episodeId;
 
         [Tooltip("Display title of the episode")]
+        [FormerlySerializedAs("header")]
         public string title;
 
         [Tooltip("Short description shown on the card")]
