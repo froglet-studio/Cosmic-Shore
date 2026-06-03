@@ -45,14 +45,15 @@ anyone tuning the entrance.
 Files: `_Scripts/UI/HUDAnimationSettingsSO.cs`, `_Scripts/UI/Scoreboard.cs`,
 `_Scripts/UI/PlayerScoreCard.cs`.
 
-### B4 — ⚪ Two crystal-reward amounts can double-award / drift
-The winner reward exists twice: `Scoreboard.winnerCrystalReward` (awarded in
+### B4 — 🟢 Two crystal-reward amounts can double-award / drift
+The winner reward existed twice: `Scoreboard.winnerCrystalReward` (winner-only,
 `AwardCrystalsIfLocalWinner`) and `EndGameCinematicController.crystalsPerGame`
-(awarded in `AwardCrystalReward`, skipped only while
-`delegateCrystalRewardToScoreboard == true`). If a scene sets
-`delegateCrystalRewardToScoreboard = false` **and** leaves
-`winnerCrystalReward > 0`, the local winner is awarded twice; the two amounts
-can also drift out of sync. Single source of truth — `REFACTOR.md` R3.
+(awarded with **no** winner check in `AwardCrystalReward`, skipped only while
+`delegateCrystalRewardToScoreboard == true`). A scene flipping the flag to `false`
+with `winnerCrystalReward > 0` would award the local winner twice (and the two
+amounts could drift). **Resolved by `REFACTOR.md` R3** (commit `ed6517ab`): the
+cinematic award path + flag were removed, leaving one value + one award path — the
+double-award is now structurally impossible.
 Files: `_Scripts/UI/Scoreboard.cs`,
 `_Scripts/Utility/DataContainers/EndGameCinematicController.cs`.
 
@@ -76,6 +77,6 @@ inspection; verify in a HexRace/Joust end-game once wired.
 
 ---
 
-B1 fixed (verify only). B6 is a confirmed prefab-wiring defect; the rest are
-read-through findings — promote to 🔴 with a repro (and a NetDiag/CSDebug log
+B1 and B4 fixed (verify only). B6 is a confirmed prefab-wiring defect; B2/B3/B5
+are read-through findings — promote to 🔴 with a repro (and a NetDiag/CSDebug log
 line where relevant) when picked up.

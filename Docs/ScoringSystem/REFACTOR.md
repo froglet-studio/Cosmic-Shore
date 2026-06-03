@@ -73,11 +73,17 @@ Behavior-preserving — all public APIs unchanged, no caller/prefab changes; net
 −80 lines. `DomainScorePanel` no longer depends on `DG.Tweening` directly; its
 themed base-color path is preserved via `ScoreNumberAnimator.SetBaseColor`.
 
-### R3 — 🔴 Single source of truth for the winner crystal reward
-`Scoreboard.winnerCrystalReward` (=5) and
-`EndGameCinematicController.crystalsPerGame` (=5) are independent and
-hand-synced; the `delegateCrystalRewardToScoreboard` handshake is implicit.
-Collapse to one configured value + one award path (see also `BUGS.md` B4).
+### R3 — 🟢 Single source of truth for the winner crystal reward
+`Scoreboard.winnerCrystalReward` and `EndGameCinematicController.crystalsPerGame`
+were independent, hand-synced values joined by an implicit
+`delegateCrystalRewardToScoreboard` handshake. **Done** (commit `ed6517ab`): the
+cinematic award path was dead in all shipped content (the delegate flag is `true`
+in every scene/prefab), so it was removed — `crystalsPerGame`, `crystalRewardText`,
+`crystalFadeDuration`, `delegateCrystalRewardToScoreboard`, the `AwardCrystalReward`
+coroutine + its call. `Scoreboard.winnerCrystalReward` + `AwardCrystalsIfLocalWinner`
+(winner-only) is now the lone value + award path. `crystalRewardRoot` and its
+`OnEnable` hide were kept so scene-authored legacy reward UI (e.g. HexRace's
+active `CrystalDisplayBG`) stays hidden. Behavior-preserving; closes `BUGS.md` B4.
 
 ### R4 — 🔴 Centralize the loser-score sentinel encode/decode
 HexRace (`10000 + crystalsLeft`) and Joust (`99999`) encode loser scores as
