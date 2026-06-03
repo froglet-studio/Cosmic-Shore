@@ -114,11 +114,17 @@ read the theme ColorSet — only the player cards used the list). Also fixed a r
 mismatch: the hardcoded banner showed Jade=green / Ruby=red, but the theme's Jade
 is teal and Ruby magenta — banner/cards now match the vessels on screen.
 
-**Remaining domain-color sources (outside the Scoring System — separate follow-up
-if we want truly app-wide single-source):** `DomainColorPaletteSO` via
-`SilhouetteConfigSO` / `SquirrelVesselHUDController` (vessel HUD / elemental), and
-`GameEventFeed.domainColors` + the static `GameFeedAPI.DomainColors` dictionary
-(game feed). All would route to `ThemeManagerData.ColorSet` the same way.
+**App-wide single-source — DONE** (commits `f957dc0d`, `96bb5fbb`): the remaining
+sources outside the scoring UI were migrated to `ThemeManagerData.ColorSet` too.
+Game feed: `GameEventFeed` resolves via injected `gameData`; the static
+`GameFeedAPI` hardcoded dict is replaced by an `SO_ColorSet` handed to it by
+`ThemeManager` at game start. Vessel HUD: `SquirrelVesselHUDController` and
+`SilhouetteController` `[Inject] GameDataSO` and resolve via `GetDomainUIColor`
+(silhouette danger → shared `EnvironmentColors.Danger`); their `DomainColorPaletteSO`
+fields (`domainColors`, `SilhouetteConfigSO.domainPalette`) were removed.
+`DomainColorPaletteSO` now has **no code consumers** — the class + its `.asset`
+instances can be deleted in a separate cleanup. Net result: every domain color
+(banner, cards, HUD, feed, silhouette, vessels, prisms) reads one `SO_ColorSet`.
 
 ### R6 — 🔴 Remove the legacy per-player HUD layout
 Once the unified path lands, the domain-panel layout is the only layout. After
