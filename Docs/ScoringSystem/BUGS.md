@@ -10,12 +10,16 @@ regressions). Read `ARCHITECTURE.md` first.
 
 ---
 
-### B1 — 🟡 `PlayerScoreCard` secondary-stat panel never re-hides its root
-`ShowSecondaryStat` activates both `secondaryStatText` **and** `dataPanelsRoot`,
-but `HideSecondaryStat` only deactivates `secondaryStatText` — it leaves
-`dataPanelsRoot` active. Cards are recreated each game so it rarely shows, but
-the asymmetry is wrong. Fix: `HideSecondaryStat` should also deactivate
-`dataPanelsRoot` (or the card should manage the root from a single place).
+### B1 — 🟢 `PlayerScoreCard` empty DataPanels background never re-hides
+`ShowSecondaryStat` activated `dataPanelsRoot`, but `HideSecondaryStat` only hid
+`secondaryStatText` — so the `DataPanels` background (it has a CanvasRenderer +
+Image, defaults active) stayed visible behind cards with no extra stats. **Done**
+(commit `47bf46c1`). A naive "also hide the root" is wrong: `crystalRewardRoot`
+(`CrystalScore`) is a **child** of `dataPanelsRoot` (`DataPanels`) in the prefab,
+so hiding the root would make a winner's "+N" reward invisible whenever they had
+no secondary stat. Fix drives the shared root from **both** children via
+`RefreshDataPanelsRoot()` (visible iff secondary stat OR crystal reward is
+showing), called from all four Show/Hide methods so it's order-independent.
 File: `_Scripts/UI/PlayerScoreCard.cs`.
 
 ### B2 — ⚪ Joust "jousts left" differs between reveal and scoreboard
@@ -59,8 +63,19 @@ If a mode changes its scoring formula, the two can disagree. **Tracked by
 `REFACTOR.md` R10** (one server-authoritative ranked results list) — centralize
 result computation on the server so every surface reads the same ordered results.
 
+### B6 — 🔴 Score-card secondary stat never renders (field unwired in prefab)
+`secondaryStatText` is unassigned (`fileID: 0`) in the only score-card prefab
+(`_Prefabs/UI Elements/In Game/PlayerScoreCard.prefab`), so the secondary line
+that `HexRaceScoreboard` ("`N Crystals`") and `MultiplayerJoustScoreboard`
+("`N Jousts`") feed through `Scoreboard.ShowMultiplayerView` → `ShowSecondaryStat`
+is silently dropped — the text is set on a null reference and never displayed.
+After B1, `RefreshDataPanelsRoot` also correctly leaves `DataPanels` hidden in
+this case (no renderable child). Fix is data, not code: wire the `Score (sub)`
+TMP child into `PlayerScoreCard.secondaryStatText`. Confirmed by prefab
+inspection; verify in a HexRace/Joust end-game once wired.
+
 ---
 
-No 🔴 confirmed-reproduced bugs yet — the above are read-through findings.
-Promote to 🔴 with a repro (and a NetDiag/CSDebug log line where relevant) when
-picked up.
+B1 fixed (verify only). B6 is a confirmed prefab-wiring defect; the rest are
+read-through findings — promote to 🔴 with a repro (and a NetDiag/CSDebug log
+line where relevant) when picked up.
