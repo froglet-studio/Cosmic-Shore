@@ -1,7 +1,7 @@
-# Scoreboard System — Refactor Backlog
+# Scoring System — Refactor Backlog
 
-Sequenced cleanup + improvement items for the scoreboard surfaces. Read
-`ARCHITECTURE.md` first.
+Sequenced cleanup + improvement items for the Scoring System (in-game score HUD
++ final scoreboard). Read `ARCHITECTURE.md` first.
 
 ## Ground rules (non-negotiable)
 

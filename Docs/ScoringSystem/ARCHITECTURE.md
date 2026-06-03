@@ -1,11 +1,15 @@
-# Scoreboard System — Architecture
+# Scoring System — Architecture
 
-Canonical reference for the two scoreboard surfaces in Cosmic Shore:
+Canonical reference for the **Scoring System** in Cosmic Shore — the shared
+scoring data plus the two UI surfaces that present it:
 
 1. **In-game score UI** — the live HUD shown during gameplay (per-domain team
    scores + the local player's centerline score).
 2. **Final scoreboard** — the end-game results screen (ranked player cards,
    winner banner, mode stats, lobby buttons).
+
+("Scoring System" is the umbrella term; "scoreboard" below refers specifically
+to the end-game surface.)
 
 Both are *views* over two **fundamentals** — **Domain** (team identity/color)
 and **scoring** (per-player `Score` + per-domain sums). They are not new

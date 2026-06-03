@@ -32,7 +32,7 @@ Docs/
 │   ├── TESTS.md                 Tests A-E
 │   └── TODOS.md                 deferred adoption + extensions
 │
-├── Scoreboard/                  ← in-game score HUD + final scoreboard
+├── ScoringSystem/               ← in-game score HUD + final scoreboard
 │   ├── ARCHITECTURE.md          both surfaces, data flow, per-mode table,
 │   │                            target architecture (unified networked scoring)
 │   ├── REFACTOR.md              sequenced backlog + ground rules
@@ -47,9 +47,9 @@ Docs/
 ```
 
 The `PartySystem/`, `PresenceSystem/`, `NetworkDiagnostics/`, and
-`Scoreboard/` folders share a consistent shape: ARCHITECTURE for current
+`ScoringSystem/` folders share a consistent shape: ARCHITECTURE for current
 state, REFACTOR for active backlog, BUGS for open issues, TESTS for manual
-procedures, TODOS for parking-lot items (the Scoreboard folds its
+procedures, TODOS for parking-lot items (the Scoring System folds its
 parking-lot into REFACTOR). The PartySystem also keeps a
 chronological session journal because MPPM testing produces
 session-scoped findings that benefit from a timeline view.
@@ -65,8 +65,8 @@ session-scoped findings that benefit from a timeline view.
 | Run the manual smoke / stress tests | `PartySystem/TESTS.md` § "Smoke gate" |
 | See the latest MPPM session findings | `PartySystem/MPPM_SESSION_LOG.md` |
 | Understand the diagnostic overlay | `NetworkDiagnostics/ARCHITECTURE.md` |
-| Understand the scoreboard (HUD + end-game) | `Scoreboard/ARCHITECTURE.md` |
-| See scoreboard cleanup work / open issues | `Scoreboard/REFACTOR.md` + `Scoreboard/BUGS.md` |
+| Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
+| See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |
 

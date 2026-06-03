@@ -1,6 +1,6 @@
-# Scoreboard System — Open Issues
+# Scoring System — Open Issues
 
-Correctness issues found while documenting the scoreboard surfaces. These are
+Correctness issues found while documenting the Scoring System. These are
 **candidates** surfaced from reading the source; confirm the repro before
 fixing. Fix order follows `REFACTOR.md` discipline (one per commit, no
 regressions). Read `ARCHITECTURE.md` first.

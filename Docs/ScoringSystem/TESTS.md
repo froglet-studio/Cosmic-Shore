@@ -1,7 +1,7 @@
-# Scoreboard System — Manual Tests
+# Scoring System — Manual Tests
 
-Manual verification for the in-game HUD (Surface A) and final scoreboard
-(Surface B). Run in the Unity Editor; multiplayer cases use **Multiplayer Play
+Manual verification for the Scoring System's two surfaces: the in-game HUD
+(Surface A) and final scoreboard (Surface B). Run in the Unity Editor; multiplayer cases use **Multiplayer Play
 Mode (MPPM)** per `Docs/README.md` (VP1 = host, VP2+ = joining players). Read
 `ARCHITECTURE.md` first.
 
