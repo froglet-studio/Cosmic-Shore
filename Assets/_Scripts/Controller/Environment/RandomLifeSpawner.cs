@@ -8,6 +8,18 @@ namespace CosmicShore.Gameplay
 {
     public sealed class RandomLifeSpawner : CellLifeSpawnerBase
     {
+        // Fauna spawn-interval multipliers by CellAggressionLevel — mirrors
+        // IntensityWiseLifeSpawner so Cell.CurrentFaunaSpawnPeriod (which the HUD
+        // spawn-cycle ring reads) stays in lock-step with this spawner's real cadence.
+        static readonly float[] FaunaSpawnIntervalByAggression = { 1f, 0.55f, 0.25f };
+
+        static float ScaleFaunaInterval(Cell host, float baseSeconds)
+        {
+            if (!host) return baseSeconds;
+            int idx = Mathf.Clamp((int)host.AggressionLevel, 0, FaunaSpawnIntervalByAggression.Length - 1);
+            return Mathf.Max(0.05f, baseSeconds * FaunaSpawnIntervalByAggression[idx]);
+        }
+
         protected override void OnStart(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
             Track(host, StartFloraLoops(host, config, runtime, gameData));
@@ -30,7 +42,7 @@ namespace CosmicShore.Gameplay
                 if (!AllowSpawn(floraCfg.SpawnProbability))
                     continue;
 
-                Track(host, SpawnFloraTypeLoop_Random(host, gameData, spawnProfile, floraCfg, excluded));
+                Track(host, SpawnFloraTypeLoop_Random(host, spawnProfile, floraCfg, excluded));
             }
         }
 
@@ -50,13 +62,12 @@ namespace CosmicShore.Gameplay
                 if (!AllowSpawn(faunaCfg.SpawnProbability))
                     continue;
 
-                Track(host, SpawnFaunaTypeLoop_Random(host, runtime, gameData, spawnProfile, faunaCfg, excluded));
+                Track(host, SpawnFaunaTypeLoop_Random(host, runtime, spawnProfile, faunaCfg, excluded));
             }
         }
 
         IEnumerator SpawnFloraTypeLoop_Random(
             Cell host,
-            GameDataSO gameData,
             SpawnProfileSO spawnProfile,
             FloraConfigurationSO floraCfg,
             Domains? excluded)
@@ -67,8 +78,12 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < initialCount; i++)
             {
-                // Random mode volume gate
-                if (GetControllingVolume(gameData) < spawnProfile.FloraSpawnVolumeCeiling)
+                // Phase gate: plant only while the cell still allows new flora
+                // (Phase < Settled). Replaces the old scored-volume ceiling, which
+                // reads ~0 in Menu_Main and so never bounded planting there — tying
+                // planting to the cell's own live prism mass is what lets the
+                // grow/consume cycle close.
+                if (host && host.FloraPlantingEnabled)
                     SpawnFlora(host, floraCfg.FloraPrefab, excluded);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
@@ -82,7 +97,8 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Continuous
+            // Continuous — keeps ticking so planting resumes if the cell falls back
+            // across the planting hysteresis floor (Phase drops below Settled again).
             while (true)
             {
                 float waitPeriod = floraCfg.OverrideDefaultPlantPeriod
@@ -92,7 +108,8 @@ namespace CosmicShore.Gameplay
                 if (waitPeriod > 0f) yield return new WaitForSeconds(waitPeriod);
                 else yield return null;
 
-                if (GetControllingVolume(gameData) < spawnProfile.FloraSpawnVolumeCeiling)
+                if (!host) yield break;
+                if (host.FloraPlantingEnabled)
                     SpawnFlora(host, floraCfg.FloraPrefab, excluded);
             }
         }
@@ -100,7 +117,6 @@ namespace CosmicShore.Gameplay
         IEnumerator SpawnFaunaTypeLoop_Random(
             Cell host,
             CellRuntimeDataSO runtime,
-            GameDataSO gameData,
             SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg,
             Domains? excluded)
@@ -109,14 +125,18 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.InitialFaunaSpawnWaitTime > 0f)
                 yield return new WaitForSeconds(spawnProfile.InitialFaunaSpawnWaitTime);
 
-            // Initial batch
+            // Initial batch — gated on FaunaSpawningEnabled (cell has crossed Quiet),
+            // matching IntensityWiseLifeSpawner. The old scored-volume gate
+            // (GetControllingVolume) reads ~0 in Menu_Main where no game is scored, so
+            // fauna never spawned there; the phase gate ties spawning to the cell's
+            // own live prism mass instead.
             int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
             float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
 
             for (int i = 0; i < initialCount; i++)
             {
-                if (GetControllingVolume(gameData) > spawnProfile.FaunaSpawnVolumeThreshold && TryGetCrystalGoal(runtime, out var goal))
-                    SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
+                if (host && host.FaunaSpawningEnabled)
+                    TrySpawnFaunaRandom(host, runtime, faunaCfg, excluded);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
@@ -129,23 +149,37 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Continuous threshold loop (keeps your old random behaviour)
-            yield return RunThresholdLoop(
-                condition: () =>
-                {
-                    if (GetControllingVolume(gameData) <= spawnProfile.FaunaSpawnVolumeThreshold)
-                        return false;
+            // Continuous spawn — phase-gated, interval scales with aggression so the
+            // cycle accelerates under stress. Seed the spawn-cycle telemetry before the
+            // first wait so the HUD ring starts at 0% and advances, instead of sitting
+            // at the "never spawned" sentinel (the dead-ring symptom in Menu_Main).
+            host.RecordFaunaSpawn();
+            while (true)
+            {
+                float wait = ScaleFaunaInterval(host, Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime));
+                yield return new WaitForSeconds(wait);
 
-                    return runtime != null && runtime.CrystalTransform != null;
-                },
-                spawnOnce: () =>
-                {
-                    if (!TryGetCrystalGoal(runtime, out var goal)) return;
-                    SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
-                },
-                trueWait: () => spawnProfile.BaseFaunaSpawnTime,
-                falseWait: () => 2f
-            );
+                if (!host) yield break;
+                if (!host.FaunaSpawningEnabled) continue;
+
+                TrySpawnFaunaRandom(host, runtime, faunaCfg, excluded);
+                host.RecordFaunaSpawn();
+            }
+        }
+
+        /// <summary>
+        /// Spawns one fauna in a random (excluded-aware) domain — RandomLifeSpawner's
+        /// distinguishing flavor vs IntensityWiseLifeSpawner's controlling-color spawns.
+        /// Seeks the crystal when present, the cell centre otherwise, so fauna still
+        /// appear in cells whose crystal hasn't spawned yet (e.g. Menu_Main on entry).
+        /// </summary>
+        void TrySpawnFaunaRandom(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains? excluded)
+        {
+            Vector3 goal = TryGetCrystalGoal(runtime, out var crystalGoal)
+                ? crystalGoal
+                : host.transform.position;
+
+            SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
         }
     }
 }

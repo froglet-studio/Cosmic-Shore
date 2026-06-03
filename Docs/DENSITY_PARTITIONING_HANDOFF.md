@@ -90,62 +90,53 @@ is production code. The branch is pushed and conflict-free with bleeding-edge.
 **Symptom:** the HUD's outer spawn-cycle ring never advances; flora visibly
 grow but no fauna appear.
 
-**Investigation:**
+**Actual root cause (the IntensityWise hypothesis below was wrong).** The
+shared `Cell.prefab` — used by Menu_Main **and 12 other scenes** — has
+`cellTypeChoiceOptions = Random`, so every scene runs `RandomLifeSpawner`,
+**not** `IntensityWiseLifeSpawner`. Nothing in the project sets `IntensityWise`
+(`grep "cellTypeChoiceOptions: 1"` → zero hits). So the whole phase-gated
+ecology + ring telemetry the audit built lived on `IntensityWiseLifeSpawner`,
+which no scene actually runs. Two independent consequences in Menu_Main:
 
-`Cell.FaunaSpawnCycleFraction` returns `0` until `RecordFaunaSpawn()` is
-called. `RecordFaunaSpawn()` is called by
-`IntensityWiseLifeSpawner.SpawnFaunaTypeLoop` — once before the first wait,
-then after every successful `TrySpawnFauna`. The loop itself runs (otherwise
-flora wouldn't either — both initial-spawn coroutines launch from
-`SpawnInitialFlora` / `SpawnInitialFauna` in the same `OnStart`).
+1. **No fauna.** `RandomLifeSpawner` gated fauna on
+   `GetControllingVolume(gameData) > FaunaSpawnVolumeThreshold` — the
+   *controlling team's scored `VolumeRemaining`*, which is ~0 in Menu_Main
+   (no game is scored there). Flora spawned because their gate is the
+   opposite direction (`volume < FloraSpawnVolumeCeiling`). The phase
+   threshold (`Quiet = 100`) was never on this path, so lowering it does
+   nothing.
+2. **Dead ring.** `RandomLifeSpawner` never called `RecordFaunaSpawn()` —
+   only `IntensityWiseLifeSpawner` did — so `_lastFaunaSpawnTime` stayed
+   `-1` and `FaunaSpawnCycleFraction` returned 0 forever.
 
-The two attempts inside the loop are both gated on
-`host.FaunaSpawningEnabled`, which is `phase >= CellPhase.Quiet`. **Quiet =
-100 prisms** in `Blob Cell Config.asset` (the config Menu_Main uses).
+**Fix applied — retrofit `RandomLifeSpawner` onto the phase model** (chosen
+over flipping cells to `IntensityWise` so no prefab/scene rewiring is needed;
+the spawner every scene already runs becomes the one phase-driven model):
 
-The Menu_Main ecology footprint is small. The cell almost certainly never
-reaches 100 live prisms (flora are dispersed across a 1200m radius, the
-trail accumulates slowly with the menu vessel on autopilot, and there's
-no consumption pressure yet because fauna aren't spawning). So:
+- Flora plant on `host.FloraPlantingEnabled` (Phase < Settled) instead of the
+  scored-volume ceiling.
+- Fauna spawn on `host.FaunaSpawningEnabled` (Phase >= Quiet) instead of the
+  scored-volume threshold.
+- `host.RecordFaunaSpawn()` is seeded before the continuous loop and called
+  after each spawn; the interval is aggression-scaled (`ScaleFaunaInterval`)
+  so `Cell.CurrentFaunaSpawnPeriod` — what the ring reads — matches the real
+  cadence.
 
-```
-count < 100  →  phase = Sprout  →  FaunaSpawningEnabled = false  →
-TrySpawnFauna skipped  →  RecordFaunaSpawn never ticks  →
-FaunaSpawnCycleFraction returns 0  →  ring stays empty
-```
+Because flora now plant up to Settled (300) and every flora/trail prism
+increments `LiveBlockCount` via `Cell.AddBlock`, the menu cell should climb
+through Quiet (100) on its own — so lowering `QuietEnter` is no longer
+required to get the first fauna. If the readout's `total` stalls below 100,
+*then* lower `QuietEnter`/`QuietExit` (keep exit < enter).
 
-**Diagnostic confirmation (do this first):**
+**Validate (one run):** play Menu_Main freestyle, read the indicator text:
+`total` should climb (flora), cross 100 → `Phase` reaches `Quiet` → fauna
+appear and the ring starts sweeping; `±rate/s` shows the grow/consume swing.
+There should be no `[NO CFG]` tag (the menu cell does get Blob Cell Config).
 
-1. Pull, play Menu_Main freestyle.
-2. Look at the indicator's readout text. It shows `total/rabid Phase`.
-3. If `Phase` reads `Sprout`, `Quiet` (under-threshold), or `Settled`
-   without ever hitting `Restless`, the diagnosis is confirmed.
-
-**Fix paths (pick one based on what behavior you want):**
-
-- **(a) Lower Menu_Main's phase thresholds.** The simplest fix. Either
-  edit `Assets/_SO_Assets/Cell Configs/Blob Cell/Blob Cell Config.asset` to
-  drop `QuietEnter` (currently 100) down to something the menu actually
-  hits — 20-30 — or create a `Menu Cell Config.asset` variant just for
-  Menu_Main with a tighter band.
-- **(b) Seed Menu_Main with starter mass.** Bump
-  `Blob Cell Config → CellModifiers` or `Blob Cell Spawn Profile →
-  SupportedFloras → InitialSpawnCount` so the cell starts loaded enough
-  to clear Quiet.
-- **(c) Hook `LightFaunaManager` into `RecordFaunaSpawn` too.** Menu_Main
-  uses event-driven fauna spawning via `LightFaunaManager.MaybeSpawnGroup`,
-  not the periodic `IntensityWiseLifeSpawner` path. If that's the spawner
-  actually running in the menu (check the scene for a `LightFaunaManager`
-  component on a child of the Cell prefab), wire `host.RecordFaunaSpawn()`
-  into `LightFaunaManager.SpawnGroup()` so the ring reflects event-driven
-  spawns too.
-
-Option (a) is the cheapest validation: 30 seconds of edit and re-test
-confirms whether the path is otherwise sound. If fauna spawn AND the ring
-ticks after lowering the threshold, the diagnosis is correct and we just
-need to pick the right Menu_Main tuning. If fauna spawn but the ring still
-doesn't move, the wiring inside `RecordFaunaSpawn` ↔
-`FaunaSpawnCycleFraction` has a bug — start there.
+> **In-game note:** the flora gate also changed in gameplay scenes (now
+> Phase < Settled, not scored-volume). Watch flora density when testing a
+> gameplay scene — if flora vanish too early under heavy trail, raise that
+> biome's `SettledEnter` rather than reverting the gate.
 
 ### 3.2 In-game ecology validation still pending
 
