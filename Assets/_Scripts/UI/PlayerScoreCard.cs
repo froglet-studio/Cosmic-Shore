@@ -110,11 +110,13 @@ namespace CosmicShore.UI
             if (!crystalRewardRoot || !crystalRewardText) return;
             crystalRewardText.text = $"+{crystalCount}";
             crystalRewardRoot.SetActive(true);
+            RefreshDataPanelsRoot();
         }
 
         public void HideCrystalReward()
         {
             if (crystalRewardRoot) crystalRewardRoot.SetActive(false);
+            RefreshDataPanelsRoot();
         }
 
         /// <summary>
@@ -127,12 +129,30 @@ namespace CosmicShore.UI
                 secondaryStatText.text = statText;
                 secondaryStatText.gameObject.SetActive(true);
             }
-            if (dataPanelsRoot) dataPanelsRoot.SetActive(true);
+            RefreshDataPanelsRoot();
         }
 
         public void HideSecondaryStat()
         {
             if (secondaryStatText) secondaryStatText.gameObject.SetActive(false);
+            RefreshDataPanelsRoot();
+        }
+
+        /// <summary>
+        /// The shared DataPanels background is the parent of BOTH the secondary stat
+        /// and the crystal-reward line, so it must be visible when either child is
+        /// showing and hidden only when neither is — otherwise an empty panel renders
+        /// behind cards that have no extra stats (the old code never hid it). Driven
+        /// from the child active-states so it stays correct regardless of the order in
+        /// which Show/Hide are called (e.g. a winner with no secondary stat).
+        /// </summary>
+        void RefreshDataPanelsRoot()
+        {
+            if (!dataPanelsRoot) return;
+            bool anyChildShown =
+                (secondaryStatText && secondaryStatText.gameObject.activeSelf) ||
+                (crystalRewardRoot && crystalRewardRoot.activeSelf);
+            dataPanelsRoot.SetActive(anyChildShown);
         }
 
         /// <summary>
