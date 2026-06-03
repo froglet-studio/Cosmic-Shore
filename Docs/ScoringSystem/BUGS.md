@@ -64,19 +64,19 @@ If a mode changes its scoring formula, the two can disagree. **Tracked by
 `REFACTOR.md` R10** (one server-authoritative ranked results list) — centralize
 result computation on the server so every surface reads the same ordered results.
 
-### B6 — 🔴 Score-card secondary stat never renders (field unwired in prefab)
-`secondaryStatText` is unassigned (`fileID: 0`) in the only score-card prefab
+### B6 — 🟢 Score-card secondary stat never renders (field unwired in prefab)
+`secondaryStatText` was unassigned (`fileID: 0`) in the only score-card prefab
 (`_Prefabs/UI Elements/In Game/PlayerScoreCard.prefab`), so the secondary line
 that `HexRaceScoreboard` ("`N Crystals`") and `MultiplayerJoustScoreboard`
 ("`N Jousts`") feed through `Scoreboard.ShowMultiplayerView` → `ShowSecondaryStat`
-is silently dropped — the text is set on a null reference and never displayed.
-After B1, `RefreshDataPanelsRoot` also correctly leaves `DataPanels` hidden in
-this case (no renderable child). Fix is data, not code: wire the `Score (sub)`
-TMP child into `PlayerScoreCard.secondaryStatText`. Confirmed by prefab
-inspection; verify in a HexRace/Joust end-game once wired.
+was silently dropped. **Done** (commit `3aa3b5b7`): wired it to the existing
+orphaned `TextMeshProUGUI` (`ScoreText`, placeholder "expand to view") under
+`DataPanels` — sibling of `CrystalScore`, inactive by default. Data-only prefab
+change; composes with B1's `RefreshDataPanelsRoot`. Verify the element's on-card
+position visually in a HexRace/Joust end-game.
 
 ---
 
-B1 and B4 fixed (verify only). B6 is a confirmed prefab-wiring defect; B2/B3/B5
-are read-through findings — promote to 🔴 with a repro (and a NetDiag/CSDebug log
-line where relevant) when picked up.
+B1, B4 and B6 fixed (verify only — B6 also warrants a visual position check).
+B2/B3/B5 are read-through findings — promote to 🔴 with a repro (and a
+NetDiag/CSDebug log line where relevant) when picked up.
