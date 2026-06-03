@@ -641,6 +641,9 @@ namespace CosmicShore.Gameplay
         {
             if (!_randomSwitchEnabled) return;
             if (_randomSwitchModes == null || _randomSwitchModes.Length < 2) return;
+            // OnValidate can fire from the inspector before Start runs, so the parent CTS
+            // may not exist yet — in that case Start will pick this up on its own.
+            if (_cts == null) return;
 
             _randomSwitchCts?.Cancel();
             _randomSwitchCts?.Dispose();

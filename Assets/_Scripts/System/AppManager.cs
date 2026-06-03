@@ -176,6 +176,8 @@ namespace CosmicShore.Core
 
             if (_bootstrapConfig.TargetFrameRate > 0)
                 Application.targetFrameRate = _bootstrapConfig.TargetFrameRate;
+            else
+                Application.targetFrameRate = -1;   // <= 0 = uncapped (render as fast as possible)
 
             QualitySettings.vSyncCount = _bootstrapConfig.VSyncCount;
 
@@ -365,6 +367,68 @@ namespace CosmicShore.Core
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
+
+            // ── Party system services ────────────────────────────────────────
+            // Pure C# — registered as lazy singletons.
+            // Concrete types for fields declared as concrete; interface types
+            // for fields declared as interface (see HostConnectionService).
+            // Registration order does not matter — all factories are lazy and
+            // resolve their own deps from the container on first injection.
+
+            builder.RegisterFactory(
+                _ => new LobbyPropertyWriter(),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new SoapPartyEventBus(hostConnectionData),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // 1.5f matches the HCS SerializeField default (refreshIntervalSeconds).
+            builder.RegisterFactory(
+                _ => new LobbyRefreshScheduler(1.5f),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new InviteService(),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new AcceptanceSignalService(),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory<IPresenceLobbyService>(
+                c => new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory<IPartySessionService>(
+                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory<IPartyMemberService>(
+                c => new PartyMemberService(hostConnectionData, c.Resolve<SoapPartyEventBus>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory<INetworkTransitionService>(
+                c => new NetworkTransitionService(c.Resolve<GameDataSO>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
         }
 
         /// <summary>
@@ -431,7 +495,11 @@ namespace CosmicShore.Core
 
         #region Service Startup
 
-        void StartNetworkMonitor() => networkMonitor?.StartMonitoring();
+        void StartNetworkMonitor()
+        {
+            CosmicShore.Utility.NetworkDiagnostics.Initialize(networkMonitorDataVariable);
+            networkMonitor?.StartMonitoring();
+        }
         void StopNetworkMonitor() => networkMonitor?.StopMonitoring();
         void StartAuthentication() => authenticationServiceFacade?.StartAuthentication();
 

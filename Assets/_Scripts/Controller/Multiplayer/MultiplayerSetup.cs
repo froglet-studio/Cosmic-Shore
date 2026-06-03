@@ -353,6 +353,11 @@ namespace CosmicShore.Gameplay
                 if (clientId != networkManager.LocalClientId)
                 {
                     CSDebug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    // Netcode backstop for hard drops (client crash) that may beat the
+                    // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is
+                    // available here (no UGS PlayerId), so this reconciles the roster;
+                    // invite cleanup is handled by the PlayerLeaving handler / poll.
+                    HostConnectionService.Instance?.ReconcilePartyMembersNow();
                 }
                 return;
             }
@@ -394,24 +399,23 @@ namespace CosmicShore.Gameplay
         public async UniTask LeaveSession()
         {
             if (_leaving) return;
-
             _leaving = true;
 
             try
             {
-                if (gameData.ActiveSession != null)
-                {
-                    if (gameData.ActiveSession.IsHost)
-                    {
-                        await gameData.ActiveSession.AsHost().DeleteAsync();
-                        CSDebug.Log("[MultiplayerSetup] Host deleted session.");
-                    }
-                    else
-                    {
-                        await gameData.ActiveSession.LeaveAsync();
-                        CSDebug.Log("[MultiplayerSetup] Client left session.");
-                    }
-                }
+                // Eager per-user Relay: gameData.ActiveSession IS the party Relay
+                // session (single backing field; see Docs/PartySystem/ARCHITECTURE.md Q4).
+                // Do NOT null the reference — that would orphan the live UGS Relay
+                // and force HCS to recreate, violating the locked invariant
+                // "ActiveSession is never nulled outside an intentional leave."
+                // Just raise the game-ended SOAP event; the Relay stays alive so
+                // all party members reload Menu_Main on the same NM session.
+                //
+                // NM is intentionally NOT shut down here.  ReturnToMainMenu() sets
+                // IsReturnToMenuTransition=true so ServerPlayerVesselInitializer skips
+                // its own Shutdown(), and nm.SceneManager.LoadScene carries all connected
+                // clients back to Menu_Main on the live Relay.
+                gameData.InvokeOnSessionEnded();
             }
             catch (Exception e)
             {
@@ -419,14 +423,10 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                gameData.ActiveSession = null;
-
-                if (networkManager != null)
-                    networkManager.Shutdown();
-
-                gameData.InvokeOnSessionEnded();
                 _leaving = false;
             }
+
+            await UniTask.CompletedTask;
         }
 
         // --------------------------

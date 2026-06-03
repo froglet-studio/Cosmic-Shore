@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
@@ -264,6 +265,18 @@ namespace CosmicShore.Core
         /// </summary>
         public void SetFadeImmediate(float alpha)
         {
+            // Defensive guard: a UGS-SDK await resuming on the ThreadPool can land here,
+            // and any UnityEngine.Object access (incl. `== null`) throws
+            // EnsureRunningOnMainThread. Bail loudly instead of crashing the scene flow.
+            if (!MainThreadDispatcher.IsOnMainThread)
+            {
+                Debug.LogError(
+                    "[SceneTransitionManager] SetFadeImmediate called off main thread — " +
+                    "caller forgot `.AsMainThread()` on a UGS / Netcode Task await " +
+                    "(see UniTaskExtensions.cs). Ignoring to avoid EnsureRunningOnMainThread.");
+                return;
+            }
+
             if (_fadeCanvasGroup == null) return;
             _fadeCanvasGroup.alpha = alpha;
             _fadeCanvasGroup.blocksRaycasts = alpha > 0.01f;

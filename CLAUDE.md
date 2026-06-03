@@ -244,6 +244,10 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 |---|---|---|
 | `CLAUDE.md` | Project root | Architecture, patterns, systems reference |
 | `SCENES.md` | `Docs/` | Complete scene inventory, game modes, launch pipeline |
+| `THREADING.md` | `Docs/` | UniTask / SyncContext threading rules, `.AsMainThread()` contract, `MainThreadDispatcher`, canary, history |
+| `PartySystem/` | `Docs/` | Party (Relay) layer: `ARCHITECTURE.md` (locked design, investigation Q&A, error-handling matrix, exit criteria), `REFACTOR.md` (active backlog + deferred items + per-commit protocol), `BUGS.md`, `TESTS.md`, `TODOS.md`. EAGER per-user Relay session is the locked design. |
+| `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
+| `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `README.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
@@ -251,7 +255,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
-| `BENCHMARK_TEST_PROCEDURE.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance benchmarking procedures |
+| `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, customization) |
 | `GIT_RULES.md` | Project root | Git commit conventions |
 
 ## Architecture Patterns
@@ -311,6 +315,73 @@ Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationStat
 - **Do not** duplicate SOAP types — check `Assets/_Scripts/ScriptableObjects/SOAP/` for existing types before creating new ones
 - **Do not** put gameplay logic inside ScriptableVariable/ScriptableEvent classes — they are data containers and channels, not controllers
 - **Do not** add if-null guards on ScriptableEvent serialize fields — fail loud on missing references
+
+### Threading & Main-Thread Affinity
+
+See `Docs/THREADING.md` for the full reference. The short version:
+
+UGS SDK (`Unity.Services.*`) and Netcode methods return `System.Threading.Tasks.Task` whose
+continuations complete on the .NET ThreadPool. From the ThreadPool, any `UnityEngine.Object`
+access throws `EnsureRunningOnMainThread`, and any `Obvious.Soap` `ScriptableEvent.Raise()` runs
+its listeners **inline on the off-thread**, surfacing the same crash one level deeper.
+
+**The contract:** every `await` of a UGS / Netcode `Task` uses `.AsMainThread()`:
+
+```csharp
+ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(opts).AsMainThread();
+```
+
+`.AsMainThread()` (in `Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs`) awaits
+the original task and then awaits `MainThreadDispatcher.SwitchToMainThreadAsync()`, which
+marshals onto Unity's captured `SynchronizationContext`. Four overloads cover
+`Task`, `Task<T>`, `UniTask`, `UniTask<T>`.
+
+**Why UniTask's own primitives don't work on this version (`com.cysharp.unitask@86b6e6a2e286`):**
+
+UniTask 2.x intentionally bypasses `SynchronizationContext` and `ExecutionContext`:
+
+> *"UniTask always works like `Task.ConfigureAwait(false)` and is not guaranteed that the thread
+> before awaiting may match the thread after awaiting."* — UniTask docs.
+
+Consequence:
+
+- `UniTask.SwitchToMainThread()` — awaiter's `IsCompleted` reports `true` from ThreadPool →
+  continuation runs **inline** on ThreadPool. Switch is a no-op. ([Cysharp/UniTask#319](https://github.com/Cysharp/UniTask/issues/319), [#151](https://github.com/Cysharp/UniTask/issues/151))
+- `UniTask.Yield(PlayerLoopTiming.Update)` — yields, but the resumption is *not* guaranteed on
+  main thread because UniTask's `ContinuationQueue` doesn't capture the SyncContext.
+  ([Cysharp/UniTask#561](https://github.com/Cysharp/UniTask/discussions/561) — exact symptom we hit.)
+
+Neither primitive is a reliable main-thread switch on this version. The `MainThreadDispatcher` +
+`.AsMainThread()` boundary helper bypasses UniTask's bypass by using Unity's own
+`SynchronizationContext`, which IS properly main-thread-bound.
+
+**The canary** lives in `SceneTransitionManager.SetFadeImmediate`
+(`Assets/_Scripts/System/Bootstrap/SceneTransitionManager.cs`). It reads
+`MainThreadDispatcher.IsOnMainThread` and logs `Debug.LogError` with the call stack if a future
+UGS call site forgets `.AsMainThread()`. Both the canary and the helper share one main-thread-ID
+source — no risk of divergent capture sites.
+
+**When to use which primitive:**
+
+| Situation | Use |
+|---|---|
+| `await` a UGS / Netcode / cross-thread `Task` | `.AsMainThread()` |
+| `await` a `UniTask` you wrote that internally awaits UGS with `.AsMainThread()` | nothing extra at the caller |
+| Need main thread without a Task to attach to (e.g., top of a `catch` block) | `await MainThreadDispatcher.SwitchToMainThreadAsync()` |
+| Yield one frame for PlayerLoop processing (NOT thread marshaling) | `await UniTask.Yield(PlayerLoopTiming.Update)` — fine for sequencing, not for affinity |
+| Assert main thread (debug) | `MainThreadDispatcher.IsOnMainThread` |
+
+The three remaining `Yield(PlayerLoopTiming.Update)` calls in
+`Controller/Party/PartyInviteController.cs` (in catch / recovery blocks) are intentional —
+they are "wait for the next PlayerLoop tick before handling this exception" semantics, not
+threading.
+
+**Anti-patterns to avoid:**
+
+- **Do not** add `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — neither works on this UniTask version. Use `.AsMainThread()`.
+- **Do not** raise a SOAP `ScriptableEvent` from a UGS / Netcode callback continuation without ensuring the continuation has resumed on the main thread first — SOAP raises invoke listeners inline.
+- **Do not** touch a `UnityEngine.Object` (incl. `== null` checks) in a `Task` continuation without `.AsMainThread()` upstream.
+- **Do not** capture `Thread.CurrentThread.ManagedThreadId` in random places to make per-class main-thread checks — read `MainThreadDispatcher.IsOnMainThread` instead, single source of truth.
 
 ### Bootstrap & Scene Flow
 
@@ -964,28 +1035,34 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 - **Local-only freestyle toggle**: `MenuCrystalClickHandler` toggles autopilot ↔ freestyle per-client with `IsLocalUser` guard. No network RPC needed — vessel behavior replicates automatically via Netcode.
 - **TimeScale safety**: `MenuCrystalClickHandler.IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) prevents `Time.timeScale` changes in multiplayer, which would freeze all local rendering including other players' vessels.
 
-#### Pending Critical Refactors (next session)
+#### Party system — see `Docs/PartySystem/` and `Docs/PresenceSystem/`
 
-Queued for a focused pass — these are root-cause fixes, not symptom patches.
+The party / invite / lobby system is hardened toward an unbreakable state. The
+canonical references are split by layer: `Docs/PartySystem/` (the Relay-backed
+party session) and `Docs/PresenceSystem/` (the lobby-only discovery layer). Read
+`Docs/PartySystem/ARCHITECTURE.md` before touching `HostConnectionService.cs`,
+`PartySessionService.cs`, `NetworkTransitionService.cs`, or
+`PartyInviteController.cs`; read `Docs/PresenceSystem/ARCHITECTURE.md` before
+touching `PresenceLobbyService.cs`. The active refactor backlog (the three
+remaining service refactors + deferred items D1-D5 + per-commit protocol) lives
+in `Docs/PartySystem/REFACTOR.md`. Open bugs are split into
+`Docs/PartySystem/BUGS.md` and `Docs/PresenceSystem/BUGS.md`. Catch-block failure
+diagnostics are documented in `Docs/NetworkDiagnostics/README.md`.
 
-1. **Lazy party-session creation** *(highest leverage)*
-   - Today every authenticated user eagerly creates a Relay-backed session on startup via `HostConnectionService.Start()` → `CreatePartySessionAsync()` → `CreateSessionAsync(WithRelayNetwork())`, which internally calls `NetworkManager.StartHost()`. Every user burns a Relay allocation + UGS session whether or not they invite anyone.
-   - Cost: the accept flow has to `ShutdownNetworkManagerAsync` before joining the inviter's session. That shutdown-and-reconnect dance is the origin of the scene-sync race (fixed in `b84fe6e4`), the `get_isPlaying` log noise on scene-load ticks (`b5f13ca7`), stale `LocalPlayer`/`Vessels` refs (same), the local-host fallback race (`HOST_CONFLICT_MAX_RETRIES` in `CreatePartySessionCoreAsync`), and the whole "why does Menu_Main reload on accept?" pain that `b74a311c` tried to paper over.
-   - Target design: users join only the presence lobby on startup (lobby-only session, no Relay, no NM). `CreateSessionAsync(WithRelayNetwork())` fires **on first invite sent**. Accept flow becomes `JoinSessionByIdAsync` directly — no prior shutdown, no scene-sync race, no stale refs, no steps 1b/3b needed.
-   - Files that change: `HostConnectionService.CreatePartySessionAsync`/`Start`/`Update` (remove eager creation + the Update-loop recreation), `AuthenticationSceneController.LoadMainMenuNetworkedAsync` (Menu_Main loads locally, not networked, until the user enters a party), `TryStartLocalHostFallback` (delete — no longer needed), `PartyInviteController.AcceptInviteAsync` (shutdown step + 1b + 3b become no-ops; strip them), `MenuServerPlayerVesselInitializer` (only spawns when a party is actually live), `TransitionToPartyHostAsync` (stop being a no-op and actually do the host transition on first-invite).
-   - Expected gains: accept latency ~1.5-3s → ~500-800ms; Relay session count drops ~10×; removes a whole class of "client orphaned after accept" bugs; makes the `b74a311c` "direct-join, no scene reload" intent actually achievable (today Netcode reloads anyway because the host loaded Menu_Main via `nm.SceneManager.LoadScene`).
-   - Scope: ~1 day, touches ~6 files, needs careful verification with 2+ MPPM VPs.
+**Locked design — do not relitigate.** Every authenticated player hosts their own
+Relay-backed party session from the moment they enter `Menu_Main` (the "Always
+InParty" model). EAGER per-user Relay creation is the canonical model. **Do not
+reintroduce LAZY / on-first-invite creation** — the shutdown-and-recreate cascade
+it caused is the root of every recurring party-invite bug. If a future bug appears
+to argue for lazy creation, re-examine the root cause through the lens of
+`Docs/PartySystem/ARCHITECTURE.md` "Unbreakable exit criteria" first.
 
-2. **Play-mode integration tests for the accept/decline/leave flow**
-   - `_Scripts/Tests/EditMode/PartyInviteControllerTests.cs:17-18` explicitly says integration tests are "tracked separately" — they do not exist. Every party fix in this branch was verified by eyeballing the Console.
-   - Minimum viable: MPPM-driven play-mode test (VP-A signs in → creates party → VP-B signs in → receives invite → accepts → assert both Player + Vessel NetworkObjects exist on both clients + `gameData.LocalPlayer != null` on both + `connectionData.PartyMembers.Count == 2`).
-   - Add to `_Scripts/Controller/Multiplayer/Tests/` (new `.asmdef` probably).
-   - Without this, every fix in this file is silently re-breakable.
-
-3. **Secondary items** (fold into #1 if possible)
-   - `HostConnectionService.OnSceneLoaded` `_lastFiredInvite = null` reset on Menu_Main reload can mask a legitimate re-invite from the same sender mid-session.
-   - `PartyInviteController.RecoverFromFailedTransitionAsync` has no path to re-notify the sender or re-surface the invite when `HostConnectionService.AcceptInviteAsync` partially succeeds (sets `_lastInviteResolved = true`) and then Relay join fails — user ends up with no row and no party.
-   - No server-side invite-token check: anyone with a session ID can `JoinSessionByIdAsync`; the `IsPrivate=true` flag is the only gate.
+**Threading prerequisite (shipped):** the UGS / Netcode `Task` continuation → SOAP
+off-thread → `EnsureRunningOnMainThread` cascade is resolved by `MainThreadDispatcher`
++ `.AsMainThread()` at every UGS / Netcode `await`. See `Docs/THREADING.md`.
+**Do not** introduce `UniTask.SwitchToMainThread()` or
+`UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — both have
+been tried and proven unreliable on this UniTask version.
 
 ### Friend System
 
@@ -1317,12 +1394,12 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 #### Race Rules
 
 - **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: inspector `CrystalCollisions` field (if non-zero) > `SpawnableWaypointTrack` waypoints > default 39. Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
-- **Turn monitor**: `NetworkCrystalCollisionTurnMonitor` checks `gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target)` every frame (server only)
-- **Winner detection**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds first player with `CrystalsCollected >= target`, sets `_raceEnded=true`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
-- **Scoring**: Winner score = race time (seconds); Loser score = `10000 + crystalsRemaining`. Golf rules (`UseGolfRules=true`): lower = better
+- **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.TryGetDomainReachingCrystalTarget(target, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected reaches the target, so AI and human teammates finish the race together
+- **Winner detection (domain-aggregated)**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds the first active domain whose summed crystals reach the target (Jade → Ruby → Gold tie-break), sets `_raceEnded=true`, picks the best individual contributor on that domain as the representative `WinnerName`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
+- **Scoring**: Every player on the winning domain gets `Score = finishTime` (seconds). Losing-domain players get `Score = 10000 + domainCrystalsRemaining` — the penalty reflects the team's deficit, so teammates on the same losing domain tie on Score. Golf rules (`UseGolfRules=true`): lower = better
 - **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients, then calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`
 - **HasEndGame=false**: Prevents base controller from calling `SyncGameEnd_ClientRpc` (which would duplicate `InvokeMiniGameEnd`). `SetupNewRound()` is overridden to return when `_raceEnded=true`, suppressing the Ready button
-- **Comeback**: `ElementalComebackSystem` buffs losing players based on crystal deficit (e.g., Space element +4 for 4 crystals behind)
+- **Comeback**: `ElementalComebackSystem` reads `gameData.SumCrystalsCollectedByDomain` for the leader and the player's own domain — buffs are sized to the **team** deficit, so players on the leading domain don't get a buff even when they personally trail their teammates
 
 #### End Game
 
@@ -1363,9 +1440,10 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 - **Deterministic track**: All clients spawn identical tracks from shared seed + intensity. `SegmentSpawner` uses `Random.InitState(seed)`. Three redundant sync paths (immediate, OnValueChanged, poll fallback) ensure reliability.
 - **Golf scoring**: `UseGolfRules = true` — lower score = better rank. Winner time (seconds) always ranks above loser penalty (10000+).
 - **Scene reload for replay**: Use `UseSceneReloadForReplay = true` — do not implement in-place reset. Flora/fauna/environment don't fully reset in-place.
-- **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all).
+- **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all). Leader and player values are read as domain aggregates via `GameDataSO.SumCrystalsCollectedByDomain`, so comeback buffs scale with the **team** deficit.
 - **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
 - **Crystal target sync**: Server writes target to `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable, which syncs to `gameData.CrystalTargetCount` on all clients.
+- **Domain-aggregated scoring**: HexRace, Joust, and Crystal Capture all end on a **per-domain** sum (`GameDataSO.TryGetDomainReachingCrystalTarget` / `TryGetDomainReachingJoustTarget`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` shows the local player's domain panel to the left of the centered player score and 1-2 opposing-domain panels to the right when its `MultiplayerHUDView` has the `allyDomainContainer` / `opposingDomainsContainer` / `domainPanelPrefab` wiring; otherwise it falls back to the legacy per-player layout.
 
 ### FTUE (First-Time User Experience)
 
@@ -1663,6 +1741,30 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 2/3 panels start inactive** — `EndShapeDetailHUD` GO starts with `SetActive(false)`, activated only by `ShapeDrawingManager` (Phase 2). PlayerScoreCards are dynamically instantiated only when turns are active (Phase 3)
 
+### Elemental Bars (per-vessel buff/debuff display)
+
+`ElementalBarsView` (`_Scripts/UI/View/ElementalBarsView.cs`) is the shared HUD widget every vessel uses to convey its dynamic and meta-earned elemental buffs/debuffs. Each of the four elements (Charge, Mass, Space, Time) renders as a **5-fold-symmetric "flower"**: five copies of one crisp white petal sprite, pivot-centred and rotated 72°·n. The petal shape differs per element (charge = irregular pentagon, mass = triangle, space = kite, time = rhombus), all sharing an inward-pointing 72° apex so adjacent inner edges stay parallel and form the negative-space gaps.
+
+**Level → colour mapping.** `ResourceSystem.GetLevel(element)` returns `floor(normalizedLevel × 10)` with `normalizedLevel ∈ [-0.5, 1.5]` → an integer in **[-5, 15]**. `ElementalBarsConfigSO.DistributePetalValues` spreads that total round-robin across the five petals; each petal value lands in `{-1,0,1,2,3}` → `{fire, grey, white, blue, lime}`:
+
+| Level | -5 | 0 | +5 | +10 | +15 |
+|---|---|---|---|---|---|
+| Petals | all fire | all grey | all white | all blue | all lime |
+
+At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). Petals are pure white, so a single multiply-tint reproduces every colour exactly — **never hue-shift** (a low-saturation source can't reach grey/white or vivid colours). Each petal recolours and scale-pops about the flower centre (outward bloom) on upgrade, flash+shakes on downgrade.
+
+**Single source of truth — `ElementalBarsConfigSO`** (`_Scripts/ScriptableObjects/`, asset at `Resources/ElementalBarsConfig.asset`). Per CLAUDE.md Config Separation, all shared look/feel lives here: the 5 tick colours, per-element petal sprites, and every juice timing/haptic. All vessels reference the one asset, so the spec can't drift between prefabs. Holds the petal math (`DistributePetalValues`, `ColorForTick`) and constants (`PetalCount=5`, `MinLevel=-5`, `MaxLevel=15`, `PetalSpacing=72`).
+
+**Per-vessel integration.** `SilhouetteController` (on all 11 vessel prefabs) is the driver: `InitializeElementBars()` calls `elementBars.Build()`, seeds levels, and subscribes to `ResourceSystem.OnElementLevelChange`. The `elementBars` reference is null-safe — vessels without the view wired simply show no bars (opt-in rollout). `SquirrelVesselHUDView` routes drift/joust/crystal juice into the view.
+
+**Zero-wire by default.** With no config or petalRoot assigned, the view loads `Resources/ElementalBarsConfig`, auto-creates a centred flower container per element, and loads petal sprites from `Resources/ElementPetals/{element}_petal`. To author explicitly (recommended for real positioning), run **Tools > Cosmic Shore > Wire Elemental Petal Bars** (assigns config + creates `*_Flower` containers), then position the containers. A petal authored in-prefab as `Petal{0..4}` under a container is reused (not duplicated) and normalised via `ElementalBarsView.ConfigurePetal`.
+
+**Patterns to follow:**
+- **Spec changes go in the config asset**, never per-vessel SerializeFields — that's the whole point of the shared system.
+- **Petal sprites are pure-white silhouettes** tinted at runtime. Add a new element by adding its sprite to the config's `petals` list and `Resources/ElementPetals/`.
+- **Rolling out to another vessel**: add an `ElementalBarsView` to that vessel's HUD (or run the wirer), then assign it to the vessel's `SilhouetteController.elementBars`. No code changes.
+- **Performance**: petals render at ~88px — keep `maxTextureSize` small (128). One `Image` per petal (20 total), `raycastTarget` off, event-driven (no `Update`), `SetLevel`/`RefreshBar` early-out when nothing changed, tweens `SetLink`ed and killed + snapped to rest on `OnDisable` for pooled/toggled HUDs.
+
 ### Namespace Convention
 
 All game code lives under `CosmicShore.*` with 8 primary namespaces:
@@ -1689,6 +1791,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Forcefield crackle | `SkimmerForcefieldCracklePrismEffectSO` (computes impact points via `Collider.ClosestPoint`), `ForcefieldCrackleController` (`[ExecuteAlways]`, 16-impact ring buffer + MaterialPropertyBlock arrays, owns all visual params), `ForcefieldCrackle.hlsl` (FBM electrical arcs on geodesic sphere), `ForcefieldCrackleControllerEditor` (edit-mode preview) | `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`, `_Scripts/Controller/Vessel/`, `Assets/Materials/Graphs/`, `_Scripts/Editor/` |
 | Camera | `CustomCameraController`, `VesselCameraCustomizer`, `CameraSettingsSO`, `ICameraController`, `ICameraConfigurator` | `_Scripts/Controller/Camera/` |
 | Vessel HUD | `IVesselHUDController`, `IVesselHUDView`, per-vessel controllers & views (Sparrow, Squirrel, Serpent, Manta, Rhino, Dolphin) | `_Scripts/UI/Controller/`, `_Scripts/UI/View/`, `_Scripts/UI/Interfaces/` |
+| Elemental bars | `ElementalBarsView` (5-petal flower per element), `ElementalBarsConfigSO` (shared colour/sprite/juice spec), `SilhouetteController` (per-vessel driver), `ElementalPetalBarWirer` (editor setup) | `_Scripts/UI/View/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Editor/` |
 | Arcade games | `MiniGameControllerBase`, `SinglePlayerMiniGameControllerBase`, `MultiplayerMiniGameControllerBase`, `CompositeScoring` | `_Scripts/Controller/Arcade/` |
 | Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
@@ -1699,6 +1802,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
 | Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
 | Bootstrap / DI | `AppManager` (orchestrator + IInstaller), `BootstrapConfigSO`, `SceneTransitionManager`, `ApplicationLifecycleManager`, `ApplicationLifecycleEventsContainerSO` | `_Scripts/System/`, `_Scripts/System/Bootstrap/`, `_Scripts/ScriptableObjects/` |
+| Threading / Main-thread affinity | `MainThreadDispatcher` (captures Unity's `SynchronizationContext` at `BeforeSceneLoad`, exposes `IsOnMainThread` + `SwitchToMainThreadAsync()`), `UniTaskExtensions.AsMainThread<T>()` (boundary helper for UGS / Netcode `Task` awaits), `SceneTransitionManager.SetFadeImmediate` (canary that fires if a UGS continuation reaches it off-thread) | `_Scripts/Utility/`, `_Scripts/Utility/ClassExtensions/`, `_Scripts/System/Bootstrap/`. See `Docs/THREADING.md`. |
 | App state machine | `ApplicationStateMachine` (single-writer phase tracker), `ApplicationStateData` / `ApplicationStateDataVariable` (SOAP state), `ApplicationState` enum | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/`, `_Scripts/Data/Enums/` |
 | Scene management | `SceneLoader` (MonoBehaviour, DontDestroyOnLoad in Bootstrap, game launch + restart + return-to-menu, SOAP code subscriptions), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
@@ -1721,6 +1825,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - Always include `CancellationToken` for anything non-trivial — UniTask respects play mode lifecycle better than raw `Task`
 - Bootstrap uses `UniTaskVoid` with `CancellationTokenSource` for the async startup sequence
 - Prefer SOAP event channels (`ScriptableEvent`) over `UniTask.WaitUntil` polling for waiting on state changes from other systems. Subscribe to the relevant event and react when it fires, rather than polling a condition every frame
+- **Every `await` of a UGS / Netcode `Task` uses `.AsMainThread()`** — see the "Threading & Main-Thread Affinity" section above and `Docs/THREADING.md`. UniTask's own `SwitchToMainThread()` and `Yield(PlayerLoopTiming.Update)` are unreliable on this UniTask version and must not be used as thread-marshaling primitives.
 
 ### Anti-Patterns to Avoid
 
@@ -1732,6 +1837,10 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - C# `event Action` / delegates on MonoBehaviours for broadcast patterns — use SOAP `ScriptableEvent` channels
 - `renderer.material` (clones material) — use `renderer.sharedMaterial` + MaterialPropertyBlock instead
 - Per-object coroutines at scale — use centralized timer/manager systems (see Prism Performance Audit)
+- `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — they don't reliably switch threads on this UniTask version. Use `.AsMainThread()` (see `Docs/THREADING.md`)
+- Raising a SOAP `ScriptableEvent` from a UGS / Netcode `Task` continuation without ensuring the continuation has resumed on the main thread first — SOAP `Raise()` invokes listeners inline, so off-thread raises crash any listener that touches Unity state
+- Touching a `UnityEngine.Object` (incl. `== null` checks routing through `op_Equality`) in a `Task` continuation without `.AsMainThread()` upstream — throws `EnsureRunningOnMainThread`
+- Caching a UGS singleton `*.Instance` (e.g. `MultiplayerService.Instance`) in a service **constructor** — lazy DI singletons are constructed during Bootstrap DI resolution, *before* `UnityServices.InitializeAsync()` completes, so `*.Instance` is null at construction and gets pinned null forever. Instead expose a private property that resolves at use time: `private IMultiplayerService _multiplayerService => MultiplayerService.Instance;` — always reads the live `Instance` at the call site (see `PartySessionService` / `PresenceLobbyService`)
 
 ## Shader & Visual Development
 
@@ -1804,29 +1913,6 @@ When investigating issues, follow this systematic approach:
 5. Fix, profile again, confirm improvement with data
 
 Do not guess at performance problems. Profile first.
-
-## Current Priority Context
-
-### GDC 2026 (March 9-13)
-
-Active build target is a 15-minute investor demo for MeetToMatch pitch meetings. The demo must showcase:
-
-- Squirrel vessel (racing/drift gameplay)
-- Sparrow vessel (shooter gameplay)
-- Party game mechanics and how vessel classes connect players
-- Multiplayer with AI opponents for solo demo capability
-- Polish level that communicates production readiness
-
-Every technical decision should be weighed against: **does this help the GDC demo?**
-
-### Build Priority Stack (in order)
-
-1. Core gameplay loop stability for both demo vessels
-2. Visual polish that communicates quality to investors
-3. Performance — must be smooth during live demo
-4. UI/UX clarity for first-time players watching a pitch
-5. Multiplayer stability (with AI backfill for reliable demos)
-6. Everything else
 
 ## Communication Preferences
 

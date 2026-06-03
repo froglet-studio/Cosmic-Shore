@@ -35,8 +35,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public float avgFrameTimeMs;
             public float p99FrameTimeMs;
             public int totalFrames;
+            public int score; // 0-100 performance score (BenchmarkAnalysis)
             public string deviceModel;
+            public string origin;        // "Editor" / "DevBuild" / "Legacy"
+            public int schemaVersion;    // 0 = legacy/unversioned
         }
+
+        static string ResolveOrigin(BenchmarkReport report) =>
+            report.schemaVersion <= 0 ? "Legacy" : (report.source?.origin.ToString() ?? "Editor");
 
         [Serializable]
         class IndexFile
@@ -71,6 +77,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 avgFrameTimeMs = report.statistics?.avgFrameTimeMs ?? 0,
                 p99FrameTimeMs = report.statistics?.p99FrameTimeMs ?? 0,
                 totalFrames = report.statistics?.totalFrames ?? 0,
+                score = report.analysis?.score ?? BenchmarkAnalysis.ComputeScore(report.statistics),
+                origin = ResolveOrigin(report),
+                schemaVersion = report.schemaVersion,
             };
 
             index.entries.Insert(0, entry); // newest first
@@ -79,7 +88,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// Tag a report for easy identification (e.g., "baseline", "pre-optimization", "GDC-build").
+        /// Tag a report for easy identification (e.g., "baseline", "pre-optimization", "release-build").
         /// </summary>
         public static void TagReport(string reportId, string tag, string folder)
         {
@@ -178,6 +187,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                         avgFrameTimeMs = report.statistics?.avgFrameTimeMs ?? 0,
                         p99FrameTimeMs = report.statistics?.p99FrameTimeMs ?? 0,
                         totalFrames = report.statistics?.totalFrames ?? 0,
+                        score = report.analysis?.score ?? BenchmarkAnalysis.ComputeScore(report.statistics),
+                        origin = ResolveOrigin(report),
+                        schemaVersion = report.schemaVersion,
                     });
                 }
                 catch (Exception e)

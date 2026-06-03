@@ -1106,10 +1106,8 @@ namespace CosmicShore.UI
                       $"AIBackfill={gameData.RequestedAIBackfillCount}, " +
                       $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}</color>");
 
-            // Hand off the party session so MultiplayerSetup in the game scene
-            // knows to reuse the existing Relay connection instead of tearing it down.
-            if (HostConnectionService.Instance?.PartySession != null)
-                gameData.ActiveSession = HostConnectionService.Instance.PartySession;
+            // gameData.ActiveSession IS HCS.PartySession (single backing field
+            // — see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
         }
 
         #endregion

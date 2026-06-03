@@ -1,11 +1,14 @@
 using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
+using System.Collections.Generic;
 
 namespace CosmicShore.Gameplay
 {
     public class ClearPrisms : MonoBehaviour
     {
+        static readonly int AlphaId = Shader.PropertyToID("_Alpha");
+
         Transform mainCamera;
 
         [SerializeField, RequireInterface(typeof(IVessel))]
@@ -23,7 +26,13 @@ namespace CosmicShore.Gameplay
 
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
-        
+
+        // Prisms currently inside the visibility capsule, with their cached renderers so
+        // OnTriggerStay does no GetComponent. A reusable property block applies the view
+        // alpha without cloning the (shared, GPU-instanced) prism material every frame.
+        readonly Dictionary<Collider, Renderer> _trackedRenderers = new();
+        MaterialPropertyBlock _propertyBlock;
+
         bool isInitialized;
 
 
@@ -46,7 +55,11 @@ namespace CosmicShore.Gameplay
             Vessel.OnBeforeDestroyed -= OnBeforeVesselDestroyed;
         }
 
-        private void OnBeforeVesselDestroyed() => isInitialized = false; // Destroy(gameObject);
+        private void OnBeforeVesselDestroyed()
+        {
+            isInitialized = false; // Destroy(gameObject);
+            _trackedRenderers.Clear();
+        }
 
 
         private void VesselInitialized()
@@ -93,23 +106,31 @@ namespace CosmicShore.Gameplay
 
         void OnTriggerEnter(Collider other)
         {
-            Prism prism = other.GetComponent<Prism>();
-            if (prism != null)
-                prism.SetTransparency(true);
+            if (!other.TryGetComponent(out Prism prism))
+                return;
+
+            prism.SetTransparency(true);
+            if (other.TryGetComponent(out Renderer renderer))
+                _trackedRenderers[other] = renderer;
         }
 
         private void OnTriggerStay(Collider other)
         {
-            Renderer renderer = other.GetComponent<Renderer>();
-            if (renderer != null)
-                renderer.material.SetFloat("_Alpha", scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData)/ capsuleRadius));
+            if (!_trackedRenderers.TryGetValue(other, out Renderer renderer) || renderer == null)
+                return;
+
+            _propertyBlock ??= new MaterialPropertyBlock();
+            float alpha = scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData) / capsuleRadius);
+            renderer.GetPropertyBlock(_propertyBlock);
+            _propertyBlock.SetFloat(AlphaId, alpha);
+            renderer.SetPropertyBlock(_propertyBlock);
         }
 
         void OnTriggerExit(Collider other)
         {
-            Prism prism = other.GetComponent<Prism>();
-            if (prism != null)
+            if (other.TryGetComponent(out Prism prism))
                 prism.SetTransparency(false);
+            _trackedRenderers.Remove(other);
         }
     }
 }

@@ -310,7 +310,13 @@ namespace CosmicShore.Utility
         {
             GameMode = GameModes.Random;
             IsMultiplayerMode = false;
-            ActiveSession = null;
+            // ActiveSession is intentionally NOT reset here. Under the "Always
+            // InParty" model the field is the single source of truth for the
+            // live UGS Relay session reference (shared with HCS via
+            // PartySessionService); nulling it would orphan the live Relay.
+            // The locked invariant: ActiveSession is only nulled by intentional
+            // leave paths (PartySessionService.LeaveAsync / OnTransportFailure
+            // after Delete/Leave). See Docs/PartySystem/ARCHITECTURE.md (Locked design).
             selectedVesselClass.Value = VesselClassType.Manta;
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
@@ -405,9 +411,9 @@ namespace CosmicShore.Utility
             SortDomainStats(golfRules);
         }
 
-        public bool IsLocalDomain(Domains domain) => 
+        public bool IsLocalDomain(Domains domain) =>
             LocalPlayer != null && domain == LocalPlayer.Domain;
-        
+
         public bool IsLocalDomainWinner(out DomainStats stats)
         {
             stats = default;
@@ -416,6 +422,71 @@ namespace CosmicShore.Utility
                 stats = stat;
             }
             return stats.Domain == LocalPlayer.Domain;
+        }
+
+        // ----- Domain aggregation helpers (per-domain sums for team-based scoring) -----
+
+        public int SumCrystalsCollectedByDomain(Domains domain)
+        {
+            int sum = 0;
+            for (int i = 0, count = RoundStatsList.Count; i < count; i++)
+            {
+                var s = RoundStatsList[i];
+                if (s != null && s.Domain == domain) sum += s.CrystalsCollected;
+            }
+            return sum;
+        }
+
+        public int SumJoustCollisionsByDomain(Domains domain)
+        {
+            int sum = 0;
+            for (int i = 0, count = RoundStatsList.Count; i < count; i++)
+            {
+                var s = RoundStatsList[i];
+                if (s != null && s.Domain == domain) sum += s.JoustCollisions;
+            }
+            return sum;
+        }
+
+        /// <summary>
+        /// Returns the first active domain whose summed CrystalsCollected meets
+        /// or exceeds <paramref name="target"/>. Scans in <see cref="ActiveDomains"/>
+        /// order (Jade → Ruby → Gold), so identical inputs are deterministic.
+        /// </summary>
+        public bool TryGetDomainReachingCrystalTarget(int target, out Domains winner)
+        {
+            int dc = Mathf.Clamp(RequestedDomainCount, 1, ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
+            {
+                var d = ActiveDomains[i];
+                if (SumCrystalsCollectedByDomain(d) >= target)
+                {
+                    winner = d;
+                    return true;
+                }
+            }
+            winner = Domains.Blue;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the first active domain whose summed JoustCollisions meets
+        /// or exceeds <paramref name="target"/>. See <see cref="TryGetDomainReachingCrystalTarget"/>.
+        /// </summary>
+        public bool TryGetDomainReachingJoustTarget(int target, out Domains winner)
+        {
+            int dc = Mathf.Clamp(RequestedDomainCount, 1, ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
+            {
+                var d = ActiveDomains[i];
+                if (SumJoustCollisionsByDomain(d) >= target)
+                {
+                    winner = d;
+                    return true;
+                }
+            }
+            winner = Domains.Blue;
+            return false;
         }
         
         public void SetPlayersActive()

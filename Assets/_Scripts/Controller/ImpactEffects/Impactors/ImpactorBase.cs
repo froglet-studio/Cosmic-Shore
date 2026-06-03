@@ -26,10 +26,16 @@ namespace CosmicShore.Gameplay
         {
             if (!isInitialized)
                 return;
-            
-            if (!other.TryGetComponent(out IImpactCollider impacteeCollider))
+
+            // Use the concrete ImpactCollider (the sole IImpactCollider implementer)
+            // rather than TryGetComponent<IImpactCollider>. An interface-typed
+            // GetComponent forces Unity to iterate and type-check every component on
+            // the GameObject; this runs per prism-enter across dense trails and was
+            // ~26% self-time inside Physics.SendEvents. The concrete type uses Unity's
+            // native typed-lookup fast path.
+            if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
                 return;
-            
+
             AcceptImpactee(impacteeCollider.Impactor);
         }
     }

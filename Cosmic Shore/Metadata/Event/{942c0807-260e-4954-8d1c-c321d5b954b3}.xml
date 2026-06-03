@@ -5,7 +5,7 @@
 			<value>space ship engine main</value>
 		</property>
 		<property name="outputFormat">
-			<value>2</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
 			<destination>{a0fa6654-cb9c-4b6f-9e9c-19b57077078f}</destination>
@@ -558,10 +558,19 @@
 	<object class="MixerBusEffectChain" id="{0e902ee6-f4ff-4797-a868-39848d74d4bd}">
 		<relationship name="effects">
 			<destination>{5dfbeae3-3c6e-46c6-9285-7a68c02d3384}</destination>
-			<destination>{b3678c51-17a5-4293-98fa-4db762bf975f}</destination>
 		</relationship>
 	</object>
-	<object class="MixerBusPanner" id="{81edfaff-07b9-4369-96d7-15945bbfc476}" />
+	<object class="MixerBusPanner" id="{81edfaff-07b9-4369-96d7-15945bbfc476}">
+		<property name="surroundPanDirection">
+			<value>141.801315</value>
+		</property>
+		<property name="surroundPanExtent">
+			<value>353.308533</value>
+		</property>
+		<property name="surroundLFELevel">
+			<value>-80</value>
+		</property>
+	</object>
 	<object class="MixerBusFader" id="{7176517f-38f2-4726-8493-54d4c8b744ab}" />
 	<object class="Automator" id="{27a08fc5-ce32-418e-837d-63a08b3eec12}">
 		<property name="nameOfPropertyBeingAutomated">
@@ -697,11 +706,6 @@
 	</object>
 	<object class="MixerBusPanner" id="{1978d35b-fb97-48cc-9af7-a136c8f73def}" />
 	<object class="MixerBusFader" id="{5dfbeae3-3c6e-46c6-9285-7a68c02d3384}" />
-	<object class="SpatialiserEffect" id="{b3678c51-17a5-4293-98fa-4db762bf975f}">
-		<property name="maximumDistance">
-			<value>10000</value>
-		</property>
-	</object>
 	<object class="AutomationCurve" id="{e80e23f2-7810-4f7d-8f0b-0a83f19c3bfc}">
 		<relationship name="parameter">
 			<destination>{a170b8d6-8fcb-4b3f-b817-ee662e459848}</destination>

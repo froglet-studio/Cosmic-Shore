@@ -38,7 +38,6 @@ namespace CosmicShore.Gameplay
         public string ownerID;
 
         [Header("Event Channels")]
-        [SerializeField] ScriptableEventGameplaySFX gameplaySFXEvent;
         [SerializeField] ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
         [SerializeField] ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
         [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
@@ -287,7 +286,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            gameplaySFXEvent.Raise(GameplaySFXCategory.BlockDestroy);
+            AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy, transform.position);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -304,7 +303,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            gameplaySFXEvent.Raise(GameplaySFXCategory.BlockDestroy);
+            AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy, transform.position);
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
