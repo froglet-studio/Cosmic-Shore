@@ -35,6 +35,10 @@ namespace CosmicShore.Utility
         [Tooltip("If true, skip the crystal reward flow here — the Scoreboard is expected to award and display crystals instead (prevents double-awarding).")]
         [SerializeField] private bool delegateCrystalRewardToScoreboard = true;
 
+        [Header("XP Reward")]
+        [Tooltip("Participation XP awarded to the local player every game (win or lose). Feeds the menu XP progress bar. Set 0 to disable.")]
+        [SerializeField] private int xpPerGame = 25;
+
         protected bool isRunning;
         protected bool localPlayerWon;
         protected Coroutine runningRoutine;
@@ -308,6 +312,10 @@ namespace CosmicShore.Utility
         
         protected virtual IEnumerator AwardCrystalReward()
         {
+            // Participation XP is awarded to the local player every game and is independent of
+            // the crystal-reward delegation below (which only pays the winner via the scoreboard).
+            AwardParticipationXp();
+
             if (crystalsPerGame <= 0) yield break;
             if (delegateCrystalRewardToScoreboard) yield break;
 
@@ -334,6 +342,17 @@ namespace CosmicShore.Utility
 
                 yield return new WaitForSeconds(1.5f);
             }
+        }
+
+        void AwardParticipationXp()
+        {
+            if (xpPerGame <= 0) return;
+
+            var service = PlayerDataService.Instance;
+            if (service == null) return;
+
+            int total = service.AddXP(xpPerGame);
+            CSDebug.Log($"[EndGameCinematic] Awarded {xpPerGame} XP. Total: {total}");
         }
 
         /// <summary>

@@ -79,9 +79,29 @@ namespace CosmicShore.UI
             if (ShowEmailLinking)
                 InitializeEmailLinking();
 
-            PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
+            // Profile data is owned by the UGS PlayerDataService (the dead PlayFab
+            // PlayerDataController.OnProfileLoaded never fires). Subscribe to the live
+            // profile event and seed the view from the current profile immediately so the
+            // modal shows the real name/avatar instead of the stale "PLAYER" default.
+            if (playerDataService != null)
+            {
+                playerDataService.OnProfileChanged += OnProfileChanged;
+                if (playerDataService.CurrentProfile != null)
+                    InitializePlayerDisplayNameView();
+            }
 
             base.Start();
+        }
+
+        void OnDestroy()
+        {
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= OnProfileChanged;
+        }
+
+        void OnProfileChanged(PlayerProfileData profile)
+        {
+            InitializePlayerDisplayNameView();
         }
 
         #region Email Input Field Operations (unchanged)
@@ -258,10 +278,10 @@ namespace CosmicShore.UI
 
         public void CancelPlayerNameChange()
         {
-            var profile = PlayerDataController.PlayerProfile;
+            var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
 
-            if (displayNameInputField && profile != null && !string.IsNullOrEmpty(profile.DisplayName))
-                displayNameInputField.text = profile.DisplayName;
+            if (displayNameInputField && profile != null && !string.IsNullOrEmpty(profile.displayName))
+                displayNameInputField.text = profile.displayName;
 
             HideDisplayNameButtons();
         }
@@ -324,7 +344,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Called when the profile is loaded from PlayFab.
+        /// Called when the profile is loaded/changed via PlayerDataService.
         /// Sets both input + label and avatar sprite.
         /// </summary>
         void InitializePlayerDisplayNameView()
@@ -332,11 +352,11 @@ namespace CosmicShore.UI
             if (BusyIndicator)
                 BusyIndicator.SetActive(false);
 
-            var profile = PlayerDataController.PlayerProfile;
+            var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
 
-            var profileDisplayName = string.IsNullOrEmpty(profile.DisplayName)
+            var profileDisplayName = (profile == null || string.IsNullOrEmpty(profile.displayName))
                 ? "PLAYER"
-                : profile.DisplayName;
+                : profile.displayName;
 
             if (displayNameInputField)
                 displayNameInputField.text = profileDisplayName;
@@ -363,11 +383,11 @@ namespace CosmicShore.UI
         public void RefreshProfileVisuals()
         {
             // Name
-            var profile = PlayerDataController.PlayerProfile;
+            var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
             string name = null;
 
-            if (profile != null && !string.IsNullOrEmpty(profile.DisplayName))
-                name = profile.DisplayName;
+            if (profile != null && !string.IsNullOrEmpty(profile.displayName))
+                name = profile.displayName;
             else if (gameData && !string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
                 name = gameData.LocalPlayerDisplayName;
 
@@ -383,39 +403,32 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Uses ProfileIconId from PlayerProfile / GameData to set the avatar sprite.
+        /// Uses the avatar id from the live PlayerDataService profile to set the avatar sprite.
         /// </summary>
         void RefreshAvatarSprite()
         {
-            if (!profileIconImage || !profileIconList)
+            if (!profileIconImage)
                 return;
 
-            int iconId = 0;
+            Sprite sprite = null;
 
-            var profile = PlayerDataController.PlayerProfile;
-            if (profile != null)
+            // Primary: resolve through the live profile service (handles the id->sprite
+            // lookup and its own fallback).
+            if (playerDataService != null && playerDataService.CurrentProfile != null)
             {
-                iconId = profile.ProfileIconId;
+                sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.avatarId);
+            }
+            // Fallback: first icon in the locally-wired list if the service isn't ready.
+            else if (profileIconList != null && profileIconList.profileIcons is { Count: > 0 })
+            {
+                sprite = profileIconList.profileIcons[0].IconSprite;
             }
 
-            
-            if (profileIconList.profileIcons == null || profileIconList.profileIcons.Count == 0)
-                return;
-
-            ProfileIcon chosen = profileIconList.profileIcons[0]; // default
-            foreach (var icon in profileIconList.profileIcons)
+            if (sprite != null)
             {
-                if (icon.Id == iconId)
-                {
-                    chosen = icon;
-                    break;
-                }
+                profileIconImage.enabled = true;
+                profileIconImage.sprite = sprite;
             }
-
-            Sprite sprite = chosen.IconSprite;
-
-            profileIconImage.enabled = true;
-            profileIconImage.sprite = sprite;
         }
 
         private void FocusDisplayNameInputField()
