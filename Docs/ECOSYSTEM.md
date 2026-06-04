@@ -285,3 +285,84 @@ The redesign is shaped so the split drops in without rework:
 | Flora growth gate | `AssembledFlora.cs`, `BranchingFlora.cs` |
 | Spawn tuning (period, population, exclude-local) | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
 | Aggression enum + tier behaviors | `Assets/_Scripts/Data/Enums/CellAggressionLevel.cs` |
+| Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
+
+---
+
+## 10. Roadmap
+
+### Phase 1 — stabilize & ship to bleeding-edge
+
+Goal: everything on `keen-newton` is correct, safe across **all** scenes (every
+scene runs `RandomLifeSpawner`, so these changes are global), and mergeable so the
+work is saved and Phase 2 can be picked up.
+
+1. **In-editor validation (the gate — needs a human; I can't run Unity).**
+   - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
+     in the controlling color (Jade appears when Jade leads), hunt, and thin out as
+     prey runs low; spawn ring sweeps; **no numeric readout**.
+   - *One gameplay scene* (e.g. `MinigameFreestyle` / `MinigameHexRace`): confirm
+     the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
+     still appear, nothing runs away, framerate holds.
+2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
+   target device, lower `Blob Cell Config` `FrozenEnter`/`RabidEnter` (one asset).
+3. **Decide `IntensityWiseLifeSpawner`.** Dead (no scene uses it) and now diverged
+   from the live model. Recommend **delete** to kill confusion; keep only if wanted
+   as a reference. Either way, stop maintaining two fauna models.
+4. **Confirm the global defaults are wanted in gameplay**, not just the menu: the
+   flora regrowth pulse (`SpawnProfileSO`, code-default ON) and prey-linked fauna
+   (controlling-color + starvation) now apply to every biome. If a gameplay biome
+   wants the old hard-freeze, set its `FloraRegrowthPulseDuration = 0`… (add an
+   explicit off switch if we want one).
+5. **Merge `keen-newton` → bleeding-edge.** Needs an explicit go-ahead (different
+   branch); I can open the PR and write the summary on request.
+
+### Phase 2 — toward the ultimate dynamic, emergent ecosystem
+
+North star: a *small* set of fundamentals (Domain, Mass/prisms, Cells, Flora &
+Fauna, Elementals, Vessels) whose interactions produce rich, self-balancing,
+surprising behavior — and progressively **retire the scaffolding** (the regrowth
+pulse, the fixed-period spawner) as real emergent forces replace them. Ordered
+highest-impact / lowest-risk first; each step ships independently and composes
+with the others.
+
+1. **Prism mortality / decay** — *retires the regrowth-pulse cheat.*
+   Prisms (flora especially) age and die, so count falls on its own → flora
+   growth resumes through the existing Frozen-exit hysteresis with **no pulse**.
+   This is the missing down-force on the *dominant* domain (fauna only eat
+   opposing mass), so cells finally breathe by themselves. Composes with Mass,
+   Cells (phase), Flora, Fauna.
+
+2. **Predator / herbivore split** — *the centerpiece.*
+   Sub-type on `FaunaConfigurationSO` (Herbivore / Predator). "Diet = what counts
+   as prey" parameterizes the existing `Fauna.ResolveGoal`/consume + starvation
+   hooks: herbivores eat flora prisms, predators eat herbivore fauna. Two-tier
+   starvation → genuine Lotka–Volterra oscillation (flora→herbivores→predators→…).
+
+3. **Fauna reproduction** — *retires the fixed-period-spawner cheat.*
+   Well-fed fauna reproduce; the spawner becomes a one-time *seeder*, not the
+   population driver. Population becomes a true function of the food web.
+
+4. **Elemental integration** — *ties the ecology to gameplay.*
+   Flora/fauna express their effects through **Elementals** (Charge/Mass/Space/
+   Time) rather than bespoke buffs: a domain's flora buff its vessels, fauna debuff
+   opposing mass. Vessels start to *feel* the ecosystem. Composes with Domain,
+   Vessels, Elementals.
+
+5. **Domain territory dynamics.**
+   As fauna cull opposing prisms and flora regrow, a cell's controlling domain
+   shifts over time, and flora/fauna domains follow — visible territorial ebb and
+   flow instead of monoculture lock-in.
+
+6. **Flora succession & variety.**
+   Different flora favor different phases (pioneers at Sprout, canopy at Settled),
+   so a maturing cell visibly changes character.
+
+7. **Cross-cell ecology (migration).**
+   Fauna migrate to adjacent cells chasing prey; crowded/empty cells rebalance —
+   isolated cells become one connected biome.
+
+**Cheats currently in place, to retire as Phase 2 lands:** the flora regrowth
+pulse (→ step 1, decay) and the fixed-period fauna spawner (→ step 3,
+reproduction). Both are honest first-approximation scaffolding, flagged so we
+remove them rather than build on them.
