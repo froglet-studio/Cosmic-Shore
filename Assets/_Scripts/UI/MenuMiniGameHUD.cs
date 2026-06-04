@@ -30,6 +30,9 @@ namespace CosmicShore.UI
 
         [Header("Volume / Pause Button")]
         [SerializeField] Button volumePauseButton;
+        [Tooltip("Three-wedge per-domain volume indicator on the pause button face. " +
+                 "Optional — leave null if the button has no indicator wired yet.")]
+        [SerializeField] DomainVolumeIndicator domainVolumeIndicator;
         [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
@@ -50,6 +53,25 @@ namespace CosmicShore.UI
             volumePauseButton.onClick.AddListener(OnVolumePauseClicked);
         }
 
+        /// <summary>
+        /// Self-healing indicator attachment. Runs in Start (not Awake) so [Inject]
+        /// fields are populated and can be handed to the indicator. Components added
+        /// via AddComponent never receive Reflex injection, so the explicit
+        /// SetGameData handoff is required for the vessel-position-based cell
+        /// resolution to work.
+        /// </summary>
+        void EnsureDomainVolumeIndicator()
+        {
+            if (!volumePauseButton) return;
+
+            if (!domainVolumeIndicator)
+                domainVolumeIndicator = volumePauseButton.GetComponent<DomainVolumeIndicator>();
+            if (!domainVolumeIndicator)
+                domainVolumeIndicator = volumePauseButton.gameObject.AddComponent<DomainVolumeIndicator>();
+
+            domainVolumeIndicator.SetGameData(gameData);
+        }
+
         void OnEnable()
         {
             if (onShipHUDInitialized)
@@ -63,6 +85,7 @@ namespace CosmicShore.UI
         void Start()
         {
             InstantiatePauseMenu();
+            EnsureDomainVolumeIndicator();
         }
 
         void OnDisable()
