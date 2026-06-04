@@ -116,18 +116,23 @@ namespace CosmicShore.Gameplay
             // Timer-driven spawning at a FIXED period — no phase gate, no aggression
             // scaling. Prism count drives fauna *aggression/behavior* (see Fauna /
             // LightFauna); the timer drives *when* they spawn. Each tick emits a
-            // fixed-size population in the cell's controlling color, but only while there
-            // is prey to eat: production pauses when opposing prism mass is below
-            // FaunaFoodFloor, and starving fauna despawn — so the population self-bounds
-            // to prey. (Docs/ECOSYSTEM.md §6, option C: prey-linked.)
+            // fixed-size population in a prey-weighted domain (across all playable domains),
+            // but only while there is prey to eat: production pauses when no domain holds
+            // opposing prism mass above FaunaFoodFloor, and starving fauna despawn — so the
+            // population self-bounds to prey. (Docs/ECOSYSTEM.md §6, option C: prey-linked.)
             float period = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
 
             while (true)
             {
                 if (!host) yield break;
 
-                Domains color = host.ControllingDomain;
-                if (host.OpposingBlockCount(color) >= spawnProfile.FaunaFoodFloor)
+                // Cross-domain, prey-weighted spawn: the population's domain emerges from
+                // the cell's current mass distribution, so consumers appear where there is
+                // food and the DOMINANT canopy (the biggest prey pool for the OTHER colors)
+                // gets grazed back down by other-domain fauna, which then starve as it thins.
+                // Consumption + starvation regulate the cell — no imposed prism lifespan, no
+                // regrowth pulse. (Docs/ECOSYSTEM.md §5–6.)
+                if (TryPickPreyWeightedDomain(host, spawnProfile.FaunaFoodFloor, out var color))
                     SpawnFaunaPopulation(host, runtime, faunaCfg, color);
 
                 // Reset the spawn-cycle ring each period whether or not prey allowed a
@@ -139,11 +144,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Spawns one fixed-size population in <paramref name="color"/> — the cell's
-        /// controlling domain. Spawning in the controller's color fixes "no Jade fauna
-        /// when Jade controls" and lets the dominant color's fauna hunt the minority.
-        /// Seeks the crystal when present, the cell centre otherwise; each member adds
-        /// its own orbit offset (Fauna) so the swarm spreads instead of stacking.
+        /// Spawns one fixed-size population in <paramref name="color"/> — the prey-weighted
+        /// domain chosen by <see cref="CellLifeSpawnerBase.TryPickPreyWeightedDomain"/>. The
+        /// school hunts opposing mass, so weighting the domain by available prey points fauna
+        /// at whichever color currently dominates the cell. Seeks the crystal when present,
+        /// the cell centre otherwise; each member adds its own orbit offset (Fauna) so the
+        /// swarm spreads instead of stacking.
         /// </summary>
         void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color)
         {

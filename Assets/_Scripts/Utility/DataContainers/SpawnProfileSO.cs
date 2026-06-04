@@ -16,12 +16,6 @@ namespace CosmicShore.Utility
         [Min(0f)] public float FloraInitialDelaySeconds;
         [Tooltip("Seconds between each flora spawn (within the initial flora batch). 0 = spawn all instantly.")]
         [Min(0f)] public float FloraSpawnIntervalSeconds;
-        [Tooltip("Flora regrowth pulse: once a cell fills past Frozen, existing flora resume growing " +
-                 "for FloraRegrowthPulseDuration seconds out of every FloraRegrowthPulsePeriod seconds " +
-                 "(capped at Rabid) so the canopy keeps breathing instead of freezing solid. " +
-                 "<= 0 falls back to a sensible default. See Docs/ECOSYSTEM.md.")]
-        [Min(0f)] public float FloraRegrowthPulsePeriod = 15f;
-        [Min(0f)] public float FloraRegrowthPulseDuration = 4f;
         public List<FloraConfigurationSO> SupportedFloras = new();
         
         [Header("FaunaPrefab Configs")]

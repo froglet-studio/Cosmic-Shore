@@ -86,6 +86,43 @@ namespace CosmicShore.Gameplay
                 : candidates[UnityEngine.Random.Range(0, candidates.Count)];
         }
 
+        // Playable domains only — never Blue (the "no team" sentinel). Fauna spawn across
+        // ALL of these (weighted by available prey, see TryPickPreyWeightedDomain), not just
+        // the cell's controlling color, so every domain's mass — including the DOMINANT
+        // canopy — has opposing consumers. Consumption + starvation then regulate the cell.
+        static readonly Domains[] PlayableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        /// <summary>
+        /// Picks the domain for the next fauna population, weighted by available prey:
+        /// P(domain) ∝ <see cref="Cell.OpposingBlockCount"/>(domain), among the playable
+        /// domains whose prey is at least <paramref name="foodFloor"/>. Returns false when
+        /// no domain has enough prey — the caller skips the burst rather than spawn fauna
+        /// that would immediately starve.
+        ///
+        /// This is the consumption-driven down-force on the DOMINANT domain. A cell
+        /// dominated by one color is the largest prey pool for the OTHER colors, so their
+        /// fauna are the likeliest to spawn, graze that canopy back down, then starve as it
+        /// thins — the food web (consumption + starvation), not an imposed prism lifespan,
+        /// makes the cell breathe. Replaces the controlling-color-only spawn, which left the
+        /// dominant mass with no predator and forced the regrowth-pulse stopgap.
+        /// (Docs/ECOSYSTEM.md §5–6.)
+        /// </summary>
+        protected bool TryPickPreyWeightedDomain(Cell host, int foodFloor, out Domains domain)
+        {
+            domain = Domains.Jade;
+            if (!host) return false;
+
+            var eligible = new List<Domains>(PlayableDomains.Length);
+            for (int i = 0; i < PlayableDomains.Length; i++)
+                if (host.OpposingBlockCount(PlayableDomains[i]) >= foodFloor)
+                    eligible.Add(PlayableDomains[i]);
+
+            if (eligible.Count == 0) return false;
+
+            domain = PickWeighted(eligible, d => host.OpposingBlockCount(d));
+            return true;
+        }
+
         protected T PickWeighted<T>(IReadOnlyList<T> items, Func<T, float> weightSelector)
         {
             if (items == null || items.Count == 0) return default;

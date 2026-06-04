@@ -162,6 +162,15 @@ first approximations, build to extend"):
 - **Fauna domain = controlling color** (`host.ControllingDomain`). Fixes the Jade
   bug; the dominant domain's fauna proliferate and hunt the minority. Trivial,
   certain change — folded into the spawn rewrite.
+  > **Superseded in Phase 2 step 1.** Spawning *every* fauna in the controlling
+  > color left the dominant mass with **no consumer** (fauna only eat opposing
+  > prisms), which is exactly what forced the regrowth-pulse stopgap. Fauna now
+  > spawn **across all playable domains, weighted by available prey**
+  > (`CellLifeSpawnerBase.TryPickPreyWeightedDomain`): a dominated cell is the
+  > biggest prey pool for the *other* colors, so their fauna spawn preferentially,
+  > graze the dominant canopy down, then starve as it thins. The Jade bug stays
+  > fixed (Jade fauna still appear whenever non-Jade prey exists), and consumption
+  > finally reaches the dominant domain. See §10 Phase 2 step 1.
 - **Spawn = timer-driven**, no phase gate, **population of fixed N** per tick.
 - **HUD ring = base fixed period** (remove the aggression scaling the retrofit
   added to `ScaleFaunaInterval` / `CurrentFaunaSpawnPeriod`).
@@ -181,20 +190,22 @@ Two follow-on changes so cells feel full and keep breathing:
   volume scale (it ranges against `RabidEnter`). Other biomes already use the high
   code `Default` (Rabid 15000) — left as-is; scale there too if gameplay feels
   sparse.
-- **Flora regrowth pulse.** Growth was a hard stop at Frozen, and in the menu the
-  dominant domain's flora have no down-force (fauna only eat *opposing* prisms), so
-  the canopy froze and never resumed. `Cell.FloraGrowingEnabled` now = `phase <
-  Frozen` **OR** (`phase < Rabid` AND in a periodic regrowth window). So below
-  Frozen flora grow freely; once full they resume growing in brief periodic pulses
-  (cell-global, all flora breathe together); Rabid stays the hard ceiling.
-  Config: `SpawnProfileSO.FloraRegrowthPulsePeriod` (15s) /
-  `FloraRegrowthPulseDuration` (4s); `<= 0` falls back to those defaults so the
-  pulse is on across the board.
+- **Flora regrowth pulse.** ~~Growth was a hard stop at Frozen … resume in brief
+  periodic pulses.~~ **REMOVED in Phase 2 step 1.** The pulse was a hard-coded
+  oscillator papering over the real gap: the dominant domain's mass had no consumer.
+  `Cell.FloraGrowingEnabled` is now simply `phase < Frozen` — growth stops on
+  overpopulation and resumes **only when consumption** (other-domain fauna grazing
+  the dominant canopy) brings the count back below the Frozen-exit threshold. The
+  `SpawnProfileSO.FloraRegrowthPulse*` fields and `Cell.InFloraRegrowthPulse` are
+  deleted. See §10 Phase 2 step 1.
 
-> The pulse is the flora-side stopgap until prism mortality/decay exists — the
-> truly emergent down-force (flora shed aged prisms, count falls, growth resumes
-> via hysteresis) that would make the pulse unnecessary. Noted for the iteration
-> toward §7.
+> The down-force that replaced the pulse is **cross-domain consumption**, not prism
+> decay. Per the prompter (Phase 2 step 1): *avoid prisms/lifeforms having fixed
+> lives — regulate cells with consumption and starvation, not an imposed lifespan;
+> all prisms are subject to consumption based on their domain and the consumer's
+> domain.* So the emergent down-force is "spawn fauna of other domains → they eat
+> the dominant mass → they starve as it thins," leaving the food web (not a timer)
+> in control.
 
 ---
 
@@ -326,12 +337,22 @@ pulse, the fixed-period spawner) as real emergent forces replace them. Ordered
 highest-impact / lowest-risk first; each step ships independently and composes
 with the others.
 
-1. **Prism mortality / decay** — *retires the regrowth-pulse cheat.*
-   Prisms (flora especially) age and die, so count falls on its own → flora
-   growth resumes through the existing Frozen-exit hysteresis with **no pulse**.
-   This is the missing down-force on the *dominant* domain (fauna only eat
-   opposing mass), so cells finally breathe by themselves. Composes with Mass,
-   Cells (phase), Flora, Fauna.
+1. **Cross-domain consumption down-force** — *retires the regrowth-pulse cheat.*
+   ✅ **Delivered.** *(Originally scoped as "prism mortality / decay"; the prompter
+   redirected: no imposed lifespan — regulate via consumption + starvation; all
+   prisms are consumable by domain.)* The dominant domain's mass had no consumer
+   because every fauna spawned in the controlling color and fauna only eat opposing
+   prisms. Fix: fauna now spawn **across all playable domains, weighted by available
+   prey** (`CellLifeSpawnerBase.TryPickPreyWeightedDomain`), so the dominant canopy —
+   the largest prey pool for the other colors — is grazed down by their fauna, which
+   then **starve** as it thins. The regrowth pulse is deleted; `FloraGrowingEnabled`
+   is just `phase < Frozen` (growth stops on overpopulation, the prompter-favored
+   force, and resumes only when consumption drops the count below Frozen-exit). The
+   cell breathes through the food web alone — no timer, no decay. Composes with Mass,
+   Domain, Cells (phase), Flora, Fauna. **Tuning:** if the dominant canopy still
+   freezes, raise fauna pressure (`FaunaConfigurationSO.PopulationSize` ↑ /
+   `SpawnProfileSO.BaseFaunaSpawnTime` ↓ / `LightFaunaDataSO.consumeRadius` ↑) — not
+   the old pulse.
 
 2. **Predator / herbivore split** — *the centerpiece.*
    Sub-type on `FaunaConfigurationSO` (Herbivore / Predator). "Diet = what counts
@@ -362,7 +383,8 @@ with the others.
    Fauna migrate to adjacent cells chasing prey; crowded/empty cells rebalance —
    isolated cells become one connected biome.
 
-**Cheats currently in place, to retire as Phase 2 lands:** the flora regrowth
-pulse (→ step 1, decay) and the fixed-period fauna spawner (→ step 3,
-reproduction). Both are honest first-approximation scaffolding, flagged so we
-remove them rather than build on them.
+**Cheats currently in place, to retire as Phase 2 lands:** ~~the flora regrowth
+pulse (→ step 1)~~ **retired** — replaced by cross-domain consumption (step 1,
+above); and the fixed-period fauna spawner (→ step 3, reproduction), still in place.
+Honest first-approximation scaffolding, flagged so we remove them rather than build
+on them.
