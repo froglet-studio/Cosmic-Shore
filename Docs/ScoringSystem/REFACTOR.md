@@ -156,7 +156,7 @@ co-op / DuelForCell — `WinnerDomain` stays `Blue`, already reset every scene l
 replay). Behavior-preserving in normal play; fixes the tie divergence. No reset
 code needed (existing infra). Full consolidation is **R10**.
 
-### R10 — 🔴 [discuss-first] One server-authoritative ranked results list
+### R10 — 🟡 [in progress] One server-authoritative ranked results list
 **Root fix for the redundant winner/ranking representations** (subsumes R9's
 residue, `BUGS.md` B5, and `BUGS.md` B2 — the Joust "jousts left" divergence,
 fixed once `Secondary` is computed server-side). Today "who won / in what order"
@@ -177,7 +177,21 @@ stays a consumer concern (SRP).
 
 Sequence **with R1** (unified always-networked path) — both touch the scoring sync
 + data model, so the results structure should be designed once across both.
-Discuss-first; do not start before R1's design is agreed.
+
+**Progress (phased, behavior-preserving until Phase B):**
+- 🟢 **A1** (`8820f8c8`) — `ScoreResult` + `ScoreResultBuilder` + `GameDataSO.Results`/`SetResults`
+  (derives `WinnerName`/`WinnerDomain` from `Results[0]`).
+- 🟢 **A1.5** (`d3305e62`) — added `ScoreResult.ScoreText` (formatted primary) + shared `FormatTime`.
+- 🟢 **A2/A3/A4** (`05b7c71e`, `ff69baf9`, `7478d0d9`) — HexRace / Joust / CrystalCapture each
+  assemble `gameData.Results` in their `Sync…_ClientRpc` (runs on host + every client) from the
+  already-synced arrays; per-mode `ScoreText`/`Secondary` match each scoreboard's `Format*`. Joust
+  publishes its target to `gameData.JoustTargetCount` (mirrors `CrystalTargetCount`) instead of a
+  new RPC param. No consumer reads `Results` yet → on-screen behavior unchanged.
+- 🔴 **B** (consumers) — point `Scoreboard` (cards/sort), the cinematic reveal, and the crystal
+  reward at `Results`; delete the per-mode `SortPlayers`/`FormatPlayerScore`/`FormatSecondaryStat`
+  overrides. **B2 fixed here** (reveal reads the domain-deficit `ScoreText`).
+- 🔴 **C** (R1) — single-player local producer; remove the `IsMultiplayerMode` scoring branches
+  (`Scoreboard.cs:147,454`); retire `DomainStatsList[0]` as a winner source.
 
 ---
 
