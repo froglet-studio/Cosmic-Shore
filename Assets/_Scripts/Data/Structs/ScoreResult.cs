@@ -21,18 +21,27 @@ namespace CosmicShore.Data
         public readonly float Score;
 
         /// <summary>
-        /// Mode-formatted secondary display line (e.g. "12 Crystals", "3 Jousts Left",
-        /// "01:24:30"). Computed once by the producing mode so the scoreboard and the
-        /// end-game reveal can never disagree (this is what dissolves BUGS.md B2).
+        /// Mode-formatted PRIMARY display string — what the scoreboard card's main score
+        /// shows and what the end-game cinematic reveals (winner: "01:24:30"; loser:
+        /// "3 Crystals Left" / "3 Jousts Left"; CrystalCapture: "12 Crystals"). Computed
+        /// once by the producing mode so the scoreboard and the reveal can never disagree
+        /// (this is what dissolves BUGS.md B2).
+        /// </summary>
+        public readonly string ScoreText;
+
+        /// <summary>
+        /// Optional mode-formatted SECONDARY stat line (e.g. "12 Crystals", "7 Jousts"),
+        /// or null when the mode has none. Shown below the primary on the score card.
         /// </summary>
         public readonly string Secondary;
 
-        public ScoreResult(int rank, string name, Domains domain, float score, string secondary)
+        public ScoreResult(int rank, string name, Domains domain, float score, string scoreText, string secondary)
         {
             Rank = rank;
             Name = name;
             Domain = domain;
             Score = score;
+            ScoreText = scoreText;
             Secondary = secondary;
         }
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
@@ -8,8 +9,8 @@ namespace CosmicShore.Gameplay
     /// Assembles a ranked <see cref="ScoreResult"/> list from raw per-player rows.
     /// Centralizes the sort + rank so every mode — and both the server and each client —
     /// produces an identically ordered list. Each mode supplies its own per-player
-    /// <see cref="Row.Secondary"/> string, keeping per-mode formatting with the mode (SRP).
-    /// See Docs/ScoringSystem/REFACTOR.md R10.
+    /// <see cref="Row.ScoreText"/>/<see cref="Row.Secondary"/> strings, keeping per-mode
+    /// formatting with the mode (SRP). See Docs/ScoringSystem/REFACTOR.md R10.
     /// </summary>
     public static class ScoreResultBuilder
     {
@@ -19,13 +20,15 @@ namespace CosmicShore.Gameplay
             public readonly string Name;
             public readonly Domains Domain;
             public readonly float Score;
+            public readonly string ScoreText;
             public readonly string Secondary;
 
-            public Row(string name, Domains domain, float score, string secondary)
+            public Row(string name, Domains domain, float score, string scoreText, string secondary)
             {
                 Name = name;
                 Domain = domain;
                 Score = score;
+                ScoreText = scoreText;
                 Secondary = secondary;
             }
         }
@@ -44,8 +47,18 @@ namespace CosmicShore.Gameplay
             var results = new List<ScoreResult>(rows.Count);
             int rank = 1;
             foreach (var r in ordered)
-                results.Add(new ScoreResult(rank++, r.Name, r.Domain, r.Score, r.Secondary));
+                results.Add(new ScoreResult(rank++, r.Name, r.Domain, r.Score, r.ScoreText, r.Secondary));
             return results;
+        }
+
+        /// <summary>
+        /// Shared mm:ss:cs formatter for finish-time scores — the single copy that replaces
+        /// the inline duplicates in the per-mode scoreboards (and the reveal).
+        /// </summary>
+        public static string FormatTime(float seconds)
+        {
+            var t = TimeSpan.FromSeconds(seconds);
+            return $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
         }
     }
 }
