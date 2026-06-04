@@ -238,8 +238,40 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the cell still allows new flora to be planted (Phase &lt; Settled).</summary>
         public bool FloraPlantingEnabled => phase < CellPhase.Settled;
 
-        /// <summary>True while existing flora may still grow new prisms (Phase &lt; Frozen).</summary>
-        public bool FloraGrowingEnabled => phase < CellPhase.Frozen;
+        /// <summary>
+        /// True while existing flora may grow new prisms. Below Frozen flora grow
+        /// freely; between Frozen and Rabid they grow only during the periodic regrowth
+        /// pulse (so the canopy keeps "breathing" instead of freezing solid once the
+        /// cell fills); at Rabid growth stops hard (the density ceiling).
+        /// See Docs/ECOSYSTEM.md.
+        /// </summary>
+        public bool FloraGrowingEnabled =>
+            phase < CellPhase.Frozen ||
+            (phase < CellPhase.Rabid && InFloraRegrowthPulse);
+
+        // Sensible fallbacks when a SpawnProfile predates the regrowth-pulse fields
+        // (serialized 0) so the pulse is on across the board by default.
+        const float FloraRegrowthPulsePeriodDefault = 15f;
+        const float FloraRegrowthPulseDurationDefault = 4f;
+
+        /// <summary>
+        /// True during the cell's periodic flora-regrowth window. Cell-global (all flora
+        /// pulse together) so the canopy visibly breathes. Duration &gt;= period ⇒ always on.
+        /// </summary>
+        bool InFloraRegrowthPulse
+        {
+            get
+            {
+                var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+                float period = profile && profile.FloraRegrowthPulsePeriod > 0f
+                    ? profile.FloraRegrowthPulsePeriod : FloraRegrowthPulsePeriodDefault;
+                float duration = profile && profile.FloraRegrowthPulseDuration > 0f
+                    ? profile.FloraRegrowthPulseDuration : FloraRegrowthPulseDurationDefault;
+
+                if (duration >= period) return true;
+                return (Time.time % period) < duration;
+            }
+        }
 
         /// <summary>True once the cell has crossed the fauna-spawn threshold (Phase &gt;= Quiet).</summary>
         public bool FaunaSpawningEnabled => phase >= CellPhase.Quiet;

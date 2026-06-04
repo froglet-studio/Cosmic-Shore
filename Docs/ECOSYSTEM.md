@@ -169,6 +169,33 @@ first approximations, build to extend"):
   today; a 4th "berserk" tier and per-subtype aggression are natural extensions
   when the predator/herbivore split lands (§7).
 
+### 5.1 Density & flora regrowth (cells were sparse / froze solid)
+
+Two follow-on changes so cells feel full and keep breathing:
+
+- **Scaled-up capacity.** The menu's `Blob Cell Config` phase thresholds were tiny
+  (Quiet 100 … Frozen 700 … Rabid 900 — the "widened for visibility" values), so
+  flora stopped planting at 300 prisms and growing at 700. Scaled ~6× (Quiet 600 …
+  Frozen 4200 … Rabid 5400), keeping the 0.6 hysteresis ratio. Raising the
+  thresholds raises both the prism-count ceiling *and* the `DomainVolumeIndicator`
+  volume scale (it ranges against `RabidEnter`). Other biomes already use the high
+  code `Default` (Rabid 15000) — left as-is; scale there too if gameplay feels
+  sparse.
+- **Flora regrowth pulse.** Growth was a hard stop at Frozen, and in the menu the
+  dominant domain's flora have no down-force (fauna only eat *opposing* prisms), so
+  the canopy froze and never resumed. `Cell.FloraGrowingEnabled` now = `phase <
+  Frozen` **OR** (`phase < Rabid` AND in a periodic regrowth window). So below
+  Frozen flora grow freely; once full they resume growing in brief periodic pulses
+  (cell-global, all flora breathe together); Rabid stays the hard ceiling.
+  Config: `SpawnProfileSO.FloraRegrowthPulsePeriod` (15s) /
+  `FloraRegrowthPulseDuration` (4s); `<= 0` falls back to those defaults so the
+  pulse is on across the board.
+
+> The pulse is the flora-side stopgap until prism mortality/decay exists — the
+> truly emergent down-force (flora shed aged prisms, count falls, growth resumes
+> via hysteresis) that would make the pulse unnecessary. Noted for the iteration
+> toward §7.
+
 ---
 
 ## 6. Decision — fauna bounded by **prey-linked starvation** (option C)
