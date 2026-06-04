@@ -1,4 +1,5 @@
 // MultiplayerJoustController.cs
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
@@ -168,8 +169,34 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[JoustController] Client synced. Winner='{gameData.WinnerName}' Domain={gameData.WinnerDomain} " +
                       $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.Score:F1}"))}]");
 
+            gameData.SetResults(BuildResults());
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
+        }
+
+        /// <summary>
+        /// Builds the single ranked results list for this game from the synced per-player
+        /// stats (R10). ScoreText matches MultiplayerJoustScoreboard.FormatPlayerScore —
+        /// winners show the finish time, losers the team's remaining jousts (the domain
+        /// deficit vs gameData.JoustTargetCount). Runs on host + every client, so all peers
+        /// agree — which is what fixes B2 once the reveal reads this ScoreText.
+        /// </summary>
+        List<ScoreResult> BuildResults()
+        {
+            int needed = gameData.JoustTargetCount;
+            var rows = gameData.RoundStatsList.Select(s =>
+            {
+                int joustsLeft = Mathf.Max(0, needed - gameData.SumJoustCollisionsByDomain(s.Domain));
+                return new ScoreResultBuilder.Row(
+                    s.Name,
+                    s.Domain,
+                    s.Score,
+                    GolfScoreSentinels.IsFinishTime(s.Score)
+                        ? ScoreResultBuilder.FormatTime(s.Score)
+                        : $"{joustsLeft} Joust{(joustsLeft == 1 ? "" : "s")} Left",
+                    $"{s.JoustCollisions} Jousts");
+            }).ToList();
+            return ScoreResultBuilder.Build(rows, UseGolfRules);
         }
 
         // ── Replay ───────────────────────────────────────────────────────

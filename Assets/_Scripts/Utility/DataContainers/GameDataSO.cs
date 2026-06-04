@@ -143,6 +143,16 @@ namespace CosmicShore.Utility
         [NonSerialized] public int CrystalTargetCount;
 
         /// <summary>
+        /// The resolved joust-collision target for the current session — the per-domain
+        /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
+        /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
+        /// the Joust controller to format the "N Jousts Left" loser line into
+        /// <see cref="ScoreResult.ScoreText"/>. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int JoustTargetCount;
+
+        /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
         /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
         /// and ServerPlayerVesselInitializerWithAI see correct values.
@@ -288,6 +298,7 @@ namespace CosmicShore.Utility
             WinnerDomain = Domains.Blue;
             Results.Clear();
             CrystalTargetCount = 0;
+            JoustTargetCount = 0;
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
@@ -324,6 +335,7 @@ namespace CosmicShore.Utility
             WinnerDomain = Domains.Blue;
             Results.Clear();
             CrystalTargetCount = 0;
+            JoustTargetCount = 0;
         }
 
         public void ResetStatsDataForReplay()
