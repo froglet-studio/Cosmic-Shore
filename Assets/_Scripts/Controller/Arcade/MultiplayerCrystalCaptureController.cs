@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
@@ -155,8 +156,27 @@ namespace CosmicShore.Gameplay
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
+            gameData.SetResults(BuildResults());
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
+        }
+
+        /// <summary>
+        /// Builds the single ranked results list for this game from the synced per-player
+        /// stats (R10). CrystalCapture isn't golf — Score IS the crystal count — so ScoreText
+        /// matches MultiplayerCrystalCaptureScoreboard.FormatPlayerScore ("N Crystals") and
+        /// there is no secondary line. Runs on host + every client, so all peers agree.
+        /// </summary>
+        List<ScoreResult> BuildResults()
+        {
+            var rows = gameData.RoundStatsList.Select(s => new ScoreResultBuilder.Row(
+                s.Name,
+                s.Domain,
+                s.Score,
+                $"{(int)s.Score} Crystals",
+                null
+            )).ToList();
+            return ScoreResultBuilder.Build(rows, UseGolfRules);
         }
 
         // ── Replay ───────────────────────────────────────────────────────
