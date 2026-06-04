@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -331,8 +332,29 @@ namespace CosmicShore.Gameplay
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
+            gameData.SetResults(BuildResults());
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
+        }
+
+        /// <summary>
+        /// Builds the single ranked results list for this race from the synced per-player
+        /// stats (R10). ScoreText matches HexRaceScoreboard.FormatPlayerScore — winners show
+        /// the finish time, losers the team's remaining crystals (decoded from the score
+        /// sentinel). Runs on host + every client (inside the ClientRpc), so all peers agree.
+        /// </summary>
+        List<ScoreResult> BuildResults()
+        {
+            var rows = gameData.RoundStatsList.Select(s => new ScoreResultBuilder.Row(
+                s.Name,
+                s.Domain,
+                s.Score,
+                GolfScoreSentinels.IsFinishTime(s.Score)
+                    ? ScoreResultBuilder.FormatTime(s.Score)
+                    : $"{GolfScoreSentinels.DecodeHexRaceCrystalsLeft(s.Score)} Crystals Left",
+                $"{s.CrystalsCollected} Crystals"
+            )).ToList();
+            return ScoreResultBuilder.Build(rows, UseGolfRules);
         }
 
         // OnResetForReplayCustom removed — HexRace uses UseSceneReloadForReplay = true,
