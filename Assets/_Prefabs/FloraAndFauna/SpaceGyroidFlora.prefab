@@ -62,6 +62,7 @@ MonoBehaviour:
   growPeriod: 1.6
   PlantPeriod: 30
   stunDuration: 2
+  plantRadiusCellFraction: 0.2
   depth: 0
   maxTotalSpawnedObjects: 400
   maxDepth: 50

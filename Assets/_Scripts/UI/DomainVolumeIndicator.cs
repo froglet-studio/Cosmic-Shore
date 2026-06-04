@@ -50,14 +50,6 @@ namespace CosmicShore.UI
         [Tooltip("If assigned, the indicator reads from this cell directly. Leave null to auto-resolve via the local player's vessel position (or the nearest active cell).")]
         [SerializeField] Cell explicitCell;
 
-        [Header("Diagnostics")]
-        [Tooltip("Live tuning numbers: per-domain counts, total vs frenzy threshold, phase, and net prisms/sec. " +
-                 "The rate is the key tuning signal — +ve while flora outgrow fauna, -ve while fauna win, ~0 when pinned.")]
-        [SerializeField] TMP_Text debugReadout;
-        [Tooltip("Auto-create the diagnostic readout below the button when none is wired. Turn OFF for the production HUD.")]
-        [SerializeField] bool autoCreateReadout = true;
-        [Min(1f)] [SerializeField] float rateWindowSeconds = 5f;
-
         [Inject] GameDataSO gameData;
 
         Cell _cachedCell;
@@ -66,11 +58,6 @@ namespace CosmicShore.UI
         float _jadeNow, _rubyNow, _goldNow;
         int _dominant = -1;
         float _spawnCycle;
-
-        // Rate-of-change tracking for the diagnostic readout.
-        int _lastTotal = -1;
-        float _lastTotalTime;
-        float _smoothedRate;
 
         /// <summary>
         /// Explicit dependency handoff for the AddComponent path: runtime-added
@@ -87,7 +74,6 @@ namespace CosmicShore.UI
         void OnEnable()
         {
             EnsureHexGraphic();
-            EnsureReadout();
 
             _jadeNow = _rubyNow = _goldNow = 0f;
             _jadeTarget = _rubyTarget = _goldTarget = 0f;
@@ -160,41 +146,6 @@ namespace CosmicShore.UI
             }
         }
 
-        void EnsureReadout()
-        {
-            if (debugReadout || !autoCreateReadout) return;
-
-            // Parent to the CANVAS ROOT instead of the button. Buttons sit inside
-            // layout groups / rotated parents that the user's pause-button parent
-            // happens to have — under those, the readout inherited an "odd angle"
-            // and looked tilted. Anchoring to the canvas keeps the text axis-aligned
-            // regardless of how the button is laid out.
-            var canvas = GetComponentInParent<Canvas>();
-            var parentRT = canvas ? (RectTransform)canvas.rootCanvas.transform : transform;
-
-            var go = new GameObject("DomainVolumeReadout (auto)", typeof(RectTransform));
-            var rt = (RectTransform)go.transform;
-            rt.SetParent(parentRT, false);
-            rt.localRotation = Quaternion.identity;
-            rt.localScale = Vector3.one;
-            rt.sizeDelta = new Vector2(260f, 80f);
-
-            // Pin under the button: convert the button's bottom-centre to the
-            // canvas's local space and place the readout there with a small gap.
-            var hostRT = (RectTransform)transform;
-            Vector3[] corners = new Vector3[4];
-            hostRT.GetWorldCorners(corners); // 0:BL 1:TL 2:TR 3:BR
-            Vector3 bottomCentreWorld = (corners[0] + corners[3]) * 0.5f;
-            rt.position = bottomCentreWorld;
-            rt.anchoredPosition += new Vector2(0f, -48f);
-
-            var tmp = go.AddComponent<TextMeshProUGUI>();
-            tmp.fontSize = 16f;
-            tmp.alignment = TextAlignmentOptions.Top;
-            tmp.raycastTarget = false;
-            debugReadout = tmp;
-        }
-
         // ------------------------------------------------------------------
         //  Sampling
         // ------------------------------------------------------------------
@@ -206,7 +157,6 @@ namespace CosmicShore.UI
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
                 _dominant = -1;
-                UpdateReadout(null, 0, 0, 0, 0);
                 return;
             }
 
@@ -236,8 +186,6 @@ namespace CosmicShore.UI
             // periodic loop; 0 = just spawned, 1 = about to spawn (in the
             // dominant domain's color).
             _spawnCycle = cell.FaunaSpawnCycleFraction;
-
-            UpdateReadout(cell, jade, ruby, gold, rabid);
         }
 
         static int ResolveDominant(int jade, int ruby, int gold)
@@ -276,39 +224,6 @@ namespace CosmicShore.UI
             float cycle = _cachedCell ? _cachedCell.FaunaSpawnCycleFraction : _spawnCycle;
             // SetState rebuilds the mesh only on a meaningful delta.
             hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle);
-        }
-
-        // ------------------------------------------------------------------
-        //  Diagnostics
-        // ------------------------------------------------------------------
-
-        void UpdateReadout(Cell cell, int jade, int ruby, int gold, int rabid)
-        {
-            if (!debugReadout) return;
-
-            if (!cell)
-            {
-                debugReadout.text = "DVI: no active cell";
-                return;
-            }
-
-            int total = jade + ruby + gold;
-
-            float now = Time.unscaledTime;
-            if (_lastTotal >= 0 && now > _lastTotalTime)
-            {
-                float instantRate = (total - _lastTotal) / (now - _lastTotalTime);
-                float alpha = Mathf.Clamp01((now - _lastTotalTime) / Mathf.Max(1f, rateWindowSeconds));
-                _smoothedRate = Mathf.Lerp(_smoothedRate, instantRate, alpha);
-            }
-            _lastTotal = total;
-            _lastTotalTime = now;
-
-            string cfgTag = cell.HasConfigAssigned ? "" : " [NO CFG]";
-            debugReadout.text =
-                $"J:{jade} R:{ruby} G:{gold}\n" +
-                $"{total}/{rabid} {cell.Phase}{cfgTag}\n" +
-                $"{(_smoothedRate >= 0 ? "+" : "")}{_smoothedRate:F1}/s";
         }
 
         // ------------------------------------------------------------------
