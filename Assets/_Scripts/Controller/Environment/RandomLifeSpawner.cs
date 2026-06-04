@@ -8,18 +8,6 @@ namespace CosmicShore.Gameplay
 {
     public sealed class RandomLifeSpawner : CellLifeSpawnerBase
     {
-        // Fauna spawn-interval multipliers by CellAggressionLevel — mirrors
-        // IntensityWiseLifeSpawner so Cell.CurrentFaunaSpawnPeriod (which the HUD
-        // spawn-cycle ring reads) stays in lock-step with this spawner's real cadence.
-        static readonly float[] FaunaSpawnIntervalByAggression = { 1f, 0.55f, 0.25f };
-
-        static float ScaleFaunaInterval(Cell host, float baseSeconds)
-        {
-            if (!host) return baseSeconds;
-            int idx = Mathf.Clamp((int)host.AggressionLevel, 0, FaunaSpawnIntervalByAggression.Length - 1);
-            return Mathf.Max(0.05f, baseSeconds * FaunaSpawnIntervalByAggression[idx]);
-        }
-
         protected override void OnStart(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
             Track(host, StartFloraLoops(host, config, runtime, gameData));
@@ -53,8 +41,9 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.SupportedFaunas is not { Count: > 0 })
                 yield break;
 
-            var excluded = GetExcludedDomain(spawnProfile.FaunaExcludeLocalDomain, gameData, fallbackLocal: Domains.Jade);
-
+            // Fauna spawn in the cell's controlling color (see SpawnFaunaPopulation), so
+            // there is no excluded-domain roll here — that exclusion is exactly what kept
+            // the controller's own color (e.g. Jade) from ever appearing.
             foreach (var faunaCfg in spawnProfile.SupportedFaunas)
             {
                 if (!faunaCfg || !faunaCfg.FaunaPrefab) continue;
@@ -62,7 +51,7 @@ namespace CosmicShore.Gameplay
                 if (!AllowSpawn(faunaCfg.SpawnProbability))
                     continue;
 
-                Track(host, SpawnFaunaTypeLoop_Random(host, runtime, spawnProfile, faunaCfg, excluded));
+                Track(host, SpawnFaunaTypeLoop_Random(host, runtime, spawnProfile, faunaCfg));
             }
         }
 
@@ -118,68 +107,53 @@ namespace CosmicShore.Gameplay
             Cell host,
             CellRuntimeDataSO runtime,
             SpawnProfileSO spawnProfile,
-            FaunaConfigurationSO faunaCfg,
-            Domains? excluded)
+            FaunaConfigurationSO faunaCfg)
         {
-            // Optional initial wait (old behavior used InitialFaunaSpawnWaitTime too)
+            // Optional initial wait before the first population appears.
             if (spawnProfile.InitialFaunaSpawnWaitTime > 0f)
                 yield return new WaitForSeconds(spawnProfile.InitialFaunaSpawnWaitTime);
 
-            // Initial batch — gated on FaunaSpawningEnabled (cell has crossed Quiet),
-            // matching IntensityWiseLifeSpawner. The old scored-volume gate
-            // (GetControllingVolume) reads ~0 in Menu_Main where no game is scored, so
-            // fauna never spawned there; the phase gate ties spawning to the cell's
-            // own live prism mass instead.
-            int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
-            float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
+            // Timer-driven spawning at a FIXED period — no phase gate, no aggression
+            // scaling. Prism count drives fauna *aggression/behavior* (see Fauna /
+            // LightFauna); the timer drives *when* they spawn. Each tick emits a
+            // fixed-size population in the cell's controlling color, but only while there
+            // is prey to eat: production pauses when opposing prism mass is below
+            // FaunaFoodFloor, and starving fauna despawn — so the population self-bounds
+            // to prey. (Docs/ECOSYSTEM.md §6, option C: prey-linked.)
+            float period = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
 
-            for (int i = 0; i < initialCount; i++)
-            {
-                if (host && host.FaunaSpawningEnabled)
-                    TrySpawnFaunaRandom(host, runtime, faunaCfg, excluded);
-
-                // Spread instantiation across frames. WaitForSeconds when an interval
-                // is configured; otherwise yield a single frame so a large InitialSpawnCount
-                // doesn't instantiate every (prism-bodied) life form in one frame — that
-                // showed up as a ~48% frame spike in Cell.SpawnFaunaTypeLoop_Random.
-                if (i < initialCount - 1)
-                {
-                    if (initialInterval > 0f) yield return new WaitForSeconds(initialInterval);
-                    else yield return null;
-                }
-            }
-
-            // Continuous spawn — phase-gated, interval scales with aggression so the
-            // cycle accelerates under stress. Seed the spawn-cycle telemetry before the
-            // first wait so the HUD ring starts at 0% and advances, instead of sitting
-            // at the "never spawned" sentinel (the dead-ring symptom in Menu_Main).
-            host.RecordFaunaSpawn();
             while (true)
             {
-                float wait = ScaleFaunaInterval(host, Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime));
-                yield return new WaitForSeconds(wait);
-
                 if (!host) yield break;
-                if (!host.FaunaSpawningEnabled) continue;
 
-                TrySpawnFaunaRandom(host, runtime, faunaCfg, excluded);
+                Domains color = host.ControllingDomain;
+                if (host.OpposingBlockCount(color) >= spawnProfile.FaunaFoodFloor)
+                    SpawnFaunaPopulation(host, runtime, faunaCfg, color);
+
+                // Reset the spawn-cycle ring each period whether or not prey allowed a
+                // burst — the ring reflects the fixed timer cadence, not the food gate.
                 host.RecordFaunaSpawn();
+
+                yield return new WaitForSeconds(period);
             }
         }
 
         /// <summary>
-        /// Spawns one fauna in a random (excluded-aware) domain — RandomLifeSpawner's
-        /// distinguishing flavor vs IntensityWiseLifeSpawner's controlling-color spawns.
-        /// Seeks the crystal when present, the cell centre otherwise, so fauna still
-        /// appear in cells whose crystal hasn't spawned yet (e.g. Menu_Main on entry).
+        /// Spawns one fixed-size population in <paramref name="color"/> — the cell's
+        /// controlling domain. Spawning in the controller's color fixes "no Jade fauna
+        /// when Jade controls" and lets the dominant color's fauna hunt the minority.
+        /// Seeks the crystal when present, the cell centre otherwise; each member adds
+        /// its own orbit offset (Fauna) so the swarm spreads instead of stacking.
         /// </summary>
-        void TrySpawnFaunaRandom(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains? excluded)
+        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color)
         {
+            int count = Mathf.Max(1, faunaCfg.PopulationSize);
             Vector3 goal = TryGetCrystalGoal(runtime, out var crystalGoal)
                 ? crystalGoal
                 : host.transform.position;
 
-            SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
+            for (int i = 0; i < count; i++)
+                SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
         }
     }
 }

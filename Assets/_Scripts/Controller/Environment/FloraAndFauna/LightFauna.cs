@@ -123,6 +123,14 @@ namespace CosmicShore.Gameplay
             if (!data)
                 return;
 
+            // Prey-linked population control: a fauna that hasn't fed in starvationSeconds
+            // despawns, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
+            if (IsStarving)
+            {
+                Die("starvation");
+                return;
+            }
+
             Vector3 separation = Vector3.zero;
 
             // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
@@ -195,7 +203,10 @@ namespace CosmicShore.Gameplay
                         separation += diff.normalized / distance;
 
                     if (distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    {
                         otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
+                        NotifyFed();
+                    }
 
                     continue;
                 }
@@ -203,7 +214,10 @@ namespace CosmicShore.Gameplay
                 // Handle blocks
                 Prism block = collider.GetComponent<Prism>();
                 if (block && block.Domain != domain && distance < consumeRadius)
+                {
                     block.Consume(transform, domain, PLAYER_NAME, true);
+                    NotifyFed();
+                }
             }
 
             averageSpeed = neighborCount > 0

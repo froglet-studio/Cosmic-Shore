@@ -171,7 +171,7 @@ first approximations, build to extend"):
 
 ---
 
-## 6. Open decision — how fauna are **bounded** (cull / stop-producing)
+## 6. Decision — fauna bounded by **prey-linked starvation** (option C)
 
 This is loop #3, and it's the one thing that, missing, prevents the ecosystem
 from breathing. Three ways to add the negative feedback, smallest→most emergent:
@@ -182,10 +182,27 @@ from breathing. Three ways to add the negative feedback, smallest→most emergen
 | **B. Lifespan (natural cull)** | Each fauna despawns after `T` seconds | Self-bounding (pop ≈ rate × T), simple, predictable | Decoupled from prey — not yet "emergent", just a timer |
 | **C. Prey-linked / starvation (emergent)** | Fauna persist only while prey (opposing prisms) is reachable; they **starve & despawn** when prism food is scarce, and production pauses when food is low | Ties population to prism count → genuine predator–prey oscillation; this is where the **predator/herbivore** split naturally lives (herbivores eat flora prisms, predators eat herbivores) | Most work; needs a hunger/last-fed state on fauna |
 
-**Recommendation:** ship **A + B** now as the "first approximation" bound (a hard
-cap for safety + a lifespan as the simple cull), and evolve toward **C** as the
-north star once the sub-categories exist. A and B are a few lines each and unblock
-a healthy, testable menu ecology immediately; C is the design we iterate toward.
+**Decision: C (prey-linked).** Implemented now rather than the A+B interim — it's
+the emergent north star and the seam the predator/herbivore split plugs into.
+
+**Implemented:**
+- `Cell.OpposingBlockCount(domain)` = live prisms not of `domain` — the prey signal.
+- **Production pauses** when `OpposingBlockCount(controllingColor) < FaunaFoodFloor`
+  (`SpawnProfileSO`, default 5): the timer keeps ticking but no population spawns.
+- **Starvation cull** on `Fauna`/`LightFauna`: a creature that hasn't consumed a
+  prism in `starvationSeconds` (default 30, `Fauna` field) despawns; `NotifyFed()`
+  resets the clock on every `Consume`.
+- Net: population self-bounds to prey, no hard cap. Because fauna only *hunt*
+  opposing prisms at higher aggression (L1+), and aggression rises with prism
+  count, **survival tracks prism count** — low mass ⇒ fauna can't find food ⇒ they
+  thin out; high mass ⇒ they feed and multiply. That coupling is the oscillation.
+
+**Tuning knobs** (watch in Menu_Main, expect to adjust): `starvationSeconds` (too
+low ⇒ fauna starve before reaching prey; raise it), `FaunaFoodFloor` (min prey
+before a burst), `PopulationSize` (`FaunaConfigurationSO`, swarm size),
+`BaseFaunaSpawnTime` (fixed period). No hard population cap was added; if a
+prey-rich cell ever spikes fauna enough to hurt frame-rate, add a high safety cap
+as a backstop (not the primary control).
 
 ---
 
@@ -212,17 +229,19 @@ The redesign is shaped so the split drops in without rework:
 
 ## 8. Build order
 
-1. **(this doc)** Map + agree the redesign and the §6 bound. ← we are here
-2. Implement the spawn rewrite in `RandomLifeSpawner`: timer-only, fixed period,
-   fixed population N, `ControllingDomain`; simplify `CurrentFaunaSpawnPeriod` to
-   base period. (Mirror in `IntensityWiseLifeSpawner` for consistency even though
-   no scene runs it.)
-3. Implement the chosen §6 bound (recommended A + B): `MaxFaunaPerCell` cap +
-   `FaunaLifespanSeconds` despawn. New config fields on `SpawnProfileSO` /
-   `FaunaConfigurationSO`, defaults tuned for the menu.
-4. Validate in Menu_Main: population rises to the cap, holds, oscillates with
-   prism count via aggression; Jade fauna appear when Jade controls; ring sweeps.
-5. Iterate toward C (starvation) alongside the predator/herbivore sub-type split.
+1. ✅ Map + agree the redesign and the §6 bound.
+2. ✅ Spawn rewrite in `RandomLifeSpawner`: timer-only, fixed period, fixed
+   population N, `ControllingDomain`; `CurrentFaunaSpawnPeriod` simplified to base
+   period. (`IntensityWiseLifeSpawner` left as-is — no scene runs it; reconcile or
+   delete later.)
+3. ✅ §6 bound = option C: `OpposingBlockCount` prey signal + `FaunaFoodFloor`
+   production gate + `starvationSeconds` despawn. Config on `SpawnProfileSO` /
+   `FaunaConfigurationSO` / `Fauna`.
+4. ⏳ Validate in Menu_Main: Jade fauna appear when Jade controls; populations
+   appear, hunt, and thin out as prey runs low; ring sweeps at the fixed period.
+   Tune the §6 knobs.
+5. ⏳ Iterate toward the predator/herbivore sub-type split (diet = "what counts as
+   prey"; two-tier starvation = Lotka–Volterra).
 
 ---
 

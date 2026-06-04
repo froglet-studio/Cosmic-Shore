@@ -189,11 +189,11 @@ namespace CosmicShore.Gameplay
         public void RecordFaunaSpawn() => _lastFaunaSpawnTime = Time.time;
 
         /// <summary>
-        /// Effective period (seconds) between this cell's periodic fauna spawns,
-        /// scaled by current aggression: BaseFaunaSpawnTime * SpawnIntervalByAggression.
-        /// Mirrors the math in IntensityWiseLifeSpawner.ScaleFaunaInterval, kept here
-        /// so HUDs can read the period without taking a dependency on the spawner.
-        /// Returns 0 when no profile is wired (HUD treats 0 as "no cycle to show").
+        /// Fixed period (seconds) between this cell's periodic fauna population spawns —
+        /// just BaseFaunaSpawnTime. Per the ecology redesign the spawn cadence and swarm
+        /// size are FIXED; prism count drives fauna *aggression/behavior*, not spawn rate
+        /// (Docs/ECOSYSTEM.md §5). HUDs read this for the spawn-cycle ring. Returns 0 when
+        /// no profile is wired (HUD treats 0 as "no cycle to show").
         /// </summary>
         public float CurrentFaunaSpawnPeriod
         {
@@ -201,15 +201,7 @@ namespace CosmicShore.Gameplay
             {
                 var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
                 if (!profile) return 0f;
-                float baseTime = Mathf.Max(0.05f, profile.BaseFaunaSpawnTime);
-                // Multipliers parallel IntensityWiseLifeSpawner.FaunaSpawnIntervalByAggression.
-                float mult = AggressionLevel switch
-                {
-                    CellAggressionLevel.Level1 => 0.55f,
-                    CellAggressionLevel.Level2 => 0.25f,
-                    _ => 1f,
-                };
-                return baseTime * mult;
+                return Mathf.Max(0.05f, profile.BaseFaunaSpawnTime);
             }
         }
 
@@ -251,6 +243,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True once the cell has crossed the fauna-spawn threshold (Phase &gt;= Quiet).</summary>
         public bool FaunaSpawningEnabled => phase >= CellPhase.Quiet;
+
+        /// <summary>
+        /// Prey signal for a fauna of <paramref name="domain"/>: live prisms NOT of that
+        /// domain (fauna consume any prism whose domain differs from their own). Drives
+        /// prey-linked population control — production pauses and fauna starve when this
+        /// hits zero. See Docs/ECOSYSTEM.md §6.
+        /// </summary>
+        public int OpposingBlockCount(Domains domain) =>
+            Mathf.Max(0, LiveBlockCount - GetDomainBlockCount(domain));
 
         /// <summary>
         /// Fauna aggression level derived from <see cref="Phase"/>:
