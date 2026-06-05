@@ -38,6 +38,24 @@ namespace CosmicShore.Gameplay
         // spawn but varied across the pack.
         Vector3 _goalOrbitOffset;
 
+        [Header("Population control (prey-linked)")]
+        [Tooltip("Seconds this fauna can go without feeding before it starves and despawns. " +
+                 "Feeding (consuming any prism) resets the clock; 0 = never starve. Concrete " +
+                 "creature fauna (e.g. LightFauna) call NotifyFed() on consume and despawn when " +
+                 "IsStarving; manager-type Fauna subclasses ignore it. See Docs/ECOSYSTEM.md §6.")]
+        [SerializeField] protected float starvationSeconds = 30f;
+
+        // -1 until the first Start tick so a fauna spawned when Time.time already exceeds
+        // starvationSeconds isn't reported starving before its clock begins.
+        float _lastFedTime = -1f;
+
+        /// <summary>True once this fauna has gone longer than starvationSeconds without feeding.</summary>
+        protected bool IsStarving =>
+            starvationSeconds > 0f && _lastFedTime >= 0f && (Time.time - _lastFedTime) > starvationSeconds;
+
+        /// <summary>Reset the starvation clock — a subclass calls this whenever it consumes prey.</summary>
+        protected void NotifyFed() => _lastFedTime = Time.time;
+
         // --- ILifeFormEntity ---
         public Domains Domain => domain;
         public GameObject GetGameObject() => gameObject;
@@ -53,6 +71,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"{name}: Population domain is Blue (sentinel). Assign a real domain before spawning, or set it on the prefab.");
 
             _goalOrbitOffset = Random.onUnitSphere * Mathf.Max(0f, goalOrbitRadius);
+            _lastFedTime = Time.time; // start the starvation clock when the creature comes alive
 
             StartCoroutine(UpdateGoalCoroutine());
         }

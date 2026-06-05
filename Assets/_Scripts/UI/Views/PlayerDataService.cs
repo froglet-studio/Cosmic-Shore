@@ -63,6 +63,15 @@ namespace CosmicShore.UI
         {
             OnProfileChanged += SyncProfileToGameData;
 
+            if (_ugsDataService == null)
+            {
+                // DI failed to supply the cloud data service (e.g. instantiated outside a
+                // ContainerScope). Keep the local default profile so UI still renders rather
+                // than throwing in Start and aborting the rest of init.
+                CSDebug.LogWarning("[PlayerDataService] UGSDataService was not injected; running on local profile only.");
+                return;
+            }
+
             if (_ugsDataService.IsInitialized)
                 HandleDataServiceReady();
             else
@@ -79,6 +88,13 @@ namespace CosmicShore.UI
 
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
+
+            // Notify currency/XP displays of the freshly-loaded cloud values. These views
+            // subscribe to the static balance/xp events but those are otherwise only raised on
+            // mutation (AddCrystals/AddXP), so without this they'd show the local-default 0
+            // until the next change.
+            OnCrystalBalanceChanged?.Invoke(CurrentProfile?.crystalBalance ?? 0);
+            OnXPChanged?.Invoke(CurrentProfile?.xp ?? 0);
         }
 
         /// <summary>
@@ -170,6 +186,7 @@ namespace CosmicShore.UI
             repoData.displayName = CurrentProfile.displayName;
             repoData.avatarId = CurrentProfile.avatarId;
             repoData.crystalBalance = CurrentProfile.crystalBalance;
+            repoData.xp = CurrentProfile.xp;
             repoData.unlockedRewardIds = CurrentProfile.unlockedRewardIds;
 
             ds.ProfileRepo.MarkDirty();
@@ -229,6 +246,9 @@ namespace CosmicShore.UI
 
         public static event Action<int> OnCrystalBalanceChanged;
 
+        // Raised whenever the player's XP total changes (and once on cloud load).
+        public static event Action<int> OnXPChanged;
+
         public int GetCrystalBalance()
         {
             return CurrentProfile?.crystalBalance ?? 0;
@@ -237,6 +257,23 @@ namespace CosmicShore.UI
         public int GetXP()
         {
             return CurrentProfile?.xp ?? 0;
+        }
+
+        /// <summary>
+        /// Adds XP to the player's profile, persists it, and notifies listeners.
+        /// Mirrors <see cref="AddCrystals"/> so the XP progress bar has a single,
+        /// authoritative earning + persistence path.
+        /// </summary>
+        public int AddXP(int amount)
+        {
+            if (CurrentProfile == null || amount <= 0) return GetXP();
+
+            CurrentProfile.xp += amount;
+            ScheduleSave();
+            OnXPChanged?.Invoke(CurrentProfile.xp);
+            OnProfileChanged?.Invoke(CurrentProfile);
+            CSDebug.Log($"[PlayerDataService] Added {amount} XP. Total: {CurrentProfile.xp}");
+            return CurrentProfile.xp;
         }
 
         public int AddCrystals(int amount)

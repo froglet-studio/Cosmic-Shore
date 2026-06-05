@@ -83,8 +83,39 @@ namespace CosmicShore.Core
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (gameData)
-                gameData.InvokeSceneTransition(true);
+            if (!gameData) return;
+            gameData.InvokeSceneTransition(true);
+
+            // Whenever Menu_Main finishes loading (initial auth→menu or game→menu return),
+            // ensure the splash is opaque and subscribe FadeFromSplashOnReady so it fades
+            // out only once the vessel spawns (OnClientReady).  LaunchGame already handles
+            // this for menu→game transitions; this covers the two menu-entry paths that
+            // LaunchGame never sees.
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            if (scene.name == menuScene)
+            {
+                _sceneTransitionManager?.SetFadeImmediate(1f);
+                ArmSplashFadeOnNextClientReady();
+            }
+        }
+
+        /// <summary>
+        /// Subscribes <see cref="FadeFromSplashOnReady"/> to <see cref="GameDataSO.OnClientReady"/>
+        /// so the next time the local player's vessel finishes initialization the splash
+        /// overlay fades back to transparent. Idempotent — safe to call repeatedly.
+        ///
+        /// Called automatically on Menu_Main load via <see cref="OnSceneLoaded"/>. Called
+        /// manually by <see cref="Gameplay.PartyInviteController.AcceptInviteAsync"/> after
+        /// it sets the splash opaque, because accepting an invite does not trigger a scene
+        /// reload on the joining client (the host's Menu_Main is already loaded), so
+        /// <see cref="OnSceneLoaded"/> never fires and the fade subscription would otherwise
+        /// stay unarmed — leaving the joining client stuck on the splash (Bug B).
+        /// </summary>
+        public void ArmSplashFadeOnNextClientReady()
+        {
+            if (!gameData) return;
+            gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+            gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
         }
 
         #endregion
@@ -277,12 +308,14 @@ namespace CosmicShore.Core
                 return;
             }
 
-            // Clear the stale party session reference so HostConnectionService
-            // can create a fresh Relay-backed session when Menu_Main loads.
-            // LeaveSession() deletes the game session and shuts down the network;
-            // the party session created during initial auth is now stale.
-            if (HostConnectionService.Instance != null)
-                HostConnectionService.Instance.ClearStalePartySession();
+            // Eager per-user Relay: the party Relay session is NOT cleared here.
+            // MultiplayerSetup.LeaveSession() raises OnSessionEnded but leaves the
+            // shared gameData.ActiveSession reference intact (Commit 8 unified it
+            // with PartySessionService.ActiveSession; nulling here would orphan
+            // the live Relay).  HCS still has a live Relay and NM is still
+            // running.  ReturnToMainMenu() uses nm.SceneManager.LoadScene to
+            // carry all party members back to Menu_Main on the same Relay
+            // connection — no disconnection, no re-creation.
 
             ReturnToMainMenu();
             gameData.ResetAllData();

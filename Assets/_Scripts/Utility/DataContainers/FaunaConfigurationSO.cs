@@ -11,6 +11,9 @@ namespace CosmicShore.Utility
     {
         public Fauna FaunaPrefab;
         public int InitialSpawnCount;
+        [Tooltip("Fauna instantiated per population burst (fixed swarm size). Prism count drives their " +
+                 "aggression/behavior, not this count. See Docs/ECOSYSTEM.md.")]
+        [Min(1)] public int PopulationSize = 4;
         public float SpawnProbability;
     }
 }

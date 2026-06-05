@@ -55,6 +55,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Delay in ms after vessel spawn before notifying clients.")]
         [SerializeField] protected int postSpawnDelayMs = 200;
 
+        // Whether spawned vessels are destroyed with their scene. Game scenes keep
+        // the default (true). Menu_Main overrides to false so a joining client's
+        // vessel survives the client's scene-synchronize batching destroy — the same
+        // race the AI vessels hit (see ServerPlayerVesselInitializerWithAI).
+        protected virtual bool DestroyVesselWithScene => true;
+
         NetcodeHooks _netcodeHooks;
         protected CancellationTokenSource _cts;
 
@@ -88,18 +94,21 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                CSDebug.Log("<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — NOT server, disabling</color>");
+                Debug.Log("<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
-            CSDebug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
 
             if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
 
             _cts = new CancellationTokenSource();
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
+
+            // Client-pull: answer roster requests from freshly-joined clients.
+            clientPlayerVesselInitializer.OnRosterRequested = HandleRosterRequest;
 
             // Process players that were already spawned before this initializer
             // existed (e.g. the host's Player object spawned in the Auth scene
@@ -143,6 +152,8 @@ namespace CosmicShore.Gameplay
         protected virtual void OnNetworkDespawn()
         {
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerNetworkSpawned;
+            if (clientPlayerVesselInitializer != null)
+                clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
 
             _cts?.Cancel();
@@ -170,18 +181,18 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid HandlePlayerNetworkSpawnedAsync(ulong ownerClientId, CancellationToken ct)
         {
-            CSDebug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync — ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync — ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
             // Wait for NetworkVariables set in Player.OnNetworkSpawn to sync
             await UniTask.Delay(preSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
             Player player = FindUnprocessedPlayerByOwnerClientId(ownerClientId);
             if (player == null)
             {
-                CSDebug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
+                Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
                 return;
             }
 
-            CSDebug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
 
             // Domain is server-writable: human players route their selections through
             // Player.RequestSetDomain_ServerRpc (called from DomainSelectionPanel and the
@@ -190,7 +201,7 @@ namespace CosmicShore.Gameplay
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
             {
-                CSDebug.Log($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
+                Debug.Log($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
                 return;
             }
 
@@ -225,12 +236,12 @@ namespace CosmicShore.Gameplay
                     // Still not ready after retries — remove from processed so the
                     // deferred spawn event (Player.TryRaiseDeferredSpawnEvent) can retry.
                     _processedPlayers.Remove(player.NetworkObjectId);
-                    CSDebug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready after {maxRetries * retryIntervalMs}ms — VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'. Will retry on deferred event.</color>");
+                    Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready after {maxRetries * retryIntervalMs}ms — VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'. Will retry on deferred event.</color>");
                     return;
                 }
             }
 
-            CSDebug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
             await OnPlayerReadyToSpawnAsync(player, ct);
         }
 
@@ -241,14 +252,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
-            CSDebug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync — SpawnVesselAndInitialize for {player.NetName.Value}</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync — SpawnVesselAndInitialize for {player.NetName.Value}</color>");
             SpawnVesselAndInitialize(player.OwnerClientId, player);
 
-            CSDebug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
             // Wait for the vessel NetworkObject to fully replicate before telling clients
             await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
-            CSDebug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
             NotifyClients(player);
         }
 
@@ -291,27 +302,79 @@ namespace CosmicShore.Gameplay
                     newPlayer.PlayerNetId, newPlayer.VesselNetId, existingTarget);
             }
 
-            // Tell the new client to initialize ALL player-vessel pairs
+            // Tell the new client to initialize ALL player-vessel pairs.
             if (newClientId != hostClientId)
-            {
-                var playerIds = new List<ulong>();
-                var vesselIds = new List<ulong>();
-                foreach (var p in gameData.Players)
-                {
-                    if (p.VesselNetId == 0) continue;
-                    playerIds.Add(p.PlayerNetId);
-                    vesselIds.Add(p.VesselNetId);
-                }
+                SendFullRosterToClient(newClientId);
+        }
 
-                var newTarget = new ClientRpcParams
-                {
-                    Send = new ClientRpcSendParams { TargetClientIds = new[] { newClientId } }
-                };
-                clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(
-                    playerIds.ToArray(), vesselIds.ToArray(), newTarget);
+        /// <summary>
+        /// Sends the full current player-vessel roster to a single client via
+        /// <see cref="ClientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc"/>.
+        /// Used both by <see cref="NotifyClients"/> (new-client push) and by the
+        /// client-pull <see cref="HandleRosterRequest"/> (reply / heal a dropped push).
+        /// Idempotent on the client — already-initialised pairs are skipped.
+        /// </summary>
+        protected void SendFullRosterToClient(ulong clientId)
+        {
+            if (clientId == NetworkManager.Singleton.LocalClientId) return;
+
+            var playerIds = new List<ulong>();
+            var vesselIds = new List<ulong>();
+            foreach (var p in gameData.Players)
+            {
+                if (p.VesselNetId == 0) continue;
+                playerIds.Add(p.PlayerNetId);
+                vesselIds.Add(p.VesselNetId);
             }
-            
-            // Invoke Client Ready gameData.InvokeClientReady(); after few interval
+
+            var target = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
+            };
+            clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(
+                playerIds.ToArray(), vesselIds.ToArray(), target);
+        }
+
+        /// <summary>
+        /// Client-pull entry point (wired to <see cref="ClientPlayerVesselInitializer.OnRosterRequested"/>).
+        /// A freshly-joined client asks for the roster from its own OnNetworkSpawn.
+        /// Idempotent ensure-then-send: kick the spawn chain if the requester's vessel
+        /// hasn't spawned yet, then (re)send the full roster. Heals a dropped one-shot
+        /// push and the host's own deferred-spawn edge.
+        /// </summary>
+        void HandleRosterRequest(ulong requesterClientId)
+        {
+            if (!NetworkManager.Singleton.IsServer) return;
+
+            var requester = FindPlayerByOwnerClientId(requesterClientId);
+            if (requester != null
+                && requester.VesselNetId == 0
+                && !_processedPlayers.Contains(requester.NetworkObjectId))
+            {
+                HandlePlayerNetworkSpawned(requesterClientId);
+            }
+
+            SendFullRosterToClient(requesterClientId);
+        }
+
+        /// <summary>
+        /// Finds a spawned Player owned by <paramref name="ownerClientId"/> regardless of
+        /// processed-state (unlike <see cref="FindUnprocessedPlayerByOwnerClientId"/>).
+        /// </summary>
+        Player FindPlayerByOwnerClientId(ulong ownerClientId)
+        {
+            foreach (var p in gameData.Players)
+                if (p is Player netPlayer && netPlayer.IsSpawned && netPlayer.OwnerClientId == ownerClientId)
+                    return netPlayer;
+
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.ConnectedClients.TryGetValue(ownerClientId, out var client))
+            {
+                var playerObj = client.PlayerObject;
+                if (playerObj != null && playerObj.TryGetComponent<Player>(out var player) && player.IsSpawned)
+                    return player;
+            }
+            return null;
         }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer) =>
@@ -337,8 +400,7 @@ namespace CosmicShore.Gameplay
 
             var networkVessel = Instantiate(shipNetworkObject);
             GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
-            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.SpawnDespawn.Auto())
-                networkVessel.SpawnWithOwnership(clientId, true);
+            networkVessel.SpawnWithOwnership(clientId, DestroyVesselWithScene);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
             return networkVessel;
         }
@@ -352,10 +414,7 @@ namespace CosmicShore.Gameplay
             gameData.Vessels.Remove(vessel);
 
             if (vessel is VesselController vc && vc.IsSpawned)
-            {
-                using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.SpawnDespawn.Auto())
-                    vc.NetworkObject.Despawn(true);
-            }
+                vc.NetworkObject.Despawn(true);
         }
 
         /// <summary>
