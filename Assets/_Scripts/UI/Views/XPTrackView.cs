@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using DG.Tweening;
-using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,24 +30,39 @@ namespace CosmicShore.UI
         [SerializeField] private float sliderAnimDuration = 1f;
         [SerializeField] private Ease sliderEase = Ease.OutCubic;
 
-        [Inject] private PlayerDataService playerDataService;
+        // Use the persistent singleton rather than [Inject]: reliably available from
+        // bootstrap and immune to DI-injection timing (OnEnable fires before [Inject]
+        // fields are populated) and null injection.
+        PlayerDataService Service => PlayerDataService.Instance;
 
         private readonly List<GameObject> _spawnedItems = new();
         private readonly List<GameObject> _spawnedLevels = new();
         private Tween _sliderTween;
+        private bool _loaded;
 
         void Start()
         {
-            if (playerDataService != null)
-                playerDataService.OnProfileChanged += OnProfileChanged;
-
             LoadTrack();
+            _loaded = true;
+        }
+
+        void OnEnable()
+        {
+            var service = Service;
+            if (service != null)
+                service.OnProfileChanged += OnProfileChanged;
+
+            // On re-show (already built once), refresh from the live profile. On first
+            // enable _loaded is false and Start() does the initial load instead.
+            if (_loaded)
+                UpdateXPDisplay(Service != null ? Service.GetXP() : 0);
         }
 
         void OnDisable()
         {
-            if (playerDataService != null)
-                playerDataService.OnProfileChanged -= OnProfileChanged;
+            var service = Service;
+            if (service != null)
+                service.OnProfileChanged -= OnProfileChanged;
 
             KillTween();
         }
@@ -60,8 +74,17 @@ namespace CosmicShore.UI
 
         public void LoadTrack()
         {
+            // The authored slider may use a milestone-based range (e.g. 0..7); drive it as a
+            // normalized 0..1 progress bar so GetNormalized() maps directly to the fill.
+            if (xpSlider != null)
+            {
+                xpSlider.wholeNumbers = false;
+                xpSlider.minValue = 0f;
+                xpSlider.maxValue = 1f;
+            }
+
             SpawnMilestones();
-            int currentXP = playerDataService != null ? playerDataService.GetXP() : 0;
+            int currentXP = Service != null ? Service.GetXP() : 0;
             SetXPImmediate(currentXP);
         }
 
@@ -73,9 +96,8 @@ namespace CosmicShore.UI
 
             int totalMilestones = xpTrackData.milestones.Count;
             int xpPerMilestone = xpTrackData.xpPerMilestone;
-            bool hasProfile = playerDataService != null &&
-                              playerDataService.CurrentProfile != null;
-            int currentXP = hasProfile ? playerDataService.GetXP() : 0;
+            bool hasProfile = Service != null && Service.CurrentProfile != null;
+            int currentXP = hasProfile ? Service.GetXP() : 0;
 
             for (int i = 0; i < totalMilestones; i++)
             {

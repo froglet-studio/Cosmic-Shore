@@ -80256,6 +80256,7 @@ GameObject:
   - component: {fileID: 1307328294744200461}
   - component: {fileID: 1697402599965980882}
   - component: {fileID: 6149825080549627144}
+  - component: {fileID: 7421900112233445566}
   m_Layer: 5
   m_Name: ProfileScreen
   m_TagString: Untagged
@@ -80314,6 +80315,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayNameText: {fileID: 5503702512293099282}
   avatarImage: {fileID: 5397632936228737943}
+--- !u!114 &7421900112233445566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8348156532475567886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04fefa7be1b757a46bf9ca5311556ed9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  xpTrackData: {fileID: 11400000, guid: f17645cf96bd5d54e80aa5e87f6e4ce0, type: 2}
+  xpItemPrefab: {fileID: 0}
+  xpLevelPrefab: {fileID: 0}
+  xpItemPanels: {fileID: 0}
+  xpLevelDisplayPanel: {fileID: 0}
+  xpSlider: {fileID: 7045911685625720336}
+  xpText: {fileID: 0}
+  sliderAnimDuration: 1
+  sliderEase: 9
 --- !u!114 &6149825080549627144
 MonoBehaviour:
   m_ObjectHideFlags: 0
