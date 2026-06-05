@@ -141,6 +141,7 @@ namespace CosmicShore.Gameplay
             if (leaveCrystal)
             {
                 crystal.gameObject.SetActive(true);
+                EnsureCrystalCollectible(crystal);
                 try { crystal.ActivateCrystal(); }
                 catch (System.Exception e)
                 {
@@ -157,6 +158,25 @@ namespace CosmicShore.Gameplay
             }
 
             Die("starvation");
+        }
+
+        /// <summary>
+        /// Make the dropped crystal a collectible powerup. The fauna's core crystal
+        /// (CrystalMass) ships WITHOUT the <see cref="ElementalCrystalImpactor"/> +
+        /// <see cref="ImpactCollider"/> that flora add as a prefab override, so a collected
+        /// wither-crystal gave no element buff/UI — <see cref="SkimmerImpactor"/> only buffs
+        /// on <c>case ElementalCrystalImpactor</c>. Attach them at drop time (carrying the
+        /// crystal's authored Element) so collection works. Idempotent. The cleaner long-term
+        /// fix is to add these to the fauna's crystal in the prefab, matching flora.
+        /// </summary>
+        static void EnsureCrystalCollectible(Crystal crystal)
+        {
+            if (!crystal) return;
+            if (!crystal.TryGetComponent<CrystalImpactor>(out var impactor))
+                impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
+            if (!crystal.TryGetComponent<ImpactCollider>(out var impactCollider))
+                impactCollider = crystal.gameObject.AddComponent<ImpactCollider>();
+            impactCollider.Configure(impactor);
         }
 
         IEnumerator UpdateBehaviorCoroutine()

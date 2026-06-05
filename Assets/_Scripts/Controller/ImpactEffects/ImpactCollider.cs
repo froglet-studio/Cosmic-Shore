@@ -12,5 +12,12 @@ namespace CosmicShore.Gameplay
         private Object impactorObject;
         
         public IImpactor Impactor => impactorObject as IImpactor;
+
+        /// <summary>
+        /// Runtime wiring for impactors attached after authoring — e.g. a fauna's dropped
+        /// crystal made collectible on wither. Authored prefabs set <c>impactorObject</c> in
+        /// the inspector; this is the equivalent code path.
+        /// </summary>
+        public void Configure(IImpactor impactor) => impactorObject = impactor as Object;
     }
 }
