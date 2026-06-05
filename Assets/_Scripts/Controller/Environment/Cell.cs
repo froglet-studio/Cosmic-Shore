@@ -58,11 +58,20 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Domains, int> domainBlockCounts = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
-        // Prism → the domain it was REGISTERED under. RemoveBlock decrements the
-        // grids/counts for the registration-time domain, not the prism's current
-        // one — so steals / ChangeTeam between Add and Remove can't desync the
-        // per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
-        readonly Dictionary<Prism, Domains> trackedBlocks = new();
+        // Prism → the (domain, volume) it was REGISTERED under. RemoveBlock decrements the
+        // grids/counts/teamVolumes for the registration-time snapshot, not the prism's
+        // current state — so steals / ChangeTeam or growth between Add and Remove can't
+        // desync the per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
+        readonly Dictionary<Prism, RegisteredBlock> trackedBlocks = new();
+
+        // Snapshot of a prism's domain + mass at registration time. Mass (volume) is the
+        // prism's target-scale volume; both count and volume feed the owning domain.
+        readonly struct RegisteredBlock
+        {
+            public readonly Domains Domain;
+            public readonly float Volume;
+            public RegisteredBlock(Domains domain, float volume) { Domain = domain; Volume = volume; }
+        }
         SnowChanger spawnedCytoplasm;
 
         // ---------------------------------------------------------------------
@@ -654,10 +663,12 @@ namespace CosmicShore.Gameplay
             if (block is null) return;
             if (trackedBlocks.ContainsKey(block)) return; // already counted
 
-            // Snapshot the domain at registration time — RemoveBlock uses this snapshot
-            // so a team change (steal) between Add and Remove can't desync the grids.
+            // Snapshot the domain + volume at registration time — RemoveBlock uses this
+            // snapshot so a team change (steal) or growth between Add and Remove can't
+            // desync the grids/counts/volume.
             Domains registeredDomain = block ? block.Domain : Domains.Blue;
-            trackedBlocks[block] = registeredDomain;
+            float registeredVolume = block ? PrismVolume(block) : 0f;
+            trackedBlocks[block] = new RegisteredBlock(registeredDomain, registeredVolume);
 
             if (block)
             {
@@ -670,14 +681,20 @@ namespace CosmicShore.Gameplay
 
                 domainBlockCounts.TryGetValue(registeredDomain, out int count);
                 domainBlockCounts[registeredDomain] = count + 1;
+
+                // Every prism — flora HealthPrism or vessel trail prism — also feeds its
+                // domain's VOLUME tally, so per-domain volume reflects ALL mass (not just
+                // the legacy scored-team total, which Cell.ChangeVolume otherwise never fed).
+                ChangeVolume(registeredDomain, registeredVolume);
             }
         }
 
         public void RemoveBlock(Prism block)
         {
             if (block is null) return;
-            if (!trackedBlocks.Remove(block, out Domains registeredDomain)) return; // not counted
+            if (!trackedBlocks.Remove(block, out RegisteredBlock tracked)) return; // not counted
 
+            Domains registeredDomain = tracked.Domain;
             if (block)
             {
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
@@ -689,7 +706,21 @@ namespace CosmicShore.Gameplay
 
                 if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
                     domainBlockCounts[registeredDomain] = count - 1;
+
+                // Subtract exactly the volume Add registered (the snapshot), keeping the
+                // per-domain volume tally symmetric with count even if the prism grew or
+                // changed team while it was alive.
+                ChangeVolume(registeredDomain, -tracked.Volume);
             }
+        }
+
+        // A prism's mass = its target-scale volume, matching PrismScaleAnimator.UpdateVolume
+        // (TargetScale.x*y*z). Read at registration so a prism counts its eventual size, not
+        // the near-zero scale it has the instant it spawns.
+        static float PrismVolume(Prism block)
+        {
+            var s = block.TargetScale;
+            return Mathf.Abs(s.x * s.y * s.z);
         }
 
         /// <summary>

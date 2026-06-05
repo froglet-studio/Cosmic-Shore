@@ -21,7 +21,11 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.SupportedFloras is not { Count: > 0 })
                 yield break;
 
-            var excluded = GetExcludedDomain(spawnProfile.FloraExcludeLocalDomain, gameData, fallbackLocal: Domains.Blue);
+            // No domain asymmetry: all three playable domains seed flora (excluded = null).
+            // Which domain ends up controlling a cell emerges from consumption (controlling-
+            // color fauna grazing the minorities) and from players laying their own domain's
+            // prisms — not from biasing which colors are allowed to seed. (Docs/ECOSYSTEM.md §5.)
+            Domains? excluded = null;
 
             foreach (var floraCfg in spawnProfile.SupportedFloras)
             {

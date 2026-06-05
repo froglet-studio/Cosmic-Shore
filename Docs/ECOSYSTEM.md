@@ -19,6 +19,13 @@ One state variable drives the whole system: the cell's live prism count
 cell is the **cell** fundamental; the color on each prism is the **domain**
 fundamental. Everything else is a projection of, or a force on, prism count.
 
+> **Every** prism — flora HealthPrism or vessel trail prism — feeds **both** its
+> domain's count *and* its domain's **volume** (`Cell.AddBlock`/`RemoveBlock` →
+> `domainBlockCounts` + `teamVolumes`, snapshotting the prism's target-scale mass).
+> Volume was previously dead (`Cell.ChangeVolume` had no callers); it now mirrors
+> count so per-domain *mass* is available alongside per-domain *count*. This is what
+> lets a player lay their own domain's prisms to **take over** a cell.
+
 | Force on prism count | Sign | Source |
 |---|---|---|
 | Vessel trails | **+** | players/AI flying through the cell → `Cell.AddBlock` |
@@ -165,10 +172,20 @@ first approximations, build to extend"):
   proliferate and hunt the minority.
   > A Phase-2 experiment spawned fauna **across** domains (prey-weighted) to give the
   > dominant mass a consumer. The prompter rejected it: *no asymmetry between
-  > domains — fauna spawn only in the controlling color.* Reverted. The dominant-
-  > domain down-force is instead pursued through consumption + starvation +
-  > **wither-to-crystal** recycling (§6), not a per-domain spawn heuristic and not an
-  > imposed prism lifespan. See §10 Phase 2 step 1.
+  > domains — fauna spawn only in the controlling color.* Reverted.
+  >
+  > **Settled model (prompter, Phase 2):** the dominant canopy going un-eaten is a
+  > *feature*, not a bug — a cell **stays under whichever domain controls it**, so a
+  > player can take a cell, leave, and trust it remains theirs (territorial
+  > permanence). The wanted **dynamic oscillations operate *within* that constraint**:
+  > the controlling color's fauna boom on the minority mass, then starve and
+  > wither-to-crystal (§6) as they exhaust it; flora of **all three** domains keep
+  > seeding (no exclusion — `RandomLifeSpawner` passes `excluded = null`), so the
+  > minorities churn underneath a stable dominant. No down-force is applied to the
+  > dominant flora and none should be — that would break territorial permanence.
+- **Flora domain = all three playable domains** (no local-domain exclusion). The
+  legacy `SpawnProfileSO.FloraExcludeLocalDomain` flag is ignored by the live spawner
+  (still read only by the dead `IntensityWiseLifeSpawner`; delete both together).
 - **Spawn = timer-driven**, no phase gate, **population of fixed N** per tick.
 - **HUD ring = base fixed period** (remove the aggression scaling the retrofit
   added to `ScaleFaunaInterval` / `CurrentFaunaSpawnPeriod`).
@@ -350,12 +367,17 @@ with the others.
      paced by `LightFaunaDataSO.witherRingInterval`) and activates its core
      `Crystal` (`Crystal.ActivateCrystal`) as the remnant. The creature's mass returns
      to the cell as a collectible, flora-nucleating crystal instead of disappearing.
-   - **Open:** the *dominant* color's flora still have no direct consumer (fauna are
-     the controlling color and eat only opposing mass), so a one-color canopy plateaus
-     at Frozen. The down-force is meant to emerge from the recycle loop (fauna hunt the
-     minority → starve → wither into crystals → crystals re-seed mixed flora → the
-     controlling color shifts), but reliable whole-cell breathing from that loop alone
-     is not yet proven. Next design pass.
+   - **Resolved (was "open"):** the dominant color's flora having no consumer is
+     **intended** — it's territorial permanence (take a cell, leave it, it stays your
+     domain's). No down-force is applied to the dominant flora. The wanted dynamic
+     oscillations live *underneath* that constraint: controlling-color fauna boom on
+     the minority mass then starve/wither, and all-three-domain flora keep churning the
+     minorities. See §5.
+   - **Count + volume** (done): every prism (flora + trail) now feeds both its domain's
+     count and its domain's volume (`Cell.AddBlock`/`RemoveBlock` → `teamVolumes`), so
+     mass — including a player's trail — drives who controls a cell.
+   - **All-three flora** (done): `RandomLifeSpawner` seeds flora in all playable domains
+     (no local-domain exclusion).
 
 2. **Predator / herbivore split** — *the centerpiece.*
    Sub-type on `FaunaConfigurationSO` (Herbivore / Predator). "Diet = what counts
