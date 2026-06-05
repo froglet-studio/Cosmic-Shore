@@ -36,16 +36,6 @@ namespace CosmicShore.Gameplay
             isImpacting = true;
             _hasBeenCollected = true;
 
-            // Powerup buff: collecting an elemental crystal raises the collector's matching
-            // element level, which the elemental ship UI reflects via
-            // ResourceSystem.OnElementLevelChange → ElementalBarsView. This is the reliable
-            // buff point: elemental crystals are collected by the SKIMMER, which disables the
-            // collider just below, so the VesselImpactor crystal-buff path (which keys off the
-            // collider) can't fire. The crystal's authored Element selects which resource is
-            // buffed (e.g. Mass for the brittlestar's dropped crystal).
-            var resourceSystem = skimmerImpactor.Skimmer?.VesselStatus?.ResourceSystem;
-            resourceSystem?.IncrementLevel(Crystal.crystalProperties.Element);
-
             var col = Crystal.GetComponent<Collider>();
             if (col) col.enabled = false;
 
