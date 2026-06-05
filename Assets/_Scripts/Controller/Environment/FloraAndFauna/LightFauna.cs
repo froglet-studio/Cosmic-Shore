@@ -46,6 +46,12 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Guarantee the lifeform invariant: every lifeform carries one elemental crystal
+            // that drops as a powerup on death. The wither (WitherToCrystalCoroutine) drops
+            // whatever crystal this resolves; ensuring it here means a fauna can never starve
+            // out without leaving an elemental powerup.
+            LifeFormCrystal.EnsureElementalCrystal(this);
+
             // The fauna body is composed of nested HealthPrism prefab instances
             // (e.g. MassBrittlestarFauna embeds DynamicHealthBlock children). They
             // start at local scale 0 and only grow to their authored target scale
