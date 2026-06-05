@@ -27,10 +27,12 @@ namespace CosmicShore.Gameplay
     public class MenuServerPlayerVesselInitializer : ServerPlayerVesselInitializer
     {
         [Header("Menu Lava-Lamp Trail")]
-        [Tooltip("Per-trail block cap for the cosmetic autopilot trail in Menu_Main. The " +
-                 "oldest blocks recycle to the pool past this count so trail geometry and " +
-                 "trigger colliders stay bounded while the menu idles. 0 = unbounded.")]
-        [SerializeField] int menuTrailBlockCap = 200;
+        [Tooltip("Per-trail block cap for the autopilot trail in Menu_Main. The oldest " +
+                 "blocks recycle to the pool past this count. 0 = unbounded (default): trail " +
+                 "prisms are mass — they should persist until destroyed by a player or consumed " +
+                 "by fauna (the ecology's down-force), not silently recycled into a snake trail. " +
+                 "Set > 0 only if a cell's mass genuinely runs away with no consumers.")]
+        [SerializeField] int menuTrailBlockCap = 0;
 
         bool _isSwapping;
 
