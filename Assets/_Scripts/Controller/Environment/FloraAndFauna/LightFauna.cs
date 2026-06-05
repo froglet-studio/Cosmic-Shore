@@ -22,6 +22,10 @@ namespace CosmicShore.Gameplay
         private Vector3 desiredDirection;
         private Quaternion desiredRotation;
 
+        // True once starvation has begun the wither-to-crystal death animation. Freezes
+        // behavior + movement so the creature collapses in place instead of drifting.
+        bool _withering;
+
         [HideInInspector] public float Phase;
 
         public LightFaunaManager LightFaunaManager { get; set; }
@@ -76,6 +80,70 @@ namespace CosmicShore.Gameplay
                 Destroy(gameObject);
         }
 
+        /// <summary>
+        /// Starts the starvation death: the creature withers from its extremity spindles
+        /// inward to the center and leaves its core crystal behind. Idempotent — only the
+        /// first call takes effect.
+        /// </summary>
+        void BeginWither()
+        {
+            if (_withering) return;
+            _withering = true;
+            currentVelocity = Vector3.zero;
+            StartCoroutine(WitherToCrystalCoroutine());
+        }
+
+        /// <summary>
+        /// Collapses the body one spindle ring at a time, farthest-from-center first, so the
+        /// creature visibly withers inward; then activates its core crystal as the remnant.
+        /// Reuses the same <see cref="Spindle.ForceWither"/> evaporation and
+        /// <see cref="Crystal.ActivateCrystal"/> hand-off that flora use on death, so the
+        /// creature's mass returns to the cell as a collectible, flora-nucleating crystal
+        /// rather than vanishing. (Docs/ECOSYSTEM.md.)
+        /// </summary>
+        IEnumerator WitherToCrystalCoroutine()
+        {
+            // Detach the core crystal up front so collapsing the body doesn't destroy it with
+            // its parent spindle. Park it on the cell, hidden, until the body is gone.
+            var crystal = GetComponentInChildren<Crystal>(true);
+            if (crystal)
+            {
+                crystal.transform.SetParent(cell ? cell.transform : null, worldPositionStays: true);
+                crystal.gameObject.SetActive(false);
+            }
+
+            // Extremity → center: evaporate spindles farthest-from-center first. Because the
+            // outer rings go first, by the time an inner spindle's turn comes its children are
+            // already gone, so ForceWither just collapses that ring (it's a no-op on an
+            // already-withering spindle). Each spindle takes its own HealthPrisms with it.
+            var spindles = GetComponentsInChildren<Spindle>(true)
+                .Where(s => s)
+                .OrderByDescending(s => (s.transform.position - transform.position).sqrMagnitude)
+                .ToList();
+
+            // <= 0 falls back to a sensible default so existing LightFaunaDataSO assets
+            // (which deserialize a not-yet-authored field as 0) still wither visibly
+            // instead of collapsing every ring in one frame.
+            float interval = data && data.witherRingInterval > 0f ? data.witherRingInterval : 0.25f;
+            for (int i = 0; i < spindles.Count; i++)
+            {
+                if (spindles[i]) spindles[i].ForceWither();
+                if (interval > 0f) yield return new WaitForSeconds(interval);
+                else yield return null;
+            }
+
+            // Leave the crystal behind at the center: re-home it on the cell and activate it
+            // (collider on, material fade-in) so vessels can collect it and flora can grow
+            // around it — the creature's mass re-enters the food web instead of vanishing.
+            if (crystal)
+            {
+                crystal.gameObject.SetActive(true);
+                crystal.ActivateCrystal();
+            }
+
+            Die("starvation");
+        }
+
         IEnumerator UpdateBehaviorCoroutine()
         {
             while (true)
@@ -123,11 +191,18 @@ namespace CosmicShore.Gameplay
             if (!data)
                 return;
 
+            // Already dying — let the wither animation run; no more hunting/feeding.
+            if (_withering)
+                return;
+
             // Prey-linked population control: a fauna that hasn't fed in starvationSeconds
-            // despawns, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
+            // dies, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
+            // Death is not a vanish: the creature withers from its extremity spindles inward
+            // and leaves its core crystal behind (BeginWither), recycling its mass back into
+            // the cell as a collectible, flora-nucleating crystal.
             if (IsStarving)
             {
-                Die("starvation");
+                BeginWither();
                 return;
             }
 
@@ -243,6 +318,10 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // Frozen while withering — the body collapses in place, it doesn't drift away.
+            if (_withering)
+                return;
+
             transform.position += currentVelocity * Time.deltaTime;
 
             float lerpSpeed = data ? Mathf.Max(0f, data.rotationLerpSpeed) : 5f;

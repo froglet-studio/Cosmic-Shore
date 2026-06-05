@@ -21,5 +21,12 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float minSpeed = 3f;
         [Min(0f)] public float maxSpeed = 6f;
         [Min(0f)] public float rotationLerpSpeed = 5f;
+
+        [Header("Withering (starvation death)")]
+        [Tooltip("On starvation the creature withers from its extremity spindles inward " +
+                 "instead of vanishing, leaving its core crystal behind. Seconds between " +
+                 "each spindle ring collapsing — total wither time ≈ this × spindle count. " +
+                 "<= 0 falls back to a sensible default (0.25s). See Docs/ECOSYSTEM.md.")]
+        [Min(0f)] public float witherRingInterval = 0.25f;
     }
 }

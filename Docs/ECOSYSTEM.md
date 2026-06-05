@@ -159,18 +159,16 @@ first approximations, build to extend"):
   behavior`. Spawn **period and population size are FIXED** (config values, tuned
   "much longer" than today). Aggression does **not** feed spawn rate/size — only
   behavior. This makes loop #2 the heartbeat.
-- **Fauna domain = controlling color** (`host.ControllingDomain`). Fixes the Jade
-  bug; the dominant domain's fauna proliferate and hunt the minority. Trivial,
-  certain change — folded into the spawn rewrite.
-  > **Superseded in Phase 2 step 1.** Spawning *every* fauna in the controlling
-  > color left the dominant mass with **no consumer** (fauna only eat opposing
-  > prisms), which is exactly what forced the regrowth-pulse stopgap. Fauna now
-  > spawn **across all playable domains, weighted by available prey**
-  > (`CellLifeSpawnerBase.TryPickPreyWeightedDomain`): a dominated cell is the
-  > biggest prey pool for the *other* colors, so their fauna spawn preferentially,
-  > graze the dominant canopy down, then starve as it thins. The Jade bug stays
-  > fixed (Jade fauna still appear whenever non-Jade prey exists), and consumption
-  > finally reaches the dominant domain. See §10 Phase 2 step 1.
+- **Fauna domain = controlling color** (`host.ControllingDomain`). **No asymmetry
+  between domains** — fauna spawn in exactly one color, the cell's controlling
+  color, and hunt opposing mass. Fixes the Jade bug; the dominant domain's fauna
+  proliferate and hunt the minority.
+  > A Phase-2 experiment spawned fauna **across** domains (prey-weighted) to give the
+  > dominant mass a consumer. The prompter rejected it: *no asymmetry between
+  > domains — fauna spawn only in the controlling color.* Reverted. The dominant-
+  > domain down-force is instead pursued through consumption + starvation +
+  > **wither-to-crystal** recycling (§6), not a per-domain spawn heuristic and not an
+  > imposed prism lifespan. See §10 Phase 2 step 1.
 - **Spawn = timer-driven**, no phase gate, **population of fixed N** per tick.
 - **HUD ring = base fixed period** (remove the aggression scaling the retrofit
   added to `ScaleFaunaInterval` / `CurrentFaunaSpawnPeriod`).
@@ -192,20 +190,23 @@ Two follow-on changes so cells feel full and keep breathing:
   sparse.
 - **Flora regrowth pulse.** ~~Growth was a hard stop at Frozen … resume in brief
   periodic pulses.~~ **REMOVED in Phase 2 step 1.** The pulse was a hard-coded
-  oscillator papering over the real gap: the dominant domain's mass had no consumer.
-  `Cell.FloraGrowingEnabled` is now simply `phase < Frozen` — growth stops on
-  overpopulation and resumes **only when consumption** (other-domain fauna grazing
-  the dominant canopy) brings the count back below the Frozen-exit threshold. The
+  oscillator. `Cell.FloraGrowingEnabled` is now simply `phase < Frozen` — growth
+  stops on overpopulation (the prompter-favored force) and resumes only when the live
+  count falls back below the Frozen-exit threshold. The
   `SpawnProfileSO.FloraRegrowthPulse*` fields and `Cell.InFloraRegrowthPulse` are
   deleted. See §10 Phase 2 step 1.
 
-> The down-force that replaced the pulse is **cross-domain consumption**, not prism
-> decay. Per the prompter (Phase 2 step 1): *avoid prisms/lifeforms having fixed
-> lives — regulate cells with consumption and starvation, not an imposed lifespan;
-> all prisms are subject to consumption based on their domain and the consumer's
-> domain.* So the emergent down-force is "spawn fauna of other domains → they eat
-> the dominant mass → they starve as it thins," leaving the food web (not a timer)
-> in control.
+> **Prompter direction (Phase 2 step 1):** *avoid prisms/lifeforms having fixed
+> lives — regulate cells with consumption + starvation, not an imposed lifespan; all
+> prisms are consumable by domain; no asymmetry between domains (fauna spawn only in
+> the controlling color); and a starving creature does not vanish — it **withers from
+> its extremity spindles inward and leaves a crystal behind.*** **Open item:** with
+> controlling-color spawn and the pulse gone, the *dominant* color's flora still have
+> no direct consumer, so a one-color-dominated canopy plateaus at Frozen. The
+> intended down-force is the food-web recycle — fauna hunt the minority, starve,
+> wither into crystals; crystals re-seed mixed-domain flora and shift which color
+> controls — but closing that loop into reliable whole-cell *breathing* is still
+> being designed.
 
 ---
 
@@ -337,22 +338,24 @@ pulse, the fixed-period spawner) as real emergent forces replace them. Ordered
 highest-impact / lowest-risk first; each step ships independently and composes
 with the others.
 
-1. **Cross-domain consumption down-force** — *retires the regrowth-pulse cheat.*
-   ✅ **Delivered.** *(Originally scoped as "prism mortality / decay"; the prompter
-   redirected: no imposed lifespan — regulate via consumption + starvation; all
-   prisms are consumable by domain.)* The dominant domain's mass had no consumer
-   because every fauna spawned in the controlling color and fauna only eat opposing
-   prisms. Fix: fauna now spawn **across all playable domains, weighted by available
-   prey** (`CellLifeSpawnerBase.TryPickPreyWeightedDomain`), so the dominant canopy —
-   the largest prey pool for the other colors — is grazed down by their fauna, which
-   then **starve** as it thins. The regrowth pulse is deleted; `FloraGrowingEnabled`
-   is just `phase < Frozen` (growth stops on overpopulation, the prompter-favored
-   force, and resumes only when consumption drops the count below Frozen-exit). The
-   cell breathes through the food web alone — no timer, no decay. Composes with Mass,
-   Domain, Cells (phase), Flora, Fauna. **Tuning:** if the dominant canopy still
-   freezes, raise fauna pressure (`FaunaConfigurationSO.PopulationSize` ↑ /
-   `SpawnProfileSO.BaseFaunaSpawnTime` ↓ / `LightFaunaDataSO.consumeRadius` ↑) — not
-   the old pulse.
+1. **Retire the regrowth-pulse cheat; starvation = wither-to-crystal.**
+   *(Originally scoped as "prism mortality / decay"; the prompter redirected twice:
+   no imposed lifespan — regulate via consumption + starvation; no asymmetry between
+   domains — fauna spawn only in the controlling color; and a starving creature
+   withers into a crystal rather than vanishing.)*
+   - **Pulse removed** (done): `FloraGrowingEnabled` is just `phase < Frozen` — growth
+     stops on overpopulation and resumes when the count falls back below Frozen-exit.
+   - **Wither-to-crystal** (done): on starvation a `LightFauna` collapses its body from
+     the extremity spindles inward (`Spindle.ForceWither`, farthest-from-center first,
+     paced by `LightFaunaDataSO.witherRingInterval`) and activates its core
+     `Crystal` (`Crystal.ActivateCrystal`) as the remnant. The creature's mass returns
+     to the cell as a collectible, flora-nucleating crystal instead of disappearing.
+   - **Open:** the *dominant* color's flora still have no direct consumer (fauna are
+     the controlling color and eat only opposing mass), so a one-color canopy plateaus
+     at Frozen. The down-force is meant to emerge from the recycle loop (fauna hunt the
+     minority → starve → wither into crystals → crystals re-seed mixed flora → the
+     controlling color shifts), but reliable whole-cell breathing from that loop alone
+     is not yet proven. Next design pass.
 
 2. **Predator / herbivore split** — *the centerpiece.*
    Sub-type on `FaunaConfigurationSO` (Herbivore / Predator). "Diet = what counts
@@ -384,7 +387,8 @@ with the others.
    isolated cells become one connected biome.
 
 **Cheats currently in place, to retire as Phase 2 lands:** ~~the flora regrowth
-pulse (→ step 1)~~ **retired** — replaced by cross-domain consumption (step 1,
-above); and the fixed-period fauna spawner (→ step 3, reproduction), still in place.
-Honest first-approximation scaffolding, flagged so we remove them rather than build
-on them.
+pulse (→ step 1)~~ **removed** (step 1, above); the fixed-period fauna spawner
+(→ step 3, reproduction), still in place. Honest first-approximation scaffolding,
+flagged so we remove them rather than build on them. Note the **open down-force
+item** in step 1: removing the pulse without yet proving the wither/crystal recycle
+breathes a one-color-dominated cell on its own.
