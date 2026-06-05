@@ -28,5 +28,9 @@ namespace CosmicShore.Gameplay
                  "each spindle ring collapsing — total wither time ≈ this × spindle count. " +
                  "<= 0 falls back to a sensible default (0.25s). See Docs/ECOSYSTEM.md.")]
         [Min(0f)] public float witherRingInterval = 0.25f;
+        [Tooltip("Leave the core crystal behind when a starved creature withers (the mass " +
+                 "recycle). The cell bounds how many such crystals persist. Turn OFF to make " +
+                 "withering simply despawn — useful for isolating crystal-accumulation perf.")]
+        public bool leaveCrystalOnWither = true;
     }
 }

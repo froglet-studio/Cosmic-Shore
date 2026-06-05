@@ -132,13 +132,28 @@ namespace CosmicShore.Gameplay
                 else yield return null;
             }
 
-            // Leave the crystal behind at the center: re-home it on the cell and activate it
-            // (collider on, material fade-in) so vessels can collect it and flora can grow
-            // around it — the creature's mass re-enters the food web instead of vanishing.
-            if (crystal)
+            // Leave the crystal behind at the center — but NEVER let a crystal hand-off
+            // failure strand a withered husk: the creature must always despawn. Activation is
+            // guarded (a missing/mis-wired crystal cellData logs instead of leaking a fauna),
+            // and the cell bounds how many wither-crystals persist so a long session can't
+            // accumulate them. Config can also turn the crystal off entirely (isolation).
+            bool leaveCrystal = crystal && (data == null || data.leaveCrystalOnWither);
+            if (leaveCrystal)
             {
                 crystal.gameObject.SetActive(true);
-                crystal.ActivateCrystal();
+                try { crystal.ActivateCrystal(); }
+                catch (System.Exception e)
+                {
+                    CSDebug.LogError($"{name}: wither crystal activation failed ({e.Message}); discarding it.");
+                    Destroy(crystal.gameObject);
+                    leaveCrystal = false;
+                }
+                if (leaveCrystal && cell) cell.RegisterWitherCrystal(crystal);
+            }
+            else if (crystal)
+            {
+                // Crystal disabled by config — discard the parked core so it isn't orphaned.
+                Destroy(crystal.gameObject);
             }
 
             Die("starvation");

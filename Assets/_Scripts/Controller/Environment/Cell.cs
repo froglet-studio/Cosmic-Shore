@@ -74,6 +74,13 @@ namespace CosmicShore.Gameplay
         }
         SnowChanger spawnedCytoplasm;
 
+        // Bounded ring of crystals left behind by withered (starved) fauna. Without a cap a
+        // long session would accumulate them unbounded (each is a live GameObject + collider
+        // + models) — a slow perf/stability leak, since the menu autopilot rarely collects
+        // them. Oldest beyond the cap is destroyed. Cleared with the rest of the cell's mass.
+        const int MaxWitherCrystals = 16;
+        readonly Queue<Crystal> witherCrystals = new();
+
         // ---------------------------------------------------------------------
         // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
         // use this to find their containing cell — they have no scene identity
@@ -478,6 +485,7 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
+            ClearWitherCrystals();
             phase = CellPhase.Sprout;
 
             if (spawnedCytoplasm)
@@ -523,6 +531,31 @@ namespace CosmicShore.Gameplay
             UpdateCellStats();
         }
 
+        /// <summary>
+        /// Registers a crystal left behind by a withered (starved) fauna and bounds how many
+        /// persist: the oldest beyond <see cref="MaxWitherCrystals"/> is destroyed, so they
+        /// can't accumulate into a perf/stability leak over a long session.
+        /// </summary>
+        public void RegisterWitherCrystal(Crystal crystal)
+        {
+            if (!crystal) return;
+            witherCrystals.Enqueue(crystal);
+            while (witherCrystals.Count > MaxWitherCrystals)
+            {
+                var oldest = witherCrystals.Dequeue();
+                if (oldest) Destroy(oldest.gameObject);
+            }
+        }
+
+        void ClearWitherCrystals()
+        {
+            while (witherCrystals.Count > 0)
+            {
+                var c = witherCrystals.Dequeue();
+                if (c) Destroy(c.gameObject);
+            }
+        }
+
         public void UnregisterSpawnedObject(GameObject obj)
         {
             if (spawnedLifeForms.Remove(obj))
@@ -534,6 +567,7 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
+            ClearWitherCrystals();
             phase = CellPhase.Sprout;
 
             // Bind runtime -> this cell
