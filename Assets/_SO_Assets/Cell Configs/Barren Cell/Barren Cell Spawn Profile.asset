@@ -22,7 +22,9 @@ MonoBehaviour:
   FaunaExcludeLocalDomain: 1
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 5000
-  BaseFaunaSpawnTime: 300
+  BaseFaunaSpawnTime: 30
+  FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0.5
   FaunaSpawnIntervalSeconds: 5
-  SupportedFaunas: []
+  SupportedFaunas:
+  - {fileID: 11400000, guid: b3e5efaa5053ab748943e4c3433f72d1, type: 2}
