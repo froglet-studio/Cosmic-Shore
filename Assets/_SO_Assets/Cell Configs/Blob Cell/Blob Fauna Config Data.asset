@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824, type: 3}
   InitialSpawnCount: 4
+  PopulationSize: 8
   SpawnProbability: 1
