@@ -123,33 +123,51 @@ namespace CosmicShore.Gameplay
         CellPhase phase = CellPhase.Sprout;
 
         /// <summary>
-        /// Live count of unique prisms tracked through Add/RemoveBlock. Read-only signal
-        /// for systems that respond to prism load (e.g., LightFaunaManager scales its
-        /// fauna population with this so consumption keeps pace with growth, and the
-        /// phase system gates flora and fauna behavior on it).
+        /// Live count of unique prisms tracked through Add/RemoveBlock. Since the ecology
+        /// went "all in on volume", count is NO LONGER the gameplay driver — it survives
+        /// only as a cheap performance/safety signal (the high-end frenzy backstop in
+        /// <see cref="Update"/>) and for debug/telemetry. <see cref="LiveVolume"/> is the
+        /// real state variable. (Docs/ECOSYSTEM.md §1.)
         /// </summary>
         public int LiveBlockCount => trackedBlocks.Count;
 
         /// <summary>
-        /// Live leader by per-domain prism count. Recomputed on demand so the answer
-        /// always reflects the current Add/RemoveBlock-driven counts. Returns
-        /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the cell has no
-        /// prisms tracked yet. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
+        /// Total live VOLUME (mass) tracked in the cell — the sum of every prism's
+        /// registration-time volume across all domains. This is the cell's primary state
+        /// variable: phase, dominant domain, prey, and the HUD all key off volume, not
+        /// count, so what players see (mass) is what the underpinnings react to.
+        /// (Docs/ECOSYSTEM.md §1.)
+        /// </summary>
+        public float LiveVolume
+        {
+            get
+            {
+                float v = 0f;
+                foreach (var kv in teamVolumes) v += kv.Value;
+                return v;
+            }
+        }
+
+        /// <summary>
+        /// Live leader by per-domain prism VOLUME (mass). Recomputed on demand so the
+        /// answer always reflects current Add/RemoveBlock-driven volume. Returns
+        /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the cell holds no
+        /// mass yet. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
         /// </summary>
         public Domains DominantDomain
         {
             get
             {
                 Domains leader = Domains.Blue;
-                int leaderCount = 0;
+                float leaderVolume = 0f;
                 Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
                 foreach (var d in order)
                 {
-                    if (!domainBlockCounts.TryGetValue(d, out int c)) continue;
-                    if (c > leaderCount)
+                    if (!teamVolumes.TryGetValue(d, out float v)) continue;
+                    if (v > leaderVolume)
                     {
                         leader = d;
-                        leaderCount = c;
+                        leaderVolume = v;
                     }
                 }
                 return leader;
@@ -157,18 +175,26 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Live count of prisms tracked under <paramref name="domain"/>. Mirrors the
-        /// per-domain bookkeeping that <see cref="DominantDomain"/> reads, exposed so
-        /// HUD widgets (volume wedges, etc.) don't need to walk Add/RemoveBlock state
-        /// themselves. Returns 0 for untracked domains.
+        /// Live VOLUME (mass) tracked under <paramref name="domain"/> — the per-domain
+        /// signal <see cref="DominantDomain"/> and the HUD read. Returns 0 for domains
+        /// with no mass. (Alias of <see cref="GetTeamVolume"/>, named to match the HUD's
+        /// per-domain reads.)
+        /// </summary>
+        public float GetDomainVolume(Domains domain) => GetTeamVolume(domain);
+
+        /// <summary>
+        /// Live count of prisms tracked under <paramref name="domain"/>. Count is the
+        /// demoted performance signal now (volume drives gameplay — see
+        /// <see cref="GetDomainVolume"/>); kept for debug/telemetry. Returns 0 for
+        /// untracked domains.
         /// </summary>
         public int GetDomainBlockCount(Domains domain) =>
             domainBlockCounts.TryGetValue(domain, out int c) ? c : 0;
 
         /// <summary>
-        /// LiveBlockCount at which the cell crosses into Rabid (frenzy). HUD widgets
-        /// use this as the "max" — when summed mass approaches it, the cell is about
-        /// to enter Level2 aggression and the UI should communicate that.
+        /// Live VOLUME at which the cell crosses into Rabid (frenzy). HUD widgets use this
+        /// as the "max" — when a domain's volume approaches it, the cell is about to enter
+        /// Level2 aggression. (Thresholds are volume now; see <see cref="CellPhaseThresholds"/>.)
         /// </summary>
         public int RabidEnterThreshold => ResolveThresholds().RabidEnter;
 
@@ -260,13 +286,13 @@ namespace CosmicShore.Gameplay
         public bool FaunaSpawningEnabled => phase >= CellPhase.Quiet;
 
         /// <summary>
-        /// Prey signal for a fauna of <paramref name="domain"/>: live prisms NOT of that
-        /// domain (fauna consume any prism whose domain differs from their own). Drives
+        /// Prey signal for a fauna of <paramref name="domain"/>: live VOLUME (mass) NOT of
+        /// that domain (fauna consume any prism whose domain differs from their own). Drives
         /// prey-linked population control — production pauses and fauna starve when this
-        /// hits zero. See Docs/ECOSYSTEM.md §6.
+        /// runs low. Volume, not count, so prey tracks what players see. See Docs/ECOSYSTEM.md §6.
         /// </summary>
-        public int OpposingBlockCount(Domains domain) =>
-            Mathf.Max(0, LiveBlockCount - GetDomainBlockCount(domain));
+        public float OpposingVolume(Domains domain) =>
+            Mathf.Max(0f, LiveVolume - GetDomainVolume(domain));
 
         /// <summary>
         /// Fauna aggression level derived from <see cref="Phase"/>:
@@ -284,7 +310,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// "Controlling color" for fauna spawns. Prefers the cell's live
-        /// <see cref="DominantDomain"/> (per-domain prism count leader), then falls
+        /// <see cref="DominantDomain"/> (per-domain volume leader), then falls
         /// back to gameData's controlling team by remaining volume, then to the local
         /// player's domain (useful in Menu_Main where there is no scored controlling
         /// team), then to Jade as a last resort. Never returns Blue (the "no team"
@@ -339,7 +365,20 @@ namespace CosmicShore.Gameplay
             _nextPhaseTickAt = Time.time + PhaseTickIntervalSeconds;
 
             var thresholds = ResolveThresholds();
-            var newPhase = CellPhaseRules.Compute(LiveBlockCount, phase, in thresholds);
+
+            // Phase is driven by VOLUME (mass) — what players see and react to. The
+            // thresholds are volume values. (int) is safe: cell volume stays well within
+            // int range and the thresholds are integers anyway.
+            var newPhase = CellPhaseRules.Compute((int)LiveVolume, phase, in thresholds);
+
+            // Performance/safety backstop: an extreme prism COUNT forces frenzy (Rabid)
+            // regardless of volume, so a pathological count spike (e.g. a flood of tiny
+            // prisms whose volume stays low) can't blow past the budget unthrottled. Rabid
+            // halts flora growth and sends fauna berserk to cull. Rare by design — set the
+            // cap well above any normal operating count. CountFrenzyCap <= 0 disables it.
+            if (thresholds.CountFrenzyCap > 0 && LiveBlockCount >= thresholds.CountFrenzyCap)
+                newPhase = CellPhase.Rabid;
+
             ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
         }
 

@@ -11,32 +11,35 @@ herbivore).
 
 ---
 
-## 1. The spine: everything keys off **prism count**
+## 1. The spine: everything keys off **prism VOLUME** (mass)
 
-One state variable drives the whole system: the cell's live prism count
-(`Cell.LiveBlockCount` = `trackedBlocks.Count`, plus per-domain counts via
-`GetDomainBlockCount`). Prisms are the **mass** fundamental made concrete; the
-cell is the **cell** fundamental; the color on each prism is the **domain**
-fundamental. Everything else is a projection of, or a force on, prism count.
+One state variable drives the whole system: the cell's live **volume**
+(`Cell.LiveVolume` = Σ per-domain `teamVolumes`, with per-domain mass via
+`GetDomainVolume`). Prisms are the **mass** fundamental made concrete; the cell is
+the **cell** fundamental; the color on each prism is the **domain** fundamental.
+Everything gameplay-facing is a projection of, or a force on, **volume**.
 
-> **Every** prism — flora HealthPrism or vessel trail prism — feeds **both** its
-> domain's count *and* its domain's **volume** (`Cell.AddBlock`/`RemoveBlock` →
-> `domainBlockCounts` + `teamVolumes`, snapshotting the prism's target-scale mass).
-> Volume was previously dead (`Cell.ChangeVolume` had no callers); it now mirrors
-> count so per-domain *mass* is available alongside per-domain *count*. This is what
-> lets a player lay their own domain's prisms to **take over** a cell.
+> **All in on volume.** Every prism — flora HealthPrism or vessel trail prism — feeds
+> both its domain's volume *and* count (`Cell.AddBlock`/`RemoveBlock` → `teamVolumes` +
+> `domainBlockCounts`, snapshotting the prism's target-scale mass). **Volume is the
+> driver** of phase, dominant domain, prey, and the HUD — so what players see (mass) is
+> what the underpinnings react to, and a player laying their own domain's prisms can
+> **take over** a cell. **Count is demoted** to one job: a rare high-end frenzy/safety
+> backstop (`CellPhaseThresholds.CountFrenzyCap` → forces Rabid) so a flood of tiny
+> prisms can't blow the perf budget. Everything else ignores count.
 
-| Force on prism count | Sign | Source |
+| Force on cell volume | Sign | Source |
 |---|---|---|
 | Vessel trails | **+** | players/AI flying through the cell → `Cell.AddBlock` |
 | Flora planting | **+** | new flora instantiated (`RandomLifeSpawner`) → health prisms → `AddBlock` |
 | Flora growth | **+** | existing flora grow new prisms (`Flora.Grow`) → `AddBlock` |
 | Fauna consumption | **−** | fauna seek & detonate opposing-domain prisms → `RemoveBlock` |
-| Combat / decay | **−** | vessel impacts, prism death → `RemoveBlock` |
+| Combat | **−** | vessel impacts, prism death → `RemoveBlock` |
 
-Prism count → **Cell Phase** (`Sprout→Quiet→Settled→Restless→Frozen→Rabid`,
-computed with enter/exit **hysteresis** so the cell doesn't chatter on the
-boundary). Phase is the single dial the rest of the ecology reads.
+Volume → **Cell Phase** (`Sprout→Quiet→Settled→Restless→Frozen→Rabid`, computed with
+enter/exit **hysteresis** so the cell doesn't chatter on the boundary). Phase is the
+single dial the rest of the ecology reads. (Thresholds in `CellPhaseThresholds` are
+volume now — ≈60× the old count values, **tune in-editor by watching `Cell.LiveVolume`**.)
 
 ---
 
@@ -48,7 +51,7 @@ flowchart TD
     FPLANT["Flora planting"] -->|+| COUNT
     FGROW["Flora growth"] -->|+| COUNT
 
-    COUNT["PRISM COUNT<br/>LiveBlockCount + per-domain counts<br/>(MASS x DOMAIN, inside a CELL)"]
+    COUNT["CELL VOLUME (mass)<br/>LiveVolume + per-domain volume<br/>(MASS x DOMAIN, inside a CELL) · count = perf backstop only"]
     COUNT --> PHASE["CELL PHASE<br/>Sprout-Quiet-Settled-Restless-Frozen-Rabid<br/>(hysteresis)"]
 
     %% Flora is self-limiting via phase gates (negative feedback)

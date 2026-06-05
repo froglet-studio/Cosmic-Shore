@@ -25,9 +25,9 @@ namespace CosmicShore.UI
     /// runtime, and (optionally) a diagnostic readout below the button. MenuMiniGameHUD
     /// self-attaches this to its pause button and hands over the injected GameDataSO.
     ///
-    /// Reads <see cref="Cell.GetDomainBlockCount"/> and
-    /// <see cref="Cell.RabidEnterThreshold"/>; resolves the cell via the local
-    /// player's vessel position, falling back to the nearest active cell.
+    /// Reads <see cref="Cell.GetDomainVolume"/> and
+    /// <see cref="Cell.RabidEnterThreshold"/> (both VOLUME now); resolves the cell via the
+    /// local player's vessel position, falling back to the nearest active cell.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
@@ -160,19 +160,20 @@ namespace CosmicShore.UI
                 return;
             }
 
-            int rabid = cell.RabidEnterThreshold;
-            int jade = cell.GetDomainBlockCount(Domains.Jade);
-            int ruby = cell.GetDomainBlockCount(Domains.Ruby);
-            int gold = cell.GetDomainBlockCount(Domains.Gold);
+            float rabid = cell.RabidEnterThreshold;
+            float jade = cell.GetDomainVolume(Domains.Jade);
+            float ruby = cell.GetDomainVolume(Domains.Ruby);
+            float gold = cell.GetDomainVolume(Domains.Gold);
 
-            if (rabid > 0)
+            if (rabid > 0f)
             {
-                // Per-domain radial fill = that domain's mass as a fraction of the
-                // frenzy threshold. A single domain reaching the full threshold (which
-                // alone trips frenzy) fills its sector all the way to the centre.
-                _jadeTarget = Mathf.Clamp01((float)jade / rabid);
-                _rubyTarget = Mathf.Clamp01((float)ruby / rabid);
-                _goldTarget = Mathf.Clamp01((float)gold / rabid);
+                // Per-domain radial fill = that domain's VOLUME (mass) as a fraction of the
+                // frenzy threshold. A single domain reaching the full threshold (which alone
+                // trips frenzy) fills its sector all the way to the centre. Volume, not count,
+                // so the gauge shows players exactly what they're building.
+                _jadeTarget = Mathf.Clamp01(jade / rabid);
+                _rubyTarget = Mathf.Clamp01(ruby / rabid);
+                _goldTarget = Mathf.Clamp01(gold / rabid);
             }
             else
             {
@@ -188,9 +189,9 @@ namespace CosmicShore.UI
             _spawnCycle = cell.FaunaSpawnCycleFraction;
         }
 
-        static int ResolveDominant(int jade, int ruby, int gold)
+        static int ResolveDominant(float jade, float ruby, float gold)
         {
-            if (jade <= 0 && ruby <= 0 && gold <= 0) return -1;
+            if (jade <= 0f && ruby <= 0f && gold <= 0f) return -1;
             if (jade >= ruby && jade >= gold) return 0;
             if (ruby >= gold) return 1;
             return 2;

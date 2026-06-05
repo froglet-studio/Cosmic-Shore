@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
                 // scarce; starving fauna wither (see LightFauna) — the food web, not a per-
                 // domain spawn heuristic, regulates the cell. (Docs/ECOSYSTEM.md §5–6.)
                 Domains color = host.ControllingDomain;
-                if (host.OpposingBlockCount(color) >= spawnProfile.FaunaFoodFloor)
+                if (host.OpposingVolume(color) >= spawnProfile.FaunaFoodFloor)
                     SpawnFaunaPopulation(host, runtime, faunaCfg, color);
 
                 // Reset the spawn-cycle ring each period whether or not prey allowed a

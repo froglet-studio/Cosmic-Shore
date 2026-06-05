@@ -6,10 +6,17 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Per-biome up/down thresholds that drive <see cref="Cell"/>'s phase transitions.
-    /// Each phase has an UpEnter (climb threshold from the previous phase) and a DownExit
-    /// (fall threshold back to the previous phase). The gap between them is the
-    /// hysteresis band; LiveBlockCount values in the band leave the phase unchanged.
-    /// Sprout has no entry threshold — it's the starting state at zero prisms.
+    /// As of the "all in on volume" pass these are <b>VOLUME</b> (mass) thresholds, compared
+    /// against <see cref="Cell.LiveVolume"/> — what players see and react to — not prism
+    /// count. Each phase has an UpEnter (climb threshold from the previous phase) and a
+    /// DownExit (fall threshold back). The gap between them is the hysteresis band; volume
+    /// in the band leaves the phase unchanged. Sprout has no entry threshold (zero mass).
+    ///
+    /// <para>Tuning: 1 prism contributes its target-scale volume (e.g. a Blob gyroid leaf
+    /// ≈ 20–110). Watch <see cref="Cell.LiveVolume"/> in-editor and set the bands to the
+    /// mass at which a cell should feel sprouting / settled / full / frenzied. The defaults
+    /// below are ≈60× the old count values (Blob's avg leaf volume), preserving the prior
+    /// density as a starting point — retune per biome.</para>
     /// </summary>
     [Serializable]
     public struct CellPhaseThresholds
@@ -25,13 +32,21 @@ namespace CosmicShore.Utility
         [Min(0)] public int RabidEnter;
         [Min(0)] public int RabidExit;
 
+        [Tooltip("Performance/safety backstop: if the prism COUNT (not volume) reaches this, " +
+                 "the cell is forced to Rabid (frenzy) regardless of volume, so a flood of tiny " +
+                 "prisms can't blow past the budget. Set well above any normal operating count; " +
+                 "0 disables it. This is the only thing count drives now.")]
+        [Min(0)] public int CountFrenzyCap;
+
         public static CellPhaseThresholds Default => new()
         {
-            QuietEnter = 1000, QuietExit = 800,
-            SettledEnter = 4000, SettledExit = 3500,
-            RestlessEnter = 8000, RestlessExit = 7500,
-            FrozenEnter = 10000, FrozenExit = 9500,
-            RabidEnter = 15000, RabidExit = 14000,
+            // Volume (≈60× the legacy count values — see struct summary). Retune per biome.
+            QuietEnter = 60000, QuietExit = 48000,
+            SettledEnter = 240000, SettledExit = 210000,
+            RestlessEnter = 480000, RestlessExit = 450000,
+            FrozenEnter = 600000, FrozenExit = 570000,
+            RabidEnter = 900000, RabidExit = 840000,
+            CountFrenzyCap = 25000,
         };
 
         public int GetEnterThreshold(CellPhase phase) => phase switch
