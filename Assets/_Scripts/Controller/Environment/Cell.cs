@@ -182,10 +182,9 @@ namespace CosmicShore.Gameplay
 
         // ---------------------------------------------------------------------
         //  Fauna spawn cycle telemetry — read by the volume-indicator ring HUD.
-        //  Written by IntensityWiseLifeSpawner.SpawnFaunaTypeLoop when it ticks a
-        //  periodic fauna spawn. The Cell exposes a 0..1 progress fraction toward
-        //  the next spawn so the indicator can draw a rotating ring without
-        //  knowing anything about the spawner's internals.
+        //  Written by RandomLifeSpawner's fauna loop (RecordFaunaSpawn) each periodic
+        //  spawn. The Cell exposes a 0..1 progress fraction toward the next spawn so the
+        //  indicator can draw a rotating ring without knowing the spawner's internals.
         // ---------------------------------------------------------------------
 
         float _lastFaunaSpawnTime = -1f;
@@ -193,7 +192,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Records that a periodic fauna spawn just happened. The spawn-cycle ring
         /// resets to 0% and counts back up to 100% over the next CurrentFaunaSpawnPeriod
-        /// seconds. Called by IntensityWiseLifeSpawner's fauna loop.
+        /// seconds. Called by RandomLifeSpawner's fauna loop.
         /// </summary>
         public void RecordFaunaSpawn() => _lastFaunaSpawnTime = Time.time;
 
@@ -357,7 +356,6 @@ namespace CosmicShore.Gameplay
             return t.IsAllZero ? CellPhaseThresholds.Default : t;
         }
 
-        readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
         ICellLifeSpawner activeSpawner;
         bool postInitilized = false;
@@ -629,9 +627,11 @@ namespace CosmicShore.Gameplay
         {
             StopSpawner();
 
-            activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
-                ? intensitySpawner
-                : randomSpawner;
+            // One spawner model for every cell. Intensity selects the CellConfig
+            // (see AssignConfig's CellTypeChoiceOptions.IntensityWise) — and each config
+            // carries its own tuned SpawnProfile — so there is no separate intensity-wise
+            // spawner; RandomLifeSpawner drives them all. (Docs/ECOSYSTEM.md §5.)
+            activeSpawner = randomSpawner;
 
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 

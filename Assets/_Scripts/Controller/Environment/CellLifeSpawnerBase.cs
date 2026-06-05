@@ -62,15 +62,6 @@ namespace CosmicShore.Gameplay
             host.RegisterSpawnedObject(go);
         }
 
-        protected Domains GetLocalDomainOr(GameDataSO gameData, Domains fallback) =>
-            gameData?.LocalRoundStats?.Domain ?? fallback;
-
-        protected Domains? GetExcludedDomain(bool excludeLocal, GameDataSO gameData, Domains fallbackLocal)
-        {
-            if (!excludeLocal) return null;
-            return GetLocalDomainOr(gameData, fallbackLocal);
-        }
-
         protected Domains PickRandomDomain(Domains? excluded)
         {
             // Playable domains only — never Blue, the "no team" sentinel. A Blue

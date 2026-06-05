@@ -9,8 +9,6 @@ namespace CosmicShore.Utility
     public class SpawnProfileSO : ScriptableObject
     {
         [Header("Flora Configs")]
-        [Tooltip("If ON, spawned FaunaPrefab populations will never use the local player's domain.")]
-        public bool FloraExcludeLocalDomain = true;
         [Min(0f)] public float FloraSpawnVolumeCeiling = 12000f;
         [Tooltip("Wait this many seconds after the crystal spawns before flora begins spawning.")]
         [Min(0f)] public float FloraInitialDelaySeconds;
@@ -19,14 +17,13 @@ namespace CosmicShore.Utility
         public List<FloraConfigurationSO> SupportedFloras = new();
         
         [Header("FaunaPrefab Configs")]
-        [Tooltip("If ON, spawned FaunaPrefab populations will never use the local player's domain.")]
-        public bool FaunaExcludeLocalDomain = true;
         [Min(0f)] public float InitialFaunaSpawnWaitTime = 10f;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
         [Min(0f)] public float BaseFaunaSpawnTime = 60f;
         [Tooltip("Population control (prey-linked): a population only spawns while the cell holds at least " +
-                 "this many prisms NOT of the controlling color (prey). Below it, production pauses until " +
-                 "prey returns; existing fauna then starve. 0 = always produce. See Docs/ECOSYSTEM.md.")]
+                 "this much opposing-domain VOLUME (prey) — i.e. mass NOT of the controlling color. Below it, " +
+                 "production pauses until prey returns; existing fauna then starve. 0 = always produce. " +
+                 "See Docs/ECOSYSTEM.md.")]
         [Min(0)] public int FaunaFoodFloor = 5;
         [Tooltip("Wait this many seconds after the crystal spawns before FaunaPrefab begins spawning.")]
         [Min(0f)] public float FaunaInitialDelaySeconds;
