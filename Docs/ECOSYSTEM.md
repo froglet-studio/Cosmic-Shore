@@ -345,6 +345,45 @@ another biome is the same recipe (§7.1).
 > gate in `Boid.CalculateBehavior` — deferred so it doesn't change `Boid` in the
 > WildlifeBlitz cells that also use it.
 
+### 7.2 Trail-management test deployments (two scenes)
+
+The food web is wired into two scenes to test the ecosystem's ability to manage
+**trail** prisms (player/AI mass), not just flora:
+
+**A. Menu_Main freestyle toy box** (`Blob Cell Config` → `Blob Cell Spawn
+Profile`). Flora + the 3-species food web. The autopilot/player vessel lays
+trails; fauna of the controlling domain graze the opposing-domain trail + flora
+mass, sharks thin the herbivores. Goal: a self-sustaining scene that stays
+visually interesting and playable **indefinitely** — tune so neither mass nor
+fauna runs away or dies out. Levers: `Blob Cell Spawn Profile`
+`BaseFaunaSpawnTime` / `FaunaFoodFloor`, the per-species `PopulationSize`, and
+`starvationSeconds` / `consumeRadius` on the `LightFaunaDataSO`s.
+
+**B. Skim Race** (`MinigameHexRace`, dedicated `Skim Race Cell Config` → `Skim
+Race Spawn Profile`, isolated from the 6 other scenes that share the Barren
+config). **No flora** (flora would add mass — counterproductive); only the food
+web. Hypothesis: at late laps / high player counts, AI orbiting crystals leave an
+excess of **trail-prism obstacles**; herbivores (tadpole + brittlestar) spawn
+where that opposing-domain trail mass concentrates and graze it down → fewer
+prisms → better perf; sharks keep the herbivore count (and thus fauna cost) in
+check. The cell uses the **Random** spawner (`cellTypeChoiceOptions = 0`) so
+spawning is prey-linked: a population only spawns while opposing trail mass ≥
+`FaunaFoodFloor`, and starves when it's gone — fauna appear only when there are
+obstacles to eat.
+
+> **Two caveats to validate in-editor (I can't run Unity):**
+> 1. **Membrane coverage.** Registration is a **sphere of `CapsuleMembrane.radius`
+>    (1200)** around the cell centre (`Cell.ContainsPosition`), but the Skim Race
+>    track runs ~4000 long. The single cell therefore covers the **central**
+>    crystal-orbit zone, not the whole track — fauna only graze trails within
+>    ~1200 of the cell. Enough to demonstrate the effect; for full coverage,
+>    raise the membrane radius (needs a Skim-Race-specific membrane prefab so it
+>    doesn't affect other cells) or place more cells along the track.
+> 2. **Net perf.** Fauna cost CPU (per-tick `OverlapSphere`). The test is whether
+>    trail savings beat fauna cost. Start with modest counts (tadpole/brittlestar
+>    `PopulationSize` 4, shark 2, `BaseFaunaSpawnTime` 15, `FaunaFoodFloor` 10) and
+>    profile before/after; crank counts up only if it's net-positive.
+
 ---
 
 ## 8. Build order
