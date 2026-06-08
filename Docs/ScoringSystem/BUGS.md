@@ -22,19 +22,17 @@ no secondary stat. Fix drives the shared root from **both** children via
 showing), called from all four Show/Hide methods so it's order-independent.
 File: `_Scripts/UI/PlayerScoreCard.cs`.
 
-### B2 — ⚪ Joust "jousts left" differs between reveal and scoreboard
-The end-game **score reveal**
-(`MultiplayerJoustEndGameController.PlayScoreRevealSequence`) computes a loser's
-remaining jousts as **individual**: `needed - localStats.JoustCollisions`. The
-**final scoreboard** (`MultiplayerJoustScoreboard.FormatPlayerScore`) computes
-it as the **domain deficit**: `needed - SumJoustCollisionsByDomain(domain)`. In
-team games a losing player can see one number on the reveal and a different one
-on the scoreboard. Canonical = **domain deficit** (consistent with the
-domain-aggregated design). **Scheduled as part of `REFACTOR.md` R10** — the
-unified `ScoreResult.Secondary` is computed once on the server, so the reveal and
-scoreboard read the same string and can't diverge.
-Files: `_Scripts/Utility/DataContainers/MultiplayerJoustEndGameController.cs`,
-`_Scripts/UI/MultiplayerJoustScoreboard.cs`.
+### B2 — 🟢 Joust "jousts left" differs between reveal and scoreboard
+The end-game **score reveal** computed a loser's remaining jousts as
+**individual** (`needed - localStats.JoustCollisions`) while the **final
+scoreboard** computed it as the **domain deficit**
+(`needed - SumJoustCollisionsByDomain(domain)`), so in team games a losing player
+could see one number on the reveal and a different one on the scoreboard.
+Canonical = **domain deficit**. **Done** as part of `REFACTOR.md` R10 (commit
+`7ea5b8ae`): both surfaces now read the rule's `ScoreResult` — `JoustScoringRuleSO`
+builds the loser line as the domain deficit once (`BuildResults` + `BuildReveal`),
+so they can't diverge. The per-mode `MultiplayerJoustEndGameController` /
+`MultiplayerJoustScoreboard` overrides were deleted.
 
 ### B3 — 🟢 `scoreboardRowStagger` is dead config
 `HUDAnimationSettingsSO.scoreboardRowStagger` was never read — `PlayerScoreCard`'s
@@ -72,8 +70,25 @@ orphaned `TextMeshProUGUI` (`ScoreText`, placeholder "expand to view") under
 change; composes with B1's `RefreshDataPanelsRoot`. Verify the element's on-card
 position visually in a HexRace/Joust end-game.
 
+### B7 — 🟢 End-game vessel podium ranked golf modes backwards
+`EndGameVesselDisplayManager.GatherVesselData` ranked players by `RoundStatsList`
+sorted **descending by raw `Score`** — a second "who placed where" path that
+ignored the rule-produced `gameData.Results`. For golf modes (HexRace, Joust) the
+winner's `Score` is a small finish time and the loser's is the `10000+` sentinel,
+so descending put the **loser 1st**: a solo HexRace win (5 crystals first) showed
+the AI as "1st" and the human as "2nd", and the winner vessel icon
+(`EndGameVesselDisplay` keys it off `ranking == 1`) went to the loser. **Done**
+(commit `020d7b45`): the podium reads each player's rank from `gameData.Results`
+(the SSOT every other end-game surface uses — golf-aware, ranked once by the mode's
+`ScoringRuleSO`), keeping the legacy descending-Score sort only as a fallback for
+modes that produce no Results (e.g. WildlifeBlitz). CrystalCapture (points) was
+already correct and is unchanged. This was the last end-game surface still
+re-deriving rank locally — completes `REFACTOR.md` R10 Phase B's consumer migration.
+File: `_Scripts/Utility/DataContainers/EndGameVesselDisplayManager.cs`.
+
 ---
 
-B1, B3, B4, B6 fixed (verify only — B6 also warrants a visual position check).
-B2 and B5 are scheduled into **R10** (the unified ranked `ScoreResult` list
-dissolves both). No open read-through findings remain.
+B1–B4, B6, B7 fixed (verify only — B6 also warrants a visual position check; B2/B7
+need the HexRace/Joust end-game play-test). B5 remains scheduled into **R10** (the
+unified ranked `ScoreResult` list dissolves it). No open read-through findings
+remain.
