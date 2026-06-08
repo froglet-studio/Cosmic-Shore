@@ -162,6 +162,10 @@ The shared hub. **SOAP events** (all `ScriptableEventNoParam`):
 - `WinnerName`, `WinnerDomain` — server-authoritative result.
 - `IsGolfRules` (get/private set), `RequestedDomainCount` (=3),
   `IsMultiplayerMode` **[legacy — see §8]**.
+- **Server-synced per-domain metric sums** (BUGS.md B9 / "Approach B"):
+  `GetDomainMetricSum(d)` / `SetDomainMetricSum(d, v)` + `OnDomainMetricSumsChanged`.
+  The server computes each domain's metric sum and replicates it; clients display it
+  verbatim instead of re-summing per-player stats on the client (see §3).
 
 **Methods:** `SortRoundStats(golf)`, `SortDomainStats(golf)`,
 `CalculateDomainStats(golf)`, `IsLocalDomainWinner(out DomainStats)`,
@@ -224,12 +228,36 @@ RoundStats NetworkVariable (server write, replicated)
                ├─[domain]► DomainScorePanel.UpdateSum( SumStatByDomain(domain) )
                └─[legacy]► PlayerScoreEntry.UpdateScore( GetInitialCardValue(stats) )
 ```
-- `GetInitialCardValue(stats)` is the **abstract** per-mode metric selector
-  (HexRace → `OmniCrystalsCollected`, Joust → `JoustCollisions`, CrystalCapture
-  → `CrystalsCollected`). `SumStatByDomain` sums it across a domain's players.
+- `GetInitialCardValue(stats)` = `gameData.ScoringRule.LiveMetric(stats)` — the
+  per-mode metric (HexRace/CrystalCapture → Crystals, Joust → Jousts), used by the
+  **legacy per-player** card. `SumStatByDomain(domain)` no longer re-sums on the
+  client — it returns the **server-synced** `GameDataSO.GetDomainMetricSum(domain)`
+  (BUGS.md B9; see the subsection below).
 - The **centerline score** (`view.scoreDisplay`) is the *local* player's
   `Score`, driven separately by `MiniGameHUD.UpdateScoreUI` on
   `localRoundStats.OnScoreChanged`.
+
+### [B9 / Approach B] Server-authoritative domain sums + reactive panels
+Clients do **not** re-sum per-player stats for the domain boxes — a client's OWN
+`RoundStats` metric can fail to replicate to the owner (BUGS.md B9). Two pieces:
+
+- **Values (server-authoritative).** `MultiplayerDomainGamesController` (the base of
+  HexRace / Joust / CrystalCapture) runs a throttled (0.1s) **server** coroutine that
+  writes `ScoringMetrics.SumByDomain(gameData, rule.Metric, ActiveDomains[i])` into
+  three `NetworkVariable<int>`. Every peer's `OnValueChanged` mirrors the value into
+  `GameDataSO.SetDomainMetricSum` (→ `OnDomainMetricSumsChanged`), and
+  `MultiplayerHUD.SumStatByDomain` returns `gameData.GetDomainMetricSum`. So every
+  client shows exactly the host's number, and the single code path serves all three
+  modes via the per-mode `rule.Metric` (Crystals / Jousts).
+- **Structure (reactive).** `RoundStats.n_Domain` / `n_Name` now raise
+  `OnAnyStatChanged`; `MultiplayerHUD` rebuilds the panel set whenever the
+  ally/opposing domain set or roster changes (`RebuildDomainPanels` + allocation-free
+  `DomainLayoutChanged`) and subscribes `OnPlayerAdded`, instead of snapshotting once
+  at turn start (BUGS.md B8).
+
+> **Legacy gap:** the above covers only the **domain** layout. The legacy per-player
+> layout still reads per-player `RoundStats` directly and can show a frozen own-card
+> on a client — `TODOS.md` TD1 (recheck).
 
 ---
 
@@ -397,6 +425,7 @@ item** (`REFACTOR.md` R1) — agree the per-site replacement before any code.
 | Data hub + SOAP events | `_Scripts/Utility/DataContainers/GameDataSO.cs` |
 | In-game HUD base / view | `_Scripts/UI/MiniGameHUD.cs`, `_Scripts/UI/View/MinigameHUDView.cs` |
 | In-game MP HUD / view | `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/UI/View/MultiplayerHUDView.cs` |
+| In-game MP domain-sum sync (server→clients) | `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs` (NetworkVariable sums → `GameDataSO.SetDomainMetricSum`) |
 | In-game widgets | `_Scripts/UI/Elements/DomainScorePanel.cs`, `_Scripts/UI/Elements/PlayerScoreEntry.cs` |
 | Mode HUDs | `_Scripts/UI/HexRaceHUD.cs`, `MultiplayerJoustHUD.cs`, `MultiplayerCrystalCaptureHUD.cs` |
 | End-game scoreboard base | `_Scripts/UI/Scoreboard.cs`, `_Scripts/UI/PlayerScoreCard.cs` |
@@ -418,4 +447,5 @@ item** (`REFACTOR.md` R1) — agree the per-site replacement before any code.
   `Docs/THREADING.md`.
 
 See `REFACTOR.md` for the sequenced backlog, `BUGS.md` for open correctness
-issues, and `TESTS.md` for manual verification procedures.
+issues, `TODOS.md` for loose/open items (e.g. the legacy-layout client sync), and
+`TESTS.md` for manual verification procedures.

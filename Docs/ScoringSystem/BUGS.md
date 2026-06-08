@@ -86,9 +86,43 @@ already correct and is unchanged. This was the last end-game surface still
 re-deriving rank locally — completes `REFACTOR.md` R10 Phase B's consumer migration.
 File: `_Scripts/Utility/DataContainers/EndGameVesselDisplayManager.cs`.
 
+### B8 — 🟢 Client domain boxes built from a stale turn-start snapshot
+In multiplayer the in-game domain boxes were wrong on **clients** (correct on the
+host). `MultiplayerHUD.InitializeDomainPanels` built the panel set ONCE at
+`OnMiniGameTurnStarted`, snapshotting `LocalPlayer.Domain`, each `stats.Domain`, and
+`RequestedDomainCount`. On a client those replicate around turn start, so a late
+arrival produced a wrong ally/opposing set that was never corrected — and
+`RoundStats.n_Domain`'s replication callback raised **no** event, so the HUD never
+learned a domain changed; updates routed by the live `stats.Domain` into the stale
+panel dict were silently dropped. **Done** (commit `fa2515f7`): `RoundStats`
+n_Domain/n_Name callbacks now raise `OnAnyStatChanged`; `MultiplayerHUD` rebuilds the
+panel set reactively (idempotent `RebuildDomainPanels` + allocation-free
+`DomainLayoutChanged`), reconciles on each stat event, and subscribes `OnPlayerAdded`
+for late roster.
+Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/UI/MultiplayerHUD.cs`.
+
+### B9 — 🟢 Client's OWN metric count frozen on its own screen (domain layout)
+After B8, domains mapped correctly but a client's OWN crystal count stayed frozen
+(e.g. stuck at 6) on the client while correct on the host; remote players' counts
+replicated fine. Crystal counting is fully server-authoritative
+(`OmniCrystalImpactor` bails on clients; `StatsManager` records server-only), so the
+host is the source of truth — but a client re-summing its OWN per-player `RoundStats`
+could freeze (owner-side replication of its own value proved unreliable; root cause
+not isolated). **Done** (commit `e25290cc`, "Approach B"): clients no longer re-sum
+per-player stats for the domain boxes. The server (`MultiplayerDomainGamesController`)
+computes each active domain's `ScoringMetrics.SumByDomain(rule.Metric, …)` and
+replicates it via 3 NetworkVariables; every peer mirrors it into
+`GameDataSO.SetDomainMetricSum` and `MultiplayerHUD` displays it verbatim, so every
+client matches the host. Generalizes to all three domain modes via the per-mode
+`rule.Metric` (Crystals / Jousts). **Residual:** the LEGACY per-player layout still
+reads per-player stats and is NOT covered — `TODOS.md` **TD1**. Needs the 2-human
+play-test (HexRace / Joust / CrystalCapture — `TESTS.md` T11/T12).
+Files: `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`,
+`_Scripts/Utility/DataContainers/GameDataSO.cs`, `_Scripts/UI/MultiplayerHUD.cs`.
+
 ---
 
-B1–B4, B6, B7 fixed (verify only — B6 also warrants a visual position check; B2/B7
-need the HexRace/Joust end-game play-test). B5 remains scheduled into **R10** (the
-unified ranked `ScoreResult` list dissolves it). No open read-through findings
-remain.
+B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
+B9 fixed for the **domain** layout (needs the 2-human play-test; legacy-layout
+residual tracked in `TODOS.md` TD1). B5 remains scheduled into **R10** (the unified
+ranked `ScoreResult` list dissolves it). No open read-through findings remain.

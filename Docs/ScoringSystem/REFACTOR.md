@@ -137,6 +137,13 @@ subclasses were deleted, so the metric path is unified. **Remaining:** verify/re
 `_playerCards` layout (`HasDomainPanelWiring`/`InitializePlayerCards`/`UpdatePlayerCard`) once all
 scenes use domain-panel wiring.
 
+**Client-sync caveat (BUGS.md B9):** the domain layout's box values are now
+server-authoritative (Approach B — `MultiplayerDomainGamesController` syncs per-domain
+sums into `GameDataSO`), but the legacy `_playerCards` path still reads per-player
+`RoundStats` on the client, so it can show a frozen own-card in multiplayer. Either
+retire the layout (this item) or server-sync per-player values — tracked in
+`TODOS.md` TD1 (recheck).
+
 ### R7 — ⚪ Replace `PlayerScoreEntry`-as-avatar-chip with a dedicated chip
 `DomainScorePanel.AddPlayerIcon` reuses `PlayerScoreEntry` with an empty score
 field as an avatar-only chip. Introduce a small dedicated avatar-chip widget for

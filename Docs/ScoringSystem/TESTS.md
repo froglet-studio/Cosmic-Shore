@@ -5,8 +5,9 @@ Manual verification for the Scoring System's two surfaces: the in-game HUD
 Mode (MPPM)** per `Docs/README.md` (VP1 = host, VP2+ = joining players). Read
 `ARCHITECTURE.md` first.
 
-Run the relevant subset after any scoreboard change; run all of T1–T9 before
-landing an item from `REFACTOR.md`.
+Run the relevant subset after any scoreboard change; run all of T1–T12 before
+landing an item from `REFACTOR.md`. T11–T12 are the multiplayer client-sync cases
+(BUGS.md B8/B9) and need two players (MPPM VP1 host + VP2 client).
 
 ## Surface A — In-game HUD
 
@@ -32,11 +33,30 @@ On a scene **without** domain-panel wiring (`HasDomainPanelWiring == false`),
 start a game. **Expect:** per-player `PlayerScoreEntry` cards in
 `PlayerScoreContainer` update individually. (This path is slated for removal —
 `REFACTOR.md` R6 — but must keep working until then.)
+**Multiplayer caveat:** this legacy path reads per-player `RoundStats` on the
+client and is **not** covered by the B9 server-sum sync — a client's own card may
+freeze (`TODOS.md` TD1). For correct MP behavior, use a domain-wired scene (T11/T12).
 
 ### T5 — Turn end / replay reset
 End a turn, then replay. **Expect:** `OnMiniGameTurnEnd` clears cards/panels;
 `OnResetForReplay` resets the centerline score to "0"; no duplicate cards on the
 next turn.
+
+## Surface A — Multiplayer client sync (BUGS.md B8 / B9) — MPPM, 2 humans
+
+### T11 — Client domain boxes map correctly (B8)
+VP1 host + VP2 client on **separate** domains, in a domain-wired mode
+(HexRace / Joust / CrystalCapture). **Expect on VP2 (client):** its own domain box
+on the LEFT (ally), opposing box(es) on the RIGHT, correct domain colors — matching
+VP1's mapping; no frozen / empty / mis-colored boxes. (Was wrong before `fa2515f7`.)
+
+### T12 — Client's OWN box tracks the host (B9)
+Same setup. Collect the scoring metric as **VP2 (client)** and watch VP2's OWN domain
+box **on VP2's screen**. **Expect:** it advances in lockstep with what VP1 shows for
+VP2's domain — no freeze (the "stuck at 6" repro). Confirm VP1's box on VP2's screen
+also still tracks. Run all three modes — the fix is shared
+(`MultiplayerDomainGamesController` + per-mode `rule.Metric`); **Joust requires its
+scene be domain-wired** (`TODOS.md` TD2). A ~100ms value refresh cadence is expected.
 
 ## Surface B — Final scoreboard
 
