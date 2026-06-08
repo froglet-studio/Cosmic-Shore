@@ -11,6 +11,38 @@ herbivore).
 
 ---
 
+## 0. Invariant — mass is conserved (no passive decay)
+
+**Read this first; it constrains every solution below.** A prism — whether a
+lifeform's health-prism or vessel-spawned — is **only ever removed by an active
+force**:
+
+1. **A vessel using an ability** (combat), or
+2. **Fauna eating it** (consumption).
+
+There is **no passive decay, aging, lifespan, timed culler, or growth/decay
+oscillator** anywhere in the prism pipeline. Population homeostasis is the job of
+the **food web**, not of artificial removal:
+
+- A **large accumulation of prisms is a valid state**, not a defect to
+  auto-correct. It persists until an active force consumes it.
+- The only outcomes for a big accumulation are: **fauna consume it** (opposing-
+  domain fauna graze it down), **or** the fauna that depend on that prey **starve
+  and the population crashes** (because the mass is the wrong domain for them, or
+  out of reach). Either is correct emergent behavior.
+
+This is why **prism decay / mortality was considered and rejected** (it was the
+original Phase 2 "step 1"). A timed culler is just the flora regrowth pulse
+inverted — a hard-coded oscillator that manufactures the "breathing" we want to
+*emerge* from the predator–prey loop. The mirror cheat on the growth side is the
+flora **regrowth pulse** (§5.1), which is likewise flagged for retirement, not
+extension. If a cell "freezes," the fix is to give an active force a reason or
+ability to consume that mass (tune fauna diet/reach/spawning, or vessel
+abilities) — **never** to add decay. See CLAUDE.md → "Mass" fundamental and
+"Don't cheat emergence."
+
+---
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count
@@ -25,7 +57,10 @@ fundamental. Everything else is a projection of, or a force on, prism count.
 | Flora planting | **+** | new flora instantiated (`RandomLifeSpawner`) → health prisms → `AddBlock` |
 | Flora growth | **+** | existing flora grow new prisms (`Flora.Grow`) → `AddBlock` |
 | Fauna consumption | **−** | fauna seek & detonate opposing-domain prisms → `RemoveBlock` |
-| Combat / decay | **−** | vessel impacts, prism death → `RemoveBlock` |
+| Vessel abilities (combat) | **−** | vessel impacts / ability use → prism death → `RemoveBlock` |
+
+> The **−** column is exhaustive: fauna consumption and vessel abilities are the
+> *only* prism sinks. There is no decay/aging row — mass is conserved (§0).
 
 Prism count → **Cell Phase** (`Sprout→Quiet→Settled→Restless→Frozen→Rabid`,
 computed with enter/exit **hysteresis** so the cell doesn't chatter on the
@@ -191,10 +226,17 @@ Two follow-on changes so cells feel full and keep breathing:
   `FloraRegrowthPulseDuration` (4s); `<= 0` falls back to those defaults so the
   pulse is on across the board.
 
-> The pulse is the flora-side stopgap until prism mortality/decay exists — the
-> truly emergent down-force (flora shed aged prisms, count falls, growth resumes
-> via hysteresis) that would make the pulse unnecessary. Noted for the iteration
-> toward §7.
+> The pulse is a **growth-side cheat** — a hard-coded oscillator that fakes the
+> "breathing" we want to *emerge* from the predator–prey loop. Its mirror,
+> **prism decay**, was considered as the "real" down-force (flora shed aged
+> prisms → count falls → growth resumes via hysteresis) and **rejected**: mass is
+> conserved, prisms are only removed by active forces (§0). The honest model is
+> that a frozen-solid cell is a *valid* state — it stays frozen until an active
+> force (opposing-domain fauna grazing it, or vessel abilities) removes mass, at
+> which point the existing `phase < Frozen` hysteresis resumes growth on its own.
+> The pulse is therefore flagged for **retirement, not replacement-by-decay**;
+> retiring it means accepting frozen accumulations until the food web (or a
+> vessel) eats them. See §0 and §10.
 
 ---
 
@@ -326,14 +368,19 @@ pulse, the fixed-period spawner) as real emergent forces replace them. Ordered
 highest-impact / lowest-risk first; each step ships independently and composes
 with the others.
 
-1. **Prism mortality / decay** — *retires the regrowth-pulse cheat.*
-   Prisms (flora especially) age and die, so count falls on its own → flora
-   growth resumes through the existing Frozen-exit hysteresis with **no pulse**.
-   This is the missing down-force on the *dominant* domain (fauna only eat
-   opposing mass), so cells finally breathe by themselves. Composes with Mass,
-   Cells (phase), Flora, Fauna.
+1. **~~Prism mortality / decay~~ — REJECTED (see §0).** The original plan was
+   that flora prisms age and die so the count falls on its own, retiring the
+   regrowth-pulse cheat. **This is itself a cheat** and is not the path: mass is
+   conserved, prisms are removed only by active forces (vessel abilities + fauna
+   consumption). The real down-force on a dominant accumulation is the **food
+   web** — opposing-domain fauna grazing it, or, failing that, fauna starving (a
+   crash on the predator side, not a vanish on the prism side). So the work here
+   is **not** to add a culler; it is to make the food web strong enough that
+   accumulations get eaten — and to **retire the regrowth pulse outright**,
+   accepting that a cell with no active force on it stays full (a valid state).
+   That makes step 2 (predator/herbivore) the real first lever.
 
-2. **Predator / herbivore split** — *the centerpiece.*
+2. **Predator / herbivore split** — *the centerpiece, and the actual first step.*
    Sub-type on `FaunaConfigurationSO` (Herbivore / Predator). "Diet = what counts
    as prey" parameterizes the existing `Fauna.ResolveGoal`/consume + starvation
    hooks: herbivores eat flora prisms, predators eat herbivore fauna. Two-tier
@@ -363,6 +410,10 @@ with the others.
    isolated cells become one connected biome.
 
 **Cheats currently in place, to retire as Phase 2 lands:** the flora regrowth
-pulse (→ step 1, decay) and the fixed-period fauna spawner (→ step 3,
-reproduction). Both are honest first-approximation scaffolding, flagged so we
-remove them rather than build on them.
+pulse and the fixed-period fauna spawner (→ step 3, reproduction). Both are
+honest first-approximation scaffolding, flagged so we remove them rather than
+build on them. **Note:** retiring the regrowth pulse is *not* replaced by prism
+decay (that was the rejected step 1 — see §0). It is replaced by *nothing* on the
+removal side — mass is conserved — so once the pulse is gone a cell only comes
+back down when an active force (fauna grazing / vessel abilities) eats its mass.
+The down-force we strengthen is the **food web** (step 2), not a culler.

@@ -46,13 +46,28 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
   1. the flora **regrowth pulse** (a hard-coded oscillator), and
   2. the **fixed-period fauna spawner** (a hard-coded population source).
 
+### ⚠️ Locked invariant — mass is conserved (no passive decay). Read ECOSYSTEM.md §0.
+A prism (flora health-prism or vessel-spawned) is removed **only by active
+forces**: a vessel using an ability, or fauna eating it. There is **no decay,
+aging, lifespan, timed culler, or growth/decay oscillator** — population
+homeostasis is the **food web**, not artificial removal. A large prism
+accumulation is a *valid* state; it persists until something active eats it, and
+if no fauna can reach edible prey the correction shows up as fauna *starving*, not
+prisms vanishing. **Prism decay was considered and rejected** — do not re-propose
+it. If a cell "freezes," strengthen the food web (fauna diet/reach/spawning) or
+vessel abilities; never add a culler. (CLAUDE.md → "Mass" + "Don't cheat
+emergence.")
+
 ### Phase 2 build order (ECOSYSTEM.md §10 — each step ships alone, composes with the fundamentals, and retires a cheat)
-1. **Prism mortality / decay** — *retires the regrowth-pulse cheat.* Prisms (flora
-   especially) age and die → count falls on its own → flora resume growing through
-   the existing Frozen-exit hysteresis with the pulse **removed**. This is the
-   missing down-force on the *dominant* domain (fauna only eat opposing mass), so
-   cells finally breathe by themselves. **START HERE.**
-2. **Predator / herbivore split** — *the centerpiece.* Fauna sub-type on
+1. **~~Prism mortality / decay~~ — REJECTED (see §0 above).** A timed culler is
+   just the regrowth pulse inverted — a cheat. The down-force on a dominant
+   accumulation is the **food web**, not decay. The work that *replaces* this
+   step is step 2 below; separately, **retire the regrowth pulse outright**
+   (`Cell.FloraGrowingEnabled` → just `phase < Frozen`; drop
+   `Cell.InFloraRegrowthPulse` + `SpawnProfileSO.FloraRegrowthPulse*`), accepting
+   that a cell with no active force on it stays full until fauna/vessels eat it.
+2. **Predator / herbivore split — START HERE.** *The centerpiece and the real
+   first lever.* Fauna sub-type on
    `FaunaConfigurationSO` + "diet = what counts as prey" reuses the existing
    `Fauna.ResolveGoal`/consume/starvation hooks. Herbivores eat flora prisms,
    predators eat herbivore fauna → genuine Lotka–Volterra oscillation.
@@ -82,15 +97,22 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
   when asked.
 
 ### Your first task
-Design and implement **Phase 2 step 1: prism mortality / decay.** Goal: flora
-prisms age and die so cell density falls on its own, flora growth resumes through
-the existing hysteresis with the **regrowth pulse removed**, and the cell
-oscillates with no scaffolding. Investigate prism creation/tracking
-(`Cell.AddBlock`/`RemoveBlock`, `HealthPrism`, `HealthBlockTracker`, `Flora.Grow`),
-propose the decay mechanism (lifespan vs. age vs. probabilistic shed — and whether
-it lives on the prism, the flora, or a cell-level reaper), **confirm the design
-fork with the prompter**, implement it config-driven, then remove the regrowth
-pulse (`Cell.FloraGrowingEnabled` / `SpawnProfileSO.FloraRegrowthPulse*`) and hand
-back the precise in-editor validation steps. Watch the predator-prey interaction:
-decay must not fight fauna consumption into a death spiral — tune so flora
-regrowth and fauna grazing reach a breathing equilibrium.
+Design and implement the **predator / herbivore split** (the real Phase 2 step 1
+— prism decay was rejected; see §0). Goal: a fauna **sub-type** on
+`FaunaConfigurationSO` (Herbivore / Predator) plus a **diet = "what counts as
+prey"** parameter that reuses the existing `Fauna.ResolveGoal` / consume /
+`NotifyFed` / starvation hooks — herbivores eat **flora prisms**, predators eat
+**herbivore fauna**. Two-tier starvation → genuine Lotka–Volterra oscillation
+(flora → herbivores → predators → …). This is the active down-force that finally
+lets a dominant accumulation come down *through the food web* instead of through a
+culler. Investigate the consume/starvation seam (`LightFauna.UpdateBehavior`,
+`Fauna.IsStarving`/`NotifyFed`, `Cell.OpposingBlockCount`, `HealthPrism.Consume`),
+**confirm the design fork with the prompter** (how diet is expressed; whether
+predators target fauna bodies — which today are deliberately *not* cell-registered
+HealthPrisms), implement it config-driven, and hand back precise in-editor
+validation steps. Tune so the two-tier food web reaches a breathing equilibrium
+rather than a single-crash extinction. **Separately** (smaller, independent pass):
+retire the flora regrowth pulse outright — `Cell.FloraGrowingEnabled` collapses to
+`phase < Frozen`, drop `Cell.InFloraRegrowthPulse` and
+`SpawnProfileSO.FloraRegrowthPulse*` — accepting frozen accumulations as a valid
+state per §0. Do **not** add prism decay to compensate.
