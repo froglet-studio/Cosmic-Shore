@@ -1384,6 +1384,7 @@ MonoBehaviour:
   helix: {fileID: 0}
   helixIntensityScaling: 4
   seed: 0
+  rule: {fileID: 11400000, guid: 63bafccfd69743c086ad1bdc7623cc4c, type: 2}
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1491,7 +1492,6 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
-  penaltyScoreBase: 10000
   showDebugLogs: 1
 --- !u!1 &1194123992
 GameObject:
