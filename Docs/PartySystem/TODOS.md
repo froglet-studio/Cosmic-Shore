@@ -3,6 +3,13 @@
 Parking lot for minor improvements that don't rise to a refactor commit
 or a bug. Each entry has enough context that it can be picked up cold.
 
+> **Looking for the big-picture “what should I work on next?”** — the
+> cross-cutting roadmap (host-loss resilience, multi-joiner reliability,
+> push-vs-poll, scale/cost, production observability, CI) plus the
+> strengths-to-preserve invariants live in
+> `../MultiplayerArchitecture/ROADMAP.md`. This file is the granular
+> party-side parking lot beneath it.
+
 ## Code health
 
 ### TODO-1. Remove `HostConnectionService.Instance` static accessor
