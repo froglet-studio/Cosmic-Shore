@@ -16,12 +16,10 @@ namespace CosmicShore.Utility
         [Min(0f)] public float FloraInitialDelaySeconds;
         [Tooltip("Seconds between each flora spawn (within the initial flora batch). 0 = spawn all instantly.")]
         [Min(0f)] public float FloraSpawnIntervalSeconds;
-        [Tooltip("Flora regrowth pulse: once a cell fills past Frozen, existing flora resume growing " +
-                 "for FloraRegrowthPulseDuration seconds out of every FloraRegrowthPulsePeriod seconds " +
-                 "(capped at Rabid) so the canopy keeps breathing instead of freezing solid. " +
-                 "<= 0 falls back to a sensible default. See Docs/ECOSYSTEM.md.")]
-        [Min(0f)] public float FloraRegrowthPulsePeriod = 15f;
-        [Min(0f)] public float FloraRegrowthPulseDuration = 4f;
+        // The flora regrowth pulse (FloraRegrowthPulsePeriod / FloraRegrowthPulseDuration)
+        // was removed: it was a hard-coded growth oscillator faking the "breathing" the
+        // food web is meant to produce. Mass is conserved — growth resumes only when an
+        // active force lowers the prism count below Frozen. See Docs/ECOSYSTEM.md §0.
         public List<FloraConfigurationSO> SupportedFloras = new();
         
         [Header("FaunaPrefab Configs")]
