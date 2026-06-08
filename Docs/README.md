@@ -54,6 +54,7 @@ session-scoped findings that benefit from a timeline view.
 | Understand presence vs party | `PresenceSystem/ARCHITECTURE.md` § "Why it's separate from the party session" |
 | See known issues + their status | `PartySystem/BUGS.md` + `PresenceSystem/BUGS.md` |
 | See what we're refactoring next | `PartySystem/REFACTOR.md` § "Sequencing" |
+| See the next multiplayer TODOs / big-picture roadmap | `MultiplayerArchitecture/ROADMAP.md` |
 | Run the manual smoke / stress tests | `PartySystem/TESTS.md` § "Smoke gate" |
 | See the latest MPPM session findings | `PartySystem/MPPM_SESSION_LOG.md` |
 | Understand the diagnostic overlay | `NetworkDiagnostics/README.md` |

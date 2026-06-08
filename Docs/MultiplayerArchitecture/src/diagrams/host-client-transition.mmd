@@ -1,0 +1,16 @@
+sequenceDiagram
+  autonumber
+  participant PIC as PartyInviteController
+  participant NT as NetworkTransitionService
+  participant HCS as HostConnectionService
+  participant NM as NetworkManager
+  PIC->>PIC: SetFadeImmediate(1) + ArmSplashFade + Unpause
+  PIC->>NT: ShutdownAsync (8s timeout)
+  NT->>NM: Shutdown() — wait for full reset
+  PIC->>HCS: AcceptInviteAsync — publish acceptance, JoinById(host)
+  PIC->>NT: WaitForClientConnectionAsync (8s)
+  NT->>NM: poll IsConnectedClient
+  PIC->>NT: WaitForSceneSyncAsync (8s)
+  PIC->>PIC: WaitForClientReadyAsync (10s — local vessel spawns)
+  PIC-->>PIC: OnPartyJoinCompleted → party UI refresh
+  Note over PIC,NM: any timeout → RecoverFromFailedTransitionAsync → clean solo Menu_Main
