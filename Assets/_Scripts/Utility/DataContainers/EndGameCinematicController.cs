@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -285,18 +286,32 @@ namespace CosmicShore.Utility
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
+            // Domain modes: the ScoringRule produces the reveal (header / label / value /
+            // format) — the SAME source the scoreboard reads — so the two can't disagree
+            // (this is what closes BUGS.md B2 for the Joust loser line).
+            var rule = gameData != null ? gameData.ScoringRule : null;
+            if (rule != null)
+            {
+                var localName = gameData.LocalPlayer?.Name;
+                var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
+                if (localStats == null) yield break;
+
+                var reveal = rule.BuildReveal(gameData, localStats, DetermineLocalPlayerWon());
+                yield return view.PlayScoreRevealAnimation(
+                    $"{reveal.Header}\n<size=60%>{reveal.Label}</size>",
+                    reveal.Value,
+                    cinematic.scoreRevealSettings,
+                    reveal.FormatAsTime);
+                yield break;
+            }
+
+            // Legacy fallback (modes without a ScoringRule).
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
             gameData.IsLocalDomainWinner(out DomainStats stats);
-            int score = Mathf.Max(0, (int)stats.Score); 
-            
+            int score = Mathf.Max(0, (int)stats.Score);
             string displayText = cinematic.GetCinematicTextForScore(score);
-            
-            yield return view.PlayScoreRevealAnimation(
-                displayText,
-                score,
-                cinematic.scoreRevealSettings
-            );
+            yield return view.PlayScoreRevealAnimation(displayText, score, cinematic.scoreRevealSettings);
         }
 
         /// <summary>
@@ -380,7 +395,17 @@ namespace CosmicShore.Utility
         /// </summary>
         protected virtual bool DetermineLocalPlayerWon()
         {
-            return gameData != null && gameData.IsLocalDomainWinner(out _);
+            if (gameData == null) return false;
+
+            // Domain modes set a server-authoritative WinnerDomain — the same value the
+            // scoreboard banner uses. The local player wins iff their domain is the winner.
+            if (gameData.WinnerDomain != Domains.Blue)
+            {
+                var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
+                return localDomain == gameData.WinnerDomain;
+            }
+
+            return gameData.IsLocalDomainWinner(out _);
         }
 
         protected virtual CinematicDefinitionSO ResolveCinematicForThisScene()

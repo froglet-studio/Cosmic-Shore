@@ -220,10 +220,21 @@ namespace CosmicShore.UI
         /// </summary>
         protected virtual void ShowMultiplayerView()
         {
-            var orderedStats = SortPlayers(gameData.RoundStatsList);
+            // Prefer the single source of truth: the mode's ranked + formatted results
+            // (GameDataSO.Results, produced once by the ScoringRule). Modes that don't
+            // produce results (freestyle, DuelForCell) fall back to the legacy path.
+            if (gameData.Results is { Count: > 0 })
+            {
+                var winnerDomain = gameData.WinnerDomain != Domains.Blue
+                    ? gameData.WinnerDomain
+                    : gameData.Results[0].Domain;
+                SetBannerForDomain(winnerDomain);
+                PopulateFromResults(gameData.Results);
+                return;
+            }
 
-            Domains winnerDomain = DetermineWinnerDomain(orderedStats);
-            SetBannerForDomain(winnerDomain);
+            var orderedStats = SortPlayers(gameData.RoundStatsList);
+            SetBannerForDomain(DetermineWinnerDomain(orderedStats));
             PopulatePlayerCards(orderedStats);
         }
 
@@ -335,6 +346,46 @@ namespace CosmicShore.UI
             AwardCrystalsIfLocalWinner(winnerName);
         }
 
+        /// <summary>
+        /// Renders cards from the single source of truth — the mode's ranked, formatted
+        /// <see cref="GameDataSO.Results"/>. Order, primary text and secondary line all come
+        /// from the ScoringRule, so the scoreboard and the end-game cinematic can't disagree.
+        /// </summary>
+        void PopulateFromResults(List<ScoreResult> results)
+        {
+            ClearPlayerCards();
+
+            if (results == null || results.Count == 0) return;
+            if (!playerCardContainer || !playerCardPrefab)
+            {
+                CSDebug.LogWarning($"[Scoreboard] PopulateFromResults skipped — " +
+                    $"container={(playerCardContainer != null ? "OK" : "NULL")}, " +
+                    $"prefab={(playerCardPrefab != null ? "OK" : "NULL")}");
+                return;
+            }
+
+            string winnerName = results[0].Name;
+
+            for (int i = 0; i < results.Count; i++)
+            {
+                var r = results[i];
+                var card = Instantiate(playerCardPrefab, playerCardContainer);
+
+                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), i);
+                card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
+
+                if (!string.IsNullOrEmpty(r.Secondary))
+                    card.ShowSecondaryStat(r.Secondary);
+
+                if (winnerCrystalReward > 0 && r.Name == winnerName)
+                    card.ShowCrystalReward(winnerCrystalReward);
+
+                _spawnedCards.Add(card);
+            }
+
+            AwardCrystalsIfLocalWinner(winnerName);
+        }
+
         void ClearPlayerCards()
         {
             foreach (var card in _spawnedCards)
@@ -374,14 +425,16 @@ namespace CosmicShore.UI
                 : Color.gray;
         }
 
-        Sprite ResolveAvatarSprite(IRoundStats stats)
+        Sprite ResolveAvatarSprite(IRoundStats stats) => ResolveAvatarSpriteByName(stats.Name);
+
+        Sprite ResolveAvatarSpriteByName(string playerName)
         {
             // AI players — look up by name in AI profile list (struct, not nullable)
             if (aiProfileList != null && aiProfileList.aiProfiles != null)
             {
                 foreach (var p in aiProfileList.aiProfiles)
                 {
-                    if (p.Name == stats.Name)
+                    if (p.Name == playerName)
                         return p.AvatarSprite;
                 }
             }
@@ -389,7 +442,7 @@ namespace CosmicShore.UI
             // Human players — look up by AvatarId via gameData.Players
             if (profileIconList != null && profileIconList.profileIcons != null && gameData?.Players != null)
             {
-                var player = gameData.Players.FirstOrDefault(pl => pl.Name == stats.Name);
+                var player = gameData.Players.FirstOrDefault(pl => pl.Name == playerName);
                 if (player != null)
                 {
                     foreach (var icon in profileIconList.profileIcons)
