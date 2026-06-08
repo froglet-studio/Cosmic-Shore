@@ -16,7 +16,7 @@ namespace CosmicShore.UI
     /// legacy per-player layout in PlayerScoreContainer so scenes that haven't
     /// been updated keep working.
     /// </summary>
-    public abstract class MultiplayerHUD : MiniGameHUD
+    public class MultiplayerHUD : MiniGameHUD
     {
         [Header("Multiplayer View")]
         [SerializeField] protected MultiplayerHUDView multiplayerView;
@@ -240,17 +240,36 @@ namespace CosmicShore.UI
                 UnsubscribeFromPlayerStats(stats);
         }
 
-        protected abstract int GetInitialCardValue(IRoundStats stats);
-        protected abstract void SubscribeToPlayerStats(IRoundStats stats);
-        protected abstract void UnsubscribeFromPlayerStats(IRoundStats stats);
+        /// <summary>
+        /// The per-player card value = the mode's scoring metric, read from the active
+        /// <see cref="GameDataSO.ScoringRule"/>. One metric drives the HUD, the "remaining"
+        /// readout, the end condition and the scoreboard secondary, so they cannot diverge.
+        /// </summary>
+        protected virtual int GetInitialCardValue(IRoundStats stats)
+            => gameData != null && gameData.ScoringRule != null
+                ? gameData.ScoringRule.LiveMetric(stats)
+                : 0;
+
+        /// <summary>
+        /// Subscribe to the generic stat-changed event — metric-agnostic, so the same base
+        /// serves every domain mode. <see cref="HandlePlayerStatChanged"/> recomputes the card
+        /// / domain sum from the rule metric.
+        /// </summary>
+        protected virtual void SubscribeToPlayerStats(IRoundStats stats)
+        {
+            if (stats != null) stats.OnAnyStatChanged += HandlePlayerStatChanged;
+        }
+
+        protected virtual void UnsubscribeFromPlayerStats(IRoundStats stats)
+        {
+            if (stats != null) stats.OnAnyStatChanged -= HandlePlayerStatChanged;
+        }
         protected virtual void SubscribeToGameSpecificEvents() { }
         protected virtual void UnsubscribeFromGameSpecificEvents() { }
 
         /// <summary>
-        /// Legacy hook used by the per-player layout. Subclasses don't call this
-        /// directly anymore — they call <see cref="HandlePlayerStatChanged"/>
-        /// from their OnXxxChanged handlers, which dispatches to per-player or
-        /// per-domain UI depending on the inspector wiring.
+        /// Per-player-layout helper. <see cref="HandlePlayerStatChanged"/> dispatches here
+        /// (per-player card) or to the domain panel depending on the inspector wiring.
         /// </summary>
         protected void UpdatePlayerCard(string playerName, int newValue)
         {
@@ -259,10 +278,9 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Single entry point for stat changes. Subclasses call this from their
-        /// per-stat OnXxxChanged handler with the updated <paramref name="stats"/>.
-        /// Routes the update to the active layout — per-player card or per-domain
-        /// panel — and computes the new domain sum on demand.
+        /// Single entry point for stat changes, invoked from each player's
+        /// <see cref="IRoundStats.OnAnyStatChanged"/>. Routes the update to the active layout —
+        /// per-player card or per-domain panel — and recomputes the domain sum on demand.
         /// </summary>
         protected void HandlePlayerStatChanged(IRoundStats stats)
         {
