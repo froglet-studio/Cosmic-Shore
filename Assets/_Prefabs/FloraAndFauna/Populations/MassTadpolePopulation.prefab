@@ -50,7 +50,7 @@ MonoBehaviour:
   Goal: {x: 0, y: 0, z: 0}
   boidPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24,
     type: 3}
-  numberOfBoids: 150
+  numberOfBoids: 300
   spawnRadius: 200
   Mound: {fileID: 0}
   Boids: []

@@ -281,33 +281,42 @@ The diet split is in code (`FaunaDiet` enum + `Fauna.diet` + `LightFauna`
 consume branch + `Fauna.Predated`) **and wired into the Blob (menu) test cell**
 with the team's three real species:
 
-| Species | Prefab | Component | Diet |
-|---|---|---|---|
-| **Tadpole** | `MassTadPoleFauna` | `Boid` | Herbivore (default) |
-| **Brittlestar** | `MassBrittlestarFauna` | `LightFauna` | Herbivore (default) |
-| **Shark** | `MassSharkFauna` | `LightFauna` | **Predator** (`diet: 1`) |
+| Species | Prefab | Component | Spawned by | Diet | Role |
+|---|---|---|---|---|---|
+| **Tadpole** | `MassTadPoleFauna` | `Boid` | `BoidManager` (`MassTadpolePopulation`) | Herbivore | large forager **murmuration** |
+| **Brittlestar** | `MassBrittlestarFauna` | `LightFauna` | cell config (`RandomLifeSpawner`) | Herbivore | grazer (starves) |
+| **Shark** | `MassSharkFauna` | `LightFauna` | cell config | **Predator** (`diet: 1`) | apex; eats *both* herbivores |
 
-All three are in `Blob Cell Spawn Profile.SupportedFaunas` (brittlestar pop 4,
-tadpole pop 4, shark pop 2 — apex tier is smaller). Activating predators in
-another biome is the same recipe (§7.1).
+Two herbivore species, one predator. **Tadpoles are the murmuration** — they
+"only look great as a murmuration," so they come from a `BoidManager`
+(`MassTadpolePopulation`, scene-placed) that maintains a large flocking swarm,
+**not** from the per-creature cell-config spawn (which would dribble out lone
+tadpoles). Brittlestar + shark come from the cell config.
 
 - **Diet = "what counts as prey"** is a `FaunaDiet diet` field on the `Fauna`
-  base (`Herbivore` / `Predator`), defaulting to **Herbivore** so every existing
-  fauna prefab keeps its exact current behavior:
-  - **Herbivore** — consumes opposing-domain prism MASS within `consumeRadius`.
-    `LightFauna` (brittlestar) detonates opposing prisms; `Boid` (tadpole)
-    attaches-to / explodes opposing prisms via its own behavior. Unchanged.
+  base (`Herbivore` / `Predator`), defaulting to **Herbivore**:
+  - **Herbivore** — consumes opposing-domain prism MASS (flora canopy + vessel
+    trails). `LightFauna` (brittlestar) detonates opposing prisms within
+    `consumeRadius`; `Boid` (tadpole) explodes opposing prisms via its Explode
+    collision effect — i.e. it **forages**. (Boid's other effect, Attach/mound, is
+    not used by tadpoles; it's load-bearing for drone abilities, so the code stays.)
   - **Predator** — consumes **herbivore fauna of any species** via
     `GetComponentInParent<Fauna>()` on nearby colliders (matches the `Fauna` base,
     so a shark eats both `LightFauna` brittlestars and `Boid` tadpoles) →
     `prey.Predated()`. Predators **never** eat prism mass. Predation **ignores
-    domain** (it's a diet relationship, not a team fight) so predators have prey
-    even in a single-domain cell — the food web bounds them, not the domain split.
-- **Starvation (the §6 bound) is the shared population control** for both diets:
-  herbivores starve when opposing prism mass is gone; predators starve when no
-  herbivore fauna are reachable (`Fauna.IsStarving` → `Die`). A Predator layered
-  on Herbivores is therefore a two-tier **Lotka–Volterra** loop (flora →
-  herbivores → predators) that oscillates on its own — no culler, mass conserved.
+    domain** (a diet relationship, not a team fight) so predators have prey even in
+    a single-domain cell — the food web bounds them, not the domain split.
+- **Population bounds (per species):**
+  - *Brittlestar* — `Fauna.IsStarving → Die` (starves when opposing prism mass is
+    gone) **and** shark predation. Full two-tier Lotka–Volterra herbivore.
+  - *Tadpole* — bounded by **shark predation + the `BoidManager` target cap**
+    (`numberOfBoids`). `Boid` does **not** run the starvation clock, so the
+    murmuration doesn't self-cull on empty prey; instead `BoidManager` **replenishes**
+    boids lost to predators/attrition back toward the target, so the swarm stays
+    dense and **persistent** (the "indefinite" goal) while predation provides churn.
+  - *Shark* — `IsStarving → Die` when no herbivores are reachable. With the
+    tadpole murmuration replenishing, sharks have steady prey (a stable predator–prey
+    balance) rather than the boom/bust of a pure two-species loop.
 - **Targeting (v1):** predators reuse the shared phase-based goal (density-grid
   centroids). Herbivores swarm opposing-flora density; predators seek the same
   centroids and so converge on the herbivores feeding there, eating them on
@@ -321,68 +330,74 @@ another biome is the same recipe (§7.1).
   curves slot into the existing `CellAggressionLevel` switch points:
   `Cell.AggressionLevel`, `Fauna.ResolveGoal` / `LightFauna.UpdateBehavior`).
 
-### 7.1 How the Blob cell was wired (recipe for other biomes)
-1. Set the predator creature's diet: `MassSharkFauna`'s `LightFauna` has
-   `diet: 1` (Predator). Herbivores need nothing — diet defaults to Herbivore.
-2. One `FaunaConfigurationSO` per species points at its **creature** prefab's
-   Fauna component (not the Population/manager): `Blob Tadpole Fauna Config Data`
-   → `MassTadPoleFauna` (Boid), `Blob Shark Fauna Config Data` → `MassSharkFauna`
-   (LightFauna), and the existing `Blob Fauna Config Data` → `MassBrittlestarFauna`.
-   Predator `PopulationSize` is smaller (apex tier).
-3. All three configs are in `Blob Cell Spawn Profile.SupportedFaunas`.
-4. **Validate in Menu_Main:** tadpoles + brittlestars graze opposing flora;
-   sharks converge on the swarms and thin them; when herbivores crash, sharks
-   starve (`starvationSeconds`); herbivores recover → sharks recover. Tune
-   `PopulationSize` / `BaseFaunaSpawnTime` / `starvationSeconds` / `consumeRadius`
-   (on each `LightFaunaDataSO`) toward a breathing equilibrium, not one-shot
-   extinction.
+### 7.1 Wiring recipe
+- **Predator diet:** `MassSharkFauna`'s `LightFauna` has `diet: 1` (Predator).
+  Herbivores need nothing — diet defaults to Herbivore.
+- **Cell-config species (brittlestar, shark):** one `FaunaConfigurationSO` each,
+  pointing at the **creature** prefab (not the manager), listed in the cell's
+  `SpawnProfileSO.SupportedFaunas`. Predator `PopulationSize` smaller (apex).
+- **Tadpole murmuration:** a scene-placed `MassTadpolePopulation` (`BoidManager`).
+  `numberOfBoids` = swarm size (now **300**, the "much larger" lever — watch
+  per-scene perf). The manager **replenishes** lost boids so the swarm persists.
 
-> **Known asymmetry:** `Boid` (tadpole) does **not** run the starvation clock —
-> only `LightFauna` checks `IsStarving`. So tadpoles don't self-cull when flora
-> runs out; their only down-force is shark predation. Brittlestars (LightFauna)
-> both starve *and* are predated. To make tadpoles a full herbivore tier, add
-> `NotifyFed()` on `Boid`'s opposing-prism interaction + an `if (IsStarving) Die()`
-> gate in `Boid.CalculateBehavior` — deferred so it doesn't change `Boid` in the
-> WildlifeBlitz cells that also use it.
+> **Why tadpoles aren't a cell-config species:** lone cell-spawned tadpoles don't
+> read as a swarm. The murmuration (`BoidManager`) is the point, and it self-
+> sustains via replenishment rather than the `Fauna` starvation clock (`Boid`
+> doesn't run it). Sharks still eat tadpoles (Fauna-base predation), so the
+> murmuration is genuinely in the food web — predation + the manager cap bound it.
+> The `Boid` mound code stays (drone abilities use it); tadpoles just never invoke
+> it (Explode-only).
 
 ### 7.2 Trail-management test deployments (two scenes)
 
 The food web is wired into two scenes to test the ecosystem's ability to manage
 **trail** prisms (player/AI mass), not just flora:
 
-**A. Menu_Main freestyle toy box** (`Blob Cell Config` → `Blob Cell Spawn
-Profile`). Flora + the 3-species food web. The autopilot/player vessel lays
-trails; fauna of the controlling domain graze the opposing-domain trail + flora
-mass, sharks thin the herbivores. Goal: a self-sustaining scene that stays
-visually interesting and playable **indefinitely** — tune so neither mass nor
-fauna runs away or dies out. Levers: `Blob Cell Spawn Profile`
-`BaseFaunaSpawnTime` / `FaunaFoodFloor`, the per-species `PopulationSize`, and
+**A. Menu_Main freestyle toy box.** A scene-placed `MassTadpolePopulation`
+(`BoidManager`, 300 boids, self-replenishing) gives the tadpole murmuration;
+`Blob Cell Config → Blob Cell Spawn Profile` adds flora + brittlestar (herbivore)
++ shark (predator). The autopilot/player vessel lays trails; tadpoles + brittle-
+stars graze opposing-domain trail + flora mass, sharks thin both. Goal: a
+self-sustaining scene that stays visually interesting and playable
+**indefinitely**. Levers: `MassTadpolePopulation.numberOfBoids`, `Blob Cell Spawn
+Profile` `BaseFaunaSpawnTime` / `FaunaFoodFloor`, per-species `PopulationSize`,
 `starvationSeconds` / `consumeRadius` on the `LightFaunaDataSO`s.
 
 **B. Skim Race** (`MinigameHexRace`, dedicated `Skim Race Cell Config` → `Skim
 Race Spawn Profile`, isolated from the 6 other scenes that share the Barren
-config). **No flora** (flora would add mass — counterproductive); only the food
-web. Hypothesis: at late laps / high player counts, AI orbiting crystals leave an
-excess of **trail-prism obstacles**; herbivores (tadpole + brittlestar) spawn
-where that opposing-domain trail mass concentrates and graze it down → fewer
-prisms → better perf; sharks keep the herbivore count (and thus fauna cost) in
-check. The cell uses the **Random** spawner (`cellTypeChoiceOptions = 0`) so
-spawning is prey-linked: a population only spawns while opposing trail mass ≥
-`FaunaFoodFloor`, and starves when it's gone — fauna appear only when there are
-obstacles to eat.
+config). **No flora**; only the food web. Hypothesis: at late laps / high player
+counts, AI orbiting crystals leave an excess of **trail-prism obstacles**; fauna
+graze them → fewer prisms → better perf. The two layers:
+- **Tadpole murmuration at the crystals.** A `MassTadpolePopulation` with
+  **`spawnAtCrystals = true`** distributes its swarm across `cellData.Crystals`
+  (≈ `numberOfBoids` / crystalCount per crystal) — foragers sit exactly on the
+  obstacle hotspots, regardless of cell membrane size (this is why "spawn where
+  the crystals spawn" sidesteps the membrane-coverage limit below).
+- **Brittlestar + shark** from the cell config (Random spawner,
+  `cellTypeChoiceOptions = 0`): prey-linked — they spawn only while opposing trail
+  mass ≥ `FaunaFoodFloor` and starve when it's gone.
 
-> **Two caveats to validate in-editor (I can't run Unity):**
-> 1. **Membrane coverage.** Registration is a **sphere of `CapsuleMembrane.radius`
->    (1200)** around the cell centre (`Cell.ContainsPosition`), but the Skim Race
->    track runs ~4000 long. The single cell therefore covers the **central**
->    crystal-orbit zone, not the whole track — fauna only graze trails within
->    ~1200 of the cell. Enough to demonstrate the effect; for full coverage,
->    raise the membrane radius (needs a Skim-Race-specific membrane prefab so it
->    doesn't affect other cells) or place more cells along the track.
-> 2. **Net perf.** Fauna cost CPU (per-tick `OverlapSphere`). The test is whether
->    trail savings beat fauna cost. Start with modest counts (tadpole/brittlestar
->    `PopulationSize` 4, shark 2, `BaseFaunaSpawnTime` 15, `FaunaFoodFloor` 10) and
->    profile before/after; crank counts up only if it's net-positive.
+> **Deploy the Skim Race tadpoles (in-editor):** drop a `MassTadpolePopulation`
+> into `MinigameHexRace`, set **`spawnAtCrystals = true`**, and wire its `cellData`
+> to the **same `CellRuntimeDataSO`** the crystal manager writes to (so
+> `cellData.Crystals` is populated). The swarm fills in once crystals spawn.
+
+> **Caveats to validate in-editor (I can't run Unity):**
+> 1. **Client-local fauna.** Fauna and trail prisms have **no `NetworkObject`** —
+>    they're client-local (trails reconstructed from networked vessel movement,
+>    cell phase synced via `CellNetworkSync`). Fine for a **perf** test (each
+>    client's fauna graze its own local trails → per-client win) and for the menu.
+>    But fauna/trail state **diverges across clients**, so this is not yet fair for
+>    competitive play — server-authoritative fauna would be needed for that.
+> 2. **Membrane coverage (brittlestar/shark only).** Cell-config spawning + density
+>    targeting live inside a **1200-radius sphere** (`Cell.ContainsPosition`) while
+>    the track runs ~4000 long, so the cell-config grazers cover the central zone
+>    only. The **crystal-anchored tadpoles are unaffected** (they spawn at crystal
+>    positions directly). For full cell-config coverage, raise the membrane radius
+>    (needs a Skim-Race-specific membrane prefab) or add cells.
+> 3. **Net perf.** Fauna cost CPU (per-tick `OverlapSphere`). Test whether trail
+>    savings beat fauna cost: start modest (`numberOfBoids` 300, brittlestar/shark
+>    `PopulationSize` 4/2) and profile before/after; scale only if net-positive.
 
 ---
 

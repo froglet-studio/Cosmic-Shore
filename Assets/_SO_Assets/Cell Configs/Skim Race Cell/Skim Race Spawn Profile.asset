@@ -25,6 +25,5 @@ MonoBehaviour:
   FaunaInitialDelaySeconds: 0
   FaunaSpawnIntervalSeconds: 1
   SupportedFaunas:
-  - {fileID: 11400000, guid: cd7a0ed03ab04008908e9445ce78283d, type: 2}
   - {fileID: 11400000, guid: ab0dc8255c7c41f0a2f94c3e5f094da2, type: 2}
   - {fileID: 11400000, guid: 881e201ec5574db6979009c3b7a28998, type: 2}
