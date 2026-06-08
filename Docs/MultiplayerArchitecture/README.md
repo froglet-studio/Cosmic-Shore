@@ -10,7 +10,10 @@ Structured in two passes: **Part I — Curated Overview** (accessible) and **Par
 Deep-Dive** (exhaustive). Synthesised from the canonical engineering docs under `Docs/` and the
 source under `Assets/_Scripts/`.
 
-**Output:** `CosmicShore-Multiplayer-Netcode-Architecture.pdf` (~69 pages).
+**Outputs:**
+- `CosmicShore-Multiplayer-Netcode-Architecture.pdf` — the full dossier (~71 pages, Part I + Part II).
+- `CosmicShore-Multiplayer-LinkedIn-Overview.pdf` — a standalone, LinkedIn-ready PDF of **Part I only**
+  (the curated overview), same branded report style, public-friendly footer.
 
 ## Regenerate
 
@@ -19,10 +22,11 @@ Requirements: Node 18+, Python 3.9+ with [WeasyPrint](https://weasyprint.org/).
 ```bash
 npm install            # puppeteer (Chromium), @mermaid-js/mermaid-cli, markdown-it, highlight.js
 pip install weasyprint
-npm run all            # render diagrams (mmd → svg) then build the PDF
+npm run all            # render diagrams (mmd → svg) then build the full dossier PDF
 # equivalently:
 node src/render-diagrams.mjs
 node src/build.mjs
+node src/build-overview.mjs   # the standalone LinkedIn Part-I overview PDF
 ```
 
 ## Layout
@@ -35,7 +39,8 @@ src/
 ├── fonts.css       # inlined Space Grotesk / Inter / JetBrains Mono (base64)
 ├── mermaid-config.json / puppeteer-config.json
 ├── render-diagrams.mjs
-└── build.mjs       # markdown-it (+ containers, highlight.js) → HTML → WeasyPrint → PDF
+├── build.mjs          # full dossier: markdown-it (+ containers, highlight.js) → HTML → WeasyPrint
+└── build-overview.mjs # standalone LinkedIn Part-I overview (reuses theme.css + content/01-07)
 ```
 
 ## Editing
