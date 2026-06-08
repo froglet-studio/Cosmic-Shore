@@ -681,8 +681,20 @@ namespace CosmicShore.Data
 
             // --- Replication callbacks: sync local field, then fire event ---
 
-            n_Name.OnValueChanged   += (_, v) => _nameLocal = v.ToString();
-            n_Domain.OnValueChanged += (_, v) => _domainLocal = v;
+            n_Name.OnValueChanged += (_, v) =>
+            {
+                _nameLocal = v.ToString();
+                // A late-replicated name/domain must notify observers (e.g. the in-game HUD's
+                // domain-grouped layout) so they reconcile. Every OTHER stat already raises
+                // OnAnyStatChanged from its replication callback; name + domain previously did
+                // not, which left client domain boxes frozen on a stale turn-start snapshot.
+                OnAnyStatChanged?.Invoke(this);
+            };
+            n_Domain.OnValueChanged += (_, v) =>
+            {
+                _domainLocal = v;
+                OnAnyStatChanged?.Invoke(this);
+            };
 
             n_Score.OnValueChanged += (_, v) =>
             {

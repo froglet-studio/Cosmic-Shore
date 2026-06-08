@@ -27,6 +27,12 @@ namespace CosmicShore.UI
         protected Dictionary<Domains, DomainScorePanel> _domainPanels = new();
         bool _useDomainView;
 
+        // Domain-panel build signature. A client races domain/roster replication at turn start,
+        // so these let it detect when a late-replicated domain or roster entry means the panel set
+        // must be rebuilt (see DomainLayoutChanged) instead of staying frozen on a stale snapshot.
+        Domains _builtLocalDomain = Domains.Blue;
+        bool _domainPanelsBuilt;
+
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -98,16 +104,24 @@ namespace CosmicShore.UI
             else
                 InitializePlayerCards();
 
+            // On a client, player domains / roster can still be replicating when the turn starts.
+            // React to late-arriving players so their domain box appears and updates.
+            if (gameData != null)
+                gameData.OnPlayerAdded += HandlePlayerAdded;
+
             SubscribeToGameSpecificEvents();
         }
 
         protected override void OnMiniGameTurnEnd()
         {
             base.OnMiniGameTurnEnd();
+            if (gameData != null)
+                gameData.OnPlayerAdded -= HandlePlayerAdded;
             UnsubscribeFromAllStats();
             UnsubscribeFromGameSpecificEvents();
             _playerCards.Clear();
             _domainPanels.Clear();
+            _domainPanelsBuilt = false;
             if (multiplayerView != null) multiplayerView.ClearDomainPanels();
         }
 
@@ -154,14 +168,28 @@ namespace CosmicShore.UI
 
         void InitializeDomainPanels()
         {
-            multiplayerView.ClearDomainPanels();
-            _domainPanels.Clear();
             AssignAIProfiles();
 
-            // Subscribe to every player's stat events so any teammate's update
-            // can recompute the domain sum.
+            // Subscribe to every player's stat events ONCE per turn so any teammate's update —
+            // including a late-replicated domain (RoundStats now raises OnAnyStatChanged from its
+            // n_Domain callback) — recomputes the domain sum and reconciles the panel set.
             foreach (var stats in gameData.RoundStatsList.Where(s => s != null))
                 SubscribeToPlayerStats(stats);
+
+            RebuildDomainPanels();
+        }
+
+        /// <summary>
+        /// (Re)creates the per-domain panels from the CURRENT replicated roster + domains.
+        /// Idempotent and safe to call repeatedly: a client calls it again whenever a domain or
+        /// the roster replicates after the turn started, so the boxes match the host instead of
+        /// being frozen at a stale turn-start snapshot. Does NOT (re)subscribe to stat events —
+        /// subscription is owned by InitializeDomainPanels / HandlePlayerAdded.
+        /// </summary>
+        void RebuildDomainPanels()
+        {
+            multiplayerView.ClearDomainPanels();
+            _domainPanels.Clear();
 
             var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
             int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
@@ -179,10 +207,64 @@ namespace CosmicShore.UI
             {
                 var d = GameDataSO.ActiveDomains[i];
                 if (d == localDomain) continue;
-                bool anyPlayers = gameData.RoundStatsList.Any(s => s != null && s.Domain == d);
-                if (!anyPlayers) continue;
+                if (!HasPlayersInDomain(d)) continue;
                 CreateDomainPanel(d, multiplayerView.OpposingDomainsContainer);
             }
+
+            _builtLocalDomain = localDomain;
+            _domainPanelsBuilt = true;
+        }
+
+        bool HasPlayersInDomain(Domains domain)
+        {
+            var list = gameData.RoundStatsList;
+            for (int i = 0, count = list.Count; i < count; i++)
+                if (list[i] != null && list[i].Domain == domain) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// True when the desired domain-panel layout (ally + opposing-with-players, from the live
+        /// LocalPlayer domain + RequestedDomainCount) differs from what is currently built — i.e. a
+        /// domain or the roster replicated after the last build, so we must rebuild. Allocation-free.
+        /// </summary>
+        bool DomainLayoutChanged()
+        {
+            if (!_domainPanelsBuilt) return true;
+
+            var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
+            if (localDomain != _builtLocalDomain) return true;
+
+            int desiredCount = 0;
+            if (localDomain != Domains.Blue)
+            {
+                desiredCount++;
+                if (!_domainPanels.ContainsKey(localDomain)) return true;
+            }
+
+            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
+            {
+                var d = GameDataSO.ActiveDomains[i];
+                if (d == localDomain) continue;
+                if (!HasPlayersInDomain(d)) continue;
+                desiredCount++;
+                if (!_domainPanels.ContainsKey(d)) return true;
+            }
+
+            return desiredCount != _domainPanels.Count;
+        }
+
+        /// <summary>
+        /// Late roster arrival on a client (OnPlayerAdded): subscribe the new player's stats and
+        /// rebuild so its domain box appears. Subscription is idempotent against re-adds.
+        /// </summary>
+        void HandlePlayerAdded(string playerName, Domains domain)
+        {
+            if (!_useDomainView) return;
+            var stats = gameData.RoundStatsList.FirstOrDefault(s => s != null && s.Name == playerName);
+            if (stats != null) SubscribeToPlayerStats(stats);
+            RebuildDomainPanels();
         }
 
         void CreateDomainPanel(Domains domain, Transform container)
@@ -257,7 +339,11 @@ namespace CosmicShore.UI
         /// </summary>
         protected virtual void SubscribeToPlayerStats(IRoundStats stats)
         {
-            if (stats != null) stats.OnAnyStatChanged += HandlePlayerStatChanged;
+            if (stats == null) return;
+            // Idempotent: OnPlayerAdded can fire for an already-tracked player and the rebuild
+            // path may re-touch subscriptions — never double-invoke HandlePlayerStatChanged.
+            stats.OnAnyStatChanged -= HandlePlayerStatChanged;
+            stats.OnAnyStatChanged += HandlePlayerStatChanged;
         }
 
         protected virtual void UnsubscribeFromPlayerStats(IRoundStats stats)
@@ -288,6 +374,12 @@ namespace CosmicShore.UI
 
             if (_useDomainView)
             {
+                // A domain or roster entry may have replicated after the panels were built
+                // (clients race the turn start). Reconcile the panel set first so a late-synced
+                // domain is never dropped — then update the affected domain's sum.
+                if (DomainLayoutChanged())
+                    RebuildDomainPanels();
+
                 if (_domainPanels.TryGetValue(stats.Domain, out var panel))
                     panel.UpdateSum(SumStatByDomain(stats.Domain));
             }
