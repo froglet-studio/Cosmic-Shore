@@ -121,8 +121,10 @@ namespace CosmicShore.Gameplay
         public bool IsMultiplayerOwner => IsSpawned && IsOwner && !IsInitializedAsAI;
         public bool IsNetworkOwner => IsSpawned && IsOwner;
         public bool IsNetworkClient => IsSpawned && !IsOwner;
-        public bool IsSinglePlayerOwner => !IsSpawned && !IsInitializedAsAI;
-        public bool IsLocalUser => IsMultiplayerOwner || IsSinglePlayerOwner;
+        // No offline single-player: every session is a Relay host (solo or party). The local user
+        // is the owner of a non-AI Player on this machine — AI shares the host's OwnerClientId, so
+        // it is still excluded (IsMultiplayerOwner == IsSpawned && IsOwner && !IsInitializedAsAI).
+        public bool IsLocalUser => IsMultiplayerOwner;
        
         IPlayer.InitializeData InitializeData;
         
