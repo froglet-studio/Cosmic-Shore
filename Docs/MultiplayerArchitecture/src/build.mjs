@@ -146,6 +146,7 @@ const manifest = [
   { type: "section", part: "II", file: "23-testing.md" },
   { type: "section", part: "II", file: "24-diagnostics.md" },
   { type: "section", part: "II", file: "25-decisions-ledger.md" },
+  { type: "section", part: "II", file: "26-future-roadmap.md" },
 
   { type: "divider", eyebrow: "Appendices", title: "Reference", num: "A",
     body: "File and class index, glossary of networking and project terms, and the UGS SDK call map." },

@@ -76,6 +76,14 @@ const slides = [
       `One authoritative source; everything else <b>defers</b>.`,
       `Order object vs. scene lifecycles explicitly, or get orphans.` ] },
 
+  { kind: "list", kicker: "Honest limitations",
+    title: "What we'd improve next",
+    points: [
+      `<b>Host-loss resilience</b> — today the host is a player; if they drop, the party ends.`,
+      `<b>Prove 3–4-player parties</b> — close the second-joiner edge case.`,
+      `<b>Push over polling</b> — event-driven invites to cut latency + rate-limit churn.`,
+      `<b>Production telemetry</b> — measure party success and join latency in shipped builds.` ] },
+
   { kind: "outro", kicker: "Cosmic Shore",
     title: "The party game<br>for pilots",
     body: `Built by <strong>Froglet Inc.</strong> on Unity 6, Netcode for GameObjects & Unity Gaming Services.`,
