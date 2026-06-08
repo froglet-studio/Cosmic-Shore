@@ -126,11 +126,16 @@ fields (`domainColors`, `SilhouetteConfigSO.domainPalette`) were removed.
 instances can be deleted in a separate cleanup. Net result: every domain color
 (banner, cards, HUD, feed, silhouette, vessels, prisms) reads one `SO_ColorSet`.
 
-### R6 — 🔴 Remove the legacy per-player HUD layout
+### R6 — 🟡 Remove the legacy per-player HUD layout
 Once the unified path lands, the domain-panel layout is the only layout. After
 migrating remaining scenes, delete `MultiplayerHUDView.HasDomainPanelWiring`,
 the `_playerCards` path, and `InitializePlayerCards`/`UpdatePlayerCard` so there
 is a single rendering route in `MultiplayerHUD`.
+
+*Advanced by commit `3014de71`* — `MultiplayerHUD` now reads `rule.LiveMetric` and the per-mode HUD
+subclasses were deleted, so the metric path is unified. **Remaining:** verify/remove the legacy
+`_playerCards` layout (`HasDomainPanelWiring`/`InitializePlayerCards`/`UpdatePlayerCard`) once all
+scenes use domain-panel wiring.
 
 ### R7 — ⚪ Replace `PlayerScoreEntry`-as-avatar-chip with a dedicated chip
 `DomainScorePanel.AddPlayerIcon` reuses `PlayerScoreEntry` with an empty score
@@ -187,11 +192,69 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
   already-synced arrays; per-mode `ScoreText`/`Secondary` match each scoreboard's `Format*`. Joust
   publishes its target to `gameData.JoustTargetCount` (mirrors `CrystalTargetCount`) instead of a
   new RPC param. No consumer reads `Results` yet → on-screen behavior unchanged.
-- 🔴 **B** (consumers) — point `Scoreboard` (cards/sort), the cinematic reveal, and the crystal
-  reward at `Results`; delete the per-mode `SortPlayers`/`FormatPlayerScore`/`FormatSecondaryStat`
-  overrides. **B2 fixed here** (reveal reads the domain-deficit `ScoreText`).
-- 🔴 **C** (R1) — single-player local producer; remove the `IsMultiplayerMode` scoring branches
-  (`Scoreboard.cs:147,454`); retire `DomainStatsList[0]` as a winner source.
+- 🟢 **B** (consumers) — **done via the `ScoringRuleSO` strategy** (commits `af07a171`,
+  `3014de71`, `7ea5b8ae`): a per-mode `ScoringRuleSO` is now the single producer — it owns the end
+  condition + `LiveMetric` and builds the ordered `Results`. `MultiplayerHUD` reads `rule.LiveMetric`
+  (the HexRace HUD now shows Crystals, matching the end condition); `Scoreboard` (cards + sort) and
+  the cinematic reveal read `gameData.Results`. The per-mode `SortPlayers` / `FormatPlayerScore` /
+  `FormatSecondaryStat` overrides + 3 HUD subclasses + 6 scoreboard/cinematic subclasses were
+  deleted. **B2 closed** (reveal reads the domain-deficit `ScoreText`).
+- 🟡 **C** (R1) — partially advanced: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`, no
+  offline single-player branch). Still open: remove the `IsMultiplayerMode` scoring branches
+  (`Scoreboard.cs:147,454`) and retire `DomainStatsList[0]` as a winner source.
+
+### R11 — ⚪ [deferred · needs device + UGS testing] Fully retire `GolfScoreSentinels`
+Follow-on to **R4**, which deliberately stopped at *centralizing* the sentinel into one file. This
+item removes the float-encoded DNF signal entirely. **Deferred by owner decision** — disproportionate
+scope/risk for the payoff, and it changes cloud-leaderboard behavior that can't be verified in this
+environment.
+
+**Why the sentinel exists:** golf modes (HexRace, Joust) encode "did this player finish?" into the
+`float Score` — winner = real finish time (`< DnfThreshold`), loser = sentinel
+(`10000 + crystalsLeft` / `99999`). That one float is the finish/DNF signal read by sort, domain
+aggregation, the cloud leaderboard, and quests — which is exactly why removing it reaches so far.
+
+**Agreed design (no new synced field):** replace the float-threshold signal with the already-synced
+**`WinnerDomain`** — a player finished ⇔ `stats.Domain == gameData.WinnerDomain`. `Score` becomes a
+real value only (winner = finish time; loser = `0`; CC unchanged = crystals). The synced `scores[]`
+arrays keep their shape (no RPC signature change); `WinnerDomain`, synced in the same RPC, carries the
+outcome. Add `ScoreOutcome {Winner,Loser}` to `ScoreResult` so consumers never re-derive from the float.
+
+**Blast radius (~10 files + tests + cloud):**
+- *Rules* — `HexRaceScoringRuleSO`/`JoustScoringRuleSO`: `AssignScores` loser `Score = 0f`;
+  `BuildResults` decides winner/loser via `Domain == WinnerDomain` (not `IsFinishTime`).
+- *Generic `GameDataSO` (all modes — risky)* — `SortRoundStats`/`CalculateDomainStats` must become
+  winner-aware (with losers at `0`, golf-ascending would otherwise rank losers first).
+- *Cloud (highest risk, untestable here)* — `UGSStatsManager.GetEvaluatedHighScore` must take a
+  `didFinish` arg (else a loser's `0` overwrites the cloud best time); `ReportHexRaceStats`/
+  `ReportJoustStats` drop the `IsFinishTime` guard and gate on the caller's `didFinish`;
+  `HexRaceScoreTracker` + `JoustStatsReporter` thread `didFinish`.
+- *Progression* — `GameModeProgressionService` `RaceTimeUnder`/`WinMatch` switch from
+  `IsFinishTime`/`RoundStatsList[0]` to `Domain == WinnerDomain`.
+- *Tests* — `GameDataSOTests` asserts on `RoundStatsList[0]`/`DomainStatsList[0]` after the current
+  Score-based sort; update to the winner-aware contract.
+- *Delete* — `GolfScoreSentinels.cs` (+ `.meta`).
+
+**Exit criteria:** solo + 2-human-team HexRace/Joust scoreboard + cinematic correct; leaderboard
+records the winner's time and a loser does **not** overwrite the cloud best with `0`;
+RaceTimeUnder/WinMatch quests fire; CC + WildlifeBlitz unaffected; edit-mode tests green. Land as its
+own reviewed PR.
+
+### R12 — ⚪ [deferred · low payoff] Fold per-mode end-game stat providers behind the rule
+The end-game stat rows (Best Streak / Longest Drift / Jousts Won) are produced by three
+heterogeneous `…StatsProvider`s reading different sources (`HexRaceScoreTracker`, `VesselTelemetry`,
+`RoundStats`). Target: fold them behind the `ScoringRuleSO` (or a thin provider keyed off
+`rule.Metric`) and delete the three providers, so the rule is the single producer for *all* end-game
+surfaces (matching R10). **Deferred by owner decision** — same refactor-for-low-payoff profile as
+R11; the sources are genuinely different, so it's modest risk for little structural gain. Pick up only
+when the stat-row surface itself changes.
+
+---
+
+## Related (shipped this session, outside the R-backlog)
+- **Joust replay → network scene reload** (commit `21d538d3`) — Joust now replays via a full scene
+  reload, matching HexRace/CrystalCapture, instead of an in-place reset. Gameplay-flow consistency
+  (not a scoring-data change), recorded here for traceability with the scoring session.
 
 ---
 
