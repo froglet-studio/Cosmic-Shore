@@ -153,6 +153,16 @@ namespace CosmicShore.Utility
         [NonSerialized] public int JoustTargetCount;
 
         /// <summary>
+        /// The active scoring strategy for the current mode, published by the mode's controller
+        /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
+        /// asset onto the controller). Read by the network turn monitors for the end condition
+        /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
+        /// cinematic). Transient — re-published on every (re)spawn, so it is intentionally NOT
+        /// cleared by the reset methods.
+        /// </summary>
+        [NonSerialized] public ScoringRuleSO ScoringRule;
+
+        /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
         /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
         /// and ServerPlayerVesselInitializerWithAI see correct values.

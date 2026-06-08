@@ -52,6 +52,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Assigns 1-based ranks to already-ordered rows. Use when the caller (e.g. a
+        /// <see cref="ScoringRuleSO"/>) has applied its own sort + tiebreak and only needs
+        /// the ranked <see cref="ScoreResult"/> projection.
+        /// </summary>
+        public static List<ScoreResult> BuildRanked(IReadOnlyList<Row> orderedRows)
+        {
+            var results = new List<ScoreResult>(orderedRows.Count);
+            int rank = 1;
+            foreach (var r in orderedRows)
+                results.Add(new ScoreResult(rank++, r.Name, r.Domain, r.Score, r.ScoreText, r.Secondary));
+            return results;
+        }
+
+        /// <summary>
         /// Shared mm:ss:cs formatter for finish-time scores — the single copy that replaces
         /// the inline duplicates in the per-mode scoreboards (and the reveal).
         /// </summary>

@@ -11,6 +11,10 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerJoustController : MultiplayerDomainGamesController
     {
+        [Header("Scoring")]
+        [Tooltip("Drag JoustScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [SerializeField] ScoringRuleSO rule;
+
         private bool _finalResultsSent;
         private Domains _winningDomain = Domains.Blue;
 
@@ -25,6 +29,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
@@ -53,19 +58,9 @@ namespace CosmicShore.Gameplay
         {
             float currentTime = Time.time - gameData.TurnStartTime;
 
-            Domains winningDomain = Domains.Blue;
-            int bestDomainSum = -1;
-            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
-            for (int i = 0; i < dc; i++)
-            {
-                var d = GameDataSO.ActiveDomains[i];
-                int sum = gameData.SumJoustCollisionsByDomain(d);
-                if (sum > bestDomainSum)
-                {
-                    bestDomainSum = sum;
-                    winningDomain = d;
-                }
-            }
+            // Winning domain (highest joust sum, Jade→Ruby→Gold tie-break) + per-player
+            // scores (winner = elapsed time, losers = sentinel) delegated to the rule.
+            Domains winningDomain = rule.ResolveWinner(gameData);
 
             // Representative winner-name = best individual contributor on the winning
             // domain. Used for the WinnerName legacy field (display strings only —
@@ -79,16 +74,10 @@ namespace CosmicShore.Gameplay
             string winnerName = winnerRep?.Name ?? "";
 
             CSDebug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Domain={winningDomain} " +
-                      $"DomainSum={bestDomainSum} Time={currentTime:F2}s " +
+                      $"Time={currentTime:F2}s " +
                       $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.JoustCollisions}j"))}]");
 
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                if (winningDomain != Domains.Blue && stats.Domain == winningDomain)
-                    stats.Score = currentTime;
-                else
-                    stats.Score = GolfScoreSentinels.JoustLoserScore;
-            }
+            rule.AssignScores(gameData, winningDomain, currentTime);
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);

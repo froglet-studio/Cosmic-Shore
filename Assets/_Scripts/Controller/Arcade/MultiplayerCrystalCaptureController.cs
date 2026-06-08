@@ -10,6 +10,10 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerCrystalCaptureController : MultiplayerDomainGamesController
     {
+        [Header("Scoring")]
+        [Tooltip("Drag CrystalCaptureScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [SerializeField] ScoringRuleSO rule;
+
         private bool _finalResultsSent;
 
         protected override bool UseGolfRules => false;
@@ -24,6 +28,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
@@ -40,54 +45,29 @@ namespace CosmicShore.Gameplay
         {
             base.OnTurnEndedCustom();
             if (!IsServer || _finalResultsSent) return;
+            if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0) return;
 
-            var winner = DetermineWinner();
-            if (winner == null) return;
+            // Winning domain (highest crystal sum, Jade→Ruby→Gold tie-break) delegated to the
+            // rule; representative winner-name = best individual contributor on that domain
+            // (legacy display field — victory/defeat attribution uses WinnerDomain).
+            var winningDomain = rule.ResolveWinner(gameData);
+            if (winningDomain == Domains.Blue) return;
 
-            // Per-player Score still tracks individual contribution (for the
-            // scoreboard's secondary stat); domain aggregation is what determines
-            // the winner and is computed below in CalculateDomainStats.
-            foreach (var stats in gameData.RoundStatsList)
-                stats.Score = stats.CrystalsCollected;
+            var winnerRep = gameData.RoundStatsList
+                .Where(s => s.Domain == winningDomain)
+                .OrderByDescending(s => s.CrystalsCollected)
+                .FirstOrDefault();
+            if (winnerRep == null) return;
+
+            // Per-player Score = crystal count (the rule owns this); domain aggregation in
+            // CalculateDomainStats determines team standing.
+            rule.AssignScores(gameData, winningDomain, 0f);
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
 
             _finalResultsSent = true;
-            SyncFinalScoresSnapshot(winner.Name, winner.Domain);
-        }
-
-        /// <summary>
-        /// Winning team = active domain with the highest aggregate CrystalsCollected.
-        /// Returns the best individual contributor on that team as the representative
-        /// "winner name" used for legacy display fields. Victory/defeat attribution
-        /// in end-game screens uses WinnerDomain, not WinnerName.
-        /// </summary>
-        IRoundStats DetermineWinner()
-        {
-            if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0)
-                return null;
-
-            Domains winningDomain = Domains.Blue;
-            int bestDomainSum = -1;
-            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
-            for (int i = 0; i < dc; i++)
-            {
-                var d = GameDataSO.ActiveDomains[i];
-                int sum = gameData.SumCrystalsCollectedByDomain(d);
-                if (sum > bestDomainSum)
-                {
-                    bestDomainSum = sum;
-                    winningDomain = d;
-                }
-            }
-
-            if (winningDomain == Domains.Blue) return null;
-
-            return gameData.RoundStatsList
-                .Where(s => s.Domain == winningDomain)
-                .OrderByDescending(s => s.CrystalsCollected)
-                .FirstOrDefault();
+            SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
         }
 
         /// <summary>
