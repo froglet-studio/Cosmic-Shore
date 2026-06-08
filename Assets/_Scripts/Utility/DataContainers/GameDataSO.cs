@@ -42,6 +42,15 @@ namespace CosmicShore.Utility
         public ScriptableEventUlong OnPlayerPairInitialized;
         public event Action<string, Domains> OnPlayerAdded;
 
+        /// <summary>
+        /// Raised on every peer when the server-synced per-domain metric sums change (see
+        /// <see cref="SetDomainMetricSum"/>). The in-game multiplayer HUD listens so its domain boxes
+        /// display the SERVER's authoritative sums verbatim instead of each client re-summing
+        /// per-player stats (which can freeze for a client's own player when its own RoundStats
+        /// replication lags).
+        /// </summary>
+        public event Action OnDomainMetricSumsChanged;
+
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
         
@@ -85,6 +94,32 @@ namespace CosmicShore.Utility
         /// Set by <see cref="SortRoundStats"/> during end-game flow.
         /// </summary>
         public bool IsGolfRules { get; private set; }
+
+        // ── Server-synced per-domain metric sums (in-game HUD) ───────────────────
+        // MultiplayerDomainGamesController computes ScoringMetrics.SumByDomain for each active domain
+        // on the server and replicates it; SetDomainMetricSum runs on every peer from the
+        // NetworkVariable callback. Indexed by ActiveDomains order (Jade, Ruby, Gold).
+        readonly int[] _domainMetricSums = new int[3];
+
+        /// <summary>Server-synced summed metric (crystals / jousts) for an active domain; 0 if not active.</summary>
+        public int GetDomainMetricSum(Domains domain)
+        {
+            int i = System.Array.IndexOf(ActiveDomains, domain);
+            return (i >= 0 && i < _domainMetricSums.Length) ? _domainMetricSums[i] : 0;
+        }
+
+        /// <summary>
+        /// Writes one synced domain sum (called on every peer from the controller's NetworkVariable
+        /// callback) and raises <see cref="OnDomainMetricSumsChanged"/> when it actually changes.
+        /// </summary>
+        public void SetDomainMetricSum(Domains domain, int value)
+        {
+            int i = System.Array.IndexOf(ActiveDomains, domain);
+            if (i < 0 || i >= _domainMetricSums.Length) return;
+            if (_domainMetricSums[i] == value) return;
+            _domainMetricSums[i] = value;
+            OnDomainMetricSumsChanged?.Invoke();
+        }
 
         /// <summary>
         /// Server-authoritative winner name, written by game controllers in their
@@ -309,6 +344,7 @@ namespace CosmicShore.Utility
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
+            System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
@@ -346,6 +382,7 @@ namespace CosmicShore.Utility
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
+            System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
         public void ResetStatsDataForReplay()

@@ -40,6 +40,7 @@ namespace CosmicShore.UI
             {
                 gameData.OnMiniGameTurnStarted.OnRaised += RefreshAllProgress;
                 gameData.OnResetForReplay.OnRaised += ResetAllProgress;
+                gameData.OnDomainMetricSumsChanged += RefreshDomainSums;
             }
         }
 
@@ -50,7 +51,16 @@ namespace CosmicShore.UI
             {
                 gameData.OnMiniGameTurnStarted.OnRaised -= RefreshAllProgress;
                 gameData.OnResetForReplay.OnRaised -= ResetAllProgress;
+                gameData.OnDomainMetricSumsChanged -= RefreshDomainSums;
             }
+        }
+
+        // Server-synced domain sums changed — refresh every domain box to the host's values.
+        void RefreshDomainSums()
+        {
+            if (!_useDomainView) return;
+            foreach (var kvp in _domainPanels)
+                kvp.Value.UpdateSum(gameData.GetDomainMetricSum(kvp.Key));
         }
 
         void ResetAllProgress()
@@ -391,14 +401,10 @@ namespace CosmicShore.UI
 
         int SumStatByDomain(Domains domain)
         {
-            int sum = 0;
-            var list = gameData.RoundStatsList;
-            for (int i = 0, count = list.Count; i < count; i++)
-            {
-                var s = list[i];
-                if (s != null && s.Domain == domain) sum += GetInitialCardValue(s);
-            }
-            return sum;
+            // Read the SERVER-synced authoritative sum (MultiplayerDomainGamesController publishes it
+            // via NetworkVariable → gameData). Clients no longer re-sum per-player stats here, which
+            // could freeze for a client's OWN player when its own RoundStats replication lags.
+            return gameData.GetDomainMetricSum(domain);
         }
     }
 }
