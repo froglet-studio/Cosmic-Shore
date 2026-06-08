@@ -220,5 +220,33 @@ Make a Cell+ecology a *default* any scene gets, like a `ContainerScope`:
 
 ---
 
-*Next: Phase 1. Recommended first orchestrated move — build the collider budget + telemetry
-(the hard gate) and the `LifeformBootstrap`, then wire the bare modes. See §6/§7.*
+---
+
+## 10. P1 execution detail — RESUME HERE
+
+**Decided: P1 first** (the collider budget gate, before scaling life to every mode).
+
+**The collider-LOD dependency (key insight — don't lose this):** you must NOT blanket-disable
+prism colliders at Frozen. Prism colliders are needed by (a) the **player** colliding with the
+canopy and (b) **fauna** finding prey via `Physics.OverlapSphere`. So the safe staged order is:
+
+1. **Telemetry (safe, do first).** Add `CellConfigDataSO.ColliderBudget` (int) + an in-editor
+   overlay showing per cell: phase, prism count (≈ active colliders today), `LiveVolume`, vs
+   budget (red when over). Reads existing `Cell.LiveBlockCount` / `LiveVolume` / `Phase`. Makes
+   the budget **observable** — the perf-regression guard. Lowest risk; ship + validate first.
+2. **Fauna → density-grid queries.** Replace `LightFauna.UpdateBehavior`'s `Physics.OverlapSphere`
+   (~LightFauna.cs:268) with a Burst `BlockDensityGrid` neighborhood query (new API, e.g.
+   `GetPrismsInRadius`). Removes fauna's collider dependency + saves ~2–5 ms. **Prerequisite for LOD.**
+3. **Proximity collider-LOD** (NOT a blanket phase-disable). Disable colliders on prisms far from
+   any vessel; re-enable on approach → active colliders bounded to "prisms near a vessel"
+   regardless of total prism count. Track the precise active count → feed the telemetry. Touch:
+   `Prism.cs` collider toggles (~247/305/452/OnDisable) gated on a coarse vessel-proximity check.
+4. **Per-cell active-prism budget.** Recycle oldest **trail** prisms when over budget — **never
+   cull the flora canopy** (territorial permanence + mass conservation). Generalize the menu trail cap.
+5. **`LifeformBootstrap`** prefab (Cell + CellConfig + budget + telemetry) → wire the ~9 bare modes.
+
+**P1 correctness invariants:** player-prism collision must survive; fauna must still find prey
+(via the grid); never cull flora mass to meet the budget (recycle trails only).
+
+**To resume:** invoke the `/ecology` skill, read this §10, continue from the first unchecked
+slice. All prior work is committed on `claude/epic-darwin-g0Ehi`.
