@@ -19,6 +19,7 @@ namespace CosmicShore.Gameplay
         private Domains _winningDomain = Domains.Blue;
 
         protected override bool UseGolfRules => true;
+        protected override bool UseSceneReloadForReplay => true; // match HexRace / CrystalCapture
 
         // Joust handles end-game through OnTurnEndedCustom (server-side winner detection) →
         // SyncJoustResults_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
@@ -164,20 +165,8 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Replay ───────────────────────────────────────────────────────
-
-        protected override void OnResetForReplayCustom()
-        {
-            base.OnResetForReplayCustom();
-            _finalResultsSent = false;
-            _winningDomain = Domains.Blue;
-
-            foreach (var s in gameData.RoundStatsList)
-            {
-                s.JoustCollisions = 0;
-                s.Score = 0f;
-            }
-
-            gameData.InvokeTurnStarted();
-        }
+        // OnResetForReplayCustom removed — Joust uses UseSceneReloadForReplay = true, which
+        // performs a full network scene reload. _finalResultsSent / _winningDomain and all
+        // per-player stats are re-initialized fresh via OnNetworkSpawn + a rebuilt RoundStatsList.
     }
 }
