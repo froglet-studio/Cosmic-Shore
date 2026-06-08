@@ -19,10 +19,15 @@ namespace CosmicShore.Gameplay
     ///                      mass = ρ · 108·a·b·c (exactly 13.5× box mass by default,
     ///                      3× the inscribed octahedron shield's mass)
     ///
-    /// Engage: per-face bloom morph — 24 outer faces grow outward from their
+    /// The stellation is rendered as just its 8 tetrahedral faces (the two
+    /// constituent tetrahedra), not 24 spike faces — see
+    /// <see cref="StellatedOctahedronMeshGenerator"/>. Opaque rendering makes the
+    /// 8 triangles pixel-identical to the full stella octangula at ⅓ the cost.
+    ///
+    /// Engage: per-face bloom morph — the 8 tetra faces grow outward from their
     /// centroids.
     /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
-    ///   where each of the 24 faces simultaneously shrinks and flies outward
+    ///   where each of the 8 faces simultaneously shrinks and flies outward
     ///   along its face normal, mirroring the prism destruction VFX.
     ///
     /// Fast overlap test: <see cref="IsPointInsideShield"/> uses the
@@ -224,7 +229,7 @@ namespace CosmicShore.Gameplay
             else Engage();
         }
 
-        /// <summary>Engage the super-shield with per-face bloom across all 24 faces.</summary>
+        /// <summary>Engage the super-shield with per-face bloom across all 8 tetra faces.</summary>
         public void Engage(bool instant = false)
         {
             if (_isShielded && !_isEngaging) return;
@@ -250,7 +255,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Disengage the super-shield. Box mesh snaps back immediately; a
-        /// shatter overlay plays where each of the 24 faces flies outward
+        /// shatter overlay plays where each of the 8 tetra faces flies outward
         /// along its normal while shrinking to a point.
         /// </summary>
         public void Disengage(bool instant = false)
@@ -332,7 +337,7 @@ namespace CosmicShore.Gameplay
         // --- Mesh updates ----------------------------------------------------
 
         /// <summary>
-        /// Per-face bloom for engage: all 24 faces grow from centroid points to full size.
+        /// Per-face bloom for engage: all 8 tetra faces grow from centroid points to full size.
         /// </summary>
         private void UpdateEngageMesh(float faceScale)
         {

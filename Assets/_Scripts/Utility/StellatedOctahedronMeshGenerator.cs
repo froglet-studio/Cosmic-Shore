@@ -13,9 +13,11 @@ namespace CosmicShore.Utility
     ///   Given box half-extents (a, b, c) and shieldScale s (default 3):
     ///     inscribed octahedron vertices = { (±s·a, 0, 0), (0, ±s·b, 0), (0, 0, ±s·c) }
     ///     stellation spike tips         = { (±s·a, ±s·b, ±s·c) }   (cube corners)
-    ///     visible surface: 24 outer triangular faces (3 lateral faces per
-    ///       tetrahedral spike × 8 spikes; the spike base coincides with the
-    ///       inscribed octahedron face and is hidden inside the union)
+    ///     visible surface: the 8 faces of the two constituent tetrahedra. Each
+    ///       big tetra face is coplanar with the 3 spike lateral faces tiling
+    ///       its corners, so 8 opaque triangles render identically to the
+    ///       24-spike-face stella octangula — the protruding dual tetra occludes
+    ///       each face's center via the depth buffer — at ⅓ the triangle count.
     ///     volume:    V_super = 108·a·b·c
     ///                V_box   = 8·a·b·c   →  ratio 13.5
     ///                V_oct   = 36·a·b·c  →  super:oct ratio 3
@@ -52,17 +54,22 @@ namespace CosmicShore.Utility
         /// </summary>
         public const float CIRCUMSCRIBING_SCALE = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
 
-        /// <summary>Total visible triangle count: 8 spikes × 3 lateral faces.</summary>
-        public const int FACE_COUNT = 24;
+        /// <summary>
+        /// Total rendered triangle count: the two constituent tetrahedra × 4
+        /// faces each. Rendered opaque, these 8 triangles are pixel-identical to
+        /// the geometric 24 spike faces (the dual tetra occludes each face center
+        /// via the depth buffer) — see the class summary and <see cref="ContainsPointLocal"/>.
+        /// </summary>
+        public const int FACE_COUNT = 8;
 
         /// <summary>Vertex count for flat shading: <see cref="FACE_COUNT"/> × 3.</summary>
         public const int VERTEX_COUNT = FACE_COUNT * 3;
 
         /// <summary>
         /// Generate a flat-shaded stellated octahedron mesh for a box of the
-        /// given half-extents. 24 outer triangles, 72 vertices (per-face for
-        /// flat shading). Returns a new Mesh instance; callers are responsible
-        /// for its lifecycle (DestroyImmediate/Destroy).
+        /// given half-extents. 8 outer triangles (the two tetrahedra), 24
+        /// vertices (per-face for flat shading). Returns a new Mesh instance;
+        /// callers are responsible for its lifecycle (DestroyImmediate/Destroy).
         /// </summary>
         public static Mesh Generate(Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
         {
@@ -84,40 +91,34 @@ namespace CosmicShore.Utility
             float b = halfExtents.y * shieldScale;
             float c = halfExtents.z * shieldScale;
 
-            // 8 spike tetrahedra (one per octant), each contributing 3 lateral
-            // outer faces. Total 24 faces, 72 unique vertices for flat shading.
+            // The stella octangula is exactly the union of two regular tetrahedra
+            // inscribed in the cube of spike tips (±a, ±b, ±c): Tet A on the four
+            // even-parity corners, Tet B (its dual) on the four odd-parity
+            // corners. Each big tetra face is coplanar with the 3 spike lateral
+            // faces tiling its corners, so the 8 tetra faces — rendered opaque —
+            // reproduce the full 24-spike-face silhouette: wherever the dual tetra
+            // protrudes through a face, the dual's nearer front faces occlude that
+            // face's center via the depth buffer. 8 triangles for the same image
+            // as 24 (3×); the matching collision model is ContainsPointLocal.
             var verts = new Vector3[VERTEX_COUNT];
             var norms = new Vector3[VERTEX_COUNT];
             var tris  = new int[VERTEX_COUNT];
 
             int vi = 0;
-            for (int oct = 0; oct < 8; oct++)
-            {
-                int sx = ((oct & 1) == 0) ? 1 : -1;
-                int sy = ((oct & 2) == 0) ? 1 : -1;
-                int sz = ((oct & 4) == 0) ? 1 : -1;
 
-                Vector3 T  = new Vector3(sx * a, sy * b, sz * c);   // spike tip (cube corner)
-                Vector3 Vx = new Vector3(sx * a, 0f, 0f);           // octahedron vertex on x-axis
-                Vector3 Vy = new Vector3(0f, sy * b, 0f);           // y-axis
-                Vector3 Vz = new Vector3(0f, 0f, sz * c);           // z-axis
+            // Tet A — even-parity corners (sx·sy·sz = +1).
+            AddTetrahedron(verts, norms, tris, ref vi,
+                new Vector3( a,  b,  c),
+                new Vector3( a, -b, -c),
+                new Vector3(-a,  b, -c),
+                new Vector3(-a, -b,  c));
 
-                // Winding rule (mirrors OctahedronMeshGenerator's parity logic):
-                //   sx·sy·sz = +1 → standard winding T → Vx → Vy etc.
-                //   sx·sy·sz = -1 → flipped winding to keep outward normals
-                if (sx * sy * sz > 0)
-                {
-                    AddFace(verts, norms, tris, ref vi, T, Vx, Vy);
-                    AddFace(verts, norms, tris, ref vi, T, Vy, Vz);
-                    AddFace(verts, norms, tris, ref vi, T, Vz, Vx);
-                }
-                else
-                {
-                    AddFace(verts, norms, tris, ref vi, T, Vy, Vx);
-                    AddFace(verts, norms, tris, ref vi, T, Vz, Vy);
-                    AddFace(verts, norms, tris, ref vi, T, Vx, Vz);
-                }
-            }
+            // Tet B — odd-parity corners (sx·sy·sz = -1), the dual of Tet A.
+            AddTetrahedron(verts, norms, tris, ref vi,
+                new Vector3(-a, -b, -c),
+                new Vector3(-a,  b,  c),
+                new Vector3( a, -b,  c),
+                new Vector3( a,  b, -c));
 
             mesh.Clear();
             mesh.vertices = verts;
@@ -128,17 +129,17 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Rewrite an existing mesh in-place with per-face scaling. Each of
-        /// the 24 triangular faces is scaled around its own centroid by
-        /// <paramref name="faceScale"/>:
+        /// Rewrite an existing mesh in-place with per-face scaling. Each of the
+        /// 8 triangular faces (the two tetrahedra) is scaled around its own
+        /// centroid by <paramref name="faceScale"/>:
         ///   0 → every face collapsed to a point at its center (invisible)
         ///   1 → full-size stellated octahedron (identical to <see cref="PopulateMesh"/>)
         ///
         /// Each vertex v_i on a face becomes:
         ///   centroid + faceScale · (v_i − centroid)
         ///
-        /// Use this for the engage morph so faces "bloom" outward from their
-        /// centers rather than the whole shape growing uniformly.
+        /// Use this for the engage morph so the two tetrahedra "bloom" outward
+        /// from their face centers rather than the whole shape growing uniformly.
         /// </summary>
         public static void PopulateMeshFaceScale(Mesh mesh, Vector3 halfExtents,
             float faceScale, float shieldScale = CIRCUMSCRIBING_SCALE)
@@ -199,6 +200,36 @@ namespace CosmicShore.Utility
 
             mesh.vertices = verts;
             mesh.RecalculateBounds();
+        }
+
+        /// <summary>
+        /// Emit a tetrahedron's 4 outward-facing triangles (one opposite each
+        /// supplied vertex). Both constituent tetrahedra are centered at the
+        /// origin, so <see cref="AddOutwardFace"/> can orient every face by its
+        /// centroid direction — corner vertices may be passed in any order.
+        /// </summary>
+        private static void AddTetrahedron(Vector3[] verts, Vector3[] norms, int[] tris, ref int vi,
+                                           Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
+        {
+            AddOutwardFace(verts, norms, tris, ref vi, p1, p2, p3); // opposite p0
+            AddOutwardFace(verts, norms, tris, ref vi, p0, p3, p2); // opposite p1
+            AddOutwardFace(verts, norms, tris, ref vi, p0, p1, p3); // opposite p2
+            AddOutwardFace(verts, norms, tris, ref vi, p0, p2, p1); // opposite p3
+        }
+
+        /// <summary>
+        /// Add a face wound so its normal points outward. The origin is each
+        /// tetra's centroid, so the face centroid points outward; if the winding
+        /// disagrees, swap the last two vertices before delegating to <see cref="AddFace"/>.
+        /// </summary>
+        private static void AddOutwardFace(Vector3[] verts, Vector3[] norms, int[] tris, ref int vi,
+                                           Vector3 v0, Vector3 v1, Vector3 v2)
+        {
+            Vector3 n = Vector3.Cross(v1 - v0, v2 - v0);
+            if (Vector3.Dot(n, v0 + v1 + v2) < 0f)
+                (v1, v2) = (v2, v1);
+
+            AddFace(verts, norms, tris, ref vi, v0, v1, v2);
         }
 
         private static void AddFace(Vector3[] verts, Vector3[] norms, int[] tris, ref int vi,
