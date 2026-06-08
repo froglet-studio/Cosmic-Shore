@@ -1144,11 +1144,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 923a1692e687af44daf6f67a2ef2ccb3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  statusText: {fileID: 1713505288}
-  retryButton: {fileID: 203003806}
-  inboundRequestEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e84b,
-    type: 2}
-  outboundRetryEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e95c, type: 2}
 --- !u!114 &820208347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2307,7 +2302,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
+  m_fontSize: 67.8
   m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3128,6 +3123,11 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: 49d6fbb77714f45da926b744d54d3944, type: 3}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: joustScoredEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Charge Joust
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: mineExplodeEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
       objectReference: {fileID: 0}
@@ -3255,6 +3255,11 @@ PrefabInstance:
         type: 3}
       propertyPath: gunFireEvent.Guid.Data4
       value: -1324604388
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustReceivedEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Mass joust
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
@@ -3523,6 +3528,26 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: joustScoredEvent.Guid.Data1
+      value: 1333840280
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustScoredEvent.Guid.Data2
+      value: 1330870228
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustScoredEvent.Guid.Data3
+      value: 856184972
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustScoredEvent.Guid.Data4
+      value: -1867009068
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: mineExplodeEvent.Guid.Data1
       value: -159591309
       objectReference: {fileID: 0}
@@ -3723,6 +3748,36 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: elementMassReceivedEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Mass joust
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementTimeReceivedEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/time Joust
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustReceivedEvent.Guid.Data1
+      value: 1935444665
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustReceivedEvent.Guid.Data2
+      value: 1209967654
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustReceivedEvent.Guid.Data3
+      value: -86979705
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustReceivedEvent.Guid.Data4
+      value: 855951193
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: crystalCollectEvent.Guid.Data1
       value: 1401307610
       objectReference: {fileID: 0}
@@ -3743,6 +3798,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: elementSpaceReceivedEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Space Joust
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: shieldActivateEvent.Guid.Data1
       value: -922617308
       objectReference: {fileID: 0}
@@ -3760,6 +3820,11 @@ PrefabInstance:
         type: 3}
       propertyPath: shieldActivateEvent.Guid.Data4
       value: -698904471
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementChargeReceivedEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Charge Joust
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
@@ -3800,6 +3865,86 @@ PrefabInstance:
         type: 3}
       propertyPath: shieldDeactivateEvent.Guid.Data4
       value: -416318210
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementMassReceivedEvent.Guid.Data1
+      value: 1935444665
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementMassReceivedEvent.Guid.Data2
+      value: 1209967654
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementMassReceivedEvent.Guid.Data3
+      value: -86979705
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementMassReceivedEvent.Guid.Data4
+      value: 855951193
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementTimeReceivedEvent.Guid.Data1
+      value: -1254976528
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementTimeReceivedEvent.Guid.Data2
+      value: 1275513386
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementTimeReceivedEvent.Guid.Data3
+      value: -981470078
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementTimeReceivedEvent.Guid.Data4
+      value: 286922241
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementSpaceReceivedEvent.Guid.Data1
+      value: -1163572034
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementSpaceReceivedEvent.Guid.Data2
+      value: 1312051193
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementSpaceReceivedEvent.Guid.Data3
+      value: -1732454749
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementSpaceReceivedEvent.Guid.Data4
+      value: 1656763241
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementChargeReceivedEvent.Guid.Data1
+      value: 1333840280
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementChargeReceivedEvent.Guid.Data2
+      value: 1330870228
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementChargeReceivedEvent.Guid.Data3
+      value: 856184972
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: elementChargeReceivedEvent.Guid.Data4
+      value: -1867009068
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
