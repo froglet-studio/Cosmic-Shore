@@ -12,8 +12,8 @@ source under `Assets/_Scripts/`.
 
 **Outputs:**
 - `CosmicShore-Multiplayer-Netcode-Architecture.pdf` — the full dossier (~71 pages, Part I + Part II).
-- `CosmicShore-Multiplayer-LinkedIn-Overview.pdf` — a standalone, LinkedIn-ready PDF of **Part I only**
-  (the curated overview), same branded report style, public-friendly footer.
+- `CosmicShore-Multiplayer-LinkedIn-Slides.pdf` — a LinkedIn-ready **slide deck / carousel** (4:5,
+  16 slides) built from the Part I narrative: one idea per slide, with diagrams and the bug stories.
 
 ## Regenerate
 
@@ -26,7 +26,7 @@ npm run all            # render diagrams (mmd → svg) then build the full dossi
 # equivalently:
 node src/render-diagrams.mjs
 node src/build.mjs
-node src/build-overview.mjs   # the standalone LinkedIn Part-I overview PDF
+node src/build-slides.mjs     # the LinkedIn slide deck / carousel (Part I, 4:5)
 ```
 
 ## Layout
@@ -35,12 +35,13 @@ node src/build-overview.mjs   # the standalone LinkedIn Part-I overview PDF
 src/
 ├── content/        # Markdown source, one file per section (also reusable as article text)
 ├── diagrams/       # *.mmd Mermaid sources → *.svg (rendered, git-ignored)
-├── theme.css       # branded WeasyPrint paged-media theme
+├── theme.css       # branded WeasyPrint paged-media theme (the dossier)
+├── linkedin-theme.css # 4:5 dark slide theme for the LinkedIn carousel
 ├── fonts.css       # inlined Space Grotesk / Inter / JetBrains Mono (base64)
 ├── mermaid-config.json / puppeteer-config.json
 ├── render-diagrams.mjs
 ├── build.mjs          # full dossier: markdown-it (+ containers, highlight.js) → HTML → WeasyPrint
-└── build-overview.mjs # standalone LinkedIn Part-I overview (reuses theme.css + content/01-07)
+└── build-slides.mjs   # LinkedIn slide deck / carousel from the Part I narrative
 ```
 
 ## Editing
