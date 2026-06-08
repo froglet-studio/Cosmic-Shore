@@ -38,11 +38,23 @@ namespace CosmicShore.Gameplay
         // spawn but varied across the pack.
         Vector3 _goalOrbitOffset;
 
+        [Header("Diet (predator / prey)")]
+        [Tooltip("What this fauna eats — the predator/herbivore selector. Herbivore: " +
+                 "opposing-domain prism MASS (flora canopy + vessel trails); the default, " +
+                 "original behavior. Predator: herbivore FAUNA (ignores prism mass for " +
+                 "feeding). Both starve via the clock below, so a Predator layered on " +
+                 "Herbivores yields a two-tier Lotka-Volterra food web. Docs/ECOSYSTEM.md §7/§10.")]
+        [SerializeField] protected FaunaDiet diet = FaunaDiet.Herbivore;
+
+        /// <summary>What this fauna eats — the predator/herbivore selector. See <see cref="FaunaDiet"/>.</summary>
+        public FaunaDiet Diet => diet;
+
         [Header("Population control (prey-linked)")]
         [Tooltip("Seconds this fauna can go without feeding before it starves and despawns. " +
-                 "Feeding (consuming any prism) resets the clock; 0 = never starve. Concrete " +
-                 "creature fauna (e.g. LightFauna) call NotifyFed() on consume and despawn when " +
-                 "IsStarving; manager-type Fauna subclasses ignore it. See Docs/ECOSYSTEM.md §6.")]
+                 "Feeding (consuming any prism, or — for predators — eating a herbivore) resets " +
+                 "the clock; 0 = never starve. Concrete creature fauna (e.g. LightFauna) call " +
+                 "NotifyFed() on consume and despawn when IsStarving; manager-type Fauna " +
+                 "subclasses ignore it. See Docs/ECOSYSTEM.md §6.")]
         [SerializeField] protected float starvationSeconds = 30f;
 
         // -1 until the first Start tick so a fauna spawned when Time.time already exceeds
@@ -88,6 +100,26 @@ namespace CosmicShore.Gameplay
         /// that have meaningful death behavior.
         /// </summary>
         protected virtual void Die(string killerName = "") { }
+
+        // Idempotency for predation: two predators can reach the same herbivore on the
+        // same frame (each iterating its own OverlapSphere snapshot). Without this guard
+        // the second Predated() re-enters Die() and double-removes / double-destroys.
+        bool _consumedAsPrey;
+
+        /// <summary>False once a predator has eaten this fauna — predators skip already-eaten prey.</summary>
+        public bool IsAlivePrey => !_consumedAsPrey;
+
+        /// <summary>
+        /// A predator has caught this fauna (it is the predator's food — the predator
+        /// resets its own starvation clock on its side). Routes through the normal
+        /// <see cref="Die"/> path (manager removal / destroy) and is idempotent.
+        /// </summary>
+        public virtual void Predated(string predatorName = "predator")
+        {
+            if (_consumedAsPrey) return;
+            _consumedAsPrey = true;
+            Die(predatorName);
+        }
 
         public void SetTeam(Domains domain)
         {

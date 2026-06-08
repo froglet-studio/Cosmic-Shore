@@ -275,24 +275,56 @@ as a backstop (not the primary control).
 
 ---
 
-## 7. Extensibility — predator / herbivore split (where this is headed)
+## 7. Predator / herbivore split — IMPLEMENTED (code) / needs authoring
 
-The redesign is shaped so the split drops in without rework:
+The diet split is in code (`FaunaDiet` enum + `Fauna.diet` + `LightFauna`
+consume branch + `Fauna.Predated`). What's left is **content authoring + tuning**
+in the editor — there is no working predator until a predator-diet fauna is
+wired into a `SpawnProfileSO`.
 
-- **Fauna sub-type** becomes a field on `FaunaConfigurationSO` (e.g. `Herbivore`
-  / `Predator`). `SupportedFaunas` already lists multiple configs per biome.
-- **Diet = "what counts as prey"** in `Fauna.ResolveGoal` / consume: herbivores
-  target **flora** prisms (any flora-domain mass), predators target **herbivore**
-  fauna. Today `ResolveGoal` already switches its target by aggression — diet is
-  the same seam, parameterized by sub-type instead of hard-coded to "opposing
-  prisms."
-- **Option C (starvation)** is the shared population-control mechanism for both:
-  herbivores starve when flora is gone; predators starve when herbivores are
-  gone. That two-tier starvation is the classic Lotka–Volterra oscillation and is
-  exactly the "vibrant ecosystem" target.
-- **Aggression tiers** stay the behavior dial per sub-type (a 4th tier or
-  per-sub-type curves slot into the existing `CellAggressionLevel` switch points:
-  `Cell.AggressionLevel`, `Fauna.ResolveGoal`, `goalUpdateIntervalByAggression`).
+- **Diet = "what counts as prey"** is a `FaunaDiet diet` field on the `Fauna`
+  base (`Herbivore` / `Predator`), defaulting to **Herbivore** so every existing
+  fauna prefab keeps its exact current behavior:
+  - **Herbivore** — consumes opposing-domain prism MASS (flora canopy + vessel
+    trails) within `consumeRadius`. Unchanged from before.
+  - **Predator** — consumes **herbivore fauna** (`LightFauna` whose `Diet ==
+    Herbivore`), via `GetComponentInParent<LightFauna>()` on nearby colliders →
+    `prey.Predated()`. Predators **never** eat prism mass. Predation **ignores
+    domain** (it's a diet relationship, not a team fight) so predators have prey
+    even in a single-domain cell — the food web bounds them, not the domain split.
+- **Starvation (the §6 bound) is the shared population control** for both diets:
+  herbivores starve when opposing prism mass is gone; predators starve when no
+  herbivore fauna are reachable (`Fauna.IsStarving` → `Die`). A Predator layered
+  on Herbivores is therefore a two-tier **Lotka–Volterra** loop (flora →
+  herbivores → predators) that oscillates on its own — no culler, mass conserved.
+- **Targeting (v1):** predators reuse the shared phase-based goal (density-grid
+  centroids). Herbivores swarm opposing-flora density; predators seek the same
+  centroids and so converge on the herbivores feeding there, eating them on
+  contact. Explicit "seek nearest herbivore" steering is a future refinement (no
+  central fauna registry exists yet).
+- **Spawn gating (known approximation):** `RandomLifeSpawner` gates every fauna
+  population on `OpposingBlockCount >= FaunaFoodFloor` (prism prey). For predators
+  this is a *proxy* (dense prisms ⇒ herbivores present ⇒ predator food); the real
+  bound is starvation. Refinement: gate predator spawn on herbivore count.
+- **Aggression tiers** stay the behavior dial per diet (a 4th tier or per-diet
+  curves slot into the existing `CellAggressionLevel` switch points:
+  `Cell.AggressionLevel`, `Fauna.ResolveGoal` / `LightFauna.UpdateBehavior`).
+
+### 7.1 In-editor authoring to activate predators (the human's pass)
+1. Duplicate an existing `LightFauna` prefab (e.g. the brittlestar/shark) →
+   "…Predator". On its `Fauna` set **Diet = Predator**. Optionally lengthen
+   `starvationSeconds` so predators don't starve before reaching prey, and tune
+   `consumeRadius` / speeds for catching herbivores.
+2. Create a `FaunaConfigurationSO` pointing at the predator prefab (set
+   `PopulationSize` smaller than the herbivore population — predators are the
+   apex tier).
+3. Add that config to the biome's `SpawnProfileSO.SupportedFaunas` **alongside**
+   the herbivore config (both must be present for a food web).
+4. Validate: herbivores graze opposing flora; predators converge and thin the
+   herbivores; when herbivores crash, predators starve; herbivores recover →
+   predators recover. Tune `PopulationSize`, `BaseFaunaSpawnTime`,
+   `starvationSeconds`, `consumeRadius` toward a breathing equilibrium rather
+   than a one-shot extinction.
 
 ---
 
@@ -309,8 +341,11 @@ The redesign is shaped so the split drops in without rework:
 4. ⏳ Validate in Menu_Main: Jade fauna appear when Jade controls; populations
    appear, hunt, and thin out as prey runs low; ring sweeps at the fixed period.
    Tune the §6 knobs.
-5. ⏳ Iterate toward the predator/herbivore sub-type split (diet = "what counts as
-   prey"; two-tier starvation = Lotka–Volterra).
+5. ✅/⏳ Predator/herbivore diet split — **code landed** (`FaunaDiet` + `Fauna.diet`
+   + `LightFauna` consume branch + `Fauna.Predated`); two-tier starvation =
+   Lotka–Volterra. Remaining: author a predator prefab/config and wire it into a
+   `SpawnProfileSO`, then tune in-editor (§7.1).
+6. ⏳ Retire the regrowth pulse — **done** (`FloraGrowingEnabled = phase < Frozen`).
 
 ---
 
@@ -323,9 +358,11 @@ The redesign is shaped so the split drops in without rework:
 | Spawner all scenes run | `Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs` |
 | Regulated spawner (parity ref, unused) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
 | Spawn helpers (`SpawnFaunaWithDomain`, `PickRandomDomain`) | `Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs` |
-| Fauna behavior / aggression goal logic | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
-| Flora growth gate | `AssembledFlora.cs`, `BranchingFlora.cs` |
-| Spawn tuning (period, population, exclude-local) | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
+| Fauna base: domain, goal, diet, starvation, `Predated` | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
+| Creature behavior + diet-branched consume (herbivore prisms / predator fauna) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs` |
+| Diet enum (Herbivore / Predator) | `Assets/_Scripts/Data/Enums/FaunaDiet.cs` |
+| Flora growth gate (now just `phase < Frozen`) | `AssembledFlora.cs`, `BranchingFlora.cs`, `Cell.FloraGrowingEnabled` |
+| Spawn tuning (period, population, food floor) | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
 | Aggression enum + tier behaviors | `Assets/_Scripts/Data/Enums/CellAggressionLevel.cs` |
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
 
