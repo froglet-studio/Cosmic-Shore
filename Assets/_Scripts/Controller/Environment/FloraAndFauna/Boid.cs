@@ -53,6 +53,13 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
+        [Header("Forager")]
+        [Tooltip("ON = this boid is a food-web FORAGER (tadpole): it feeds when it grazes " +
+                 "opposing mass (Explode effect) and starves (despawns) after starvationSeconds " +
+                 "without feeding, so the swarm self-limits to available trail/flora prey. " +
+                 "OFF (default) = drone/mound boid (BoidController) — never feeds or starves.")]
+        [SerializeField] bool forager = false;
+
         BoxCollider blockCollider;
 
         List<Collider> separatedBoids = new List<Collider>();
@@ -88,6 +95,16 @@ namespace CosmicShore.Gameplay
 
             while (true)
             {
+                // Forager swarms (tadpoles) self-limit to available prey: a boid that hasn't
+                // grazed in starvationSeconds despawns, so the swarm thins out when there's no
+                // opposing mass left to eat (and its per-boid CPU cost drops with it). Gated
+                // on `forager` so drone/mound boids (BoidController) never starve.
+                if (forager && IsStarving)
+                {
+                    Die("starvation");
+                    yield break;
+                }
+
                 if (!isAttached)
                 {
                     target = Goal;      // Check it later
@@ -179,8 +196,12 @@ namespace CosmicShore.Gameplay
 
                                 case BoidCollisionEffects.Explode:
                                     if (embeddedHealthPrism)
+                                    {
                                         otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
                                             embeddedHealthPrism.PlayerName + " boid", true);
+                                        // Grazing opposing mass resets the starvation clock (foragers only).
+                                        if (forager) NotifyFed();
+                                    }
                                     break;
                             }
                         }

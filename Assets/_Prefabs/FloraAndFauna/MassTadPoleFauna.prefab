@@ -75,6 +75,7 @@ MonoBehaviour:
   Mound: {fileID: 0}
   isKilled: 0
   collisionEffects: 01000000
+  forager: 1
 --- !u!1001 &4724174359583210385
 PrefabInstance:
   m_ObjectHideFlags: 0
