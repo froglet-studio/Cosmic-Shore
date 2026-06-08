@@ -78,7 +78,7 @@ winner's `Score` is a small finish time and the loser's is the `10000+` sentinel
 so descending put the **loser 1st**: a solo HexRace win (5 crystals first) showed
 the AI as "1st" and the human as "2nd", and the winner vessel icon
 (`EndGameVesselDisplay` keys it off `ranking == 1`) went to the loser. **Done**
-(commit `020d7b45`): the podium reads each player's rank from `gameData.Results`
+(commit `fd0dee09`): the podium reads each player's rank from `gameData.Results`
 (the SSOT every other end-game surface uses — golf-aware, ranked once by the mode's
 `ScoringRuleSO`), keeping the legacy descending-Score sort only as a fallback for
 modes that produce no Results (e.g. WildlifeBlitz). CrystalCapture (points) was

@@ -199,7 +199,7 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
   the cinematic reveal read `gameData.Results`. The per-mode `SortPlayers` / `FormatPlayerScore` /
   `FormatSecondaryStat` overrides + 3 HUD subclasses + 6 scoreboard/cinematic subclasses were
   deleted. **B2 closed** (reveal reads the domain-deficit `ScoreText`).
-  **Follow-up** (`020d7b45`): a post-merge play-test caught one surface this missed — the end-game
+  **Follow-up** (`fd0dee09`): a post-merge play-test caught one surface this missed — the end-game
   vessel podium (`EndGameVesselDisplayManager`) still ranked by a local descending-`Score` sort
   (golf-inverted → showed the loser 1st in HexRace). It now reads `gameData.Results` too (BUGS.md
   B7); that was the last end-game surface re-deriving rank locally.
