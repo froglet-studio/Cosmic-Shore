@@ -190,15 +190,18 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Predator diet: hunt herbivore fauna. Another creature's body shows up
-                // here as its child HealthPrisms, so walk up to the owning LightFauna. A
-                // predator's own body prisms resolve to `this` and are skipped; other
-                // predators (Diet != Herbivore) are treated as neighbors, not prey, so
-                // predators don't cannibalize. Predation ignores domain — it is a diet
-                // relationship, not a team fight — so predators always have prey even in
-                // a single-domain cell (the food web, not the domain split, bounds them).
+                // here as its child HealthPrisms, so walk up to the owning Fauna. We match
+                // the Fauna BASE (not LightFauna) so a predator eats ANY herbivore species
+                // — LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
+                // nearest Fauna ancestor of its body colliders, so managers (also Fauna,
+                // but with no body in the scene) are never returned. A predator's own body
+                // resolves to `this` and is skipped; other predators (Diet != Herbivore)
+                // are neighbors, not prey, so predators don't cannibalize. Predation
+                // ignores domain — it is a diet relationship, not a team fight — so
+                // predators always have prey even in a single-domain cell.
                 if (diet == FaunaDiet.Predator)
                 {
-                    var prey = collider.GetComponentInParent<LightFauna>();
+                    var prey = collider.GetComponentInParent<Fauna>();
                     if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
                     {
                         neighborCount++;

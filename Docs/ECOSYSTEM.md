@@ -275,20 +275,31 @@ as a backstop (not the primary control).
 
 ---
 
-## 7. Predator / herbivore split — IMPLEMENTED (code) / needs authoring
+## 7. Predator / herbivore split — IMPLEMENTED + wired (3 species)
 
 The diet split is in code (`FaunaDiet` enum + `Fauna.diet` + `LightFauna`
-consume branch + `Fauna.Predated`). What's left is **content authoring + tuning**
-in the editor — there is no working predator until a predator-diet fauna is
-wired into a `SpawnProfileSO`.
+consume branch + `Fauna.Predated`) **and wired into the Blob (menu) test cell**
+with the team's three real species:
+
+| Species | Prefab | Component | Diet |
+|---|---|---|---|
+| **Tadpole** | `MassTadPoleFauna` | `Boid` | Herbivore (default) |
+| **Brittlestar** | `MassBrittlestarFauna` | `LightFauna` | Herbivore (default) |
+| **Shark** | `MassSharkFauna` | `LightFauna` | **Predator** (`diet: 1`) |
+
+All three are in `Blob Cell Spawn Profile.SupportedFaunas` (brittlestar pop 4,
+tadpole pop 4, shark pop 2 — apex tier is smaller). Activating predators in
+another biome is the same recipe (§7.1).
 
 - **Diet = "what counts as prey"** is a `FaunaDiet diet` field on the `Fauna`
   base (`Herbivore` / `Predator`), defaulting to **Herbivore** so every existing
   fauna prefab keeps its exact current behavior:
-  - **Herbivore** — consumes opposing-domain prism MASS (flora canopy + vessel
-    trails) within `consumeRadius`. Unchanged from before.
-  - **Predator** — consumes **herbivore fauna** (`LightFauna` whose `Diet ==
-    Herbivore`), via `GetComponentInParent<LightFauna>()` on nearby colliders →
+  - **Herbivore** — consumes opposing-domain prism MASS within `consumeRadius`.
+    `LightFauna` (brittlestar) detonates opposing prisms; `Boid` (tadpole)
+    attaches-to / explodes opposing prisms via its own behavior. Unchanged.
+  - **Predator** — consumes **herbivore fauna of any species** via
+    `GetComponentInParent<Fauna>()` on nearby colliders (matches the `Fauna` base,
+    so a shark eats both `LightFauna` brittlestars and `Boid` tadpoles) →
     `prey.Predated()`. Predators **never** eat prism mass. Predation **ignores
     domain** (it's a diet relationship, not a team fight) so predators have prey
     even in a single-domain cell — the food web bounds them, not the domain split.
@@ -310,21 +321,29 @@ wired into a `SpawnProfileSO`.
   curves slot into the existing `CellAggressionLevel` switch points:
   `Cell.AggressionLevel`, `Fauna.ResolveGoal` / `LightFauna.UpdateBehavior`).
 
-### 7.1 In-editor authoring to activate predators (the human's pass)
-1. Duplicate an existing `LightFauna` prefab (e.g. the brittlestar/shark) →
-   "…Predator". On its `Fauna` set **Diet = Predator**. Optionally lengthen
-   `starvationSeconds` so predators don't starve before reaching prey, and tune
-   `consumeRadius` / speeds for catching herbivores.
-2. Create a `FaunaConfigurationSO` pointing at the predator prefab (set
-   `PopulationSize` smaller than the herbivore population — predators are the
-   apex tier).
-3. Add that config to the biome's `SpawnProfileSO.SupportedFaunas` **alongside**
-   the herbivore config (both must be present for a food web).
-4. Validate: herbivores graze opposing flora; predators converge and thin the
-   herbivores; when herbivores crash, predators starve; herbivores recover →
-   predators recover. Tune `PopulationSize`, `BaseFaunaSpawnTime`,
-   `starvationSeconds`, `consumeRadius` toward a breathing equilibrium rather
-   than a one-shot extinction.
+### 7.1 How the Blob cell was wired (recipe for other biomes)
+1. Set the predator creature's diet: `MassSharkFauna`'s `LightFauna` has
+   `diet: 1` (Predator). Herbivores need nothing — diet defaults to Herbivore.
+2. One `FaunaConfigurationSO` per species points at its **creature** prefab's
+   Fauna component (not the Population/manager): `Blob Tadpole Fauna Config Data`
+   → `MassTadPoleFauna` (Boid), `Blob Shark Fauna Config Data` → `MassSharkFauna`
+   (LightFauna), and the existing `Blob Fauna Config Data` → `MassBrittlestarFauna`.
+   Predator `PopulationSize` is smaller (apex tier).
+3. All three configs are in `Blob Cell Spawn Profile.SupportedFaunas`.
+4. **Validate in Menu_Main:** tadpoles + brittlestars graze opposing flora;
+   sharks converge on the swarms and thin them; when herbivores crash, sharks
+   starve (`starvationSeconds`); herbivores recover → sharks recover. Tune
+   `PopulationSize` / `BaseFaunaSpawnTime` / `starvationSeconds` / `consumeRadius`
+   (on each `LightFaunaDataSO`) toward a breathing equilibrium, not one-shot
+   extinction.
+
+> **Known asymmetry:** `Boid` (tadpole) does **not** run the starvation clock —
+> only `LightFauna` checks `IsStarving`. So tadpoles don't self-cull when flora
+> runs out; their only down-force is shark predation. Brittlestars (LightFauna)
+> both starve *and* are predated. To make tadpoles a full herbivore tier, add
+> `NotifyFed()` on `Boid`'s opposing-prism interaction + an `if (IsStarving) Die()`
+> gate in `Boid.CalculateBehavior` — deferred so it doesn't change `Boid` in the
+> WildlifeBlitz cells that also use it.
 
 ---
 
