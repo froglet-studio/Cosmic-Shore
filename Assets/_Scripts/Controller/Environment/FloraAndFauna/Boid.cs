@@ -81,7 +81,19 @@ namespace CosmicShore.Gameplay
             if (!blockCollider)
                 CSDebug.LogWarning($"{nameof(Boid)} on {name}: embedded HealthPrism has no BoxCollider.");
 
-            embeddedHealthPrism.ChangeTeam(domain);
+            // Initialize the body health prism(s) so they actually render and become a real
+            // (consumable) health prism. Like LightFauna's body prisms, they start at local
+            // scale 0 and only grow once Prism.Initialize fires the scale animator — without
+            // this the tadpole has no visible/active health prism. (LightFauna does the same
+            // for the brittlestar/shark body.)
+            var bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+            for (int i = 0; i < bodyPrisms.Length; i++)
+            {
+                var hp = bodyPrisms[i];
+                if (!hp) continue;
+                hp.ChangeTeam(domain);
+                hp.Initialize("tadpole");
+            }
 
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
             float initialDelay = normalizedIndex * behaviorUpdateRate;
@@ -173,7 +185,17 @@ namespace CosmicShore.Gameplay
                 {
                     blockAttraction += -diff.normalized / distance;
 
-                    if (distance < trailBlockInteractionRadius && embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain)
+                    // Drones eat OPPOSING-domain mass (combat). Foragers (tadpoles) are cleanup
+                    // grazers: they eat prisms of ANY domain — so the dominant trail gets grazed
+                    // too, not just the minority — but SKIP shielded prisms so they never eat
+                    // protected structure like the Skim Race track (ShieldedSpawnablePrism).
+                    var pp = otherPrism.prismProperties;
+                    bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
+                    bool edible = forager
+                        ? !shielded
+                        : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
+
+                    if (distance < trailBlockInteractionRadius && embeddedHealthPrism && edible)
                     {
                         foreach (var effect in collisionEffects)
                         {
@@ -197,10 +219,21 @@ namespace CosmicShore.Gameplay
                                 case BoidCollisionEffects.Explode:
                                     if (embeddedHealthPrism)
                                     {
-                                        otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
-                                            embeddedHealthPrism.PlayerName + " boid", true);
-                                        // Grazing opposing mass resets the starvation clock (foragers only).
-                                        if (forager) NotifyFed();
+                                        if (forager)
+                                        {
+                                            // Foragers CONSUME (implode toward the tadpole → the
+                                            // suction shader), matching how LightFauna grazes.
+                                            // devastate:false so a shielded prism that somehow
+                                            // reaches here only loses its shield, never gets eaten.
+                                            otherPrism.Consume(transform, embeddedHealthPrism.Domain,
+                                                embeddedHealthPrism.PlayerName + " tadpole", false);
+                                            NotifyFed();
+                                        }
+                                        else
+                                        {
+                                            otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
+                                                embeddedHealthPrism.PlayerName + " boid", true);
+                                        }
                                     }
                                     break;
                             }
