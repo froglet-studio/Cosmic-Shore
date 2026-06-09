@@ -7,6 +7,24 @@ can skim what changed and why on return.
 
 **Branch:** `claude/quirky-meitner-bcos8u`. Everything is pushed.
 
+## ⬅️ Validate on return (the things only you can check in-editor)
+
+1. **Tadpoles now eat (menu + skim race).** Last code session before the loop:
+   foragers Consume (suction) any **unshielded** prism of **any** domain except
+   fauna bodies — so the dominant trail gets grazed. Watch: do tadpoles visibly
+   suck in trail prisms? Does Skim Race FPS recover at late laps now?
+   - If the **race track gets eaten** → the track isn't shielded; tell me and I'll
+     gate foragers differently (the current safeguard is "skip shielded prisms").
+   - If the **menu flora gets stripped** → reduce `Blob Tadpole` `PopulationSize`
+     (currently 25); flora regrow, so it should breathe, not go barren.
+2. **Tadpoles have a health prism now** (Boid.Initialize initializes the body).
+3. **No predators in either scene** (I removed sharks earlier — they ate
+   everything at co-spawn). Spawn-immunity is now built (dormant) so a balanced
+   predator can be re-added safely; I did NOT re-add one (didn't want to muddy
+   your foraging test). Say the word and I'll add a low-count shark to the menu.
+4. **Run the new edit-mode tests** (CellPhaseRules + ecology enums) — they're
+   pure-logic regression guards and should pass.
+
 **State of the two test scenes (unchanged by overnight work unless noted):**
 - **Menu (Blob):** flora + tadpole forager + brittlestar. No shark (removed
   earlier — it ate everything at co-spawn).
