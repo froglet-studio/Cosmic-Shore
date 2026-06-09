@@ -146,7 +146,7 @@ gameData.OnMiniGameTurnStarted.Raise()
 │
 └─ TurnMonitor.Update() — every frame
     └─ NetworkJoustCollisionTurnMonitor.CheckForEndOfTurn()  [server only]
-        └─ return gameData.TryGetDomainReachingJoustTarget(CollisionsNeeded, out _)
+        └─ return gameData.ScoringRule.IsObjectiveReached(gameData, out _)   // SumByDomain(Jousts) ≥ target
             └─ If true → OnTurnEnded() → gameData.InvokeGameTurnConditionsMet()
 ```
 The end condition is **domain-aggregated**: the turn ends as soon as any active domain's summed JoustCollisions reaches the target. Teammates (humans + AI on the same Domain) hit the joust target together.
@@ -154,6 +154,12 @@ The end condition is **domain-aggregated**: the turn ends as soon as any active 
 ### 7. Winner Determination & Score Sync
 
 Winner detection is **server-authoritative** via `OnTurnEndedCustom()`:
+
+> **Source of truth:** the end condition, winning domain, per-player score, and ranked
+> results are produced by `JoustScoringRuleSO` (`IsObjectiveReached` / `AssignScores` /
+> `BuildResults`) via `gameData.ScoringRule`; the turn monitor + controller delegate to it.
+> (The old `gameData.TryGetDomainReachingJoustTarget` / `SumJoustCollisionsByDomain` helpers
+> were retired — use `ScoringMetrics.SumByDomain(gameData, Jousts, domain)`.)
 
 ```
 TurnMonitor detects collision target reached → gameData.InvokeGameTurnConditionsMet()
@@ -165,7 +171,7 @@ TurnMonitor detects collision target reached → gameData.InvokeGameTurnConditio
 │   │           ├─ Guard: if (_finalResultsSent) return
 │   │           ├─ CalculateJoustScores_Server():
 │   │           │   ├─ currentTime = Time.time - gameData.TurnStartTime
-│   │           │   ├─ Winning DOMAIN = active domain with the highest SumJoustCollisionsByDomain
+│   │           │   ├─ Winning DOMAIN = active domain with the highest ScoringMetrics.SumByDomain(gameData, Jousts, …)
 │   │           │   ├─ Representative WinnerName = best individual contributor on winning domain
 │   │           │   ├─ Every player on the winning domain: stats.Score = currentTime
 │   │           │   └─ All other players: stats.Score = 99999f

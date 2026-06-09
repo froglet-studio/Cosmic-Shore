@@ -171,9 +171,10 @@ The shared hub. **SOAP events** (all `ScriptableEventNoParam`):
 
 **Methods:** `SortRoundStats(golf)`, `SortDomainStats(golf)`,
 `CalculateDomainStats(golf)`, `IsLocalDomainWinner(out DomainStats)`,
-`SumCrystalsCollectedByDomain(d)`, `SumJoustCollisionsByDomain(d)`,
-`TryGetDomainReachingCrystalTarget(target, out winner)`,
-`TryGetDomainReachingJoustTarget(...)`.
+`SumCrystalsCollectedByDomain(d)` (used by `ElementalComebackSystem`).
+End condition, winner, and per-domain sums now live in the mode's `ScoringRuleSO`
+(`IsObjectiveReached` / `ResolveWinner`) over `ScoringMetrics.SumByDomain` — the old
+`TryGetDomainReaching*` / `SumJoustCollisionsByDomain` helpers were retired.
 
 > **[target]** Scoring is already domain-aggregated and the stat layer is
 > already RPC-synced (`RoundStats` NetworkVariables). The refactor's job is to
@@ -363,8 +364,9 @@ number).
   `GameDataSO` SOAP events; never poll score state per-frame. Fail loud on
   missing SOAP refs (no if-null guards on event fields).
 - **Server-authoritative, domain-aggregated.** The controller decides the winner
-  on the server via domain sums (`TryGetDomainReaching*`), writes
-  `WinnerName`/`WinnerDomain`, and broadcasts. Views never compute the winner.
+  on the server via the mode's `ScoringRuleSO` (`IsObjectiveReached` / `ResolveWinner`,
+  over `ScoringMetrics.SumByDomain`), writes `WinnerName`/`WinnerDomain`, and broadcasts.
+  Views never compute the winner.
 - **Subclass, don't fork.** Add a mode by overriding the virtual
   `Sort/Format*` (scoreboard) and implementing the abstract metric selector
   (HUD) — not by branching inside the base classes.
