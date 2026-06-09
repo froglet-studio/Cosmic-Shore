@@ -100,6 +100,22 @@ namespace CosmicShore.Gameplay
             StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
         }
 
+        /// <summary>
+        /// Foragers (tadpoles) actively HUNT the biggest mass concentration the cell senses
+        /// — the densest region of environment prisms across the whole density grid —
+        /// regardless of aggression level, so they roam to the trail/flora buildup and clean
+        /// it instead of sitting at the crystal/spawn. Emergent (reads the density grid),
+        /// NOT track-following. `GetDensestRegionAnyDomain` falls back to the cell anchor
+        /// (crystal) when the grid is empty, so an idle swarm gathers at the centre.
+        /// Non-foragers (drones) keep the aggression-tiered base goal.
+        /// </summary>
+        protected override Vector3 ResolveGoal()
+        {
+            if (forager && cell != null)
+                return cell.GetDensestRegionAnyDomain();
+            return base.ResolveGoal();
+        }
+
         IEnumerator CalculateBehaviorCoroutine(float initialDelay)
         {
             if (initialDelay > 0f)

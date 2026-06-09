@@ -25,3 +25,4 @@ MonoBehaviour:
     type: 3}
   CellModifiers: []
   SpawnProfile: {fileID: 11400000, guid: fb21a73fb42247b5a4dfeee0349f67f4, type: 2}
+  SenseRadiusOverride: 3000

@@ -52,6 +52,24 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Radius used for mass SENSING — prism registration (<see cref="ContainsPosition"/>)
+        /// and the density grids that fauna seek mass with. Defaults to the visual
+        /// <see cref="MembraneRadius"/>, but a CellConfig can override it
+        /// (<c>SenseRadiusOverride</c>) to sense across a larger arena than the membrane
+        /// visual — e.g. the Skim Race track — so fauna find + seek mass track-wide instead
+        /// of only inside the central bubble. Independent of the membrane so the visual /
+        /// its baked animation are untouched. See Docs/ECOSYSTEM.md §7.2.
+        /// </summary>
+        public float SenseRadius
+        {
+            get
+            {
+                float over = cellConfigData != null ? cellConfigData.SenseRadiusOverride : 0f;
+                return over > 0f ? over : MembraneRadius;
+            }
+        }
+
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
         readonly Dictionary<Domains, float> teamVolumes = new();
@@ -551,13 +569,12 @@ namespace CosmicShore.Gameplay
 
         void SetupDensityGrids()
         {
-            // Size the density grids to the cell's actual membrane, not the old
-            // hard-coded 1000m cube anchored at world origin. With a 1200m-radius
-            // membrane the fixed cube saw only ~14% of the cell's volume — outer-
-            // shell mass was invisible to FindDensestRegion, so fauna were never
-            // directed at it and it accumulated unconsumed. See
+            // Size the density grids to the cell's SENSE radius (membrane radius by
+            // default, or a CellConfig override for large arenas like the Skim Race track).
+            // With a 1200m membrane the old fixed cube saw only ~14% of the cell — outer
+            // mass was invisible to FindDensestRegion so fauna never sought it. See
             // Docs/DENSITY_PARTITIONING_AUDIT.md.
-            float membraneRadius = MembraneRadius;
+            float membraneRadius = SenseRadius;
             float worldDiameter = membraneRadius > 0f
                 ? membraneRadius * 2f
                 : 2400f; // fallback when the membrane prefab is missing
@@ -768,10 +785,11 @@ namespace CosmicShore.Gameplay
 
         public bool ContainsPosition(Vector3 position)
         {
-            // MembraneRadius reads CapsuleMembrane.Radius when present (the authored
-            // radius), falling back to localScale.x — strictly more correct than the
-            // old raw localScale read for capsule membranes.
-            float radius = MembraneRadius;
+            // Use SenseRadius (membrane radius, or a CellConfig override for large arenas)
+            // so prisms across the whole sensed space register with the cell — not just
+            // those inside the visual membrane. This is what lets fauna find + seek mass
+            // across the full Skim Race track. See SenseRadius / Docs/ECOSYSTEM.md §7.2.
+            float radius = SenseRadius;
             if (radius <= 0f) return false;
             return Vector3.Distance(position, transform.position) < radius;
         }
