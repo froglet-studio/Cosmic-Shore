@@ -27,10 +27,12 @@ namespace CosmicShore.UI
         protected Dictionary<Domains, DomainScorePanel> _domainPanels = new();
         bool _useDomainView;
 
-        // Domain-panel build signature. A client races domain/roster replication at turn start,
-        // so these let it detect when a late-replicated domain or roster entry means the panel set
-        // must be rebuilt (see DomainLayoutChanged) instead of staying frozen on a stale snapshot.
-        Domains _builtLocalDomain = Domains.Blue;
+        // Domain-panel build signature — a hash of every player's (name → Player.Domain) + the local
+        // ally domain + domain count at the last build. The reconcile rebuilds whenever this changes
+        // (a player moved domains, or the roster grew), so the boxes can't freeze on a stale layout.
+        // Domain attribution is read from Player.Domain (the authoritative NetDomain mirror), never
+        // RoundStats.Domain (a derived copy that can lag behind on a client).
+        int _builtLayoutSignature;
         bool _domainPanelsBuilt;
 
         protected override void OnEnable()
@@ -180,9 +182,8 @@ namespace CosmicShore.UI
         {
             AssignAIProfiles();
 
-            // Subscribe to every player's stat events ONCE per turn so any teammate's update —
-            // including a late-replicated domain (RoundStats now raises OnAnyStatChanged from its
-            // n_Domain callback) — recomputes the domain sum and reconciles the panel set.
+            // Subscribe to every player's stat events ONCE per turn so any change — a metric tick or
+            // a domain change — reconciles the panel layout (see DomainLayoutChanged).
             foreach (var stats in gameData.RoundStatsList.Where(s => s != null))
                 SubscribeToPlayerStats(stats);
 
@@ -221,48 +222,42 @@ namespace CosmicShore.UI
                 CreateDomainPanel(d, multiplayerView.OpposingDomainsContainer);
             }
 
-            _builtLocalDomain = localDomain;
+            _builtLayoutSignature = ComputeLayoutSignature();
             _domainPanelsBuilt = true;
         }
 
         bool HasPlayersInDomain(Domains domain)
         {
-            var list = gameData.RoundStatsList;
-            for (int i = 0, count = list.Count; i < count; i++)
-                if (list[i] != null && list[i].Domain == domain) return true;
+            var players = gameData.Players;
+            for (int i = 0, count = players.Count; i < count; i++)
+                if (players[i] != null && players[i].Domain == domain) return true;
             return false;
         }
 
         /// <summary>
-        /// True when the desired domain-panel layout (ally + opposing-with-players, from the live
-        /// LocalPlayer domain + RequestedDomainCount) differs from what is currently built — i.e. a
-        /// domain or the roster replicated after the last build, so we must rebuild. Allocation-free.
+        /// True when the desired domain layout changed since the last build — a player moved domains
+        /// (membership), the local ally domain changed, the roster grew, or the domain count changed.
+        /// Read from Player.Domain (authoritative), so it reflects real team changes even when the
+        /// derived RoundStats.Domain copy lags. Allocation-free.
         /// </summary>
-        bool DomainLayoutChanged()
+        bool DomainLayoutChanged() => !_domainPanelsBuilt || ComputeLayoutSignature() != _builtLayoutSignature;
+
+        // Order-stable hash of (local ally domain, domain count, each player's name + Player.Domain).
+        // gameData.Players only ever grows during a round, so sequential hashing is stable.
+        int ComputeLayoutSignature()
         {
-            if (!_domainPanelsBuilt) return true;
-
-            var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
-            if (localDomain != _builtLocalDomain) return true;
-
-            int desiredCount = 0;
-            if (localDomain != Domains.Blue)
+            int sig = 17;
+            sig = sig * 31 + (int)(gameData.LocalPlayer?.Domain ?? Domains.Blue);
+            sig = sig * 31 + Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            var players = gameData.Players;
+            for (int i = 0, count = players.Count; i < count; i++)
             {
-                desiredCount++;
-                if (!_domainPanels.ContainsKey(localDomain)) return true;
+                var p = players[i];
+                if (p == null) continue;
+                sig = sig * 31 + (p.Name != null ? p.Name.GetHashCode() : 0);
+                sig = sig * 31 + (int)p.Domain;
             }
-
-            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
-            for (int i = 0; i < dc; i++)
-            {
-                var d = GameDataSO.ActiveDomains[i];
-                if (d == localDomain) continue;
-                if (!HasPlayersInDomain(d)) continue;
-                desiredCount++;
-                if (!_domainPanels.ContainsKey(d)) return true;
-            }
-
-            return desiredCount != _domainPanels.Count;
+            return sig;
         }
 
         /// <summary>
@@ -295,33 +290,21 @@ namespace CosmicShore.UI
             // Color used to tint per-teammate avatar entries below the sum.
             var color = colorSet != null ? colorSet.ShipColor1 : ResolveDomainColor(domain);
 
-            // Add a small icon per teammate (humans + AI on this domain). Local
-            // player's name is shown; others render avatar-only.
-            var teammates = gameData.RoundStatsList
-                .Where(s => s != null && s.Domain == domain)
-                .ToList();
-            foreach (var s in teammates)
+            // Add a small icon per teammate (humans + AI on this domain), grouped by the
+            // authoritative Player.Domain (NOT the derived RoundStats.Domain). Local player's name
+            // is shown; others render avatar-only.
+            var players = gameData.Players;
+            for (int i = 0, count = players.Count; i < count; i++)
             {
-                bool isLocal = gameData.LocalPlayer != null && s.Name == gameData.LocalPlayer.Name;
-                var avatar = ResolveAvatarForStats(s, isLocal);
-                panel.AddPlayerIcon(s.Name, avatar, color, isLocal);
+                var p = players[i];
+                if (p == null || p.Domain != domain) continue;
+                bool isLocal = gameData.LocalPlayer != null && p.Name == gameData.LocalPlayer.Name;
+                Sprite avatar = isLocal ? null : ResolveAIAvatarSprite(p.Name);
+                if (avatar == null) avatar = ResolveAvatarSprite(p.AvatarId);
+                panel.AddPlayerIcon(p.Name, avatar, color, isLocal);
             }
 
             _domainPanels[domain] = panel;
-        }
-
-        Sprite ResolveAvatarForStats(IRoundStats stats, bool isLocal)
-        {
-            Sprite sprite = null;
-            if (!isLocal)
-                sprite = ResolveAIAvatarSprite(stats.Name);
-
-            if (sprite == null)
-            {
-                var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
-                if (player != null) sprite = ResolveAvatarSprite(player.AvatarId);
-            }
-            return sprite;
         }
 
         // ── Stat dispatch ─────────────────────────────────────────────────────
@@ -384,14 +367,12 @@ namespace CosmicShore.UI
 
             if (_useDomainView)
             {
-                // A domain or roster entry may have replicated after the panels were built
-                // (clients race the turn start). Reconcile the panel set first so a late-synced
-                // domain is never dropped — then update the affected domain's sum.
+                // Domain attribution lives on Player.Domain (authoritative). If a player moved
+                // domains or the roster grew, the layout signature changes → rebuild. Sums are kept
+                // current independently by RefreshDomainSums (OnDomainMetricSumsChanged) and the
+                // CreateDomainPanel initial read.
                 if (DomainLayoutChanged())
                     RebuildDomainPanels();
-
-                if (_domainPanels.TryGetValue(stats.Domain, out var panel))
-                    panel.UpdateSum(SumStatByDomain(stats.Domain));
             }
             else
             {
