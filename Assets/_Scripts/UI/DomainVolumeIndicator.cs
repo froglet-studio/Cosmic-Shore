@@ -10,23 +10,28 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Drives the hexagonal domain-volume gauge on the pause / freestyle-toggle
-    /// button. Reads the local player's cell each tick and feeds per-domain fill
-    /// fractions + the dominant domain to a <see cref="DomainVolumeHexGraphic"/>.
+    /// Drives the hexagonal domain-volume gauge on the universal in-game pause /
+    /// freestyle-toggle button. Reads the local player's cell each tick and feeds
+    /// per-domain fill fractions + the dominant domain + the cell's phase thresholds
+    /// to a <see cref="DomainVolumeHexGraphic"/>.
     ///
-    /// Spec (restored): a pointy-top hexagon, each domain owning a fixed 1/3
-    /// (two of six edges) — Jade top, Ruby lower-left, Gold lower-right. Each sector
-    /// always spans its full angular width; the colored band fills RADIALLY INWARD
-    /// toward the centre as the domain's mass approaches the frenzy (Rabid) threshold.
-    /// The centre hexagon is tinted by the dominant domain.
+    /// Look (universal across menu and all gameplay scenes): a pointy-top hexagon,
+    /// each domain owning a fixed 1/3 (two of six edges) — Jade top, Ruby lower-left,
+    /// Gold lower-right. Each sector always spans its full angular width; the colored
+    /// band fills RADIALLY INWARD toward the centre as the domain's mass approaches the
+    /// frenzy (Rabid) threshold, the centre being the frenzy state. Concentric threshold
+    /// rings mark each cell phase boundary; as a wedge fills inward it passes through
+    /// them, the crossed ring brightening to signal that domain is pushing the cell into
+    /// the next aggression zone.
     ///
     /// ZERO-AUTHORING (ElementalBarsView pattern): when no graphic is wired the
     /// component creates a full-rect child <see cref="DomainVolumeHexGraphic"/> at
-    /// runtime, and (optionally) a diagnostic readout below the button. MenuMiniGameHUD
-    /// self-attaches this to its pause button and hands over the injected GameDataSO.
+    /// runtime, and hides the host button's authored face. MenuMiniGameHUD and
+    /// MiniGameHUD self-attach this to their pause button and hand over the injected
+    /// GameDataSO.
     ///
-    /// Reads <see cref="Cell.GetDomainBlockCount"/> and
-    /// <see cref="Cell.RabidEnterThreshold"/>; resolves the cell via the local
+    /// Reads <see cref="Cell.GetDomainBlockCount"/>, <see cref="Cell.RabidEnterThreshold"/>
+    /// and <see cref="Cell.ResolvedThresholds"/>; resolves the cell via the local
     /// player's vessel position, falling back to the nearest active cell.
     /// </summary>
     [DisallowMultipleComponent]
@@ -46,10 +51,6 @@ namespace CosmicShore.UI
         [Tooltip("Lerp speed for fill changes between samples. 0 = instant; higher = smoother.")]
         [Min(0f)] [SerializeField] float fillLerpSpeed = 8f;
 
-        [Header("Concentric phase mode (Skim Race)")]
-        [Tooltip("Draw concentric hexagon rings — one per cell phase boundary (Quiet/Settled/Restless/Frozen/Rabid) — that light up in the dominant domain's color as the cell's summed mass crosses each threshold. Off = the per-domain radial bands used in the main menu.")]
-        [SerializeField] bool concentricPhaseMode = false;
-
         [Header("Cell resolution")]
         [Tooltip("If assigned, the indicator reads from this cell directly. Leave null to auto-resolve via the local player's vessel position (or the nearest active cell).")]
         [SerializeField] Cell explicitCell;
@@ -63,12 +64,12 @@ namespace CosmicShore.UI
         int _dominant = -1;
         float _spawnCycle;
 
-        // Concentric-phase-mode state. _massTarget/_massNow are the summed mass as a
-        // fraction of RabidEnter (lerped like the per-domain fills). _phaseFracs are the
-        // per-phase enter thresholds / RabidEnter — fixed per cell config, so they're
-        // resolved at sample time and fed straight to the graphic.
-        float _massTarget, _massNow;
-        readonly float[] _phaseFracs = new float[5]; // Quiet, Settled, Restless, Frozen, Rabid
+        // Cell phase enter thresholds as fractions of RabidEnter (ascending): where the
+        // concentric rings sit. Static per cell config, refreshed each sample so a
+        // config swap (or late cell resolution) is picked up. Order matches CellPhase:
+        // Quiet, Settled, Restless, Frozen, Rabid.
+        readonly float[] _thresholdFracs = new float[5];
+        bool _hasThresholds;
 
         /// <summary>
         /// Explicit dependency handoff for the AddComponent path: runtime-added
@@ -77,14 +78,6 @@ namespace CosmicShore.UI
         /// in-scene case.
         /// </summary>
         public void SetGameData(GameDataSO data) => gameData = data;
-
-        /// <summary>
-        /// Runtime toggle for the concentric-phase-rings layout (Skim Race). Used by the
-        /// AddComponent path (e.g. <see cref="HexRaceHUD"/>) where the component is created
-        /// in code and so never receives the serialized inspector value. Authored-in-scene
-        /// indicators set this via the inspector field instead.
-        /// </summary>
-        public void SetConcentricPhaseMode(bool enabled) => concentricPhaseMode = enabled;
 
         // ------------------------------------------------------------------
         //  Lifecycle
@@ -96,7 +89,7 @@ namespace CosmicShore.UI
 
             _jadeNow = _rubyNow = _goldNow = 0f;
             _jadeTarget = _rubyTarget = _goldTarget = 0f;
-            _massNow = _massTarget = 0f;
+            _hasThresholds = false;
             _nextSampleAt = 0f;
             PushState();
         }
@@ -176,8 +169,8 @@ namespace CosmicShore.UI
             if (!cell)
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
-                _massTarget = 0f;
                 _dominant = -1;
+                _hasThresholds = false;
                 return;
             }
 
@@ -185,21 +178,6 @@ namespace CosmicShore.UI
             int jade = cell.GetDomainBlockCount(Domains.Jade);
             int ruby = cell.GetDomainBlockCount(Domains.Ruby);
             int gold = cell.GetDomainBlockCount(Domains.Gold);
-
-            // Concentric phase mode: total summed mass vs frenzy, plus each phase
-            // boundary as a radius fraction. Thresholds are static per config so they
-            // can be read straight here (no lerp needed on the rings themselves).
-            if (concentricPhaseMode)
-            {
-                _massTarget = rabid > 0 ? Mathf.Clamp01((float)cell.LiveBlockCount / rabid) : 0f;
-                var t = cell.ResolvedThresholds;
-                float denom = Mathf.Max(1, t.RabidEnter);
-                _phaseFracs[0] = t.QuietEnter / denom;
-                _phaseFracs[1] = t.SettledEnter / denom;
-                _phaseFracs[2] = t.RestlessEnter / denom;
-                _phaseFracs[3] = t.FrozenEnter / denom;
-                _phaseFracs[4] = t.RabidEnter / denom; // 1.0 by construction
-            }
 
             if (rabid > 0)
             {
@@ -209,10 +187,24 @@ namespace CosmicShore.UI
                 _jadeTarget = Mathf.Clamp01((float)jade / rabid);
                 _rubyTarget = Mathf.Clamp01((float)ruby / rabid);
                 _goldTarget = Mathf.Clamp01((float)gold / rabid);
+
+                // Concentric ring positions: each phase enter threshold as a fraction of
+                // RabidEnter. A wedge reaching ring i has, by construction, that phase's
+                // worth of mass — so the wedge passing through the ring IS that domain
+                // pushing aggression into the next zone. Rabid sits at fraction 1 (centre).
+                var t = cell.ResolvedThresholds;
+                float denom = Mathf.Max(1, t.RabidEnter);
+                _thresholdFracs[0] = t.QuietEnter / denom;
+                _thresholdFracs[1] = t.SettledEnter / denom;
+                _thresholdFracs[2] = t.RestlessEnter / denom;
+                _thresholdFracs[3] = t.FrozenEnter / denom;
+                _thresholdFracs[4] = t.RabidEnter / denom; // 1.0 by construction
+                _hasThresholds = true;
             }
             else
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
+                _hasThresholds = false;
             }
 
             // Dominant domain → centre hexagon tint. -1 when the cell is empty.
@@ -239,7 +231,6 @@ namespace CosmicShore.UI
                 _jadeNow = _jadeTarget;
                 _rubyNow = _rubyTarget;
                 _goldNow = _goldTarget;
-                _massNow = _massTarget;
             }
             else
             {
@@ -247,7 +238,6 @@ namespace CosmicShore.UI
                 _jadeNow = Mathf.Lerp(_jadeNow, _jadeTarget, t);
                 _rubyNow = Mathf.Lerp(_rubyNow, _rubyTarget, t);
                 _goldNow = Mathf.Lerp(_goldNow, _goldTarget, t);
-                _massNow = Mathf.Lerp(_massNow, _massTarget, t);
             }
             PushState();
         }
@@ -260,24 +250,9 @@ namespace CosmicShore.UI
             // so the ring sweeps smoothly between the 0.25s volume samples. Use the
             // cached cell to avoid re-running cell resolution every frame.
             float cycle = _cachedCell ? _cachedCell.FaunaSpawnCycleFraction : _spawnCycle;
-
-            if (concentricPhaseMode)
-            {
-                // The lit rings + centre + mass fill all take the dominant domain's hue,
-                // so "which domain reached the threshold" reads straight off the color.
-                Color dominantColor = _dominant switch
-                {
-                    0 => jadeC,
-                    1 => rubyC,
-                    2 => goldC,
-                    _ => Color.white,
-                };
-                hexGraphic.SetPhaseState(_massNow, _phaseFracs, dominantColor, _dominant, cycle);
-                return;
-            }
-
             // SetState rebuilds the mesh only on a meaningful delta.
-            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle);
+            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle,
+                                _hasThresholds ? _thresholdFracs : null);
         }
 
         // ------------------------------------------------------------------

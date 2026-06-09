@@ -197,3 +197,38 @@ header.
 
 Requests 1/2/4 from this batch (lower mass-vs-crystal threshold, 10× hunt speed,
 spawn-on-mass-concentration) shipped earlier in ff1529b4.
+
+---
+
+## Session 9 — Volume gauge made a UNIVERSAL pause button (corrected)
+
+Session 8's Skim-Race-only corner widget was rejected ("scaled up inaccurate
+remake"). The volume gauge is meant to be ONE recognizable element that trains
+players as the in-game pause button across every gameplay scene — not a bespoke
+per-scene re-implementation. Reworked accordingly (user-confirmed look + rollout):
+
+**Look (one universal render, menu + all gameplay):** keep the radial domain wedges
+(Jade top / Ruby lower-left / Gold lower-right, filling inward; centre = frenzy),
+and overlay **concentric threshold rings** the wedges pass through. Each ring sits
+at the radius a wedge reaches when its mass equals a cell phase threshold
+(Quiet/Settled/Restless/Frozen/Rabid), so a wedge filling past a ring = that domain
+pushing the cell into the next aggression zone; the crossed ring brightens. Folded
+into the single radial path in `DomainVolumeHexGraphic` — the standalone concentric
+mode from session 8 was removed. `SetState` now also takes the threshold fractions.
+
+**Rollout:** base `MiniGameHUD.EnsureVolumeIndicator()` attaches the SAME
+`DomainVolumeIndicator` to each scene's existing "Volume / Pause Button" (auto-found
+by name under the HUD canvas, or wire `volumePauseButton`/`volumeIndicator` per
+GameCanvas). Every gameplay HUD inherits it; the button keeps its authored onClick
+(open PauseMenu) — the gauge only replaces the face. Mirrors what
+`MenuMiniGameHUD.EnsureDomainVolumeIndicator()` already does for the menu, so the
+gauge is now identical and present everywhere. `HexRaceHUD` reverted to its minimal
+original (no bespoke widget).
+
+`DomainVolumeIndicator` now always computes the threshold fractions from
+`cell.ResolvedThresholds` and feeds them to the graphic — no per-scene mode flag.
+
+**Needs in-editor validation** (procedural UI): ring thickness/alpha legibility over
+the colored wedges, and whether per-wedge ring SEGMENTS (coloring only the sectors a
+domain has crossed) read better than the current full concentric rings + colored
+wedge showing through. Tune via `DomainVolumeHexGraphic` "Phase threshold rings".

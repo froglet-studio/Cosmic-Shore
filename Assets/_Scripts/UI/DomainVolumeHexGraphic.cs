@@ -4,7 +4,10 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Procedural hexagonal domain-volume gauge (the pause-button face).
+    /// Procedural hexagonal domain-volume gauge — the universal in-game pause-button
+    /// face. Trained as a single recognizable element across the main menu and every
+    /// gameplay scene (attached to the "Volume / Pause Button" by MenuMiniGameHUD in
+    /// the menu and by MiniGameHUD in gameplay).
     ///
     /// A pointy-top hexagon split into three fixed 120° sectors — one per playable
     /// domain — each spanning two of the six edges:
@@ -15,9 +18,15 @@ namespace CosmicShore.UI
     ///
     /// Each sector ALWAYS spans its full angular width; volume is shown by RADIAL
     /// DEPTH — the colored band grows from the outer hexagon edge inward toward the
-    /// centre as the domain's mass approaches the frenzy threshold (fill = 1 reaches
-    /// the centre hexagon). A small centre hexagon is tinted by the dominant domain,
-    /// denoting who currently holds the most volume.
+    /// centre as the domain's mass approaches the frenzy threshold. The END of the
+    /// wedge (the centre hexagon) is the final frenzy (Rabid) state.
+    ///
+    /// Overlaid on top are CONCENTRIC THRESHOLD RINGS — one per cell phase boundary
+    /// (Quiet/Settled/Restless/Frozen/Rabid) — placed at the radius a wedge reaches
+    /// when its mass equals that threshold. As a domain's wedge fills inward it PASSES
+    /// THROUGH each ring; a crossed ring brightens, signalling that domain is pushing
+    /// the cell's aggression level into the next zone. "Which domain" reads off the
+    /// colored wedge extending past the ring.
     ///
     /// Follows the ObjectiveArrowGraphic idiom: one MaskableGraphic, no sprite/font
     /// dependency, geometry built in OnPopulateMesh. The owning DomainVolumeIndicator
@@ -30,12 +39,20 @@ namespace CosmicShore.UI
         [Header("Geometry (fractions of the rect's half-min-extent)")]
         [Tooltip("Outer radius of the colored bands. <1 leaves a gap to the boundary ring.")]
         [Range(0.3f, 1f)] [SerializeField] float bandOuterFrac = 0.78f;
-        [Tooltip("Radius of the centre 'dominant' hexagon. Bands reach this at fill = 1.")]
+        [Tooltip("Radius of the centre 'dominant' hexagon. Bands reach this at fill = 1 (frenzy).")]
         [Range(0.05f, 0.4f)] [SerializeField] float centerHexFrac = 0.18f;
         [Tooltip("Minimum band thickness (fraction) so an empty domain still shows a sliver at full width.")]
         [Range(0f, 0.2f)] [SerializeField] float minBandThicknessFrac = 0.06f;
         [Tooltip("Faint boundary hexagon marking the frenzy extent. 0 thickness = off.")]
         [Range(0f, 0.12f)] [SerializeField] float boundaryThicknessFrac = 0.04f;
+
+        [Header("Phase threshold rings (wedges pass through these)")]
+        [Tooltip("Thickness of each concentric phase-threshold ring, as a fraction of the half-min-extent.")]
+        [Range(0.005f, 0.08f)] [SerializeField] float phaseRingThicknessFrac = 0.022f;
+        [Tooltip("Color of a phase-threshold ring no wedge has reached yet.")]
+        [SerializeField] Color thresholdRingColor = new(1f, 1f, 1f, 0.22f);
+        [Tooltip("Color of a phase-threshold ring once a wedge has filled past it (a domain has pushed aggression into the next zone).")]
+        [SerializeField] Color thresholdRingCrossedColor = new(1f, 1f, 1f, 0.85f);
 
         [Header("Spawn-cycle ring (outside the hex)")]
         [Tooltip("Inner radius of the spawn-cycle ring (fraction). Sits OUTSIDE the band/boundary so it doesn't obscure the volume gauge.")]
@@ -46,14 +63,6 @@ namespace CosmicShore.UI
         [SerializeField] Color ringTrackColor = new(1f, 1f, 1f, 0.10f);
         [Tooltip("Number of arc segments — higher = smoother ring at the cost of more triangles.")]
         [Range(12, 128)] [SerializeField] int ringSegments = 64;
-
-        [Header("Concentric phase rings (Skim Race mode)")]
-        [Tooltip("Thickness of each phase-boundary ring, as a fraction of the half-min-extent.")]
-        [Range(0.005f, 0.1f)] [SerializeField] float phaseRingThicknessFrac = 0.03f;
-        [Tooltip("Alpha of the translucent live-mass fill hexagon that grows from the centre toward the current mass radius.")]
-        [Range(0f, 1f)] [SerializeField] float massFillAlpha = 0.22f;
-        [Tooltip("Alpha of a phase ring once its threshold has been crossed (drawn in the dominant domain's color).")]
-        [Range(0f, 1f)] [SerializeField] float crossedRingAlpha = 0.95f;
 
         [Header("Colors")]
         [SerializeField] Color boundaryColor = new(1f, 1f, 1f, 0.18f);
@@ -76,24 +85,20 @@ namespace CosmicShore.UI
         readonly Color[] _domainColor = { Color.green, Color.red, Color.yellow };
         int _dominant = -1;                              // 0/1/2 or -1 (none)
         float _spawnCycle;                               // 0..1 progress toward next fauna spawn
-
-        // Concentric-phase-rings mode (Skim Race). When enabled the per-domain radial
-        // bands are replaced by a stack of concentric hexagon rings — one per phase
-        // boundary — that light up in the dominant domain's color as the cell's summed
-        // mass crosses each threshold.
-        bool _concentricMode;
-        float _massFrac;                                 // 0..1 summed mass / RabidEnter
-        float[] _phaseFracs = System.Array.Empty<float>(); // per-phase enter threshold / RabidEnter
-        Color _dominantColor = Color.white;              // dominant domain's identity hue
+        float[] _thresholdFracs = System.Array.Empty<float>(); // phase enter thresholds / RabidEnter (ascending)
 
         /// <summary>
         /// Push the live gauge state. Rebuilds the mesh only when something changed
         /// past a small epsilon, so per-frame lerps from the controller don't force a
         /// Canvas batch rebuild every frame once the values settle.
+        ///
+        /// <paramref name="thresholdFracs"/> are the cell's phase enter thresholds as a
+        /// fraction of RabidEnter (ascending) — where to draw the concentric rings the
+        /// wedges pass through. Pass an empty/null array to draw no rings.
         /// </summary>
         public void SetState(float fillJade, float fillRuby, float fillGold,
                              Color cJade, Color cRuby, Color cGold, int dominant,
-                             float spawnCycle)
+                             float spawnCycle, float[] thresholdFracs)
         {
             bool changed =
                 !Approximately(_fill[0], fillJade) ||
@@ -101,7 +106,8 @@ namespace CosmicShore.UI
                 !Approximately(_fill[2], fillGold) ||
                 _dominant != dominant ||
                 !Approximately(_spawnCycle, spawnCycle) ||
-                _domainColor[0] != cJade || _domainColor[1] != cRuby || _domainColor[2] != cGold;
+                _domainColor[0] != cJade || _domainColor[1] != cRuby || _domainColor[2] != cGold ||
+                !FracsApproximately(_thresholdFracs, thresholdFracs);
 
             if (!changed) return;
 
@@ -109,55 +115,22 @@ namespace CosmicShore.UI
             _domainColor[0] = cJade; _domainColor[1] = cRuby; _domainColor[2] = cGold;
             _dominant = dominant;
             _spawnCycle = spawnCycle;
+            CopyThresholds(thresholdFracs);
             SetVerticesDirty();
         }
 
-        /// <summary>
-        /// Push concentric-phase-ring state (Skim Race mode). Draws one hexagon ring per
-        /// phase boundary (evenly spaced for legibility) plus a translucent live-mass fill
-        /// mapped through the thresholds so its edge reaches ring i when mass crosses phase
-        /// i. Rings the summed mass has crossed glow in the dominant domain's color;
-        /// uncrossed rings stay faint — so you can read, at a glance, which phase the cell
-        /// is in and which domain pushed it there. <paramref name="phaseEnterFracs"/> are
-        /// the per-phase enter thresholds as a fraction of RabidEnter, ascending. Rebuilds
-        /// only on a meaningful delta.
-        /// </summary>
-        public void SetPhaseState(float massFrac, float[] phaseEnterFracs, Color dominantColor,
-                                  int dominant, float spawnCycle)
+        void CopyThresholds(float[] src)
         {
-            bool changed =
-                !_concentricMode ||
-                !Approximately(_massFrac, massFrac) ||
-                _dominant != dominant ||
-                !Approximately(_spawnCycle, spawnCycle) ||
-                _dominantColor != dominantColor ||
-                !FracsApproximately(_phaseFracs, phaseEnterFracs);
-
-            _concentricMode = true;
-            if (!changed) return;
-
-            _massFrac = massFrac;
-            _dominant = dominant;
-            _dominantColor = dominantColor;
-            _spawnCycle = spawnCycle;
-
-            // Copy in so external mutation of the caller's array can't desync the mesh.
-            if (phaseEnterFracs == null) _phaseFracs = System.Array.Empty<float>();
-            else
-            {
-                if (_phaseFracs.Length != phaseEnterFracs.Length)
-                    _phaseFracs = new float[phaseEnterFracs.Length];
-                System.Array.Copy(phaseEnterFracs, _phaseFracs, phaseEnterFracs.Length);
-            }
-
-            SetVerticesDirty();
+            if (src == null || src.Length == 0) { _thresholdFracs = System.Array.Empty<float>(); return; }
+            if (_thresholdFracs.Length != src.Length) _thresholdFracs = new float[src.Length];
+            System.Array.Copy(src, _thresholdFracs, src.Length);
         }
 
         static bool FracsApproximately(float[] a, float[] b)
         {
-            if (a == null || b == null) return a == b;
-            if (a.Length != b.Length) return false;
-            for (int i = 0; i < a.Length; i++)
+            int la = a?.Length ?? 0, lb = b?.Length ?? 0;
+            if (la != lb) return false;
+            for (int i = 0; i < la; i++)
                 if (!Approximately(a[i], b[i])) return false;
             return true;
         }
@@ -173,12 +146,6 @@ namespace CosmicShore.UI
             float R = Mathf.Min(r.width, r.height) * 0.5f;
             if (R <= 0f) return;
 
-            if (_concentricMode)
-            {
-                DrawPhaseRings(vh, c, R);
-                return;
-            }
-
             float bandOuterR = R * bandOuterFrac;
             float centerR = R * centerHexFrac;
             float minThick = R * minBandThicknessFrac;
@@ -188,21 +155,38 @@ namespace CosmicShore.UI
                 AddHexRing(vh, c, R, R - R * boundaryThicknessFrac, boundaryColor);
 
             // 2) Three domain bands, each filling its 120° sector radially inward.
+            float maxFill = 0f;
             for (int d = 0; d < 3; d++)
             {
                 float fill = Mathf.Clamp01(_fill[d]);
+                if (fill > maxFill) maxFill = fill;
                 // fill = 0 → a thin sliver at the outer edge (full angular width, per spec).
-                // fill = 1 → inner edge reaches the centre hexagon.
+                // fill = 1 → inner edge reaches the centre hexagon (frenzy).
                 float innerR = Mathf.Lerp(bandOuterR - minThick, centerR, fill);
                 innerR = Mathf.Min(innerR, bandOuterR - 0.5f); // guard against degenerate/inverted band
                 AddSectorBand(vh, c, bandOuterR, innerR, DomainCornerAngles[d], _domainColor[d]);
             }
 
-            // 3) Centre hexagon — tinted by the dominant domain (who leads on volume).
+            // 3) Concentric phase-threshold rings the wedges pass through. Each ring sits
+            //    at the radius a wedge reaches when its mass equals that threshold, so a
+            //    crossing wedge has, by definition, enough mass for that phase. Drawn after
+            //    the bands so they read as tick marks over the fills; a ring the leading
+            //    wedge has passed brightens to signal the phase is triggered.
+            float ringThick = R * phaseRingThicknessFrac;
+            for (int i = 0; i < _thresholdFracs.Length; i++)
+            {
+                float f = Mathf.Clamp01(_thresholdFracs[i]);
+                float ringR = Mathf.Lerp(bandOuterR - minThick, centerR, f);
+                if (ringR <= ringThick) continue;
+                bool crossed = maxFill >= f - 0.0005f;
+                AddHexRing(vh, c, ringR, ringR - ringThick, crossed ? thresholdRingCrossedColor : thresholdRingColor);
+            }
+
+            // 4) Centre hexagon — tinted by the dominant domain (who leads on volume).
             Color centerColor = (_dominant >= 0 && _dominant < 3) ? _domainColor[_dominant] : neutralCenterColor;
             AddHexFill(vh, c, centerR, centerColor);
 
-            // 4) Spawn-cycle ring around the outside. Empty background track + a
+            // 5) Spawn-cycle ring around the outside. Empty background track + a
             //    progress arc starting at the top and sweeping clockwise. The arc
             //    is tinted by the DOMINANT domain because every periodic fauna
             //    spawn produces the leader's color — when the arc completes a
@@ -218,107 +202,6 @@ namespace CosmicShore.UI
                 Color arcColor = (_dominant >= 0 && _dominant < 3) ? _domainColor[_dominant] : neutralCenterColor;
                 AddRingArc(vh, c, ringOuter, ringInner, 0f, cycle, segs, arcColor);
             }
-        }
-
-        /// <summary>
-        /// Concentric-hexagon phase gauge (Skim Race). Draws, from the outside in:
-        /// the boundary hex (frenzy extent), one hex ring per phase boundary, a
-        /// translucent live-mass fill hexagon, the centre dominant hex, and the
-        /// spawn-cycle ring.
-        ///
-        /// Rings are spaced EVENLY by phase (not by raw threshold value) so all five
-        /// read clearly even when the thresholds are bunched at the low end (Skim Race:
-        /// Quiet 100 … Rabid 2000). The live-mass fill is mapped PIECEWISE through the
-        /// uneven thresholds onto the even ring radii, so the fill edge reaches ring i
-        /// exactly when summed mass crosses phase i's threshold — the disc sweeping past
-        /// a ring IS that phase tripping. Crossed rings glow in the dominant domain's
-        /// color; the rest stay faint.
-        /// </summary>
-        void DrawPhaseRings(VertexHelper vh, Vector2 c, float R)
-        {
-            float ringThick = R * phaseRingThicknessFrac;
-            float centerR = R * centerHexFrac;
-            float massFrac = Mathf.Clamp01(_massFrac);
-            int n = _phaseFracs.Length;
-
-            Color domColor = (_dominant >= 0 && _dominant < 3) ? _dominantColor : neutralCenterColor;
-
-            // 1) Boundary hex (the frenzy / Rabid extent marker).
-            if (boundaryThicknessFrac > 0f)
-                AddHexRing(vh, c, R, R - R * boundaryThicknessFrac, boundaryColor);
-
-            // 2) Live-mass fill — translucent disc whose edge tracks the current summed
-            //    mass, mapped piecewise so it aligns with the evenly-spaced rings.
-            float fillR = MassFillRadius(massFrac, n, centerR, R);
-            if (massFillAlpha > 0f && fillR > centerR + 0.5f)
-            {
-                Color fillC = domColor;
-                fillC.a = massFillAlpha;
-                AddHexFill(vh, c, fillR, fillC);
-            }
-
-            // 3) Evenly-spaced phase rings. Ring i lights up once mass passes its
-            //    threshold; the highest crossed ring tells you the current phase and the
-            //    dominant color tells you who drove it there.
-            for (int i = 0; i < n; i++)
-            {
-                float ringR = EvenRingRadius(i, n, centerR, R);
-                if (ringR <= ringThick) continue;
-
-                bool crossed = massFrac >= _phaseFracs[i] - 0.0005f;
-                Color ringColor = crossed ? domColor : boundaryColor;
-                if (crossed) ringColor.a = crossedRingAlpha;
-                AddHexRing(vh, c, ringR, ringR - ringThick, ringColor);
-            }
-
-            // 4) Centre hex — dominant domain tint (who holds the most mass).
-            AddHexFill(vh, c, centerR, domColor);
-
-            // 5) Spawn-cycle ring around the outside (same as the radial mode).
-            float ringInner = R * Mathf.Min(ringInnerFrac, ringOuterFrac);
-            float ringOuter = R * Mathf.Max(ringInnerFrac, ringOuterFrac);
-            int segs = Mathf.Max(12, ringSegments);
-            if (ringTrackColor.a > 0f)
-                AddRingArc(vh, c, ringOuter, ringInner, 0f, 1f, segs, ringTrackColor);
-            float cycle = Mathf.Clamp01(_spawnCycle);
-            if (cycle > 0.001f)
-                AddRingArc(vh, c, ringOuter, ringInner, 0f, cycle, segs, domColor);
-        }
-
-        /// <summary>Radius of phase ring <paramref name="i"/> — evenly spaced from just
-        /// outside the centre hex (i = -1 → centre) to the rim (i = n-1 → R).</summary>
-        static float EvenRingRadius(int i, int n, float centerR, float R) =>
-            n > 0 ? Mathf.Lerp(centerR, R, (i + 1) / (float)n) : R;
-
-        /// <summary>
-        /// Maps the linear summed-mass fraction onto the evenly-spaced ring radii via the
-        /// (uneven) phase thresholds, so the fill edge crosses ring i precisely when mass
-        /// reaches phaseFracs[i]. Below the first threshold it lerps centre → ring 0;
-        /// at/above the last threshold it pins to the rim.
-        /// </summary>
-        float MassFillRadius(float massFrac, int n, float centerR, float R)
-        {
-            if (n <= 0) return Mathf.Lerp(centerR, R, massFrac);
-
-            if (massFrac < _phaseFracs[0])
-            {
-                float denom = Mathf.Max(1e-4f, _phaseFracs[0]);
-                return Mathf.Lerp(centerR, EvenRingRadius(0, n, centerR, R), massFrac / denom);
-            }
-
-            if (massFrac >= _phaseFracs[n - 1])
-                return R;
-
-            int band = n - 1;
-            for (int i = 0; i < n - 1; i++)
-            {
-                if (massFrac < _phaseFracs[i + 1]) { band = i; break; }
-            }
-            float t = Mathf.InverseLerp(_phaseFracs[band], _phaseFracs[band + 1], massFrac);
-            return Mathf.Lerp(
-                EvenRingRadius(band, n, centerR, R),
-                EvenRingRadius(band + 1, n, centerR, R),
-                t);
         }
 
         // ------------------------------------------------------------------
