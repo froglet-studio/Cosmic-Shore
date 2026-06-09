@@ -287,8 +287,11 @@ with the team's three real species:
 | **Brittlestar** | `MassBrittlestarFauna` | `LightFauna` | Herbivore | grazer |
 | **Shark** | `MassSharkFauna` | `LightFauna` | **Predator** (`diet: 1`) | apex; eats *both* herbivores |
 
-**All three are spawned by the cell config** (`SpawnProfileSO.SupportedFaunas`,
-via `RandomLifeSpawner`). Two herbivore species, one predator.
+All three are **spawnable** by the cell config (`SpawnProfileSO.SupportedFaunas`,
+via `RandomLifeSpawner`). Two herbivore species + one predator. **Currently only
+the two herbivores are wired into the test profiles** — the shark is built and
+balanced (spawn-immunity exists) but left out of both scenes for now (see §7.2);
+its config asset still exists, so re-adding it is one line in a profile.
 
 > **The live spawn path is the cell config — NOT the scene-placed populations.**
 > The `MassTadpolePopulation` / `MassBrittlestarPopulation` etc. objects in scenes
@@ -300,11 +303,15 @@ via `RandomLifeSpawner`). Two herbivore species, one predator.
 
 - **Diet = "what counts as prey"** is a `FaunaDiet diet` field on the `Fauna`
   base (`Herbivore` / `Predator`), defaulting to **Herbivore**:
-  - **Herbivore** — consumes opposing-domain prism MASS (flora canopy + vessel
-    trails). `LightFauna` (brittlestar) detonates opposing prisms within
-    `consumeRadius`; `Boid` (tadpole) explodes opposing prisms via its Explode
-    collision effect — i.e. it **forages**. (Boid's other effect, Attach/mound, is
-    not used by tadpoles; it's load-bearing for drone abilities, so the code stays.)
+  - **Herbivore** — eats prism MASS, but the two herbivore species differ:
+    - `LightFauna` (brittlestar) `Consume`s **opposing-domain** flora/trail prisms
+      within `consumeRadius`.
+    - `Boid` (tadpole forager) `Consume`s (implode → **suction shader**) any
+      **unshielded** prism of **any domain** that is **not a fauna body** — so it
+      grazes the *dominant* trail too (the bulk of the obstacle mass), while
+      skipping the shielded race track and other creatures. Detect/eat radius =
+      `cohesionRadius`/`trailBlockInteractionRadius` (currently 50/45). (Boid's
+      Attach/mound effect is unused by tadpoles but stays — drone abilities use it.)
   - **Predator** — consumes **herbivore fauna of any species** via
     `GetComponentInParent<Fauna>()` on nearby colliders (matches the `Fauna` base,
     so a shark eats both `LightFauna` brittlestars and `Boid` tadpoles) →
@@ -313,9 +320,9 @@ via `RandomLifeSpawner`). Two herbivore species, one predator.
     a single-domain cell — the food web bounds them, not the domain split.
 - **Population bounds (per species) — all starvation-linked:**
   - *Brittlestar* (`LightFauna`) — `Fauna.IsStarving → Die` + shark predation.
-  - *Tadpole* (`Boid`, `forager: 1`) — feeds (`NotifyFed`) when its Explode effect
-    grazes opposing mass, and starves (`IsStarving → Die`) after `starvationSeconds`
-    without feeding. So the swarm **self-limits to available trail/flora prey**: it
+  - *Tadpole* (`Boid`, `forager: 1`) — feeds (`NotifyFed`) when it grazes any
+    edible prism, and starves (`IsStarving → Die`) after `starvationSeconds` (90 on
+    the prefab) without feeding. So the swarm **self-limits to available prey**: it
     grows where there's mass to eat and thins out (dropping its CPU cost) once the
     obstacles are cleared. The `forager` flag is OFF on the drone `Boid` path
     (BoidController/mound), which must not starve.
@@ -359,13 +366,14 @@ The food web is wired into two scenes to test the ecosystem's ability to manage
 **trail** prisms (player/AI mass), not just flora:
 
 **A. Menu_Main freestyle toy box** (`Blob Cell Config → Blob Cell Spawn Profile`).
-Flora + the cell-config food web: tadpole (`PopulationSize` 25, the swarm),
-brittlestar, shark. The autopilot/player vessel lays trails; tadpoles +
-brittlestars graze opposing-domain trail + flora mass, sharks thin both. Goal: a
-self-sustaining scene that stays visually interesting and playable
+Flora + two herbivores: tadpole forager (`PopulationSize` 25, the swarm) +
+brittlestar. **No shark** (removed — see the predator note below). The
+autopilot/player vessel lays trails; the tadpole grazes any unshielded non-fauna
+mass (incl. the dominant trail + flora), the brittlestar grazes opposing mass.
+Goal: a self-sustaining scene that stays visually interesting and playable
 **indefinitely**. Levers: tadpole `PopulationSize` (swarm density), `Blob Cell
 Spawn Profile` `BaseFaunaSpawnTime` / `FaunaFoodFloor`, `starvationSeconds` /
-`consumeRadius` on the `LightFaunaDataSO`s.
+`consumeRadius`.
 
 **B. Skim Race** (`MinigameHexRace`, dedicated `Skim Race Cell Config → Skim Race
 Spawn Profile`, isolated from the 6 other scenes that share the Barren config).
@@ -381,10 +389,12 @@ cleared.
 > generalized to the `Fauna` base (so sharks eat `Boid` tadpoles, not just
 > `LightFauna`), the sharks ate **every** herbivore the instant it spawned —
 > leaving "only sharks" and nothing to graze trails. Predators are also
-> counterproductive to the perf goal (they remove foragers). To re-introduce a
-> *balanced* predator later, give fauna a brief **spawn immunity** (can't be
-> `Predated` for N seconds after spawn) and/or spawn predators away from the prey
-> cluster, then add a low shark `PopulationSize` back to the menu profile only.
+> counterproductive to the perf goal (they remove foragers). **Spawn immunity is
+> now built** (`Fauna.predationImmunitySeconds`, default 6s, stamped in `Awake`;
+> `Predated` refuses during the window) so a balanced predator CAN be re-added
+> safely — just add the `Blob Shark` config back to the menu profile (keep
+> `PopulationSize` low). I left it out so it doesn't muddy the foraging test; say
+> the word and I'll wire it in.
 
 > **Other caveats to validate in-editor (I can't run Unity):**
 > 2. **Membrane coverage.** Cell-config spawning + density targeting live inside a

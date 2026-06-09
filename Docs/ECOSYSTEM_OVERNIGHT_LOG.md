@@ -121,6 +121,31 @@ reorder from corrupting prefab/asset fields. Test-only.
 
 ---
 
+## Session 7 — ECOSYSTEM.md accuracy pass + loop wound down
+
+The forager behavior changed several times (opposing-domain → any-domain →
+any-domain-unshielded-non-fauna via Consume/suction), and sharks were removed, so
+the bible had stale statements. Fixed §7 (herbivore description = the tadpole now
+Consumes any unshielded non-fauna prism; brittlestar = opposing), §7 intro (only
+the two herbivores are wired in; shark built-but-unwired), and §7.2-A (menu has no
+shark; spawn-immunity is built, not a to-do).
+
+**Loop wound down here.** I've completed the safe, high-value backlog (spawn-
+immunity foundation, a real bug fix, the IntensityWise doc correction, code
+review, two test files, validation checklist, doc accuracy). What remains is
+either (a) behavior changes that need your in-editor validation (re-add a balanced
+predator, per-scene forager diet, voracity/count tuning) — which I won't do blind
+while you're away — or (b) low-value churn. Per the plan, I stopped rather than
+manufacture risky changes to fill hours. The heartbeat monitor timed out on its
+own; not re-armed.
+
+**To resume the food web on your return:** the spawn-immunity makes re-adding a
+predator safe — add the `Blob Shark` config back to the Blob profile (low
+`PopulationSize`). Tell me your read on the foraging (does the tadpole graze
+visibly? does Skim Race FPS recover?) and I'll tune from there.
+
+---
+
 ## Backlog (planned for later sessions, safest first)
 1. Doc consolidation — `ECOSYSTEM.md` has drifted across many edits; make it match
    the current code (cell-config spawn is live; scene-placed `*Population` via
