@@ -570,11 +570,72 @@ with the others.
    Fauna migrate to adjacent cells chasing prey; crowded/empty cells rebalance —
    isolated cells become one connected biome.
 
-**Cheats currently in place, to retire as Phase 2 lands:** the flora regrowth
-pulse and the fixed-period fauna spawner (→ step 3, reproduction). Both are
-honest first-approximation scaffolding, flagged so we remove them rather than
-build on them. **Note:** retiring the regrowth pulse is *not* replaced by prism
-decay (that was the rejected step 1 — see §0). It is replaced by *nothing* on the
-removal side — mass is conserved — so once the pulse is gone a cell only comes
-back down when an active force (fauna grazing / vessel abilities) eats its mass.
-The down-force we strengthen is the **food web** (step 2), not a culler.
+**Cheats currently in place, to retire as Phase 2 lands:** the **fixed-period fauna
+spawner** is now the *only* remaining scaffolding cheat (→ step 3, reproduction).
+The flora **regrowth pulse** and the flora **phase-gated self-limit** are both
+**retired** (§0/§5 — flora grow + plant steadily until Frenzy). **Note:** retiring
+those is *not* replaced by prism decay (that was the rejected step 1 — see §0). It
+is replaced by *nothing* on the removal side — mass is conserved — so a cell only
+comes back down when an active force (fauna grazing / vessel abilities) eats its
+mass. The down-force we strengthen is the **food web** (step 2), not a culler.
+
+---
+
+## 11. Authoring a new ecosystem — config-completeness checklist
+
+The platform goal (kickoff): **a new ecosystem = new config assets + a Cell in a
+scene, with zero new C#.** This section is the audit of how close we are and the
+exact recipe. As of the 3-phase collapse, standing up a biome is fully data-driven.
+
+### What defines an ecosystem (the assets — no code)
+
+| Layer | Asset | Authors |
+|---|---|---|
+| **Biome** | `CellConfigDataSO` | membrane/nucleus/cytoplasm prefabs, `CellModifiers`, the `SpawnProfile` ref, `SenseRadiusOverride` (grid coverage vs. visual membrane), and the **2 phase thresholds** `PhaseThresholds` (`RestlessEnter/Exit`, `FrenzyEnter/Exit`) |
+| **Food web roster + cadence** | `SpawnProfileSO` | `SupportedFloras[]`, `SupportedFaunas[]`, `BaseFaunaSpawnTime` (fixed spawn period), `FaunaFoodFloor` (prey floor for production), initial delays/intervals, `FloraExcludeLocalDomain` |
+| **Flora species** (1 per type) | `FloraConfigurationSO` | `FloraPrefab`, `SpawnProbability`, `InitialSpawnCount`, plant-period override |
+| **Fauna species** (1 per type) | `FaunaConfigurationSO` | `FaunaPrefab`, `PopulationSize` (swarm size per burst), `InitialSpawnCount`, `SpawnProbability` |
+| **Per-creature tuning** | the flora/fauna **prefabs** | diet (`FaunaDiet`), `starvationSeconds`, `predationImmunitySeconds`, `forager` (Boid), consume/detection radii (`LightFaunaDataSO`), aggression-curve multipliers, body `HealthPrism`s |
+
+**Recipe for a brand-new biome (zero code):**
+1. Author the creature/flora **prefabs** (or reuse Tadpole / Brittlestar / Shark /
+   the gyroid floras), each carrying its own diet + starvation + radii.
+2. Create one `FaunaConfigurationSO` per fauna species and one
+   `FloraConfigurationSO` per flora species, pointing at the prefabs.
+3. Create a `SpawnProfileSO` listing those configs + the cadence/floor knobs.
+4. Create a `CellConfigDataSO`: visuals + `SpawnProfile` + `SenseRadiusOverride` +
+   the two `PhaseThresholds` (`RestlessEnter` = where fauna start hunting,
+   `FrenzyEnter` = flora freeze + max aggression).
+5. Drop a `Cell` into the scene, add the `CellConfigDataSO` to its `CellConfigs`
+   list, leave `cellTypeChoiceOptions = Random`. Done — no C#.
+
+> **Proof-of-platform validation (needs the editor):** author a *third* biome from
+> assets only (no code) and confirm it spawns, phases, and breathes. The two test
+> biomes (Blob, Skim Race) and the WildlifeBlitz cells already exercise this path.
+
+### Still hardcoded (flagged for future lift — NOT yet "author-only")
+
+These don't block a new biome but are coded constants a future biome can't retune
+from assets. Lift them onto a config SO when a biome actually needs to vary them:
+
+- **Aggression curves** are **static arrays** shared by all fauna:
+  `LightFauna.CadenceByAggression / ConsumeRadiusByAggression / SpeedByAggression`
+  and the `IntensityWiseLifeSpawner.FaunaSpawnIntervalByAggression`. A biome can't
+  make its fauna ramp differently. Lift to `FaunaConfigurationSO` (per species) or
+  `SpawnProfileSO` (per biome) when needed.
+- **`RandomLifeSpawner.FaunaSpawnJitter` (150)** — spawn spread around the mass
+  concentration. Const; could be a `SpawnProfileSO` field.
+- **`Boid.forager`** is a prefab bool, so the *same* prefab can't be a forager in
+  one biome and a drone in another. Authorable per-prefab today; lift to
+  `FaunaConfigurationSO` only if a biome needs the dual role.
+- **Two spawners** (`RandomLifeSpawner` vs `IntensityWiseLifeSpawner`) selected by
+  the Cell's `cellTypeChoiceOptions`. They have diverged (only Random is
+  prey-linked). Unify behind config (roadmap / kickoff item 2) so behavior is
+  data-selected, not spawner-class-selected.
+- **Diet is a 2-value enum** (`Herbivore` / `Predator`). "What counts as prey" is
+  not yet a composable selector (by domain relationship / prism provenance / target
+  species), so arbitrary multi-tier food webs still need the enum's two branches.
+  Generalize on `FaunaConfigurationSO` (kickoff item 3) to unlock "countless webs."
+
+The domain set ({Jade, Ruby, Gold} + the Blue wildcard) is intentionally fixed —
+Domain is a fundamental, not a per-biome knob.
