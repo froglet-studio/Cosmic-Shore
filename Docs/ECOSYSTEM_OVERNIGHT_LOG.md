@@ -36,6 +36,25 @@ leaving the scenes predator-free for now.
 
 ---
 
+## Session 2 — self-review of Boid.cs (found + fixed a real bug)
+
+Reviewed the most-churned file holistically. **Bug found:** the any-domain
+forager change made tadpoles eat *other fauna's body prisms* — brittlestar/shark
+bodies are `HealthPrism`s but not `Boid`s, so they reached the prism-eat branch
+and a tadpole would Consume them (herbivores eating fauna, which should be the
+predator's job). **Fix:** the forager edible check now also excludes any prism
+under a `Fauna` (`GetComponentInParent<Fauna>()`), so foragers eat only
+trail/flora mass — never shielded structure (track) and never fauna bodies.
+
+**Noted (not changed — consistent with LightFauna, minor):** initializing the
+tadpole body prism (so it has a real health prism, per your note) also registers
+it in the cell density grid, so fauna bodies count toward `LiveBlockCount`/phase.
+LightFauna already does this for brittlestar/shark bodies. A future cleanup could
+make `Prism.RegisterWithCell` skip fauna-owned bodies, but that touches LightFauna
+too, so I left it.
+
+---
+
 ## Backlog (planned for later sessions, safest first)
 1. Doc consolidation — `ECOSYSTEM.md` has drifted across many edits; make it match
    the current code (cell-config spawn is live; scene-placed `*Population` via

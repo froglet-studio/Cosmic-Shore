@@ -187,12 +187,17 @@ namespace CosmicShore.Gameplay
 
                     // Drones eat OPPOSING-domain mass (combat). Foragers (tadpoles) are cleanup
                     // grazers: they eat prisms of ANY domain — so the dominant trail gets grazed
-                    // too, not just the minority — but SKIP shielded prisms so they never eat
-                    // protected structure like the Skim Race track (ShieldedSpawnablePrism).
+                    // too, not just the minority — but they must NOT eat:
+                    //   - shielded prisms (protected structure like the Skim Race track), or
+                    //   - other fauna's BODY prisms (brittlestar/shark bodies are HealthPrisms but
+                    //     not Boids, so they reach this branch; herbivores eating fauna is the
+                    //     predator's job, not a forager's). GetComponentInParent<Fauna> catches
+                    //     any fauna body; this prism's own boid was already excluded above.
                     var pp = otherPrism.prismProperties;
                     bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
+                    bool isFaunaBody = collider.GetComponentInParent<Fauna>() != null;
                     bool edible = forager
-                        ? !shielded
+                        ? (!shielded && !isFaunaBody)
                         : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
 
                     if (distance < trailBlockInteractionRadius && embeddedHealthPrism && edible)
