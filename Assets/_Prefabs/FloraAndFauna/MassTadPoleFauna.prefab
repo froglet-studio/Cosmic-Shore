@@ -76,6 +76,7 @@ MonoBehaviour:
   isKilled: 0
   collisionEffects: 01000000
   forager: 1
+  starvationSeconds: 90
 --- !u!1001 &4724174359583210385
 PrefabInstance:
   m_ObjectHideFlags: 0

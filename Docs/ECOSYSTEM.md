@@ -369,19 +369,24 @@ Spawn Profile` `BaseFaunaSpawnTime` / `FaunaFoodFloor`, `starvationSeconds` /
 
 **B. Skim Race** (`MinigameHexRace`, dedicated `Skim Race Cell Config → Skim Race
 Spawn Profile`, isolated from the 6 other scenes that share the Barren config).
-**No flora**; only the food web (tadpole `PopulationSize` 12 + brittlestar +
-shark), **Random** spawner (`cellTypeChoiceOptions = 0`) so spawning is
+**No flora**; only the herbivore forager swarm (tadpole `PopulationSize` 12 +
+brittlestar), **Random** spawner (`cellTypeChoiceOptions = 0`) so spawning is
 prey-linked. Hypothesis: at late laps / high player counts, AI orbiting crystals
 leave an excess of **trail-prism obstacles**; the forager swarm grazes them →
 fewer prisms → better perf; foragers self-limit (starve) once the obstacles are
 cleared.
 
-> **Caveats to validate in-editor (I can't run Unity):**
-> 1. **Sharks don't clean trails — herbivores do.** Sharks are predators (they eat
->    fauna, not prism mass). The trail cleanup is the tadpole + brittlestar
->    *herbivores*' job; sharks actually *reduce* cleanup by eating foragers. For a
->    pure perf test, keep the shark `PopulationSize` low (or 0); add sharks back for
->    the menu's vibrant-ecosystem goal.
+> **Sharks (predators) are currently REMOVED from both test scenes.** Why: all
+> fauna spawn co-located at the cell centre, and once predator detection was
+> generalized to the `Fauna` base (so sharks eat `Boid` tadpoles, not just
+> `LightFauna`), the sharks ate **every** herbivore the instant it spawned —
+> leaving "only sharks" and nothing to graze trails. Predators are also
+> counterproductive to the perf goal (they remove foragers). To re-introduce a
+> *balanced* predator later, give fauna a brief **spawn immunity** (can't be
+> `Predated` for N seconds after spawn) and/or spawn predators away from the prey
+> cluster, then add a low shark `PopulationSize` back to the menu profile only.
+
+> **Other caveats to validate in-editor (I can't run Unity):**
 > 2. **Membrane coverage.** Cell-config spawning + density targeting live inside a
 >    **1200-radius sphere** (`Cell.ContainsPosition`) while the track runs ~4000
 >    long, so foragers concentrate in the **central** crystal-orbit zone, not the
