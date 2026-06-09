@@ -160,11 +160,14 @@ namespace CosmicShore.Gameplay
         /// instead of rolling randomly. Used by the regulated fauna spawn loop so new
         /// fauna track the live leader rather than producing inconsistent domain mixes.
         /// </summary>
-        protected Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain)
+        protected Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain, Vector3? spawnPosition = null)
         {
             if (!host || !faunaPrefab) return null;
 
-            var pop = UnityEngine.Object.Instantiate(faunaPrefab, host.transform.position, Quaternion.identity);
+            // Spawn at the requested position (e.g. on the mass concentration the fauna will
+            // forage) when given; otherwise the cell centre (legacy behavior, IntensityWise).
+            Vector3 pos = spawnPosition ?? host.transform.position;
+            var pop = UnityEngine.Object.Instantiate(faunaPrefab, pos, Quaternion.identity);
             pop.domain = domain;
             pop.Goal = goal;
 

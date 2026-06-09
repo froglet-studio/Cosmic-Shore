@@ -26,3 +26,14 @@ MonoBehaviour:
   CellModifiers: []
   SpawnProfile: {fileID: 11400000, guid: fb21a73fb42247b5a4dfeee0349f67f4, type: 2}
   SenseRadiusOverride: 3000
+  PhaseThresholds:
+    QuietEnter: 100
+    QuietExit: 80
+    SettledEnter: 300
+    SettledExit: 240
+    RestlessEnter: 600
+    RestlessExit: 480
+    FrozenEnter: 1200
+    FrozenExit: 960
+    RabidEnter: 2000
+    RabidExit: 1600

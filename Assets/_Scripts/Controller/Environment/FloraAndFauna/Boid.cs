@@ -30,6 +30,10 @@ namespace CosmicShore.Gameplay
         [Header("Speed Settings")]
         [SerializeField] float minSpeed = 2.0f;
         [SerializeField] float maxSpeed = 5.0f;
+        [Tooltip("Speed multiplier applied to a FORAGER while it is hunting mass (the cell has " +
+                 "registered prisms to clear). Lets the swarm dash between concentrations and " +
+                 "clear them quickly. Drops back to 1x when there's no mass (idling at the crystal).")]
+        [SerializeField] float huntSpeedMultiplier = 10f;
 
         [Header("Goal Settings")]
         public Transform DefaultGoal;
@@ -279,7 +283,17 @@ namespace CosmicShore.Gameplay
                                + (goalDirection * goalWeight)
                                + blockAttraction).normalized;
 
-            currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
+            // Foragers DASH (huntSpeedMultiplier, e.g. 10x) toward a mass concentration so
+            // the swarm covers the arena quickly, then ease back to base speed once within
+            // consume range so they graze it reliably instead of overshooting. 1x when the
+            // cell is empty (idling at the crystal) or when not a forager.
+            float speedMult = 1f;
+            if (forager && cell != null && cell.LiveBlockCount > 0)
+            {
+                float distToGoal = (target - transform.position).magnitude;
+                speedMult = distToGoal > trailBlockInteractionRadius ? Mathf.Max(1f, huntSpeedMultiplier) : 1f;
+            }
+            currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed * speedMult, maxSpeed * speedMult);
 
             desiredRotation = SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this) ? desiredRot : transform.rotation;
         }
