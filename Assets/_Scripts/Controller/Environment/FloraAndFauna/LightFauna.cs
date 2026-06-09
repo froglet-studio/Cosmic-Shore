@@ -27,12 +27,12 @@ namespace CosmicShore.Gameplay
         public LightFaunaManager LightFaunaManager { get; set; }
 
         /// <summary>
-        /// True when the host cell's phase is <see cref="CellPhase.Rabid"/>: aggression-2
+        /// True when the host cell's phase is <see cref="CellPhase.Frenzy"/>: aggression-2
         /// fauna ignore danger-prism damage. Read by impactor pipelines that would
         /// otherwise debuff/damage the fauna on dangerous-prism contact. Centralizing
         /// the rule here keeps the impact code path from re-deriving phase semantics.
         /// </summary>
-        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Rabid;
+        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Frenzy;
 
         public override void Initialize(Cell cell)
         {
@@ -136,15 +136,14 @@ namespace CosmicShore.Gameplay
             // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
             // systems, so the same fauna instance can transition through aggression levels
             // as the cell's phase changes around it.
-            //   Quiet/Settled: aggression 0 — head toward crystal
-            //   Restless/Frozen: aggression 1 — head toward nearest opposing-color centroid
-            //   Rabid: aggression 2 — head toward nearest centroid (any domain)
-            var phase = cell ? cell.Phase : CellPhase.Sprout;
+            //   Calm:     aggression 0 — head toward crystal
+            //   Restless: aggression 1 — head toward nearest opposing-color centroid
+            //   Frenzy:   aggression 2 — head toward nearest centroid (any domain)
+            var phase = cell ? cell.Phase : CellPhase.Calm;
             Goal = phase switch
             {
                 CellPhase.Restless => cell.GetExplosionTarget(domain),
-                CellPhase.Frozen => cell.GetExplosionTarget(domain),
-                CellPhase.Rabid => cell.GetDensestRegionAnyDomain(),
+                CellPhase.Frenzy => cell.GetDensestRegionAnyDomain(),
                 _ => (cellData && cellData.CrystalTransform)
                        ? cellData.CrystalTransform.position
                        : (cell ? cell.transform.position : transform.position),
@@ -167,7 +166,7 @@ namespace CosmicShore.Gameplay
             // Aggression 2 drops friendly avoidance (same-domain ships, fauna, and
             // health prisms stop contributing to separation). Cross-domain entities
             // still push us away so we don't clip through enemy mass.
-            bool dropFriendlyAvoidance = phase >= CellPhase.Rabid;
+            bool dropFriendlyAvoidance = phase >= CellPhase.Frenzy;
 
             var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
 

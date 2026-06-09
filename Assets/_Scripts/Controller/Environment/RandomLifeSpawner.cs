@@ -67,11 +67,10 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < initialCount; i++)
             {
-                // Phase gate: plant only while the cell still allows new flora
-                // (Phase < Settled). Replaces the old scored-volume ceiling, which
-                // reads ~0 in Menu_Main and so never bounded planting there — tying
-                // planting to the cell's own live prism mass is what lets the
-                // grow/consume cycle close.
+                // Frenzy gate: plant at a steady rate until the cell hits Frenzy
+                // (Phase < Frenzy). No early planting cap — flora keep planting + growing
+                // and the food web (fauna grazing) is the only down-force. Replaces the
+                // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
                 if (host && host.FloraPlantingEnabled)
                     SpawnFlora(host, floraCfg.FloraPrefab, excluded);
 
@@ -87,7 +86,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Continuous — keeps ticking so planting resumes if the cell falls back
-            // across the planting hysteresis floor (Phase drops below Settled again).
+            // across the Frenzy hysteresis floor (Phase drops below Frenzy again).
             while (true)
             {
                 float waitPeriod = floraCfg.OverrideDefaultPlantPeriod

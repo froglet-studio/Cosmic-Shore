@@ -34,12 +34,27 @@ the **food web**, not of artificial removal:
 This is why **prism decay / mortality was considered and rejected** (it was the
 original Phase 2 "step 1"). A timed culler is just the flora regrowth pulse
 inverted — a hard-coded oscillator that manufactures the "breathing" we want to
-*emerge* from the predator–prey loop. The mirror cheat on the growth side is the
-flora **regrowth pulse** (§5.1), which is likewise flagged for retirement, not
-extension. If a cell "freezes," the fix is to give an active force a reason or
-ability to consume that mass (tune fauna diet/reach/spawning, or vessel
-abilities) — **never** to add decay. See CLAUDE.md → "Mass" fundamental and
-"Don't cheat emergence."
+*emerge* from the predator–prey loop. If a cell "freezes," the fix is to give an
+active force a reason or ability to consume that mass (tune fauna diet/reach/
+spawning, or vessel abilities) — **never** to add decay. See CLAUDE.md → "Mass"
+fundamental and "Don't cheat emergence."
+
+**Growth-side cheats — all retired.** Two artificial throttles used to fake the
+homeostasis the food web is meant to produce, both now gone:
+
+1. The flora **regrowth pulse** (a periodic growth window above the freeze
+   threshold) — retired earlier.
+2. The flora **phase-gated self-limit**: planting stopped at a low phase and
+   growth stopped at a mid phase, so the canopy capped itself well before the
+   cell was full. **Retired now** — flora plant *and* grow at a **steady rate
+   until Frenzy** (the top phase), and the only down-force is the food web
+   (opposing-domain fauna grazing the prisms) or a vessel ability. A cell with no
+   active force on it climbs to Frenzy and stays there (a *valid* equilibrium,
+   §0) until something eats its mass back below the Frenzy exit threshold, at
+   which point the existing hysteresis resumes growth on its own. Retiring this
+   staggered self-limit is what **collapsed the phase ladder from six rungs to
+   three** (Calm → Restless → Frenzy) — the extra rungs only existed to stage the
+   flora-vs-fauna events that no longer differ. See §1, §5.
 
 ---
 
@@ -54,17 +69,27 @@ fundamental. Everything else is a projection of, or a force on, prism count.
 | Force on prism count | Sign | Source |
 |---|---|---|
 | Vessel trails | **+** | players/AI flying through the cell → `Cell.AddBlock` |
-| Flora planting | **+** | new flora instantiated (`RandomLifeSpawner`) → health prisms → `AddBlock` |
-| Flora growth | **+** | existing flora grow new prisms (`Flora.Grow`) → `AddBlock` |
+| Flora planting | **+** | new flora instantiated (`RandomLifeSpawner`) → health prisms → `AddBlock`. Steady rate until Frenzy. |
+| Flora growth | **+** | existing flora grow new prisms (`Flora.Grow`) → `AddBlock`. Steady rate until Frenzy. |
 | Fauna consumption | **−** | fauna seek & detonate opposing-domain prisms → `RemoveBlock` |
 | Vessel abilities (combat) | **−** | vessel impacts / ability use → prism death → `RemoveBlock` |
 
 > The **−** column is exhaustive: fauna consumption and vessel abilities are the
-> *only* prism sinks. There is no decay/aging row — mass is conserved (§0).
+> *only* prism sinks. There is no decay/aging row — mass is conserved (§0). And
+> the **+** column has no self-limit: flora plant + grow at a steady rate until
+> Frenzy (no early planting cap, no mid-range growth cap — those staggered phase
+> gates were a growth-side cheat, retired in §0).
 
-Prism count → **Cell Phase** (`Sprout→Quiet→Settled→Restless→Frozen→Rabid`,
-computed with enter/exit **hysteresis** so the cell doesn't chatter on the
-boundary). Phase is the single dial the rest of the ecology reads.
+Prism count → **Cell Phase** (`Calm → Restless → Frenzy`, computed with enter/exit
+**hysteresis** so the cell doesn't chatter on the boundary). The three phases map
+1:1 onto the three fauna aggression bands — the phase *is* the aggression band.
+Phase is the single dial the rest of the ecology reads:
+
+- **Calm** — low mass. Flora grow + plant freely; fauna idle toward the crystal (L0).
+- **Restless** — mid mass. Fauna hunt the nearest opposing-color centroid (L1).
+- **Frenzy** — frenzy ceiling. Flora **stop**; fauna seek any-domain density, drop
+  friendly avoidance, ignore danger prisms (L2). The cell only leaves Frenzy when
+  an active force eats its mass back below the Frenzy exit threshold.
 
 ---
 
@@ -77,12 +102,11 @@ flowchart TD
     FGROW["Flora growth"] -->|+| COUNT
 
     COUNT["PRISM COUNT<br/>LiveBlockCount + per-domain counts<br/>(MASS x DOMAIN, inside a CELL)"]
-    COUNT --> PHASE["CELL PHASE<br/>Sprout-Quiet-Settled-Restless-Frozen-Rabid<br/>(hysteresis)"]
+    COUNT --> PHASE["CELL PHASE<br/>Calm - Restless - Frenzy<br/>(hysteresis; phase == aggression band)"]
 
-    %% Flora is self-limiting via phase gates (negative feedback)
-    PHASE --> GPLANT{"Phase &lt; Settled?"}
-    GPLANT -->|yes| FPLANT
-    PHASE --> GGROW{"Phase &lt; Frozen?"}
+    %% Flora grow + plant at a steady rate until Frenzy (ONE gate, no self-limit)
+    PHASE --> GGROW{"Phase &lt; Frenzy?"}
+    GGROW -->|yes| FPLANT
     GGROW -->|yes| FGROW
 
     %% Aggression is the ONLY thing prism count feeds into fauna (per redesign)
@@ -113,9 +137,13 @@ flowchart TD
 
 ### The three feedback loops (this is where "vibrant" lives or dies)
 
-1. **Flora self-limit (negative, working).** `count↑ → phase↑ → planting stops at
-   Settled, growth stops at Frozen → count stops rising from flora.` Keeps flora
-   from filling the cell forever. ✅
+1. **Flora freeze at Frenzy (hard ceiling, NOT a self-limit).** `count↑ → phase↑ →
+   at Frenzy, planting + growth stop.` Flora plant + grow at a **steady rate** the
+   whole way up — there is no early planting cap and no mid-range growth cap (those
+   staggered self-limit gates were a growth-side cheat, retired §0). Frenzy is just
+   the top of the hysteresis band, not a homeostatic throttle: a cell that reaches
+   Frenzy stays full until the **food web** (loop #2) grazes its mass back down, so
+   the down-force on flora is the predator–prey loop, not flora throttling itself. ✅
 2. **Predator–prey (negative, the heartbeat).** `count↑ → aggression↑ → fauna hunt
    harder/closer → consume more → count↓ → aggression↓ → …` This is the
    oscillation that should make the cell feel alive. Per the latest decision this
@@ -134,7 +162,7 @@ flowchart TD
    PRISM COUNT --> PHASE --> AGGRESSION --> fauna hunt --> CONSUME (−)
         ^   ^                                                  |
         |   |                                                  |
-   flora +  +-- planting/growth gates close as phase rises (−) |
+   flora +  +-- planting + growth freeze ONLY at Frenzy (ceiling, not a throttle)
    trail +                                                     |
                                                                |
    SPAWN (timer, fixed N, controlling color) --> POPULATION ---+
@@ -166,11 +194,11 @@ Dashed = not implemented. Fauna currently spawn, hunt forever, and never leave.
 | # | Part | Driver | Current behavior | Desired | Gap / action |
 |---|---|---|---|---|---|
 | 1 | Prism count (state) | trail + flora − fauna/combat | tracked via Add/RemoveBlock, per-domain | same | ✅ the spine, leave alone |
-| 2 | Cell phase | prism count + hysteresis | Sprout→Rabid | same | ✅ thresholds tunable per biome |
-| 3 | Flora **planting** | `Phase < Settled` | plants while below Settled | prism-count driven | ✅ done (retrofit) |
-| 4 | Flora **growth** | `Phase < Frozen` | grows while below Frozen | prism-count driven | ✅ already wired in `AssembledFlora`/`BranchingFlora` |
+| 2 | Cell phase | prism count + hysteresis | Calm→Frenzy (3 phases) | same | ✅ 2 thresholds tunable per biome |
+| 3 | Flora **planting** | `Phase < Frenzy` | steady rate until Frenzy | prism-count driven | ✅ steady-until-frenzy (cheat removed) |
+| 4 | Flora **growth** | `Phase < Frenzy` | steady rate until Frenzy | prism-count driven | ✅ `AssembledFlora`/`BranchingFlora`; same gate as planting |
 | 5 | Fauna **aggression** | Phase → L0/L1/L2 | seek crystal→opposing→densest | prism-count driven | ✅ works; extension seam for a 4th tier / per-subtype |
-| 6 | Fauna **spawn timing** | timer + `Phase≥Quiet` gate + aggression-scaled interval | gated + variable period | **timer only, FIXED period** | 🔧 drop phase gate; drop aggression interval scaling |
+| 6 | Fauna **spawn timing** | timer + phase gate + aggression-scaled interval | gated + variable period | **timer only, FIXED period** | 🔧 drop phase gate; drop aggression interval scaling |
 | 7 | Fauna **spawn count** | 1 per tick | single fauna | **fixed-size population** | 🔧 spawn N per tick |
 | 8 | Fauna **domain** | `PickRandomDomain(excluded = local)` + `FaunaExcludeLocalDomain=true` | never the controller's color | **controlling color** | 🔧 use `host.ControllingDomain` — **this is the "no Jade fauna" bug** |
 | 9 | Spawn-cycle HUD ring | `CurrentFaunaSpawnPeriod` (aggression-scaled) | period varies | base fixed period | 🔧 ring reads base period (no aggression scaling) |
@@ -200,43 +228,39 @@ first approximations, build to extend"):
 - **Spawn = timer-driven**, no phase gate, **population of fixed N** per tick.
 - **HUD ring = base fixed period** (remove the aggression scaling the retrofit
   added to `ScaleFaunaInterval` / `CurrentFaunaSpawnPeriod`).
-- **Keep 3 aggression tiers for now** (first approximation). Rabid = top tier
-  today; a 4th "berserk" tier and per-subtype aggression are natural extensions
-  when the predator/herbivore split lands (§7).
+- **Keep 3 aggression tiers** — and they are now the **same thing as the phases**.
+  The 3-phase collapse made `CellPhase` (Calm / Restless / Frenzy) map 1:1 onto
+  `CellAggressionLevel` (L0 / L1 / L2). Frenzy = top tier; a 4th "berserk" tier or
+  per-subtype aggression curves slot into the existing `CellAggressionLevel` switch
+  when the predator/herbivore split deepens (§7).
+- **The phase ladder is the aggression ladder.** Because flora are no longer
+  staggered on their own rungs (steady until Frenzy, §0), a cell needs only **two
+  thresholds** to author: `RestlessEnter` (fauna start hunting) and `FrenzyEnter`
+  (flora freeze + max aggression). Down from five. The per-biome boundaries are
+  unchanged in value by the collapse — only the redundant middle rungs were dropped —
+  so existing fauna aggression behavior is identical; only flora now fills denser
+  (it grows to Frenzy instead of stopping at the old mid-range growth cap).
 
-### 5.1 Density & flora regrowth (cells were sparse / froze solid)
+### 5.1 Density & the steady-until-frenzy model (cells were sparse / froze solid)
 
-Two follow-on changes so cells feel full and keep breathing:
+- **Scaled-up capacity.** The menu's `Blob Cell Config` thresholds are now
+  `RestlessEnter 3000 / FrenzyEnter 5400` (was the tiny "widened for visibility"
+  values). Raising `FrenzyEnter` raises both the prism-count ceiling *and* the
+  `DomainVolumeIndicator` volume scale (it ranges against `FrenzyEnter`). Other
+  biomes use the high code `Default` (`FrenzyEnter 15000`); Skim Race is
+  `RestlessEnter 600 / FrenzyEnter 2000`.
+- **Flora grow steadily until Frenzy.** The old "stop planting at a low phase, stop
+  growing at a mid phase" staggered self-limit (and, before it, the periodic
+  **regrowth pulse**) are **both retired** — they were growth-side cheats faking the
+  breathing the food web is meant to produce (§0). `Cell.FloraGrowingEnabled` /
+  `FloraPlantingEnabled` are now simply `phase < Frenzy`: flora plant + grow at a
+  steady rate the whole way up, then freeze at Frenzy.
 
-- **Scaled-up capacity.** The menu's `Blob Cell Config` phase thresholds were tiny
-  (Quiet 100 … Frozen 700 … Rabid 900 — the "widened for visibility" values), so
-  flora stopped planting at 300 prisms and growing at 700. Scaled ~6× (Quiet 600 …
-  Frozen 4200 … Rabid 5400), keeping the 0.6 hysteresis ratio. Raising the
-  thresholds raises both the prism-count ceiling *and* the `DomainVolumeIndicator`
-  volume scale (it ranges against `RabidEnter`). Other biomes already use the high
-  code `Default` (Rabid 15000) — left as-is; scale there too if gameplay feels
-  sparse.
-- **Flora regrowth pulse.** Growth was a hard stop at Frozen, and in the menu the
-  dominant domain's flora have no down-force (fauna only eat *opposing* prisms), so
-  the canopy froze and never resumed. `Cell.FloraGrowingEnabled` now = `phase <
-  Frozen` **OR** (`phase < Rabid` AND in a periodic regrowth window). So below
-  Frozen flora grow freely; once full they resume growing in brief periodic pulses
-  (cell-global, all flora breathe together); Rabid stays the hard ceiling.
-  Config: `SpawnProfileSO.FloraRegrowthPulsePeriod` (15s) /
-  `FloraRegrowthPulseDuration` (4s); `<= 0` falls back to those defaults so the
-  pulse is on across the board.
-
-> The pulse is a **growth-side cheat** — a hard-coded oscillator that fakes the
-> "breathing" we want to *emerge* from the predator–prey loop. Its mirror,
-> **prism decay**, was considered as the "real" down-force (flora shed aged
-> prisms → count falls → growth resumes via hysteresis) and **rejected**: mass is
-> conserved, prisms are only removed by active forces (§0). The honest model is
-> that a frozen-solid cell is a *valid* state — it stays frozen until an active
-> force (opposing-domain fauna grazing it, or vessel abilities) removes mass, at
-> which point the existing `phase < Frozen` hysteresis resumes growth on its own.
-> The pulse is therefore flagged for **retirement, not replacement-by-decay**;
-> retiring it means accepting frozen accumulations until the food web (or a
-> vessel) eats them. See §0 and §10.
+> The honest model: a frozen-solid cell at Frenzy is a **valid state**, not a defect
+> to auto-correct. It stays frozen until an active force — opposing-domain fauna
+> grazing it, or a vessel ability — removes mass and the existing `phase < Frenzy`
+> hysteresis resumes growth on its own. Mass is conserved; the down-force is the
+> **food web**, never decay or a growth/decay oscillator. See §0 and §10.
 
 ---
 
@@ -437,7 +461,9 @@ cleared.
    + `LightFauna` consume branch + `Fauna.Predated`); two-tier starvation =
    Lotka–Volterra. Remaining: author a predator prefab/config and wire it into a
    `SpawnProfileSO`, then tune in-editor (§7.1).
-6. ⏳ Retire the regrowth pulse — **done** (`FloraGrowingEnabled = phase < Frozen`).
+6. ✅ Retire the regrowth pulse AND the flora phase-gated self-limit — **done**
+   (`FloraGrowingEnabled = FloraPlantingEnabled = phase < Frenzy`; steady growth +
+   planting until frenzy). This collapsed the phase ladder 6→3 (Calm/Restless/Frenzy).
 
 ---
 
@@ -453,7 +479,7 @@ cleared.
 | Fauna base: domain, goal, diet, starvation, `Predated` | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
 | Creature behavior + diet-branched consume (herbivore prisms / predator fauna) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs` |
 | Diet enum (Herbivore / Predator) | `Assets/_Scripts/Data/Enums/FaunaDiet.cs` |
-| Flora growth gate (now just `phase < Frozen`) | `AssembledFlora.cs`, `BranchingFlora.cs`, `Cell.FloraGrowingEnabled` |
+| Flora plant + growth gate (now just `phase < Frenzy`) | `AssembledFlora.cs`, `BranchingFlora.cs`, `Cell.FloraGrowingEnabled` / `FloraPlantingEnabled` |
 | Spawn tuning (period, population, food floor) | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
 | Aggression enum + tier behaviors | `Assets/_Scripts/Data/Enums/CellAggressionLevel.cs` |
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
@@ -476,18 +502,21 @@ work is saved and Phase 2 can be picked up.
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
-   target device, lower `Blob Cell Config` `FrozenEnter`/`RabidEnter` (one asset).
+   target device, lower `Blob Cell Config` `FrenzyEnter` (one asset).
 3. **`IntensityWiseLifeSpawner` is LIVE, not dead** (earlier notes were wrong).
    The WildlifeBlitz + Tournament scenes select it (`cellTypeChoiceOptions: 1`);
    Menu/Skim Race/etc. use `Random`. **Do NOT delete it.** It has diverged from
    `RandomLifeSpawner` (no prey-linked `FaunaFoodFloor` gate, spawns 1/tick not a
    population), so if those scenes ever wire fauna into their `SupportedFaunas`
    they'll behave differently — reconcile the two spawners then, don't remove one.
-4. **Confirm the global defaults are wanted in gameplay**, not just the menu: the
-   flora regrowth pulse (`SpawnProfileSO`, code-default ON) and prey-linked fauna
-   (controlling-color + starvation) now apply to every biome. If a gameplay biome
-   wants the old hard-freeze, set its `FloraRegrowthPulseDuration = 0`… (add an
-   explicit off switch if we want one).
+4. **Confirm the global defaults are wanted in gameplay**, not just the menu:
+   steady-until-frenzy flora growth (`phase < Frenzy`) and prey-linked fauna
+   (controlling-color + starvation) now apply to every biome. The steady-growth
+   change makes every cell fill **denser** (flora grow to `FrenzyEnter` instead of
+   stopping at the old mid-range cap) — for WildlifeBlitz that's growth to 15000 vs
+   the old ~10000. If a gameplay biome wants a lower ceiling, lower its
+   `FrenzyEnter` (one asset). No per-biome "old hard-freeze" switch exists — the
+   model is uniform now.
 5. **Merge `keen-newton` → bleeding-edge.** Needs an explicit go-ahead (different
    branch); I can open the PR and write the summary on request.
 
@@ -534,7 +563,7 @@ with the others.
    flow instead of monoculture lock-in.
 
 6. **Flora succession & variety.**
-   Different flora favor different phases (pioneers at Sprout, canopy at Settled),
+   Different flora favor different phases (pioneers at Calm, canopy at Restless),
    so a maturing cell visibly changes character.
 
 7. **Cross-cell ecology (migration).**

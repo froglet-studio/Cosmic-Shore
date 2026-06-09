@@ -139,7 +139,7 @@ namespace CosmicShore.Gameplay
             int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
             float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
 
-            // Initial batch — gated on FaunaSpawningEnabled (cell has crossed Quiet) +
+            // Initial batch — gated on FaunaSpawningEnabled (cell holds mass) +
             // per-attempt probability.
             for (int i = 0; i < initialCount; i++)
             {

@@ -43,15 +43,17 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
   live, and despawn if they can't feed for `starvationSeconds`; production pauses
   below `FaunaFoodFloor`. Prism-count→phase→**aggression** drives *behavior* (seek
   crystal / opposing centroid / densest), not spawn rate.
-- **Flora:** plant `Phase < Settled`, grow `Phase < Frozen`. The **regrowth pulse
-  is retired** (`FloraGrowingEnabled = phase < Frozen`); a full cell now stays
-  full until an active force eats it (valid state per §0).
+- **Flora:** plant + grow at a **steady rate until Frenzy** (`FloraPlantingEnabled =
+  FloraGrowingEnabled = phase < Frenzy`). The regrowth pulse **and** the staggered
+  phase-gated self-limit are both retired (that collapsed the phase ladder 6→3:
+  Calm/Restless/Frenzy); a full cell now stays full until an active force eats it
+  (valid state per §0).
 - **Diet split landed (code):** `FaunaDiet` (Herbivore default | Predator) on the
   `Fauna` base; `LightFauna` consume branches by diet (herbivore→prisms,
   predator→herbivore fauna via `Predated`); both bounded by the shared starvation
   clock = two-tier Lotka–Volterra. **Predators aren't active until authored** —
   see ECOSYSTEM.md §7.1 (predator prefab + config + wire into a `SpawnProfileSO`).
-- **Density:** Blob (menu) thresholds scaled ~6× (Frozen 4200 / Rabid 5400).
+- **Density:** Blob (menu) thresholds `RestlessEnter 3000 / FrenzyEnter 5400`.
 - **One cheat still in place — to retire:** the **fixed-period fauna spawner** (a
   hard-coded population source → step 3, reproduction). The regrowth pulse is
   already gone; prism decay was rejected (§0), not added.
@@ -71,8 +73,9 @@ emergence.")
 ### Phase 2 build order (ECOSYSTEM.md §10 — each step ships alone, composes with the fundamentals, and retires a cheat)
 1. **~~Prism mortality / decay~~ — REJECTED (see §0 above).** A timed culler is
    just the regrowth pulse inverted — a cheat. The down-force is the food web, not
-   decay. **Done instead:** the regrowth pulse is retired
-   (`FloraGrowingEnabled = phase < Frozen`).
+   decay. **Done instead:** the regrowth pulse *and* the flora phase-gated
+   self-limit are both retired (`FloraGrowingEnabled = FloraPlantingEnabled =
+   phase < Frenzy`; steady growth until frenzy, phase ladder collapsed 6→3).
 2. **Predator / herbivore split — code DONE, authoring/tuning remains.** The diet
    machinery is in (`FaunaDiet`, `Fauna.diet`/`Predated`, `LightFauna` consume
    branch); both diets share the starvation bound → Lotka–Volterra. **Next:**

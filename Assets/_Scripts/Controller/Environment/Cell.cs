@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        CellPhase phase = CellPhase.Sprout;
+        CellPhase phase = CellPhase.Calm;
 
         /// <summary>
         /// Live count of unique prisms tracked through Add/RemoveBlock. Read-only signal
@@ -175,17 +175,17 @@ namespace CosmicShore.Gameplay
             domainBlockCounts.TryGetValue(domain, out int c) ? c : 0;
 
         /// <summary>
-        /// LiveBlockCount at which the cell crosses into Rabid (frenzy). HUD widgets
-        /// use this as the "max" — when summed mass approaches it, the cell is about
-        /// to enter Level2 aggression and the UI should communicate that.
+        /// LiveBlockCount at which the cell crosses into Frenzy. HUD widgets use this as
+        /// the "max" — when summed mass approaches it, the cell is about to enter Level2
+        /// aggression (and flora freeze) and the UI should communicate that.
         /// </summary>
-        public int RabidEnterThreshold => ResolveThresholds().RabidEnter;
+        public int FrenzyEnterThreshold => ResolveThresholds().FrenzyEnter;
 
         /// <summary>
         /// The full resolved phase-threshold table for this cell (config table, or
         /// <see cref="CellPhaseThresholds.Default"/> when no config / legacy zeroed
         /// asset). Exposed so the concentric-hexagon volume indicator can draw one
-        /// ring per phase boundary (Quiet/Settled/Restless/Frozen/Rabid) at a radius
+        /// ring per phase boundary (Restless, then Frenzy at the centre) at a radius
         /// proportional to its enter threshold, lighting each ring as the cell's
         /// summed mass crosses it. Read-only — the cell is the single writer.
         /// </summary>
@@ -257,30 +257,42 @@ namespace CosmicShore.Gameplay
         public CellPhase Phase => phase;
 
         // ---------------------------------------------------------------------
-        // Derived gates — orthogonal projections of Phase the consumers actually
-        // care about. The user spec mixes flora and fauna events along a single
-        // prism-count axis; these properties decouple the two systems' rules so
-        // each consumer reads only what it needs.
+        // Derived gates — projections of Phase the consumers actually care about.
+        // Flora planting and growing now share ONE rule (steady until Frenzy); fauna
+        // read the aggression band. These properties give each consumer exactly the
+        // boolean it needs without re-deriving phase semantics.
         // ---------------------------------------------------------------------
 
-        /// <summary>True while the cell still allows new flora to be planted (Phase &lt; Settled).</summary>
-        public bool FloraPlantingEnabled => phase < CellPhase.Settled;
+        /// <summary>
+        /// True while new flora may be planted AND existing flora may grow: the cell is
+        /// below Frenzy. Planting and growth run at a STEADY rate all the way up — there
+        /// is no early planting cap and no mid-range growth cap (those staggered phase
+        /// gates were a growth-side cheat: a hard-coded self-limit faking the homeostasis
+        /// the food web is meant to produce). The only down-force on flora is the food web
+        /// (opposing-domain fauna grazing the prisms) or vessel abilities. Once a cell
+        /// fills to Frenzy, growth stops and stays stopped until an ACTIVE force lowers the
+        /// live prism count back below the Frenzy exit threshold (hysteresis), at which
+        /// point growth resumes on its own. Mass is conserved: no passive decay, no growth
+        /// oscillator — a frozen-solid cell is a valid state, not a defect to auto-correct.
+        /// See Docs/ECOSYSTEM.md §0/§5.
+        /// </summary>
+        public bool FloraGrowingEnabled => phase < CellPhase.Frenzy;
 
         /// <summary>
-        /// True while existing flora may grow new prisms: the cell is below Frozen.
-        /// Once a cell fills to Frozen, growth stops and stays stopped until an ACTIVE
-        /// force — fauna consuming opposing mass, or vessel abilities — lowers the live
-        /// prism count back below the Frozen exit threshold (hysteresis), at which point
-        /// growth resumes on its own. Mass is conserved: there is no passive decay and no
-        /// growth oscillator, so a frozen-solid cell is a valid state, not a defect to
-        /// auto-correct. See Docs/ECOSYSTEM.md §0 (the retired regrowth pulse used to add
-        /// a periodic growth window here — removed because it was a hard-coded oscillator
-        /// faking the breathing the food web is meant to produce).
+        /// True while new flora may be planted. Identical to <see cref="FloraGrowingEnabled"/>
+        /// — planting and growth share the single "below Frenzy" rule now (steady until
+        /// frenzy). Kept as a separate name so spawner code reads intent at the call site.
         /// </summary>
-        public bool FloraGrowingEnabled => phase < CellPhase.Frozen;
+        public bool FloraPlantingEnabled => FloraGrowingEnabled;
 
-        /// <summary>True once the cell has crossed the fauna-spawn threshold (Phase &gt;= Quiet).</summary>
-        public bool FaunaSpawningEnabled => phase >= CellPhase.Quiet;
+        /// <summary>
+        /// True once the cell holds any mass — the spawn floor for the timer-driven
+        /// IntensityWise fauna loop. Decoupled from the phase ladder (the old Quiet rung
+        /// that gated this no longer exists); the prey-linked RandomLifeSpawner gates on
+        /// <see cref="OpposingBlockCount"/> + FaunaFoodFloor instead, which is the real
+        /// population bound (Docs/ECOSYSTEM.md §6).
+        /// </summary>
+        public bool FaunaSpawningEnabled => LiveBlockCount > 0;
 
         /// <summary>
         /// Prey signal for a fauna of <paramref name="domain"/>: live prisms NOT of that
@@ -292,16 +304,16 @@ namespace CosmicShore.Gameplay
             Mathf.Max(0, LiveBlockCount - GetDomainBlockCount(domain));
 
         /// <summary>
-        /// Fauna aggression level derived from <see cref="Phase"/>:
-        ///   Sprout/Quiet/Settled → Level0  (head toward crystal, normal cadence)
-        ///   Restless/Frozen      → Level1  (head toward opposing-color centroid)
-        ///   Rabid                → Level2  (any-domain centroid, drop friendly avoidance)
+        /// Fauna aggression level derived from <see cref="Phase"/> — a 1:1 mapping now
+        /// that flora are no longer staggered on separate rungs:
+        ///   Calm     → Level0  (head toward crystal, normal cadence)
+        ///   Restless → Level1  (head toward opposing-color centroid)
+        ///   Frenzy   → Level2  (any-domain centroid, drop friendly avoidance, danger-immune)
         /// </summary>
         public CellAggressionLevel AggressionLevel => phase switch
         {
             CellPhase.Restless => CellAggressionLevel.Level1,
-            CellPhase.Frozen => CellAggressionLevel.Level1,
-            CellPhase.Rabid => CellAggressionLevel.Level2,
+            CellPhase.Frenzy => CellAggressionLevel.Level2,
             _ => CellAggressionLevel.Level0,
         };
 
@@ -357,7 +369,7 @@ namespace CosmicShore.Gameplay
             // (CellNetworkSync) overlays this on networked clients via OnValueChanged
             // — server's compute wins when the two diverge — but for single-player and
             // for the server itself this is the only path that advances phase. Without
-            // it, no fauna ever spawn because phase stays at Sprout forever.
+            // it, no fauna ever spawn because phase stays at Calm forever.
             if (Time.time < _nextPhaseTickAt) return;
             _nextPhaseTickAt = Time.time + PhaseTickIntervalSeconds;
 
@@ -373,7 +385,7 @@ namespace CosmicShore.Gameplay
 
             // Existing CellConfig assets serialized before PhaseThresholds existed
             // deserialize as struct zero — Unity does not apply the C# initializer.
-            // Substitute the Default table so legacy biomes don't snap to Rabid the
+            // Substitute the Default table so legacy biomes don't snap to Frenzy the
             // moment the first prism is added.
             var t = cfg.PhaseThresholds;
             return t.IsAllZero ? CellPhaseThresholds.Default : t;
@@ -463,7 +475,7 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
-            phase = CellPhase.Sprout;
+            phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
             {
@@ -519,7 +531,7 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
-            phase = CellPhase.Sprout;
+            phase = CellPhase.Calm;
 
             // Bind runtime -> this cell
             runtime.Cell = this;

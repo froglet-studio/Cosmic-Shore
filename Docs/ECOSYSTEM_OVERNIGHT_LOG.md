@@ -232,3 +232,66 @@ original (no bespoke widget).
 the colored wedges, and whether per-wedge ring SEGMENTS (coloring only the sectors a
 domain has crossed) read better than the current full concentric rings + colored
 wedge showing through. Tune via `DomainVolumeHexGraphic` "Phase threshold rings".
+
+---
+
+## Session 10 — Removed the biggest growth-side cheat: steady flora growth until Frenzy; phase ladder collapsed 6 → 3
+
+**Directive (operator):** "continuing to remove the biggest cheats. The first cheat
+… will also simplify our number of phases. Let's keep a steady growth and planting
+rate until frenzy. Let our fauna do their jobs."
+
+**The cheat removed.** Flora used to *self-limit* via two staggered phase gates —
+planting stopped at `Settled`, growth stopped at `Frozen` — a hard-coded throttle
+that capped the canopy well before the cell was full, faking the homeostasis the
+food web is supposed to produce. Now **flora plant AND grow at a steady rate until
+Frenzy** (`Cell.FloraGrowingEnabled = FloraPlantingEnabled = phase < Frenzy`). The
+only down-force on flora is the food web (opposing-domain fauna grazing) or a vessel
+ability. A cell with no active force on it climbs to Frenzy and stays there — a valid
+equilibrium (§0), not a defect.
+
+**Phases collapsed 6 → 3.** With flora no longer staggered on their own rungs, the
+extra phases existed only to stage flora-vs-fauna events that no longer differ.
+`CellPhase` is now `None / Calm / Restless / Frenzy`, mapping **1:1 onto the three
+fauna aggression bands** (Calm→L0, Restless→L1, Frenzy→L2) — the phase *is* the
+aggression band. `CellPhaseThresholds` dropped from 5 enter/exit pairs to **2**
+(`RestlessEnter/Exit`, `FrenzyEnter/Exit`). A new biome now authors two numbers, not
+five — and the HUD draws one intermediate ring (Restless) instead of five (directly
+resolving the session-9 ring-legibility worry).
+
+**Behavior preserved, density up.** The per-biome aggression boundaries are unchanged
+in value (Blob `RestlessEnter 3000 / FrenzyEnter 5400`; Skim Race `600 / 2000`;
+Default `8000 / 15000` = the old Restless/Rabid enters), so **fauna aggression
+behavior is identical** — only the redundant middle rungs were dropped. The single
+real behavior change: **flora fill denser** (they grow to `FrenzyEnter` instead of
+stopping at the old mid-range growth cap).
+
+**Files.** Enum `CellPhase`; `CellPhaseThresholds` (struct + `CellPhaseRules.Order`);
+`Cell` (gates, `AggressionLevel`, `FrenzyEnterThreshold`, inits); `LightFauna`
+(goal switch, danger-immune, drop-avoidance); `LightFaunaManager` (Quiet gates →
+`FaunaSpawningEnabled`); `AssembledFlora`/`BranchingFlora`/`RandomLifeSpawner`
+(comments); `DomainVolumeIndicator`/`DomainVolumeHexGraphic` (one ring); `CellNetworkSync`/
+`CellRuntimeDataSO` inits; the density-partition sim runner + its editor;
+`Blob Cell Config.asset` + `Skim Race Cell Config.asset` (threshold blocks rewritten,
+same values). Tests `CellPhaseRulesTests` + `EcologyEnumIntegrityTests` rewritten for
+the 3-phase model. Docs: ECOSYSTEM.md §0/§1/§2/§3/§4/§5/§5.1/§9/§10, both kickoff docs.
+
+**Serialization-safe.** Verified no on-disk asset serializes a raw `CellPhase`
+integer (only the threshold struct's *named* int fields, in two configs — both
+rewritten), so collapsing/renumbering the enum can't drift any scene/prefab/SOAP ref.
+
+### ⬅️ Validate on return (Session 10)
+1. **Menu (Blob):** flora should fill noticeably denser now (grows to ~5400, not the
+   old ~4200 plateau) and only freeze at frenzy. The tadpole/brittlestar food web
+   should graze it and let it breathe; if it sits frozen, that's a *valid* state —
+   tune the food web (forager `PopulationSize`, `starvationSeconds`) or lower
+   `Blob Cell Config FrenzyEnter`, **never** add decay.
+2. **Perf at the new density.** Steady-until-frenzy raises the steady-state prism
+   count in every biome. If a target device dips, lower that biome's `FrenzyEnter`
+   (one asset field). WildlifeBlitz now grows to 15000 (Default) vs the old ~10000 —
+   watch it specifically.
+3. **HUD ring.** The gauge now draws a single intermediate ring (Restless); confirm
+   it reads cleanly and the wedge-crossing still communicates "entering the hunting
+   band."
+4. **Run the edit-mode tests** (`CellPhaseRulesTests`, `EcologyEnumIntegrityTests`) —
+   rewritten for the 3-phase Default table (Restless 8000/7500, Frenzy 15000/14000).
