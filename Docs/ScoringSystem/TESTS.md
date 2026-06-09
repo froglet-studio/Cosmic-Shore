@@ -44,11 +44,13 @@ next turn.
 
 ## Surface A — Multiplayer client sync (BUGS.md B8 / B9) — MPPM, 2 humans
 
-### T11 — Client domain boxes map correctly (B8)
+### T11 — Client domain boxes map correctly (B8 / B10)
 VP1 host + VP2 client on **separate** domains, in a domain-wired mode
 (HexRace / Joust / CrystalCapture). **Expect on VP2 (client):** its own domain box
 on the LEFT (ally), opposing box(es) on the RIGHT, correct domain colors — matching
-VP1's mapping; no frozen / empty / mis-colored boxes. (Was wrong before `fa2515f7`.)
+VP1's mapping; no frozen / empty / mis-colored boxes. **Each player's profile icon
+sits in its OWN domain box** (B10 — the client's own icon must NOT land in the host's
+box; host screen was always correct). (Was wrong before `fa2515f7` / the B10 fix.)
 
 ### T12 — Client's OWN box tracks the host (B9)
 Same setup. Collect the scoring metric as **VP2 (client)** and watch VP2's OWN domain

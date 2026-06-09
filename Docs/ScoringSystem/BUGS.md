@@ -120,9 +120,27 @@ play-test (HexRace / Joust / CrystalCapture — `TESTS.md` T11/T12).
 Files: `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`,
 `_Scripts/Utility/DataContainers/GameDataSO.cs`, `_Scripts/UI/MultiplayerHUD.cs`.
 
+### B10 — 🟢 Client's OWN profile icon grouped into the wrong domain box
+With 2 humans on different domains (host Jade, client Ruby), the client's screen
+grouped BOTH players' icons into one domain box (the client's icon landed in the
+host's box), while the host's screen grouped them correctly. Same owner-replication
+gap as B9: the client's OWN `RoundStats.Domain` (a server-write NetworkVariable)
+doesn't reach the owner, so it stayed stale (set once from a pre-sync `Player.Domain`
+at init). `Player.OnNetDomainChanged` wrote `RoundStats.Domain` **only on the
+server**, trusting `n_Domain` replication to carry it to clients — but the owner never
+gets its own. `Player.Domain` (driven by the reliably-replicated `NetDomain`) WAS
+correct, which is why the ally box + crystal counts (B9 server-synced) were already
+right. **Done** (commit `eb798334`): `Player.OnNetDomainChanged` now writes
+`RoundStats.Domain` on **every** peer, sourced from the reliable `NetDomain` instead
+of the unreliable per-`RoundStats` `n_Domain`; the `RoundStats.Domain` setter raises
+`OnAnyStatChanged` on a client/local set so the HUD regroups. The COUNT fix (B9) is
+unaffected — sums are computed from the server's always-correct domains.
+Files: `_Scripts/Controller/Player/Player.cs`, `_Scripts/Data/Enums/RoundStats.cs`.
+
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
-B9 fixed for the **domain** layout (needs the 2-human play-test; legacy-layout
-residual tracked in `TODOS.md` TD1). B5 remains scheduled into **R10** (the unified
-ranked `ScoreResult` list dissolves it). No open read-through findings remain.
+B9 (count) + B10 (domain icon placement) fixed for the **domain** layout (need the
+2-human play-test; legacy-layout residual tracked in `TODOS.md` TD1). B5 remains
+scheduled into **R10** (the unified ranked `ScoreResult` list dissolves it). No open
+read-through findings remain.
